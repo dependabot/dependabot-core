@@ -9,6 +9,7 @@ require "dependabot/uv/file_parser"
 require "dependabot/uv/requirement"
 require "dependabot/errors"
 require "dependabot/uv/name_normaliser"
+require "dependabot/uv/sources_table"
 require "dependabot/python/file_parser/pep_dependency"
 require "dependabot/python/file_parser/poetry_lock"
 require "dependabot/python/file_parser/pyproject_document"
@@ -92,6 +93,7 @@ module Dependabot
           unresolvable_sources = PyprojectDocument.from_file(pyproject_file)
                                                   .unresolvable_uv_source_names
                                                   .map { |name| normalise(name) }
+          git_tag_sources = SourcesTable.writable_for(pyproject_file)
 
           parse_pep621_pep735_dependencies(pyproject_file).each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
@@ -100,17 +102,16 @@ module Dependabot
 
             next if unresolvable_sources.include?(normalise(dep.name))
 
-            # In uv no constraint means any version is acceptable
-            requirement_value = dep.requirement == "" ? "*" : dep.requirement
+            git_source = git_source_for(git_tag_sources, dep.name)
 
             dependencies <<
               Dependency.new(
                 name: normalised_name(dep.name, dep.extras),
                 version: dep.version&.include?("*") ? nil : dep.version,
                 requirements: [{
-                  requirement: requirement_value,
+                  requirement: requirement_for(dep.requirement, git_source),
                   file: Pathname.new(dep.file).cleanpath.to_path,
-                  source: nil,
+                  source: git_source,
                   groups: [dep.requirement_type].compact
                 }],
                 package_manager: "uv"
@@ -351,6 +352,36 @@ module Dependabot
         sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        sig do
+          params(
+            git_tag_sources: T::Hash[String, T::Hash[Symbol, String]],
+            name: String
+          ).returns(T.nilable(T::Hash[Symbol, String]))
+        end
+        def git_source_for(git_tag_sources, name)
+          normalised = normalise(name)
+          match = git_tag_sources.find { |key, _| normalise(key) == normalised }
+          return nil unless match
+
+          { type: "git" }.merge(match[1])
+        end
+
+        # nil alongside a git source, as the Poetry path does (python/lib/.../pyproject_files_parser.rb
+        # git_requirement). Keeping the PEP 508 constraint makes requirements_up_to_date? compare it
+        # against the newest tag, so a `>=` floor above that tag reports the pin as current.
+        sig do
+          params(
+            requirement: T.nilable(String),
+            git_source: T.nilable(T::Hash[Symbol, String])
+          ).returns(T.nilable(String))
+        end
+        def requirement_for(requirement, git_source)
+          return nil if git_source
+
+          # In uv no constraint means any version is acceptable
+          requirement == "" ? "*" : requirement
         end
 
         sig { returns(PyprojectDocument) }
