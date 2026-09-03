@@ -1,0 +1,201 @@
+name: Terraform - Bump Bundled CLI Version
+on: # yamllint disable-line rule:truthy
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+permissions: {}
+
+jobs:
+  Check-And-Bump-Terraform-Version:
+    if: github.repository == 'dependabot/dependabot-core'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # HashiCorp Security release-signing key: https://www.hashicorp.com/.well-known/pgp-key.txt
+      HASHICORP_GPG_FINGERPRINT: "C874011F0AB405110D02105534365D9472D7468F"
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          # Avoid persisting the token in .git/config; git auth is set up explicitly below instead
+          persist-credentials: false
+          # Ensure we start from main in case the workflow is run from a branch
+          ref: "main"
+
+      - name: Determine current and latest stable Terraform versions
+        id: versions
+        run: |
+          CURRENT_VERSION=$(grep -oP '^ARG TERRAFORM_VERSION=\K.*' terraform/Dockerfile)
+          echo "Current bundled version: $CURRENT_VERSION"
+
+          # Query the HashiCorp releases index and pick the highest version
+          # that is a plain stable release (X.Y.Z), rejecting any pre-release
+          # suffix (e.g. -alpha, -beta, -rc, -preview1, or any future label).
+          LATEST_VERSION=$(curl -sSL https://releases.hashicorp.com/terraform/index.json \
+            | jq -r '.versions | keys[]' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -n1)
+          echo "Latest stable version: $LATEST_VERSION"
+
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "::error::Could not determine latest Terraform version"
+            exit 1
+          fi
+
+          SKIP_REASON=""
+          if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
+            echo "Already up to date."
+            UPDATE_NEEDED=false
+            SKIP_REASON=up_to_date
+          elif [ "$(printf '%s\n%s\n' "$CURRENT_VERSION" "$LATEST_VERSION" | sort -V | tail -n1)" = "$LATEST_VERSION" ]; then
+            UPDATE_NEEDED=true
+          else
+            echo "Bundled version $CURRENT_VERSION is newer than latest indexed version $LATEST_VERSION; skipping downgrade."
+            UPDATE_NEEDED=false
+            SKIP_REASON=bundled_newer
+          fi
+
+          {
+            echo "CURRENT_VERSION=$CURRENT_VERSION"
+            echo "LATEST_VERSION=$LATEST_VERSION"
+            echo "UPDATE_NEEDED=$UPDATE_NEEDED"
+            echo "SKIP_REASON=$SKIP_REASON"
+          } >> "$GITHUB_ENV"
+
+      - name: Check for an existing open PR
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          # Using an idempotent branch name ensures no duplicate PRs are created
+          # if the action is re-run before the previous PR is merged.
+          BRANCH_NAME="bump-terraform-cli-to-v${LATEST_VERSION}"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "An open PR (#$EXISTING_PR) already exists for $BRANCH_NAME; skipping."
+            {
+              echo "UPDATE_NEEDED=false"
+              echo "SKIP_REASON=existing_pr"
+              echo "EXISTING_PR_NUMBER=$EXISTING_PR"
+            } >> "$GITHUB_ENV"
+          fi
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Fetch and verify checksums for latest version
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          SUMS_URL="https://releases.hashicorp.com/terraform/${LATEST_VERSION}/terraform_${LATEST_VERSION}_SHA256SUMS"
+
+          curl -sSL -o SHA256SUMS "$SUMS_URL"
+          curl -sSL -o SHA256SUMS.sig "${SUMS_URL}.sig"
+          curl -sSL -o hashicorp.asc https://www.hashicorp.com/.well-known/pgp-key.txt
+
+          gpg --import hashicorp.asc
+
+          # Bind trust to whichever key actually produced the signature, not just to
+          # importing the expected key - the downloaded key file could smuggle in an
+          # extra untrusted key that gpg would otherwise accept a signature from.
+          VERIFY_STATUS=$(gpg --status-fd 1 --verify SHA256SUMS.sig SHA256SUMS 2>gpg_verify.log)
+          VERIFY_EXIT=$?
+          if [ "$VERIFY_EXIT" -ne 0 ]; then
+            echo "::error::Failed to verify SHA256SUMS signature"
+            cat gpg_verify.log
+            exit 1
+          fi
+
+          SIGNING_PRIMARY_FPR=$(echo "$VERIFY_STATUS" | awk '/^\[GNUPG:\] VALIDSIG/ { print $NF }')
+          if [ "$SIGNING_PRIMARY_FPR" != "$HASHICORP_GPG_FINGERPRINT" ]; then
+            echo "::error::SHA256SUMS was signed by an unexpected key (got $SIGNING_PRIMARY_FPR, expected $HASHICORP_GPG_FINGERPRINT)"
+            exit 1
+          fi
+
+          AMD64_CHECKSUM=$(grep "terraform_${LATEST_VERSION}_linux_amd64.zip" SHA256SUMS | awk '{print $1}')
+          ARM64_CHECKSUM=$(grep "terraform_${LATEST_VERSION}_linux_arm64.zip" SHA256SUMS | awk '{print $1}')
+
+          if [ -z "$AMD64_CHECKSUM" ] || [ -z "$ARM64_CHECKSUM" ]; then
+            echo "::error::Could not determine checksums for Terraform $LATEST_VERSION"
+            exit 1
+          fi
+
+          echo "AMD64_CHECKSUM=$AMD64_CHECKSUM" >> "$GITHUB_ENV"
+          echo "ARM64_CHECKSUM=$ARM64_CHECKSUM" >> "$GITHUB_ENV"
+
+      - name: Update terraform/Dockerfile
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          sed -i "s/^ARG TERRAFORM_VERSION=.*/ARG TERRAFORM_VERSION=${LATEST_VERSION}/" terraform/Dockerfile
+          sed -i "s/^ARG TERRAFORM_AMD64_CHECKSUM=.*/ARG TERRAFORM_AMD64_CHECKSUM=${AMD64_CHECKSUM}/" terraform/Dockerfile
+          sed -i "s/^ARG TERRAFORM_ARM64_CHECKSUM=.*/ARG TERRAFORM_ARM64_CHECKSUM=${ARM64_CHECKSUM}/" terraform/Dockerfile
+          git diff terraform/Dockerfile
+
+      - name: Configure the git user
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          # Specifying the full email allows the avatar to show up: https://github.com/orgs/community/discussions/26560
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Configures git to authenticate via the gh CLI's own credential helper instead
+          # of persisting the raw token on disk (checkout above set persist-credentials: false)
+          gh auth setup-git
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Create a branch and commit the changes
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          git checkout -b "$BRANCH_NAME"
+          git add terraform/Dockerfile
+          git commit -m "Update bundled Terraform CLI to ${LATEST_VERSION}" \
+            -m "Bumps the Terraform CLI bundled in the Terraform updater Docker image from ${CURRENT_VERSION} to ${LATEST_VERSION}." \
+            -m "Release notes: https://github.com/hashicorp/terraform/releases/tag/v${LATEST_VERSION}"
+
+      - name: Push the branch
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          echo "Pushing branch to remote. If this fails, check if a branch/PR already exists for this version."
+          git config push.autoSetupRemote true
+          git push
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Create a PR from the branch with the commit
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          PR_URL=$(gh pr create --fill --label "L: terraform")
+          echo "PR created at URL: $PR_URL"
+          echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Set summary
+        if: env.UPDATE_NEEDED == 'true'
+        run: |
+          echo ":rocket: PR created at URL: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: No update needed
+        if: env.UPDATE_NEEDED == 'false'
+        run: |
+          case "$SKIP_REASON" in
+            bundled_newer)
+              echo "Bundled Terraform CLI ($CURRENT_VERSION) is newer than the latest indexed release ($LATEST_VERSION); no downgrade performed." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            existing_pr)
+              echo "An open PR already exists for Terraform $LATEST_VERSION (#$EXISTING_PR_NUMBER); skipping." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "Terraform CLI is already at the latest stable version ($CURRENT_VERSION)." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+          esac
