@@ -627,27 +627,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "with a dependency resolution that returns Invalid package.json response" do
-      let(:dependency_name) { "@radix-ui/react-context-menu" }
-      let(:version) { "2.2.3-rc.12" }
-      let(:previous_version) { "^2.2.3" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "2.2.3-rc.12",
-          groups: ["Dependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "^2.2.3",
-          groups: ["Dependencies"],
-          source: nil
-        }]
-      end
-
       let(:project_name) { "pnpm/invalid_json" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "ERR_PNPM_INVALID_PACKAGE_JSON  Invalid package.json in package " \
+                       "\"src-ahqstore-types/pkg\": Unexpected end of JSON input",
+              error_context: {}
+            )
+          )
+      end
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -816,6 +807,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           updated_pnpm_lock_content
         end
       end
+    end
+  end
+
+  describe "when pnpm refuses to pin a transitive dependency" do
+    let(:project_name) { "pnpm/no_lockfile_change" }
+    let(:dependencies) { [dependency, transitive_dependency] }
+    let(:transitive_dependency) do
+      Dependabot::Dependency.new(
+        name: "acorn",
+        version: "6.7.3",
+        previous_version: "6.4.2",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:pinned_update) { "update fetch-factory@0.0.2 acorn@6.7.3  --lockfile-only --no-save -r" }
+    let(:unpinned_update) { "update fetch-factory@0.0.2 acorn  --lockfile-only --no-save -r" }
+    let(:fingerprint) { { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" } }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(pinned_update, fingerprint)
+        .and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"acorn\" (requested \"6.7.3\") is not a " \
+                     "direct dependency, so the requested version cannot be recorded.",
+            error_context: {}
+          )
+        )
+    end
+
+    it "retries the update without a version for the transitive dependency only" do
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(pinned_update, fingerprint)
+        .ordered
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(unpinned_update, fingerprint)
+        .ordered
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with("install --lockfile-only")
+        .ordered
+
+      updated_pnpm_lock_content
     end
   end
 
