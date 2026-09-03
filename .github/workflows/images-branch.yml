@@ -423,6 +423,7 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
+          ref: ${{ needs.approval.outputs.base_sha }}
 
       - name: Preserve build definition
         run: |
