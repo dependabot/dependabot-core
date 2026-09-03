@@ -171,7 +171,8 @@ module Dependabot
             next if req.source_string("digest")
 
             old_declaration = scalar_image_declaration(dependency_name, req, old_tag)
-            next unless value_node.value == old_declaration
+            # clip/keep chomping (plain > or |) leaves 1+ trailing newlines in the parsed value
+            next unless value_node.value.sub(/\n+\z/, "") == old_declaration
 
             new_declaration = scalar_image_declaration(dependency_name, req, dependency_version)
             replace_within_node_span(value_node, content, old_declaration, new_declaration)
@@ -189,20 +190,66 @@ module Dependabot
           ).void
         end
         def replace_within_node_span(value_node, content, old_declaration, new_declaration)
-          start_line = value_node.start_line
-          end_line = value_node.end_line
-
-          if start_line == end_line
-            line = T.must(content[start_line])
-            prefix = line[0...value_node.start_column]
-            rest = T.must(line[value_node.start_column..])
-            content[start_line] = "#{prefix}#{rest.sub(old_declaration, new_declaration)}"
+          if value_node.start_line == value_node.end_line
+            replace_within_single_line(value_node, content, old_declaration, new_declaration)
           else
-            # block/folded scalar: the declaration text lives on a line after start_line, so
-            # search the node's whole line span rather than just the line Psych anchors it to
-            segment = T.must(content[start_line..end_line]).join("\n")
-            content[start_line..end_line] = segment.sub(old_declaration, new_declaration).split("\n", -1)
+            replace_within_multi_line(value_node, content, old_declaration, new_declaration)
           end
+        end
+
+        sig do
+          params(
+            value_node: Psych::Nodes::Scalar,
+            content: T::Array[String],
+            old_declaration: String,
+            new_declaration: String
+          ).void
+        end
+        def replace_within_single_line(value_node, content, old_declaration, new_declaration)
+          line = T.must(content[value_node.start_line])
+          prefix = line[0...value_node.start_column]
+          # bounding at end_column too keeps the search from bleeding into whatever
+          # follows the node (e.g. a sibling key sharing the line)
+          node_text = T.must(line[value_node.start_column...value_node.end_column])
+          suffix = T.must(line[value_node.end_column..])
+          return unless node_text.include?(old_declaration)
+
+          content[value_node.start_line] = "#{prefix}#{node_text.sub(old_declaration, new_declaration)}#{suffix}"
+        end
+
+        sig do
+          params(
+            value_node: Psych::Nodes::Scalar,
+            content: T::Array[String],
+            old_declaration: String,
+            new_declaration: String
+          ).void
+        end
+        def replace_within_multi_line(value_node, content, old_declaration, new_declaration)
+          lines = T.must(content[value_node.start_line..value_node.end_line])
+          prefix = T.must(lines.first)[0...value_node.start_column]
+          suffix = T.must(T.must(lines.last)[value_node.end_column..])
+          node_text = node_span_text(lines, value_node.start_column, value_node.end_column)
+          return unless node_text.include?(old_declaration)
+
+          updated_lines = node_text.sub(old_declaration, new_declaration).split("\n", -1)
+          updated_lines[0] = "#{prefix}#{updated_lines.first}"
+          updated_lines[-1] = "#{updated_lines.last}#{suffix}"
+          content[value_node.start_line..value_node.end_line] = updated_lines
+        end
+
+        sig do
+          params(
+            lines: T::Array[String],
+            start_column: Integer,
+            end_column: Integer
+          ).returns(String)
+        end
+        def node_span_text(lines, start_column, end_column)
+          middle_lines = T.must(lines[1..-2])
+          first_segment = T.must(T.must(lines.first)[start_column..])
+          last_segment = T.must(T.must(lines.last)[0...end_column])
+          ([first_segment] + middle_lines + [last_segment]).join("\n")
         end
 
         sig do
