@@ -1068,4 +1068,100 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       end
     end
   end
+
+  describe "Git dependencies" do
+    # The version comes from uv.lock, as it does in any repository that has one: it is the package's
+    # own distribution version, never a commit sha - which is what makes the guards below necessary
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: "0.3.0",
+        requirements: dependency_requirements,
+        package_manager: "uv"
+      )
+    end
+    let(:dependency_requirements) do
+      [{
+        requirement: "*",
+        file: "pyproject.toml",
+        groups: [],
+        source: {
+          type: "git",
+          url: "https://github.com/tiangolo/fastapi",
+          ref: "0.110.0"
+        }
+      }]
+    end
+    let(:dependency_files) { [pyproject] }
+    let(:pyproject_fixture_name) { "uv_git_tag_sources.toml" }
+
+    before do
+      git_header = { "content-type" => "application/x-git-upload-pack-advertisement" }
+      stub_request(:get, "https://github.com/tiangolo/fastapi.git/info/refs?service=git-upload-pack")
+        .to_return(status: 200, body: fixture("git", "upload_packs", "fastapi"), headers: git_header)
+      # Stubbed so that the ref assertion below is what fails when the git path is not taken, rather
+      # than an unhandled request. That the request is never made is asserted on its own.
+      stub_request(:get, "https://pypi.org/pypi/git-sources-project/json/").to_return(status: 404)
+    end
+
+    describe "#lowest_security_fix_version" do
+      let(:security_advisories) do
+        [Dependabot::SecurityAdvisory.new(
+          dependency_name: "fastapi",
+          package_manager: "uv",
+          vulnerable_versions: [Dependabot::Uv::Requirement.new("< 0.120.0")]
+        )]
+      end
+
+      # The version in uv.lock is the package's own, so `existing_version_is_sha?` does not keep a git
+      # pin out of the security path. Answering with a version from that name's index would title the
+      # pull request with a fix the diff does not apply: the diff moves a tag.
+      it "declines to answer for a git dependency" do
+        expect(checker.lowest_security_fix_version).to be_nil
+      end
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      # A branch is not a version, so nothing can say what the next one is. The shared Python path
+      # guards this with pinned_ref_looks_like_version?, and without it the newest tag would be
+      # written over a ref the author deliberately left moving.
+      context "when the source is pinned to a branch rather than a tag" do
+        let(:dependency_requirements) do
+          [{
+            requirement: "*",
+            file: "pyproject.toml",
+            groups: [],
+            source: { type: "git", url: "https://github.com/tiangolo/fastapi", ref: "main" }
+          }]
+        end
+
+        it "leaves the requirement exactly as it was" do
+          expect(updated_requirements).to eq(dependency_requirements)
+        end
+      end
+
+      it "moves the tag to the newest version the remote advertises" do
+        expect(updated_requirements).to eq(
+          [{
+            requirement: "*",
+            file: "pyproject.toml",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/tiangolo/fastapi",
+              ref: "0.128.0"
+            }
+          }]
+        )
+      end
+
+      it "does not consult an index about the manifest's own name" do
+        updated_requirements
+
+        expect(WebMock).not_to have_requested(:get, "https://pypi.org/pypi/git-sources-project/json/")
+      end
+    end
+  end
 end
