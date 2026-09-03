@@ -187,6 +187,37 @@ module Dependabot
           poetry_sources.find { |source| source.name == name }
         end
 
+        # A name pinned to one of these says nothing about what a package index holds. A git source
+        # carrying a tag is left alone: the tag gives an ordering, so such a pin can be updated from
+        # the remote instead of being skipped.
+        UNRESOLVABLE_UV_SOURCE_KEYS = %w(git url).freeze
+
+        sig { returns(T::Array[String]) }
+        def unresolvable_uv_source_names
+          tool = section(@data, "tool", "tool")
+          uv = tool && section(tool, "uv", "tool.uv")
+          sources = uv && section(uv, "sources", "tool.uv.sources")
+          return [] unless sources
+
+          sources.filter_map do |name, config|
+            # uv accepts either a single source or a list of them, each with its own markers.
+            entries = T.let(config.is_a?(Array) ? config : [config], T::Array[Object])
+            next unless entries.any? { |entry| unresolvable_uv_source_entry?(entry) }
+
+            name
+          end
+        end
+
+        sig { params(entry: Object).returns(T::Boolean) }
+        def unresolvable_uv_source_entry?(entry)
+          return false unless entry.is_a?(Hash)
+
+          keys = entry.keys
+          return false unless keys.intersect?(UNRESOLVABLE_UV_SOURCE_KEYS)
+
+          !(keys.include?("git") && keys.include?("tag"))
+        end
+
         sig { params(key: String).returns(T::Array[String]) }
         def workspace_globs(key)
           tool = section(@data, "tool", "tool")
