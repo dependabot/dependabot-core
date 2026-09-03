@@ -87,7 +87,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ needs.approval.outputs.base_sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.approval.outputs.base_sha }}
 
       - name: Preserve trusted image selection
         run: |
@@ -112,6 +112,12 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
           git fetch origin "$BASE_REF"
 
+      - name: Generate publication matrix
+        id: publication-bake-matrix
+        uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          target: ecosystem
+
       - name: Find affected ecosystems
         id: changes
         continue-on-error: true
@@ -125,13 +131,14 @@ jobs:
       - name: Remove internal targets
         id: matrix
         env:
-          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          BAKE_MATRIX: ${{ steps.publication-bake-matrix.outputs.matrix }}
         run: |
           MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
       - name: Resolve proposed image matrix
         id: proposed
+        continue-on-error: true
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}

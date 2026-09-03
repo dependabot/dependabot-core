@@ -69,6 +69,7 @@ assert_equal "$bake_targets" "$filter_targets" "filter and Bake targets"
 ruby -ryaml -e '
   filters = YAML.safe_load_file(ARGV.fetch(0), aliases: true)
   expected = {
+    "shared" => ["script/resolve-image-matrix"],
     "conda" => ["python/**"],
     "gradle" => ["maven/**"],
     "helm" => ["docker/**"],

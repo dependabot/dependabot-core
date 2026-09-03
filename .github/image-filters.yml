@@ -10,6 +10,7 @@ shared: &shared
   - common/**
   - docker-bake.hcl
   - omnibus/**
+  - script/resolve-image-matrix
   - updater/**
   - '*/.bundle/**'
   - '*/*.gemspec'

@@ -70,6 +70,7 @@ jobs:
 
       - name: Resolve proposed image matrix
         id: proposed
+        continue-on-error: true
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
