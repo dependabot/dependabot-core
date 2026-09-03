@@ -108,9 +108,10 @@ jobs:
           # Bind trust to whichever key actually produced the signature, not just to
           # importing the expected key - the downloaded key file could smuggle in an
           # extra untrusted key that gpg would otherwise accept a signature from.
-          VERIFY_STATUS=$(gpg --status-fd 1 --verify SHA256SUMS.sig SHA256SUMS 2>gpg_verify.log)
-          VERIFY_EXIT=$?
-          if [ "$VERIFY_EXIT" -ne 0 ]; then
+          # The failure must be checked in the same conditional as the assignment:
+          # under the runner's default errexit shell, a failing command substitution
+          # exits the step immediately, so a separate `$?` check afterward is never reached.
+          if ! VERIFY_STATUS=$(gpg --status-fd 1 --verify SHA256SUMS.sig SHA256SUMS 2>gpg_verify.log); then
             echo "::error::Failed to verify SHA256SUMS signature"
             cat gpg_verify.log
             exit 1
