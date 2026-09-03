@@ -21,6 +21,7 @@ chmod +x "$tmpdir/docker"
 DOCKER_LOG="$tmpdir/docker.log" \
 GITHUB_STEP_SUMMARY="$tmpdir/summary.md" \
 IMAGE_PREFIX="registry.example/dependabot-updater-" \
+SOURCE_TAG="source-sha" \
 TARGETS_JSON='[{"target":"bundler"}]' \
 TAGS_JSON='["commit-sha","date-tag"]' \
 PATH="$tmpdir:$PATH" \
@@ -37,6 +38,7 @@ grep -q $'^bundler\tsha256:0123456789abcdef$' "$tmpdir/output"
 grep -q 'registry.example/dependabot-updater-bundler@sha256:0123456789abcdef' "$tmpdir/summary.md"
 
 if IMAGE_PREFIX="registry.example/" \
+  SOURCE_TAG="source-sha" \
   TARGETS_JSON='[{"target":"invalid/target"}]' \
   TAGS_JSON='["tag"]' \
   PATH="$tmpdir:$PATH" \

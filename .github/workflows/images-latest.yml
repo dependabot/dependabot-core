@@ -10,6 +10,10 @@ on: # yamllint disable-line rule:truthy
   workflow_dispatch:
 permissions: {}
 
+concurrency:
+  group: latest-images-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   date-version:
     runs-on: ubuntu-latest
@@ -96,6 +100,7 @@ jobs:
       build_matrix: ${{ steps.selection.outputs.build_matrix }}
       promote_count: ${{ steps.selection.outputs.promote_count }}
       promote_matrix: ${{ steps.selection.outputs.promote_matrix }}
+      source_tag: ${{ steps.source.outputs.source_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -103,11 +108,51 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Verify current main tip
+        if: github.event_name == 'push'
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          git fetch origin main
+          [[ "$(git rev-parse origin/main)" == "$EXPECTED_SHA" ]]
+
       - name: Generate ecosystem matrix
         id: bake-matrix
         uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         with:
           target: ecosystem
+
+      - name: Verify predecessor image tags
+        id: source
+        if: github.event_name == 'push'
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          SOURCE_TAG: ${{ github.event.before }}
+        run: |
+          AVAILABLE=true
+          MISSING=()
+          while read -r target; do
+            image="ghcr.io/dependabot/dependabot-updater-${target}:${SOURCE_TAG}"
+            if ! docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
+              AVAILABLE=false
+              MISSING+=("$target")
+            fi
+          done < <(
+            jq -r '
+              .[].target
+              | select(
+                  . != "python-runtime" and
+                  . != "updater-core" and
+                  (endswith("-raw") | not)
+                )
+            ' <<< "$BAKE_MATRIX"
+          )
+
+          echo "available=$AVAILABLE" >> "$GITHUB_OUTPUT"
+          echo "source_tag=$SOURCE_TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$AVAILABLE" != "true" ]]; then
+            printf 'Missing predecessor image tags: %s\n' "${MISSING[*]}"
+          fi
 
       - name: Find affected ecosystems
         id: changes
@@ -125,7 +170,12 @@ jobs:
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
-          FORCE_ALL: ${{ github.event_name != 'push' || steps.changes.outcome != 'success' }}
+          FORCE_ALL: >-
+            ${{
+              github.event_name != 'push' ||
+              steps.changes.outcome != 'success' ||
+              steps.source.outputs.available != 'true'
+            }}
         run: |
           if ! RESULT=$(script/resolve-image-matrix); then
             echo "::warning::Image selection failed; building every ecosystem"
@@ -264,6 +314,7 @@ jobs:
       DATE_VERSION: ${{ needs.date-version.outputs.date }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
+      SOURCE_TAG: ${{ needs.prepare.outputs.source_tag }}
       TARGET: ${{ matrix.target }}
     steps:
       - name: Checkout code

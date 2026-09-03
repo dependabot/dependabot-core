@@ -80,6 +80,7 @@ jobs:
       build_matrix: ${{ steps.selection.outputs.build_matrix }}
       promote_count: ${{ steps.selection.outputs.promote_count }}
       promote_matrix: ${{ steps.selection.outputs.promote_matrix }}
+      source_tag: ${{ steps.source.outputs.source_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,6 +101,37 @@ jobs:
         with:
           files: ${{ runner.temp }}/docker-bake.hcl
           target: ecosystem
+
+      - name: Verify base image tags
+        id: source
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          SOURCE_TAG: ${{ needs.approval.outputs.base_sha }}
+        run: |
+          AVAILABLE=true
+          MISSING=()
+          while read -r target; do
+            image="ghcr.io/dependabot/dependabot-updater-${target}:${SOURCE_TAG}"
+            if ! docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
+              AVAILABLE=false
+              MISSING+=("$target")
+            fi
+          done < <(
+            jq -r '
+              .[].target
+              | select(
+                  . != "python-runtime" and
+                  . != "updater-core" and
+                  (endswith("-raw") | not)
+                )
+            ' <<< "$BAKE_MATRIX"
+          )
+
+          echo "available=$AVAILABLE" >> "$GITHUB_OUTPUT"
+          echo "source_tag=$SOURCE_TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$AVAILABLE" != "true" ]]; then
+            printf 'Missing base image tags: %s\n' "${MISSING[*]}"
+          fi
 
       - name: Checkout approved pull request
         env:
@@ -126,7 +158,12 @@ jobs:
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
-          FORCE_ALL: ${{ inputs.force_all || steps.changes.outcome != 'success' }}
+          FORCE_ALL: >-
+            ${{
+              inputs.force_all ||
+              steps.changes.outcome != 'success' ||
+              steps.source.outputs.available != 'true'
+            }}
         run: |
           if ! RESULT=$("$RUNNER_TEMP/resolve-image-matrix"); then
             echo "::warning::Image selection failed; building every ecosystem"
@@ -353,6 +390,7 @@ jobs:
     env:
       APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
       IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
+      SOURCE_TAG: ${{ needs.prepare.outputs.source_tag }}
       TARGET: ${{ matrix.target }}
     steps:
       - name: Checkout code

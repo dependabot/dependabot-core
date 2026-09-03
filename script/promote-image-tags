@@ -9,7 +9,12 @@ fi
 
 targets_json="${TARGETS_JSON:-[]}"
 tags_json="${TAGS_JSON:-[]}"
-source_tag="${SOURCE_TAG:-latest}"
+source_tag="${SOURCE_TAG:-}"
+
+if [[ -z "$source_tag" ]]; then
+  echo "SOURCE_TAG must identify the immutable source image tag" >&2
+  exit 1
+fi
 
 if ! jq -e 'type == "array" and all(.[]; (.target | type) == "string")' <<< "$targets_json" > /dev/null; then
   echo "TARGETS_JSON must be an array of target objects" >&2
