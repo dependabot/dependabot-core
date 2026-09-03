@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
 require "dependabot/npm_and_yarn/language"
 require "dependabot/npm_and_yarn/constraint_helper"
+require "dependabot/package/npm_package_manager_config"
 
 module Dependabot
   module NpmAndYarn
@@ -82,14 +83,13 @@ module Dependabot
       sig do
         params(
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          package_json: T.nilable(T::Hash[String, T.untyped])
+          config: Dependabot::Package::NpmPackageManagerConfig
         ).void
       end
-      def initialize(lockfiles, package_json)
+      def initialize(lockfiles, config)
         @lockfiles = lockfiles
-        @package_json = package_json
-        @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
-        @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, {}), T::Hash[String, T.untyped])
+        @manifest_package_manager = T.let(config.package_manager, T.nilable(String))
+        @engines = T.let(config.engines || {}, T::Hash[String, String])
       end
 
       # Returns npm, yarn, or pnpm based on the lockfiles, package.json, and engines
@@ -130,8 +130,6 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def name_from_engines
-        return unless @engines.is_a?(Hash)
-
         PACKAGE_MANAGER_CLASSES.each_key do |manager_name|
           return manager_name if @engines[manager_name]
         end
@@ -145,22 +143,21 @@ module Dependabot
 
       sig do
         params(
-          package_json: T.nilable(T::Hash[String, T.untyped]),
+          config: Dependabot::Package::NpmPackageManagerConfig,
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
           credentials: T.nilable(T::Array[Dependabot::Credential])
         ).void
       end
-      def initialize(package_json, lockfiles, registry_config_files, credentials)
-        @package_json = package_json
+      def initialize(config, lockfiles, registry_config_files, credentials)
         @lockfiles = lockfiles
         @registry_helper = T.let(
           RegistryHelper.new(registry_config_files, credentials),
           Dependabot::NpmAndYarn::RegistryHelper
         )
-        @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, package_json), PackageManagerDetector)
-        @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
-        @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
+        @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, config), PackageManagerDetector)
+        @manifest_package_manager = T.let(config.package_manager, T.nilable(String))
+        @engines = T.let(config.engines, T.nilable(T::Hash[String, String]))
 
         @installed_versions = T.let({}, T::Hash[String, String])
         @registries = T.let({}, T::Hash[String, String])
@@ -223,9 +220,9 @@ module Dependabot
 
       sig { params(name: String).returns(String) }
       def raw_engine_constraint(name)
-        return "" unless @engines.is_a?(Hash) && @engines[name]
+        return "" unless @engines
 
-        @engines[name].to_s.strip
+        @engines.fetch(name, "").strip
       end
 
       sig { params(raw_constraint: String).returns(T.nilable(T::Array[T::Array[String]])) }
@@ -424,7 +421,7 @@ module Dependabot
 
         # If we can't get the installed version or the version is invalid, we need to get inferred version
         unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
-          @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
+          @installed_versions[name] = T.must(numeric_lockfile_version(name, @lockfiles[name.to_sym])).to_s
         end
 
         T.must(@installed_versions[name])
@@ -472,25 +469,25 @@ module Dependabot
         match["version"]
       end
 
-      sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
+      sig { params(name: String).returns(T.nilable(Integer)) }
       def guessed_version(name)
         lockfile = @lockfiles[name.to_sym]
         return unless lockfile
 
-        version = Helpers.send(:"#{name}_version_numeric", lockfile)
+        version = numeric_lockfile_version(name, lockfile)
 
         Dependabot.logger.info("Guessed version info \"#{name}\" : \"#{version}\"")
 
         version
       end
 
-      sig { params(name: T.untyped).returns(T.nilable(String)) }
+      sig { params(name: String).returns(T.nilable(String)) }
       def check_engine_version(name)
-        return if @package_json.nil?
+        return unless @engines
 
         version_selector = VersionSelector.new
 
-        engine_versions = version_selector.setup(@package_json, name, dependabot_versions(name))
+        engine_versions = version_selector.setup(@engines, name, dependabot_versions(name))
 
         return if engine_versions.empty?
 
@@ -508,6 +505,23 @@ module Dependabot
           YarnPackageManager::SUPPORTED_VERSIONS
         when "pnpm"
           PNPMPackageManager::SUPPORTED_VERSIONS
+        end
+      end
+
+      sig do
+        params(
+          name: String,
+          lockfile: T.nilable(Dependabot::DependencyFile)
+        ).returns(T.nilable(Integer))
+      end
+      def numeric_lockfile_version(name, lockfile)
+        case name
+        when NpmPackageManager::NAME
+          Helpers.npm_version_numeric(lockfile)
+        when YarnPackageManager::NAME
+          Helpers.yarn_version_numeric(lockfile)
+        when PNPMPackageManager::NAME
+          Helpers.pnpm_version_numeric(lockfile)
         end
       end
     end
