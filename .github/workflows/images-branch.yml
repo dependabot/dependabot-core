@@ -417,6 +417,7 @@ jobs:
       DOCKER_IMAGE: ghcr.io/dependabot/dependabot-updater-docker
       FAIL_ON_CONFLICT: true
       IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
+      STAGING_TAG: ${{ format('{0}-docker-source', needs.approval.outputs.head_sha) }}
       UPDATER_CORE_CONTEXT: docker-image://ghcr.io/dependabot/dependabot-updater-core@${{ needs.build-updater-core.outputs.digest }}
     steps:
       - name: Checkout code
@@ -462,7 +463,7 @@ jobs:
             UPDATER_CORE_CONTEXT=${{ env.UPDATER_CORE_CONTEXT }}
           set: |
             docker.output=type=registry
-            docker.tags=${{ env.DOCKER_IMAGE }}:${{ env.DEPENDABOT_UPDATER_VERSION }}
+            docker.tags=${{ env.DOCKER_IMAGE }}:${{ env.STAGING_TAG }}
 
       - name: Validate and publish both image names
         env:
@@ -473,14 +474,32 @@ jobs:
           echo "$IMAGE contains $IMAGE_LAYERS layers"
           [[ $IMAGE_LAYERS -lt 126 ]]
 
-          COMMIT_DIGEST=$(docker buildx imagetools inspect "${DOCKER_IMAGE}:${DEPENDABOT_UPDATER_VERSION}" --format '{{json .Manifest.Digest}}' | jq -r '.')
-          [[ "$COMMIT_DIGEST" == "$IMAGE_DIGEST" ]]
+          STAGING_DIGEST=$(docker buildx imagetools inspect "${DOCKER_IMAGE}:${STAGING_TAG}" --format '{{json .Manifest.Digest}}' | jq -r '.')
+          [[ "$STAGING_DIGEST" == "$IMAGE_DIGEST" ]]
 
-          TARGETS_JSON='[{"target":"docker-compose"}]'
+          for destination in "$DOCKER_IMAGE" "$DOCKER_COMPOSE_IMAGE"; do
+            EXISTING_DIGEST=$(
+              docker buildx imagetools inspect \
+                "${destination}:${DEPENDABOT_UPDATER_VERSION}" \
+                --format '{{json .Manifest.Digest}}' 2> /dev/null |
+                jq -er 'select(type == "string" and startswith("sha256:"))' ||
+                true
+            )
+            if [[ -n "$EXISTING_DIGEST" && "$EXISTING_DIGEST" != "$IMAGE_DIGEST" ]]; then
+              echo "${destination}:${DEPENDABOT_UPDATER_VERSION} already resolves to conflicting digest $EXISTING_DIGEST"
+              exit 1
+            fi
+          done
+
+          TARGETS_JSON='[{"target":"docker"}]'
           TAGS_JSON=$(jq -cn --arg tag "$DEPENDABOT_UPDATER_VERSION" '[$tag]')
           SOURCE_TARGET=docker
-          SOURCE_TAG="$DEPENDABOT_UPDATER_VERSION"
+          SOURCE_TAG="$STAGING_TAG"
           export TARGETS_JSON TAGS_JSON SOURCE_TARGET SOURCE_TAG
+          "$RUNNER_TEMP/promote-image-tags"
+
+          TARGETS_JSON='[{"target":"docker-compose"}]'
+          export TARGETS_JSON
           "$RUNNER_TEMP/promote-image-tags"
 
       - name: Generate Docker artifact attestation
