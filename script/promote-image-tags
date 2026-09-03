@@ -9,10 +9,16 @@ fi
 
 targets_json="${TARGETS_JSON:-[]}"
 tags_json="${TAGS_JSON:-[]}"
+fail_on_conflict="${FAIL_ON_CONFLICT:-false}"
 source_tag="${SOURCE_TAG:-}"
 
 if [[ -z "$source_tag" ]]; then
   echo "SOURCE_TAG must identify the immutable source image tag" >&2
+  exit 1
+fi
+
+if [[ "$fail_on_conflict" != "true" && "$fail_on_conflict" != "false" ]]; then
+  echo "FAIL_ON_CONFLICT must be true or false" >&2
   exit 1
 fi
 
@@ -42,6 +48,22 @@ for target in "${targets[@]}"; do
       --format '{{json .Manifest.Digest}}' |
       jq -er 'select(type == "string" and startswith("sha256:"))'
   )
+
+  if [[ "$fail_on_conflict" == "true" ]]; then
+    for tag in "${tags[@]}"; do
+      existing_digest=$(
+        docker buildx imagetools inspect \
+          "${image}:${tag}" \
+          --format '{{json .Manifest.Digest}}' 2> /dev/null |
+          jq -er 'select(type == "string" and startswith("sha256:"))' ||
+          true
+      )
+      if [[ -n "$existing_digest" && "$existing_digest" != "$source_digest" ]]; then
+        echo "${image}:${tag} already resolves to conflicting digest $existing_digest" >&2
+        exit 1
+      fi
+    done
+  fi
 
   create_args=(buildx imagetools create --prefer-index=false)
   for tag in "${tags[@]}"; do

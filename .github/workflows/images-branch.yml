@@ -22,6 +22,10 @@ on: # yamllint disable-line rule:truthy
         default: false
 permissions: {}
 
+concurrency:
+  group: branch-images-${{ github.event.pull_request.number || inputs.pr }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
 jobs:
   approval:
     # Skip when triggered by pull request events on PR's from forks because the GITHUB_TOKEN on
@@ -81,7 +85,7 @@ jobs:
       build_matrix: ${{ steps.selection.outputs.build_matrix }}
       promote_count: ${{ steps.selection.outputs.promote_count }}
       promote_matrix: ${{ steps.selection.outputs.promote_matrix }}
-      source_tag: ${{ steps.source.outputs.source_tag }}
+      source_tag: ${{ steps.base-source.outputs.source_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -103,11 +107,30 @@ jobs:
           files: ${{ runner.temp }}/docker-bake.hcl
           target: ecosystem
 
+      - name: Checkout approved pull request
+        env:
+          APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
+          BASE_REF: ${{ needs.approval.outputs.base_ref }}
+          PR: ${{ needs.approval.outputs.pr }}
+        run: |
+          gh pr checkout "$PR"
+          [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
+          git fetch origin "$BASE_REF"
+
+      - name: Resolve immutable base source
+        id: base-source
+        env:
+          APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
+          BASE_REF: ${{ needs.approval.outputs.base_ref }}
+        run: |
+          SOURCE_TAG=$(git merge-base "$APPROVED_HEAD_SHA" "origin/$BASE_REF")
+          echo "source_tag=$SOURCE_TAG" >> "$GITHUB_OUTPUT"
+
       - name: Verify base image tags
         id: source
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
-          SOURCE_TAG: ${{ needs.approval.outputs.base_sha }}
+          SOURCE_TAG: ${{ steps.base-source.outputs.source_tag }}
         run: |
           AVAILABLE=true
           MISSING=()
@@ -134,20 +157,9 @@ jobs:
           )
 
           echo "available=$AVAILABLE" >> "$GITHUB_OUTPUT"
-          echo "source_tag=$SOURCE_TAG" >> "$GITHUB_OUTPUT"
           if [[ "$AVAILABLE" != "true" ]]; then
             printf 'Missing base image tags: %s\n' "${MISSING[*]}"
           fi
-
-      - name: Checkout approved pull request
-        env:
-          APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
-          BASE_REF: ${{ needs.approval.outputs.base_ref }}
-          PR: ${{ needs.approval.outputs.pr }}
-        run: |
-          gh pr checkout "$PR"
-          [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
-          git fetch origin "$BASE_REF"
 
       - name: Find affected ecosystems
         id: changes
@@ -395,6 +407,7 @@ jobs:
         include: ${{ fromJSON(needs.prepare.outputs.promote_matrix) }}
     env:
       APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
+      FAIL_ON_CONFLICT: true
       IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
       SOURCE_TAG: ${{ needs.prepare.outputs.source_tag }}
       TARGET: ${{ matrix.target }}
