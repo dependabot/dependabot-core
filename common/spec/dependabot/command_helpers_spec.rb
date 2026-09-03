@@ -14,7 +14,7 @@ RSpec.describe Dependabot::CommandHelpers do
     let(:error_hang_cmd) { command_fixture("error_hang.sh") }
     let(:invalid_cmd) { "non_existent_command" }
     let(:no_timeout_cmd) { command_fixture("no_timeout.sh") }
-    let(:timeout) { 2 } # Timeout for hanging commands
+    let(:timeout) { 1 } # Timeout for hanging commands
 
     context "when the command runs successfully" do
       it "captures stdout and exits successfully" do
@@ -117,12 +117,17 @@ RSpec.describe Dependabot::CommandHelpers do
 
         expect(stdout).to eq("This is a command result.\n")
         expect(stderr).to eql("")
-        expect(status.exitstatus).to eq(0)
-        expect(elapsed_time).to be_within(0.5).of(3)
+        expect(status).to be_success
+        expect(elapsed_time).to be_positive
+        expect(elapsed_time).to be < 1
       end
     end
 
     context "when output_observer requests graceful stop" do
+      before do
+        stub_const("Dependabot::CommandHelpers::TIMEOUTS::GRACEFULLY_STOP", 1)
+      end
+
       it "terminates early due to observer and logs the reason" do
         # Bash script that prints a trigger then sleeps
         cmd = ["bash", "-c", "echo TRIGGER && sleep 10"]
@@ -140,7 +145,7 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(stdout).to include("TRIGGER")
         expect(status).not_to be_nil
         expect(status.exitstatus).to eq(0).or eq(124) # depending on whether it's handled as graceful or timeout
-        expect(elapsed_time).to be < 6 # confirms early termination
+        expect(elapsed_time).to be < 2 # confirms early termination
       end
     end
 
