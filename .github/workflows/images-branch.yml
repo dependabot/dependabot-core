@@ -23,7 +23,7 @@ on: # yamllint disable-line rule:truthy
 permissions: {}
 
 concurrency:
-  group: branch-images-${{ github.event.pull_request.number || inputs.pr }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: branch-images-${{ github.event.pull_request.number || inputs.pr }}
   cancel-in-progress: false
 
 jobs:
