@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/julia/registry_client"
 
 module Dependabot
   module Julia
@@ -98,11 +99,12 @@ module Dependabot
           const :message, String
         end
 
-        sig { params(hash: ObjectHash, context: String).returns(T.nilable(Failure)) }
-        def self.failure_from(hash, context)
-          return unless hash.key?("error")
+        sig { params(hash: ObjectHash, _context: String).returns(T.nilable(Failure)) }
+        def self.failure_from(hash, _context)
+          error = hash["error"]
+          return unless hash.length == 1 && error.is_a?(String)
 
-          Failure.new(message: ValueParser.string(hash, "error", context))
+          Failure.new(message: error)
         end
 
         class Version < T::ImmutableStruct

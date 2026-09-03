@@ -10,12 +10,13 @@ require "dependabot/credential"
 require "dependabot/julia/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require_relative "registry_client/result"
 
 module Dependabot
   module Julia
     class RegistryClient
       extend T::Sig
+
+      require_relative "registry_client/result"
 
       sig do
         params(credentials: T::Array[Dependabot::Credential], custom_registries: T::Array[T::Hash[Symbol, String]]).void
