@@ -181,7 +181,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ needs.approval.outputs.base_sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.approval.outputs.base_sha }}
 
       - name: Preserve build definition
         run: cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
@@ -260,7 +260,7 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
-          ref: ${{ needs.approval.outputs.base_sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.approval.outputs.base_sha }}
 
       - name: Preserve build definition
         run: cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
