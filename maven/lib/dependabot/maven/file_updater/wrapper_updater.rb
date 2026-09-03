@@ -222,6 +222,7 @@ module Dependabot
             wrapper_plugin_version: wrapper_version,
             env: build_env,
             distribution_type: distribution_type,
+            registry_base: resolved_registry_base,
             extra_args: extra_args,
             cwd: wrapper_dir
           )
@@ -288,8 +289,10 @@ module Dependabot
         end
 
         # Builds the environment hash passed to the native wrapper command.
-        # Sets the proxy host and, for a private/mirror registry, MVNW_REPOURL. Registry auth is
-        # injected by Dependabot's proxy, so no username/password is set here (core never receives them).
+        # Sets only the proxy host. Registry routing is handled by the native
+        # helper's generated settings mirror (see `resolved_registry_base`), and
+        # registry auth is injected by Dependabot's proxy, so no username/password
+        # is set here (core never receives them).
         sig { returns(T::Hash[String, String]) }
         def build_env
           env = T.let({}, T::Hash[String, String])
@@ -299,9 +302,6 @@ module Dependabot
             env["PROXY_HOST"] = proxy_url.host.to_s
           end
 
-          registry_base, cred = resolve_registry_base_and_credential
-          env.merge!(build_registry_env(registry_base, cred))
-
           if Dependabot.logger.debug?
             env["MVNW_VERBOSE"] = "true"
             Dependabot.logger.debug "build_env result: #{env}"
@@ -310,51 +310,18 @@ module Dependabot
           env
         end
 
-        sig do
-          returns([T.nilable(String), T.nilable(Dependabot::Credential)])
-        end
-        def resolve_registry_base_and_credential
-          properties = wrapper_properties_file&.content.to_s
-          dist_url = effective_distribution_url(properties)
-          Dependabot.logger.debug "Effective distribution URL: #{dist_url}"
-
-          registry_base_regex = %r{^(https?://[^/]+(?:/[^/]+)*)/org/apache/maven/apache-maven/}
-          registry_base = dist_url&.match(registry_base_regex)&.captures&.first
-          Dependabot.logger.debug "Extracted registry base: #{registry_base || '(none)'}"
-
-          cred = maven_registry_credential(registry_base)
-          Dependabot.logger.debug "Matched credential: #{cred ? "url=#{cred.fetch('url', '(none)')}" : '(none)'}"
-
-          [registry_base, cred]
-        end
-
-        sig do
-          params(registry_base: T.nilable(String), cred: T.nilable(Dependabot::Credential))
-            .returns(T::Hash[String, String])
-        end
-        def build_registry_env(registry_base, cred)
-          if registry_base
-            { "MVNW_REPOURL" => registry_base }
-          elsif cred&.replaces_base?
-            { "MVNW_REPOURL" => cred.fetch("url").chomp("/") }
-          else
-            {}
-          end
-        end
-
-        sig { params(registry_base: T.nilable(String)).returns(T.nilable(Dependabot::Credential)) }
-        def maven_registry_credential(registry_base)
-          maven_creds = @credentials.select { |c| c["type"] == "maven_repository" }
-
-          if registry_base
-            url_matches = maven_creds.select do |c|
-              cred_url = c.fetch("url", "").chomp("/")
-              !cred_url.empty? && registry_base.start_with?(cred_url)
-            end
-            return url_matches.max_by { |c| c.fetch("url", "").length } if url_matches.any?
-          end
-
-          maven_creds.find(&:replaces_base?)
+        # The registry that actually served the release we're updating to. `source_url` on the
+        # resolved requirement is `release.url` from version resolution
+        # (base_version_finder: `{ version: release.version, source_url: release.url }`), so it is
+        # the one place `mvn` is guaranteed to find this version. The native regeneration mirrors
+        # plugin/distribution resolution there instead of falling back to Central and hanging behind
+        # a no-egress registry. Nil only when no version resolved, leaving the Central default.
+        #
+        # A trailing slash is stripped so Maven appends the artifact path to a canonical base
+        # (`base/org/...`, not `base//org/...`) and registries don't 301-redirect every request.
+        sig { returns(T.nilable(String)) }
+        def resolved_registry_base
+          dependency.requirements.filter_map { |req| req.metadata_string("source_url") }.first&.chomp("/")
         end
 
         sig { params(buildfile: DependencyFile).returns(String) }
