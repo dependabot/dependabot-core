@@ -66,9 +66,6 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
-        # Check feature flag once for all enhanced security error reporting in this method
-        enhanced_security_reporting = Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -85,16 +82,14 @@ module Dependabot
 
         # If there are job dependencies not present in the dependency snapshot, record an error.
         # Skip this check for pull request updates as dependencies may have changed since the original PR.
-        if enhanced_security_reporting
-          dependency_names = original_dependencies.map(&:name)
-          missing_dependencies = job_dependencies - dependency_names
-          if missing_dependencies.any? && !job.updating_a_pull_request?
-            error_handler.handle_job_error(
-              error: Dependabot::DependencyNotFound.new(
-                "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
-              )
+        dependency_names = dependency_snapshot.all_dependencies.map(&:name)
+        missing_dependencies = job_dependencies - dependency_names
+        if missing_dependencies.any? && !job.updating_a_pull_request?
+          error_handler.handle_job_error(
+            error: Dependabot::DependencyNotFound.new(
+              "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
             )
-          end
+          )
         end
 
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
@@ -680,8 +675,6 @@ module Dependabot
         ).void
       end
       def record_security_update_error_if_applicable(dependency, checker, group)
-        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
@@ -723,8 +716,6 @@ module Dependabot
         ).void
       end
       def record_security_update_not_found_if_applicable(dependency, checker, group)
-        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
@@ -745,8 +736,6 @@ module Dependabot
         ).void
       end
       def record_security_update_ignored_if_applicable(dependency, checker, group)
-        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
