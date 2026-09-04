@@ -9,6 +9,7 @@ require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_updaters"
 require "dependabot/dependency_group"
+require "dependabot/git_attributes"
 require "dependabot/updater/blocked_version_detector"
 
 # This class is responsible for generating a DependencyChange for a given
@@ -81,6 +82,8 @@ module Dependabot
       unless updated_files.any?
         raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
       end
+
+      reconcile_line_endings(updated_files)
 
       enforce_blocked_transitive_versions!
 
@@ -255,6 +258,21 @@ module Dependabot
         "Skipping transitive dependency blocking check: #{e.class}"
       )
       nil
+    end
+
+    sig { params(updated_files: T::Array[Dependabot::DependencyFile]).void }
+    def reconcile_line_endings(updated_files)
+      Dependabot::GitAttributes.reconcile_line_endings!(
+        updated_files,
+        original_files: dependency_files,
+        repo_contents_path: job.repo_contents_path
+      )
+    rescue StandardError => e
+      # Cosmetic normalization must never break a valid update; on failure we
+      # commit the files as the updater produced them.
+      Dependabot.logger.warn(
+        "Skipping line-ending reconciliation: #{e.class}"
+      )
     end
 
     sig do
