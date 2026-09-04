@@ -3,6 +3,7 @@
 
 require "dependabot/config/update_config"
 require "sorbet-runtime"
+require "wildcard_matcher"
 
 module Dependabot
   module Config
@@ -10,7 +11,7 @@ module Dependabot
     class File
       extend T::Sig
 
-      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      sig { returns(T::Array[T::Hash[Symbol, T.anything]]) }
       attr_reader :updates
 
       sig { returns(T::Hash[Symbol, T::Hash[Symbol, String]]) }
@@ -18,13 +19,13 @@ module Dependabot
 
       sig do
         params(
-          updates: T.nilable(T::Array[T::Hash[Symbol, String]]),
+          updates: T.nilable(T::Array[T::Hash[Symbol, T.anything]]),
           registries: T.nilable(T::Hash[Symbol, T::Hash[Symbol, String]])
         )
           .void
       end
       def initialize(updates:, registries: nil)
-        @updates = T.let(updates || [], T::Array[T::Hash[Symbol, String]])
+        @updates = T.let(updates || [], T::Array[T::Hash[Symbol, T.anything]])
         @registries = T.let(registries || {}, T::Hash[Symbol, T::Hash[Symbol, String]])
       end
 
@@ -36,8 +37,9 @@ module Dependabot
         dir = directory || "/"
         package_ecosystem = REVERSE_PACKAGE_MANAGER_LOOKUP.fetch(package_manager, "dummy")
         cfg = updates.find do |u|
-          u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir &&
-            (target_branch.nil? || u[:"target-branch"] == target_branch)
+          string_value(u[:"package-ecosystem"]) == package_ecosystem &&
+            string_value(u[:directory]) == dir &&
+            match_target_branch?(u[:"target-branch"], target_branch)
         end
         UpdateConfig.new(
           ignore_conditions: ignore_conditions(cfg),
@@ -57,6 +59,39 @@ module Dependabot
       end
 
       private
+
+      sig { params(config_branch: T.anything, target_branch: T.nilable(String)).returns(T::Boolean) }
+      def match_target_branch?(config_branch, target_branch)
+        return true if target_branch.nil?
+
+        case config_branch
+        when Array
+          config_branch.any? do |branch|
+            case branch
+            when String then match_branch_pattern?(branch, target_branch)
+            else false
+            end
+          end
+        when String
+          match_branch_pattern?(config_branch, target_branch)
+        else
+          false
+        end
+      end
+
+      sig { params(pattern: T.nilable(String), target_branch: String).returns(T::Boolean) }
+      def match_branch_pattern?(pattern, target_branch)
+        return true if pattern == target_branch
+        return false if pattern.nil?
+
+        # match gh variable
+        return true if pattern.start_with?("${{") && pattern.end_with?("}}")
+
+        # match glob pattern
+        return true if pattern.include?("*") && WildcardMatcher.match?(pattern, target_branch)
+
+        false
+      end
 
       PACKAGE_MANAGER_LOOKUP = T.let(
         {
