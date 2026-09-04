@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -70,7 +70,9 @@ module Dependabot
           write_all_temporary_files(updated_project_files, actual_manifest)
           result = call_julia_helper
 
-          return handle_julia_helper_error_multi(result, actual_manifest, updated_project_files) if result["error"]
+          if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+            return handle_julia_helper_error_multi(result, actual_manifest, updated_project_files)
+          end
 
           build_updated_files_multi(updated_files, updated_project_files, actual_manifest, result)
         end
@@ -147,7 +149,14 @@ module Dependabot
         File.write(manifest_path, actual_manifest.content)
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig do
+        returns(
+          T.any(
+            Dependabot::Julia::RegistryClient::Result::ManifestUpdate,
+            Dependabot::Julia::RegistryClient::Result::Failure
+          )
+        )
+      end
       def call_julia_helper
         registry_client.update_manifest(
           project_path: Dir.pwd,
@@ -157,13 +166,13 @@ module Dependabot
 
       sig do
         params(
-          result: T::Hash[String, T.untyped],
+          result: Dependabot::Julia::RegistryClient::Result::Failure,
           actual_manifest: Dependabot::DependencyFile,
           updated_project_files: T::Array[T::Hash[Symbol, T.untyped]]
         ).returns(T::Array[Dependabot::DependencyFile])
       end
       def handle_julia_helper_error_multi(result, actual_manifest, updated_project_files)
-        error_message = result["error"]
+        error_message = result.message
         manifest_path = actual_manifest.name
 
         is_resolver_error = resolver_error?(error_message)
@@ -212,7 +221,7 @@ module Dependabot
           updated_files: T::Array[Dependabot::DependencyFile],
           updated_project_files: T::Array[T::Hash[Symbol, T.untyped]],
           actual_manifest: Dependabot::DependencyFile,
-          result: T::Hash[String, T.untyped]
+          result: Dependabot::Julia::RegistryClient::Result::ManifestUpdate
         ).void
       end
       def build_updated_files_multi(updated_files, updated_project_files, actual_manifest, result)
@@ -225,16 +234,10 @@ module Dependabot
           updated_files << updated_file(file: file, content: content)
         end
 
-        return unless result["manifest_content"]
-
-        updated_manifest_content = result["manifest_content"]
+        updated_manifest_content = result.manifest_content
         return unless updated_manifest_content != actual_manifest.content
 
-        manifest_for_update = if result["manifest_path"]
-                                manifest_file_for_path(result["manifest_path"])
-                              else
-                                actual_manifest
-                              end
+        manifest_for_update = manifest_file_for_path(result.manifest_path)
         updated_files << updated_file(file: manifest_for_update, content: updated_manifest_content)
       end
 

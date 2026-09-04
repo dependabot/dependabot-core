@@ -33,30 +33,18 @@ module Dependabot
       sig { params(temp_dir: T.any(Pathname, String)).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files_using_julia_helper(temp_dir)
         workspace_info = registry_client.find_workspace_project_files(temp_dir.to_s)
-        validate_workspace_info!(workspace_info)
+        if workspace_info.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+          raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."
+        end
 
-        project_files = T.cast(workspace_info["project_files"], T::Array[String])
-        manifest_path = T.cast(workspace_info["manifest_file"], String)
+        project_files = workspace_info.project_files
+        manifest_path = workspace_info.manifest_file
 
         fetched_files = fetch_all_project_files(project_files, temp_dir.to_s)
         raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found." if fetched_files.empty?
 
         fetch_manifest_file(fetched_files, manifest_path, project_files, temp_dir.to_s)
         fetched_files
-      end
-
-      sig { params(workspace_info: T::Hash[String, Object]).void }
-      def validate_workspace_info!(workspace_info)
-        # Only domain errors ("no project file found") reach here; helper
-        # crashes raise from RegistryClient rather than being misreported as
-        # a missing Project.toml.
-        error_value = T.cast(workspace_info["error"], T.nilable(String))
-        has_error = !error_value.nil?
-        project_files = T.cast(workspace_info["project_files"], T.nilable(T::Array[String]))
-        no_projects = project_files.nil? || project_files.empty?
-        return unless has_error || no_projects
-
-        raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."
       end
 
       sig { params(project_files: T::Array[String], base_dir: String).returns(T::Array[Dependabot::DependencyFile]) }

@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 700
+# Offense count: 674
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -295,8 +295,6 @@ Sorbet/ForbidTUntyped:
     - "hex/lib/dependabot/hex/update_checker/latest_version_finder.rb"
     - "julia/lib/dependabot/julia/file_parser.rb"
     - "julia/lib/dependabot/julia/file_updater.rb"
-    - "julia/lib/dependabot/julia/package/package_details_fetcher.rb"
-    - "julia/lib/dependabot/julia/registry_client.rb"
     - "julia/lib/dependabot/julia/update_checker.rb"
     - "nix/lib/dependabot/nix/file_parser.rb"
     - "nix/lib/dependabot/nix/flake_nix_parser.rb"

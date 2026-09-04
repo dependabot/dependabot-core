@@ -30,10 +30,9 @@ module Dependabot
       def source_url_from_julia_helper
         uuid = T.cast(dependency.metadata[:julia_uuid], T.nilable(String))
         result = registry_client.find_package_source_url(dependency.name, uuid)
-        error = T.cast(result["error"], T.nilable(T.any(String, T::Boolean)))
-        return nil if error
+        return nil if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
 
-        T.cast(result["source_url"], T.nilable(String))
+        result.source_url
       rescue StandardError => e
         Dependabot.logger.warn("Failed to get source URL from Julia helper: #{e.message}")
         nil
