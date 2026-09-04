@@ -229,6 +229,21 @@ module Dependabot
         PNPM_FALLBACK_VERSION
       end
 
+      # pnpm 11.23+ refuses `update <name>@<version>` when <name> is not a direct
+      # dependency of any selected project. Older pnpm ignored the version for such
+      # packages and updated them to whatever a fresh install resolves.
+      PNPM_INDIRECT_DEP_VERSION_ERROR = /ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP/
+      PNPM_INDIRECT_DEP_NAME = /"(?<name>[^"]+)" \(requested "[^"]+"\)/
+
+      # Names of the packages pnpm refused to pin because they are not direct
+      # dependencies, or an empty array when the error is something else.
+      sig { params(error_message: String).returns(T::Array[String]) }
+      def self.pnpm_indirect_dependency_names(error_message)
+        return [] unless error_message.match?(PNPM_INDIRECT_DEP_VERSION_ERROR)
+
+        error_message.scan(PNPM_INDIRECT_DEP_NAME).flatten
+      end
+
       # The concrete pnpm version that will run for this update. Returns nil when
       # the version can't be determined. Used to gate version-specific config such as
       # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
