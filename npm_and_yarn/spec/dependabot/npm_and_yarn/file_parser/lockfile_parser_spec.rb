@@ -461,6 +461,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
+      context "when a catalogued dependency also resolves to an older transitive version" do
+        let(:dependency_files) { project_dependency_files("pnpm/catalog_duplicate_versions") }
+        let(:dependency_name) { "globals" }
+        let(:requirement) { "^17.11.0" }
+
+        # The requirement here comes from pnpm-workspace.yaml's catalog, but the importer
+        # records its specifier as the literal "catalog:". The range is only recoverable
+        # from the lockfile's own catalogs block.
+        it "finds the catalogued version, not the transitive one" do
+          expect(lockfile_details).to eq(
+            "aliased" => false,
+            "dev" => false,
+            "name" => "globals",
+            "specifiers" => ["catalog:", "^17.11.0"],
+            "version" => "17.11.0"
+          )
+        end
+      end
+
       context "when resolved version has peer disambiguation suffix (lockfileFormat 5.4)" do
         let(:dependency_files) { project_dependency_files("pnpm/peer_disambiguation") }
         let(:dependency_name) { "@typescript-eslint/parser" }

@@ -91,6 +91,42 @@ describe("generates an updated pnpm lock for the original file", () => {
     }
   );
 
+  // A catalogued dependency's importer specifier is the literal "catalog:", so the
+  // version range it resolves to is only recoverable from the lockfile's own
+  // `catalogs` block. Without it a consumer matching on the range cannot tell the
+  // catalogued resolution apart from an older transitive one of the same name.
+  it("that contains a catalogued dependency with a second transitive version", async () => {
+    copyDependencies("catalog_duplicate_versions", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result).toEqual([
+      {
+        name: "@eslint/eslintrc",
+        version: "3.3.6",
+        resolved: undefined,
+        dev: false,
+        specifiers: ["^3.3.6"],
+        aliased: false,
+      },
+      {
+        name: "globals",
+        version: "14.0.0",
+        resolved: undefined,
+        dev: false,
+        specifiers: [],
+        aliased: false,
+      },
+      {
+        name: "globals",
+        version: "17.11.0",
+        resolved: undefined,
+        dev: false,
+        specifiers: ["catalog:", "^17.11.0"],
+        aliased: false,
+      },
+    ]);
+  });
+
   // Should have the version in the lock file.
   it("that contains dependencies with an empty version", async () => {
     copyDependencies("empty_version", tempDir);

@@ -1715,6 +1715,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
       end
+
+      context "when a catalogued dependency also resolves to an older transitive version" do
+        subject(:globals) { top_level_dependencies.find { |dep| dep.name == "globals" } }
+
+        let(:files) { project_dependency_files("pnpm/catalog_duplicate_versions") }
+
+        # globals is catalogued at ^17.11.0 and resolves to 17.11.0, but @eslint/eslintrc
+        # pins a second copy at 14.0.0. Reporting the transitive version here makes the
+        # updater try to bump a dependency that is already current, which yields no file
+        # change at all.
+        it "reports the catalogued version, not the transitive one" do
+          expect(globals.version).to eq("17.11.0")
+        end
+
+        it "keeps the catalog requirement" do
+          expect(globals.requirements).to eq(
+            [{ requirement: "^17.11.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }]
+          )
+        end
+
+        it "still sees both resolutions" do
+          expect(globals.metadata[:all_versions].map(&:version)).to contain_exactly("14.0.0", "17.11.0")
+        end
+      end
     end
 
     describe "sub-dependencies" do
