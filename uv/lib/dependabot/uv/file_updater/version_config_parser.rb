@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -12,6 +12,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       class VersionConfigParser
         extend T::Sig
+
+        ObjectHash = T.type_alias { T::Hash[String, Object] }
 
         class VersionConfig < T::Struct
           extend T::Sig
@@ -32,7 +34,7 @@ module Dependabot
           @pyproject_content = pyproject_content
           @base_path = base_path
           @repo_root = repo_root
-          @parsed_pyproject = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          @parsed_pyproject = T.let(nil, T.nilable(ObjectHash))
         end
 
         sig { returns(VersionConfig) }
@@ -56,13 +58,44 @@ module Dependabot
         sig { returns(String) }
         attr_reader :repo_root
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(ObjectHash) }
         def parsed_pyproject
           return @parsed_pyproject unless @parsed_pyproject.nil?
 
-          @parsed_pyproject = TomlRB.parse(pyproject_content)
+          @parsed_pyproject = object_hash(T.cast(TomlRB.parse(pyproject_content), Object))
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           @parsed_pyproject = {}
+        end
+
+        sig { params(value: Object).returns(ObjectHash) }
+        def object_hash(value)
+          raise TypeError, "Version configuration must be a table" unless value.is_a?(Hash)
+
+          result = T.let({}, ObjectHash)
+          value.each do |raw_key, raw_value|
+            key = T.cast(raw_key, Object)
+            raise TypeError, "Version configuration keys must be strings" unless key.is_a?(String)
+
+            result[key] = T.cast(raw_value, Object)
+          end
+          result
+        end
+
+        sig { params(path: T::Array[String]).returns(Object) }
+        def config_value(path)
+          value = T.let(parsed_pyproject, Object)
+          path.each do |key|
+            return nil if value.nil?
+
+            value = object_hash(value)[key]
+          end
+          value
+        end
+
+        sig { params(path: T::Array[String]).returns(T.nilable(ObjectHash)) }
+        def config_table(path)
+          value = config_value(path)
+          object_hash(value) if value.is_a?(Hash)
         end
 
         sig { returns(T::Array[String]) }
@@ -82,8 +115,8 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def setuptools_scm_write_paths
-          scm_config = parsed_pyproject.dig("tool", "setuptools_scm")
-          return [] unless scm_config.is_a?(Hash)
+          scm_config = config_table(%w(tool setuptools_scm))
+          return [] unless scm_config
 
           paths = []
 
@@ -98,8 +131,8 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def hatch_vcs_build_hook_write_paths
-          vcs_hook = parsed_pyproject.dig("tool", "hatch", "build", "hooks", "vcs")
-          return [] unless vcs_hook.is_a?(Hash)
+          vcs_hook = config_table(%w(tool hatch build hooks vcs))
+          return [] unless vcs_hook
 
           paths = []
 
@@ -111,8 +144,8 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def hatch_version_source_paths
-          hatch_version = parsed_pyproject.dig("tool", "hatch", "version")
-          return [] unless hatch_version.is_a?(Hash)
+          hatch_version = config_table(%w(tool hatch version))
+          return [] unless hatch_version
 
           paths = []
 
@@ -124,14 +157,14 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_fallback_version
-          scm_config = parsed_pyproject.dig("tool", "setuptools_scm")
-          if scm_config.is_a?(Hash)
+          scm_config = config_table(%w(tool setuptools_scm))
+          if scm_config
             fallback = scm_config["fallback_version"]
             return fallback if fallback.is_a?(String)
           end
 
-          raw_options = parsed_pyproject.dig("tool", "hatch", "version", "raw-options")
-          if raw_options.is_a?(Hash)
+          raw_options = config_table(%w(tool hatch version raw-options))
+          if raw_options
             fallback = raw_options["fallback_version"]
             return fallback if fallback.is_a?(String)
           end
@@ -141,7 +174,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_package_name
-          name = parsed_pyproject.dig("project", "name")
+          name = config_value(%w(project name))
           return name if name.is_a?(String)
 
           nil
