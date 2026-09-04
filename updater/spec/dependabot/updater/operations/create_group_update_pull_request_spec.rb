@@ -236,6 +236,59 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
           expect(result.updated_dependencies).to be_empty
         end
 
+        context "when the job spans multiple directories" do
+          let(:dependency_group) do
+            Dependabot::DependencyGroup.new(
+              name: "dummy-group",
+              rules: { "patterns" => ["dummy-pkg-a"], "group-by" => "dependency-name" }
+            )
+          end
+
+          def change_for(directory)
+            Dependabot::DependencyChange.new(
+              job: job,
+              updated_dependencies: [
+                Dependabot::Dependency.new(
+                  name: "dummy-pkg-a",
+                  version: "4.1.0",
+                  previous_version: "4.0.0",
+                  requirements: [{
+                    file: "Gemfile", requirement: "~> 4.1.0", groups: ["default"], source: nil
+                  }],
+                  previous_requirements: [{
+                    file: "Gemfile", requirement: "~> 4.0.0", groups: ["default"], source: nil
+                  }],
+                  package_manager: "bundler",
+                  metadata: { all_versions: ["4.1.0"] }
+                )
+              ],
+              updated_dependency_files: [
+                Dependabot::DependencyFile.new(name: "Gemfile", content: "", directory: directory)
+              ],
+              dependency_group: dependency_group
+            )
+          end
+
+          before do
+            allow(job.source).to receive(:directories).and_return(["/api", "/web"])
+            allow(job.source).to receive(:directory=)
+            allow(create_group_update_pull_request)
+              .to receive(:compile_all_dependency_changes_for)
+              .and_return(change_for("/api"), change_for("/web"))
+          end
+
+          it "merges the per-directory changes into one deduplicated grouped change" do
+            result = create_group_update_pull_request.send(:dependency_change)
+
+            expect(result.updated_dependencies.map(&:name)).to eq(["dummy-pkg-a"])
+            expect(result.updated_dependency_files.map(&:directory)).to contain_exactly("/api", "/web")
+            # The group must survive the merge, or the PR is reported as an ungrouped one.
+            expect(result.dependency_group).to eq(dependency_group)
+            expect(result.updated_dependencies.first.metadata[:updated_directories])
+              .to contain_exactly("/api", "/web")
+          end
+        end
+
         it "preserves dependency files during filtering" do
           dependency_file = instance_double(
             Dependabot::DependencyFile,

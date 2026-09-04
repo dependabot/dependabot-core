@@ -161,6 +161,11 @@ module Dependabot
 
           job_group = T.must(dependency_snapshot.job_group)
 
+          selector = Dependabot::Updater::GroupDependencySelector.new(
+            group: job_group,
+            dependency_snapshot: dependency_snapshot
+          )
+
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(job_group)
           else
@@ -173,20 +178,16 @@ module Dependabot
               T::Array[Dependabot::DependencyChange]
             )
 
-            # merge the changes together into one
-            dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
-            dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
-            @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+            # Merge the per-directory changes into one, deduplicating the dependencies that
+            # appear in more than one directory.
+            @dependency_change = T.let(
+              selector.merge_per_directory!(dependency_changes),
+              T.nilable(Dependabot::DependencyChange)
+            )
           end
 
           # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
-          if @dependency_change
-            selector = Dependabot::Updater::GroupDependencySelector.new(
-              group: job_group,
-              dependency_snapshot: dependency_snapshot
-            )
-            selector.filter_to_group!(@dependency_change)
-          end
+          selector.filter_to_group!(@dependency_change) if @dependency_change
 
           @dependency_change
         end
