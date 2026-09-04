@@ -25,6 +25,9 @@ bundler:
 cargo:
   - *shared
   - 'cargo/**'
+codeql:
+  - *shared
+  - 'codeql/**'
 common:
   - *shared
   - '**/**'

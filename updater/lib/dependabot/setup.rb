@@ -30,6 +30,7 @@ Sentry.init do |config|
     common|
     bundler|
     cargo|
+    codeql|
     composer|
     conda|
     deno|
@@ -74,6 +75,7 @@ require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
+require "dependabot/codeql"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
