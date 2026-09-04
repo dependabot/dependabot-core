@@ -236,46 +236,15 @@ module Dependabot
           filtered_versions
         end
 
-        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
-        def in_cooldown_period?(release)
-          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version, release.version)
-          return false if days <= 0
-
-          release = package_details_fetcher.fetch_release_metadata(release: release)
-          return missing_release_date_in_cooldown?(release) unless release.released_at
-
-          cooldown_window?(release: release, days: days)
+        sig { override.params(release: Dependabot::Package::PackageRelease).returns(T.nilable(Time)) }
+        def released_at_for(release)
+          package_details_fetcher.fetch_release_metadata(release: release).released_at
         end
 
-        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
-        def missing_release_date_in_cooldown?(release)
-          if cooldown_options
-            Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
-            true
-          else
-            Dependabot.logger.info("Release date not available for version #{release.version}")
-            false
-          end
-        end
-
-        sig do
-          params(
-            release: Dependabot::Package::PackageRelease,
-            days: Integer
-          ).returns(T::Boolean)
-        end
-        def cooldown_window?(release:, days:)
-          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
-                        .within_cooldown_window?(T.must(release.released_at), days)
-          if in_cooldown
-            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
-            Dependabot.logger.info(
-              "Version #{release.version}, Release date: #{release.released_at}." \
-              " Days since release: #{passed_days} (cooldown days: #{days})"
-            )
-          end
-          in_cooldown
+        sig { override.params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def missing_release_date_blocks_update?(release)
+          Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
+          true
         end
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }

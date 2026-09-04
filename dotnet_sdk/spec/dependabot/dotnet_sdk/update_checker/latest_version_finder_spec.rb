@@ -12,7 +12,8 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      cooldown_options: cooldown_options
     )
   end
 
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
   let(:raise_on_ignored) { false }
+  let(:cooldown_options) { nil }
   let(:metadata) { {} }
 
   let(:mock_package_details_fetcher) { instance_double(Dependabot::DotnetSdk::Package::PackageDetailsFetcher) }
@@ -139,6 +141,21 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
     context "with language_version parameter" do
       it "accepts the parameter and returns the latest version" do
         expect(finder.latest_version(language_version: "8.0")).to eq(Dependabot::DotnetSdk::Version.new("8.0.400"))
+      end
+    end
+
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:available_releases) do
+        [Dependabot::Package::PackageRelease.new(
+          version: Dependabot::DotnetSdk::Version.new("8.0.300"),
+          released_at: nil
+        )]
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(finder.latest_version).to eq(Dependabot::DotnetSdk::Version.new("8.0.300"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
   end

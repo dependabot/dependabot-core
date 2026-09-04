@@ -119,6 +119,32 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         ).and_call_original
       expect(checker.latest_version).to eq(Gem::Version.new("2.6.0"))
     end
+
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Uv::Version.new("2.6.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details) do
+        Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+      end
+      let(:package_details_fetcher) do
+        instance_double(Dependabot::Python::Package::PackageDetailsFetcher, fetch: package_details)
+      end
+
+      before do
+        allow(Dependabot::Python::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(checker.latest_version).to eq(Dependabot::Uv::Version.new("2.6.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do

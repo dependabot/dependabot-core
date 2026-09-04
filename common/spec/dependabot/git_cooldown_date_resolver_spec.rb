@@ -89,6 +89,12 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
       result = resolver.tag_creation_date("v1.0.0", "abc123")
       expect(result).to eq(Time.parse(commit_date))
     end
+
+    it "returns nil when neither tag nor commit date is available" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+      expect(resolver.tag_creation_date("v1.0.0", "abc123")).to be_nil
+    end
   end
 
   describe "#github_release_published_at" do
