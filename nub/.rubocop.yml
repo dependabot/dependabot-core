@@ -1,0 +1,48 @@
+inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/nub/update_checker.rb
+    - lib/dependabot/nub/update_checker/latest_version_finder.rb
+    - lib/dependabot/nub/update_checker/version_resolver.rb
+
+# The lib below models parsed package.json / npm-registry / lockfile JSON, which is genuinely
+# heterogeneous — the same `T::Hash[String, T.untyped]` shapes bun and npm_and_yarn carry. Those
+# gems grandfather the identical files under Sorbet/ForbidTUntyped in the root .rubocop_todo.yml;
+# nub cannot, because script/sorbet-untyped-ratchet forbids adding NEW files to that list, so the
+# exclusion lives here per-gem instead. Same rationale as the RSpec/Lint entries below.
+Sorbet/ForbidTUntyped:
+  Exclude:
+    - lib/dependabot/nub/dependency_files_filterer.rb
+    - lib/dependabot/nub/file_fetcher.rb
+    - lib/dependabot/nub/file_parser.rb
+    - lib/dependabot/nub/file_parser/lockfile_parser.rb
+    - lib/dependabot/nub/file_parser/nub_lock.rb
+    - lib/dependabot/nub/file_updater.rb
+    - lib/dependabot/nub/file_updater/package_json_updater.rb
+    - lib/dependabot/nub/metadata_finder.rb
+    - lib/dependabot/nub/package/package_details_fetcher.rb
+    - lib/dependabot/nub/package/registry_finder.rb
+    - lib/dependabot/nub/package_manager.rb
+    - lib/dependabot/nub/registry_helper.rb
+    - lib/dependabot/nub/registry_parser.rb
+    - lib/dependabot/nub/update_checker.rb
+    - lib/dependabot/nub/update_checker/latest_version_finder.rb
+    - lib/dependabot/nub/update_checker/library_detector.rb
+    - lib/dependabot/nub/update_checker/requirements_updater.rb
+    - lib/dependabot/nub/update_checker/version_resolver.rb
+    - lib/dependabot/nub/update_checker/vulnerability_auditor.rb
+
+# ERR_PATTERNS follows a `private` — harmless (constants ignore visibility). bun grandfathers the
+# byte-identical bun_lockfile_updater.rb for this cop in the root todo.
+Lint/UselessConstantScoping:
+  Exclude:
+    - lib/dependabot/nub/file_updater/nub_lockfile_updater.rb
+
+# Stubbing idioms inherited from bun's update_checker_spec, which bun/npm_and_yarn grandfather.
+RSpec/AnyInstance:
+  Exclude:
+    - spec/dependabot/nub/update_checker_spec.rb
+RSpec/StubbedMock:
+  Exclude:
+    - spec/dependabot/nub/update_checker_spec.rb

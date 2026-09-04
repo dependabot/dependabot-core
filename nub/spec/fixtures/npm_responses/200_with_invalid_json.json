@@ -1,0 +1,3 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.ico"><title>JFrog Landing</title><link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700,800&display=swap" rel="stylesheet"><script>VERSION = "2024.2.251";
+      API_PROXY_URL = "https://landing-api.jfrog.com/api/v1/";
+      API_PROXY_URL_V2 = "https://landing-api.jfrog.com/a

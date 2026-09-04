@@ -83,6 +83,9 @@ nix:
 npm_and_yarn:
   - *shared
   - 'npm_and_yarn/**'
+nub:
+  - *shared
+  - 'nub/**'
 nuget:
   - *shared
   - 'nuget/**'

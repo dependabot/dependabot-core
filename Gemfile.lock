@@ -153,6 +153,13 @@ PATH
       dependabot-common (= 0.394.0)
 
 PATH
+  remote: nub
+  specs:
+    dependabot-nub (0.394.0)
+      dependabot-common (= 0.394.0)
+      dependabot-npm_and_yarn (= 0.394.0)
+
+PATH
   remote: nuget
   specs:
     dependabot-nuget (0.394.0)
@@ -498,6 +505,7 @@ DEPENDENCIES
   dependabot-julia!
   dependabot-maven!
   dependabot-npm_and_yarn!
+  dependabot-nub!
   dependabot-nuget!
   dependabot-opentofu!
   dependabot-pre_commit!
@@ -569,6 +577,7 @@ CHECKSUMS
   dependabot-julia (0.394.0)
   dependabot-maven (0.394.0)
   dependabot-npm_and_yarn (0.394.0)
+  dependabot-nub (0.394.0)
   dependabot-nuget (0.394.0)
   dependabot-opentofu (0.394.0)
   dependabot-pre_commit (0.394.0)

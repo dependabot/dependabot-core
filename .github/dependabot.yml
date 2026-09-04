@@ -127,6 +127,7 @@ updates:
     directories:
       - "/bun/helpers"
       - "/npm_and_yarn/helpers"
+      - "/nub/helpers"
     schedule:
       interval: "weekly"
       day: "sunday"
