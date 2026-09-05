@@ -41,6 +41,20 @@ RSpec.describe Dependabot::Source do
       specify { expect(source.url).to eq("http://my.private.instance/my/repo") }
     end
 
+    context "with invalid scheme param" do
+      let(:attrs) do
+        {
+          provider: "github",
+          repo: "my/repo",
+          api_endpoint: "https://my.private.instance/api/v3/",
+          hostname: "my.private.instance",
+          scheme: "invalid"
+        }
+      end
+
+      specify { expect { source }.to raise_error(/scheme must be either https or http/) }
+    end
+
     context "with a hostname but no api_endpoint" do
       let(:attrs) do
         {

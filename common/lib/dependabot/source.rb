@@ -185,6 +185,10 @@ module Dependabot
         raise msg
       end
 
+      if (scheme && !%w(http https).include?(scheme))
+        raise "scheme must be either https or http"
+      end
+
       @provider = provider
       @repo = repo
       @directory = directory
