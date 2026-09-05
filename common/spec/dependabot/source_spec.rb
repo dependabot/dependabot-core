@@ -27,6 +27,20 @@ RSpec.describe Dependabot::Source do
       specify { expect { source }.not_to raise_error }
     end
 
+    context "with htttp private instance" do
+      let(:attrs) do
+        {
+          provider: "github",
+          repo: "my/repo",
+          api_endpoint: "http://my.private.instance/api/v3/",
+          hostname: "my.private.instance",
+          scheme: "http"
+        }
+      end
+
+      specify { expect(source.url).to eq("http://my.private.instance/my/repo") }
+    end
+
     context "with a hostname but no api_endpoint" do
       let(:attrs) do
         {

@@ -163,7 +163,8 @@ module Dependabot
         branch: T.nilable(String),
         commit: T.nilable(String),
         hostname: T.nilable(String),
-        api_endpoint: T.nilable(String)
+        api_endpoint: T.nilable(String),
+        scheme: T.nilable(String),
       ).void
     end
     def initialize(
@@ -174,7 +175,8 @@ module Dependabot
       branch: nil,
       commit: nil,
       hostname: nil,
-      api_endpoint: nil
+      api_endpoint: nil,
+      scheme: nil
     )
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either " \
@@ -191,11 +193,12 @@ module Dependabot
       @commit = commit
       @hostname = T.let(hostname || default_hostname(provider), String)
       @api_endpoint = T.let(api_endpoint || default_api_endpoint(provider), T.nilable(String))
+      @scheme = T.let(scheme || "https", String)
     end
 
     sig { returns(String) }
     def url
-      "https://" + hostname + "/" + repo
+      "#{@scheme}://" + hostname + "/" + repo
     end
 
     sig { returns(String) }
