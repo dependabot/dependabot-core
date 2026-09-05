@@ -1,0 +1,13 @@
+{
+  "name": "preset.bazelrc",
+  "path": "tools/preset.bazelrc",
+  "sha": "abc789",
+  "size": 80,
+  "url": "https://api.github.com/repos/example/repo/contents/tools/preset.bazelrc?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/tools/preset.bazelrc",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc789",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/tools/preset.bazelrc",
+  "type": "file",
+  "content": "IyBQcmVzZXQgY29uZmlndXJhdGlvbgppbXBvcnQgJXdvcmtzcGFjZSUvdG9v\nbHMvY2kuYmF6ZWxyYwpidWlsZCAtLWRpc2tfY2FjaGU9fi8uY2FjaGUvYmF6\nZWwK\n",
+  "encoding": "base64"
+}
