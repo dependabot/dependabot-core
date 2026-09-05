@@ -15,6 +15,7 @@
 
 ### Fixed
 
+- Fixed suggested `[compat]` bounds for JLL packages including the build number (e.g. `Zlib_jll = "1.6.10+0"`), which Julia rejects as an invalid version specifier
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)

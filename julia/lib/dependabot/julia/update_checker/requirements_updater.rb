@@ -10,6 +10,14 @@ module Dependabot
     class RequirementsUpdater
       extend T::Sig
 
+      # Julia compat entries only accept plain, dot-separated numeric versions
+      # of at most three parts (see Pkg's `semver_spec`), so anything a version
+      # string carries beyond "major.minor.patch" has to be dropped before it
+      # can be suggested as a bound. This matters for JLL packages, which
+      # register build metadata as part of the version ("1.6.10+0"): writing
+      # `Zlib_jll = "1.6.10+0"` into [compat] makes Pkg reject the Project.toml.
+      NUMERIC_VERSION_PREFIX = /\A\d+(?:\.\d+){0,2}/
+
       sig do
         params(
           requirements: T::Array[Dependabot::DependencyRequirement],
@@ -62,7 +70,7 @@ module Dependabot
 
         # If requirement is nil (no compat entry), use target version
         new_requirement = if current_requirement.nil?
-                            target_version.to_s
+                            exact_version_spec(target_version)
                           else
                             updated_version_requirement(current_requirement, target_version)
                           end
@@ -106,6 +114,20 @@ module Dependabot
         "#{requirement_string}#{separator}#{new_spec}"
       end
 
+      # The target version rendered as an exact compat bound, e.g. "1.6.10+0"
+      # (a JLL build) becomes "1.6.10", which still admits the build.
+      sig { params(target_version: Dependabot::Julia::Version).returns(String) }
+      def exact_version_spec(target_version)
+        version_string = target_version.to_s
+        version_string[NUMERIC_VERSION_PREFIX] || version_string
+      end
+
+      sig { params(target_version: Dependabot::Julia::Version).returns([Integer, Integer, Integer]) }
+      def compat_version_parts(target_version)
+        parts = exact_version_spec(target_version).split(".")
+        [parts[0].to_i, parts[1].to_i, parts[2].to_i]
+      end
+
       sig { params(target_version: Dependabot::Julia::Version).returns(String) }
       def simplified_version_spec(target_version)
         # Follow CompatHelper.jl's compat_version_number logic:
@@ -113,10 +135,7 @@ module Dependabot
         # - major == 0, minor > 0: use "0.minor"
         # - major == 0, minor == 0: use "0.0.patch"
         # Note: CompatHelper always returns plain versions (no ^ or ~ prefix)
-        # Coerce segments to integers (segments may be Integer or String or nil)
-        major = (target_version.segments[0] || 0).to_i
-        minor = (target_version.segments[1] || 0).to_i
-        patch = (target_version.segments[2] || 0).to_i
+        major, minor, patch = compat_version_parts(target_version)
 
         if major.positive?
           "#{major}.#{minor}"
