@@ -30,7 +30,7 @@ RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL11_URL_ARM64} || echo ${LIBS
  && dpkg -i /tmp/libssl-1.1.deb \
  && rm /tmp/libssl-1.1.deb
 
-ARG POWERSHELL_VERSION=7.4.5
+ARG POWERSHELL_VERSION=7.6.5
 RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && POWERSHELL_VERSION_MAJOR=$(echo $POWERSHELL_VERSION | cut -d. -f1) \
  && INSTALL_PATH=/usr/local/microsoft/powershell/${POWERSHELL_VERSION_MAJOR} \
