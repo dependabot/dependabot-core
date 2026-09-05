@@ -98,6 +98,11 @@ module Dependabot
           const :url, T.nilable(String), default: nil
         end
 
+        class ProjectMetadata < T::ImmutableStruct
+          const :name, T.nilable(String), default: nil
+          const :description, T.nilable(String), default: nil
+        end
+
         sig { params(data: PyprojectValueParser::ObjectHash).void }
         def initialize(data)
           @data = data
@@ -105,16 +110,40 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(PyprojectDocument) }
         def self.from_file(file)
-          content = T.must(file.content)
-          parsed = T.cast(TomlRB.parse(content), Object)
-          new(PyprojectValueParser.object_hash(parsed, "pyproject.toml"))
+          from_content(T.must(file.content))
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        sig { params(content: String).returns(PyprojectDocument) }
+        def self.from_content(content)
+          parsed = T.cast(TomlRB.parse(content), Object)
+          new(PyprojectValueParser.object_hash(parsed, "pyproject.toml"))
         end
 
         sig { returns(T::Boolean) }
         def poetry?
           !poetry_root.nil?
+        end
+
+        sig { returns(T::Boolean) }
+        def project?
+          !section(@data, "project", "project").nil?
+        end
+
+        sig { returns(T.nilable(ProjectMetadata)) }
+        def poetry_metadata
+          metadata_from(poetry_root, "tool.poetry")
+        end
+
+        sig { returns(T.nilable(ProjectMetadata)) }
+        def project_metadata
+          metadata_from(section(@data, "project", "project"), "project")
+        end
+
+        sig { returns(T.nilable(ProjectMetadata)) }
+        def build_system_metadata
+          metadata_from(section(@data, "build-system", "build-system"), "build-system")
         end
 
         sig { returns(T::Boolean) }
@@ -199,6 +228,19 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(data: T.nilable(PyprojectValueParser::ObjectHash), context: String)
+            .returns(T.nilable(ProjectMetadata))
+        end
+        def metadata_from(data, context)
+          return unless data
+
+          ProjectMetadata.new(
+            name: PyprojectValueParser.optional_string(data["name"], "#{context}.name"),
+            description: PyprojectValueParser.optional_string(data["description"], "#{context}.description")
+          )
+        end
 
         sig { returns(T.nilable(PyprojectValueParser::ObjectHash)) }
         def poetry_root

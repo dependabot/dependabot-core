@@ -131,4 +131,116 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
         .to raise_error(TypeError, "tool.uv.workspace.members must contain only strings")
     end
   end
+
+  describe "library metadata" do
+    let(:content) do
+      <<~TOML
+        [tool.poetry]
+        name = "poetry-project"
+        description = "Poetry description"
+
+        [project]
+        name = "standard-project"
+        description = "Project description"
+
+        [build-system]
+        name = "build-project"
+        description = "Build description"
+      TOML
+    end
+
+    it "returns typed metadata for each section" do
+      expect(document.poetry_metadata).to have_attributes(
+        name: "poetry-project", description: "Poetry description"
+      )
+      expect(document.project_metadata).to have_attributes(
+        name: "standard-project", description: "Project description"
+      )
+      expect(document.build_system_metadata).to have_attributes(
+        name: "build-project", description: "Build description"
+      )
+    end
+
+    context "with an empty project section" do
+      let(:content) { "[project]" }
+
+      it "distinguishes a present section from a missing one" do
+        expect(document).to be_project
+        expect(document).not_to be_pep621
+        expect(document.project_metadata).to have_attributes(name: nil, description: nil)
+        expect(document.poetry_metadata).to be_nil
+        expect(document.build_system_metadata).to be_nil
+      end
+    end
+
+    context "without metadata sections" do
+      let(:content) { "" }
+
+      it "returns no metadata" do
+        expect(document).not_to be_project
+        expect(document.poetry_metadata).to be_nil
+        expect(document.project_metadata).to be_nil
+        expect(document.build_system_metadata).to be_nil
+      end
+    end
+
+    context "with a non-string name" do
+      let(:content) { "[project]\nname = 123" }
+
+      it "raises a contextual error when the metadata is read" do
+        expect(document).to be_project
+        expect { document.project_metadata }.to raise_error(TypeError, "project.name must be a string")
+      end
+    end
+
+    context "with a non-table metadata section" do
+      let(:content) { "project = 123" }
+
+      it "rejects the malformed section" do
+        expect { document.project_metadata }.to raise_error(TypeError, "project must be an object")
+      end
+    end
+
+    context "with a non-string description" do
+      let(:content) do
+        <<~TOML
+          [tool.poetry]
+          name = "valid-project"
+
+          [project]
+          description = false
+        TOML
+      end
+
+      it "validates only the requested metadata section" do
+        expect(document.poetry_metadata).to have_attributes(name: "valid-project", description: nil)
+        expect { document.project_metadata }
+          .to raise_error(TypeError, "project.description must be a string")
+      end
+    end
+
+    context "with unknown metadata fields" do
+      let(:content) { "[project]\nname = \"example\"\nextra = { nested = [1, false] }" }
+
+      it "reads known fields without validating unrelated fields" do
+        expect(document.project_metadata).to have_attributes(name: "example", description: nil)
+      end
+    end
+  end
+
+  describe ".from_content" do
+    it "parses the same document without a dependency file" do
+      expect(described_class.from_content(content).poetry_dependencies("dependencies"))
+        .to eq(document.poetry_dependencies("dependencies"))
+    end
+
+    it "preserves native TOML syntax errors" do
+      expect { described_class.from_content("[project\n") }.to raise_error(TomlRB::ParseError)
+    end
+
+    it "preserves native duplicate-key errors" do
+      expect { described_class.from_content("[project]\nname = \"one\"\nname = \"two\"") }
+        .to raise_error(TomlRB::ValueOverwriteError)
+    end
+  end
 end
