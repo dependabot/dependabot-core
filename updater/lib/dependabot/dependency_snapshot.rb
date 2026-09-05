@@ -4,6 +4,7 @@
 require "base64"
 require "sorbet-runtime"
 
+require "dependabot/experiments"
 require "dependabot/fetched_files"
 require "dependabot/file_parsers"
 require "dependabot/notices_helpers"
@@ -112,43 +113,41 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
+    # `defer_update_types` is set by the callers that suppress individual updates for a whole group, i.e.
+    # the ones whose marking decides whether a dependency gets a pull request at all.
     sig do
       params(
         group: Dependabot::DependencyGroup,
-        excluding_dependencies: T::Hash[String, T::Set[String]]
+        excluding_dependencies: T::Hash[String, T::Set[String]],
+        defer_update_types: T::Boolean
       )
         .void
     end
-    def mark_group_handled(group, excluding_dependencies = {})
+    def mark_group_handled(group, excluding_dependencies = {}, defer_update_types: false)
       Dependabot.logger.info("Marking group '#{group.name}' as handled.")
 
       # When grouping by dependency name, we need to mark dependencies as handled
       # across ALL directories to prevent duplicate individual PRs
       group_by_name = group.group_by_dependency_name?
+      defer = defer_update_types && update_types_may_reject?(group)
 
       directories.each do |directory|
         @current_directory = directory
-
-        # add the existing dependencies in the group so individual updates don't try to update them
-        dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
-
-        dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
-          # When grouping by name, include deps from all directories; otherwise filter by current directory
-          group_by_name || !dep.directory || dep.directory == directory
-        end
-
-        # also add dependencies that might be in the group, as a rebase would add them;
-        # this avoids individual PR creation that immediately is superseded by a group PR supersede
-        current_dependencies = group.dependencies.map(&:name).reject do |dep|
-          excluding_dependencies[directory]&.include?(dep)
-        end
-
-        add_handled_dependencies(
-          current_dependencies.concat(
-            dependencies_in_existing_prs.filter_map(&:name)
-          )
+        mark_group_handled_in_current_directory(
+          group, excluding_dependencies, group_by_name: group_by_name, defer: defer
         )
       end
+    end
+
+    # The groups that may still claim this dependency once the semver level of its available update is
+    # known. An empty list means no group is waiting on it and it can be updated individually.
+    sig { params(dependency_name: String).returns(T::Array[Dependabot::DependencyGroup]) }
+    def groups_deferred_by_semver_rules(dependency_name)
+      assert_current_directory_set!
+      deferred = @deferred_group_dependencies[@current_directory]
+      return [] unless deferred
+
+      deferred[dependency_name] || []
     end
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
@@ -198,6 +197,68 @@ module Dependabot
     private
 
     sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        excluding_dependencies: T::Hash[String, T::Set[String]],
+        group_by_name: T::Boolean,
+        defer: T::Boolean
+      )
+        .void
+    end
+    def mark_group_handled_in_current_directory(group, excluding_dependencies, group_by_name:, defer:)
+      directory = @current_directory
+
+      # add the existing dependencies in the group so individual updates don't try to update them
+      dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group).filter do |dep|
+        # When grouping by name, include deps from all directories; otherwise filter by current directory
+        group_by_name || !dep.directory || dep.directory == directory
+      end
+
+      # also add dependencies that might be in the group, as a rebase would add them;
+      # this avoids individual PR creation that immediately is superseded by a group PR supersede
+      current_dependencies = group.dependencies.map(&:name).reject do |dep|
+        excluding_dependencies[directory]&.include?(dep)
+      end
+
+      # A group that sets update-types only claims a dependency when the update available for it is at one
+      # of those semver levels, which is not known until an update checker has resolved the latest version.
+      # Marking those dependencies as handled here would silently drop the ones the group is going to
+      # reject, so the decision is deferred to the individual update run instead.
+      if defer
+        defer_to_group(group, current_dependencies)
+        current_dependencies = []
+      end
+
+      add_handled_dependencies(
+        current_dependencies.concat(
+          dependencies_in_existing_prs.filter_map(&:name)
+        )
+      )
+    end
+
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
+    def update_types_may_reject?(group)
+      return false unless Dependabot::Experiments.enabled?(:individual_prs_for_semver_excluded_dependencies)
+
+      !group.update_types.nil?
+    end
+
+    sig { params(group: Dependabot::DependencyGroup, dependency_names: T::Array[String]).void }
+    def defer_to_group(group, dependency_names)
+      return if dependency_names.empty?
+
+      Dependabot.logger.info(
+        "Deferring to the update-types rules of group '#{group.name}': (#{dependency_names.join(', ')})."
+      )
+
+      deferred = (@deferred_group_dependencies[@current_directory] ||= {})
+      dependency_names.uniq.each do |name|
+        groups = (deferred[name] ||= [])
+        groups << group unless groups.include?(group)
+      end
+    end
+
+    sig do
       params(job: Dependabot::Job, base_commit_sha: String, dependency_files: T::Array[Dependabot::DependencyFile]).void
     end
     def initialize(job:, base_commit_sha:, dependency_files:) # rubocop:disable Metrics/AbcSize
@@ -207,6 +268,10 @@ module Dependabot
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
       @handled_dependencies = T.let({}, T::Hash[String, T::Set[String]])
+      @deferred_group_dependencies = T.let(
+        {},
+        T::Hash[String, T::Hash[String, T::Array[Dependabot::DependencyGroup]]]
+      )
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
