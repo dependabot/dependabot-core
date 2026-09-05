@@ -36,6 +36,14 @@ assert_equal '["nuget","pre-commit"]' "$(jq -c '[.build[].target] | sort' <<< "$
 result=$(
   BAKE_MATRIX="$matrix" \
   CHANGED_TARGETS='[]' \
+  script/resolve-image-matrix
+)
+assert_equal '0' "$(jq -r '.build_count' <<< "$result")" "empty build count"
+assert_equal '3' "$(jq -r '.promote_count' <<< "$result")" "empty promotion count"
+
+result=$(
+  BAKE_MATRIX="$matrix" \
+  CHANGED_TARGETS='[]' \
   FORCE_ALL=true \
   script/resolve-image-matrix
 )
@@ -56,6 +64,14 @@ if BAKE_MATRIX="$matrix" CHANGED_TARGETS='["unknown"]' script/resolve-image-matr
   exit 1
 fi
 
+result=$(
+  BAKE_MATRIX="$matrix" \
+  CHANGED_TARGETS='["unknown"]' \
+  FORCE_ALL=true \
+  script/resolve-image-matrix
+)
+assert_equal '3' "$(jq -r '.build_count' <<< "$result")" "fallback build count"
+
 bake_targets=$(
   docker buildx bake --print ecosystem 2> /dev/null |
     jq -c '.group.ecosystem.targets | map(select(. != "updater-core")) | sort'
@@ -71,7 +87,7 @@ assert_equal "$bake_targets" "$filter_targets" "filter and Bake targets"
 ruby -ryaml -e '
   filters = YAML.safe_load_file(ARGV.fetch(0), aliases: true)
   expected = {
-    "shared" => ["script/resolve-image-matrix"],
+    "shared" => ["script/promote-image-tags", "script/resolve-image-matrix"],
     "conda" => ["python/**"],
     "gradle" => ["maven/**"],
     "helm" => ["docker/**"],
