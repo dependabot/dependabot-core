@@ -1340,6 +1340,16 @@ RSpec.describe Dependabot::Docker::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
+    context "with templated tags" do
+      let(:helmfile_fixture_name) { "templated-tags.yaml" }
+
+      it "ignores tags that require Helm template rendering" do
+        expect(dependencies.map { |dependency| [dependency.name, dependency.version] }).to eq(
+          [["busybox", "1.36.1"]]
+        )
+      end
+    end
+
     context "with no registry" do
       let(:helmfile_fixture_name) { "no-registry.yaml" }
 
