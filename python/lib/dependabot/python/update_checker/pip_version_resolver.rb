@@ -31,6 +31,9 @@ module Dependabot
         PIP_REPORT_FILENAME = "dependabot-pip-report.json"
         RESOLUTION_ERROR_PATTERN = /ResolutionImpossible|No matching distribution found/
         LOWER_BOUND_OPERATORS = %w(> >= ~>).freeze
+        PIP_REQUIREMENT_FILE_EXTENSIONS = %w(.txt .in).freeze
+        HASH_OPTION_PATTERN = /(?:[ \t]*\\[ \t]*\r?\n[ \t]*|[ \t]+)--hash=[^\s\\]+/
+        REQUIRE_HASHES_PATTERN = /^\s*--require-hashes(?:\s+#.*)?\r?\n?/
         LowerBound = T.type_alias { [String, Gem::Version] }
 
         require_relative "pip_version_resolver/marker_evaluator"
@@ -295,7 +298,6 @@ module Dependabot
           return false unless file&.content
 
           content = T.must(file.content)
-          return false if content.include?("--hash=")
           return false if content.match?(/^\s*-(?:r|c|requirement|constraint)(?:\s+|=)["']/)
 
           requirement_declaration_present?(file, requirement)
@@ -312,26 +314,35 @@ module Dependabot
             next unless file.content
 
             FileUtils.mkdir_p(File.dirname(file.name))
+            resolver_content = resolver_file_content(file)
             content = if file.name == requirement.file
-                        updated_requirement_content(file, requirement, requirement_string)
+                        updated_requirement_content(resolver_content, requirement, requirement_string)
                       else
-                        file.content
+                        resolver_content
                       end
             File.write(file.name, content)
           end
           File.write(".python-version", language_version_manager.python_major_minor)
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def resolver_file_content(file)
+          content = T.must(file.content)
+          return content unless file.name.end_with?(*PIP_REQUIREMENT_FILE_EXTENSIONS)
+
+          content.gsub(HASH_OPTION_PATTERN, "").gsub(REQUIRE_HASHES_PATTERN, "")
+        end
+
         sig do
           params(
-            file: Dependabot::DependencyFile,
+            content: String,
             requirement: Dependabot::DependencyRequirement,
             requirement_string: String
           ).returns(String)
         end
-        def updated_requirement_content(file, requirement, requirement_string)
+        def updated_requirement_content(content, requirement, requirement_string)
           FileUpdater::RequirementReplacer.new(
-            content: T.must(file.content),
+            content: content,
             dependency_name: dependency.name,
             old_requirement: requirement.requirement_string,
             new_requirement: requirement_string
