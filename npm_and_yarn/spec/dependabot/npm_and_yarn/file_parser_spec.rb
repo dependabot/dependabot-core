@@ -39,6 +39,114 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe ".each_dependency compatibility" do
+    it "keeps raw values and section order for updater callers" do
+      json = {
+        "dependencies" => { "first" => "1.0.0", "raw" => { "version" => "2.0.0" }, "missing" => nil },
+        "devDependencies" => { "first" => "3.0.0" }
+      }
+      yielded = []
+
+      described_class.each_dependency(json) { |name, requirement, type| yielded << [name, requirement, type] }
+
+      expect(yielded).to eq(
+        [
+          ["first", "1.0.0", "dependencies"],
+          ["raw", { "version" => "2.0.0" }, "dependencies"],
+          ["missing", nil, "dependencies"],
+          ["first", "3.0.0", "devDependencies"]
+        ]
+      )
+    end
+
+    it "allows callers to update the original dependency map during iteration" do
+      json = { "dependencies" => { "first" => "1.0.0", "second" => "2.0.0" } }
+      yielded = []
+
+      described_class.each_dependency(json) do |name, requirement, type|
+        yielded << requirement
+        json[type]["second"] = "3.0.0" if name == "first"
+      end
+
+      expect(yielded).to eq(["1.0.0", "3.0.0"])
+      expect(json["dependencies"]["second"]).to eq("3.0.0")
+    end
+  end
+
+  describe "package.json read boundaries" do
+    let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "0.3.0" } } }
+    let(:manifest_content) { JSON.dump(manifest) }
+    let(:package_file) { Dependabot::DependencyFile.new(name: "package.json", content: manifest_content) }
+    let(:files) { [package_file] }
+
+    it "parses an exact dependency without a lockfile" do
+      expect(parser.parse.map(&:name)).to eq(["chalk"])
+    end
+
+    context "with malformed dependency containers" do
+      let(:manifest) { { "dependencies" => [["chalk", "0.3.0"]] } }
+
+      it "rejects the container with file and field context" do
+        expect { parser.parse }
+          .to raise_error(TypeError, "#{package_file.path}: dependencies must be an object")
+      end
+    end
+
+    context "with a flat manifest and malformed dependencies" do
+      let(:manifest) { { "flat" => true, "dependencies" => [] } }
+
+      it "skips the manifest before inspecting dependencies" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with missing, null, and false dependency sections" do
+      let(:manifest) { { "dependencies" => nil, "devDependencies" => false } }
+
+      it "finds no dependencies" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with a workspace package" do
+      let(:manifest) { { "dependencies" => { "chalk" => "0.3.0", "member" => "1.0.0" } } }
+      let(:member_name) { "member" }
+      let(:files) do
+        [
+          package_file,
+          Dependabot::DependencyFile.new(
+            name: "packages/member/package.json",
+            content: JSON.dump("name" => member_name)
+          )
+        ]
+      end
+
+      it "excludes the workspace package from registry updates" do
+        expect(parser.parse.map(&:name)).to eq(["chalk"])
+      end
+
+      context "with a non-string workspace name" do
+        let(:member_name) { 123 }
+
+        it "does not match the dependency name" do
+          expect(parser.parse.map(&:name)).to contain_exactly("chalk", "member")
+        end
+      end
+    end
+
+    context "with invalid JSON" do
+      let(:manifest_content) { "{" }
+
+      it "preserves the parsing error for dependency extraction" do
+        expect { parser.parse }.to raise_error(JSON::ParserError)
+      end
+
+      it "preserves the file error for package-manager detection" do
+        expect { parser.ecosystem }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+  end
+
   describe "#ecosystem" do
     let(:files) { project_dependency_files("npm6/simple") }
 

@@ -37,6 +37,95 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     dependency_files.find { |f| f.name == file_name }
   end
 
+  describe "workspace manifest reads" do
+    let(:workspaces) { [] }
+    let(:root_manifest) do
+      Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: JSON.dump("workspaces" => workspaces, "dependencies" => [])
+      )
+    end
+    let(:member_manifest) do
+      Dependabot::DependencyFile.new(name: "packages/member/package.json", content: "{}")
+    end
+    let(:root_lockfile) { Dependabot::DependencyFile.new(name: "package-lock.json", content: "{}") }
+    let(:dependency_files) { [root_manifest, member_manifest, root_lockfile] }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "chalk",
+        version: "0.4.0",
+        requirements: [{
+          file: member_manifest.name,
+          requirement: "0.3.0",
+          groups: ["dependencies"],
+          source: nil
+        }],
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    before do
+      lockfile_parser = instance_double(Dependabot::NpmAndYarn::FileParser::LockfileParser, parse: [dependency])
+      allow(Dependabot::NpmAndYarn::FileParser::LockfileParser).to receive(:new).and_return(lockfile_parser)
+    end
+
+    it "keeps the workspace lockfile without inspecting unrelated manifest fields" do
+      expect(files_requiring_update).to contain_exactly(member_manifest, root_lockfile)
+    end
+
+    context "with an object workspace declaration" do
+      let(:workspaces) { {} }
+
+      it "keeps the root lockfile" do
+        expect(files_requiring_update).to contain_exactly(member_manifest, root_lockfile)
+      end
+    end
+
+    [nil, false].each do |value|
+      context "with workspaces set to #{value.inspect}" do
+        let(:workspaces) { value }
+
+        it "does not treat the root lockfile as a workspace lockfile" do
+          expect(files_requiring_update).to eq([member_manifest])
+        end
+      end
+    end
+
+    context "with a pnpm workspace file instead of a workspace declaration" do
+      let(:workspaces) { nil }
+      let(:dependency_files) do
+        super() + [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "packages: []")]
+      end
+
+      it "retains the pnpm workspace fallback" do
+        expect(files_requiring_update).to contain_exactly(member_manifest, root_lockfile)
+      end
+    end
+
+    context "when the nested package has its own lockfile and no root manifest" do
+      let(:root_lockfile) do
+        Dependabot::DependencyFile.new(name: "packages/member/package-lock.json", content: "{}")
+      end
+      let(:dependency_files) { [member_manifest, root_lockfile] }
+
+      it "does not attempt to read the root manifest" do
+        expect(files_requiring_update).to contain_exactly(member_manifest, root_lockfile)
+      end
+    end
+
+    context "with multiple workspace lockfiles" do
+      let(:other_lockfile) { Dependabot::DependencyFile.new(name: "yarn.lock", content: "") }
+      let(:dependency_files) { super() + [other_lockfile] }
+
+      it "decodes the root manifest once" do
+        allow(JSON).to receive(:parse).and_call_original
+
+        expect(files_requiring_update).to contain_exactly(member_manifest, root_lockfile, other_lockfile)
+        expect(JSON).to have_received(:parse).with(root_manifest.content).once
+      end
+    end
+  end
+
   describe ".files_requiring_update" do
     it do
       expect(files_requiring_update).to contain_exactly(
