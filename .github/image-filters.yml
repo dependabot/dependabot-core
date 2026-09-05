@@ -1,0 +1,130 @@
+shared: &shared
+  - .dockerignore
+  - .github/image-filters.yml
+  - .github/workflows/images-branch.yml
+  - .github/workflows/images-latest.yml
+  - .github/workflows/images-updater-core.yml
+  - Dockerfile.updater-core
+  - Dockerfile.validation
+  - LICENSE
+  - common/**
+  - docker-bake.hcl
+  - omnibus/**
+  - script/resolve-image-matrix
+  - updater/**
+  - '*/.bundle/**'
+  - '*/*.gemspec'
+
+bazel:
+  - *shared
+  - bazel/**
+bun:
+  - *shared
+  - bun/**
+bundler:
+  - *shared
+  - bundler/**
+cargo:
+  - *shared
+  - cargo/**
+composer:
+  - *shared
+  - composer/**
+conda:
+  - *shared
+  - conda/**
+  - python/**
+deno:
+  - *shared
+  - deno/**
+devcontainers:
+  - *shared
+  - devcontainers/**
+docker:
+  - *shared
+  - docker/**
+docker-compose:
+  - *shared
+  - docker/**
+dotnet-sdk:
+  - *shared
+  - dotnet_sdk/**
+elm:
+  - *shared
+  - elm/**
+gitsubmodule:
+  - *shared
+  - git_submodules/**
+github-actions:
+  - *shared
+  - github_actions/**
+gomod:
+  - *shared
+  - go_modules/**
+gradle:
+  - *shared
+  - gradle/**
+  - maven/**
+helm:
+  - *shared
+  - docker/**
+  - helm/**
+mix:
+  - *shared
+  - hex/**
+julia:
+  - *shared
+  - julia/**
+maven:
+  - *shared
+  - maven/**
+nix:
+  - *shared
+  - nix/**
+npm:
+  - *shared
+  - npm_and_yarn/**
+nuget:
+  - *shared
+  - .gitmodules
+  - nuget/**
+opentofu:
+  - *shared
+  - opentofu/**
+pip:
+  - *shared
+  - cargo/**
+  - python/**
+pre-commit:
+  - *shared
+  - bundler/**
+  - cargo/**
+  - go_modules/**
+  - npm_and_yarn/**
+  - pre_commit/**
+  - pub/**
+  - python/**
+pub:
+  - *shared
+  - pub/**
+rust-toolchain:
+  - *shared
+  - rust_toolchain/**
+sbt:
+  - *shared
+  - maven/**
+  - sbt/**
+swift:
+  - *shared
+  - swift/**
+terraform:
+  - *shared
+  - terraform/**
+uv:
+  - *shared
+  - cargo/**
+  - python/**
+  - uv/**
+vcpkg:
+  - *shared
+  - vcpkg/**
