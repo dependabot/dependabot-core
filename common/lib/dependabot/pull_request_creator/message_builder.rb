@@ -338,7 +338,7 @@ module Dependabot
 
       sig { returns(String) }
       def commit_subject
-        subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
+        subject = pr_name
         return subject unless subject.length > 72
 
         subject = subject.gsub(/ from [^\s]*? to [^\s]*/, "")
