@@ -3005,16 +3005,28 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       let(:pr_name_prefix) { "⬆️ " }
 
-      it "uses gitmoji" do
-        expect(commit_message).to start_with(":arrow_up: Bump ")
+      it "keeps the unicode emoji in the commit subject" do
+        expect(commit_message).to start_with("⬆️ Bump ")
+      end
+
+      it "uses the same prefix as the PR title" do
+        expect(commit_message.split("\n").first).to eq(builder.pr_name)
       end
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { business: [{}] } }
         let(:pr_name_prefix) { "⬆️🔒 " }
 
-        it "uses gitmoji" do
-          expect(commit_message).to start_with(":arrow_up::lock: Bump ")
+        it "keeps both unicode emoji in the commit subject" do
+          expect(commit_message).to start_with("⬆️🔒 Bump ")
+        end
+      end
+
+      context "when the prefix is already a shortcode" do
+        let(:pr_name_prefix) { ":arrow_up: " }
+
+        it "passes the shortcode through verbatim" do
+          expect(commit_message).to start_with(":arrow_up: Bump ")
         end
       end
     end
