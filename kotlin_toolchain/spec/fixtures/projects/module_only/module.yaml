@@ -1,0 +1,4 @@
+product: jvm/app
+apply: base.module-template.yaml
+dependencies:
+  - io.ktor:ktor-server-core:3.1.0

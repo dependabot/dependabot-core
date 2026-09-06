@@ -1,0 +1,8 @@
+product: jvm/app
+apply:
+  - //base.module-template.yaml
+dependencies:
+  - io.ktor:ktor-server-core:3.3.2
+tasks:
+  testJvm:
+    dependsOn: [ :example:prepare ]

@@ -239,6 +239,11 @@ docker run --rm -ti \
   -v "$(pwd)/julia/lib:$CODE_DIR/julia/lib" \
   -v "$(pwd)/julia/script:$CODE_DIR/julia/script" \
   -v "$(pwd)/julia/spec:$CODE_DIR/julia/spec" \
+  -v "$(pwd)/kotlin_toolchain/.rubocop.yml:$CODE_DIR/kotlin_toolchain/.rubocop.yml" \
+  -v "$(pwd)/kotlin_toolchain/dependabot-kotlin_toolchain.gemspec:$CODE_DIR/kotlin_toolchain/dependabot-kotlin_toolchain.gemspec" \
+  -v "$(pwd)/kotlin_toolchain/lib:$CODE_DIR/kotlin_toolchain/lib" \
+  -v "$(pwd)/kotlin_toolchain/script:$CODE_DIR/kotlin_toolchain/script" \
+  -v "$(pwd)/kotlin_toolchain/spec:$CODE_DIR/kotlin_toolchain/spec" \
   -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \

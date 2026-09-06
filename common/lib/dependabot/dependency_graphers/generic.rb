@@ -43,7 +43,7 @@ module Dependabot
           "gem"
         when "npm_and_yarn", "bun"
           "npm"
-        when "maven", "gradle"
+        when "maven", "gradle", "kotlin_toolchain"
           "maven"
         when "pip", "uv"
           "pypi"

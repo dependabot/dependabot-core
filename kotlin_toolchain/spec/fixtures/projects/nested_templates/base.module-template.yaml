@@ -1,0 +1,5 @@
+apply:
+  - nested.module-template.yaml
+settings:
+  kotlin:
+    version: 2.3.20

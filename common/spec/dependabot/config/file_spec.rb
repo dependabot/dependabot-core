@@ -46,6 +46,19 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config).to be_a(Dependabot::Config::UpdateConfig)
         expect(update_config.commit_message_options.prefix).to be_nil
       end
+
+      it "maps the Kotlin Toolchain ecosystem name" do
+        kotlin_config = described_class.parse(<<~YAML)
+          version: 2
+          updates:
+            - package-ecosystem: kotlin-toolchain
+              directory: /
+              commit-message:
+                prefix: kotlin
+        YAML
+
+        expect(kotlin_config.update_config("kotlin_toolchain").commit_message_options.prefix).to eq("kotlin")
+      end
     end
 
     describe "#parse" do

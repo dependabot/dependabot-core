@@ -39,6 +39,7 @@ class RakeHelpers
     helm/dependabot-helm.gemspec
     hex/dependabot-hex.gemspec
     julia/dependabot-julia.gemspec
+    kotlin_toolchain/dependabot-kotlin_toolchain.gemspec
     maven/dependabot-maven.gemspec
     nix/dependabot-nix.gemspec
     npm_and_yarn/dependabot-npm_and_yarn.gemspec

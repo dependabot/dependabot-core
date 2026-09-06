@@ -56,6 +56,10 @@
 - changed-files:
   - any-glob-to-any-file: gradle/**
 
+"L: kotlin-toolchain":
+- changed-files:
+  - any-glob-to-any-file: kotlin_toolchain/**
+
 "L: elixir:hex":
 - changed-files:
   - any-glob-to-any-file: hex/**

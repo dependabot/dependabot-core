@@ -85,6 +85,11 @@
     "ecosystem": "julia"
   },
   {
+    "core": "kotlin_toolchain",
+    "test": "kotlin-toolchain",
+    "ecosystem": "kotlin-toolchain"
+  },
+  {
     "core": "maven",
     "test": "maven",
     "ecosystem": "maven"
