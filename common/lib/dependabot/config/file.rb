@@ -78,6 +78,7 @@ module Dependabot
           "gradle" => "gradle",
           "helm" => "helm",
           "julia" => "julia",
+          "kotlin-toolchain" => "kotlin_toolchain",
           "maven" => "maven",
           "mix" => "hex",
           "nix" => "nix",

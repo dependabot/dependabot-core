@@ -28,6 +28,7 @@
 --ignore=helm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
+--ignore=kotlin_toolchain/spec/
 --ignore=maven/spec/
 --ignore=nix/spec/
 --ignore=npm_and_yarn/spec/

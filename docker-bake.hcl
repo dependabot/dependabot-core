@@ -35,6 +35,7 @@ variable "ECOSYSTEMS" {
     { name = "helm", image = "helm", dockerfile = "helm/Dockerfile" },
     { name = "hex", image = "mix", dockerfile = "hex/Dockerfile" },
     { name = "julia", image = "julia", dockerfile = "julia/Dockerfile" },
+    { name = "kotlin_toolchain", image = "kotlin-toolchain", dockerfile = "kotlin_toolchain/Dockerfile" },
     { name = "maven", image = "maven", dockerfile = "maven/Dockerfile" },
     { name = "nix", image = "nix", dockerfile = "nix/Dockerfile" },
     { name = "npm_and_yarn", image = "npm", dockerfile = "npm_and_yarn/Dockerfile" },
