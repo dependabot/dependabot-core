@@ -338,13 +338,13 @@ module Dependabot
 
       sig { returns(String) }
       def commit_subject
-        subject = pr_name
-        return subject unless subject.length > 72
+        full = pr_name
+        return full unless full.length > 72
 
-        subject = subject.gsub(/ from [^\s]*? to [^\s]*/, "")
-        return subject unless subject.length > 72
+        without_versions = full.gsub(/ from [^\s]*? to [^\s]*/, "")
+        return without_versions unless without_versions.length > 72
 
-        T.must(subject.split(" in ").first)
+        T.must(without_versions.split(" in ").first)
       end
 
       sig { returns(String) }
