@@ -39,7 +39,8 @@ module Dependabot
       sig { params(content: String).returns(T.nilable(String)) }
       def self.repository_from_content(content)
         match = content.match(UNIX_REPOSITORY) || content.match(WINDOWS_REPOSITORY)
-        match&.named_captures&.fetch("repository")&.sub(%r{/+$}, "")
+        repository = match&.named_captures&.fetch("repository")
+        repository && without_trailing_slashes(repository)
       end
 
       sig { params(content: String, repository: String).returns(T.nilable(String)) }
@@ -132,7 +133,13 @@ module Dependabot
       sig { params(repository: String, version: String, windows: T::Boolean).returns(String) }
       def self.artifact_url(repository:, version:, windows:)
         artifact = artifact_name(version: version, windows: windows)
-        "#{repository.sub(%r{/+$}, '')}/org/jetbrains/kotlin/kotlin-cli/#{version}/#{artifact}"
+        "#{without_trailing_slashes(repository)}/org/jetbrains/kotlin/kotlin-cli/#{version}/#{artifact}"
+      end
+
+      sig { params(value: String).returns(String) }
+      def self.without_trailing_slashes(value)
+        value = value.delete_suffix("/") while value.end_with?("/")
+        value
       end
     end
   end
