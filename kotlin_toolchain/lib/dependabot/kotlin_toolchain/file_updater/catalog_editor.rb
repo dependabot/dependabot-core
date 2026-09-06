@@ -13,7 +13,7 @@ module Dependabot
       class CatalogEditor
         extend T::Sig
 
-        TABLE_HEADER = /\A\s*\[(?!\[)\s*(?<key>[^\]]*?)\s*\]\s*(?:#.*)?\z/
+        TABLE_HEADER = /\A\s*\[(?!\[)(?<key>[^\]]*)\]\s*(?:#.*)?\z/
         KEY_SEGMENT = /"(?<double>[^"]*)"|'(?<single>[^']*)'|(?<bare>[A-Za-z0-9_-]+)/
         ASSIGNMENT = /\A\s*(?<key>(?:#{KEY_SEGMENT})(?:\s*\.\s*(?:#{KEY_SEGMENT}))*)\s*=(?<value>.*)\z/m
 

@@ -5,4 +5,4 @@ dependencies:
   - io.ktor:ktor-server-core:3.3.2
 tasks:
   testJvm:
-    dependsOn: [ :example:prepare ]
+    dependsOn: [ ":example:prepare" ]
