@@ -6,6 +6,8 @@ require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/kotlin_toolchain/package/package_details_fetcher"
+require "dependabot/kotlin_toolchain/version"
+require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::KotlinToolchain::Package::PackageDetailsFetcher do
   let(:dependency_file) do
@@ -94,6 +96,60 @@ RSpec.describe Dependabot::KotlinToolchain::Package::PackageDetailsFetcher do
     it "still returns the versions the other repositories know about" do
       expect(fetcher.fetch_available_versions.map { |release| release.fetch(:version).to_s })
         .to contain_exactly("1.0.0", "1.1.0")
+    end
+  end
+
+  context "when a library version has no release date" do
+    before do
+      stub_request(:get, /maven-metadata\.xml\z/).to_return(status: 404)
+      stub_request(:get, %r{/library/\z}).to_return(status: 404)
+    end
+
+    it "leaves the date empty without probing artifacts" do
+      release = Dependabot::Package::PackageRelease.new(
+        version: Dependabot::KotlinToolchain::Version.new("1.1.0"),
+        released_at: nil
+      )
+
+      expect(fetcher.fetch_release_metadata(release: release).released_at).to be_nil
+      expect(a_request(:head, /.*/)).not_to have_been_made
+    end
+  end
+
+  context "when the wrapper version has no release date" do
+    let(:repository) { "https://packages.jetbrains.team/maven/p/amper/amper" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "org.jetbrains.kotlin:kotlin-cli",
+        version: "0.11.1",
+        requirements: [{
+          file: "kotlin",
+          requirement: "0.11.1",
+          groups: ["toolchain"],
+          source: { type: "maven_repo", url: repository },
+          metadata: { kind: "wrapper", repository: repository }
+        }],
+        package_manager: "kotlin_toolchain",
+        metadata: { maven_name: "org.jetbrains.kotlin:kotlin-cli", wrapper: true }
+      )
+    end
+    let(:last_modified) { "Mon, 24 Aug 2026 23:54:24 GMT" }
+
+    before do
+      stub_request(:get, /maven-metadata\.xml\z/).to_return(status: 404)
+      stub_request(:get, %r{/kotlin-cli/\z}).to_return(status: 404)
+      stub_request(:head, "#{repository}/org/jetbrains/kotlin/kotlin-cli/0.12.0/kotlin-cli-0.12.0-wrapper")
+        .to_return(status: 200, headers: { "Last-Modified" => last_modified })
+    end
+
+    it "takes the date from the wrapper artifact in the distribution repository" do
+      release = Dependabot::Package::PackageRelease.new(
+        version: Dependabot::KotlinToolchain::Version.new("0.12.0"),
+        released_at: nil
+      )
+
+      expect(fetcher.fetch_release_metadata(release: release).released_at).to eq(Time.httpdate(last_modified))
+      expect(a_request(:head, /repo\.maven\.apache\.org|maven\.google\.com/)).not_to have_been_made
     end
   end
 
