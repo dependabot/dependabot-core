@@ -219,6 +219,12 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
           )
         end
 
+        it "does not add the warning to the caller's notices" do
+          create_change
+
+          expect(notices).to be_empty
+        end
+
         it "does not duplicate an existing cooldown warning" do
           notices << Dependabot::Notice.new(
             mode: Dependabot::Notice::NoticeMode::WARN,

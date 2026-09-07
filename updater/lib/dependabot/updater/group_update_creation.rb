@@ -8,6 +8,7 @@ require "dependabot/updater/dependency_group_change_batch"
 require "dependabot/workspace"
 require "dependabot/updater/security_update_helpers"
 require "dependabot/notices"
+require "dependabot/update_checkers/cooldown_calculation"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
@@ -126,6 +127,12 @@ module Dependabot
           end
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
+          if original_dependency &&
+             Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+            original_dependency.metadata[
+              Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_METADATA_KEY
+            ] = true
+          end
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|

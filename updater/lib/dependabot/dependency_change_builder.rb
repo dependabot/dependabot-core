@@ -73,6 +73,7 @@ module Dependabot
       @updated_dependencies = updated_dependencies
       @change_source = change_source
       @notices = notices
+      @cooldown_notices = T.let([], T::Array[Dependabot::Notice])
       @regenerated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
     end
 
@@ -103,7 +104,7 @@ module Dependabot
         updated_dependencies: updated_deps,
         updated_dependency_files: updated_files,
         dependency_group: source_dependency_group,
-        notices: notices
+        notices: notices + cooldown_notices
       )
     end
 
@@ -123,6 +124,9 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::Notice]) }
     attr_reader :notices
+
+    sig { returns(T::Array[Dependabot::Notice]) }
+    attr_reader :cooldown_notices
 
     sig { returns(T.nilable(String)) }
     def source_dependency_name
@@ -193,7 +197,7 @@ module Dependabot
         show_in_pr: true,
         show_alert: false
       )
-      @notices << notice unless @notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
+      cooldown_notices << notice unless notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
     end
 
     sig { returns(T::Boolean) }
