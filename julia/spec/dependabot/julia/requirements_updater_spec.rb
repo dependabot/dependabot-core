@@ -99,6 +99,66 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         it { is_expected.to eq("0.35.0") }
       end
 
+      # JLL packages register build metadata as part of their version
+      # ("Zlib_jll" 1.6.10+0). Julia's [compat] specifiers are numeric-only, so
+      # a suggested bound must never carry the "+build" suffix.
+      context "with a JLL target version carrying build metadata" do
+        context "when there is no compat entry" do
+          let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
+          let(:target_version) { "1.6.10+0" }
+
+          it "drops the build number" do
+            expect(result).to eq("1.6.10")
+          end
+        end
+
+        context "when the existing compat entry already admits the new build" do
+          let(:requirement_string) { "1.6.10" }
+          let(:target_version) { "1.6.10+1" }
+
+          it "leaves the compat entry untouched" do
+            expect(result).to eq("1.6.10")
+          end
+        end
+
+        context "when the existing compat entry needs widening" do
+          let(:requirement_string) { "1.5.0" }
+          let(:target_version) { "2.0.1+2" }
+
+          it "appends a spec without the build number" do
+            expect(result).to eq("1.5.0, 2.0")
+          end
+        end
+
+        context "when the JLL is a 0.0.x version" do
+          let(:requirement_string) { "0.0.5" }
+          let(:target_version) { "0.0.8+3" }
+
+          it "appends a patch-level spec without the build number" do
+            expect(result).to eq("0.0.5, 0.0.8")
+          end
+        end
+
+        context "with bump_versions" do
+          let(:update_strategy) { :bump_versions }
+          let(:requirement_string) { "1.5" }
+          let(:target_version) { "1.6.10+0" }
+
+          it "bumps to a spec without the build number" do
+            expect(result).to eq("1.6")
+          end
+        end
+
+        context "with a prerelease target version" do
+          let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
+          let(:target_version) { "1.6.10-rc1" }
+
+          it "drops the prerelease tag, which compat entries also reject" do
+            expect(result).to eq("1.6.10")
+          end
+        end
+      end
+
       context "with range requirement" do
         let(:requirement_string) { "0.34 - 0.35" }
         let(:target_version) { "0.36.0" }
