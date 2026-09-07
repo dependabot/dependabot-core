@@ -851,6 +851,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
         it "treats the release as outside the cooldown window" do
           expect(latest_version_details[:version]).to eq(version_class.new("1.2.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
       end
 
