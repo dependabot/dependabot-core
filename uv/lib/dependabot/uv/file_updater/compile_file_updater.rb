@@ -332,7 +332,7 @@ module Dependabot
         # userinfo so tokens are never written into the regenerated file.
         sig { params(content: String).returns(String) }
         def scrub_index_url_credentials(content)
-          content.gsub(%r{^(--(?:extra-)?index-url[= ]https?://)[^@\s/]+@}, "\\1")
+          content.gsub(%r{^(--(?:extra-)?index-url[= ]https?://)[^/\s]+@}, "\\1")
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
