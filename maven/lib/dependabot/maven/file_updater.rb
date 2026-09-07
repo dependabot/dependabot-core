@@ -255,15 +255,13 @@ module Dependabot
         # file's formatting, indentation style, and attribute quotes on the root elements,
         # avoiding git diff noise on unrelated lines.
         if dependency_management_created
-          new_block_text = dependency_management.to_s
           # Find the character position of the true closing project tag at the literal end of the file.
           match_data = content.match(%r{</project>\s*\z})
 
           if match_data
             insert_position = match_data.begin(0)
             # Extract the baseline indentation level for the root block formatting (e.g. spaces or tabs)
-            base_indent = indentation_config[:levels][:base]
-            formatted_patch = "\n#{base_indent}#{new_block_text}\n"
+            formatted_patch = "\n#{indentation_config[:levels][:base]}#{dependency_management}\n"
 
             # place the block text right into that character boundary index position
             return T.must(content[0...insert_position]) + formatted_patch + T.must(content[insert_position..-1])
