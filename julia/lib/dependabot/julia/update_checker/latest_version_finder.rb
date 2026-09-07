@@ -4,6 +4,7 @@
 require "time"
 require "dependabot/julia/package/package_details_fetcher"
 require "dependabot/julia/version"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/update_checkers/version_filters"
 
 module Dependabot
@@ -187,7 +188,14 @@ module Dependabot
       def cooldown_active_for_release?(release)
         cooldown_days = determine_cooldown_days(release.version)
         return false unless cooldown_days&.positive?
-        return false unless release.released_at
+
+        unless release.released_at
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            dependency,
+            cooldown_days: cooldown_days
+          )
+          return false
+        end
 
         # Check if enough time has passed since release
         seconds_since_release = T.cast(Time.now - release.released_at, Float)
