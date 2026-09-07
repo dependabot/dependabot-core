@@ -146,13 +146,17 @@ module Dependabot
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
+          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
+          days = cooldown_days_for(current_version, release.version)
+
           unless release.released_at
+            Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+              dependency,
+              cooldown_days: days
+            )
             Dependabot.logger.info("Release date not available for version #{release.version}")
             return false
           end
-
-          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version, release.version)
 
           # Calculate the number of seconds passed since the release
           passed_seconds = Time.now.to_i - release.released_at.to_i
