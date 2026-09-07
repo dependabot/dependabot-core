@@ -64,6 +64,8 @@ module Dependabot
           "bun" => "bun",
           "bundler" => "bundler",
           "cargo" => "cargo",
+          "codeql" => "codeql",
+          "codeql-pack" => "codeql",
           "composer" => "composer",
           "deno" => "deno",
           "conda" => "conda",
@@ -98,7 +100,7 @@ module Dependabot
       )
 
       REVERSE_PACKAGE_MANAGER_LOOKUP = T.let(
-        PACKAGE_MANAGER_LOOKUP.invert.freeze,
+        PACKAGE_MANAGER_LOOKUP.invert.merge("codeql" => "codeql").freeze,
         T::Hash[String, String]
       )
 
