@@ -636,7 +636,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
       context "when cooldown is enabled" do
         before do
-          allow(checker).to receive(:should_skip_cooldown?).and_return(false)
+          allow(checker).to receive_messages(should_skip_cooldown?: false, cooldown_days_for: 1)
           allow(Dependabot.logger).to receive(:info)
 
           # Mock cooldown period check - return true for recent time, false for old time
@@ -702,6 +702,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           it "returns all versions when no release dates available" do
             result = checker.send(:apply_cooldown_filter, versions)
             expect(result).to eq(versions)
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
           end
         end
       end
