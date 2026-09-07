@@ -2,12 +2,13 @@
 # frozen_string_literal: true
 
 require "excon"
-require "toml-rb"
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/dependency_requirement"
 require "dependabot/errors"
+require "dependabot/python/file_parser"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/requirement"
@@ -28,6 +29,8 @@ module Dependabot
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
+
+      PyprojectDocument = FileParser::PyprojectDocument
 
       MAIN_PYPI_INDEXES = %w(
         https://pypi.python.org/simple/
@@ -248,7 +251,7 @@ module Dependabot
         # For hybrid projects with both [tool.poetry] and [project] sections but no lockfile,
         # use the requirements resolver to handle PEP 621 dependencies
         # For pure Poetry projects, use Poetry resolver even without lockfile
-        return :poetry if poetry_based? && (poetry_lock || !standard_details)
+        return :poetry if poetry_based? && (poetry_lock || !pyproject_document.project?)
 
         :requirements
       end
@@ -395,7 +398,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def poetry_based?
-        updating_pyproject? && !poetry_details.nil?
+        updating_pyproject? && pyproject_document.poetry?
       end
 
       sig { returns(T::Boolean) }
@@ -410,22 +413,41 @@ module Dependabot
       def check_pypi_for_library_match
         return false unless updating_pyproject?
 
-        library_details_temp = library_details
-        return false unless library_details_temp && !library_details_temp["name"].nil?
+        metadata = library_details
+        name = metadata&.name
+        return false unless name
 
-        has_library_metadata = !library_details_temp["description"].nil?
+        local_description = metadata.description
+        has_library_metadata = !local_description.nil?
 
-        response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(library_details_temp['name'])}/json/"
-        )
-        return has_library_metadata unless response.status == 200
+        begin
+          response = Dependabot::RegistryClient.get(
+            url: "https://pypi.org/pypi/#{normalised_name(name)}/json/"
+          )
+          return has_library_metadata unless response.status == 200
 
-        local_description = library_details_temp["description"]
-        return true if local_description.nil?
+          return true if local_description.nil?
 
-        (JSON.parse(response.body)["info"] || {})["summary"] == local_description
-      rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
-        has_library_metadata
+          pypi_summary(response.body) == local_description
+        rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
+          has_library_metadata
+        end
+      end
+
+      sig { params(body: String).returns(T.nilable(String)) }
+      def pypi_summary(body)
+        metadata = T.cast(JSON.parse(body), Object)
+        raise TypeError, "PyPI metadata must be an object" unless metadata.is_a?(Hash)
+
+        info = T.cast(metadata["info"], Object)
+        return if info.nil?
+        raise TypeError, "PyPI info must be an object" unless info.is_a?(Hash)
+
+        summary = T.cast(info["summary"], Object)
+        return if summary.nil?
+        return summary if summary.is_a?(String)
+
+        raise TypeError, "PyPI info.summary must be a string"
       end
 
       sig { returns(T::Boolean) }
@@ -483,43 +505,21 @@ module Dependabot
         dependency_files.find { |f| f.name == "poetry.lock" }
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { returns(T.nilable(PyprojectDocument::ProjectMetadata)) }
       def library_details
         @library_details ||= T.let(
-          poetry_details || standard_details || build_system_details,
-          T.nilable(T::Hash[String, T.untyped])
+          pyproject_document.poetry_metadata ||
+            pyproject_document.project_metadata ||
+            pyproject_document.build_system_metadata,
+          T.nilable(PyprojectDocument::ProjectMetadata)
         )
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def poetry_details
-        @poetry_details ||= T.let(
-          toml_content.dig("tool", "poetry"),
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def standard_details
-        @standard_details ||= T.let(
-          toml_content["project"],
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def build_system_details
-        @build_system_details ||= T.let(
-          toml_content["build-system"],
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def toml_content
-        @toml_content ||= T.let(
-          TomlRB.parse(T.must(pyproject).content),
-          T.nilable(T::Hash[String, T.untyped])
+      sig { returns(PyprojectDocument) }
+      def pyproject_document
+        @pyproject_document ||= T.let(
+          PyprojectDocument.from_content(T.must(T.must(pyproject).content)),
+          T.nilable(PyprojectDocument)
         )
       end
 

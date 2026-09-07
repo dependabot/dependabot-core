@@ -1,4 +1,4 @@
 #!/bin/bash
 echo "This is a command result."
-sleep 3
+sleep 0.1
 exit 0

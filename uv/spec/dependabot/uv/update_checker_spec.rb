@@ -80,6 +80,76 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
 
   it_behaves_like "an update checker"
 
+  describe "#requirements_update_strategy" do
+    subject(:strategy) { checker.requirements_update_strategy }
+
+    let(:dependency_files) { [pyproject] }
+    let(:dependency_requirements) do
+      [{ file: "pyproject.toml", requirement: "==2.0.0", groups: [], source: nil }]
+    end
+    let(:pyproject) { Dependabot::DependencyFile.new(name: "pyproject.toml", content: project_content) }
+    let(:project_content) do
+      <<~TOML
+        [tool.poetry]
+        name = 123
+
+        [project]
+        name = "example"
+        description = "Example library"
+      TOML
+    end
+    let(:project_url) { "https://pypi.org/pypi/example/json/" }
+
+    before do
+      stub_request(:get, project_url)
+        .to_return(status: 200, body: { info: { summary: "Example library" } }.to_json)
+    end
+
+    it "uses project metadata and ignores Poetry metadata" do
+      expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+    end
+
+    context "with only Poetry metadata" do
+      let(:project_content) { "[tool.poetry]\nname = 123" }
+
+      it "does not use Poetry for library detection" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+
+    context "with build-system metadata and no project table" do
+      let(:project_content) do
+        <<~TOML
+          [build-system]
+          name = "example"
+          description = "Example library"
+        TOML
+      end
+
+      it "retains the build-system metadata fallback" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+      end
+
+      context "with an empty project table" do
+        let(:project_content) { "[project]\n#{super()}" }
+
+        it "does not fall through to the build-system metadata" do
+          expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+          expect(a_request(:get, project_url)).not_to have_been_made
+        end
+      end
+    end
+
+    context "with malformed project metadata" do
+      let(:project_content) { "[project]\nname = \"example\"\ndescription = 123" }
+
+      it "uses the same type errors as Python library detection" do
+        expect { strategy }.to raise_error(TypeError, "project.description must be a string")
+      end
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 

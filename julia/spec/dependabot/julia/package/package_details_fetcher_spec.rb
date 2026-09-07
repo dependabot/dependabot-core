@@ -49,19 +49,26 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
 
       # Mock the batch operation for release dates
       allow(registry_client).to receive(:batch_fetch_version_release_dates)
-        .with([{
-          name: "Example",
-          uuid: "7876af07-990d-54b4-ab0e-23690620f79a",
-          versions: available_versions
-        }])
-        .and_return({
-          "Example" => {
-            "0.5.0" => release_date1.to_s,
-            "0.5.1" => release_date2.to_s,
-            "0.5.2" => nil,
-            "0.5.3" => release_date2.to_s
-          }
-        })
+        .and_return(
+          Dependabot::Julia::RegistryClient::Result::ReleaseDatesBatch.new(
+            packages: {
+              "Example" => Dependabot::Julia::RegistryClient::Result::ReleaseDates.new(
+                dates: {
+                  "0.5.0" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
+                    release_date: release_date1.to_s
+                  ),
+                  "0.5.1" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
+                    release_date: release_date2.to_s
+                  ),
+                  "0.5.2" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(release_date: nil),
+                  "0.5.3" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
+                    release_date: release_date2.to_s
+                  )
+                }
+              )
+            }
+          )
+        )
     end
 
     it "returns an array of PackageRelease objects" do
