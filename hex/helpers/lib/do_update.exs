@@ -9,13 +9,10 @@ defmodule DependabotDependencyFetcher do
   @max_attempts 3
 
   @doc """
-  Hex caches downloaded package tarballs and removes the cached copy itself
-  if it fails to unpack, but a transient network issue (for example, a
-  connection that's cut short) can still cause a single fetch attempt to
-  fail with "Unpacking tarball failed: tarball error, Unexpected end of
-  file". Since the corrupted cache entry is discarded before the error is
-  raised, retrying is usually enough for the package to be re-downloaded and
-  unpacked successfully.
+  Whether an error message matches one of the known transient tarball
+  download/unpacking failures (for example, "Unpacking tarball failed:
+  tarball error, Unexpected end of file"), which can happen when a
+  connection is cut short mid-download.
   """
   def retryable_error?(message) when is_binary(message) do
     String.contains?(message, "Unpacking tarball failed") or
@@ -25,10 +22,21 @@ defmodule DependabotDependencyFetcher do
 
   def retryable_error?(_message), do: false
 
+  @doc """
+  Hex caches downloaded package tarballs and removes the cached copy itself
+  if it fails to unpack, but a transient network issue (for example, a
+  connection that's cut short) can still cause a single fetch attempt to
+  fail. Since the corrupted cache entry is discarded before the error is
+  raised, retrying is usually enough for the package to be re-downloaded and
+  unpacked successfully.
+  """
   def with_retries(fun, attempt \\ 1) do
     case run(fun) do
       {:error, message} = error ->
         if attempt < @max_attempts and retryable_error?(message) do
+          # Give a transient network issue a moment to resolve before
+          # retrying, backing off a little longer on each attempt.
+          Process.sleep(1000 * attempt)
           with_retries(fun, attempt + 1)
         else
           error
