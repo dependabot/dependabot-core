@@ -70,12 +70,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, _|
         raise "Unexpected shell command: #{command}"
       end
-
-      Dependabot::Experiments.register(:gradle_lockfile_updater, true)
-    end
-
-    after do
-      Dependabot::Experiments.reset!
     end
 
     it "returns DependencyFile objects" do
