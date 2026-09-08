@@ -263,6 +263,32 @@ RSpec.describe Dependabot::Nub::MetadataFinder do
           it { is_expected.to eq("https://github.com/jshttp/etag") }
         end
 
+        # The resolved registry is scheme-less, so a credential configured with a
+        # scheme or a trailing slash has to be normalized before it can match.
+        context "with credentials that carry the scheme" do
+          let(:credentials) do
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ),
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://registry.npmjs.org/",
+                  "token" => "secret_token"
+                }
+              )
+            ]
+          end
+
+          it { is_expected.to eq("https://github.com/jshttp/etag") }
+        end
+
         context "without credentials" do
           before do
             stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
