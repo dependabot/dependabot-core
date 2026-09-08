@@ -60,6 +60,14 @@ module Dependabot
             end
           end
 
+          sig { params(hash: ObjectHash, key: String, context: String).returns(T::Array[String]) }
+          def self.optional_string_array(hash, key, context)
+            value = hash[key]
+            return [] if value.nil?
+
+            string_array(value, "#{context} #{key}")
+          end
+
           sig { params(value: Object, context: String).returns(String) }
           def self.string_value(value, context)
             return value if value.is_a?(String)
@@ -177,6 +185,10 @@ module Dependabot
           # Ships with at least one Julia release admitted by the project's
           # julia compat entry
           const :stdlib, T::Boolean, default: false
+          # For a stdlib, the versions its compat entry has to admit across
+          # that Julia range (lowest per caret line, sorted); see the helper's
+          # stdlib_versions_for_julia_compat
+          const :stdlib_versions, T::Array[String], default: []
 
           sig { params(value: Object).returns(ProjectDependency) }
           def self.from_object(value)
@@ -187,7 +199,8 @@ module Dependabot
               name: ValueParser.string(hash, "name", context),
               uuid: ValueParser.string(hash, "uuid", context),
               requirement: ValueParser.optional_string(hash, "requirement", context),
-              stdlib: ValueParser.optional_boolean(hash, "stdlib", context)
+              stdlib: ValueParser.optional_boolean(hash, "stdlib", context),
+              stdlib_versions: ValueParser.optional_string_array(hash, "stdlib_versions", context)
             )
           end
         end

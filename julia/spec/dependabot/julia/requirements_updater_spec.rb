@@ -7,12 +7,14 @@ require "dependabot/julia/version"
 
 RSpec.describe Dependabot::Julia::RequirementsUpdater do
   let(:update_strategy) { nil }
+  let(:stdlib_versions) { {} }
 
   let(:updater) do
     described_class.new(
       requirements: requirements,
       target_version: target_version,
-      update_strategy: update_strategy
+      update_strategy: update_strategy,
+      stdlib_versions: stdlib_versions
     )
   end
 
@@ -114,6 +116,84 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
 
         it "appends a spec for the target version" do
           expect(result).to eq("0.34 - 0.35, 1, 2.0")
+        end
+      end
+    end
+
+    context "with a standard library" do
+      # The versions the entry has to admit across the project's Julia range,
+      # as computed by the helper; the registry's latest release is irrelevant
+      let(:stdlib_versions) { { "Project.toml" => ["1.10.0"] } }
+      let(:target_version) { "1.11.5" }
+
+      context "with no compat entry" do
+        let(:requirement_string) { nil }
+
+        it { is_expected.to eq("1.10") }
+
+        context "when the range reaches Julia 1.0 and the old test sandbox pin" do
+          let(:stdlib_versions) { { "Project.toml" => ["0.0.0", "1.0.0"] } }
+
+          it { is_expected.to eq("< 0.0.1, 1") }
+        end
+
+        context "when the stdlib changed major line (SHA)" do
+          let(:stdlib_versions) { { "Project.toml" => ["0.7.0", "1.0.0"] } }
+
+          it { is_expected.to eq("0.7, 1") }
+        end
+      end
+
+      context "when the entry already admits every version" do
+        let(:requirement_string) { "1" }
+
+        it { is_expected.to eq("1") }
+      end
+
+      context "when the entry misses a bundled version" do
+        let(:requirement_string) { "1.11" }
+
+        it "widens rather than bumping to the registry release" do
+          expect(result).to eq("1.11, 1.10")
+        end
+
+        context "with bump_versions" do
+          let(:update_strategy) { :bump_versions }
+
+          it { is_expected.to eq("1.11, 1.10") }
+        end
+
+        context "with lockfile_only" do
+          let(:update_strategy) { :lockfile_only }
+
+          it { is_expected.to eq("1.11") }
+        end
+      end
+
+      context "with a range requirement" do
+        let(:requirement_string) { "1.6 - 1.9" }
+
+        it { is_expected.to eq("1.6 - 1.9") }
+      end
+
+      context "with no registry target at all" do
+        let(:requirement_string) { nil }
+        let(:target_version) { nil }
+
+        it { is_expected.to eq("1.10") }
+      end
+
+      context "when files have different julia compat entries" do
+        let(:requirements) do
+          [
+            { requirement: nil, file: "Project.toml", groups: ["deps"], source: nil },
+            { requirement: nil, file: "test/Project.toml", groups: ["deps"], source: nil }
+          ]
+        end
+        let(:stdlib_versions) { { "Project.toml" => ["1.10.0"], "test/Project.toml" => ["0.0.0", "1.0.0"] } }
+
+        it "floors each file separately" do
+          expect(updater.updated_requirements.map { |r| r[:requirement] }).to eq(["1.10", "< 0.0.1, 1"])
         end
       end
     end
