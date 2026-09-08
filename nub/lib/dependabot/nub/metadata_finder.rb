@@ -276,7 +276,9 @@ module Dependabot
       def auth_token
         credentials
           .select { |cred| cred["type"] == "npm_registry" }
-          .find { |cred| cred["registry"] == dependency_registry }
+          # dependency_registry is scheme-less, but a configured credential may carry
+          # the scheme and a trailing slash, so normalize before matching.
+          .find { |cred| cred["registry"]&.sub(%r{^https?://}, "")&.gsub(%r{/+$}, "") == dependency_registry }
           &.fetch("token", nil)
       end
 
