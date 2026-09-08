@@ -372,8 +372,7 @@ module Dependabot
 
         sig { params(npm_response: Excon::Response).returns(T::Boolean) }
         def response_invalid_json?(npm_response)
-          result = JSON.parse(npm_response.body)
-          result.is_a?(Hash) || result.is_a?(Array)
+          T.cast(JSON.parse(npm_response.body), Object)
           false
         rescue JSON::ParserError, TypeError
           true
