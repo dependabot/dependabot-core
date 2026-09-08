@@ -24,7 +24,7 @@ There are some notable differences:
 - **Lockfile Updates**: Dependabot updates both `Project.toml` and tries to update any `Manifest.toml` files, whereas CompatHelper.jl only updates `Project.toml`.
 - **Workspace Support**: Dependabot handles Julia workspaces where multiple packages share a common manifest file in a parent directory.
 - **Conflict Notifications**: When manifest updates fail due to dependency conflicts (common in workspaces), Dependabot adds warning notices to pull requests explaining the issue.
-- **Standard Libraries**: Dependabot never adds or updates compat entries for packages that ship with Julia, whereas CompatHelper.jl treats their registry releases like any other package (see [Standard Libraries](#standard-libraries)).
+- **Standard Libraries**: Dependabot derives the compat entry of a package that ships with Julia from the versions bundled across the project's supported Julia releases, whereas CompatHelper.jl treats its registry releases like any other package (see [Standard Libraries](#standard-libraries)).
 
 Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
 
@@ -77,9 +77,15 @@ Julia workspaces are fully supported. In workspace configurations:
 
 Some standard libraries also have releases in the General registry: legacy bridge packages for Julia versions that predate the stdlib (`Artifacts` 1.3.0 for Julia 1.0-1.5) and "upgradable" stdlibs that can be updated from the registry (`Statistics` 1.11.x). Pkg pins a stdlib to the version bundled with the running Julia, so a compat entry derived from those registry releases can make a project uninstallable on part of the Julia range its own `julia` compat entry admits.
 
-Dependabot therefore leaves a dependency alone (no compat entry is added or updated, and no manifest update is proposed) when it ships as a standard library in **any** Julia release admitted by the project's `julia` compat entry; a project without a `julia` entry is assumed to support every release. Which packages are stdlibs in which release comes from [HistoricalStdlibVersions.jl](https://github.com/JuliaPackaging/HistoricalStdlibVersions.jl), the same data Pkg uses to resolve for a `julia_version` other than the running one. For example, `Artifacts` is only treated as a registry package when the `julia` compat is capped below 1.6, and `StyledStrings` when it is capped below 1.11.
+Dependabot therefore never treats the registry's latest release as the target for a package that ships as a standard library in any Julia release admitted by the project's `julia` compat entry (a project without a `julia` entry is assumed to support every release). Instead the helper computes the versions the compat entry has to admit across that range:
 
-This matches the General registry's AutoMerge guidelines, which exempt stdlibs from the compat requirement.
+- the bundled version where the package is a pinned stdlib (the Julia version itself for stdlibs that were unversioned before Julia 1.11, which is how Pkg resolves them),
+- the newest installable registry release where it is upgradable or not yet a stdlib,
+- and `0.0.0` while the range reaches releases before Julia 1.10, whose `Pkg.test()` sandbox pinned stdlibs to that version.
+
+Reduced to the lowest version per caret line, this becomes the compat entry: `Statistics = "1.10"` for `julia = "1.10"`, `Statistics = "< 0.0.1, 1"` for `julia = "1"`, `SHA = "0.7, 1"` for `julia = "1.10"`. A missing entry is added, and an existing entry that fails to admit one of those versions is widened, regardless of the configured update strategy; entries are never narrowed and no manifest updates are proposed for stdlibs. Which packages are stdlibs in which release, and at what version, comes from [HistoricalStdlibVersions.jl](https://github.com/JuliaPackaging/HistoricalStdlibVersions.jl), the same data Pkg uses to resolve for a `julia_version` other than the running one. For example, `Artifacts` is only a registry package when the `julia` compat is capped below 1.6, and `StyledStrings` when it is capped below 1.11.
+
+The General registry's AutoMerge guidelines currently exempt stdlibs from the compat requirement; the entries above follow the [stdlib compat PSA](https://discourse.julialang.org/t/psa-compat-requirements-in-the-general-registry-are-changing/104958).
 
 ### Terminology: Julia vs Dependabot
 

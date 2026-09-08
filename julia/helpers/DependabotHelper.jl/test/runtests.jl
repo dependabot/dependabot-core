@@ -1047,6 +1047,29 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         @test !is_stdlib(example_uuid_parsed, "1")
         @test !is_stdlib(example_uuid_parsed, nothing)
 
+        # Versions a project has to accept, lowest per caret line: bundled
+        # (the Julia version itself when unversioned), newest installable
+        # registry release where upgradable or not yet a stdlib, and 0.0.0
+        # while the range reaches releases whose test sandbox pins stdlibs to it
+        sha_uuid = Base.UUID("ea8e919c-243c-51af-8825-aaa63cd721ce")
+        downloads_uuid = Base.UUID("f43a241f-c20a-4ad4-852c-f6b1247861c6")
+        floor(uuid, compat) = DependabotHelper.stdlib_versions_for_julia_compat(
+            uuid, compat === nothing ? nothing : Pkg.Types.semver_spec(compat)
+        )
+        @test floor(statistics_uuid, "1") == [v"0.0.0", v"1.0.0"]
+        @test floor(statistics_uuid, "1.6") == [v"0.0.0", v"1.6.0"]
+        @test floor(statistics_uuid, "1.10") == [v"1.10.0"]
+        @test floor(statistics_uuid, "1.11") == [v"1.11.5"]  # registry only
+        @test floor(artifacts_uuid, "1") == [v"0.0.0", v"1.3.0"]  # registry bridge on 1.0-1.5
+        @test floor(artifacts_uuid, "1.10") == [v"1.10.0"]
+        @test floor(sha_uuid, "1.10") == [v"0.7.0", v"1.0.0"]  # 0.7 through 1.12, 1.0 from 1.13
+        @test floor(sha_uuid, "1") == [v"0.0.0", v"0.7.0", v"1.0.0"]
+        @test floor(downloads_uuid, "1.10") == [v"1.6.0"]
+        @test floor(styledstrings_uuid, "1.10") == [v"1.0.3"]  # registry on 1.10, stdlib 1.11.0 after
+        @test floor(styledstrings_uuid, "1.11") == [v"1.11.0"]
+        @test isempty(DependabotHelper.stdlib_versions_for_julia_compat(test_uuid, Pkg.Versions.VersionSpec(Pkg.Versions.VersionRange[])))
+        @test DependabotHelper.lowest_per_line([v"1.2.0", v"1.0.5", v"0.7.1", v"0.7.0", v"0.0.3", v"2.0.0"]) == [v"0.0.3", v"0.7.0", v"1.0.5", v"2.0.0"]
+
         @test DependabotHelper.bound_below(v"1.6.2") == Pkg.Versions.VersionBound(1, 6, 1)
         @test DependabotHelper.bound_below(v"1.6.0") == Pkg.Versions.VersionBound(1, 5)
         @test DependabotHelper.bound_below(v"2.0.0") == Pkg.Versions.VersionBound(1)
@@ -1073,9 +1096,12 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                 @test !haskey(result, "error")
                 by_name = Dict(d["name"] => d for d in result["dependencies"])
                 @test by_name["Artifacts"]["stdlib"] == true
+                @test by_name["Artifacts"]["stdlib_versions"] == ["1.10.0"]
                 @test by_name["Example"]["stdlib"] == false
+                @test !haskey(by_name["Example"], "stdlib_versions")
                 weak_by_name = Dict(d["name"] => d for d in result["weak_dependencies"])
                 @test weak_by_name["Statistics"]["stdlib"] == true
+                @test weak_by_name["Statistics"]["stdlib_versions"] == ["1.10.0"]
             end
 
             # Before Julia 1.6, Artifacts came from the registry

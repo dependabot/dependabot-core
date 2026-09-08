@@ -61,8 +61,17 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             sources = get(project_toml, "sources", Dict{String,Any}())
 
             # Packages that ship with any Julia release the project supports
-            # must not have their compat entries track registry releases
-            stdlib_julia_versions = julia_versions_for_compat(julia_compat_spec(project_info))
+            # must not have their compat entries track registry releases; they
+            # get the versions the project has to accept instead
+            julia_compat = julia_compat_spec(project_info)
+            stdlib_julia_versions = julia_versions_for_compat(julia_compat)
+            function add_stdlib_info!(dep_info, dep_uuid)
+                dep_info["stdlib"] = is_stdlib_for_julia_versions(dep_uuid, stdlib_julia_versions)
+                if dep_info["stdlib"]
+                    dep_info["stdlib_versions"] = [string(v) for v in stdlib_versions_for_julia_compat(dep_uuid, julia_compat)]
+                end
+                return dep_info
+            end
 
             # Get dependencies and add compat requirements
             dependencies = []
@@ -71,9 +80,9 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
 
                 dep_info = Dict{String,Any}(
                     "name" => dep_name,
-                    "uuid" => string(dep_uuid),
-                    "stdlib" => is_stdlib_for_julia_versions(dep_uuid, stdlib_julia_versions)
+                    "uuid" => string(dep_uuid)
                 )
+                add_stdlib_info!(dep_info, dep_uuid)
 
                 # Add version constraint if available in compat
                 if haskey(project_info.compat, dep_name)
@@ -103,12 +112,13 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 for (dep_name, dep_uuid_str) in weakdeps_section
                     haskey(sources, dep_name) && continue
 
-                    weak_dep_uuid = tryparse(Base.UUID, string(dep_uuid_str))
                     weak_dep_info = Dict{String,Any}(
                         "name" => dep_name,
                         "uuid" => dep_uuid_str,
-                        "stdlib" => weak_dep_uuid !== nothing && is_stdlib_for_julia_versions(weak_dep_uuid, stdlib_julia_versions)
+                        "stdlib" => false
                     )
+                    weak_dep_uuid = tryparse(Base.UUID, string(dep_uuid_str))
+                    weak_dep_uuid === nothing || add_stdlib_info!(weak_dep_info, weak_dep_uuid)
 
                     # Add version constraint if available in compat
                     if haskey(project_info.compat, dep_name)
