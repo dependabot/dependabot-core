@@ -17,6 +17,7 @@
 ### Fixed
 
 - Fixed registry lookups on Julia 1.13, where Pkg changed `registry_info` to also take the registry instance
+- Stop adding or updating compat entries for standard libraries that also have registry releases (legacy bridge packages such as `Artifacts`, upgradable stdlibs such as `Statistics`); whether a dependency is a stdlib is decided per Julia release across the project's `julia` compat range using HistoricalStdlibVersions.jl (#16227, #16228)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)

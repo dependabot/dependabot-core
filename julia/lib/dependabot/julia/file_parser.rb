@@ -250,7 +250,7 @@ module Dependabot
           uuid = dependency.uuid
           requirement_string = dependency.requirement
 
-          next if skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
+          next if skip_dependency?(dependency, file_name, workspace_package_uuids)
 
           new_requirement = {
             requirement: requirement_string,
@@ -313,20 +313,33 @@ module Dependabot
 
       sig do
         params(
-          uuid: T.nilable(String),
-          requirement_string: T.nilable(String),
+          dependency: Dependabot::Julia::RegistryClient::Result::ProjectDependency,
           file_name: String,
           workspace_package_uuids: T::Array[String]
         ).returns(T::Boolean)
       end
-      def skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
-        return true if uuid && workspace_package_uuids.include?(uuid)
+      def skip_dependency?(dependency, file_name, workspace_package_uuids)
+        return true if workspace_package_uuids.include?(dependency.uuid)
+
+        # Pkg pins a standard library to the version bundled with Julia, so
+        # a compat entry tracking its registry releases (a legacy bridge for
+        # older Julia, or an "upgradable" stdlib release) can make the
+        # project uninstallable on part of its supported Julia range. The
+        # helper flags packages that ship with any Julia release admitted by
+        # the project's julia compat; those are left alone, as the General
+        # registry's compat guideline exempts them too.
+        if dependency.stdlib
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} in #{file_name}: standard library for the project's Julia versions"
+          )
+          return true
+        end
 
         # A dep with no compat entry in a workspace member file (test/,
         # docs/, ...) must not get one synthesized: Julia convention
         # (CompatHelper) only adds compat bounds to the package's own
         # Project.toml. Existing member compat entries are still updated.
-        requirement_string.nil? && workspace_member_file?(file_name)
+        dependency.requirement.nil? && workspace_member_file?(file_name)
       end
 
       # Anything outside the target directory ("test/Project.toml", or

@@ -27,7 +27,7 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 version = "1.11.0"
 
 [[deps.DependabotHelper]]
-deps = ["Downloads", "JSON", "Pkg", "PrecompileTools", "TOML"]
+deps = ["Downloads", "HistoricalStdlibVersions", "JSON", "Pkg", "PrecompileTools", "TOML"]
 path = "DependabotHelper.jl"
 uuid = "e7a99c2c-d05a-4768-9b9a-24beacacea09"
 version = "0.1.0"
@@ -40,6 +40,13 @@ version = "1.7.0"
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 version = "1.11.0"
+
+[[deps.HistoricalStdlibVersions]]
+deps = ["Pkg", "PrecompileTools"]
+git-tree-sha1 = "e2c444d79d406f80f316b779761eef0cf17fc137"
+registries = "General"
+uuid = "6df8b67a-e8a0-4029-b4b7-ac196fe72102"
+version = "2.0.7"
 
 [[deps.JSON]]
 deps = ["Dates", "Logging", "Parsers", "PrecompileTools", "StructUtils", "UUIDs", "Unicode"]
