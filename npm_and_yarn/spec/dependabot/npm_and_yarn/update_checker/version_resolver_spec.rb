@@ -1027,6 +1027,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(latest_allowable_version) }
+
+        context "when pnpm metadata has no peer dependency relationship" do
+          before do
+            allow(latest_version_finder).to receive(:possible_versions_with_details)
+              .and_return([[latest_allowable_version, {}]])
+          end
+
+          it "does not run a pnpm version resolution check" do
+            expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+
+            expect(latest_resolvable_version).to eq(latest_allowable_version)
+          end
+        end
       end
 
       describe "updating a dependency with a peer requirement" do
@@ -1047,6 +1060,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+
+        it "runs a pnpm version resolution check" do
+          allow(latest_version_finder).to receive(:possible_versions_with_details)
+            .and_return([[latest_allowable_version, { "peerDependencies" => { "react" => "^16.0.0" } }]])
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+          expect(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:run_pnpm_command)
+            .with(
+              "update react-dom@16.3.1 --lockfile-only",
+              fingerprint: "update <dependency_name>@<version> --lockfile-only"
+            ).and_return("")
+
+          latest_resolvable_version
+        end
       end
 
       describe "updating a dependency with a peer requirement and some badly written peer dependency requirements" do
@@ -1235,6 +1263,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       describe "when pnpm returns ERR_PNPM_TRUST_DOWNGRADE" do
         let(:project_name) { "pnpm/pnpm-lock" }
+        let(:dependency_files) do
+          project_dependency_files(project_name) + [
+            Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "trustPolicy: no-downgrade"
+            )
+          ]
+        end
         let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
         let(:dependency) do
           Dependabot::Dependency.new(
