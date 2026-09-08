@@ -36,9 +36,6 @@ module Dependabot
       )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
-      # Bun uses its own lockfile format that this ecosystem's file updater cannot write to.
-      # Detected only to raise a clear error (see `raise_if_bun_lock_misconfigured_as_npm!`) —
-      # this ecosystem never fetches or updates `bun.lock` itself.
       BUN_LOCKFILE_NAME = "bun.lock"
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
@@ -311,12 +308,8 @@ module Dependabot
         !npm_version && !yarn_version && !pnpm_version
       end
 
-      # A `bun.lock` with no npm/yarn/pnpm lockfile means the project is managed by Bun,
-      # but `package-ecosystem: "npm"` (or `"yarn"`) routes it to this ecosystem instead of
-      # to the dedicated `"bun"` ecosystem. This ecosystem has no updater for `bun.lock`, so
-      # left unchecked it would silently open a PR that bumps `package.json` without ever
-      # updating the lockfile (dependabot/dependabot-core#14223). Fail fast with a clear,
-      # actionable error instead.
+      # Without this check, a bun-managed project misconfigured as "npm" would silently get a
+      # PR that bumps package.json without updating bun.lock (dependabot-core#14223).
       sig { void }
       def raise_if_bun_lock_misconfigured_as_npm!
         return unless no_package_manager_detected?
