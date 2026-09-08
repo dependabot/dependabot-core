@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Nub::FileFetcher do
   end
 
   before do
-    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    allow(file_fetcher_instance).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
 
     stub_request(:get, File.join(url, "?ref=sha"))
       .with(headers: { "Authorization" => "token token" })
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::Nub::FileFetcher do
 
   context "with package.json file just including a dummy string" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      allow(file_fetcher_instance).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Nub::FileFetcher do
 
   context "with packageManager field not in x.y.z format" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      allow(file_fetcher_instance).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Nub::FileFetcher do
 
   context "with lockfileVersion not in integer format" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      allow(file_fetcher_instance).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
