@@ -168,9 +168,12 @@ module Dependabot
         def update_package_json_resolutions(package_json_content:, new_req:, dependency:, old_req:)
           dep = dependency
           parsed_json_content = JSON.parse(package_json_content)
+          # Resolution values are requirement strings, so they are matched against the
+          # requirement inside old_req rather than the requirement hash itself.
+          old_requirement = old_req&.fetch(:requirement, nil)
           resolutions =
             parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {})
-                               .reject { |_, v| v != old_req && v != dep.previous_version }
+                               .reject { |_, v| v != old_requirement && v != dep.previous_version }
                                .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
 
           return package_json_content unless resolutions.any?
@@ -183,7 +186,7 @@ module Dependabot
               content: content
             )
 
-            new_resolution = resolution == old_req ? new_req : dep.version
+            new_resolution = resolution == old_requirement ? new_req[:requirement] : dep.version
 
             replacement_line = replacement_declaration_line(
               original_line: original_line,
