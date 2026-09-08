@@ -51,6 +51,15 @@ module Dependabot
             optional_string_value(hash[key], "#{context} #{key}")
           end
 
+          sig { params(hash: ObjectHash, key: String, context: String).returns(T::Boolean) }
+          def self.optional_boolean(hash, key, context)
+            case hash[key]
+            when nil, false then false
+            when true then true
+            else raise TypeError, "#{context} #{key} must be a boolean or nil"
+            end
+          end
+
           sig { params(value: Object, context: String).returns(String) }
           def self.string_value(value, context)
             return value if value.is_a?(String)
@@ -165,6 +174,9 @@ module Dependabot
           const :name, String
           const :uuid, String
           const :requirement, T.nilable(String), default: nil
+          # Ships with at least one Julia release admitted by the project's
+          # julia compat entry
+          const :stdlib, T::Boolean, default: false
 
           sig { params(value: Object).returns(ProjectDependency) }
           def self.from_object(value)
@@ -174,7 +186,8 @@ module Dependabot
             new(
               name: ValueParser.string(hash, "name", context),
               uuid: ValueParser.string(hash, "uuid", context),
-              requirement: ValueParser.optional_string(hash, "requirement", context)
+              requirement: ValueParser.optional_string(hash, "requirement", context),
+              stdlib: ValueParser.optional_boolean(hash, "stdlib", context)
             )
           end
         end

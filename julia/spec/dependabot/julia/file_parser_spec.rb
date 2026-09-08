@@ -369,6 +369,80 @@ RSpec.describe Dependabot::Julia::FileParser do
       end
     end
 
+    context "when a dependency ships as a standard library" do
+      let(:dependency_files) { [stdlib_project_file] }
+      let(:julia_compat) { "1.10" }
+      let(:stdlib_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "StdlibUser"
+            uuid = "11111111-1111-1111-1111-111111111111"
+            version = "1.0.0"
+
+            [deps]
+            Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+            Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+            [weakdeps]
+            StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
+
+            [compat]
+            Example = "0.5"
+            julia = "#{julia_compat}"
+          TOML
+        )
+      end
+
+      it "does not synthesize compat entries from the stdlibs' registry releases" do
+        # Artifacts 1.3.0 is a legacy bridge for Julia 1.0-1.5 (#16227) and
+        # Statistics 1.11.x an upgradable stdlib release (#16228); Julia 1.10+
+        # pins both to the bundled copy, so neither bound would be right
+        expect(dependencies.map(&:name)).to contain_exactly("Example")
+      end
+
+      context "when the julia compat admits every 1.x release" do
+        let(:julia_compat) { "1" }
+
+        it "leaves the stdlibs alone rather than bounding them tighter than julia itself" do
+          expect(dependencies.map(&:name)).to contain_exactly("Example")
+        end
+      end
+
+      context "when the julia compat predates the packages becoming stdlibs" do
+        let(:julia_compat) { "1.0 - 1.5" }
+
+        it "treats their registry releases as regular dependencies" do
+          # Artifacts became a stdlib in 1.6 and StyledStrings in 1.11;
+          # Statistics has always been one
+          expect(dependencies.map(&:name)).to contain_exactly("Example", "Artifacts", "StyledStrings")
+          artifacts_dep = dependencies.find { |d| d.name == "Artifacts" }
+          expect(artifacts_dep.requirements.first[:requirement]).to be_nil
+        end
+      end
+
+      context "when a stdlib already has a compat entry" do
+        let(:stdlib_project_file) do
+          Dependabot::DependencyFile.new(
+            name: "Project.toml",
+            content: <<~TOML
+              [deps]
+              Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+              [compat]
+              Statistics = "1"
+              julia = "1"
+            TOML
+          )
+        end
+
+        it "does not update it either" do
+          expect(dependencies).to be_empty
+        end
+      end
+    end
+
     context "when the root project has a dependency without a compat entry" do
       let(:dependency_files) { [root_without_compat] }
       let(:root_without_compat) do
