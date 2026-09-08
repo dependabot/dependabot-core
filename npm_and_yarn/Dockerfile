@@ -10,7 +10,7 @@ ARG PNPM_VERSION=11.17.0
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
-ARG YARN_VERSION=4.9.2
+ARG YARN_VERSION=4.18.0
 
 # See https://github.com/nodesource/distributions#installation-instructions
 # Always update NODEJS_VERSION with a compatible NPM_VERSION
