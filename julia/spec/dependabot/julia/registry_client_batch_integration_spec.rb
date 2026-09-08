@@ -32,14 +32,13 @@ RSpec.describe Dependabot::Julia::RegistryClient, :julia_helpers do
 
         result = client.batch_fetch_package_info(dependencies)
 
-        expect(result).to be_a(Hash)
-        expect(result["Example"]).to be_a(Hash)
-        expect(result["Example"]["available_versions"]).to be_an(Array)
-        expect(result["Example"]["latest_version"]).to be_a(String)
-
-        expect(result["JSON"]).to be_a(Hash)
-        expect(result["JSON"]["available_versions"]).to be_an(Array)
-        expect(result["JSON"]["latest_version"]).to be_a(String)
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::PackageInfoBatch)
+        expect(result.packages.fetch("Example")).to be_a(
+          Dependabot::Julia::RegistryClient::Result::PackageInfo
+        )
+        expect(result.packages.fetch("JSON")).to be_a(
+          Dependabot::Julia::RegistryClient::Result::PackageInfo
+        )
       end
     end
 
@@ -64,39 +63,34 @@ RSpec.describe Dependabot::Julia::RegistryClient, :julia_helpers do
 
         result = client.batch_fetch_available_versions(dependencies)
 
-        expect(result).to be_a(Hash)
-        expect(result["Example"]).to have_key("versions")
-        expect(result["Example"]["versions"]).to be_an(Array)
-        expect(result["Example"]["versions"]).not_to be_empty
-
-        expect(result["JSON"]).to have_key("versions")
-        expect(result["JSON"]["versions"]).to be_an(Array)
-        expect(result["JSON"]["versions"]).not_to be_empty
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::AvailableVersionsBatch)
+        expect(result.packages.fetch("Example").versions).not_to be_empty
+        expect(result.packages.fetch("JSON").versions).not_to be_empty
       end
     end
 
     describe "batch_get_version_release_dates" do
       it "successfully fetches release dates for multiple packages" do
         packages_versions = [
-          {
+          Dependabot::Julia::RegistryClient::Result::PackageVersionsRequest.new(
             name: "Example",
             uuid: "7876af07-990d-54b4-ab0e-23690620f79a",
             versions: ["0.5.3", "0.5.4"]
-          },
-          {
+          ),
+          Dependabot::Julia::RegistryClient::Result::PackageVersionsRequest.new(
             name: "JSON",
             uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6",
             versions: ["0.21.0", "0.21.1"]
-          }
+          )
         ]
 
         result = client.batch_fetch_version_release_dates(packages_versions)
 
-        expect(result).to be_a(Hash)
-        expect(result["Example"]).to be_a(Hash)
-        expect(result["Example"]["0.5.3"]).to eq("2019-07-17T05:33:46")
-        expect(result["JSON"]).to be_a(Hash)
-        expect(result["JSON"]["0.21.0"]).to eq("2019-07-16T19:58:10")
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::ReleaseDatesBatch)
+        example_dates = result.packages.fetch("Example")
+        json_dates = result.packages.fetch("JSON")
+        expect(example_dates.dates.fetch("0.5.3").release_date).to eq("2019-07-17T05:33:46")
+        expect(json_dates.dates.fetch("0.21.0").release_date).to eq("2019-07-16T19:58:10")
       end
     end
 
@@ -131,7 +125,7 @@ RSpec.describe Dependabot::Julia::RegistryClient, :julia_helpers do
           result = client.batch_fetch_package_info(dependencies)
         end.not_to raise_error
 
-        expect(result.keys.length).to eq(3)
+        expect(result.packages.length).to eq(3)
       end
     end
   end

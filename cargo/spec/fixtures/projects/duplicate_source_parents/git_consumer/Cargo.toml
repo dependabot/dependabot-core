@@ -1,0 +1,7 @@
+[package]
+name = "git_consumer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nix = { git = "https://github.com/nix-rust/nix", tag = "v0.29.0", features = ["fs"] }

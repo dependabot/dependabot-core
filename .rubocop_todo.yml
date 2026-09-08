@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 712
+# Offense count: 660
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -251,14 +251,12 @@ Sorbet/ForbidTUntyped:
     - "bun/lib/dependabot/bun/file_parser/lockfile_parser.rb"
     - "bun/lib/dependabot/bun/metadata_finder.rb"
     - "bun/lib/dependabot/bun/package/registry_finder.rb"
-    - "bun/lib/dependabot/bun/package_manager.rb"
     - "bun/lib/dependabot/bun/registry_helper.rb"
     - "bun/lib/dependabot/bun/registry_parser.rb"
     - "bun/lib/dependabot/bun/update_checker.rb"
     - "bun/lib/dependabot/bun/update_checker/latest_version_finder.rb"
     - "bun/lib/dependabot/bun/update_checker/library_detector.rb"
     - "bun/lib/dependabot/bun/update_checker/version_resolver.rb"
-    - "bun/lib/dependabot/bun/version_selector.rb"
     - "bundler/lib/dependabot/bundler/file_parser.rb"
     - "bundler/lib/dependabot/bundler/file_updater/lockfile_updater.rb"
     - "bundler/lib/dependabot/bundler/file_updater/requirement_replacer.rb"
@@ -297,8 +295,6 @@ Sorbet/ForbidTUntyped:
     - "hex/lib/dependabot/hex/update_checker/latest_version_finder.rb"
     - "julia/lib/dependabot/julia/file_parser.rb"
     - "julia/lib/dependabot/julia/file_updater.rb"
-    - "julia/lib/dependabot/julia/package/package_details_fetcher.rb"
-    - "julia/lib/dependabot/julia/registry_client.rb"
     - "julia/lib/dependabot/julia/update_checker.rb"
     - "nix/lib/dependabot/nix/file_parser.rb"
     - "nix/lib/dependabot/nix/flake_nix_parser.rb"
@@ -324,13 +320,11 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/helpers.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/metadata_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/package/registry_finder.rb"
-    - "npm_and_yarn/lib/dependabot/npm_and_yarn/package_manager.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/registry_helper.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/latest_version_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/library_detector.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb"
-    - "npm_and_yarn/lib/dependabot/npm_and_yarn/version_selector.rb"
     - "opentofu/lib/dependabot/opentofu/file_parser.rb"
     - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
     - "opentofu/lib/dependabot/opentofu/registry_client.rb"
@@ -373,7 +367,6 @@ Sorbet/ForbidTUntyped:
     - "uv/lib/dependabot/uv/file_updater/compile_file_updater.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_error_handler.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_updater.rb"
-    - "uv/lib/dependabot/uv/file_updater/version_config_parser.rb"
     - "uv/lib/dependabot/uv/update_checker.rb"
     - "vcpkg/lib/dependabot/vcpkg/file_parser.rb"
     - "vcpkg/lib/dependabot/vcpkg/file_updater.rb"

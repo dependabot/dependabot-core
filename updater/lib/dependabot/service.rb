@@ -9,6 +9,7 @@ require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
+require "dependabot/sentry/error_fingerprint"
 require "dependabot/workflow_summary"
 require "github_api/dependency_submission"
 
@@ -212,11 +213,17 @@ module Dependabot
       # some GHES versions do not support reporting errors to the service
       return unless Experiments.enabled?(:record_update_job_unknown_error)
 
+      fingerprint = if error.respond_to?(:sentry_context)
+                      T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint]
+                    else
+                      Dependabot::Sentry::ErrorFingerprint.for(error: error, package_manager: job&.package_manager)
+                    end
+
       error_details = {
         ErrorAttributes::CLASS => error.class.to_s,
         ErrorAttributes::MESSAGE => error.message,
         ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
+        ErrorAttributes::FINGERPRINT => fingerprint,
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,

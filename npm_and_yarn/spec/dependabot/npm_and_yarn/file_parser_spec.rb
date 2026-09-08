@@ -39,6 +39,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe "#ecosystem" do
+    let(:files) { project_dependency_files("npm6/simple") }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("20.0.0")
+    end
+
+    it "builds package-manager metadata from the typed manifest config" do
+      expect(parser.ecosystem.package_manager.name).to eq("npm")
+    end
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
