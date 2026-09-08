@@ -59,6 +59,8 @@ npm_and_yarn:
 nub:
   - *common
   - 'nub/**'
+  # The Nub image reuses npm_and_yarn code, so smoke coverage runs when it changes.
+  - 'npm_and_yarn/**'
 nuget:
   - *common
   - 'nuget/**'
