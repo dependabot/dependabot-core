@@ -3,6 +3,7 @@
 
 require "json"
 require "sorbet-runtime"
+require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
@@ -35,6 +36,10 @@ module Dependabot
       )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
+      # Bun uses its own lockfile format that this ecosystem's file updater cannot write to.
+      # Detected only to raise a clear error (see `raise_if_bun_lock_misconfigured_as_npm!`) —
+      # this ecosystem never fetches or updates `bun.lock` itself.
+      BUN_LOCKFILE_NAME = "bun.lock"
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -81,6 +86,8 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        raise_if_bun_lock_misconfigured_as_npm!
+
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
         fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
@@ -302,6 +309,33 @@ module Dependabot
       sig { returns(T::Boolean) }
       def no_package_manager_detected?
         !npm_version && !yarn_version && !pnpm_version
+      end
+
+      # A `bun.lock` with no npm/yarn/pnpm lockfile means the project is managed by Bun,
+      # but `package-ecosystem: "npm"` (or `"yarn"`) routes it to this ecosystem instead of
+      # to the dedicated `"bun"` ecosystem. This ecosystem has no updater for `bun.lock`, so
+      # left unchecked it would silently open a PR that bumps `package.json` without ever
+      # updating the lockfile (dependabot/dependabot-core#14223). Fail fast with a clear,
+      # actionable error instead.
+      sig { void }
+      def raise_if_bun_lock_misconfigured_as_npm!
+        return unless no_package_manager_detected?
+        return unless bun_lock
+
+        raise Dependabot::MisconfiguredTooling.new(
+          "Bun",
+          "This project has a `#{BUN_LOCKFILE_NAME}` file but no `package-lock.json`, `yarn.lock` or " \
+          "`pnpm-lock.yaml`, which means it is managed by Bun. Dependabot's `npm_and_yarn` ecosystem " \
+          "cannot update `#{BUN_LOCKFILE_NAME}`. Set `package-ecosystem: \"bun\"` in your dependabot.yml " \
+          "for this directory so Dependabot can update this project's dependencies correctly."
+        )
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def bun_lock
+        return @bun_lock if defined?(@bun_lock)
+
+        @bun_lock ||= T.let(fetch_file_if_present(BUN_LOCKFILE_NAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T.nilable(T.any(Integer, String))) }
