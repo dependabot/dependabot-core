@@ -50,6 +50,19 @@ module Dependabot
       ).run
     end
 
+    sig { params(package_manager_name: String).returns(Dependabot::Notice) }
+    def self.cooldown_date_unavailable_notice(package_manager_name:)
+      Dependabot::Notice.new(
+        mode: Dependabot::Notice::NoticeMode::WARN,
+        type: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_NOTICE_TYPE,
+        package_manager_name: package_manager_name,
+        title: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_TITLE,
+        description: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_DESCRIPTION,
+        show_in_pr: true,
+        show_alert: false
+      )
+    end
+
     sig do
       params(
         job: Dependabot::Job,
@@ -186,16 +199,8 @@ module Dependabot
     def add_cooldown_notice
       return unless cooldown_date_unavailable?
 
-      notice = Dependabot::Notice.new(
-        mode: Dependabot::Notice::NoticeMode::WARN,
-        type: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_NOTICE_TYPE,
-        package_manager_name: job.package_manager,
-        title: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_TITLE,
-        description: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_DESCRIPTION,
-        # The job-level warning covers runs that never build a pull request, so this
-        # channel only has to render the notice in the pull request body.
-        show_in_pr: true,
-        show_alert: false
+      notice = self.class.cooldown_date_unavailable_notice(
+        package_manager_name: job.package_manager
       )
       cooldown_notices << notice unless notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
     end

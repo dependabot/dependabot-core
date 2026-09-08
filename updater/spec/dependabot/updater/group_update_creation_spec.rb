@@ -57,6 +57,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     instance_double(
       Dependabot::Job,
       dependencies: job_dependencies,
+      package_manager: "bundler",
       clone?: clone_job,
       repo_contents_path: repo_contents_path,
       security_advisories_for: security_advisories,
@@ -398,6 +399,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
         expect(Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(original_dependency))
           .to be(true)
+      end
+
+      it "adds the warning to the final grouped dependency change" do
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(Dependabot::DependencyChange).to have_received(:new) do |notices:, **|
+          expect(notices.map(&:type)).to include("cooldown_date_unavailable")
+        end
       end
     end
 

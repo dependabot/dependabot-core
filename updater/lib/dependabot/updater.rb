@@ -107,6 +107,8 @@ module Dependabot
         warn_title: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_TITLE,
         warn_description: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_DESCRIPTION
       )
+    rescue StandardError => e
+      Dependabot.logger.error("Failed to record cooldown warning: #{e.message}")
     end
   end
 end

@@ -153,6 +153,9 @@ module Dependabot
           store_changes(dependency)
         end
 
+        group_notices = notices + group_changes.notices
+        add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
+
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
         # into a single object we can pass to PR creation.
         dependency_change = Dependabot::DependencyChange.new(
@@ -160,7 +163,7 @@ module Dependabot
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group,
-          notices: notices + group_changes.notices
+          notices: group_notices
         )
 
         unless dependency_change.all_have_previous_version?
@@ -175,6 +178,23 @@ module Dependabot
         dependency_change
       ensure
         cleanup_workspace
+      end
+
+      sig do
+        params(
+          notices: T::Array[Dependabot::Notice],
+          dependencies: T::Array[Dependabot::Dependency]
+        ).void
+      end
+      def add_cooldown_date_unavailable_notice(notices, dependencies)
+        return unless dependencies.any? do |dependency|
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        end
+
+        notice = Dependabot::DependencyChangeBuilder.cooldown_date_unavailable_notice(
+          package_manager_name: job.package_manager
+        )
+        notices << notice unless notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
       end
 
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }

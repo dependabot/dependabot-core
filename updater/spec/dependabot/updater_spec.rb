@@ -2486,6 +2486,25 @@ RSpec.describe Dependabot::Updater do
 
         updater.run
       end
+
+      it "does not fail the job when the warning cannot be recorded" do
+        stub_update_checker(up_to_date?: true)
+
+        job = build_job
+        service = build_service
+        dependency_snapshot = build_dependency_snapshot(job: job)
+        updater = build_updater(service: service, job: job, dependency_snapshot: dependency_snapshot)
+        dependency_snapshot.all_dependencies.each do |dependency|
+          dependency.metadata[:cooldown_date_unavailable] = true
+        end
+        allow(service).to receive(:record_update_job_warning).and_raise(StandardError, "network error")
+        allow(Dependabot.logger).to receive(:error)
+
+        expect { updater.run }.not_to raise_error
+        expect(Dependabot.logger).to have_received(:error).with(
+          "Failed to record cooldown warning: network error"
+        )
+      end
     end
 
     it "does not record a cooldown warning when publication dates were available" do
