@@ -222,6 +222,68 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  describe "#perform when all requested dependencies are missing" do
+    let(:requested_dependencies) { %w(missing-one missing-two) }
+
+    before do
+      allow(job).to receive_messages(
+        security_updates_only?: true,
+        updating_a_pull_request?: false,
+        dependencies: requested_dependencies,
+        dependency_groups: %w(first second).map do |name|
+          Dependabot::Job::DependencyGroupDefinition.from_hash(
+            "name" => name, "applies-to" => "security-updates", "rules" => { "patterns" => ["*"] }
+          )
+        end
+      )
+    end
+
+    it "reports one job error even when every group is empty" do
+      expect(mock_error_handler).to receive(:handle_job_error)
+        .with(error: kind_of(Dependabot::DependencyNotFound)).once
+
+      perform
+    end
+
+    context "with no configured groups" do
+      before do
+        allow(job).to receive(:dependency_groups).and_return([])
+      end
+
+      it "still reports the missing targets" do
+        expect(mock_error_handler).to receive(:handle_job_error)
+          .with(error: kind_of(Dependabot::DependencyNotFound)).once
+
+        perform
+      end
+    end
+
+    context "when a requested dependency is present" do
+      let(:requested_dependencies) { %w(dummy-pkg-a missing-one) }
+
+      before do
+        allow(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest).to receive(:new)
+          .and_return(instance_double(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest, perform: nil))
+      end
+
+      it "does not report a missing-dependency error for a partial match" do
+        expect(mock_error_handler).not_to receive(:handle_job_error)
+
+        perform
+      end
+
+      context "with different casing" do
+        let(:requested_dependencies) { %w(DUMMY-PKG-A missing-one) }
+
+        it "recognizes the manifest dependency" do
+          expect(mock_error_handler).not_to receive(:handle_job_error)
+
+          perform
+        end
+      end
+    end
+  end
+
   describe "#perform" do
     let(:mock_create_group_update) do
       instance_double(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest)

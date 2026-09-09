@@ -106,8 +106,6 @@ module Dependabot
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
 
-          report_missing_job_dependencies
-
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(group)
           else
@@ -156,10 +154,10 @@ module Dependabot
 
           # Handled state has to span every directory: computing `dependency_change` leaves
           # `current_directory` pointing at the last one.
-          handled = dependency_snapshot.all_handled_dependencies
+          handled = Set.new(dependency_snapshot.all_handled_dependencies.map(&:downcase))
 
           undiagnosed
-            .reject { |dep| handled.include?(dep.name) }
+            .reject { |dep| handled.include?(dep.name.downcase) }
             .each do |dep|
               error_handler.handle_dependency_error(
                 error: Dependabot::DependabotError.new(
