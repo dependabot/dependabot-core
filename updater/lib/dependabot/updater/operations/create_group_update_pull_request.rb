@@ -62,10 +62,6 @@ module Dependabot
 
           if dependency_change&.updated_dependencies&.any?
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
-
-            # Report any failed dependency updates before creating the PR
-            report_failed_dependency_updates_for_security_updates
-
             begin
               service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
             rescue StandardError => e
@@ -76,9 +72,6 @@ module Dependabot
             end
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
-
-            # If there are no updates, we still want to report them as failed updates
-            report_failed_dependency_updates_for_security_updates
           end
 
           dependency_change
@@ -139,34 +132,6 @@ module Dependabot
           end
 
           @dependency_change
-        end
-
-        sig { void }
-        def report_failed_dependency_updates_for_security_updates
-          # Only report failed updates if the group applies to security updates
-          return unless job.security_updates_only?
-
-          original_dependencies = group.dependencies
-          updated_dependency_names = dependency_change&.updated_dependencies&.map(&:name) || []
-
-          failed_dependencies = original_dependencies.reject do |dep|
-            updated_dependency_names.include?(dep.name)
-          end
-
-          # Filter out dependencies that were already handled (i.e., had errors reported during processing)
-          unhandled_failed_dependencies = failed_dependencies.reject do |dep|
-            dependency_snapshot.handled_dependencies.include?(dep.name)
-          end
-
-          unhandled_failed_dependencies.each do |failed_dependency|
-            error_handler.handle_dependency_error(
-              error: Dependabot::DependabotError.new(
-                "Security update failed for #{failed_dependency.name} #{failed_dependency.version}"
-              ),
-              dependency: failed_dependency,
-              dependency_group: group
-            )
-          end
         end
       end
     end
