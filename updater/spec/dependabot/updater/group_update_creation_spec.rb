@@ -474,6 +474,12 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
             expect(error.message).to include("missing_dep")
           end
 
+          test_instance.report_missing_job_dependencies
+        end
+
+        it "is not reported while compiling an individual directory" do
+          expect(error_handler).not_to receive(:handle_job_error)
+
           test_instance.compile_all_dependency_changes_for(group)
         end
 
@@ -485,7 +491,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           it "does not record missing dependency error" do
             expect(error_handler).not_to receive(:handle_job_error)
 
-            test_instance.compile_all_dependency_changes_for(group)
+            test_instance.report_missing_job_dependencies
           end
         end
       end
@@ -496,7 +502,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         it "does not record any missing dependency error" do
           expect(error_handler).not_to receive(:handle_job_error)
 
-          test_instance.compile_all_dependency_changes_for(group)
+          test_instance.report_missing_job_dependencies
         end
       end
 

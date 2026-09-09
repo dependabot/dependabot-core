@@ -106,6 +106,8 @@ module Dependabot
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
 
+          report_missing_job_dependencies
+
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(group)
           else

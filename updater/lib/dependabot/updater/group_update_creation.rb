@@ -88,23 +88,10 @@ module Dependabot
 
         # deduplicate the dependencies.
         original_dependencies = dependency_snapshot.dependencies
-        job_dependencies = Set.new(job.dependencies || []).to_a
 
         # log the original dependencies and job specified dependencies.
         Dependabot.logger.info("Dependency Snapshot: #{original_dependencies.map(&:name).join(', ')}")
-        Dependabot.logger.info("Job specified dependencies: #{job_dependencies.join(', ')}")
-
-        # If there are job dependencies not present in the dependency snapshot, record an error.
-        # Skip this check for pull request updates as dependencies may have changed since the original PR.
-        dependency_names = dependency_snapshot.all_dependencies.map(&:name)
-        missing_dependencies = job_dependencies - dependency_names
-        if missing_dependencies.any? && !job.updating_a_pull_request?
-          error_handler.handle_job_error(
-            error: Dependabot::DependencyNotFound.new(
-              "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
-            )
-          )
-        end
+        Dependabot.logger.info("Job specified dependencies: #{Set.new(job.dependencies || []).to_a.join(', ')}")
 
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = dependency_snapshot.notices
@@ -832,6 +819,24 @@ module Dependabot
         failed_security_update_dependencies(dependency_change).each do |dependency|
           report_security_update_failure(dependency.name)
         end
+      end
+
+      # Both the requested dependencies and the snapshot span every directory, so this is a
+      # job-scoped check and must not run inside the per-directory compile.
+      sig { void }
+      def report_missing_job_dependencies
+        # Dependencies may have changed since the original PR was opened.
+        return if job.updating_a_pull_request?
+
+        known_names = dependency_snapshot.all_dependencies.map(&:name)
+        missing_dependencies = Set.new(job.dependencies || []).to_a - known_names
+        return if missing_dependencies.empty?
+
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyNotFound.new(
+            "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
+          )
+        )
       end
     end
   end
