@@ -38,6 +38,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     instance_double(
       Dependabot::DependencySnapshot,
       dependencies: dependencies,
+      all_dependencies: all_dependencies,
       dependency_files: dependency_files,
       handled_dependencies: [],
       notices: []
@@ -96,6 +97,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   end
 
   let(:job_dependencies) { ["dep1"] }
+  let(:all_dependencies) { dependencies }
   let(:security_advisories) { [] }
 
   let(:checker) do
@@ -135,13 +137,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   describe "#record_security_update_error_if_applicable" do
     let(:dependency) { dependencies.first }
 
-    context "when enhanced security reporting is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(true)
-      end
-
+    context "when recording security update errors" do
       context "when dependency has security advisories" do
         let(:security_advisories) { [{ "id" => "advisory-1" }] }
 
@@ -215,36 +211,12 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         end
       end
     end
-
-    context "when enhanced security reporting is disabled" do
-      let(:security_advisories) { [{ "id" => "advisory-1" }] }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(false)
-        allow(job).to receive(:security_advisories_for).with(dependency).and_return(security_advisories)
-      end
-
-      it "does not log or record any error even with security advisories" do
-        expect(Dependabot.logger).not_to receive(:info)
-        expect(test_instance).not_to receive(:record_security_update_not_possible_error)
-
-        test_instance.record_security_update_error_if_applicable(dependency, checker, group)
-      end
-    end
   end
 
   describe "#record_security_update_not_found_if_applicable" do
     let(:dependency) { dependencies.first }
 
-    context "when enhanced security reporting is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(true)
-      end
-
+    context "when recording missing security updates" do
       context "when dependency has security advisories" do
         let(:security_advisories) { [{ "id" => "advisory-1" }] }
 
@@ -278,36 +250,12 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         end
       end
     end
-
-    context "when enhanced security reporting is disabled" do
-      let(:security_advisories) { [{ "id" => "advisory-1" }] }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(false)
-        allow(job).to receive(:security_advisories_for).with(dependency).and_return(security_advisories)
-      end
-
-      it "does not log or record any error even with security advisories" do
-        expect(Dependabot.logger).not_to receive(:info)
-        expect(test_instance).not_to receive(:record_security_update_not_found)
-
-        test_instance.record_security_update_not_found_if_applicable(dependency, checker, group)
-      end
-    end
   end
 
   describe "#record_security_update_ignored_if_applicable" do
     let(:dependency) { dependencies.first }
 
-    context "when enhanced security reporting is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(true)
-      end
-
+    context "when recording ignored security updates" do
       context "when dependency has security advisories" do
         let(:security_advisories) { [{ "id" => "advisory-1" }] }
 
@@ -340,27 +288,9 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         end
       end
     end
-
-    context "when enhanced security reporting is disabled" do
-      let(:security_advisories) { [{ "id" => "advisory-1" }] }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(false)
-        allow(job).to receive(:security_advisories_for).with(dependency).and_return(security_advisories)
-      end
-
-      it "does not log or record any error even with security advisories" do
-        expect(Dependabot.logger).not_to receive(:info)
-        expect(test_instance).not_to receive(:record_security_update_ignored)
-
-        test_instance.record_security_update_ignored_if_applicable(dependency, checker, group)
-      end
-    end
   end
 
-  describe "feature flag behavior in compile_all_dependency_changes_for" do
+  describe "compile_all_dependency_changes_for" do
     let(:group_notices) { [] }
 
     before do
@@ -412,13 +342,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       end
     end
 
-    context "when enhanced security reporting is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(true)
-      end
-
+    context "when checking job dependencies" do
       context "when job dependencies are missing from dependency snapshot" do
         let(:job_dependencies) { %w(dep1 missing_dep) }
 
@@ -453,19 +377,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           test_instance.compile_all_dependency_changes_for(group)
         end
       end
-    end
 
-    context "when enhanced security reporting is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(false)
-      end
+      context "when a job dependency is present in another directory" do
+        let(:job_dependencies) { %w(dep1 dep3) }
+        let(:all_dependencies) do
+          dependencies + [instance_double(Dependabot::Dependency, name: "dep3")]
+        end
 
-      context "when job dependencies are missing from dependency snapshot" do
-        let(:job_dependencies) { %w(dep1 missing_dep) }
-
-        it "does not record missing dependency error" do
+        it "does not record a missing dependency error" do
           expect(error_handler).not_to receive(:handle_job_error)
 
           test_instance.compile_all_dependency_changes_for(group)
@@ -793,7 +712,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
-  describe "feature flag behavior in compile_updates_for" do
+  describe "security error reporting in compile_updates_for" do
     let(:dependency) { dependencies.first }
 
     before do
@@ -811,13 +730,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       allow(checker).to receive(:up_to_date?).and_return(false)
     end
 
-    context "when enhanced security reporting is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(true)
-      end
-
+    context "when checking security updates" do
       context "when all versions are ignored and dependency has security advisories" do
         before do
           allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
@@ -841,42 +754,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         it "calls record_security_update_not_found_if_applicable" do
           expect(test_instance).to receive(:record_security_update_not_found_if_applicable)
             .with(dependency, checker, group)
-
-          test_instance.compile_updates_for(dependency, dependency_files, group)
-        end
-      end
-    end
-
-    context "when enhanced security reporting is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enhanced_grouped_security_error_reporting)
-          .and_return(false)
-      end
-
-      context "when all versions are ignored and dependency has security advisories" do
-        before do
-          allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
-          allow(job).to receive(:security_advisories_for).with(dependency).and_return([{ "id" => "advisory-1" }])
-        end
-
-        it "does not log or record any error even with security advisories" do
-          expect(Dependabot.logger).not_to receive(:info)
-          expect(test_instance).not_to receive(:record_security_update_ignored)
-
-          test_instance.compile_updates_for(dependency, dependency_files, group)
-        end
-      end
-
-      context "when dependency is up to date and has security advisories" do
-        before do
-          allow(checker).to receive(:up_to_date?).and_return(true)
-          allow(job).to receive(:security_advisories_for).with(dependency).and_return([{ "id" => "advisory-1" }])
-        end
-
-        it "does not log or record any error even with security advisories" do
-          expect(Dependabot.logger).not_to receive(:info)
-          expect(test_instance).not_to receive(:record_security_update_not_found)
 
           test_instance.compile_updates_for(dependency, dependency_files, group)
         end
