@@ -490,6 +490,27 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
         it { is_expected.to eq("") }
       end
+
+      context "when exactly 30 percent of the commits use Gitmoji" do
+        let(:commits_response) do
+          JSON.dump(
+            [
+              { commit: { message: ":rocket: release dependency update" } },
+              { commit: { message: "⬆️ update dependency" } },
+              { commit: { message: ":bug: fix dependency issue" } },
+              { commit: { message: "refactor dependency handling" } },
+              { commit: { message: "docs: update dependency notes" } },
+              { commit: { message: "test dependency handling" } },
+              { commit: { message: "chore dependency handling" } },
+              { commit: { message: "build dependency handling" } },
+              { commit: { message: "ci dependency handling" } },
+              { commit: { message: "style dependency handling" } }
+            ]
+          )
+        end
+
+        it { is_expected.to eq("") }
+      end
     end
 
     context "when commit_message_options are provided" do
