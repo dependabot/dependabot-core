@@ -19,7 +19,7 @@ module Dependabot
 
       ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style test).freeze
       ESLINT_PREFIXES = %w(Breaking Build Chore Docs Fix New Update Upgrade).freeze
-      GITMOJI_PREFIXES = %w(
+      GITMOJI_SHORTCODE_PREFIXES = %w(
         alien ambulance apple arrow_down arrow_up art beers bento bookmark boom bug building_construction
         bulb busts_in_silhouette camera_flash card_file_box chart_with_upwards_trend checkered_flag children_crossing
         clown_face construction construction_worker egg fire globe_with_meridians green_apple green_heart hankey
@@ -27,6 +27,12 @@ module Dependabot
         pencil2 penguin pushpin recycle rewind robot rocket rotating_light see_no_evil sparkles speech_balloon tada
         truck twisted_rightwards_arrows whale wheelchair white_check_mark wrench zap
       ).freeze
+
+      # U+FE0F (variation selector-16) is optional in commit messages; strip it so both forms match
+      GITMOJI_UNICODE_PREFIXES = %w(
+        👽 🚑 🍎 ⬇️ ⬆️ 🎨 🍻 🍱 🔖 💥 🐛 🏗️ 💡 👥 📸 🗃️ 📈 🏁 🚸 🤡 🚧 👷 🥚 🔥 🌐 🍏 💚 💩
+        ➖ ➕ 📱 💄 🔒 🔊 📝 🔇 👌 📦 📄 ✏️ 🐧 📌 ♻️ ⏪ 🤖 🚀 🚨 🙈 ✨ 💬 🎉 🚚 🔀 🐳 ♿ ✅ 🔧 ⚡
+      ).map { |emoji| -emoji.delete("\uFE0F") }.freeze
 
       class RecentCommit < T::ImmutableStruct
         const :message, T.nilable(String)
@@ -319,9 +325,10 @@ module Dependabot
       def using_gitmoji_commit_messages?
         return false unless recent_commit_messages.any?
 
-        gitmoji_messages =
-          recent_commit_messages
-          .select { |m| GITMOJI_PREFIXES.any? { |pre| m.match?(/:#{pre}:/i) } }
+        gitmoji_messages = recent_commit_messages.select do |message|
+          GITMOJI_SHORTCODE_PREFIXES.any? { |prefix| message.match?(/:#{prefix}:/i) } ||
+            message.start_with?(*GITMOJI_UNICODE_PREFIXES)
+        end
 
         gitmoji_messages.count / recent_commit_messages.count.to_f > 0.3
       end
