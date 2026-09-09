@@ -9,6 +9,8 @@ require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_updaters"
 require "dependabot/dependency_group"
+require "dependabot/notices"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/updater/blocked_version_detector"
 
 # This class is responsible for generating a DependencyChange for a given
@@ -48,6 +50,19 @@ module Dependabot
       ).run
     end
 
+    sig { params(package_manager_name: String).returns(Dependabot::Notice) }
+    def self.cooldown_date_unavailable_notice(package_manager_name:)
+      Dependabot::Notice.new(
+        mode: Dependabot::Notice::NoticeMode::WARN,
+        type: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_NOTICE_TYPE,
+        package_manager_name: package_manager_name,
+        title: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_TITLE,
+        description: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_DESCRIPTION,
+        show_in_pr: true,
+        show_alert: false
+      )
+    end
+
     sig do
       params(
         job: Dependabot::Job,
@@ -71,6 +86,7 @@ module Dependabot
       @updated_dependencies = updated_dependencies
       @change_source = change_source
       @notices = notices
+      @cooldown_notices = T.let([], T::Array[Dependabot::Notice])
       @regenerated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
     end
 
@@ -101,7 +117,7 @@ module Dependabot
         updated_dependencies: updated_deps,
         updated_dependency_files: updated_files,
         dependency_group: source_dependency_group,
-        notices: notices
+        notices: notices + cooldown_notices
       )
     end
 
@@ -121,6 +137,9 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::Notice]) }
     attr_reader :notices
+
+    sig { returns(T::Array[Dependabot::Notice]) }
+    attr_reader :cooldown_notices
 
     sig { returns(T.nilable(String)) }
     def source_dependency_name
@@ -169,10 +188,36 @@ module Dependabot
       # Collect notices from file updater after update attempt
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
       @notices.concat(updater_notices)
+      add_cooldown_notice
 
       updated_files = all_files.reject(&:support_file?)
       updated_files = all_files if updated_files.empty? && all_files.any?
       updated_files
+    end
+
+    sig { void }
+    def add_cooldown_notice
+      return unless cooldown_date_unavailable?
+
+      notice = self.class.cooldown_date_unavailable_notice(
+        package_manager_name: job.package_manager
+      )
+      cooldown_notices << notice unless notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
+    end
+
+    sig { returns(T::Boolean) }
+    def cooldown_date_unavailable?
+      source = change_source
+      dependencies = updated_dependencies.dup
+      if source.is_a?(Dependabot::Dependency)
+        dependencies << source
+      else
+        dependencies.concat(source.dependencies)
+      end
+
+      dependencies.any? do |dependency|
+        Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+      end
     end
 
     sig { returns(String) }
