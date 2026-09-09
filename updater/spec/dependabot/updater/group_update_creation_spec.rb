@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     Dependabot::Experiments.reset!
   end
 
-  describe "#record_security_update_error_if_applicable" do
+  describe "#note_security_update_not_possible" do
     let(:dependency) { dependencies.first }
 
     context "when recording security update errors" do
@@ -152,7 +152,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           )
           expect(test_instance).to receive(:record_security_update_not_possible_error).with(checker)
 
-          test_instance.record_security_update_error_if_applicable(dependency, checker, group)
+          test_instance.note_security_update_not_possible(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
         end
 
         context "when checker has conflicting dependencies with vulnerability explanation" do
@@ -172,7 +173,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
             )
             expect(test_instance).to receive(:record_security_update_not_possible_error).with(checker)
 
-            test_instance.record_security_update_error_if_applicable(dependency, checker, group)
+            test_instance.note_security_update_not_possible(dependency, checker, group)
+            test_instance.report_security_update_failure(dependency.name)
           end
         end
 
@@ -192,7 +194,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
             )
             expect(test_instance).to receive(:record_security_update_not_possible_error).with(checker)
 
-            test_instance.record_security_update_error_if_applicable(dependency, checker, group)
+            test_instance.note_security_update_not_possible(dependency, checker, group)
+            test_instance.report_security_update_failure(dependency.name)
           end
         end
       end
@@ -208,13 +211,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           expect(Dependabot.logger).not_to receive(:info)
           expect(test_instance).not_to receive(:record_security_update_not_possible_error)
 
-          test_instance.record_security_update_error_if_applicable(dependency, checker, group)
+          test_instance.note_security_update_not_possible(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
         end
       end
     end
   end
 
-  describe "#record_security_update_not_found_if_applicable" do
+  describe "#note_security_update_not_found" do
     let(:dependency) { dependencies.first }
 
     context "when recording missing security updates" do
@@ -232,7 +236,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           )
           expect(test_instance).to receive(:record_security_update_not_found).with(checker)
 
-          test_instance.record_security_update_not_found_if_applicable(dependency, checker, group)
+          test_instance.note_security_update_not_found(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
         end
       end
 
@@ -247,13 +252,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           expect(Dependabot.logger).not_to receive(:info)
           expect(test_instance).not_to receive(:record_security_update_not_found)
 
-          test_instance.record_security_update_not_found_if_applicable(dependency, checker, group)
+          test_instance.note_security_update_not_found(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
         end
       end
     end
   end
 
-  describe "#record_security_update_ignored_if_applicable" do
+  describe "#note_security_update_ignored" do
     let(:dependency) { dependencies.first }
 
     context "when recording ignored security updates" do
@@ -270,7 +276,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           )
           expect(test_instance).to receive(:record_security_update_ignored).with(checker)
 
-          test_instance.record_security_update_ignored_if_applicable(dependency, checker, group)
+          test_instance.note_security_update_ignored(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
         end
       end
 
@@ -285,9 +292,47 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           expect(Dependabot.logger).not_to receive(:info)
           expect(test_instance).not_to receive(:record_security_update_ignored)
 
-          test_instance.record_security_update_ignored_if_applicable(dependency, checker, group)
+          test_instance.note_security_update_ignored(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
         end
       end
+    end
+  end
+
+  describe "#report_security_update_failures" do
+    let(:dependency) { dependencies.first }
+
+    before do
+      allow(job).to receive_messages(security_updates_only?: true)
+      allow(job).to receive(:security_advisories_for).with(dependency).and_return([{ "id" => "advisory-1" }])
+      allow(Dependabot.logger).to receive(:info)
+      test_instance.note_security_update_not_possible(dependency, checker, group)
+    end
+
+    it "does not report a dependency that was updated in another directory" do
+      updated = instance_double(Dependabot::Dependency, name: "dep1")
+      dependency_change = instance_double(Dependabot::DependencyChange, updated_dependencies: [updated])
+
+      expect(test_instance).not_to receive(:record_security_update_not_possible_error)
+
+      test_instance.report_security_update_failures(dependency_change)
+    end
+
+    it "reports the failure once when several directories fail for the same dependency" do
+      test_instance.note_security_update_not_possible(dependency, checker, group)
+
+      expect(test_instance).to receive(:record_security_update_not_possible_error).with(checker).once
+
+      test_instance.report_security_update_failures(nil)
+    end
+
+    it "keeps the first diagnosis when a later directory fails differently" do
+      test_instance.note_security_update_not_found(dependency, checker, group)
+
+      expect(test_instance).to receive(:record_security_update_not_possible_error).with(checker)
+      expect(test_instance).not_to receive(:record_security_update_not_found)
+
+      test_instance.report_security_update_failures(nil)
     end
   end
 
@@ -380,7 +425,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           all_versions_ignored?: false,
           semver_rules_allow_grouping?: true,
           log_up_to_date: nil,
-          record_security_update_not_found_if_applicable: nil
+          note_security_update_not_found: nil
         )
         allow(test_instance).to receive(:dependency_file_parser).and_return(
           instance_double(Dependabot::FileParsers::Base, parse: [reparsed_dependency])
@@ -628,7 +673,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       before do
         allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
-        allow(test_instance).to receive(:record_security_update_ignored_if_applicable)
+        allow(test_instance).to receive(:note_security_update_ignored)
       end
 
       it "marks the dependency as handled" do
@@ -681,7 +726,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       before do
         allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
-        allow(test_instance).to receive(:record_security_update_ignored_if_applicable)
+        allow(test_instance).to receive(:note_security_update_ignored)
       end
 
       it "does NOT mark the dependency as handled" do
@@ -805,8 +850,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           allow(job).to receive(:security_advisories_for).with(dependency).and_return([{ "id" => "advisory-1" }])
         end
 
-        it "calls record_security_update_ignored_if_applicable" do
-          expect(test_instance).to receive(:record_security_update_ignored_if_applicable)
+        it "calls note_security_update_ignored" do
+          expect(test_instance).to receive(:note_security_update_ignored)
             .with(dependency, checker, group)
 
           test_instance.compile_updates_for(dependency, dependency_files, group)
@@ -819,8 +864,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           allow(job).to receive(:security_advisories_for).with(dependency).and_return([{ "id" => "advisory-1" }])
         end
 
-        it "calls record_security_update_not_found_if_applicable" do
-          expect(test_instance).to receive(:record_security_update_not_found_if_applicable)
+        it "calls note_security_update_not_found" do
+          expect(test_instance).to receive(:note_security_update_not_found)
             .with(dependency, checker, group)
 
           test_instance.compile_updates_for(dependency, dependency_files, group)

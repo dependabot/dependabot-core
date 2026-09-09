@@ -147,9 +147,11 @@ module Dependabot
 
           if dependency_change.nil?
             Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
+            report_security_update_failures(nil)
             return
           end
 
+          report_security_update_failures(dependency_change)
           upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
         end
 
