@@ -201,6 +201,84 @@ public class VersionFinderTests : TestBase
         Assert.True(result);
     }
 
+    [Theory]
+    [InlineData("Microsoft.Build.Framework")]
+    [InlineData("Microsoft.Build.Utilities.Core")]
+    [InlineData("Microsoft.Build.Tasks.Core")]
+    [InlineData("Microsoft.Build")]
+    public void VersionFilter_PatchOnlyDefaultPackage_PatchVersionReturnsTrue(string dependencyName)
+    {
+        var filter = CreateVersionFilter(dependencyName);
+
+        var result = filter(NuGetVersion.Parse("17.8.3"));
+
+        Assert.True(result);
+    }
+
+    [Theory]
+    [InlineData("17.9.0")]
+    [InlineData("18.0.0")]
+    public void VersionFilter_PatchOnlyDefaultPackage_MajorOrMinorVersionReturnsFalse(string candidateVersion)
+    {
+        var filter = CreateVersionFilter("Microsoft.Build.Framework");
+
+        var result = filter(NuGetVersion.Parse(candidateVersion));
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void VersionFilter_PatchOnlyDefaultPackage_NameComparisonIsCaseInsensitive()
+    {
+        var filter = CreateVersionFilter("microsoft.build.framework");
+
+        var result = filter(NuGetVersion.Parse("17.9.0"));
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void VersionFilter_PatchOnlyDefaultPackage_UnclassifiedVersionReturnsTrue()
+    {
+        var filter = CreateVersionFilter("Microsoft.Build.Framework", dependencyVersion: "17.8.0-alpha");
+
+        var result = filter(NuGetVersion.Parse("17.8.0-beta"));
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VersionFilter_NonPatchOnlyDefaultPackage_MajorVersionReturnsTrue()
+    {
+        var filter = CreateVersionFilter("Some.Dependency");
+
+        var result = filter(NuGetVersion.Parse("18.0.0"));
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VersionFilter_PatchOnlyDefaultPackage_ExplicitIgnoreStillApplies()
+    {
+        var filter = CreateVersionFilter(
+            "Microsoft.Build.Framework",
+            ignoredVersions: [Requirement.Parse("17.8.3")]);
+
+        var result = filter(NuGetVersion.Parse("17.8.3"));
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void VersionFilter_PatchOnlyDefaultPackage_VulnerableDependencyMajorVersionReturnsTrue()
+    {
+        var filter = CreateVersionFilter("Microsoft.Build.Framework", isVulnerable: true);
+
+        var result = filter(NuGetVersion.Parse("18.0.0"));
+
+        Assert.True(result);
+    }
+
     [Fact]
     public async Task TargetFrameworkIsConsideredForUpdatedVersions()
     {
@@ -526,5 +604,23 @@ public class VersionFinderTests : TestBase
         Assert.NotNull(versionsResult);
         var versions = versionsResult.GetVersions();
         Assert.Empty(versions);
+    }
+
+    private static Func<NuGetVersion, bool> CreateVersionFilter(
+        string dependencyName,
+        bool isVulnerable = false,
+        ImmutableArray<Requirement>? ignoredVersions = null,
+        string dependencyVersion = "17.8.0")
+    {
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = dependencyName,
+            Version = dependencyVersion,
+            IsVulnerable = isVulnerable,
+            IgnoredVersions = ignoredVersions ?? [],
+            Vulnerabilities = [],
+        };
+
+        return VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
     }
 }

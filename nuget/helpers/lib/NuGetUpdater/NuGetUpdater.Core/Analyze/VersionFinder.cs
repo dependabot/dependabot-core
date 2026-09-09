@@ -16,6 +16,21 @@ namespace NuGetUpdater.Core.Analyze;
 
 internal static class VersionFinder
 {
+    private static readonly ImmutableHashSet<string> PatchOnlyDefaultPackageNames = ImmutableHashSet.Create(
+        StringComparer.OrdinalIgnoreCase,
+        "Microsoft.Build.Framework",
+        "Microsoft.Build.Utilities.Core",
+        "Microsoft.Build.Tasks.Core",
+        "Microsoft.Build");
+
+    private enum VersionBumpType
+    {
+        Major,
+        Minor,
+        Patch,
+        Other,
+    }
+
     public static Task<VersionResult> GetVersionsByNameAsync(
         ImmutableArray<NuGetFramework> projectTfms,
         string dependencyName,
@@ -216,25 +231,25 @@ internal static class VersionFinder
             var isIgnoredVersion = dependencyInfo.IgnoredVersions.Any(i => i.IsSatisfiedBy(version));
             var isVulnerableVersion = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
             var isSafeVersion = !safeVersions.Any() || safeVersions.Any(s => s.IsSatisfiedBy(version));
+            var versionBumpType = currentVersion is null
+                ? VersionBumpType.Other
+                : GetVersionBumpType(currentVersion, version);
 
             var isIgnoredByType = false;
             if (currentVersion is not null)
             {
-                var isMajorBump = version.Major > currentVersion.Major;
-                var isMinorBump = version.Major == currentVersion.Major && version.Minor > currentVersion.Minor;
-                var isPatchBump = version.Major == currentVersion.Major && version.Minor == currentVersion.Minor && version.Patch > currentVersion.Patch;
                 foreach (var ignoreType in dependencyInfo.IgnoredUpdateTypes)
                 {
                     switch (ignoreType)
                     {
                         case ConditionUpdateType.SemVerPatch:
-                            isIgnoredByType = isIgnoredByType || isPatchBump || isMinorBump || isMajorBump;
+                            isIgnoredByType = isIgnoredByType || versionBumpType is VersionBumpType.Patch or VersionBumpType.Minor or VersionBumpType.Major;
                             break;
                         case ConditionUpdateType.SemVerMinor:
-                            isIgnoredByType = isIgnoredByType || isMinorBump || isMajorBump;
+                            isIgnoredByType = isIgnoredByType || versionBumpType is VersionBumpType.Minor or VersionBumpType.Major;
                             break;
                         case ConditionUpdateType.SemVerMajor:
-                            isIgnoredByType = isIgnoredByType || isMajorBump;
+                            isIgnoredByType = isIgnoredByType || versionBumpType is VersionBumpType.Major;
                             break;
                         default:
                             break;
@@ -242,14 +257,43 @@ internal static class VersionFinder
                 }
             }
 
+            // This deliberately narrow prototype default reduces update churn for Microsoft.Build packages.
+            var isIgnoredByPatchOnlyDefault = !dependencyInfo.IsVulnerable
+                && currentVersion is not null
+                && PatchOnlyDefaultPackageNames.Contains(dependencyInfo.Name)
+                && versionBumpType is VersionBumpType.Major or VersionBumpType.Minor;
+
             return versionGreaterThanCurrent
                 && rangeSatisfies
                 && prereleaseTypeMatches
                 && !isIgnoredVersion
                 && !isVulnerableVersion
                 && isSafeVersion
-                && !isIgnoredByType;
+                && !isIgnoredByType
+                && !isIgnoredByPatchOnlyDefault;
         };
+    }
+
+    private static VersionBumpType GetVersionBumpType(NuGetVersion currentVersion, NuGetVersion candidateVersion)
+    {
+        if (candidateVersion.Major > currentVersion.Major)
+        {
+            return VersionBumpType.Major;
+        }
+
+        if (candidateVersion.Major == currentVersion.Major && candidateVersion.Minor > currentVersion.Minor)
+        {
+            return VersionBumpType.Minor;
+        }
+
+        if (candidateVersion.Major == currentVersion.Major &&
+            candidateVersion.Minor == currentVersion.Minor &&
+            candidateVersion.Patch > currentVersion.Patch)
+        {
+            return VersionBumpType.Patch;
+        }
+
+        return VersionBumpType.Other;
     }
 
     internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion)

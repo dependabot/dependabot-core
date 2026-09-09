@@ -66,6 +66,54 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task LimitsMicrosoftBuildFrameworkToPatchUpdatesByDefault()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.8.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.8.5", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.9.1", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "18.0.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Microsoft.Build.Framework", "17.8.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Microsoft.Build.Framework",
+                Version = "17.8.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "17.8.5",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Microsoft.Build.Framework", "17.8.5", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
     public async Task FindsUpdatedPeerDependencies()
     {
         await TestAnalyzeAsync(
