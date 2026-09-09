@@ -200,7 +200,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       let(:updated_dependencies) { [] }
 
       before do
-        allow(dependency_snapshot).to receive(:handled_dependencies).and_return([dependency.name])
+        allow(dependency_snapshot).to receive(:all_handled_dependencies).and_return(Set[dependency.name])
       end
 
       it "reports unhandled dependencies that failed to update" do

@@ -334,6 +334,15 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       test_instance.report_security_update_failures(nil)
     end
+
+    it "does not report a dependency updated under different casing in another directory" do
+      updated = instance_double(Dependabot::Dependency, name: "DEP1")
+      dependency_change = instance_double(Dependabot::DependencyChange, updated_dependencies: [updated])
+
+      expect(test_instance).not_to receive(:record_security_update_not_possible_error)
+
+      test_instance.report_security_update_failures(dependency_change)
+    end
   end
 
   describe "compile_all_dependency_changes_for" do

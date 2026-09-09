@@ -818,11 +818,13 @@ module Dependabot
       def failed_security_update_dependencies(dependency_change)
         return [] unless job.security_updates_only?
 
-        updated_names = (dependency_change&.updated_dependencies || []).map(&:name)
+        # Names are compared case-insensitively: Gradle, Maven and NuGet names are
+        # case-insensitive, and advisories often disagree with the manifest on casing.
+        updated_names = (dependency_change&.updated_dependencies || []).map { |dep| dep.name.downcase }
 
         group.dependencies
-             .uniq(&:name)
-             .reject { |dependency| updated_names.include?(dependency.name) }
+             .uniq { |dependency| dependency.name.downcase }
+             .reject { |dependency| updated_names.include?(dependency.name.downcase) }
       end
 
       sig { params(dependency_change: T.nilable(Dependabot::DependencyChange)).void }

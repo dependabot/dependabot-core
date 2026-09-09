@@ -152,8 +152,12 @@ module Dependabot
           # A diagnosed failure carries the conflicting dependencies and lowest non-vulnerable version.
           diagnosed.each { |dep| report_security_update_failure(dep.name) }
 
+          # Handled state has to span every directory: computing `dependency_change` leaves
+          # `current_directory` pointing at the last one.
+          handled = dependency_snapshot.all_handled_dependencies
+
           undiagnosed
-            .reject { |dep| dependency_snapshot.handled_dependencies.include?(dep.name) }
+            .reject { |dep| handled.include?(dep.name) }
             .each do |dep|
               error_handler.handle_dependency_error(
                 error: Dependabot::DependabotError.new(

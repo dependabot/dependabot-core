@@ -166,6 +166,13 @@ module Dependabot
       T.must(@handled_dependencies[@current_directory])
     end
 
+    # Handled dependencies across every directory, for job-scoped decisions that must not
+    # depend on whichever directory happens to be current.
+    sig { returns(T::Set[String]) }
+    def all_handled_dependencies
+      @handled_dependencies.values.reduce(Set.new) { |all, names| all.merge(names) }
+    end
+
     sig { params(dir: String).void }
     def current_directory=(dir)
       @current_directory = dir
