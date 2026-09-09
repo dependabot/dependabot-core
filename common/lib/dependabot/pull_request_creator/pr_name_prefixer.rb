@@ -29,10 +29,13 @@ module Dependabot
       ).freeze
 
       # U+FE0F (variation selector-16) is optional in commit messages; strip it so both forms match
-      GITMOJI_UNICODE_PREFIXES = %w(
-        👽 🚑 🍎 ⬇️ ⬆️ 🎨 🍻 🍱 🔖 💥 🐛 🏗️ 💡 👥 📸 🗃️ 📈 🏁 🚸 🤡 🚧 👷 🥚 🔥 🌐 🍏 💚 💩
-        ➖ ➕ 📱 💄 🔒 🔊 📝 🔇 👌 📦 📄 ✏️ 🐧 📌 ♻️ ⏪ 🤖 🚀 🚨 🙈 ✨ 💬 🎉 🚚 🔀 🐳 ♿ ✅ 🔧 ⚡
-      ).map { |emoji| -emoji.delete("\uFE0F") }.freeze
+      GITMOJI_UNICODE_PREFIXES = T.let(
+        %w(
+          👽 🚑 🍎 ⬇️ ⬆️ 🎨 🍻 🍱 🔖 💥 🐛 🏗️ 💡 👥 📸 🗃️ 📈 🏁 🚸 🤡 🚧 👷 🥚 🔥 🌐 🍏 💚 💩
+          ➖ ➕ 📱 💄 🔒 🔊 📝 🔇 👌 📦 📄 ✏️ 🐧 📌 ♻️ ⏪ 🤖 🚀 🚨 🙈 ✨ 💬 🎉 🚚 🔀 🐳 ♿ ✅ 🔧 ⚡
+        ).map { |emoji| emoji.delete("\uFE0F").freeze }.freeze,
+        T::Array[String]
+      )
 
       class RecentCommit < T::ImmutableStruct
         const :message, T.nilable(String)
@@ -327,7 +330,7 @@ module Dependabot
 
         gitmoji_messages = recent_commit_messages.select do |message|
           GITMOJI_SHORTCODE_PREFIXES.any? { |prefix| message.match?(/:#{prefix}:/i) } ||
-            message.start_with?(*GITMOJI_UNICODE_PREFIXES)
+            GITMOJI_UNICODE_PREFIXES.any? { |prefix| message.start_with?(prefix) }
         end
 
         gitmoji_messages.count / recent_commit_messages.count.to_f > 0.3
