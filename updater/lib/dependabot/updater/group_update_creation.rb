@@ -828,9 +828,16 @@ module Dependabot
         # Dependencies may have changed since the original PR was opened.
         return if job.updating_a_pull_request?
 
+        requested = Set.new(job.dependencies || []).to_a
+        return if requested.empty?
+
         known_names = dependency_snapshot.all_dependencies.map(&:name)
-        missing_dependencies = Set.new(job.dependencies || []).to_a - known_names
-        return if missing_dependencies.empty?
+        missing_dependencies = requested - known_names
+
+        # Only a job with nothing at all to work on is a failure. Reporting when some
+        # requested dependencies resolved would fail a job that still opens a valid PR,
+        # and matches how CreateSecurityUpdatePullRequest treats an empty target set.
+        return unless missing_dependencies.length == requested.length
 
         error_handler.handle_job_error(
           error: Dependabot::DependencyNotFound.new(

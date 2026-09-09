@@ -465,8 +465,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
 
     context "when checking job dependencies" do
-      context "when job dependencies are missing from dependency snapshot" do
-        let(:job_dependencies) { %w(dep1 missing_dep) }
+      context "when no job dependency is present in the dependency snapshot" do
+        let(:job_dependencies) { %w(missing_dep other_missing_dep) }
 
         it "records missing dependency error for non-PR updates" do
           expect(error_handler).to receive(:handle_job_error) do |error:|
@@ -493,6 +493,16 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
             test_instance.report_missing_job_dependencies
           end
+        end
+      end
+
+      context "when only some job dependencies are missing" do
+        let(:job_dependencies) { %w(dep1 missing_dep) }
+
+        it "does not fail the job, since it still has something to update" do
+          expect(error_handler).not_to receive(:handle_job_error)
+
+          test_instance.report_missing_job_dependencies
         end
       end
 
