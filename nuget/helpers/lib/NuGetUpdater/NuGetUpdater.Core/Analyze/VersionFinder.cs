@@ -66,7 +66,14 @@ internal static class VersionFinder
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var versionFilter = CreateVersionFilter(currentVersion);
+        var defaultVersionFilter = CreateVersionFilter(currentVersion);
+        Func<NuGetVersion, bool> versionFilter = version =>
+            defaultVersionFilter(version) &&
+            IsVersionAllowedByPatchOnlyDefault(
+                [dependencyInfo.Name],
+                currentVersion,
+                version,
+                dependencyInfo.IsVulnerable);
 
         return GetVersionsAsync(projectTfms, dependencyInfo, currentVersion, versionFilter, currentTime, nugetContext, logger, cancellationToken);
     }
@@ -257,11 +264,11 @@ internal static class VersionFinder
                 }
             }
 
-            // This deliberately narrow prototype default reduces update churn for Microsoft.Build packages.
-            var isIgnoredByPatchOnlyDefault = !dependencyInfo.IsVulnerable
-                && currentVersion is not null
-                && PatchOnlyDefaultPackageNames.Contains(dependencyInfo.Name)
-                && versionBumpType is VersionBumpType.Major or VersionBumpType.Minor;
+            var isAllowedByPatchOnlyDefault = IsVersionAllowedByPatchOnlyDefault(
+                [dependencyInfo.Name],
+                currentVersion,
+                version,
+                dependencyInfo.IsVulnerable);
 
             return versionGreaterThanCurrent
                 && rangeSatisfies
@@ -270,8 +277,25 @@ internal static class VersionFinder
                 && !isVulnerableVersion
                 && isSafeVersion
                 && !isIgnoredByType
-                && !isIgnoredByPatchOnlyDefault;
+                && isAllowedByPatchOnlyDefault;
         };
+    }
+
+    // This deliberately narrow prototype default reduces update churn for Microsoft.Build packages.
+    internal static bool IsVersionAllowedByPatchOnlyDefault(
+        IEnumerable<string> dependencyNames,
+        NuGetVersion? currentVersion,
+        NuGetVersion candidateVersion,
+        bool isVulnerable)
+    {
+        if (isVulnerable ||
+            currentVersion is null ||
+            !dependencyNames.Any(PatchOnlyDefaultPackageNames.Contains))
+        {
+            return true;
+        }
+
+        return GetVersionBumpType(currentVersion, candidateVersion) is not VersionBumpType.Major and not VersionBumpType.Minor;
     }
 
     private static VersionBumpType GetVersionBumpType(NuGetVersion currentVersion, NuGetVersion candidateVersion)

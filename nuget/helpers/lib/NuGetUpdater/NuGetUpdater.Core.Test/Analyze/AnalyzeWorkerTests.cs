@@ -114,6 +114,66 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task LimitsMicrosoftBuildFrameworkToPatchUpdatesWhenSharingVersionProperty()
+    {
+        var evaluationResult = new EvaluationResult(
+            EvaluationResultType.Success,
+            "$(SharedPackageVersion)",
+            "17.8.0",
+            "SharedPackageVersion",
+            ErrorMessage: null);
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "17.8.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "17.8.5", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "17.9.1", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "18.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.8.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.8.5", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.9.1", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "18.0.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "17.8.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
+                            new("Microsoft.Build.Framework", "17.8.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "17.8.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "17.8.5",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = true,
+                UpdatedDependencies = [
+                    new("Some.Package", "17.8.5", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                    new("Microsoft.Build.Framework", "17.8.5", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
     public async Task FindsUpdatedPeerDependencies()
     {
         await TestAnalyzeAsync(

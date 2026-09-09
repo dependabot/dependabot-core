@@ -280,6 +280,33 @@ public class VersionFinderTests : TestBase
     }
 
     [Fact]
+    public async Task GetVersionsByNameAsync_PatchOnlyDefaultPackage_ReturnsPatchVersionsOnly()
+    {
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.8.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.8.3", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "17.9.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Build.Framework", "18.0.0", "net8.0"),
+            ],
+            tempDir.DirectoryPath);
+        var projectTfms = new[] { "net8.0" }.Select(NuGetFramework.Parse).ToImmutableArray();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+
+        var versionResult = await VersionFinder.GetVersionsByNameAsync(
+            projectTfms,
+            "Microsoft.Build.Framework",
+            NuGetVersion.Parse("17.8.0"),
+            nugetContext,
+            new TestLogger(),
+            CancellationToken.None);
+
+        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        AssertEx.Equal(["17.8.3"], actual);
+    }
+
+    [Fact]
     public async Task TargetFrameworkIsConsideredForUpdatedVersions()
     {
         // arrange
