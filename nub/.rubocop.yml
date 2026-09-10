@@ -27,7 +27,6 @@ Sorbet/ForbidTUntyped:
     - lib/dependabot/nub/update_checker.rb
     - lib/dependabot/nub/update_checker/latest_version_finder.rb
     - lib/dependabot/nub/update_checker/library_detector.rb
-    - lib/dependabot/nub/update_checker/requirements_updater.rb
     - lib/dependabot/nub/update_checker/version_resolver.rb
     - lib/dependabot/nub/update_checker/vulnerability_auditor.rb
 

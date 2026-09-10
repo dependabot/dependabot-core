@@ -133,4 +133,41 @@ RSpec.describe Dependabot::Nub::FileParser do
       end
     end
   end
+
+  describe "aliased dependencies" do
+    subject(:dependency_names) { parser.parse.map(&:name) }
+
+    let(:files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: manifest)]
+    end
+
+    # An alias is written with npm's registry protocol whatever client reads the
+    # manifest, so matching the package manager name skipped every alias and
+    # published the alias key itself as though it were a package.
+    context "with an npm-style alias in the requirement" do
+      let(:manifest) do
+        {
+          name: "test", version: "1.0.0",
+          dependencies: { react18: "npm:react@^18.0.0", plain: "^1.0.0" }
+        }.to_json
+      end
+
+      it "ignores the aliased dependency" do
+        expect(dependency_names).to eq(["plain"])
+      end
+    end
+
+    context "with a yarn-style alias in the name" do
+      let(:manifest) do
+        {
+          name: "test", version: "1.0.0",
+          dependencies: { "my-fetch-factory@npm:fetch-factory": "0.0.2", plain: "^1.0.0" }
+        }.to_json
+      end
+
+      it "ignores the aliased dependency" do
+        expect(dependency_names).to eq(["plain"])
+      end
+    end
+  end
 end
