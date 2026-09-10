@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/errors"
 require "dependabot/python/file_parser"
 
 module Dependabot
@@ -25,6 +26,17 @@ module Dependabot
           PyprojectValueParser.array(result, "PEP dependency result").map do |value|
             from_object(value)
           end
+        end
+
+        sig { params(result: Object).returns(T::Array[PepDependency]) }
+        def self.from_requirements_helper_result(result)
+          PyprojectValueParser.array(result, "parse_requirements result").each_with_index.map do |value, index|
+            from_object(value)
+          rescue TypeError => e
+            raise Dependabot::DependencyFileNotEvaluatable, "parse_requirements result[#{index}]: #{e.message}"
+          end
+        rescue TypeError => e
+          raise Dependabot::DependencyFileNotEvaluatable, e.message
         end
 
         sig { params(value: Object).returns(PepDependency) }
