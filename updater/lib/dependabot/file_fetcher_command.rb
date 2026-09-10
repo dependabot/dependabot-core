@@ -8,6 +8,7 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
+require "dependabot/file_fetcher_command_local_checkout"
 require "octokit"
 require "sorbet-runtime"
 
@@ -15,6 +16,12 @@ module Dependabot
   class FileFetcherCommand < BaseCommand
     extend T::Sig
     include FileFetcherCommandConnectivity
+    include FileFetcherCommandLocalCheckout
+
+    sig { params(record_ecosystem_versions: T::Boolean).void }
+    def initialize(record_ecosystem_versions: true)
+      @record_ecosystem_versions = record_ecosystem_versions
+    end
 
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
@@ -38,8 +45,7 @@ module Dependabot
         begin
           connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
           normalize_single_directory
-          validate_target_branch
-          dependabot_ref_namespace_available?
+          validate_repository
           clone_repo_contents
           @base_commit_sha = file_fetcher.commit
           raise "base commit SHA not found" unless @base_commit_sha
@@ -262,7 +268,7 @@ module Dependabot
     sig { returns(T::Boolean) }
     def should_record_ecosystem_versions?
       # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
-      Experiments.enabled?(:record_ecosystem_versions)
+      @record_ecosystem_versions && Experiments.enabled?(:record_ecosystem_versions)
     end
 
     sig { params(file_fetcher: Dependabot::FileFetchers::Base).void }
@@ -293,7 +299,7 @@ module Dependabot
       end
     end
 
-    sig { void }
+    sig { override.void }
     def dependabot_ref_namespace_available?
       dependabot_branch = "dependabot"
       begin
@@ -312,7 +318,7 @@ module Dependabot
       end
     end
 
-    sig { void }
+    sig { override.void }
     def validate_target_branch
       return unless job.source.branch
 
@@ -337,12 +343,13 @@ module Dependabot
 
     sig { void }
     def clone_repo_contents
+      return if local_checkout_only?
       return unless job.clone?
 
       file_fetcher.clone_repo_contents
     end
 
-    sig { returns(T::Boolean) }
+    sig { override.returns(T::Boolean) }
     def already_cloned?
       return false unless Environment.repo_contents_path
 
