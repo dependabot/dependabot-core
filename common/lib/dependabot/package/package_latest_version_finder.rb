@@ -198,20 +198,20 @@ module Dependabot
 
       sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
       def in_cooldown_period?(release)
-        return false unless release.released_at
-
-        cooldown = @cooldown_options
-        return false if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
-          cooldown, dependency.name, cooldown_enabled: cooldown_enabled?
-        )
-
         current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-        days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
-          T.must(cooldown), current_version, release.version
-        )
-        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
-          T.must(release.released_at), days
-        )
+        days = cooldown_days_for(current_version, release.version)
+        return false unless days.positive?
+
+        released_at = released_at_for(release)
+        unless released_at
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            dependency,
+            cooldown_days: days
+          )
+          return missing_release_date_blocks_update?(release)
+        end
+
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(released_at, days)
       end
 
       sig do
@@ -359,6 +359,17 @@ module Dependabot
       sig { returns(T::Boolean) }
       def cooldown_enabled?
         true
+      end
+
+      # Registries that only expose a publication date through a second request resolve it here.
+      sig { overridable.params(release: Dependabot::Package::PackageRelease).returns(T.nilable(Time)) }
+      def released_at_for(release)
+        release.released_at
+      end
+
+      sig { overridable.params(_release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+      def missing_release_date_blocks_update?(_release)
+        false
       end
 
       sig do

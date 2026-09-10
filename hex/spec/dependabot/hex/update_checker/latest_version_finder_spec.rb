@@ -82,5 +82,31 @@ RSpec.describe namespace::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("1.7.1")) }
       end
     end
+
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Hex::Version.new("1.8.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Hex::Package::PackageDetailsFetcher,
+          fetch_package_releases: [release]
+        )
+      end
+
+      before do
+        allow(Dependabot::Hex::Package::PackageDetailsFetcher)
+          .to receive(:new).with(dependency: dependency).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version).to eq(Dependabot::Hex::Version.new("1.8.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
   end
 end
