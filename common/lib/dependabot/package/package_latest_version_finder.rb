@@ -12,7 +12,7 @@ require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/registry_client"
 require "dependabot/package/package_details"
 require "dependabot/package/release_cooldown_options"
-require "dependabot/package/cooldown_date_unavailable_tracker"
+require "dependabot/package/cooldown_date_tracker"
 
 module Dependabot
   module Package
@@ -124,9 +124,7 @@ module Dependabot
         @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: language_version)
       end
 
-      sig do
-        returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
-      end
+      sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
       def available_versions
         package_details&.releases
       end
@@ -142,12 +140,13 @@ module Dependabot
         return unless releases
 
         releases = filter_yanked_versions(releases)
-        releases = @cooldown_tracker.filter(language_version:, requirements: true) { filter_by_cooldown(releases) }
-        releases = filter_unsupported_versions(releases, language_version)
-        releases = filter_prerelease_versions(releases)
-        releases = filter_ignored_versions(releases)
-        releases = filter_out_of_range_versions(releases)
-        releases = apply_post_fetch_latest_versions_filter(releases)
+        releases = @cooldown_tracker.filter(language_version:, requirements: true) do
+          filtered = filter_by_cooldown(releases)
+          filtered = filter_prerelease_versions(filter_unsupported_versions(filtered, language_version))
+          filtered = filter_ignored_versions(filtered)
+          filtered = filter_out_of_range_versions(filtered)
+          apply_post_fetch_latest_versions_filter(filtered)
+        end
         releases.max_by(&:version)&.version
       end
 
@@ -157,9 +156,8 @@ module Dependabot
       end
       def filter_yanked_versions(releases)
         filtered = releases.reject(&:yanked?)
-        if releases.count > filtered.count
-          Dependabot.logger.info("Filtered out #{releases.count - filtered.count} yanked versions")
-        end
+        removed_count = releases.count - filtered.count
+        Dependabot.logger.info("Filtered out #{removed_count} yanked versions") if removed_count.positive?
         filtered
       end
 
@@ -168,8 +166,13 @@ module Dependabot
           .returns(T::Array[Dependabot::Package::PackageRelease])
       end
       def filter_by_cooldown(releases)
-        return releases unless cooldown_enabled?
-        return releases unless cooldown_options
+        unless @cooldown_tracker.active
+          return @cooldown_tracker.filter(language_version: nil, requirements: false) do
+            filter_by_cooldown(releases)
+          end
+        end
+
+        return releases unless cooldown_enabled? && cooldown_options
 
         filtered = releases.reject { |release| in_cooldown_period?(release) }
 
@@ -179,21 +182,11 @@ module Dependabot
 
         # If all releases were filtered out due to cooldown and we have a current version, use it as fallback
         if filtered.empty? && !releases.empty? && dependency.version
-          current_version_str = dependency.version
-
           Dependabot.logger.info(
             "All versions filtered by cooldown for #{dependency.name}, " \
-            "falling back to current version #{current_version_str}"
+            "falling back to current version #{dependency.version}"
           )
-
-          # Create a PackageRelease for the current version
-          current_version = version_class.new(current_version_str)
-          current_release = Dependabot::Package::PackageRelease.new(
-            version: current_version,
-            released_at: nil,
-            tag: nil
-          )
-          return [current_release]
+          return [current_dependency_release]
         end
 
         filtered
@@ -372,6 +365,11 @@ module Dependabot
         false
       end
 
+      sig { overridable.returns(Dependabot::Package::PackageRelease) }
+      def current_dependency_release
+        Dependabot::Package::PackageRelease.new(version: version_class.new(T.must(dependency.version)))
+      end
+
       sig do
         params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(Dependabot::Version))
@@ -389,11 +387,12 @@ module Dependabot
         return unless releases
 
         releases = filter_yanked_versions(releases)
-        releases = @cooldown_tracker.filter(language_version:, requirements: false) { filter_by_cooldown(releases) }
-        releases = filter_unsupported_versions(releases, language_version)
-        releases = filter_prerelease_versions(releases)
-        releases = filter_ignored_versions(releases)
-        releases = apply_post_fetch_latest_versions_filter(releases)
+        releases = @cooldown_tracker.filter(language_version:, requirements: false) do
+          filtered = filter_by_cooldown(releases)
+          filtered = filter_prerelease_versions(filter_unsupported_versions(filtered, language_version))
+          filtered = filter_ignored_versions(filtered)
+          apply_post_fetch_latest_versions_filter(filtered)
+        end
         releases.max_by(&:version)
       end
 
