@@ -25,6 +25,8 @@ There are some notable differences:
 - **Workspace Support**: Dependabot handles Julia workspaces where multiple packages share a common manifest file in a parent directory.
 - **Conflict Notifications**: When manifest updates fail due to dependency conflicts (common in workspaces), Dependabot adds warning notices to pull requests explaining the issue.
 
+`[extras]` dependencies are included when they already have a `[compat]` entry, matching CompatHelper.jl's default `IfExistingCompatExtras()` policy.
+
 Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
 
 ## Julia Documentation References
