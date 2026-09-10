@@ -179,5 +179,88 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
         expect(updated_cargo.content).to include("thiserror = { version = \"1.0.50\" }")
       end
     end
+
+    context "when the workspace root also has package-level dependencies" do
+      # Reproduces: workspace root Cargo.toml with [package] + [dependencies] alongside
+      # [workspace.dependencies]. Non-workspace deps must be updated in Cargo.toml too.
+      let(:workspace_root_with_package_deps) do
+        <<~TOML
+          [workspace]
+          members = ["license-store-cache"]
+
+          [workspace.package]
+          version = "0.3.3"
+          edition = "2021"
+          license = "MPL-2.0"
+
+          [workspace.dependencies]
+          askalono = "0.5.0"
+
+          [package]
+          name = "nix-init"
+          version.workspace = true
+          edition.workspace = true
+          license.workspace = true
+
+          [dependencies]
+          anyhow = "1.0.101"
+          askalono.workspace = true
+          zip = "7.4.0"
+        TOML
+      end
+
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: workspace_root_with_package_deps
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "zip",
+            version: "8.0.0",
+            previous_version: "7.4.0",
+            requirements: [
+              {
+                file: "Cargo.toml",
+                requirement: "8.0.0",
+                groups: ["dependencies"],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Cargo.toml",
+                requirement: "7.4.0",
+                groups: ["dependencies"],
+                source: nil
+              }
+            ],
+            package_manager: "cargo"
+          )
+        ]
+      end
+
+      it "updates the package-level dependency in the workspace root Cargo.toml" do
+        updated_files = updater.updated_dependency_files
+        updated_cargo = updated_files.find { |f| f.name == "Cargo.toml" }
+
+        expect(updated_cargo).not_to be_nil
+        expect(updated_cargo.content).to include('zip = "8.0.0"')
+        expect(updated_cargo.content).not_to include('zip = "7.4.0"')
+      end
+
+      it "does not alter workspace-inherited dependencies" do
+        updated_files = updater.updated_dependency_files
+        updated_cargo = updated_files.find { |f| f.name == "Cargo.toml" }
+
+        expect(updated_cargo.content).to include("askalono.workspace = true")
+        expect(updated_cargo.content).to include('askalono = "0.5.0"')
+      end
+    end
   end
 end
