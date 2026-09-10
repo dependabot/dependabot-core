@@ -12,6 +12,7 @@ require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/registry_client"
 require "dependabot/package/package_details"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/package/cooldown_date_unavailable_tracker"
 
 module Dependabot
   module Package
@@ -79,6 +80,8 @@ module Dependabot
         @latest_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
         @lowest_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
         @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
+        cooldown_tracker = CooldownDateTracker.new(dependency: dependency, ignored_versions: ignored_versions)
+        @cooldown_tracker = T.let(cooldown_tracker, CooldownDateTracker)
       end
 
       sig do
@@ -139,7 +142,7 @@ module Dependabot
         return unless releases
 
         releases = filter_yanked_versions(releases)
-        releases = filter_by_cooldown(releases)
+        releases = @cooldown_tracker.filter(language_version:, requirements: true) { filter_by_cooldown(releases) }
         releases = filter_unsupported_versions(releases, language_version)
         releases = filter_prerelease_versions(releases)
         releases = filter_ignored_versions(releases)
@@ -204,10 +207,7 @@ module Dependabot
 
         released_at = released_at_for(release)
         unless released_at
-          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
-            dependency,
-            cooldown_days: days
-          )
+          @cooldown_tracker.record(release: release, current_version: current_version, days: days)
           return missing_release_date_blocks_update?(release)
         end
 
@@ -389,7 +389,7 @@ module Dependabot
         return unless releases
 
         releases = filter_yanked_versions(releases)
-        releases = filter_by_cooldown(releases)
+        releases = @cooldown_tracker.filter(language_version:, requirements: false) { filter_by_cooldown(releases) }
         releases = filter_unsupported_versions(releases, language_version)
         releases = filter_prerelease_versions(releases)
         releases = filter_ignored_versions(releases)
