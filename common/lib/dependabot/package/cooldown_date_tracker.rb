@@ -19,6 +19,7 @@ module Dependabot
         @active = T.let(false, T::Boolean)
         @language_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @enforce_requirements = T.let(false, T::Boolean)
+        @prefiltered = T.let(false, T::Boolean)
         @releases = T.let({}, T::Hash[Dependabot::Package::PackageRelease, Integer])
       end
 
@@ -48,6 +49,17 @@ module Dependabot
       end
 
       sig do
+        params(block: T.proc.returns(T::Array[Dependabot::Package::PackageRelease]))
+          .returns(T::Array[Dependabot::Package::PackageRelease])
+      end
+      def filter_prefiltered(&block)
+        @prefiltered = true
+        filter(language_version: nil, requirements: false, &block)
+      ensure
+        @prefiltered = false
+      end
+
+      sig do
         params(
           release: Dependabot::Package::PackageRelease,
           current_version: T.nilable(Dependabot::Version),
@@ -56,7 +68,7 @@ module Dependabot
       end
       def record(release:, current_version:, days:)
         return unless active
-        return unless relevant?(release, current_version)
+        return unless @prefiltered || relevant?(release, current_version)
 
         @releases[release] = days
       end
@@ -133,7 +145,11 @@ module Dependabot
       sig { params(filtered: T::Array[Dependabot::Package::PackageRelease]).void }
       def mark_for_selected_release(filtered)
         current_version = T.cast(dependency.numeric_version, T.nilable(Dependabot::Version))
-        eligible = filtered.select { |release| relevant?(release, current_version) }
+        eligible = if @prefiltered
+                     filtered
+                   else
+                     filtered.select { |release| relevant?(release, current_version) }
+                   end
         selected = (eligible + @releases.keys).max_by(&:version)
         return unless selected
 
