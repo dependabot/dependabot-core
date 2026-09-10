@@ -58,8 +58,8 @@ RSpec.describe Dependabot::Nub::UpdateChecker::SubdependencyVersionResolver do
     expect(latest_resolvable_version).to eq(Gem::Version.new("1.0.1"))
 
     expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
-      "update @dependabot-fixtures/npm-transitive-dependency@1.0.1 --lockfile-only --ignore-scripts",
-      fingerprint: "update <dependency_name>@<latest_allowable_version> --lockfile-only --ignore-scripts"
+      "update @dependabot-fixtures/npm-transitive-dependency@1.0.1 --lockfile-only --no-save --ignore-scripts",
+      fingerprint: "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save --ignore-scripts"
     )
   end
 
@@ -70,8 +70,8 @@ RSpec.describe Dependabot::Nub::UpdateChecker::SubdependencyVersionResolver do
       latest_resolvable_version
 
       expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
-        "update @dependabot-fixtures/npm-transitive-dependency --lockfile-only --ignore-scripts",
-        fingerprint: "update <dependency_name> --lockfile-only --ignore-scripts"
+        "update @dependabot-fixtures/npm-transitive-dependency --lockfile-only --no-save --ignore-scripts",
+        fingerprint: "update <dependency_name> --lockfile-only --no-save --ignore-scripts"
       )
     end
   end

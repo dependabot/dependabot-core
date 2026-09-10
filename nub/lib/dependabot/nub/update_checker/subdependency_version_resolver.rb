@@ -141,16 +141,16 @@ module Dependabot
         sig { returns(String) }
         def nub_update_command
           name = dependency.name
-          return "update #{name} --lockfile-only --ignore-scripts" unless latest_allowable_version
+          return "update #{name} --lockfile-only --no-save --ignore-scripts" unless latest_allowable_version
 
-          "update #{name}@#{latest_allowable_version} --lockfile-only --ignore-scripts"
+          "update #{name}@#{latest_allowable_version} --lockfile-only --no-save --ignore-scripts"
         end
 
         sig { returns(String) }
         def nub_update_fingerprint
-          return "update <dependency_name> --lockfile-only --ignore-scripts" unless latest_allowable_version
+          return "update <dependency_name> --lockfile-only --no-save --ignore-scripts" unless latest_allowable_version
 
-          "update <dependency_name>@<latest_allowable_version> --lockfile-only --ignore-scripts"
+          "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save --ignore-scripts"
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
