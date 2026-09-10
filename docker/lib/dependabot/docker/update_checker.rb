@@ -87,7 +87,6 @@ module Dependabot
       TAGS_PAGE_SIZE = 100
 
       GITHUB_PACKAGES_PAGE_SIZE = 100
-      GITHUB_PACKAGES_MAX_PAGES = 5
 
       DockerSource = T.type_alias do
         T::Hash[Symbol, T.nilable(String)]
@@ -558,6 +557,7 @@ module Dependabot
 
         github_container_registry_tag_release_date(tag) if registry_hostname == "ghcr.io"
       rescue JSON::ParserError, ArgumentError, TypeError, Excon::Error::Socket, Excon::Error::Timeout,
+             RegistryError, PrivateSourceBadResponse, PrivateSourceAuthenticationFailure,
              *transient_docker_errors,
              DockerRegistry2::RegistryAuthenticationException,
              DockerRegistry2::RegistryAuthorizationException,
@@ -574,7 +574,7 @@ module Dependabot
         namespace, repository = docker_repo_name.split("/", 2)
         return unless namespace && repository
 
-        digest = docker_registry_client.manifest_digest(docker_repo_name, tag.name)
+        digest = digest_of(tag.name)
         return unless digest
 
         response = Dependabot::RegistryClient.get(
@@ -603,53 +603,55 @@ module Dependabot
 
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
       def github_container_registry_tag_release_date(tag)
-        digest = docker_registry_client.manifest_digest(docker_repo_name, tag.name)
+        digest = digest_of(tag.name)
         return unless digest
 
-        version = github_package_versions.find do |candidate|
-          matching_digest?(candidate["name"], digest) && github_package_version_tags(candidate).include?(tag.name)
-        end
+        version = github_package_version(tag, digest)
         return unless version
 
         timestamp = version["updated_at"]
         Time.iso8601(timestamp) if timestamp.is_a?(String)
       end
 
-      sig { returns(T::Array[GithubPackageVersion]) }
-      def github_package_versions
-        @github_package_versions ||= T.let(
-          fetch_github_package_versions,
-          T.nilable(T::Array[GithubPackageVersion])
-        )
-      end
+      sig { params(tag: Dependabot::Docker::Tag, digest: String).returns(T.nilable(GithubPackageVersion)) }
+      def github_package_version(tag, digest)
+        page = 1
+        loop do
+          versions = github_package_versions(page)
+          version = versions.find do |candidate|
+            matching_digest?(candidate["name"], digest) && github_package_version_tags(candidate).include?(tag.name)
+          end
+          return version if version
+          return nil if versions.length < GITHUB_PACKAGES_PAGE_SIZE
 
-      sig { returns(T::Array[GithubPackageVersion]) }
-      def fetch_github_package_versions
-        owner, package = docker_repo_name.split("/", 2)
-        token = github_packages_token
-        return [] unless owner && package && token
-
-        owner_type = "orgs"
-        first_response = github_package_versions_response(owner_type, owner, package, token, 1)
-        if first_response.status == 404
-          owner_type = "users"
-          first_response = github_package_versions_response(owner_type, owner, package, token, 1)
-        end
-        return [] unless first_response.status == 200
-
-        versions = parse_github_package_versions(first_response.body)
-        page = 2
-        page_full = T.let(versions.length == GITHUB_PACKAGES_PAGE_SIZE, T::Boolean)
-        while page_full && page <= GITHUB_PACKAGES_MAX_PAGES
-          response = github_package_versions_response(owner_type, owner, package, token, page)
-          break unless response.status == 200
-
-          page_versions = parse_github_package_versions(response.body)
-          versions.concat(page_versions)
-          page_full = page_versions.length == GITHUB_PACKAGES_PAGE_SIZE
           page += 1
         end
-        versions
+      end
+
+      sig { params(page: Integer).returns(T::Array[GithubPackageVersion]) }
+      def github_package_versions(page)
+        @github_package_versions ||= T.let(
+          {},
+          T.nilable(T::Hash[Integer, T::Array[GithubPackageVersion]])
+        )
+        @github_package_versions[page] ||= fetch_github_package_versions(page)
+      end
+
+      sig { params(page: Integer).returns(T::Array[GithubPackageVersion]) }
+      def fetch_github_package_versions(page)
+        owner, package = docker_repo_name.split("/", 2)
+        return [] unless owner && package
+
+        token = github_packages_token
+        @github_package_owner_type ||= T.let("orgs", T.nilable(String))
+        response = github_package_versions_response(@github_package_owner_type, owner, package, token, page)
+        if page == 1 && response.status == 404
+          @github_package_owner_type = "users"
+          response = github_package_versions_response(@github_package_owner_type, owner, package, token, page)
+        end
+        return [] unless response.status == 200
+
+        parse_github_package_versions(response.body)
       end
 
       sig do
@@ -657,7 +659,7 @@ module Dependabot
           owner_type: String,
           owner: String,
           package: String,
-          token: String,
+          token: T.nilable(String),
           page: Integer
         ).returns(Excon::Response)
       end
@@ -665,14 +667,15 @@ module Dependabot
         escaped_owner = URI.encode_www_form_component(owner)
         escaped_package = URI.encode_www_form_component(package)
         url = "https://api.github.com/#{owner_type}/#{escaped_owner}/packages/container/#{escaped_package}/versions"
+        headers = {
+          "Accept" => "application/vnd.github+json",
+          "X-GitHub-Api-Version" => "2022-11-28"
+        }
+        headers["Authorization"] = "Bearer #{token}" if token
         with_retries(max_attempts: 3, errors: [Excon::Error::Socket, Excon::Error::Timeout]) do
           Dependabot::RegistryClient.get(
             url: url,
-            headers: {
-              "Accept" => "application/vnd.github+json",
-              "Authorization" => "Bearer #{token}",
-              "X-GitHub-Api-Version" => "2022-11-28"
-            },
+            headers: headers,
             options: {
               query: { per_page: GITHUB_PACKAGES_PAGE_SIZE, page: page },
               connect_timeout: docker_open_timeout_in_seconds,
