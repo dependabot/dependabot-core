@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -1753,7 +1753,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it "keeps the current version in cooldown" do
           expect(latest_version).to eq("17.04")
-          expect(dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
         end
       end
 

@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "fails open when the subsequent digest resolution succeeds" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(golang_dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
 
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "holds the digest-only update in cooldown" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
-        expect(golang_dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+        expect(golang_dependency.metadata).not_to include(:cooldown_date_unavailable)
       end
     end
 
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     it "holds a recent digest-only update in cooldown" do
       expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
-      expect(golang_dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+      expect(golang_dependency.metadata).not_to include(:cooldown_date_unavailable)
     end
 
     context "when the publication date is outside cooldown" do
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "fails open without using the mismatched date" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(golang_dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
 
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "fails open without using a date for another tag" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(golang_dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
 
@@ -304,7 +304,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "fails open with an unavailable-date warning" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(golang_dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
 
@@ -340,7 +340,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it "fails open after checking the final page" do
           expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-          expect(golang_dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+          expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
           expect(WebMock).to have_requested(:get, versions_url)
             .with(query: { "page" => "6", "per_page" => "100" }).once
         end
