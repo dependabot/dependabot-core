@@ -432,15 +432,35 @@ module Dependabot
         fingerprint: "git config --global credential.helper '<helper_command>'"
       )
 
-      # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
-      safe_directories.each do |path|
-        run_shell_command("git config --global --add safe.directory #{path}")
+      deduped_credentials, hosts = deduped_credentials_and_hosts(credentials)
+
+      # The safe.directory entries and url.*.insteadOf rewrite rules are
+      # entirely determined by `safe_directories` and `hosts`, and unlike the
+      # credential.helper line above they don't embed any of this call's
+      # random, per-invocation file paths. Since the same set of hosts and
+      # safe directories is typically reused across many `with_git_configured`
+      # calls within a single job, we memoize the generated config for the
+      # lifetime of the process (i.e. for the job) instead of re-running the
+      # underlying `git config --global ...` subprocesses every time. The
+      # cache is keyed on its inputs, so it can never return stale content and
+      # naturally starts empty again in the next job's process.
+      File.open(git_config_global_path, "a") do |file|
+        file << static_git_config_for(safe_directories, hosts)
       end
 
-      github_credentials = credentials
-                           .select { |c| c["type"] == "git_source" }
-                           .select { |c| c["host"] == "github.com" }
-                           .select { |c| c["password"] && c["username"] }
+      File.write(git_store_path, git_store_content(deduped_credentials))
+    end
+    # rubocop:enable Metrics/AbcSize
+
+    # Determines the deduplicated credential list (picking a single, deliberately
+    # added github.com credential when several are present) alongside the list of
+    # hosts that need url.*.insteadOf rewrite rules.
+    sig do
+      params(credentials: T::Array[Dependabot::Credential])
+        .returns([T::Array[Dependabot::Credential], T::Array[String]])
+    end
+    def self.deduped_credentials_and_hosts(credentials)
+      github_credentials = github_source_credentials(credentials)
 
       # If multiple credentials are specified for github.com, pick the one that
       # *isn't* just an app token (since it must have been added deliberately)
@@ -448,16 +468,100 @@ module Dependabot
         github_credentials.find { |c| !c["password"]&.start_with?("v1.") } ||
         github_credentials.first
 
-      # Make sure we always have https alternatives for github.com.
-      configure_git_to_use_https("github.com") if github_credential.nil?
-
       deduped_credentials = credentials -
                             github_credentials +
                             [github_credential].compact
 
-      File.write(git_store_path, git_store_content(deduped_credentials))
+      hosts = hosts_needing_https_rewrite(deduped_credentials, needs_github_fallback: github_credential.nil?)
+
+      [deduped_credentials, hosts]
     end
-    # rubocop:enable Metrics/AbcSize
+    private_class_method :deduped_credentials_and_hosts
+
+    sig do
+      params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[Dependabot::Credential])
+    end
+    def self.github_source_credentials(credentials)
+      credentials.select do |c|
+        c["type"] == "git_source" && c["host"] == "github.com" && c["password"] && c["username"]
+      end
+    end
+    private_class_method :github_source_credentials
+
+    sig do
+      params(
+        deduped_credentials: T::Array[Dependabot::Credential],
+        needs_github_fallback: T::Boolean
+      ).returns(T::Array[String])
+    end
+    def self.hosts_needing_https_rewrite(deduped_credentials, needs_github_fallback:)
+      hosts = deduped_credentials
+              .select { |c| c["type"] == "git_source" }
+              .filter_map { |c| c["host"] }
+      # Make sure we always have https alternatives for github.com.
+      hosts << "github.com" if needs_github_fallback
+      hosts
+    end
+    private_class_method :hosts_needing_https_rewrite
+
+    sig { returns(T::Hash[String, String]) }
+    def self.static_git_config_cache
+      @static_git_config_cache ||= T.let({}, T.nilable(T::Hash[String, String]))
+    end
+    private_class_method :static_git_config_cache
+
+    sig { returns(Mutex) }
+    def self.static_git_config_cache_mutex
+      @static_git_config_cache_mutex ||= T.let(Mutex.new, T.nilable(Mutex))
+    end
+    private_class_method :static_git_config_cache_mutex
+
+    # Builds (or reuses a cached copy of) the safe.directory and
+    # url.*.insteadOf portion of the global git config for the given
+    # `safe_directories`/`hosts`. This is safe to share across calls because
+    # it never depends on any per-call credential material or file paths.
+    sig { params(safe_directories: T::Array[String], hosts: T::Array[String]).returns(String) }
+    def self.static_git_config_for(safe_directories, hosts)
+      cache_key = Digest::SHA256.hexdigest([safe_directories.sort, hosts.uniq.sort].to_json)
+
+      static_git_config_cache_mutex.synchronize do
+        static_git_config_cache[cache_key] ||= build_static_git_config(safe_directories, hosts)
+      end
+    end
+    private_class_method :static_git_config_for
+
+    sig { params(safe_directories: T::Array[String], hosts: T::Array[String]).returns(String) }
+    def self.build_static_git_config(safe_directories, hosts)
+      content = +""
+
+      # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
+      unless safe_directories.empty?
+        content << "[safe]\n"
+        safe_directories.each { |path| content << "\tdirectory = #{path}\n" }
+      end
+
+      hosts.uniq.each { |host| content << url_insteadof_config(host) }
+
+      content
+    end
+    private_class_method :build_static_git_config
+
+    sig { params(host: String).returns(String) }
+    def self.url_insteadof_config(host)
+      # NOTE: we use --global here (rather than --system) so that Dependabot
+      # can be run without privileged access. This mirrors what
+      # `git config --global --add url.https://<host>/.insteadOf <pattern>`
+      # would write to the global config file.
+      <<~CONFIG
+        [url "https://#{host}/"]
+        \tinsteadOf = ssh://git@#{host}/
+        \tinsteadOf = ssh://git@#{host}:
+        \tinsteadOf = git@#{host}:
+        \tinsteadOf = git@#{host}/
+        \tinsteadOf = git://#{host}/
+      CONFIG
+    end
+    private_class_method :url_insteadof_config
 
     sig { params(credentials: T::Array[Credential]).returns(String) }
     def self.git_store_content(credentials)
@@ -472,7 +576,6 @@ module Dependabot
           password: credential["password"],
           host: host
         ) << "\n"
-        configure_git_to_use_https(host)
       end
     end
     private_class_method :git_store_content
@@ -484,32 +587,6 @@ module Dependabot
       "https://#{credentials}#{host}"
     end
     private_class_method :authenticated_git_url
-
-    sig { params(host: String).void }
-    def self.configure_git_to_use_https(host)
-      # NOTE: we use --global here (rather than --system) so that Dependabot
-      # can be run without privileged access
-      run_shell_command(
-        "git config --global --replace-all url.https://#{host}/." \
-        "insteadOf ssh://git@#{host}/"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/." \
-        "insteadOf ssh://git@#{host}:"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/." \
-        "insteadOf git@#{host}:"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/." \
-        "insteadOf git@#{host}/"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/." \
-        "insteadOf git://#{host}/"
-      )
-    end
 
     sig { params(path: String).void }
     def self.reset_git_repo(path)
