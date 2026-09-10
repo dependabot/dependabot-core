@@ -131,6 +131,9 @@ module Dependabot
 
       protected
 
+      sig { returns(CooldownDateTracker) }
+      attr_reader :cooldown_tracker
+
       sig do
         params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(Dependabot::Version))
@@ -366,9 +369,7 @@ module Dependabot
       end
 
       sig { overridable.returns(Dependabot::Package::PackageRelease) }
-      def current_dependency_release
-        Dependabot::Package::PackageRelease.new(version: version_class.new(T.must(dependency.version)))
-      end
+      def current_dependency_release = PackageRelease.new(version: version_class.new(T.must(dependency.version)))
 
       sig do
         params(language_version: T.nilable(T.any(String, Dependabot::Version)))
