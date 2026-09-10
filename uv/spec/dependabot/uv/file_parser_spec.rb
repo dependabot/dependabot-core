@@ -72,6 +72,12 @@ RSpec.describe Dependabot::Uv::FileParser do
       its(:length) { is_expected.to eq(5) }
     end
 
+    context "with an editable reference written as --editable" do
+      let(:requirements_fixture_name) { "with_setup_path_long_option.txt" }
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with jinja templates" do
       let(:requirements_fixture_name) { "jinja_requirements.txt" }
 

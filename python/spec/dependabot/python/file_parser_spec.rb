@@ -648,6 +648,17 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
+      context "when written as --editable" do
+        let(:requirements) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content: fixture("requirements", "with_setup_path_long_option.txt")
+          )
+        end
+
+        its(:length) { is_expected.to eq(15) }
+      end
+
       context "when in a nested requirements file" do
         let(:files) { [requirements, child_requirements, setup_file] }
         let(:requirements) do
