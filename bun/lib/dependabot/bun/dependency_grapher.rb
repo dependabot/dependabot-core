@@ -114,15 +114,18 @@ module Dependabot
         packages = parsed_lockfile.fetch("packages", nil)
         return {} unless packages.is_a?(Hash)
 
-        # bun.lock entries are arrays: ["{name}@{version}", registry, {details}, integrity]
+        # Registry entries are ["{name}@{version}", registry, {details}, integrity], but git, github, folder,
+        # link and tarball entries are ["{name}@{resolution}", {details}, ...] (git entries carry a trailing
+        # string), so the details object is located by shape rather than by index.
         packages.each_with_object({}) do |(_key, entry), rels|
           next unless entry.is_a?(Array) && entry.first.is_a?(String)
 
           parent_name = T.must(T.cast(entry.first, String).split(/(?<=\w)\@/).first)
-          children = entry.dig(2, "dependencies")&.keys
-          next unless children&.any?
+          details = entry.drop(1).find { |part| part.is_a?(Hash) }
+          children = details&.fetch("dependencies", nil)
+          next unless children.is_a?(Hash) && children.any?
 
-          rels[parent_name] = children
+          rels[parent_name] = children.keys
         end
       end
     end

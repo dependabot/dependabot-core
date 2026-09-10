@@ -218,6 +218,37 @@ RSpec.describe Dependabot::Bun::DependencyGrapher do
       end
     end
 
+    context "with a lockfile containing a git dependency" do
+      let(:dependency_files) { project_dependency_files("bun/grapher_with_git_dependency") }
+
+      it "does not set the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(false)
+        expect(grapher.subdependency_error).to be_nil
+      end
+
+      it "still includes subdependency edges for registry packages" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        fetch_factory = resolved_dependencies["pkg:npm/fetch-factory@0.0.1"]
+        expect(fetch_factory).not_to be_nil
+        expect(fetch_factory.dependencies).to contain_exactly(
+          "pkg:npm/es6-promise@3.3.1",
+          "pkg:npm/lodash@3.10.1"
+        )
+      end
+
+      it "reads the dependencies of non-registry entries" do
+        grapher.resolved_dependencies
+
+        expect(grapher.send(:package_relationships)).to include(
+          "is-number" => ["kind-of"],
+          "kind-of" => ["is-buffer"]
+        )
+      end
+    end
+
     context "when the lockfile is corrupt" do
       let(:dependency_files) { project_dependency_files("bun/grapher_with_subdeps") }
 

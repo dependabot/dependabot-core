@@ -1,0 +1,8 @@
+{
+  "name": "grapher-git-dependency-test",
+  "version": "1.0.0",
+  "dependencies": {
+    "fetch-factory": "^0.0.1",
+    "is-number": "jonschlinkert/is-number"
+  }
+}
