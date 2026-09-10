@@ -144,7 +144,7 @@ module Dependabot
 
       sig { params(filtered: T::Array[Dependabot::Package::PackageRelease]).void }
       def mark_for_selected_release(filtered)
-        current_version = T.cast(dependency.numeric_version, T.nilable(Dependabot::Version))
+        current_version = dependency.numeric_version
         eligible = if @prefiltered
                      filtered
                    else

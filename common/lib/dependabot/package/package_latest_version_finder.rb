@@ -189,7 +189,7 @@ module Dependabot
             "All versions filtered by cooldown for #{dependency.name}, " \
             "falling back to current version #{dependency.version}"
           )
-          return [current_dependency_release]
+          return [cooldown_fallback_release]
         end
 
         filtered
@@ -369,7 +369,7 @@ module Dependabot
       end
 
       sig { overridable.returns(Dependabot::Package::PackageRelease) }
-      def current_dependency_release = PackageRelease.new(version: version_class.new(T.must(dependency.version)))
+      def cooldown_fallback_release = PackageRelease.new(version: version_class.new(T.must(dependency.version)))
 
       sig do
         params(language_version: T.nilable(T.any(String, Dependabot::Version)))

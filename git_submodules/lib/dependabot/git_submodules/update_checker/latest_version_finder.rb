@@ -48,7 +48,7 @@ module Dependabot
         private
 
         sig { override.returns(Dependabot::Package::PackageRelease) }
-        def current_dependency_release
+        def cooldown_fallback_release
           Dependabot::Package::PackageRelease.new(
             version: GitSubmodules::Version.new("0.0.0-0.0"),
             tag: dependency.version
