@@ -77,7 +77,7 @@ module Dependabot
     sig { returns(T::Array[Dependabot::Dependency]) }
     def allowed_dependencies
       if job.security_updates_only?
-        dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
+        job_dependencies
       else
         dependencies.select { |d| job.allowed_update?(d) }
       end

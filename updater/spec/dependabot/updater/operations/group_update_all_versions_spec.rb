@@ -275,10 +275,22 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       context "with different casing" do
         let(:requested_dependencies) { %w(DUMMY-PKG-A missing-one) }
 
-        it "recognizes the manifest dependency" do
+        let(:checker) do
+          instance_double(Dependabot::UpdateCheckers::Base, lowest_security_fix_version: nil, up_to_date?: true)
+        end
+
+        before do
+          allow(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest).to receive(:new).and_call_original
+          allow(Dependabot::Bundler::UpdateChecker).to receive(:new).and_return(checker)
+        end
+
+        it "checks the manifest dependency through the real grouped operation" do
           expect(mock_error_handler).not_to receive(:handle_job_error)
 
           perform
+
+          expect(Dependabot::Bundler::UpdateChecker).to have_received(:new)
+            .with(hash_including(dependency: have_attributes(name: "dummy-pkg-a"))).once
         end
       end
     end
