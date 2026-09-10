@@ -72,6 +72,9 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
 
   let(:package_details_fetcher) { instance_double(Dependabot::RustToolchain::Package::PackageDetailsFetcher) }
   let(:mock_versions) { [] }
+  let(:mock_releases) do
+    mock_versions.map { |version| Dependabot::Package::PackageRelease.new(version: version) }
+  end
 
   before do
     allow(Dependabot::RustToolchain::Package::PackageDetailsFetcher)
@@ -81,7 +84,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
       .to receive(:fetch)
       .and_return(Dependabot::Package::PackageDetails.new(
                     dependency: dependency,
-                    releases: mock_versions.map { |v| Dependabot::Package::PackageRelease.new(version: v) },
+                    releases: mock_releases,
                     dist_tags: nil
                   ))
   end
@@ -232,6 +235,26 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
         expect(filtered_releases.map { |x| x.version.to_s })
           .not_to include("nightly-2025-08-01", "nightly-2025-08-19", "beta-2025-08-10", "1.72.0")
       end
+    end
+  end
+
+  describe "#latest_version" do
+    let(:dependency_requirement) { "nightly-2026-07-07" }
+    let(:dependency_version) { "nightly-2026-07-07" }
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:mock_releases) do
+      [
+        create_release("nightly-2026-07-08", released_at: Time.utc(2026, 7, 8)),
+        create_release("nightly-2026-07-15", released_at: Time.utc(2026, 7, 15))
+      ]
+    end
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.utc(2026, 7, 16))
+    end
+
+    it "selects the latest toolchain outside the cooldown period" do
+      expect(version_finder.latest_version).to eq(Dependabot::RustToolchain::Version.new("nightly-2026-07-08"))
     end
   end
 
@@ -426,8 +449,8 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
     end
   end
 
-  def create_release(version_string)
+  def create_release(version_string, released_at: nil)
     version = Dependabot::RustToolchain::Version.new(version_string)
-    Dependabot::Package::PackageRelease.new(version: version)
+    Dependabot::Package::PackageRelease.new(version: version, released_at: released_at)
   end
 end
