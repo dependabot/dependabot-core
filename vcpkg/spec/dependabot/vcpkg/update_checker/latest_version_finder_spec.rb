@@ -187,6 +187,25 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder do
         expect(latest_version).to eq(Dependabot::Vcpkg::Version.new("2025.04.09"))
       end
     end
+
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:mock_package_details) do
+        Dependabot::Package::PackageDetails.new(
+          dependency: dependency,
+          releases: [Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Vcpkg::Version.new("2025.06.13"),
+            tag: "abc123",
+            released_at: nil
+          )]
+        )
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version).to eq(Dependabot::Vcpkg::Version.new("2025.06.13"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
   end
 
   describe "#tag_for_commit_sha" do
