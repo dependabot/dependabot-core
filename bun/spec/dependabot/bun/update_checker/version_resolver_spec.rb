@@ -227,6 +227,42 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
         end
       end
     end
+
+    context "with a lockfile" do
+      context "when there are already peer requirement issues" do
+        let(:project_name) { "javascript/peer_dependency_mismatch" }
+
+        context "when dealing with a dependency with issues" do
+          let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react",
+              version: nil,
+              package_manager: "bun",
+              requirements: [{
+                file: "package.json",
+                requirement: "^15.2.0",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.npmjs.org" }
+              }]
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+
+          it "checks peer dependencies with --lockfile-only so node_modules is never installed" do
+            allow(Dependabot::Bun::Helpers).to receive(:run_bun_command)
+
+            latest_resolvable_version
+
+            expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+              "update react@16.3.1 --save-text-lockfile --ignore-scripts --lockfile-only",
+              fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts --lockfile-only"
+            )
+          end
+        end
+      end
+    end
   end
 
   describe "#dependency_updates_from_full_unlock" do
