@@ -16,15 +16,17 @@ module Dependabot
           dependency: T.nilable(Dependabot::Dependency),
           lockfile: T.nilable(Dependabot::DependencyFile),
           language_version_manager: LanguageVersionManager,
-          dependency_files: T.nilable(T::Array[Dependabot::DependencyFile])
+          dependency_files: T.nilable(T::Array[Dependabot::DependencyFile]),
+          repo_contents_path: T.nilable(String)
         )
           .void
       end
-      def initialize(dependency:, lockfile:, language_version_manager:, dependency_files: nil)
+      def initialize(dependency:, lockfile:, language_version_manager:, dependency_files: nil, repo_contents_path: nil)
         @dependency = dependency
         @lockfile = lockfile
         @language_version_manager = language_version_manager
         @dependency_files = dependency_files
+        @repo_contents_path = repo_contents_path
       end
 
       sig { params(constraint: T.nilable(String)).returns(String) }
@@ -53,7 +55,8 @@ module Dependabot
       # Called by Python::DependencyGrapher.
       sig { returns(String) }
       def run_pipenv_graph
-        SharedHelpers.in_a_temporary_directory do
+        SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
+          File.write(".python-version", language_version_manager.python_major_minor)
           write_temporary_dependency_files
           language_version_manager.install_required_python
           run_command("pyenv exec pipenv sync --dev", fingerprint: "pyenv exec pipenv sync --dev")
@@ -85,6 +88,9 @@ module Dependabot
       sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
       attr_reader :dependency_files
 
+      sig { returns(T.nilable(String)) }
+      attr_reader :repo_contents_path
+
       sig { returns(Dependabot::Dependency) }
       def current_dependency
         T.must(dependency)
@@ -99,6 +105,11 @@ module Dependabot
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, file.content)
         end
+      end
+
+      sig { returns(String) }
+      def base_directory
+        dependency_files&.first&.directory || "/"
       end
 
       sig { returns(String) }
