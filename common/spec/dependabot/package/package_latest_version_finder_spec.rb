@@ -784,6 +784,20 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         end
       end
 
+      context "when a higher dated prerelease is filtered out" do
+        let(:available_releases) do
+          [
+            { version: "7.0.0.beta1", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+
+        it "marks the selected undated release" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+
       context "when the effective cooldown is zero days" do
         let(:cooldown_options) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0)

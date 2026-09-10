@@ -16,11 +16,14 @@ module Dependabot
       def initialize(dependency:, ignored_versions:)
         @dependency = dependency
         @ignored_versions = ignored_versions
-        @defer = T.let(false, T::Boolean)
+        @active = T.let(false, T::Boolean)
         @language_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @enforce_requirements = T.let(false, T::Boolean)
         @releases = T.let({}, T::Hash[Dependabot::Package::PackageRelease, Integer])
       end
+
+      sig { returns(T::Boolean) }
+      attr_reader :active
 
       sig do
         params(
@@ -30,7 +33,7 @@ module Dependabot
         ).returns(T::Array[Dependabot::Package::PackageRelease])
       end
       def filter(language_version:, requirements:, &block)
-        @defer = true
+        @active = true
         @language_version = language_version
         @enforce_requirements = requirements
 
@@ -38,7 +41,7 @@ module Dependabot
         mark_for_selected_release(filtered)
         filtered
       ensure
-        @defer = false
+        @active = false
         @language_version = nil
         @enforce_requirements = false
         @releases.clear
@@ -52,11 +55,10 @@ module Dependabot
         ).void
       end
       def record(release:, current_version:, days:)
-        if @defer
-          @releases[release] = days if relevant?(release, current_version)
-        elsif current_version.nil? || release.version > current_version
-          mark(days)
-        end
+        return unless active
+        return unless relevant?(release, current_version)
+
+        @releases[release] = days
       end
 
       private
@@ -74,6 +76,7 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def relevant?(release, current_version)
+        return false if release.yanked?
         return false if current_version && release.version <= current_version
         return false if unwanted_prerelease?(release)
         return false if ignored?(release)
@@ -129,15 +132,14 @@ module Dependabot
 
       sig { params(filtered: T::Array[Dependabot::Package::PackageRelease]).void }
       def mark_for_selected_release(filtered)
-        selected = (filtered + @releases.keys).max_by(&:version)
+        current_version = T.cast(dependency.numeric_version, T.nilable(Dependabot::Version))
+        eligible = filtered.select { |release| relevant?(release, current_version) }
+        selected = (eligible + @releases.keys).max_by(&:version)
         return unless selected
 
         days = @releases[selected]
-        mark(days) if days
-      end
+        return unless days
 
-      sig { params(days: Integer).void }
-      def mark(days)
         Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
           dependency,
           cooldown_days: days
