@@ -417,9 +417,11 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
           .to_return(status: 200,
-                     body: fixture("github", "commits_gitmoji.json"),
+                     body: commits_response,
                      headers: json_header)
       end
+
+      let(:commits_response) { fixture("github", "commits_gitmoji.json") }
 
       it { is_expected.to eq("⬆️ ") }
 
@@ -427,6 +429,87 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         let(:security_fix) { true }
 
         it { is_expected.to eq("⬆️🔒 ") }
+      end
+
+      context "when the commits use Gitmoji shortcodes" do
+        let(:commits_response) do
+          JSON.dump(
+            [
+              { commit: { message: ":rocket: release dependency update" } },
+              { commit: { message: ":bug: fix dependency issue" } },
+              { commit: { message: ":memo: update changelog" } },
+              { commit: { message: "refactor dependency handling" } }
+            ]
+          )
+        end
+
+        it { is_expected.to eq("⬆️ ") }
+      end
+
+      context "when the commits use Unicode Gitmoji" do
+        let(:commits_response) do
+          JSON.dump(
+            [
+              { commit: { message: "⬆️ update dependency" } },
+              { commit: { message: "✏️ update dependency notes" } },
+              { commit: { message: "🚀 release dependency update" } },
+              { commit: { message: "refactor dependency handling" } }
+            ]
+          )
+        end
+
+        it { is_expected.to eq("⬆️ ") }
+      end
+
+      context "when the commits use Unicode Gitmoji without a variation selector" do
+        let(:commits_response) do
+          JSON.dump(
+            [
+              { commit: { message: "⬆ update dependency" } },
+              { commit: { message: "🏗 restructure dependency loading" } },
+              { commit: { message: "♻ rework dependency handling" } },
+              { commit: { message: "refactor dependency handling" } }
+            ]
+          )
+        end
+
+        it { is_expected.to eq("⬆️ ") }
+      end
+
+      context "when Unicode Gitmoji appear mid-message" do
+        let(:commits_response) do
+          JSON.dump(
+            [
+              { commit: { message: "update 🚀 dependency" } },
+              { commit: { message: "fix 🐛 dependency issue" } },
+              { commit: { message: "add ✨ dependency" } },
+              { commit: { message: "refactor dependency handling" } }
+            ]
+          )
+        end
+
+        it { is_expected.to eq("") }
+      end
+
+      context "when exactly 30 percent of the commits use Gitmoji" do
+        let(:commits_response) do
+          JSON.dump(
+            [
+              { commit: { message: ":rocket: release dependency update" } },
+              { commit: { message: "⬆️ update dependency" } },
+              { commit: { message: ":bug: fix dependency issue" } },
+              { commit: { message: "refactor dependency handling" } },
+              { commit: { message: "docs: update dependency notes" } },
+              { commit: { message: "test dependency handling" } },
+              { commit: { message: "chore dependency handling" } },
+              { commit: { message: "build dependency handling" } },
+              { commit: { message: "ci dependency handling" } },
+              { commit: { message: "style dependency handling" } }
+            ]
+          )
+        end
+
+        it { is_expected.to eq("") }
       end
     end
 
