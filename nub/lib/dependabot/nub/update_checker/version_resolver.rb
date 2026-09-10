@@ -639,10 +639,10 @@ module Dependabot
           ).returns(T.untyped)
         end
         def run_nub_checker(path:, version:)
-          # nub is pnpm-compatible and rejects `update <pkg>@<pinned-version>`, so pin the candidate
-          # version into the manifests and re-resolve lockfile-only — a peer-dependency conflict then
-          # surfaces as a subprocess failure the caller classifies (same pin approach the FileUpdater
-          # uses; nub has no `install <pkg>@<ver>` / `update <pkg>@<ver>` add-a-specific-version form).
+          # Pin the candidate into the manifests, then re-resolve lockfile-only: a peer-dependency
+          # conflict surfaces as a subprocess failure that run_checker classifies. The pin belongs in
+          # the manifest rather than in `nub update <pkg>@<ver>`, because peer ranges are resolved
+          # against the declared requirement and that command leaves the manifest untouched.
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               pin_dependency_version_in_manifests(version)
@@ -671,21 +671,6 @@ module Dependabot
             end
 
             File.write(manifest, JSON.pretty_generate(parsed)) if changed
-          end
-        end
-
-        sig do
-          params(
-            version: T.nilable(T.any(String, Gem::Version))
-          ).returns(String)
-        end
-        def version_install_arg(version:)
-          git_source = dependency.requirements.find { |req| req.source_string("type") == "git" }
-
-          if git_source
-            "#{dependency.name}@#{git_source.source_string('url')}##{version}"
-          else
-            "#{dependency.name}@#{version}"
           end
         end
 
