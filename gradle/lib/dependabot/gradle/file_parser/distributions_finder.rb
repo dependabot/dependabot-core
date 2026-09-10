@@ -75,7 +75,7 @@ module Dependabot
 
             case key
             when "distributionUrl"
-              distribution_url = value.gsub("\\:", ":")
+              distribution_url = value.gsub("\\:", ":").gsub("\\=", "=")
             when "distributionSha256Sum"
               checksum = value
             else

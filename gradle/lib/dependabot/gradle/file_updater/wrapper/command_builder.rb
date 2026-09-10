@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/gradle/distributions"
 require "dependabot/gradle/file_updater"
 require "dependabot/gradle/file_updater/wrapper/gradle_version_capabilities"
 require "dependabot/gradle/file_updater/wrapper/properties_document"
@@ -48,7 +49,12 @@ module Dependabot
 
           sig { returns(T::Array[String]) }
           def build
-            args = %W(wrapper --gradle-version #{version})
+            custom_url = custom_distribution_url
+            args = if custom_url
+                     %W(wrapper --gradle-distribution-url #{custom_url})
+                   else
+                     %W(wrapper --gradle-version #{version})
+                   end
 
             # Dependabot's proxy cannot satisfy the HEAD request Gradle issues to validate the
             # distribution URL, so we always skip validation. The user's original
@@ -56,7 +62,7 @@ module Dependabot
             args += %w(--no-validate-url)
 
             args += steered_args
-            args += %W(--distribution-type #{distribution_type}) if distribution_type
+            args += %W(--distribution-type #{distribution_type}) if custom_url.nil? && distribution_type
             args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
             args
           end
@@ -94,7 +100,27 @@ module Dependabot
             url = T.must(@requirements[0]).source_string("url")
             # Anchor to the `-bin.zip` / `-all.zip` filename suffix so a path segment such as a
             # mirror host (e.g. https://binaries.example.com/...) can't false-match `bin`/`all`.
-            url&.match(/-(bin|all)\.zip/)&.captures&.first
+            distribution_url&.match(/-(bin|all)\.zip/)&.captures&.first
+          end
+
+          sig { returns(T.nilable(String)) }
+          def distribution_url
+            source = T.let(T.must(@requirements[0])[:source], T::Hash[Symbol, String])
+            source[:url]&.gsub("\\:", ":")
+          end
+
+          sig { returns(T.nilable(String)) }
+          def custom_distribution_url
+            url = distribution_url
+            return nil if url.nil?
+
+            type = distribution_type
+            canonical_url = if type
+                              "#{Dependabot::Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL}/distributions/" \
+                                "gradle-#{version}-#{type}.zip"
+                            end
+
+            url unless url == canonical_url
           end
         end
       end
