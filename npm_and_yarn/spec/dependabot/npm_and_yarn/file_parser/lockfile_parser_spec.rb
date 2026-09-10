@@ -56,7 +56,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         describe "a repeated dependency" do
           subject { dependencies.find { |d| d.name == "acorn" } }
 
-          its(:version) { is_expected.to eq("5.1.1") }
+          its(:version) { is_expected.to eq("5.2.1") }
         end
       end
 
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         describe "a repeated dependency" do
           subject { dependencies.find { |d| d.name == "async" } }
 
-          its(:version) { is_expected.to eq("1.5.2") }
+          its(:version) { is_expected.to eq("2.5.0") }
         end
       end
 
@@ -240,7 +240,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         describe "a repeated dependency" do
           subject { dependencies.find { |d| d.name == "lodash" } }
 
-          its(:version) { is_expected.to eq("2.4.1") }
+          its(:version) { is_expected.to eq("3.10.1") }
         end
       end
 
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         describe "a repeated dependency" do
           subject { dependencies.find { |d| d.name == "lodash" } }
 
-          its(:version) { is_expected.to eq("2.4.1") }
+          its(:version) { is_expected.to eq("3.10.1") }
         end
       end
 
