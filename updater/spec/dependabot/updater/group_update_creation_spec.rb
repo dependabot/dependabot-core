@@ -57,6 +57,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     instance_double(
       Dependabot::Job,
       dependencies: job_dependencies,
+      package_manager: "bundler",
       clone?: clone_job,
       repo_contents_path: repo_contents_path,
       security_advisories_for: security_advisories,
@@ -83,8 +84,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
   let(:dependencies) do
     [
-      instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0"),
-      instance_double(Dependabot::Dependency, name: "dep2", version: "2.0.0")
+      instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", metadata: {}),
+      instance_double(Dependabot::Dependency, name: "dep2", version: "2.0.0", metadata: {})
     ]
   end
 
@@ -322,8 +323,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       let(:notice) do
         Dependabot::Notice.new(
           mode: Dependabot::Notice::NoticeMode::WARN,
-          type: "docker_cooldown_date_unavailable",
-          package_manager_name: "docker",
+          type: "cooldown_date_unavailable",
+          package_manager_name: "bundler",
           description: "Cooldown was not applied.",
           show_in_pr: true,
           show_alert: false
@@ -339,6 +340,73 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
         expect(Dependabot::DependencyChange).to have_received(:new)
           .with(hash_including(notices: [notice]))
+      end
+    end
+
+    context "when a grouped fail-closed check marks a reparsed dependency" do
+      let(:original_dependency) do
+        Dependabot::Dependency.new(
+          name: "dep1",
+          version: "1.0.0",
+          requirements: [],
+          package_manager: "bundler"
+        )
+      end
+      let(:reparsed_dependency) do
+        Dependabot::Dependency.new(
+          name: "dep1",
+          version: "1.0.0",
+          requirements: [],
+          package_manager: "bundler"
+        )
+      end
+      let(:dependencies) { [original_dependency] }
+      let(:group_dependencies) { [original_dependency] }
+      let(:checker) do
+        instance_double(
+          Dependabot::UpdateCheckers::Base,
+          dependency: reparsed_dependency,
+          up_to_date?: true
+        )
+      end
+
+      before do
+        allow(test_instance).to receive(:compile_updates_for).and_call_original
+        allow(test_instance).to receive_messages(
+          update_checker_for: checker,
+          raise_on_ignored?: false,
+          log_checking_for_update: nil,
+          record_blocked_version_ignored: nil,
+          all_versions_ignored?: false,
+          semver_rules_allow_grouping?: true,
+          log_up_to_date: nil,
+          record_security_update_not_found_if_applicable: nil
+        )
+        allow(test_instance).to receive(:dependency_file_parser).and_return(
+          instance_double(Dependabot::FileParsers::Base, parse: [reparsed_dependency])
+        )
+        allow(checker).to receive(:up_to_date?) do
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            reparsed_dependency,
+            cooldown_days: 1
+          )
+          true
+        end
+      end
+
+      it "propagates the marker to the dependency snapshot" do
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(original_dependency))
+          .to be(true)
+      end
+
+      it "adds the warning to the final grouped dependency change" do
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(Dependabot::DependencyChange).to have_received(:new) do |notices:, **|
+          expect(notices.map(&:type)).to include("cooldown_date_unavailable")
+        end
       end
     end
 
