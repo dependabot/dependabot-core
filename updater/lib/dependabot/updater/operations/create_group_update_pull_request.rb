@@ -141,32 +141,32 @@ module Dependabot
           @dependency_change
         end
 
+        # The single place a security update failure is reported for the job. A dependency is
+        # only a failure if no directory managed to update it, so this cannot run until every
+        # directory has been compiled.
         sig { void }
         def report_failed_dependency_updates_for_security_updates
-          # Only report failed updates if the group applies to security updates
-          return unless job.security_updates_only?
+          diagnosed, undiagnosed = failed_security_update_dependencies(dependency_change)
+                                   .partition { |dep| security_update_failures.key?(dep.name.downcase) }
 
-          original_dependencies = group.dependencies
-          updated_dependency_names = dependency_change&.updated_dependencies&.map(&:name) || []
+          # A diagnosed failure carries the conflicting dependencies and lowest non-vulnerable version.
+          diagnosed.each { |dep| report_security_update_failure(dep.name) }
 
-          failed_dependencies = original_dependencies.reject do |dep|
-            updated_dependency_names.include?(dep.name)
-          end
+          # Handled state has to span every directory: computing `dependency_change` leaves
+          # `current_directory` pointing at the last one.
+          handled = Set.new(dependency_snapshot.all_handled_dependencies.map(&:downcase))
 
-          # Filter out dependencies that were already handled (i.e., had errors reported during processing)
-          unhandled_failed_dependencies = failed_dependencies.reject do |dep|
-            dependency_snapshot.handled_dependencies.include?(dep.name)
-          end
-
-          unhandled_failed_dependencies.each do |failed_dependency|
-            error_handler.handle_dependency_error(
-              error: Dependabot::DependabotError.new(
-                "Security update failed for #{failed_dependency.name} #{failed_dependency.version}"
-              ),
-              dependency: failed_dependency,
-              dependency_group: group
-            )
-          end
+          undiagnosed
+            .reject { |dep| handled.include?(dep.name.downcase) }
+            .each do |dep|
+              error_handler.handle_dependency_error(
+                error: Dependabot::DependabotError.new(
+                  "Security update failed for #{dep.name} #{dep.version}"
+                ),
+                dependency: dep,
+                dependency_group: group
+              )
+            end
         end
       end
     end
