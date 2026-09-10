@@ -13,7 +13,6 @@ Sorbet/ForbidTUnsafe:
 # exclusion lives here per-gem instead. Same rationale as the RSpec/Lint entries below.
 Sorbet/ForbidTUntyped:
   Exclude:
-    - lib/dependabot/nub/dependency_files_filterer.rb
     - lib/dependabot/nub/file_fetcher.rb
     - lib/dependabot/nub/file_parser.rb
     - lib/dependabot/nub/file_parser/lockfile_parser.rb
@@ -23,7 +22,6 @@ Sorbet/ForbidTUntyped:
     - lib/dependabot/nub/metadata_finder.rb
     - lib/dependabot/nub/package/package_details_fetcher.rb
     - lib/dependabot/nub/package/registry_finder.rb
-    - lib/dependabot/nub/package_manager.rb
     - lib/dependabot/nub/registry_helper.rb
     - lib/dependabot/nub/registry_parser.rb
     - lib/dependabot/nub/update_checker.rb

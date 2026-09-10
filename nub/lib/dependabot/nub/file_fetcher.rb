@@ -9,6 +9,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/nub/helpers"
 require "dependabot/nub/package_manager"
+require "dependabot/package/npm_package_manager_config"
 require "dependabot/nub/file_parser"
 require "dependabot/nub/file_parser/lockfile_parser"
 require "dependabot/file_filtering"
@@ -103,7 +104,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            parsed_package_json,
+            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
             lockfiles,
             registry_config_files,
             credentials
