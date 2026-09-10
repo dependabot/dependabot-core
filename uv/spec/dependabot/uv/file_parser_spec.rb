@@ -947,6 +947,55 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "when uv_excludes_pip experiment is enabled" do
+      before { Dependabot::Experiments.register(:uv_excludes_pip, true) }
+
+      context "with only requirements.txt files" do
+        let(:files) { [requirements] }
+
+        it "returns no dependencies" do
+          expect(parser.parse).to be_empty
+        end
+      end
+
+      context "with pyproject.toml and requirements.txt" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "uv_simple.toml")
+          )
+        end
+        let(:files) { [pyproject, requirements] }
+
+        it "parses pyproject.toml dependencies and ignores requirements.txt" do
+          names = parser.parse.map(&:name)
+          expect(names).to include("requests")
+          expect(names).not_to include("psycopg2")
+        end
+      end
+
+      context "with uv.lock, pyproject.toml, and requirements.txt" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "uv_simple.toml")
+          )
+        end
+        let(:uv_lock) do
+          Dependabot::DependencyFile.new(
+            name: "uv.lock",
+            content: fixture("uv_locks", "simple.lock")
+          )
+        end
+        let(:files) { [pyproject, uv_lock, requirements] }
+
+        it "parses pyproject.toml + uv.lock dependencies and ignores requirements.txt" do
+          names = parser.parse.map(&:name)
+          expect(names).not_to include("psycopg2")
+        end
+      end
+    end
+
     context "with uv workspace member pyprojects" do
       let(:files) { [pyproject, workspace_member_pyproject] }
       let(:parsed_files) { [] }
