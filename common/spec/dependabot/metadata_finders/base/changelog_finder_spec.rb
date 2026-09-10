@@ -1000,7 +1000,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:expected_pruned_changelog) do
             "## v2.2.0\n" \
               "- [Fetch all history for all tags and branches when " \
-              "fetch-depth=0](https://github.com/actions/checkout/pull/258)\n" \
+              "fetch-depth=0](https://github.com/actions/checkout/pull/258)\n"
           end
 
           context "when there's a new ref" do

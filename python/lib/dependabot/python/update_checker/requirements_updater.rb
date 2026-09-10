@@ -12,7 +12,7 @@ require "dependabot/requirements_update_strategy"
 module Dependabot
   module Python
     class UpdateChecker
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class RequirementsUpdater
         extend T::Sig
 
@@ -358,7 +358,7 @@ module Dependabot
           new_segments
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
-                .join(".")
+            .join(".")
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
@@ -542,7 +542,6 @@ module Dependabot
           Python::Requirement
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

@@ -1,0 +1,8 @@
+on: [push]
+
+name: Action and run collision
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: [{ uses: actions/checkout@v2.1.0 }, { run: echo done } # keep run note
+    ]

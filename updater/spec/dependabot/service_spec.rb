@@ -11,6 +11,7 @@ require "dependabot/errors"
 require "dependabot/pull_request_creator"
 require "dependabot/service"
 require "dependabot/experiments"
+require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::Service do
   subject(:service) { described_class.new(client: mock_client) }
@@ -32,15 +33,6 @@ RSpec.describe Dependabot::Service do
     )
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
-  end
-
-  let(:enable_enhanced_error_details_for_updater) { false }
-
-  before do
-    Dependabot::Experiments.register(
-      :enable_enhanced_error_details_for_updater,
-      enable_enhanced_error_details_for_updater
-    )
   end
 
   shared_context "with a created pr" do
@@ -314,19 +306,11 @@ RSpec.describe Dependabot::Service do
     end
 
     it "memoizes a shorthand summary of the error" do
-      expect(service.errors).to eql([["epoch_error", nil]])
-    end
-
-    context "when enable_enhanced_error_details_for_updater is enabled" do
-      let(:enable_enhanced_error_details_for_updater) { true }
-
-      it "memoizes a shorthand summary of the error" do
-        expect(service.errors).to eql(
-          [["epoch_error", {
-            message: "What is fortran doing here?!"
-          }, nil]]
-        )
-      end
+      expect(service.errors).to eql(
+        [["epoch_error", {
+          message: "What is fortran doing here?!"
+        }, nil]]
+      )
     end
   end
 
@@ -407,6 +391,61 @@ RSpec.describe Dependabot::Service do
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::JOB_ID => job.id,
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager
+          )
+        )
+    end
+
+    it "groups EOF socket errors by package manager and Dependabot call site" do
+      job = instance_double(
+        Dependabot::Job,
+        id: 1234,
+        package_manager: "pip",
+        repo_private?: false,
+        repo_owner: "foo",
+        dependencies: nil,
+        dependency_groups: nil,
+        security_updates_only?: false
+      )
+      error = Excon::Error::Socket.new(EOFError.new).tap do |socket_error|
+        socket_error.set_backtrace(
+          [
+            "/home/dependabot/common/lib/dependabot/registry_client.rb:32:in 'get'",
+            "/home/dependabot/python/lib/dependabot/python/package/package_details_fetcher.rb:445:" \
+            "in 'registry_response_for_dependency'"
+          ]
+        )
+      end
+
+      service.capture_exception(error: error, job: job)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::FINGERPRINT => [
+              "excon-eof",
+              "pip",
+              "python/lib/dependabot/python/package/package_details_fetcher.rb:registry_response_for_dependency"
+            ]
+          )
+        )
+    end
+
+    it "preserves an existing fingerprint" do
+      error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+        message: "Something went wrong",
+        error_context: { fingerprint: "existing-fingerprint" }
+      )
+
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::FINGERPRINT => ["existing-fingerprint"]
           )
         )
     end
@@ -667,19 +706,15 @@ RSpec.describe Dependabot::Service do
           .to include("epoch_error")
       end
 
-      context "when enable_enhanced_error_details_for_updater is enabled" do
-        let(:enable_enhanced_error_details_for_updater) { true }
-
-        it "includes an error summary" do
-          expect(service.summary)
-            .to include("epoch_error")
-          expect(service.summary)
-            .to include("Type")
-          expect(service.summary)
-            .to include("Details")
-          expect(service.summary)
-            .to include("\"message\": \"What is fortran doing here?!\"")
-        end
+      it "includes enhanced error details" do
+        expect(service.summary)
+          .to include("epoch_error")
+        expect(service.summary)
+          .to include("Type")
+        expect(service.summary)
+          .to include("Details")
+        expect(service.summary)
+          .to include("\"message\": \"What is fortran doing here?!\"")
       end
     end
 
@@ -698,23 +733,19 @@ RSpec.describe Dependabot::Service do
           .to include("dependabot-cobol")
       end
 
-      context "when enable_enhanced_error_details_for_updater is enabled" do
-        let(:enable_enhanced_error_details_for_updater) { true }
-
-        it "includes an error summary" do
-          expect(service.summary)
-            .to include("unknown_error")
-          expect(service.summary)
-            .to include("dependabot-cobol")
-          expect(service.summary)
-            .to include("Dependency")
-          expect(service.summary)
-            .to include("Error Type")
-          expect(service.summary)
-            .to include("Error Details")
-          expect(service.summary)
-            .to include("\"message\": \"0001 Undefined error. Inform Technical Support\"")
-        end
+      it "includes enhanced error details" do
+        expect(service.summary)
+          .to include("unknown_error")
+        expect(service.summary)
+          .to include("dependabot-cobol")
+        expect(service.summary)
+          .to include("Dependency")
+        expect(service.summary)
+          .to include("Error Type")
+        expect(service.summary)
+          .to include("Error Details")
+        expect(service.summary)
+          .to include("\"message\": \"0001 Undefined error. Inform Technical Support\"")
       end
     end
 

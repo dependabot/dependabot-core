@@ -1,0 +1,5 @@
+on: [push]
+
+name: Cross-sequence comment
+jobs: { first: { runs-on: ubuntu-latest, steps: [{ uses: actions/checkout@v2.1.0 }] }, second: { runs-on: ubuntu-latest, steps: [{ uses: actions/setup-node@v3.0.0 }, # v2.1.0
+      { run: echo done }] } }

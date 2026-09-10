@@ -12,6 +12,8 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
+      Audit = Dependabot::UpdateCheckers::VulnerabilityAudit
+
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/library_detector"
       require_relative "update_checker/latest_version_finder"
@@ -52,7 +54,7 @@ module Dependabot
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @updated_requirements = T.let(nil, T.nilable(T::Array[Dependabot::DependencyRequirement]))
-        @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        @vulnerability_audit = T.let(nil, T.nilable(Audit))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
 
         @latest_version_for_git_dependency = T.let(nil, T.nilable(T.any(String, Gem::Version)))
@@ -116,7 +118,7 @@ module Dependabot
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         # This will require a full unlock to update multiple top level ancestors.
-        return if vulnerability_audit["fix_available"] && vulnerability_audit["top_level_ancestors"].count > 1
+        return if vulnerability_audit.fix_available && vulnerability_audit.top_level_ancestors.count > 1
 
         latest_version_finder.lowest_security_fix_version
       end
@@ -198,7 +200,7 @@ module Dependabot
         library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
-      sig { override.returns(T::Array[T::Hash[String, String]]) }
+      sig { override.returns(T::Array[Dependabot::UpdateCheckers::Conflict]) }
       def conflicting_dependencies
         conflicts = ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
@@ -209,9 +211,8 @@ module Dependabot
         )
         return conflicts unless vulnerability_audit_performed?
 
-        vulnerable = [vulnerability_audit].select do |hash|
-          !hash["fix_available"] && hash["explanation"]
-        end
+        audit = vulnerability_audit
+        vulnerable = !audit.fix_available && audit.explanation ? [audit.to_h] : []
 
         conflicts + vulnerable
       end
@@ -223,7 +224,7 @@ module Dependabot
         !!defined?(@vulnerability_audit)
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(Audit) }
       def vulnerability_audit
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
@@ -256,12 +257,12 @@ module Dependabot
 
         return false unless security_advisories.any?
 
-        vulnerability_audit["fix_available"]
+        vulnerability_audit.fix_available
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        return conflicting_updated_dependencies if security_advisories.any? && vulnerability_audit["fix_available"]
+        return conflicting_updated_dependencies if security_advisories.any? && vulnerability_audit.fix_available
 
         T.must(version_resolver.dependency_updates_from_full_unlock)
          .map { |update_details| build_updated_dependency(update_details.transform_keys(&:to_sym)) }
@@ -273,8 +274,8 @@ module Dependabot
         top_level_dependencies = top_level_dependency_lookup
 
         updated_deps = []
-        vulnerability_audit["fix_updates"].each do |update|
-          dependency_name = update["dependency_name"]
+        vulnerability_audit.fix_updates.each do |update|
+          dependency_name = update.dependency_name
           requirements = top_level_dependencies[dependency_name]&.requirements || []
 
           updated_deps << build_updated_dependency(
@@ -283,8 +284,8 @@ module Dependabot
               package_manager: "bun",
               requirements: requirements
             ),
-            version: update["target_version"],
-            previous_version: update["current_version"]
+            version: update.target_version,
+            previous_version: update.current_version
           )
         end
         # rubocop:enable Metrics/AbcSize
@@ -294,7 +295,7 @@ module Dependabot
         # to include it so it's described in the PR and we'll pass validation
         # that this dependency is at a non-vulnerable version.
         if updated_deps.none? { |dep| dep.name == dependency.name }
-          target_version = vulnerability_audit["target_version"]
+          target_version = vulnerability_audit.target_version
           updated_deps << build_updated_dependency(
             dependency: dependency,
             version: target_version,

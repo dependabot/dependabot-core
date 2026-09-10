@@ -77,6 +77,18 @@ RSpec.describe Dependabot::Docker::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
+    context "when a Dockerfile cannot be parsed" do
+      let(:error) { Dependabot::DependencyFileNotParseable.new("/Dockerfile") }
+
+      before do
+        allow(dockerfile).to receive(:content).and_raise(error)
+      end
+
+      it "raises the unparseable file error" do
+        expect { dependencies }.to raise_error(error)
+      end
+    end
+
     context "with a name" do
       let(:dockerfile_fixture_name) { "name" }
 
@@ -1168,6 +1180,124 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("my-repo/nginx")
           expect(dependency.version).to eq("1.14.2")
           expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "when a YAML file cannot be parsed" do
+      let(:unparseable_yaml) do
+        <<~YAML
+          metadata:
+            annotations:
+              a.b/c: "true"
+             invalid: yaml
+        YAML
+      end
+      let(:unparseable_file) do
+        Dependabot::DependencyFile.new(
+          name: "unparseable.yaml",
+          directory: "/",
+          content: unparseable_yaml
+        )
+      end
+
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      context "with a valid Dockerfile" do
+        let(:podfiles) { [dockerfile, unparseable_file] }
+
+        it "warns and parses dependencies from the Dockerfile" do
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("ubuntu")
+          expect(dependencies.first.version).to eq("17.04")
+          expect(Dependabot.logger).to have_received(:warn).with(
+            a_string_including("Failed to parse YAML file /unparseable.yaml")
+          )
+        end
+      end
+
+      context "with another valid YAML file" do
+        let(:podfiles) { [unparseable_file, valid_file] }
+        let(:valid_file) do
+          Dependabot::DependencyFile.new(
+            name: "valid.yaml",
+            directory: "/",
+            content: fixture("kubernetes", "yaml", "pod.yaml")
+          )
+        end
+
+        it "warns and parses dependencies from the valid file" do
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("nginx")
+          expect(dependencies.first.version).to eq("1.14.2")
+          expect(dependencies.first.requirements).to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "valid.yaml",
+              source: { tag: "1.14.2" }
+            }]
+          )
+          expect(Dependabot.logger).to have_received(:warn).with(
+            a_string_including("Failed to parse YAML file /unparseable.yaml")
+          )
+        end
+      end
+
+      context "without a Dockerfile or parseable YAML file" do
+        let(:podfiles) { [unparseable_file] }
+
+        it "warns and returns no dependencies" do
+          expect(dependencies).to be_empty
+          expect(Dependabot.logger).to have_received(:warn).with(
+            a_string_including("Failed to parse YAML file /unparseable.yaml")
+          )
+        end
+      end
+
+      context "with multiple directories" do
+        let(:files_by_directory) do
+          {
+            "/invalid-one" => [
+              Dependabot::DependencyFile.new(
+                name: "unparseable.yaml",
+                directory: "/invalid-one",
+                content: unparseable_yaml
+              )
+            ],
+            "/invalid-two" => [
+              Dependabot::DependencyFile.new(
+                name: "unparseable.yaml",
+                directory: "/invalid-two",
+                content: unparseable_yaml
+              )
+            ],
+            "/valid" => [
+              Dependabot::DependencyFile.new(
+                name: "valid.yaml",
+                directory: "/valid",
+                content: fixture("kubernetes", "yaml", "pod.yaml")
+              )
+            ]
+          }
+        end
+
+        it "continues parsing later directories" do
+          dependencies_by_directory = files_by_directory.to_h do |directory, directory_files|
+            directory_source = source.dup.tap { |configured_source| configured_source.directory = directory }
+            directory_dependencies = described_class.new(
+              dependency_files: directory_files,
+              source: directory_source
+            ).parse
+
+            [directory, directory_dependencies]
+          end
+
+          expect(dependencies_by_directory.fetch("/invalid-one")).to be_empty
+          expect(dependencies_by_directory.fetch("/invalid-two")).to be_empty
+          expect(dependencies_by_directory.fetch("/valid").map(&:name)).to eq(["nginx"])
         end
       end
     end

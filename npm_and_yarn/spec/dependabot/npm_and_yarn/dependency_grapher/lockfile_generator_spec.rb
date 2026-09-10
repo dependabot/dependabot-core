@@ -27,13 +27,6 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
     ]
   end
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
-  end
-
   describe "#generate" do
     context "with npm package manager" do
       let(:package_manager) { "npm" }

@@ -95,4 +95,27 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
       expect(described_class.skip_cooldown?(cooldown, "my-dep", cooldown_enabled: true)).to be false
     end
   end
+
+  describe ".mark_cooldown_date_unavailable" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "my-dep",
+        version: "1.0.0",
+        requirements: [],
+        package_manager: "bundler"
+      )
+    end
+
+    it "marks the dependency when the effective cooldown is positive" do
+      described_class.mark_cooldown_date_unavailable(dependency, cooldown_days: 1)
+
+      expect(described_class.cooldown_date_unavailable?(dependency)).to be true
+    end
+
+    it "does not mark the dependency when the effective cooldown is zero" do
+      described_class.mark_cooldown_date_unavailable(dependency, cooldown_days: 0)
+
+      expect(described_class.cooldown_date_unavailable?(dependency)).to be false
+    end
+  end
 end

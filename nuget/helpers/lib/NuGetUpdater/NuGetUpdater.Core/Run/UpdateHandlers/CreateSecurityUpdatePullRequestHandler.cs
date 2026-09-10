@@ -150,7 +150,8 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length > 0)
             {
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
+                var reportedDependencies = updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory));
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true);
                 if (existingPullRequest is not null)
                 {
                     await apiHandler.RecordUpdateJobError(new PullRequestExistsForSecurityUpdate(rawDependencies), logger);
@@ -165,7 +166,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                 var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                 await apiHandler.CreatePullRequest(new CreatePullRequest()
                 {
-                    Dependencies = [.. updatedDependencies],
+                    Dependencies = [.. updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory))],
                     UpdatedDependencyFiles = [.. updatedDependencyFiles],
                     BaseCommitSha = baseCommitSha,
                     CommitMessage = commitMessage,

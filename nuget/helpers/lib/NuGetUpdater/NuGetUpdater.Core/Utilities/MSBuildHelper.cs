@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -563,6 +564,119 @@ internal static partial class MSBuildHelper
         return targets;
     }
 
+    internal static async Task<ImmutableDictionary<string, string>?> GetProjectPropertiesAsync(
+        string projectPath,
+        IReadOnlyCollection<string> propertyNames,
+        ILogger logger
+    )
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify properties, so we can skip the process invocation
+            return null;
+        }
+
+        var requestedPropertyNames = propertyNames
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray();
+        if (requestedPropertyNames.Length == 0)
+        {
+            return ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (requestedPropertyNames.Length == 1)
+        {
+            var propertyName = requestedPropertyNames[0];
+            var propertyValue = await GetProjectPropertyAsync(projectPath, propertyName, logger);
+            return propertyValue is null
+                ? null
+                : ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase).Add(propertyName, propertyValue);
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var tempDir = Directory.CreateTempSubdirectory("__get_msbuild_properties_");
+        try
+        {
+            var resultOutputPath = Path.Combine(tempDir.FullName, "result.json");
+            var args = new[]
+            {
+                projectPath,
+                $"-getProperty:{string.Join(",", requestedPropertyNames)}",
+                $"-getResultOutputFile:{resultOutputPath}",
+            };
+
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+            if (exitCode != 0)
+            {
+                if (IsGetPropertyUnsupported(stdOut, stdErr))
+                {
+                    var fallbackProperties = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var propertyName in requestedPropertyNames)
+                    {
+                        var propertyValue = await GetProjectPropertyUsingCompatibilityTargetAsync(projectPath, propertyName, logger);
+                        if (propertyValue is null)
+                        {
+                            return null;
+                        }
+
+                        fallbackProperties[propertyName] = propertyValue;
+                    }
+
+                    return fallbackProperties.ToImmutable();
+                }
+
+                logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+                return null;
+            }
+
+            if (!File.Exists(resultOutputPath))
+            {
+                logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]: MSBuild did not produce a result output file.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+                return null;
+            }
+
+            var resultOutput = await File.ReadAllTextAsync(resultOutputPath);
+            try
+            {
+                using var resultDocument = JsonDocument.Parse(resultOutput);
+                var root = resultDocument.RootElement;
+                if (root.ValueKind != JsonValueKind.Object ||
+                    !root.TryGetProperty("Properties", out var propertiesElement) ||
+                    propertiesElement.ValueKind != JsonValueKind.Object)
+                {
+                    logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]: MSBuild result output did not contain a properties object.");
+                    return null;
+                }
+
+                var properties = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var propertyName in requestedPropertyNames)
+                {
+                    if (!propertiesElement.TryGetProperty(propertyName, out var propertyElement) ||
+                        propertyElement.ValueKind != JsonValueKind.String ||
+                        propertyElement.GetString() is not string propertyValue)
+                    {
+                        logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]: MSBuild result output did not contain a string value for the property.");
+                        return null;
+                    }
+
+                    properties[propertyName] = propertyValue;
+                }
+
+                return properties.ToImmutable();
+            }
+            catch (JsonException ex)
+            {
+                logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]: MSBuild produced invalid JSON result output: {ex.Message}");
+                return null;
+            }
+        }
+        finally
+        {
+            tempDir.Delete(recursive: true);
+        }
+    }
+
     internal static async Task<string?> GetProjectPropertyAsync(string projectPath, string propertyName, ILogger logger)
     {
         var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
@@ -582,41 +696,9 @@ internal static partial class MSBuildHelper
         var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
-            if (stdOut.Contains("error MSB1001: Unknown switch."))
+            if (IsGetPropertyUnsupported(stdOut, stdErr))
             {
-                // older versions of MSBuild don't allow `-getProperty` so we go a different route
-                // we can't force an indirect property evaluation, but we can force import a custom targets file that effectively renames the property
-                var tempDir = Directory.CreateTempSubdirectory("__get_msbuild_property_");
-                try
-                {
-                    // prepare magic contents
-                    var targetsTemplateContents = await File.ReadAllTextAsync(GetFileFromRuntimeDirectory("GetProperty.targets"));
-                    var targetContents = targetsTemplateContents.Replace("%RequestedPropertyName%", $"$({propertyName})");
-
-                    // write magic contents
-                    var tempTargetsPath = Path.Combine(tempDir.FullName, $"GetProperty_{propertyName}.targets");
-                    await File.WriteAllTextAsync(tempTargetsPath, targetContents);
-
-                    // do it
-                    args = [
-                        projectPath,
-                        $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
-                        "/t:_Dependabot_GetProperty",
-                    ];
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
-                    if (exitCode == 0)
-                    {
-                        var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);
-                        if (match.Success)
-                        {
-                            return match.Groups["PropertyValue"].Value.Trim();
-                        }
-                    }
-                }
-                finally
-                {
-                    tempDir.Delete(recursive: true);
-                }
+                return await GetProjectPropertyUsingCompatibilityTargetAsync(projectPath, propertyName, logger);
             }
 
             logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
@@ -629,6 +711,11 @@ internal static partial class MSBuildHelper
     internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
     {
         var rawValue = await GetProjectPropertyAsync(projectPath, "TargetFrameworks", logger);
+        return ParseProjectTargetFrameworks(rawValue);
+    }
+
+    internal static ImmutableArray<string> ParseProjectTargetFrameworks(string? rawValue)
+    {
         if (rawValue is null)
         {
             return [];
@@ -639,6 +726,49 @@ internal static partial class MSBuildHelper
             .OrderBy(t => t)
             .ToImmutableArray();
         return tfms;
+    }
+
+    private static bool IsGetPropertyUnsupported(string stdOut, string stdErr)
+    {
+        return stdOut.Contains("error MSB1001: Unknown switch.", StringComparison.Ordinal) ||
+            stdErr.Contains("error MSB1001: Unknown switch.", StringComparison.Ordinal);
+    }
+
+    private static async Task<string?> GetProjectPropertyUsingCompatibilityTargetAsync(string projectPath, string propertyName, ILogger logger)
+    {
+        // Older versions of MSBuild don't allow `-getProperty`, so import a custom target that reports the property.
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var tempDir = Directory.CreateTempSubdirectory("__get_msbuild_property_");
+        try
+        {
+            var targetsTemplateContents = await File.ReadAllTextAsync(GetFileFromRuntimeDirectory("GetProperty.targets"));
+            var targetContents = targetsTemplateContents.Replace("%RequestedPropertyName%", $"$({propertyName})");
+            var tempTargetsPath = Path.Combine(tempDir.FullName, $"GetProperty_{propertyName}.targets");
+            await File.WriteAllTextAsync(tempTargetsPath, targetContents);
+
+            var args = new[]
+            {
+                projectPath,
+                $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
+                "/t:_Dependabot_GetProperty",
+            };
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+            if (exitCode == 0)
+            {
+                var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);
+                if (match.Success)
+                {
+                    return match.Groups["PropertyValue"].Value.Trim();
+                }
+            }
+
+            logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return null;
+        }
+        finally
+        {
+            tempDir.Delete(recursive: true);
+        }
     }
 
     internal static string? GetMissingFile(string output)

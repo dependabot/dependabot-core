@@ -114,7 +114,7 @@ module Dependabot
         PNPM_TRUST_LOCKFILE_VERSION = "11.3"
         # pnpm-workspace.yaml settings that govern verification of loaded lockfile
         # entries, and so must not be overridden by `trustLockfile=true`.
-        LOCKFILE_VERIFICATION_SETTINGS = T.let(%w(trustLockfile trustPolicy).freeze, T::Array[String])
+        LOCKFILE_VERIFICATION_SETTINGS = %w(trustLockfile trustPolicy).freeze
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}

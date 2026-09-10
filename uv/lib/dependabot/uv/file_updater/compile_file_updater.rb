@@ -18,7 +18,7 @@ require "dependabot/uv/authed_url_builder"
 module Dependabot
   module Uv
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class CompileFileUpdater
         extend T::Sig
 
@@ -434,12 +434,17 @@ module Dependabot
             args << index_url if index_url
 
             begin
+              helper_result = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              )
+
+              # Skip this index if helper returned nil (can happen with unavailable registries)
+              next if helper_result.nil?
+
               native_helper_hashes = T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-                  function: "get_dependency_hash",
-                  args: args
-                ),
+                helper_result,
                 T::Array[T::Hash[String, String]]
               ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
 
@@ -450,6 +455,8 @@ module Dependabot
               next
             end
           end
+
+          raise DependencyFileNotResolvable, "Unable to find hashes for package #{name}" if hashes.empty?
 
           hashes
         end
@@ -665,7 +672,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

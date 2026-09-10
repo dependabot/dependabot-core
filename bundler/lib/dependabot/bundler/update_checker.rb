@@ -131,7 +131,7 @@ module Dependabot
         cooldown_options_builder.release_cooldown_options(@update_cooldown)
       end
 
-      sig { override.returns(T::Array[T::Hash[String, String]]) }
+      sig { override.returns(T::Array[Dependabot::UpdateCheckers::Conflict]) }
       def conflicting_dependencies
         ConflictingDependencyResolver.new(
           dependency_files: dependency_files,

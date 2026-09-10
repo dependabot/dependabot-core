@@ -7,4 +7,4 @@ pyenv exec flake8 helpers/. --count --exclude=./.*,./python/spec/fixtures --show
 cd /opt/python && pyenv exec python -m pytest test/ -v && cd -
 
 bundle install
-bundle exec turbo_tests --verbose
+bundle exec turbo_tests2 --verbose

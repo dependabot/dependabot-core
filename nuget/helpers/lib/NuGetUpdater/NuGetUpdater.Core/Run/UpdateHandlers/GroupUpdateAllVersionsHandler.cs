@@ -64,6 +64,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var groupMatcher = group.GetGroupMatcher();
             var updateOperationsPerformed = new List<UpdateOperationBase>();
             var updatedDependencies = new List<ReportedDependency>();
+            var updatedDependenciesWithDirectories = new List<ReportedDependencyWithDirectory>();
             var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
             foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
@@ -142,6 +143,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         .ToArray();
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
+                    updatedDependenciesWithDirectories.AddRange(updatedDependenciesForThis.Select(d => ReportedDependencyWithDirectory.From(d, directory)));
                     updateOperationsPerformed.AddRange(patchedUpdateOperations);
                     foreach (var o in patchedUpdateOperations)
                     {
@@ -156,7 +158,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             if (updateOperationsPerformed.Count > 0)
             {
                 var existingPullRequest = job.GetExistingPullRequestForDependencies(
-                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
+                        dependencies: updatedDependenciesWithDirectories,
                         considerVersions: true);
                 if (existingPullRequest is not null)
                 {
@@ -169,7 +171,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                     await apiHandler.CreatePullRequest(new CreatePullRequest()
                     {
-                        Dependencies = [.. updatedDependencies],
+                        Dependencies = [.. updatedDependenciesWithDirectories],
                         UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
                         BaseCommitSha = baseCommitSha,
                         CommitMessage = commitMessage,
@@ -272,7 +274,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 if (updateOperationsPerformed.Count > 0)
                 {
                     var existingPullRequest = job.GetExistingPullRequestForDependencies(
-                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
+                        dependencies: updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory)),
                         considerVersions: true);
                     if (existingPullRequest is not null)
                     {
@@ -285,7 +287,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                         await apiHandler.CreatePullRequest(new CreatePullRequest()
                         {
-                            Dependencies = [.. updatedDependencies],
+                            Dependencies = [.. updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory))],
                             UpdatedDependencyFiles = [.. updatedDependencyFiles],
                             BaseCommitSha = baseCommitSha,
                             CommitMessage = commitMessage,

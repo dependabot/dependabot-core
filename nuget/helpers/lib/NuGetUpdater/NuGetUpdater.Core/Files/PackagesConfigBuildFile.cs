@@ -20,7 +20,9 @@ internal sealed class PackagesConfigBuildFile : XmlBuildFile
         }
     }
 
-    public IEnumerable<IXmlElementSyntax> Packages => Contents.RootSyntax.GetElements("package", StringComparison.OrdinalIgnoreCase);
+    public IEnumerable<IXmlElementSyntax> Packages => (Contents.RootSyntax
+        ?? throw new UnparseableFileException("packages.config does not contain a root element", Path))
+        .GetElements("package", StringComparison.OrdinalIgnoreCase);
 
     public IEnumerable<Dependency> GetDependencies() => Packages
         .Select(p => new Dependency(

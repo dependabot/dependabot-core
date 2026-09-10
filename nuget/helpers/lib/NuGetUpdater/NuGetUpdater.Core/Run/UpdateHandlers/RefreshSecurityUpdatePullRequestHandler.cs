@@ -164,7 +164,8 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
                 var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
+                var reportedDependencies = updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory)).ToArray();
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true);
                 if (existingPullRequest is not null)
                 {
                     await apiHandler.UpdatePullRequest(new UpdatePullRequest()
@@ -181,7 +182,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 }
                 else
                 {
-                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
+                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false);
                     if (existingPrButDifferent is not null)
                     {
                         await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
@@ -189,7 +190,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     await apiHandler.CreatePullRequest(new CreatePullRequest()
                     {
-                        Dependencies = [.. updatedDependencies],
+                        Dependencies = [.. updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory))],
                         UpdatedDependencyFiles = [.. updatedDependencyFiles],
                         BaseCommitSha = baseCommitSha,
                         CommitMessage = commitMessage,

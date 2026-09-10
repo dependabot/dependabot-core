@@ -69,12 +69,25 @@ module Dependabot
 
       sig { params(checker: Dependabot::UpdateCheckers::Base).void }
       def record_security_update_not_possible_error(checker)
+        service.record_update_job_error(
+          error_type: "security_update_not_possible",
+          error_details: security_update_not_possible_error_details(checker)
+        )
+      end
+
+      sig do
+        params(
+          checker: Dependabot::UpdateCheckers::Base,
+          conflicting_dependencies: T.nilable(T::Array[Dependabot::UpdateCheckers::Conflict])
+        ).returns(Dependabot::ErrorDetails::Detail)
+      end
+      def security_update_not_possible_error_details(checker, conflicting_dependencies: nil)
         latest_allowed_version =
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
         lowest_non_vulnerable_version =
           checker.lowest_security_fix_version&.to_s
-        conflicting_dependencies = checker.conflicting_dependencies
+        conflicting_dependencies ||= checker.conflicting_dependencies
 
         Dependabot.logger.info(
           security_update_not_possible_message(checker, T.must(latest_allowed_version), conflicting_dependencies)
@@ -83,15 +96,12 @@ module Dependabot
           earliest_fixed_version_message(lowest_non_vulnerable_version)
         )
 
-        service.record_update_job_error(
-          error_type: "security_update_not_possible",
-          error_details: {
-            "dependency-name": checker.dependency.name,
-            "latest-resolvable-version": latest_allowed_version,
-            "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
-            "conflicting-dependencies": conflicting_dependencies
-          }
-        )
+        {
+          "dependency-name": checker.dependency.name,
+          "latest-resolvable-version": latest_allowed_version,
+          "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
+          "conflicting-dependencies": conflicting_dependencies
+        }
       end
 
       sig { params(checker: Dependabot::UpdateCheckers::Base).void }
@@ -163,14 +173,14 @@ module Dependabot
         params(
           checker: Dependabot::UpdateCheckers::Base,
           latest_allowed_version: String,
-          conflicting_dependencies: T::Array[T::Hash[String, String]]
+          conflicting_dependencies: T::Array[Dependabot::UpdateCheckers::Conflict]
         )
           .returns(String)
       end
       def security_update_not_possible_message(checker, latest_allowed_version, conflicting_dependencies)
         if conflicting_dependencies.any?
           dep_messages = conflicting_dependencies.map do |dep|
-            "  #{dep['explanation']}"
+            "  #{T.cast(dep['explanation'], String)}"
           end.join("\n")
 
           dependencies_pluralized =

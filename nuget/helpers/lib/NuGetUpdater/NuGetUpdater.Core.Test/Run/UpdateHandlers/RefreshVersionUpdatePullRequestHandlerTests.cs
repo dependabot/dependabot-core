@@ -742,6 +742,7 @@ public class RefreshVersionUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.1",
                             Requirements = [
                                 new() { Requirement = "2.0.1", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -865,6 +866,7 @@ public class RefreshVersionUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },

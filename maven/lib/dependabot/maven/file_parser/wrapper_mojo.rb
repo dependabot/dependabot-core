@@ -4,6 +4,7 @@
 # Parses maven-wrapper.properties and emits Dependency objects for the two
 # tracked Maven coordinates: org.apache.maven:apache-maven (the maven distribution)
 # and org.apache.maven.wrapper:maven-wrapper (the wrapper plugin).
+require "uri"
 require "dependabot/dependency_requirement"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/distributions"
@@ -39,7 +40,8 @@ module Dependabot
           #  - wrapperVersion property (>=3.3.1),
           #  - version segment of wrapperUrl JAR filename (<3.3.0), or
           #  - comment in the mvnw script body (3.3.0 only, see MWRAPPER-120 and MWRAPPER-134).
-          # This field is mandatory and raises if none of the sources yield a version.
+          # When none of the sources yield a version, load_properties returns nil and the
+          # wrapper is skipped, so this field is only ever set to a resolved version.
           const :wrapper_version, String
 
           # The full JAR URL from the wrapperUrl property
@@ -65,7 +67,21 @@ module Dependabot
         DIST_URL_VERSION_REGEX = %r{
           /apache-maven-(?<version>[^/?#]+)-(?:bin|src)\.(?:zip|tar\.gz)(?:[?#].*)?\z
         }x
-        class UnparseableDistributionUrl < RuntimeError; end
+
+        # Apache Maven Wrapper JAR as it appears in a wrapperUrl path. Anchored to the artifact
+        # directory, a numeric version directory, and a `maven-wrapper-<version>.jar` filename whose
+        # version equals that directory (via the \k<version> backreference), mirroring Maven's
+        # mandatory repository layout. This rejects foreign JARs sharing the directory (e.g.
+        # .../maven-wrapper/3.3.4/foreign-3.3.4.jar), non-artifact filenames
+        # (.../3.3.4/maven-wrapper-foreign.jar) and mismatched coordinates
+        # (.../3.3.4/maven-wrapper-9.9.9.jar). Matched on the path only (not the host, query, or
+        # fragment) so wrappers proxied through private registries are still recognised, while
+        # wrappers from other vendors (e.g. legacy io.takari) are not. Applied in apache_wrapper_url?.
+        WRAPPER_COORDINATE_REGEX = %r{
+          /org/apache/maven/wrapper/maven-wrapper/    # Apache Maven Wrapper artifact directory
+          (?<version>\d+\.\d+(?:\.\d+)?(?:-\w+)*)/     # version directory
+          maven-wrapper-\k<version>\.jar\z            # artifact JAR named for that same version
+        }xi
 
         sig do
           params(
@@ -77,23 +93,11 @@ module Dependabot
           content = properties_file.content
           return [] unless content
 
-          distribution_url = get_property_value(content, "distributionUrl")
-          if distribution_url&.include?("mvnd")
-            Dependabot.logger.warn("Maven daemon (mvnd) distribution is not supported, skipping wrapper update")
-            return []
-          end
-
-          begin
-            props = load_properties(content, script_files: script_files)
-          rescue UnparseableDistributionUrl => e
-            Dependabot.logger.warn("#{e.message}, skipping wrapper update")
-            return []
-          end
-
-          if props.wrapper_url&.include?("takari")
-            Dependabot.logger.warn("The Takari distribution is not supported, skipping wrapper update")
-            return []
-          end
+          # load_properties returns nil for wrappers we cannot safely update (missing
+          # mandatory data or an unsupported vendor/distribution). The reason is logged there,
+          # and we skip the wrapper without disrupting ordinary POM dependency parsing.
+          props = load_properties(content, script_files: script_files)
+          return [] unless props
 
           file_name = properties_file.name
           has_debug_scripts = debug_scripts?(script_files)
@@ -252,35 +256,65 @@ module Dependabot
           script_files.any? { |f| debug_scripts.any? { |s| f.name.end_with?(s) } }
         end
 
-        sig { params(content: String, script_files: T::Array[DependencyFile]).returns(WrapperProperties) }
+        sig { params(content: String, script_files: T::Array[DependencyFile]).returns(T.nilable(WrapperProperties)) }
         def self.load_properties(content, script_files: [])
-          distribution_url = get_property_value!(content, "distributionUrl")
+          distribution_url = get_property_value(content, "distributionUrl")
+          return skip_wrapper("distributionUrl property is missing") unless distribution_url
+
+          return skip_wrapper("Maven daemon (mvnd) distribution is not supported") if distribution_url.include?("mvnd")
+
           distribution_version = extract_distribution_version(distribution_url)
-          distribution_sha256_sum = get_property_value(content, "distributionSha256Sum")
+          return skip_wrapper("could not extract Maven version from distributionUrl") unless distribution_version
+
           wrapper_url = get_property_value(content, "wrapperUrl")
-          wrapper_sha256_sum = get_property_value(content, "wrapperSha256Sum")
-          distribution_type = resolve_distribution_type(content, wrapper_url)
+          if wrapper_url && !apache_wrapper_url?(wrapper_url)
+            return skip_wrapper("wrapperUrl is not an Apache Maven Wrapper")
+          end
+
           wrapper_version = resolve_wrapper_version(content, wrapper_url, script_files)
+          unless wrapper_version
+            return skip_wrapper(
+              "could not determine Maven Wrapper version from wrapperVersion, wrapperUrl, or script files"
+            )
+          end
 
           WrapperProperties.new(
             distribution_url: distribution_url,
             distribution_version: distribution_version,
-            distribution_sha256_sum: distribution_sha256_sum,
-            wrapper_sha256_sum: wrapper_sha256_sum,
+            distribution_sha256_sum: get_property_value(content, "distributionSha256Sum"),
+            wrapper_sha256_sum: get_property_value(content, "wrapperSha256Sum"),
             wrapper_version: wrapper_version,
             wrapper_url: wrapper_url,
-            distribution_type: distribution_type
+            distribution_type: resolve_distribution_type(content, wrapper_url)
           )
         end
 
-        sig { params(content: String).returns(String) }
+        # Signals that the wrapper cannot be updated: logs the reason and returns nil so the
+        # caller treats the wrapper as absent rather than aborting the whole Maven parse.
+        sig { params(reason: String).returns(NilClass) }
+        def self.skip_wrapper(reason)
+          Dependabot.logger.warn("#{reason}, skipping Maven Wrapper update")
+          nil
+        end
+
+        sig { params(content: String).returns(T.nilable(String)) }
         def self.extract_distribution_version(content)
           match = content.match(DIST_URL_VERSION_REGEX)
-          unless match && match[:version]
-            raise UnparseableDistributionUrl, "Could not extract Maven version from distributionUrl"
-          end
+          match && match[:version]
+        end
 
-          T.must(match[:version])
+        # True when the wrapperUrl points at the Apache Maven Wrapper artifact. The coordinate is
+        # matched against the URL path only (never the query or fragment) so that a non-Apache JAR
+        # cannot slip through the allowlist by carrying the coordinate in a `?redirect=...` query.
+        # A malformed URL that cannot be parsed is treated as not-Apache.
+        sig { params(url: String).returns(T::Boolean) }
+        def self.apache_wrapper_url?(url)
+          path = URI.parse(url).path
+          return false unless path
+
+          path.match?(WRAPPER_COORDINATE_REGEX)
+        rescue URI::InvalidURIError
+          false
         end
 
         sig { params(content: String, target_key: String).returns(T.nilable(String)) }
@@ -324,15 +358,6 @@ module Dependabot
           end
         end
 
-        sig { params(content: String, target_key: String).returns(String) }
-        def self.get_property_value!(content, target_key)
-          value = get_property_value(content, target_key)
-
-          raise "Missing mandatory property: #{target_key}" if value.nil?
-
-          value
-        end
-
         private_class_method :build_distribution_dependency
         private_class_method :build_wrapper_dependency
         private_class_method :build_distribution_requirements
@@ -353,7 +378,7 @@ module Dependabot
             content: String,
             wrapper_url: T.nilable(String),
             script_files: T::Array[DependencyFile]
-          ).returns(String)
+          ).returns(T.nilable(String))
         end
         def self.resolve_wrapper_version(content, wrapper_url, script_files)
           version = get_property_value(content, "wrapperVersion")
@@ -365,10 +390,6 @@ module Dependabot
           if script_files.any?
             Dependabot.logger.warn "Maven Wrapper with no wrapperVersion or wrapperUrl in properties file"
             version = load_wrapper_version_from_scripts(script_files)
-          end
-
-          if version.nil?
-            raise "Could not determine Maven Wrapper version from wrapperVersion, wrapperUrl, or script files"
           end
 
           version
@@ -401,6 +422,8 @@ module Dependabot
         private_class_method :resolve_wrapper_version
         private_class_method :parse_version_from_wrapper_url
         private_class_method :load_wrapper_version_from_scripts
+        private_class_method :skip_wrapper
+        private_class_method :apache_wrapper_url?
       end
     end
   end

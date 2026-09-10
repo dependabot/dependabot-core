@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
+require "dependabot/uv"
 require "dependabot/uv/package"
 
 RSpec.describe Dependabot::Uv::Package::PackageDetailsFetcher do
@@ -77,6 +78,111 @@ RSpec.describe Dependabot::Uv::Package::PackageDetailsFetcher do
 
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch }
+
+    context "with a private index" do
+      let(:registry_base) { "https://registry.example.com/simple" }
+      let(:json_url) { "https://registry.example.com/pypi/#{dependency_name}/json" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "--index-url #{registry_base}/\nrequests==2.4.1\n"
+        )]
+      end
+      let(:simple_api_accept) do
+        "application/vnd.pypi.simple.v1+json, " \
+          "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+      end
+
+      context "when the index returns PEP 691 JSON" do
+        let(:api_version) { "1.1" }
+        let(:registry_request_url) { registry_url }
+
+        before do
+          stub_request(:get, registry_request_url)
+            .with(headers: { "Accept" => simple_api_accept })
+            .to_return(
+              status: 200,
+              headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+              body: JSON.dump(
+                "meta" => { "api-version" => api_version },
+                "name" => dependency_name,
+                "files" => [
+                  {
+                    "filename" => "requests-2.32.3-py3-none-any.whl",
+                    "url" => "../files/requests-2.32.3-py3-none-any.whl",
+                    "requires-python" => ">=3.8",
+                    "yanked" => false,
+                    "upload-time" => "2026-08-24T12:34:56Z"
+                  }
+                ]
+              )
+            )
+        end
+
+        it "uses the negotiated JSON response without requesting the legacy JSON API" do
+          result = fetch
+
+          expect(result.releases.map { |release| release.version.to_s }).to eq(["2.32.3"])
+          expect(result.releases.first.released_at).to eq(Time.utc(2026, 8, 24, 12, 34, 56))
+          expect(result.releases.first.url)
+            .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
+          expect(a_request(:get, registry_url)).to have_been_made.once
+          expect(a_request(:get, json_url)).not_to have_been_made
+        end
+
+        context "with an authenticated index" do
+          let(:registry_base) { "https://user:pass@registry.example.com/simple" }
+          let(:registry_request_url) { "https://registry.example.com/simple/#{dependency_name}/" }
+
+          it "does not expose credentials in the release URL" do
+            expect(fetch.releases.first.url)
+              .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
+          end
+        end
+
+        context "with an unsupported API major version" do
+          let(:api_version) { "2.0" }
+
+          it "rejects the response" do
+            expect { fetch }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: 2.0")
+          end
+        end
+      end
+
+      context "when the request times out" do
+        before do
+          stub_request(:get, registry_url).to_raise(Excon::Error::Timeout)
+        end
+
+        it "preserves the error without retrying as HTML" do
+          expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut)
+          expect(
+            a_request(:get, registry_url).with(headers: { "Accept" => "text/html" })
+          ).not_to have_been_made
+        end
+      end
+
+      context "when the index returns HTML" do
+        before do
+          stub_request(:get, registry_url)
+            .with(headers: { "Accept" => simple_api_accept })
+            .to_return(
+              status: 200,
+              headers: { "Content-Type" => "text/html" },
+              body: fixture("releases_api", "simple", "simple_index.html")
+            )
+        end
+
+        it "parses the negotiated HTML response without requesting the legacy JSON API" do
+          result = fetch
+
+          expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
+          expect(a_request(:get, registry_url)).to have_been_made.once
+          expect(a_request(:get, json_url)).not_to have_been_made
+        end
+      end
+    end
 
     context "with a valid JSON response" do
       before do

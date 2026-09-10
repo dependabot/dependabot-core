@@ -13,7 +13,7 @@ require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
     class FileUpdater < Dependabot::FileUpdaters::Base
@@ -829,7 +829,7 @@ module Dependabot
           yarnrc_global_registry =
             T.must(T.must(yarnrc_file).content)
              .lines.find { |line| line.match?(regex) }
-                   &.match(regex)
+             &.match(regex)
              &.named_captures
              &.fetch("registry")
 
@@ -967,7 +967,7 @@ module Dependabot
                                      "[#{code}]: #{error_message}"
                                    end
 
-          raise  create_error(handler, modified_error_message, error, params)
+          raise create_error(handler, modified_error_message, error, params)
         end
       end
 
@@ -1107,4 +1107,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

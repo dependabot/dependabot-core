@@ -1112,6 +1112,16 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           end
 
+          before do
+            stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: [].to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
           its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
         end
 
@@ -1736,6 +1746,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:upload_pack_fixture) { "gatsby" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:releases_url) { "https://api.github.com/repos/gocardless/business/releases?per_page=100" }
 
     before do
       stub_request(:get, service_pack_url)
@@ -1745,6 +1756,13 @@ RSpec.describe Dependabot::GitCommitChecker do
           headers: {
             "content-type" => "application/x-git-upload-pack-advertisement"
           }
+        )
+      stub_request(:get, releases_url)
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: [].to_json,
+          headers: { "Content-Type" => "application/json" }
         )
     end
 
@@ -1764,6 +1782,9 @@ RSpec.describe Dependabot::GitCommitChecker do
         expect(tag_names).to include("0.2.0")
         expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
         expect(tag_names).to include("gatsby-transformer-sqip@2.0.40")
+        expect(WebMock).to have_requested(:get, releases_url)
+          .with(headers: { "Authorization" => "token token" })
+          .once
       end
 
       it "includes more tags than allowed_version_tags when SHA doesn't match a tag" do
@@ -1849,7 +1870,10 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "when the source commit is a tag" do
         let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
 
-        it { is_expected.to eq("v2.3.3") }
+        it "caches the matching tag" do
+          expect(checker.local_tag_for_pinned_sha).to eq("v2.3.3")
+          expect(checker.local_tag_for_pinned_sha).to eq("v2.3.3")
+        end
       end
 
       context "when the source commit is not a tag" do
@@ -1874,6 +1898,39 @@ RSpec.describe Dependabot::GitCommitChecker do
         let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
 
         it { is_expected.to eq("v2.3.4") }
+      end
+    end
+
+    context "when the source commit has no matching tag" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          branch: "main",
+          ref: "25a956c84d5dd820d28caab9f86b8d183aeeff3d"
+        }
+      end
+      let(:git_metadata_fetcher) do
+        instance_double(
+          Dependabot::GitMetadataFetcher,
+          head_commit_for_ref: nil,
+          tags_for_upload_pack: []
+        )
+      end
+      let(:checker_with_metadata_fetcher) do
+        described_class.new(
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          git_metadata_fetcher: git_metadata_fetcher
+        )
+      end
+
+      it "caches the missing tag" do
+        expect(checker_with_metadata_fetcher.local_tag_for_pinned_sha).to be_nil
+        expect(checker_with_metadata_fetcher.local_tag_for_pinned_sha).to be_nil
+        expect(git_metadata_fetcher).to have_received(:tags_for_upload_pack).once
       end
     end
   end

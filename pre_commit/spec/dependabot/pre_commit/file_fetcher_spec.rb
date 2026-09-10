@@ -134,9 +134,6 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
 
     context "when exclude_paths is configured" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_exclude_paths_subdirectory_manifest_files).and_return(true)
         file_fetcher_instance.exclude_paths = [".pre-commit-config.yaml"]
       end
 

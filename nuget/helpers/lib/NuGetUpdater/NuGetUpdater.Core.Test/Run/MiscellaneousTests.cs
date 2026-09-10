@@ -317,7 +317,14 @@ public class MiscellaneousTests
     [MemberData(nameof(GetMatchingPullRequestTestData))]
     public void GetMatchingPullRequest(Job job, IEnumerable<Dependency> dependencies, bool considerVersions, string? expectedGroupPrName, string[]? expectedPrDependencyNames)
     {
-        var existingPr = job.GetExistingPullRequestForDependencies(dependencies, considerVersions);
+        var reportedDependencies = dependencies.Select(d => new ReportedDependencyWithDirectory()
+        {
+            Name = d.Name,
+            Version = d.Version,
+            Requirements = [],
+            Directory = "/current",
+        });
+        var existingPr = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions);
 
         if (expectedPrDependencyNames is null)
         {
@@ -336,6 +343,49 @@ public class MiscellaneousTests
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         AssertEx.Equal(expectedPrDependencyNames, actualPrDependencyNames);
+    }
+
+    [Theory]
+    [InlineData("/current", true)]
+    [InlineData("/other", false)]
+    [InlineData(null, true)]
+    public void GetMatchingPullRequestConsidersDirectory(string? existingPullRequestDirectory, bool expectMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+            },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency()
+                        {
+                            DependencyName = "Dependency.A",
+                            DependencyVersion = NuGetVersion.Parse("1.0.0"),
+                            Directory = existingPullRequestDirectory,
+                        },
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory()
+            {
+                Name = "Dependency.A",
+                Version = "1.0.0",
+                Requirements = [],
+                Directory = "/current",
+            },
+        };
+
+        var existingPr = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true);
+
+        Assert.Equal(expectMatch, existingPr is not null);
     }
 
     public static IEnumerable<object?[]> GetMatchingPullRequestTestData()

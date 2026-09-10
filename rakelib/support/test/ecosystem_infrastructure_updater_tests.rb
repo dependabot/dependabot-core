@@ -11,7 +11,7 @@ module EcosystemInfrastructureUpdaterTests
 
   module_function
 
-  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+  # rubocop:disable-next Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
   def test_ecosystem_update_infrastructure?
     puts "\n=== Testing rake ecosystem:update_infrastructure ==="
 
@@ -99,7 +99,6 @@ module EcosystemInfrastructureUpdaterTests
       Dir.chdir(original_dir) if Dir.exist?(original_dir)
     end
   end
-  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
   def test_ecosystem_update_infrastructure_rejects_duplicate_image?
     puts "\n=== Testing ecosystem:update_infrastructure image collision ==="
@@ -171,7 +170,7 @@ module EcosystemInfrastructureUpdaterTests
     end
   end
 
-  # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity
+  # rubocop:disable-next Metrics/MethodLength, Metrics/PerceivedComplexity
   def test_ecosystem_create?
     puts "\n=== Testing rake ecosystem:create ==="
 
@@ -244,7 +243,6 @@ module EcosystemInfrastructureUpdaterTests
       Dir.chdir(original_dir) if Dir.exist?(original_dir)
     end
   end
-  # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity
 
   def all_tests?
     results = []

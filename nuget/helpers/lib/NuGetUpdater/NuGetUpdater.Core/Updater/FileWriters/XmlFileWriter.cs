@@ -161,8 +161,10 @@ public class XmlFileWriter : IFileWriter
                 // find last `<ItemGroup>` in the project...
                 Action addItemGroup = () => { }; // adding an ItemGroup to the project isn't always necessary, but it's much easier to prepare for it here
                 var projectDocument = filesAndContents[projectRelativePath];
+                var projectRoot = projectDocument.RootSyntax
+                    ?? throw new UnparseableFileException("Project file does not contain a root element", projectRelativePath);
                 var indentation = GetDocumentIndentationCharacters(projectDocument);
-                var itemGroups = projectDocument.RootSyntax.Elements
+                var itemGroups = projectRoot.Elements
                     .Where(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase))
                     .ToArray();
                 var itemGroupsWithPackageReferences = itemGroups
@@ -178,13 +180,15 @@ public class XmlFileWriter : IFileWriter
                     addItemGroup = () =>
                     {
                         // add the new element
-                        var updatedRootSyntax = projectDocument.RootSyntax.AddChild(itemGroupForInsertion);
-                        var updatedProjectDocument = projectDocument.ReplaceNode(projectDocument.RootSyntax.AsNode, updatedRootSyntax.AsNode);
+                        var updatedRootSyntax = projectRoot.AddChild(itemGroupForInsertion);
+                        var updatedProjectDocument = projectDocument.ReplaceNode(projectRoot.AsNode, updatedRootSyntax.AsNode);
 
                         // reset well-known variables
                         projectDocument = updatedProjectDocument;
                         filesAndContents[projectRelativePath] = updatedProjectDocument;
-                        itemGroupForInsertion = updatedProjectDocument.RootSyntax.Elements.Last(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
+                        projectRoot = updatedProjectDocument.RootSyntax
+                            ?? throw new InvalidOperationException("Updated project file does not contain a root element");
+                        itemGroupForInsertion = projectRoot.Elements.Last(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
                     };
                 }
 
@@ -230,8 +234,10 @@ public class XmlFileWriter : IFileWriter
 
                         var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia(lastPriorElementIndent)]);
                         newElement = (IXmlElementSyntax)newElement.AsNode.WithLeadingTrivia(newTrivia);
-                        var replacementParent = lastPriorElement.Parent.InsertNodesAfter(lastPriorElement, [newElement.AsNode]);
-                        var actualReplacementParent = ReplaceNode(projectRelativePath, lastPriorElement.Parent, replacementParent);
+                        var parent = lastPriorElement.Parent
+                            ?? throw new InvalidOperationException("Expected package reference element to have a parent");
+                        var replacementParent = parent.InsertNodesAfter(lastPriorElement, [newElement.AsNode]);
+                        var actualReplacementParent = ReplaceNode(projectRelativePath, parent, replacementParent);
                         var insertionIndex = elementsBeforeNew.Length;
                         var actualNewElement = ((IXmlElementSyntax)actualReplacementParent).Content[insertionIndex];
                         newElement = (IXmlElementSyntax)actualNewElement;
@@ -352,10 +358,12 @@ public class XmlFileWriter : IFileWriter
                                 .ToArray();
                             var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), .. indentTrivia]);
                             newVersionElement = (IXmlElementSyntax)newVersionElement.AsNode.WithLeadingTrivia(newTrivia).WithoutTrailingTrivia();
-                            var insertionIndex = lastPriorPackageVersionElement.Parent.Content.IndexOf(lastPriorPackageVersionElement.AsNode) + 1;
-                            var replacementParent = lastPriorPackageVersionElement.Parent
+                            var parent = lastPriorPackageVersionElement.Parent
+                                ?? throw new InvalidOperationException("Expected package version element to have a parent");
+                            var insertionIndex = parent.Content.IndexOf(lastPriorPackageVersionElement.AsNode) + 1;
+                            var replacementParent = parent
                                 .InsertChild(newVersionElement, insertionIndex);
-                            var actualReplacementParent = ReplaceNode(filePath, lastPriorPackageVersionElement.Parent.AsNode, replacementParent.AsNode);
+                            var actualReplacementParent = ReplaceNode(filePath, parent.AsNode, replacementParent.AsNode);
                             var actualNewElement = ((IXmlElementSyntax)actualReplacementParent).Content[insertionIndex];
                             newVersionElement = (IXmlElementSyntax)actualNewElement;
                         }
@@ -363,8 +371,9 @@ public class XmlFileWriter : IFileWriter
                         {
                             // no prior package versions; add to the front of the document
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
-                            var (packageVersionGroup, filePath) = allPackageVersionElementsAndPaths.First();
-                            packageVersionGroup = packageVersionGroup.Parent;
+                            var (firstPackageVersionElement, filePath) = allPackageVersionElementsAndPaths.First();
+                            var packageVersionGroup = firstPackageVersionElement.Parent
+                                ?? throw new InvalidOperationException("Expected package version element to have a parent");
                             var itemGroupTrivia = packageVersionGroup.AsNode.GetLeadingTrivia().ToList();
                             var priorEolIndex = itemGroupTrivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
                             var indentTrivia = itemGroupTrivia
@@ -515,17 +524,20 @@ public class XmlFileWriter : IFileWriter
                                         .ToArray();
                                     var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), .. indentTrivia]);
                                     newCpvElement = (IXmlElementSyntax)newCpvElement.AsNode.WithLeadingTrivia(newTrivia).WithoutTrailingTrivia();
-                                    var insertionIndex = lastPriorCpvElement.Parent.Content.IndexOf(lastPriorCpvElement.AsNode) + 1;
-                                    var replacementParent = lastPriorCpvElement.Parent
+                                    var parent = lastPriorCpvElement.Parent
+                                        ?? throw new InvalidOperationException("Expected central package version element to have a parent");
+                                    var insertionIndex = parent.Content.IndexOf(lastPriorCpvElement.AsNode) + 1;
+                                    var replacementParent = parent
                                         .InsertChild(newCpvElement, insertionIndex);
-                                    ReplaceNode(filePath, lastPriorCpvElement.Parent.AsNode, replacementParent.AsNode);
+                                    ReplaceNode(filePath, parent.AsNode, replacementParent.AsNode);
                                 }
                                 else
                                 {
                                     // no prior elements; add to the front of the document
                                     _logger.Info($"Adding new `<{PackageReferenceElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
-                                    var (cpvGroup, filePath) = sortedCpvElementsAndPaths.First();
-                                    cpvGroup = cpvGroup.Parent;
+                                    var (firstCpvElement, filePath) = sortedCpvElementsAndPaths.First();
+                                    var cpvGroup = firstCpvElement.Parent
+                                        ?? throw new InvalidOperationException("Expected central package version element to have a parent");
                                     var groupTrivia = cpvGroup.AsNode.GetLeadingTrivia().ToList();
                                     var priorEolIndex = groupTrivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
                                     var indentTrivia = groupTrivia

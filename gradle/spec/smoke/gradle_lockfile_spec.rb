@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/gradle/file_updater"
 
-# rubocop:disable RSpec/SpecFilePathFormat
+# rubocop:disable-next RSpec/SpecFilePathFormat
 RSpec.describe Dependabot::Gradle::FileUpdater do
   subject(:file_updater) do
     described_class.new(
@@ -117,10 +117,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:gradle_lockfile_updater)
-      .and_return(true)
-
     allow_any_instance_of(Dependabot::Gradle::FileUpdater::WrapperUpdater) # rubocop:disable RSpec/AnyInstance
       .to receive(:update_files).and_return([])
 
@@ -140,4 +136,3 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     expect(updated_files.find { |f| f.name == "app/build.gradle" }.content).to include("3.13.0")
   end
 end
-# rubocop:enable RSpec/SpecFilePathFormat

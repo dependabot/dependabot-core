@@ -41,6 +41,8 @@ internal static class EntryPointTestHelper
         // save packages
         await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDirectory.DirectoryPath);
 
+        await GitTestHelper.InitializeRepositoryAsync(tempDirectory.DirectoryPath, files.Select(file => file.Path));
+
         var actualUrls = new List<string>();
         using var http = TestHttpServer.CreateTestStringServer((method, url) =>
         {
