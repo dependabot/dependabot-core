@@ -218,6 +218,41 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       expect(dependency_change.updated_dependencies.length).to eq(9)
     end
 
+    context "when directories update different representations of the same file" do
+      let(:directories) { ["/", "/dir1"] }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "main.tf", content: "# original", directory: "/"),
+          Dependabot::DependencyFile.new(name: "../main.tf", content: "# original", directory: "/dir1")
+        ]
+      end
+
+      before do
+        Dependabot::FileUpdaters.register(
+          "terraform",
+          Class.new(Dependabot::FileUpdaters::Base) do
+            define_method(:updated_dependency_files) do
+              dependency_files.map do |file|
+                content = file.name == "main.tf" ? "# updated" : "# stale"
+                Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+              end
+            end
+            define_method(:check_required_files) { nil }
+          end
+        )
+      end
+
+      it "sends the direct representation with its updated content once" do
+        dependency_change = nil
+        allow(mock_service).to receive(:create_pull_request) { |change| dependency_change = change }
+
+        create_operation.perform
+
+        matching_files = dependency_change.updated_dependency_files.select { |file| file.path == "/main.tf" }
+        expect(matching_files.map(&:content)).to eq(["# updated"])
+      end
+    end
+
     context "when no directory produces a change" do
       before do
         # Re-register an update checker whose updates are missing a previous version and

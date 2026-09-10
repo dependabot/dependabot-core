@@ -156,6 +156,7 @@ module Dependabot
       end
       updated_dependencies.compact!
       updated_dependency_files.compact!
+      deduplicate_updated_dependency_files!
       notices.compact!
     end
 
@@ -196,6 +197,25 @@ module Dependabot
     end
 
     private
+
+    sig { void }
+    def deduplicate_updated_dependency_files!
+      files_by_path = T.let({}, T::Hash[String, Dependabot::DependencyFile])
+
+      updated_dependency_files.each do |file|
+        existing_file = files_by_path[file.path]
+        next if existing_file && parent_directory_references(existing_file) <= parent_directory_references(file)
+
+        files_by_path[file.path] = file
+      end
+
+      updated_dependency_files.replace(files_by_path.values)
+    end
+
+    sig { params(file: Dependabot::DependencyFile).returns(Integer) }
+    def parent_directory_references(file)
+      file.name.split("/").count("..")
+    end
 
     # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
     # allow rebases to continue working for those, but for multi-directory configs we do compare with the directory.
