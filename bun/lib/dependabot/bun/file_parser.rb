@@ -29,6 +29,7 @@ module Dependabot
       require_relative "file_parser/lockfile_parser"
 
       DEPENDENCY_TYPES = %w(dependencies devDependencies optionalDependencies).freeze
+      ALIAS_PROTOCOL = "npm:"
       GIT_URL_REGEX = %r{
         (?<git_prefix>^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
         (?<username>[a-z0-9-]+)/
@@ -273,7 +274,7 @@ module Dependabot
 
       sig { params(requirement: String).returns(T::Boolean) }
       def alias_package?(requirement)
-        requirement.start_with?("#{BunPackageManager::NAME}:")
+        requirement.start_with?(ALIAS_PROTOCOL)
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
@@ -295,7 +296,7 @@ module Dependabot
 
       sig { params(name: String).returns(T::Boolean) }
       def aliased_package_name?(name)
-        name.include?("@#{BunPackageManager::NAME}:")
+        name.include?("@#{ALIAS_PROTOCOL}")
       end
 
       sig { returns(T::Array[String]) }
