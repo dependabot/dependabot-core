@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/dependency"
 require "dependabot/shared/shared_file_updater"
@@ -40,9 +41,23 @@ module Dependabot
               File.read(chart_lock.name)
             end
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise unless chart_download_failure?(e.message)
+
+          # `helm dependency update` failed to download a chart dependency (e.g.
+          # the resolved version isn't a pullable chart in the registry). Surface
+          # a precise, classified error instead of a generic unknown_error.
+          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         private
+
+        # Matches Helm's chart download failures, e.g.
+        #   "could not download oci://.../frontierchart:...: ...: not found"
+        sig { params(message: String).returns(T::Boolean) }
+        def chart_download_failure?(message)
+          message.include?("could not download") || message.match?(/not found/i)
+        end
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
