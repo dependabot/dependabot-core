@@ -211,6 +211,57 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       end
     end
 
+    context "when SHA-pinned with frozen comment and tag is force-moved to a new commit" do
+      # User is pinned to "6f6a02c..." which was the old commit for v6.0.0.
+      # The v6.0.0 tag has been force-moved to "3e8a8703..." (from the upload pack fixture).
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source,
+            metadata: { comment: "# frozen: v6.0.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+
+        v6_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions)
+          .and_return([v6_tag])
+
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+      end
+
+      it "detects that the dependency is NOT up to date (SHA differs)" do
+        expect(checker.up_to_date?).to be(false)
+      end
+
+      it "returns the version from the force-moved tag" do
+        expect(checker.latest_version.to_s).to eq("6.0.0")
+      end
+    end
+
     context "with shortened version ref" do
       let(:reference) { "v4.4" }
 
