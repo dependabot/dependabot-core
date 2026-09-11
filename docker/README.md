@@ -22,6 +22,8 @@ Docker support for [`dependabot-core`][core-repo].
 ### Supported tag schemas
 
 Dependabot supports updates for Docker tags that use semver versioning, dates, and build numbers.
+In Helm values files, image tags containing template expressions (for example,
+`tag: "{{ .Values.image.tag }}"`) are skipped because Dependabot does not render charts and cannot resolve their values.
 The Docker tag class is located at:
 https://github.com/dependabot/dependabot-core/blob/main/docker/lib/dependabot/docker/tag.rb
 

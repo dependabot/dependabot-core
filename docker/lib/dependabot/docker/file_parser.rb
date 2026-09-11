@@ -145,7 +145,11 @@ module Dependabot
         repo = img_hash.fetch("repository", nil)
         return [] unless repo.is_a?(String)
 
-        match = tag_value.to_s.match(TAG_WITH_DIGEST)
+        tag = tag_value.to_s
+        # Helm template expressions cannot be resolved without rendering the chart.
+        return [] if tag.include?("{{")
+
+        match = tag.match(TAG_WITH_DIGEST)
         return [] unless match
 
         tag_details = match.named_captures
