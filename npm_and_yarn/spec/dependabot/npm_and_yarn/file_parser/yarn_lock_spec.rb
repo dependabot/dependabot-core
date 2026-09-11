@@ -84,23 +84,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
           .to raise_error(Dependabot::DependencyFileNotParseable, /yarn helper result must be an object/)
       end
     end
+  end
 
-    [
-      ["No space left on device", Dependabot::OutOfDisk],
-      ["Out of diskspace", Dependabot::OutOfDisk],
-      ["MemoryError", Dependabot::OutOfMemory],
-      ["invalid lockfile", Dependabot::DependencyFileNotParseable]
-    ].each do |message, error_class|
-      context "when the helper reports #{message}" do
-        before do
-          error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "yarn:parseLockfile")).and_raise(error)
-        end
+  [
+    ["No space left on device", Dependabot::OutOfDisk],
+    ["Out of diskspace", Dependabot::OutOfDisk],
+    ["MemoryError", Dependabot::OutOfMemory],
+    ["invalid lockfile", Dependabot::DependencyFileNotParseable]
+  ].each do |message, error_class|
+    context "when the helper reports #{message}" do
+      before do
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "yarn:parseLockfile")).and_raise(error)
+      end
 
-        it "retains the existing error category" do
-          expect { reader.parsed }.to raise_error(error_class)
-        end
+      it "retains the existing error category" do
+        expect { reader.parsed }.to raise_error(error_class)
       end
     end
   end
