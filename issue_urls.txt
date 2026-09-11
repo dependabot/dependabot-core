@@ -1,0 +1,3 @@
+https://github.com/dependabot/dependabot-core/issues/9375
+https://github.com/dependabot/dependabot-core/issues/10306
+https://github.com/dependabot/dependabot-core/issues/13317
