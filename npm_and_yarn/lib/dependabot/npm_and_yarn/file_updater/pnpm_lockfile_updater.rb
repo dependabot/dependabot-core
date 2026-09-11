@@ -225,11 +225,26 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_update_packages
-          dependency_updates = dependencies.map do |d|
-            "#{d.name}@#{d.version}"
-          end.join(" ")
+          run_pnpm_update_specs(dependencies.map { |d| "#{d.name}@#{d.version}" })
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          indirect = Helpers.pnpm_indirect_dependency_names(e.message)
+          raise if indirect.empty?
 
-          cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
+          # pnpm 11.23+ refuses to pin a package no manifest declares. Older pnpm
+          # ignored the version for such packages, so drop it and let pnpm resolve
+          # them as a fresh install would, which is what happened before.
+          Dependabot.logger.info(
+            "pnpm refused to pin #{indirect.join(', ')} because they are not direct dependencies; " \
+            "retrying the update without a version for them"
+          )
+          run_pnpm_update_specs(
+            dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
+          )
+        end
+
+        sig { params(specs: T::Array[String]).returns(T.nilable(String)) }
+        def run_pnpm_update_specs(specs)
+          cmd = "update #{specs.join(' ')}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
         end

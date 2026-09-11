@@ -210,6 +210,36 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         latest_resolvable_version
       end
 
+      it "retries without the version when pnpm refuses to pin the subdependency" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive_messages(run_pnpm_deep_update_command: "", run_pnpm_audit_fix_command: "")
+
+        expect(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:run_pnpm_command)
+          .with(
+            "update lodash@3.10.2 --lockfile-only --no-save -r",
+            { fingerprint: "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save -r" }
+          )
+          .ordered
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"lodash\" (requested \"3.10.2\") is not a " \
+                       "direct dependency, so the requested version cannot be recorded.",
+              error_context: {}
+            )
+          )
+        expect(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:run_pnpm_command)
+          .with(
+            "update lodash --lockfile-only --no-save -r",
+            { fingerprint: "update <dependency_name> --lockfile-only --no-save -r" }
+          )
+          .ordered
+
+        latest_resolvable_version
+      end
+
       it "falls back to pnpm audit --fix when pnpm update is a no-op" do
         # Stub pnpm update to be a no-op (returns unchanged lockfile)
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")

@@ -236,10 +236,7 @@ module Dependabot
             Dir.chdir(path) do
               original_content = File.read(lockfile_name)
 
-              Helpers.run_pnpm_command(
-                pnpm_update_command,
-                fingerprint: pnpm_update_fingerprint
-              )
+              run_pnpm_update
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
@@ -255,6 +252,29 @@ module Dependabot
               { lockfile_name => updated_content }
             end
           end
+        end
+
+        # Pins the update to the latest allowable version. pnpm 11.23+ refuses the
+        # pin for a package no manifest declares, which is always the case here.
+        # Older pnpm ignored the pin for such packages, so retry without it and
+        # let pnpm resolve the package as a fresh install would.
+        sig { void }
+        def run_pnpm_update
+          Helpers.run_pnpm_command(
+            pnpm_update_command,
+            fingerprint: pnpm_update_fingerprint
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if Helpers.pnpm_indirect_dependency_names(e.message).empty?
+
+          Dependabot.logger.info(
+            "pnpm refused to pin #{dependency.name} because it is not a direct dependency; " \
+            "retrying the update without a version"
+          )
+          Helpers.run_pnpm_command(
+            "update #{dependency.name} --lockfile-only --no-save -r",
+            fingerprint: "update <dependency_name> --lockfile-only --no-save -r"
+          )
         end
 
         sig { returns(String) }
