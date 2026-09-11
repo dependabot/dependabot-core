@@ -12,7 +12,7 @@ require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestCreator
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class Github
       extend T::Sig
       include Dependabot::Clients::GithubResourceParser
@@ -634,6 +634,5 @@ module Dependabot
         end
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end

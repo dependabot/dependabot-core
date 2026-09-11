@@ -11,7 +11,15 @@
     <SharedDirectory>$(NuGetSourceLocation)\build\Shared</SharedDirectory>
     <NoWarn>$(NoWarn);CA1416</NoWarn><!-- platform compatibility in vendored NuGet.Client code -->
     <NoWarn>$(NoWarn);CS0436</NoWarn><!-- type conflicts with imported types in vendored NuGet.Client code -->
-    <Version>6.8.0</Version>
+    <!--
+      These assemblies share the default load context with the copies bundled in the selected .NET SDK.
+      Keep this version aligned with both NuGet.Client/build/config.props and the SDK in ../global.json.
+    -->
+    <Version>7.9.0</Version>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign>true</PublicSign>
+    <!-- NuGet.Core assemblies use Microsoft's public key, as do the copies bundled with the SDK. -->
+    <AssemblyOriginatorKeyFile>$(NuGetSourceLocation)\keys\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <Import Project="..\Directory.Common.props" />

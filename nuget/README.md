@@ -19,6 +19,12 @@ Open the solution file at `helpers/lib/NuGetUpdater/NuGetUpdater.slnx` in your p
    [dependabot-core-dev] ~ $ cd nuget && rspec
    ```
 
+Run the reusable C# test suite in the NuGet development container:
+
+```
+$ bin/test nuget ./script/run-csharp-tests
+```
+
 ### Known limitations
 
 #### Projects suppressing `NU1701`

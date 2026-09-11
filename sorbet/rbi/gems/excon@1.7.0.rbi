@@ -271,19 +271,19 @@ class Excon::Connection
   # pkg:gem/excon#lib/excon/connection.rb:424
   def detect_content_length(body); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:551
+  # pkg:gem/excon#lib/excon/connection.rb:550
   def proxy_from_env; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:538
+  # pkg:gem/excon#lib/excon/connection.rb:537
   def proxy_match_host_port(host, port); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:530
+  # pkg:gem/excon#lib/excon/connection.rb:529
   def raise_socket_error(error); end
 
   # pkg:gem/excon#lib/excon/connection.rb:481
   def response(datum = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:579
+  # pkg:gem/excon#lib/excon/connection.rb:578
   def setup_proxy; end
 
   # pkg:gem/excon#lib/excon/connection.rb:492

@@ -12,9 +12,11 @@
 
   <ItemGroup>
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Protocol\**\*.cs" />
+    <Compile Include="$(SharedDirectory)\NuGetFeatureFlags.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Protocol\**\*.resx" />
   </ItemGroup>
 

@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+}
+
+group 'com.example'
+version '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        // upstream regression tracked in JIRA }
+        /* pending cleanup } see notes */
+        substitute module("io.airlift:aircompressor:2.0.2") using module("io.airlift:aircompressor:2.0.3")
+            .because(/see ticket {/)
+            .because("tracked // elsewhere {")
+        substitute(module("com.google.guava:guava:30.0-jre"))
+            .using(module("com.google.guava:guava:31.0-jre"))
+            .because("tracking issue {")
+        substitute module("commons-io:commons-io:2.11.0") using module("commons-io:commons-io:2.12.0")
+            .because($/legacy issue {/$)
+    }
+}
+
+configurations.all {
+    resolutionStrategy.dependencySubstitution {}
+}
+
+// A custom closure whose name merely ends with "dependencySubstitution" must
+// not be treated as a real substitution block.
+configurations.all {
+    mydependencySubstitution {
+        implementation group: 'org.example', name: 'custom-lib', version: '1.0.0'
+    }
+}
+
+dependencies {
+    implementation group: 'io.airlift', name: 'aircompressor', version: '2.0.2'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation group: 'com.google.guava', name: 'guava', version: '30.0-jre'
+}

@@ -17,7 +17,7 @@ require "dependabot/python/authed_url_builder"
 module Dependabot
   module Python
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
 
@@ -466,6 +466,7 @@ module Dependabot
         end
 
         sig { params(name: String, version: String, algorithm: String).returns(T::Array[String]) }
+        # rubocop:disable-next Metrics/PerceivedComplexity
         def package_hashes_for(name:, version:, algorithm:)
           index_urls = @index_urls || [nil]
           hashes = []
@@ -477,12 +478,17 @@ module Dependabot
             args << index_url if index_url
 
             begin
+              helper_result = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              )
+
+              # Skip this index if helper returned nil (can happen with unavailable registries)
+              next if helper_result.nil?
+
               native_helper_hashes = T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-                  function: "get_dependency_hash",
-                  args: args
-                ),
+                helper_result,
                 T::Array[T::Hash[String, String]]
               ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
 
@@ -494,9 +500,10 @@ module Dependabot
             end
           end
 
+          raise DependencyFileNotResolvable, "Unable to find hashes for package #{name}" if hashes.empty?
+
           hashes
         end
-
         sig { params(requirement_string: String).returns(T.nilable(String)) }
         def hash_separator(requirement_string)
           hash_regex = RequirementParser::HASH
@@ -807,7 +814,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

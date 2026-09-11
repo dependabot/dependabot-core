@@ -84,7 +84,12 @@ namespace NuGet.CommandLine
                 throw new CommandException(NuGetResources.InvalidFile);
             }
 
-            _msbuildDirectory = MsBuildUtility.GetMsBuildDirectoryFromMsBuildPath(MSBuildPath, MSBuildVersion, Console).Value.Path;
+            // Upstream rejects SDK MSBuild paths because standalone NuGet.exe runs on .NET Framework and cannot load
+            // .NET SDK assemblies. Dependabot embeds this command in .NET and pre-registers the matching SDK with
+            // MSBuildLocator, so the supplied SDK path is both supported and required on Linux.
+            _msbuildDirectory = string.IsNullOrEmpty(MSBuildPath)
+                ? MsBuildUtility.GetMsBuildDirectoryFromMsBuildPath(MSBuildPath, MSBuildVersion, Console).Value.Path
+                : MSBuildPath;
             var context = new UpdateConsoleProjectContext(Console, FileConflictAction);
 
             var logger = new LoggerAdapter(context);

@@ -685,7 +685,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           "Resolving dependencies..." \
           "Incompatible constraints in requirements of reflector (0.1.0):" \
           "types-setuptools (==75.8.0.20250210)" \
-          "types-setuptools (>=69.1.0.20240308,<70.0.0.0)" \
+          "types-setuptools (>=69.1.0.20240308,<70.0.0.0)"
       end
 
       it "raises a helpful error" do

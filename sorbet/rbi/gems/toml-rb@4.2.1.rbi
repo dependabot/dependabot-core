@@ -130,50 +130,58 @@ end
 
 # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:6
 class TomlRB::Dumper
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:9
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:21
   def initialize(hash); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:7
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:19
   def toml_str; end
 
   private
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:107
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:128
   def bare_key?(key); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:62
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:74
   def dump_nested_pairs(nested_pairs, prefix); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:48
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:60
   def dump_pairs(simple, nested, table_array, prefix = T.unsafe(nil)); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:55
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:67
   def dump_simple_pairs(simple_pairs); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:70
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:82
   def dump_table_array_pairs(table_array_pairs, prefix); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:84
+  # Serialize a Ruby string as a TOML basic string. Ruby's String#inspect
+  # emits \a \v \e for 0x07/0x0B/0x1B, which TOML (and this parser) reject.
+  #
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:139
+  def escape_string(str); end
+
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:96
   def print_prefix(prefix, extra_brackets = T.unsafe(nil)); end
 
-  # The key needs to use quotes according to TOML specs.
-  # Ruby representation of literals or strings, mixed with special characters
-  # made the concatenation error-prone, luckiley the `#inspect` method returns
-  # exactly what we need. I decided to keep the method `quote_key/1`
-  # for readability.
+  # Quote and escape a key as a TOML basic string.
   #
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:116
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:133
   def quote_key(key); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:27
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:39
   def sort_pairs(hash); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:91
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:103
   def to_toml(obj); end
 
-  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:17
+  # pkg:gem/toml-rb#lib/toml-rb/dumper.rb:29
   def visit(hash, prefix, extra_brackets = T.unsafe(nil)); end
 end
+
+# TOML basic strings only allow these short escapes; every other control
+# character must be written as \uXXXX (TOML 1.0.0 spec).
+#
+# pkg:gem/toml-rb#lib/toml-rb/dumper.rb:9
+TomlRB::Dumper::BASIC_ESCAPES = T.let(T.unsafe(nil), Hash)
 
 # Parent class for all TomlRB errors
 #

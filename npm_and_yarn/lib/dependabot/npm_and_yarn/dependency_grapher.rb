@@ -125,7 +125,7 @@ module Dependabot
         @detected_package_manager ||= T.let(
           PackageManagerDetector.new(
             lockfiles_hash,
-            parsed_package_json
+            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json)
           ).detect_package_manager,
           T.nilable(String)
         )

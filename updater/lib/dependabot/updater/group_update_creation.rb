@@ -7,7 +7,10 @@ require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
 require "dependabot/workspace"
 require "dependabot/updater/security_update_helpers"
+require "dependabot/service"
 require "dependabot/notices"
+require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/cooldown_calculation"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
@@ -21,7 +24,7 @@ module Dependabot
   class Updater
     extend T::Sig
 
-    # rubocop:disable Metrics/ModuleLength
+    # rubocop:disable-next Metrics/ModuleLength
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
@@ -57,6 +60,11 @@ module Dependabot
       sig { returns(Dependabot::DependencyGroup) }
       attr_reader :group
 
+      sig { returns(T::Hash[String, Dependabot::Service::ErrorRecord]) }
+      def security_update_failures
+        @security_update_failures ||= T.let({}, T.nilable(T::Hash[String, Dependabot::Service::ErrorRecord]))
+      end
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -66,9 +74,6 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
-        # Check feature flag once for all enhanced security error reporting in this method
-        enhanced_security_reporting = Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -77,25 +82,10 @@ module Dependabot
 
         # deduplicate the dependencies.
         original_dependencies = dependency_snapshot.dependencies
-        job_dependencies = Set.new(job.dependencies || []).to_a
 
         # log the original dependencies and job specified dependencies.
         Dependabot.logger.info("Dependency Snapshot: #{original_dependencies.map(&:name).join(', ')}")
-        Dependabot.logger.info("Job specified dependencies: #{job_dependencies.join(', ')}")
-
-        # If there are job dependencies not present in the dependency snapshot, record an error.
-        # Skip this check for pull request updates as dependencies may have changed since the original PR.
-        if enhanced_security_reporting
-          dependency_names = original_dependencies.map(&:name)
-          missing_dependencies = job_dependencies - dependency_names
-          if missing_dependencies.any? && !job.updating_a_pull_request?
-            error_handler.handle_job_error(
-              error: Dependabot::DependencyNotFound.new(
-                "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
-              )
-            )
-          end
-        end
+        Dependabot.logger.info("Job specified dependencies: #{Set.new(job.dependencies || []).to_a.join(', ')}")
 
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = dependency_snapshot.notices
@@ -126,6 +116,12 @@ module Dependabot
           end
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
+          if original_dependency &&
+             Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+            original_dependency.metadata[
+              Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_METADATA_KEY
+            ] = true
+          end
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|
@@ -151,6 +147,9 @@ module Dependabot
           store_changes(dependency)
         end
 
+        group_notices = notices + group_changes.notices
+        add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
+
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
         # into a single object we can pass to PR creation.
         dependency_change = Dependabot::DependencyChange.new(
@@ -158,7 +157,7 @@ module Dependabot
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group,
-          notices: notices + group_changes.notices
+          notices: group_notices
         )
 
         unless dependency_change.all_have_previous_version?
@@ -173,6 +172,23 @@ module Dependabot
         dependency_change
       ensure
         cleanup_workspace
+      end
+
+      sig do
+        params(
+          notices: T::Array[Dependabot::Notice],
+          dependencies: T::Array[Dependabot::Dependency]
+        ).void
+      end
+      def add_cooldown_date_unavailable_notice(notices, dependencies)
+        return unless dependencies.any? do |dependency|
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        end
+
+        notice = Dependabot::DependencyChangeBuilder.cooldown_date_unavailable_notice(
+          package_manager_name: job.package_manager
+        )
+        notices << notice unless notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
       end
 
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
@@ -299,7 +315,7 @@ module Dependabot
         )
 
         if all_versions_ignored?(dependency, checker)
-          record_security_update_ignored_if_applicable(dependency, checker, group)
+          note_security_update_ignored(dependency, checker, group)
           mark_handled_for_group_by_name(dependency, group, "all versions ignored")
           return []
         end
@@ -316,7 +332,7 @@ module Dependabot
           log_up_to_date(dependency)
 
           # Check if this up-to-date dependency has security advisories but no fix
-          record_security_update_not_found_if_applicable(dependency, checker, group)
+          note_security_update_not_found(dependency, checker, group)
           return []
         end
 
@@ -329,7 +345,7 @@ module Dependabot
           )
 
           # Check if this is a security update with vulnerability audit explanation
-          record_security_update_error_if_applicable(dependency, checker, group)
+          note_security_update_not_possible(dependency, checker, group)
           return []
         end
 
@@ -670,8 +686,9 @@ module Dependabot
         Dependabot::Dependency.new(**dependency_params)
       end
 
-      # Records appropriate security update errors when vulnerability auditor
-      # reports that fixes are unavailable in group updates
+      # Diagnoses why a dependency with a security advisory could not be updated in the
+      # directory currently being compiled. Nothing is reported here: see
+      # #report_security_update_failures.
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -679,42 +696,45 @@ module Dependabot
           group: Dependabot::DependencyGroup
         ).void
       end
-      def record_security_update_error_if_applicable(dependency, checker, group)
-        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+      def note_security_update_not_possible(dependency, checker, group)
+        return unless job.security_advisories_for(dependency).any?
 
-        # Only record errors for dependencies with security advisories
-        security_advisories = job.security_advisories_for(dependency)
-        return unless security_advisories.any?
-
-        # Check if vulnerability audit was performed and has explanations
-        if checker.respond_to?(:conflicting_dependencies)
-          conflicting_deps = checker.conflicting_dependencies
-          vulnerability_conflicts = conflicting_deps.select do |conflict|
-            conflict.key?("explanation") && !conflict.key?("dependency_name")
-          end
-
-          if vulnerability_conflicts.any?
-            # This indicates vulnerability auditor found fix unavailable
-            first_conflict = vulnerability_conflicts.first
-            explanation = first_conflict["explanation"] if first_conflict
-            Dependabot.logger.info(
-              "Security update not possible for #{dependency.name} in group #{group.name}: #{explanation}"
-            )
-
-            # Use the SecurityUpdateHelpers method for consistency
-            record_security_update_not_possible_error(checker)
-            return
-          end
+        conflicting_dependencies = checker.conflicting_dependencies
+        explanation = vulnerability_conflict_explanation(conflicting_dependencies)
+        if explanation
+          Dependabot.logger.info(
+            "Security update not possible for #{dependency.name} in group #{group.name}: #{explanation}"
+          )
+        else
+          Dependabot.logger.info(
+            "Security update not possible for #{dependency.name} in group #{group.name}"
+          )
         end
 
-        # Fallback: record generic security update not possible error
-        Dependabot.logger.info(
-          "Security update not possible for #{dependency.name} in group #{group.name}"
+        note_security_update_failure(
+          dependency,
+          Dependabot::Service::ErrorRecord.new(
+            error_type: "security_update_not_possible",
+            error_details: security_update_not_possible_error_details(checker, conflicting_dependencies:),
+            dependency: nil
+          )
         )
-        record_security_update_not_possible_error(checker)
       end
 
-      # Records security update not found error for up-to-date dependencies with advisories
+      # Returns the vulnerability auditor's explanation for why no fix is available, if it ran.
+      sig do
+        params(conflicting_dependencies: T::Array[Dependabot::UpdateCheckers::Conflict]).returns(T.nilable(String))
+      end
+      def vulnerability_conflict_explanation(conflicting_dependencies)
+        conflict = conflicting_dependencies.find do |candidate|
+          candidate.key?("explanation") && !candidate.key?("dependency_name")
+        end
+        return nil unless conflict
+
+        explanation = conflict["explanation"]
+        explanation.is_a?(String) ? explanation : nil
+      end
+
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -722,21 +742,26 @@ module Dependabot
           group: Dependabot::DependencyGroup
         ).void
       end
-      def record_security_update_not_found_if_applicable(dependency, checker, group)
-        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
-        # Only record errors for dependencies with security advisories
-        security_advisories = job.security_advisories_for(dependency)
-        return unless security_advisories.any?
+      def note_security_update_not_found(dependency, checker, group)
+        return unless job.security_advisories_for(dependency).any?
 
         Dependabot.logger.info(
           "Security update not found for #{dependency.name} in group #{group.name} - " \
           "dependency is up to date but still vulnerable"
         )
-        record_security_update_not_found(checker)
+        note_security_update_failure(
+          dependency,
+          Dependabot::Service::ErrorRecord.new(
+            error_type: "security_update_not_found",
+            error_details: {
+              "dependency-name": checker.dependency.name,
+              "dependency-version": checker.dependency.version
+            },
+            dependency: checker.dependency
+          )
+        )
       end
 
-      # Records security update ignored error for dependencies with all versions ignored
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -744,19 +769,97 @@ module Dependabot
           group: Dependabot::DependencyGroup
         ).void
       end
-      def record_security_update_ignored_if_applicable(dependency, checker, group)
-        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
-        # Only record errors for dependencies with security advisories
-        security_advisories = job.security_advisories_for(dependency)
-        return unless security_advisories.any?
+      def note_security_update_ignored(dependency, checker, group)
+        return unless job.security_advisories_for(dependency).any?
 
         Dependabot.logger.info(
           "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"
         )
-        record_security_update_ignored(checker)
+        note_security_update_failure(
+          dependency,
+          Dependabot::Service::ErrorRecord.new(
+            error_type: "all_versions_ignored",
+            error_details: { "dependency-name": checker.dependency.name },
+            dependency: nil
+          )
+        )
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          failure: Dependabot::Service::ErrorRecord
+        ).void
+      end
+      def note_security_update_failure(dependency, failure)
+        # The first directory to fail wins: a job reports one outcome per dependency.
+        security_update_failures[dependency.name.downcase] ||= failure
+      end
+
+      # The single job-scoped report of why a security update failed. `record_update_job_error`
+      # marks the whole job as failed, so it must not be called while compiling an individual
+      # directory: a dependency that cannot be updated in one directory may still be updated in
+      # another, as happens routinely in multi-directory groups.
+      sig { params(dependency_name: String).void }
+      def report_security_update_failure(dependency_name)
+        failure = security_update_failures[dependency_name.downcase]
+        return unless failure
+
+        service.record_update_job_error(
+          error_type: failure.error_type,
+          error_details: failure.error_details,
+          dependency: failure.dependency
+        )
+      end
+
+      # Group dependencies that no directory managed to update.
+      sig do
+        params(dependency_change: T.nilable(Dependabot::DependencyChange))
+          .returns(T::Array[Dependabot::Dependency])
+      end
+      def failed_security_update_dependencies(dependency_change)
+        return [] unless job.security_updates_only?
+
+        # Names are compared case-insensitively: Gradle, Maven and NuGet names are
+        # case-insensitive, and advisories often disagree with the manifest on casing.
+        updated_names = (dependency_change&.updated_dependencies || []).map { |dep| dep.name.downcase }
+
+        group.dependencies
+             .uniq { |dependency| dependency.name.downcase }
+             .reject { |dependency| updated_names.include?(dependency.name.downcase) }
+      end
+
+      sig { params(dependency_change: T.nilable(Dependabot::DependencyChange)).void }
+      def report_security_update_failures(dependency_change)
+        failed_security_update_dependencies(dependency_change).each do |dependency|
+          report_security_update_failure(dependency.name)
+        end
+      end
+
+      # Both the requested dependencies and the snapshot span every directory, so this is a
+      # job-scoped check and must not run inside the per-directory compile.
+      sig { void }
+      def report_missing_job_dependencies
+        # Dependencies may have changed since the original PR was opened.
+        return if job.updating_a_pull_request?
+
+        requested = (job.dependencies || []).uniq(&:downcase)
+        return if requested.empty?
+
+        known_names = dependency_snapshot.all_dependencies.to_set { |dependency| dependency.name.downcase }
+        missing_dependencies = requested.reject { |name| known_names.include?(name.downcase) }
+
+        # Only a job with nothing at all to work on is a failure. Reporting when some
+        # requested dependencies resolved would fail a job that still opens a valid PR,
+        # and matches how CreateSecurityUpdatePullRequest treats an empty target set.
+        return unless missing_dependencies.length == requested.length
+
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyNotFound.new(
+            "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
+          )
+        )
       end
     end
-    # rubocop:enable Metrics/ModuleLength
   end
 end

@@ -19,7 +19,7 @@ module Dependabot
     class UpdateChecker
       # This resolver intentionally co-locates resolution, marker handling, and
       # constraints matching to keep compatibility decisions in one place.
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class PipVersionResolver
         extend T::Sig
 
@@ -575,7 +575,6 @@ module Dependabot
           T.must(@pyproject_content_cache[pyproject.name])
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

@@ -65,6 +65,8 @@ internal static class SdkProjectDiscovery
     // these targets are required to evaluate a legacy project with a single operation
     private static readonly ImmutableArray<string> LegacyProjectSingleRestoreTargetNames = ["ResolveProjectReferences"];
 
+    private const string TargetFrameworksPropertyName = "TargetFrameworks";
+
     // this property evaluates to a version number in an SDK-style project and is unset or empty otherwise
     private const string NETCoreSdkVersionPropertyName = "NETCoreSdkVersion";
 
@@ -119,16 +121,30 @@ internal static class SdkProjectDiscovery
         Dictionary<string, HashSet<string>> additionalFiles = new(PathComparer.Instance);
         //    projectPath  additionalFiles
 
+        var startingProjectProperties = await MSBuildHelper.GetProjectPropertiesAsync(
+            startingProjectPath,
+            [TargetFrameworksPropertyName, NETCoreSdkVersionPropertyName],
+            logger
+        );
+        var projectTfms = MSBuildHelper.ParseProjectTargetFrameworks(startingProjectProperties?.GetValueOrDefault(TargetFrameworksPropertyName));
+        var netCoreSdkVersionValue = startingProjectProperties?.GetValueOrDefault(NETCoreSdkVersionPropertyName);
+        var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
+        var requiredTargets = isLegacyProject
+            ? LegacyProjectSingleRestoreTargetNames
+            : SingleRestoreTargetNames;
+
         // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
         // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
         // alternately, if there are too many target frameworks specified, they must be handled individually
-        var projectTfms = await MSBuildHelper.GetProjectTargetFrameworksAsync(startingProjectPath, logger);
         var hasPlatformTfms = projectTfms.Any(tfm => tfm.Contains('-'));
         var requiresIndividualRestores = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkRestores;
+        var useDirectRestore = requiresIndividualRestores;
         if (!requiresIndividualRestores)
         {
             logger.Info($"Performing single restore for project {startingProjectPath}");
             projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+            var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
+            useDirectRestore = requiredTargets.All(actualTargets.Contains);
         }
         else
         {
@@ -158,15 +174,7 @@ internal static class SdkProjectDiscovery
                 // `ResolveProjectReferences` to gather all `PackageReference` items and further down we re-build the transitive
                 // dependency set.  Without the legacy project check, we could incorrectly invoke `Build` which eventually tries
                 // to call `csc.exe` which is unnecessary and can be slow.
-                var netCoreSdkVersionValue = await MSBuildHelper.GetProjectPropertyAsync(startingProjectPath, NETCoreSdkVersionPropertyName, logger);
-                var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
-                var requiredTargets = isLegacyProject
-                    ? LegacyProjectSingleRestoreTargetNames
-                    : SingleRestoreTargetNames;
-
-                var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-                var useDirectRestore = requiredTargets.All(actualTargets.Contains);
-                if (useDirectRestore || isIndividualTfmRestore)
+                if (useDirectRestore)
                 {
                     // directly call the required targets
                     args.Add($"/t:{string.Join(",", requiredTargets)}");

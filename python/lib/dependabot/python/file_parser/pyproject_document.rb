@@ -98,6 +98,11 @@ module Dependabot
           const :url, T.nilable(String), default: nil
         end
 
+        class ProjectMetadata < T::ImmutableStruct
+          const :name, T.nilable(String), default: nil
+          const :description, T.nilable(String), default: nil
+        end
+
         sig { params(data: PyprojectValueParser::ObjectHash).void }
         def initialize(data)
           @data = data
@@ -105,16 +110,40 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(PyprojectDocument) }
         def self.from_file(file)
-          content = T.must(file.content)
-          parsed = T.cast(TomlRB.parse(content), Object)
-          new(PyprojectValueParser.object_hash(parsed, "pyproject.toml"))
+          from_content(T.must(file.content))
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        sig { params(content: String).returns(PyprojectDocument) }
+        def self.from_content(content)
+          parsed = T.cast(TomlRB.parse(content), Object)
+          new(PyprojectValueParser.object_hash(parsed, "pyproject.toml"))
         end
 
         sig { returns(T::Boolean) }
         def poetry?
           !poetry_root.nil?
+        end
+
+        sig { returns(T::Boolean) }
+        def project?
+          !section(@data, "project", "project").nil?
+        end
+
+        sig { returns(T.nilable(ProjectMetadata)) }
+        def poetry_metadata
+          metadata_from(poetry_root, "tool.poetry")
+        end
+
+        sig { returns(T.nilable(ProjectMetadata)) }
+        def project_metadata
+          metadata_from(section(@data, "project", "project"), "project")
+        end
+
+        sig { returns(T.nilable(ProjectMetadata)) }
+        def build_system_metadata
+          metadata_from(section(@data, "build-system", "build-system"), "build-system")
         end
 
         sig { returns(T::Boolean) }
@@ -187,6 +216,37 @@ module Dependabot
           poetry_sources.find { |source| source.name == name }
         end
 
+        # A name pinned to one of these says nothing about what a package index holds. A git source
+        # carrying a tag is left alone: the tag gives an ordering, so such a pin can be updated from
+        # the remote instead of being skipped.
+        UNRESOLVABLE_UV_SOURCE_KEYS = %w(git url).freeze
+
+        sig { returns(T::Array[String]) }
+        def unresolvable_uv_source_names
+          tool = section(@data, "tool", "tool")
+          uv = tool && section(tool, "uv", "tool.uv")
+          sources = uv && section(uv, "sources", "tool.uv.sources")
+          return [] unless sources
+
+          sources.filter_map do |name, config|
+            # uv accepts either a single source or a list of them, each with its own markers.
+            entries = T.let(config.is_a?(Array) ? config : [config], T::Array[Object])
+            next unless entries.any? { |entry| unresolvable_uv_source_entry?(entry) }
+
+            name
+          end
+        end
+
+        sig { params(entry: Object).returns(T::Boolean) }
+        def unresolvable_uv_source_entry?(entry)
+          return false unless entry.is_a?(Hash)
+
+          keys = entry.keys
+          return false unless keys.intersect?(UNRESOLVABLE_UV_SOURCE_KEYS)
+
+          !(keys.include?("git") && keys.include?("tag"))
+        end
+
         sig { params(key: String).returns(T::Array[String]) }
         def workspace_globs(key)
           tool = section(@data, "tool", "tool")
@@ -199,6 +259,19 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(data: T.nilable(PyprojectValueParser::ObjectHash), context: String)
+            .returns(T.nilable(ProjectMetadata))
+        end
+        def metadata_from(data, context)
+          return unless data
+
+          ProjectMetadata.new(
+            name: PyprojectValueParser.optional_string(data["name"], "#{context}.name"),
+            description: PyprojectValueParser.optional_string(data["description"], "#{context}.description")
+          )
+        end
 
         sig { returns(T.nilable(PyprojectValueParser::ObjectHash)) }
         def poetry_root

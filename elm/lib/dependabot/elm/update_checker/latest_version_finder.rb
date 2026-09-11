@@ -122,10 +122,14 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, ignored_versions: [], cooldown_options: nil)
-          @dependency = dependency
-          @dependency_files = dependency_files
-          @ignored_versions = ignored_versions
-          @cooldown_options = cooldown_options
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: [],
+            ignored_versions: ignored_versions,
+            security_advisories: [],
+            cooldown_options: cooldown_options
+          )
 
           @install_metadata = T.let(nil, T.nilable(T::Hash[String, Dependabot::Elm::Version]))
           @original_dependency_details ||= T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))

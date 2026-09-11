@@ -17,7 +17,7 @@ require "dependabot/errors"
 # - http://maven.apache.org/pom.html
 module Dependabot
   module Maven
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
@@ -658,7 +658,6 @@ module Dependabot
         doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR)
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 

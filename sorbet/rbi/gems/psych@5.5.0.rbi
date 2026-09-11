@@ -665,85 +665,93 @@ class Psych::AnchorNotDefined < ::Psych::BadAlias
   def initialize(anchor_name); end
 end
 
+Psych::BACKEND = T.let(T.unsafe(nil), String)
+
 # pkg:gem/psych#lib/psych.rb:15
 class Psych::ClassLoader
-  # pkg:gem/psych#lib/psych/class_loader.rb:22
+  # pkg:gem/psych#lib/psych/class_loader.rb:23
   def initialize; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def big_decimal; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def complex; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def data; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def date; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def date_time; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
+  def encoding; end
+
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def exception; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:26
+  # pkg:gem/psych#lib/psych/class_loader.rb:27
   def load(klassname); end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def object; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def psych_omap; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def psych_set; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def range; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def rational; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def regexp; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def struct; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:39
+  # pkg:gem/psych#lib/psych/class_loader.rb:40
   def symbol; end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:32
+  # pkg:gem/psych#lib/psych/class_loader.rb:33
   def symbolize(sym); end
 
   private
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:48
+  # pkg:gem/psych#lib/psych/class_loader.rb:49
   def find(klassname); end
 
   # pkg:gem/psych#lib/psych.rb:15
   def path2class(_arg0); end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:52
+  # pkg:gem/psych#lib/psych/class_loader.rb:53
   def resolve(klassname); end
 end
 
 # pkg:gem/psych#lib/psych/class_loader.rb:9
 Psych::ClassLoader::DATA = T.let(T.unsafe(nil), String)
 
-# pkg:gem/psych#lib/psych/class_loader.rb:77
+# pkg:gem/psych#lib/psych/class_loader.rb:12
+Psych::ClassLoader::ENCODING = T.let(T.unsafe(nil), String)
+
+# pkg:gem/psych#lib/psych/class_loader.rb:78
 class Psych::ClassLoader::Restricted < ::Psych::ClassLoader
-  # pkg:gem/psych#lib/psych/class_loader.rb:78
+  # pkg:gem/psych#lib/psych/class_loader.rb:79
   def initialize(classes, symbols); end
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:84
+  # pkg:gem/psych#lib/psych/class_loader.rb:85
   def symbolize(sym); end
 
   private
 
-  # pkg:gem/psych#lib/psych/class_loader.rb:96
+  # pkg:gem/psych#lib/psych/class_loader.rb:97
   def find(klassname); end
 end
 
@@ -1780,7 +1788,22 @@ class Psych::Parser
 
   # pkg:gem/psych#lib/psych.rb:15
   def _native_parse(_arg0, _arg1, _arg2); end
+
+  # pkg:gem/psych#lib/psych/parser.rb:94
+  def skip_io_bom(io, bom); end
+
+  # libyaml only skips a leading byte order mark when it detects the stream
+  # encoding by itself.  Psych passes the encoding explicitly whenever it is
+  # known, and on that path libyaml counts the BOM as a first-line character,
+  # which shifts the column of every token on the first line and silently
+  # terminates a block mapping at the second line [Bug #13615].
+  #
+  # pkg:gem/psych#lib/psych/parser.rb:81
+  def strip_bom(yaml); end
 end
+
+# pkg:gem/psych#lib/psych/parser.rb:67
+Psych::Parser::BOM = T.let(T.unsafe(nil), Hash)
 
 # Scan scalars for built in types
 #
@@ -1788,27 +1811,33 @@ end
 class Psych::ScalarScanner
   # Create a new scanner
   #
-  # pkg:gem/psych#lib/psych/scalar_scanner.rb:30
+  # pkg:gem/psych#lib/psych/scalar_scanner.rb:42
   def initialize(class_loader, strict_integer: T.unsafe(nil), parse_symbols: T.unsafe(nil)); end
 
-  # pkg:gem/psych#lib/psych/scalar_scanner.rb:27
+  # pkg:gem/psych#lib/psych/scalar_scanner.rb:39
   def class_loader; end
 
   # Parse and return an int from +string+
   #
-  # pkg:gem/psych#lib/psych/scalar_scanner.rb:109
+  # pkg:gem/psych#lib/psych/scalar_scanner.rb:121
   def parse_int(string); end
 
   # Parse and return a Time from +string+
   #
-  # pkg:gem/psych#lib/psych/scalar_scanner.rb:115
+  # pkg:gem/psych#lib/psych/scalar_scanner.rb:127
   def parse_time(string); end
 
   # Tokenize +string+ returning the Ruby object
   #
-  # pkg:gem/psych#lib/psych/scalar_scanner.rb:38
+  # pkg:gem/psych#lib/psych/scalar_scanner.rb:50
   def tokenize(string); end
 end
+
+# pkg:gem/psych#lib/psych/scalar_scanner.rb:36
+Psych::ScalarScanner::BOOLEAN_FALSE = T.let(T.unsafe(nil), Regexp)
+
+# pkg:gem/psych#lib/psych/scalar_scanner.rb:35
+Psych::ScalarScanner::BOOLEAN_TRUE = T.let(T.unsafe(nil), Regexp)
 
 # Same as above, but allows commas.
 # Not to YML spec, but kept for backwards compatibility
@@ -2061,25 +2090,25 @@ class Psych::Visitors::JSONTree < ::Psych::Visitors::YAMLTree
   end
 end
 
-# pkg:gem/psych#lib/psych/visitors/to_ruby.rb:473
+# pkg:gem/psych#lib/psych/visitors/to_ruby.rb:484
 class Psych::Visitors::NoAliasRuby < ::Psych::Visitors::ToRuby
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:474
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:485
   def visit_Psych_Nodes_Alias(o); end
 end
 
-# pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:580
+# pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:577
 class Psych::Visitors::RestrictedYAMLTree < ::Psych::Visitors::YAMLTree
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:592
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:589
   def initialize(emitter, ss, options); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:605
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:602
   def accept(target); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:617
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:614
   def visit_Symbol(sym); end
 end
 
-# pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:581
+# pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:578
 Psych::Visitors::RestrictedYAMLTree::DEFAULT_PERMITTED_CLASSES = T.let(T.unsafe(nil), Hash)
 
 # This class walks a YAML AST, converting each node to Ruby
@@ -2095,62 +2124,68 @@ class Psych::Visitors::ToRuby < ::Psych::Visitors::Visitor
   # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:25
   def class_loader; end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:356
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:357
   def visit_Psych_Nodes_Alias(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:348
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:349
   def visit_Psych_Nodes_Document(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:168
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:169
   def visit_Psych_Nodes_Mapping(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:132
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:133
   def visit_Psych_Nodes_Scalar(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:136
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:137
   def visit_Psych_Nodes_Sequence(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:352
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:353
   def visit_Psych_Nodes_Stream(o); end
 
   private
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:373
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:374
   def allocate_anon_data(node, members); end
 
   # pkg:gem/psych#lib/psych.rb:15
   def build_exception(_arg0, _arg1); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:438
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:439
   def deduplicate(key); end
 
   # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:55
   def deserialize(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:455
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:453
   def init_with(o, h, node); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:447
-  def merge_key(hash, key, val); end
-
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:362
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:363
   def register(node, object); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:367
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:368
   def register_empty(object); end
 
   # Convert +klassname+ to a Class
   #
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:468
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:466
   def resolve_class(klassname); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:450
+  # Resolve +klassname+ and ensure it is +parent+ or one of its
+  # subclasses. Tags such as !ruby/hash-with-ivars are only ever emitted
+  # for subclasses of a specific core class; without this check a crafted
+  # document could name an unrelated (but permitted) class and have its
+  # state populated directly, bypassing the class's own init_with.
+  #
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:475
+  def resolve_subclass(klassname, parent); end
+
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:448
   def revive(klass, node); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:378
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:379
   def revive_data_members(hash, o); end
 
-  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:387
+  # pkg:gem/psych#lib/psych/visitors/to_ruby.rb:388
   def revive_hash(hash, o, tagged = T.unsafe(nil)); end
 
   class << self
@@ -2319,28 +2354,25 @@ class Psych::Visitors::YAMLTree < ::Psych::Visitors::Visitor
   # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:426
   def binary?(string); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:537
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:534
   def dump_coder(o); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:502
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:499
   def dump_exception(o, msg); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:572
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:569
   def dump_ivars(target); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:499
-  def dump_list(o); end
-
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:550
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:547
   def emit_coder(c, o); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:528
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:525
   def format_date(date); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:520
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:517
   def format_time(time, utc = T.unsafe(nil)); end
 
-  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:532
+  # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:529
   def register(target, yaml_obj); end
 
   # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:430
