@@ -1272,6 +1272,224 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when the same image is referenced multiple times in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.26.1
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { registry: "docker.io", tag: "v3.32.2" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { registry: "docker.io", tag: "v3.26.1" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image: docker.io/calico/cni:v3.32.2" }
+        its(:content) { is_expected.to include "- name: upgrade-ipam" }
+        its(:content) { is_expected.to include "- name: install-cni" }
+
+        it "updates every occurrence and leaves none on the old version" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(2)
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when the same image is referenced three times in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.26.1
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+              containers:
+                - name: calico-node
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { registry: "docker.io", tag: "v3.32.2" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { registry: "docker.io", tag: "v3.26.1" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        it "updates all three occurrences" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(3)
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when the same image name has different old tags in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.25.0
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { registry: "docker.io", tag: "v3.32.2" }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "calico.yaml",
+              source: { registry: "docker.io", tag: "v3.25.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "calico.yaml",
+              source: { registry: "docker.io", tag: "v3.26.1" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        it "updates both differently-tagged occurrences to the new tag" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(2)
+          expect(updated_podfile.content).not_to include("v3.25.0")
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when an old tag contains regex metacharacters (build-metadata style tag)" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              containers:
+                - name: app
+                  image: docker.io/example/app:1.2.3+build.4
+          YAML
+          name: "app.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "example/app",
+          version: "1.3.0+build.1",
+          previous_version: "1.2.3+build.4",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "app.yaml",
+            source: { registry: "docker.io", tag: "1.3.0+build.1" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "app.yaml",
+            source: { registry: "docker.io", tag: "1.2.3+build.4" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "app.yaml" }
+        end
+
+        it "matches and updates a tag containing a '+' without treating it as a regex quantifier" do
+          expect(updated_podfile.content).to include("image: docker.io/example/app:1.3.0+build.1")
+          expect(updated_podfile.content).not_to include("1.2.3+build.4")
+        end
+      end
+    end
+
     context "when multiple yaml to be updated" do
       let(:yaml_files) { [podfile, podfile2] }
       let(:podfile2) do
@@ -1577,6 +1795,50 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
         its(:content) { is_expected.to include "  image: nginx:1.14.3\n" }
         its(:content) { is_expected.to include "  image:\n    repository: 'canonical/ubuntu'\n    tag: 18.04" }
+      end
+    end
+
+    context "when the helm tag contains regex metacharacters (build-metadata style tag)" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            image:
+              repository: 'example/app'
+              tag: 1.2.3+build.4
+          YAML
+          name: "values.yaml"
+        )
+      end
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "example/app",
+          version: "1.3.0+build.1",
+          previous_version: "1.2.3+build.4",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.3.0+build.1" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.2.3+build.4" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        it "matches and updates a tag containing a '+' without treating it as a regex quantifier" do
+          expect(updated_helmfile.content).to include("tag: 1.3.0+build.1")
+          expect(updated_helmfile.content).not_to include("1.2.3+build.4")
+        end
       end
     end
 

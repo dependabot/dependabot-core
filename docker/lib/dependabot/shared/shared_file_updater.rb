@@ -154,11 +154,12 @@ module Dependabot
         return if old_tags.empty?
 
         modified_content = content
+        replacement = new_helm_tag(file)
 
         old_tags.each do |old_tag|
-          old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
+          old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{Regexp.escape(old_tag)}["']?(?=\s|$)/
           modified_content = modified_content&.gsub(old_tag_regex) do |old_img_tag|
-            old_img_tag.gsub(old_tag.to_s, new_helm_tag(file).to_s)
+            old_img_tag.gsub(old_tag.to_s, replacement.to_s)
           end
         end
         modified_content
@@ -170,11 +171,12 @@ module Dependabot
         return if old_images.empty?
 
         modified_content = content
+        replacement = new_yaml_image(file)
 
         old_images.each do |old_image|
-          old_image_regex = /^\s*(?:-\s)?image:\s+#{old_image}(?=\s|$)/
+          old_image_regex = /^\s*(?:-\s)?image:\s+#{Regexp.escape(old_image)}(?=\s|$)/
           modified_content = modified_content&.gsub(old_image_regex) do |old_img|
-            old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
+            old_img.gsub(old_image.to_s, replacement.to_s)
           end
         end
         modified_content
@@ -182,7 +184,7 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def new_yaml_image(file)
-        element = T.must(dependency).requirements.find { |r| r.file == file.name }
+        element = requirement_for_file(file)
         source = image_source(element)
         prefix = source[:registry] ? "#{source[:registry]}/" : ""
         digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
@@ -198,7 +200,7 @@ module Dependabot
           digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
           tag = source[:tag] ? ":#{source[:tag]}" : ""
           "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
-        end
+        end.uniq
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -208,16 +210,21 @@ module Dependabot
           tag = source[:tag] || ""
           digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
           "#{tag}#{digest}"
-        end
+        end.uniq
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def new_helm_tag(file)
-        element = T.must(dependency).requirements.find { |r| r.file == file.name }
+        element = requirement_for_file(file)
         source = image_source(element)
         tag = source[:tag] || ""
         digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
         "#{tag}#{digest}"
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyRequirement)) }
+      def requirement_for_file(file)
+        requirements(file).first
       end
 
       protected
