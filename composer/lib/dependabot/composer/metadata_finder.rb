@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
+require "dependabot/shared_helpers"
 require "dependabot/composer/version"
 
 module Dependabot
@@ -31,15 +32,35 @@ module Dependabot
 
       sig { override.returns(T.nilable(Source)) }
       def look_up_source
-        # Packagist reflects the package's current canonical source, whereas the
-        # dependency's embedded source is a snapshot from whenever composer.lock
-        # was last written and can go stale if the package's source repo moves.
-        look_up_source_from_packagist || source_from_dependency
+        embedded_source = source_from_dependency
+        packagist_source = look_up_source_from_packagist
+
+        return packagist_source if embedded_source.nil?
+        return embedded_source if packagist_source.nil?
+        return embedded_source if embedded_source.url == packagist_source.url
+
+        # Packagist disagrees with the dependency's embedded source (e.g. a
+        # private/custom-registry package can coincidentally share a name with an
+        # unrelated public Packagist package). Only trust Packagist's answer once
+        # the embedded source itself confirms it's stale by redirecting elsewhere,
+        # so we never silently override a still-valid private source.
+        stale_embedded_source?(embedded_source) ? packagist_source : embedded_source
       end
 
       sig { returns(T.nilable(Source)) }
       def source_from_dependency
         Source.from_url(dependency.source_string("url"))
+      end
+
+      sig { params(source: Source).returns(T::Boolean) }
+      def stale_embedded_source?(source)
+        response = Dependabot::RegistryClient.head(
+          url: source.url,
+          options: { middlewares: Dependabot::SharedHelpers.excon_middleware - [Excon::Middleware::RedirectFollower] }
+        )
+        [301, 302, 303, 307, 308].include?(response.status)
+      rescue Excon::Error::Timeout, Excon::Error::Socket, Excon::Error::HTTP
+        false
       end
 
       sig { returns(T.nilable(Source)) }
@@ -69,7 +90,11 @@ module Dependabot
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "https://repo.packagist.org/p2/#{dependency.name.downcase}.json")
+        response = begin
+          Dependabot::RegistryClient.get(url: "https://repo.packagist.org/p2/#{dependency.name.downcase}.json")
+        rescue Excon::Error::Timeout, Excon::Error::Socket
+          return nil
+        end
 
         return nil unless response.status == 200
 

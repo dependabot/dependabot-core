@@ -166,8 +166,78 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
         }]
       end
 
+      before do
+        stub_request(:head, "https://github.com/Seldaek/monolog")
+          .to_return(status: 301, headers: { "Location" => "https://github.com/new-org/monolog" })
+      end
+
       it "prefers the live packagist source over the stale embedded source" do
         expect(source_url).to eq("https://github.com/new-org/monolog")
+      end
+    end
+
+    context "when the dependency's embedded source disagrees with packagist but is still live " \
+            "(e.g. a private/custom-registry package sharing a name with an unrelated public package)" do
+      let(:packagist_response) do
+        <<~JSON
+          {
+            "minified": "composer/2.0",
+            "packages": {
+              "monolog/monolog": [
+                {
+                  "name": "monolog/monolog",
+                  "version": "2.0.0",
+                  "homepage": "https://github.com/unrelated-org/monolog",
+                  "source": { "url": "https://github.com/unrelated-org/monolog.git", "type": "git" }
+                }
+              ]
+            }
+          }
+        JSON
+      end
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.*",
+          groups: [],
+          source: {
+            "type" => "git",
+            "url" => "https://github.com/my-private-org/monolog.git"
+          }
+        }]
+      end
+
+      before do
+        stub_request(:head, "https://github.com/my-private-org/monolog")
+          .to_return(status: 200)
+      end
+
+      it "keeps the embedded source instead of trusting the unrelated packagist package" do
+        expect(source_url).to eq("https://github.com/my-private-org/monolog")
+      end
+    end
+
+    context "when packagist is temporarily unreachable" do
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.*",
+          groups: [],
+          source: {
+            "type" => "git",
+            "url" => "https://github.com/Seldaek/monolog.git"
+          }
+        }]
+      end
+
+      before do
+        allow(Dependabot::RegistryClient).to receive(:get)
+          .with(url: packagist_url)
+          .and_raise(Excon::Error::Timeout.new("timed out"))
+      end
+
+      it "falls back to the dependency's embedded source instead of raising" do
+        expect(source_url).to eq("https://github.com/Seldaek/monolog")
       end
     end
 
