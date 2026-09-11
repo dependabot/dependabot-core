@@ -249,11 +249,24 @@ module Dependabot
         # Close all sections with appropriate indentation
         dependencies.add_text("\n#{indentation_config[:levels][:dependency_management]}")
         dependency_management.add_text("\n#{indentation_config[:levels][:base]}") if dependencies_created
-        project.add_text("\n") if dependency_management_created
 
-        # If dependencyManagement was created, replace entire document content with parser output
-        # Unfortunately, this might include unrelated formatting changes sometimes
-        return doc.to_s if dependency_management_created
+        # If a new dependencyManagement section was created, we use a hybrid DOM-guided
+        # text splice instead of doc.to_s. This completely preserves the original
+        # file's formatting, indentation style, and attribute quotes on the root elements,
+        # avoiding git diff noise on unrelated lines.
+        if dependency_management_created
+          # Find the character position of the true closing project tag at the literal end of the file.
+          match_data = content.match(%r{</project>\s*\z})
+
+          if match_data
+            insert_position = match_data.begin(0)
+            # Extract the baseline indentation level for the root block formatting (e.g. spaces or tabs)
+            formatted_patch = "\n#{indentation_config[:levels][:base]}#{dependency_management}\n"
+
+            # place the block text right into that character boundary index position
+            return T.must(content[0...insert_position]) + formatted_patch + T.must(content[insert_position..-1])
+          end
+        end
 
         # If dependencyManagement was not created, we just replace the existing dependencyManagement element
         # with the updated one, preserving the rest of the document
