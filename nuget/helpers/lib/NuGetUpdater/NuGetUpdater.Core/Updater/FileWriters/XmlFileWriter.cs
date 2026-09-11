@@ -1182,7 +1182,14 @@ public class XmlFileWriter : IFileWriter
                 trimmedValue = trimmedValue[4..].Trim();
             }
 
-            return NuGetVersion.TryParse(trimmedValue, out version);
+            if (NuGetVersion.TryParse(trimmedValue, out var parsedVersion))
+            {
+                version = parsedVersion;
+                return true;
+            }
+
+            version = null!;
+            return false;
         }
 
         string WithUpdatedSdkVersion(string value)
