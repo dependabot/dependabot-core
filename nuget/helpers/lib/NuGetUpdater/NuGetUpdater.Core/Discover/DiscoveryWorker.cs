@@ -225,6 +225,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             filesToScan.Enqueue(projectPath);
             AddNearestDirectoryBuildFile(projectPath, "Directory.Build.props");
             AddNearestDirectoryBuildFile(projectPath, "Directory.Build.targets");
+            AddNearestDirectoryBuildFile(projectPath, "Directory.Packages.props");
         }
 
         while (filesToScan.TryDequeue(out var buildFilePath))
@@ -246,11 +247,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
             foreach (var import in buildFile.ImportNodes)
             {
-                if (!string.IsNullOrWhiteSpace(import.GetAttributeValueCaseInsensitive("Condition")))
-                {
-                    continue;
-                }
-
                 var importedPath = import.GetAttributeValueCaseInsensitive("Project");
                 if (string.IsNullOrWhiteSpace(importedPath))
                 {

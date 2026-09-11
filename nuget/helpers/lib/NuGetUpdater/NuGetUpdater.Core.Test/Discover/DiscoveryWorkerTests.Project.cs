@@ -1056,7 +1056,7 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
-        public async Task MSBuildSdkInFileImportedWithWindowsSeparators_IsDiscoveredAsDependency()
+        public async Task MSBuildSdkInConditionallyImportedFileWithWindowsSeparators_IsDiscoveredAsDependency()
         {
             await TestDiscoveryAsync(
                 packages:
@@ -1067,7 +1067,7 @@ public partial class DiscoveryWorkerTests
                 files: [
                     ("project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
-                          <Import Project="build\Sdk.props" />
+                          <Import Project="build\Sdk.props" Condition="Exists('build\Sdk.props')" />
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
@@ -1150,6 +1150,51 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task MSBuildSdkInDirectoryPackagesProps_IsRestoredBeforeEvaluation()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
+                ],
+                workspacePath: "src",
+                files: [
+                    ("src/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                        </Project>
+                        """),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Aspire.AppHost.Sdk", "9.0.0", DependencyType.MSBuildSdk),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "../Directory.Packages.props",
+                            ],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
         public async Task VersionedMSBuildSdk_WithMatchingTransitivePackage_IsRestoredAndReportedAsSdk()
         {
             await TestDiscoveryAsync(
@@ -1207,6 +1252,13 @@ public partial class DiscoveryWorkerTests
                 ],
                 workspacePath: "",
                 files: [
+                    ("global.json", """
+                        {
+                          "msbuild-sdks": {
+                            "Aspire.AppHost.Sdk": "9.0.0"
+                          }
+                        }
+                        """),
                     ("project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -1223,6 +1275,13 @@ public partial class DiscoveryWorkerTests
                 expectedResult: new()
                 {
                     Path = "",
+                    GlobalJson = new()
+                    {
+                        FilePath = "global.json",
+                        Dependencies = [
+                            new("Aspire.AppHost.Sdk", "9.0.0", DependencyType.MSBuildSdk),
+                        ],
+                    },
                     Projects = [
                         new()
                         {
