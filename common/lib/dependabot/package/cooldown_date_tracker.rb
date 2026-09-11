@@ -73,6 +73,11 @@ module Dependabot
         @releases[release] = days
       end
 
+      sig { params(release: Dependabot::Package::PackageRelease).void }
+      def discard(release)
+        @releases.delete(release)
+      end
+
       private
 
       sig { returns(Dependabot::Dependency) }

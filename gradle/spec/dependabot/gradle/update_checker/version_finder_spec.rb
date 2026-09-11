@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -581,6 +581,50 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
+
+    context "when the newest release has no publication date" do
+      let(:maven_central_releases) do
+        <<~XML
+          <metadata>
+            <versioning>
+              <versions>
+                <version>23.3-jre</version>
+                <version>23.5-jre</version>
+                <version>23.6-jre</version>
+              </versions>
+            </versioning>
+          </metadata>
+        XML
+      end
+      let(:release_listing) do
+        <<~HTML
+          <pre>
+          <a href="23.3-jre/">23.3-jre/</a> 2017-11-09 10:00
+          <a href="23.5-jre/">23.5-jre/</a> 2017-11-22 10:00
+          <a href="23.6-jre/">23.6-jre/</a>
+          </pre>
+        HTML
+      end
+
+      before do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
+          .to_return(status: 200, body: release_listing)
+      end
+
+      it "selects the older dated release and marks the dependency" do
+        expect(latest_version_details[:version]).to eq(version_class.new("23.5-jre"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+
+      context "when no release has a publication date" do
+        let(:release_listing) { "<pre></pre>" }
+
+        it "returns no release and marks the dependency" do
+          expect(latest_version_details).to be_nil
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+    end
   end
 
   describe "#in_cooldown_period?" do
@@ -673,11 +717,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
         it "filters out the version" do
           expect(in_cooldown).to be true
-        end
-
-        it "marks the dependency through cooldown filtering" do
-          expect(finder.send(:filter_cooldown_versions, [release])).to be_empty
-          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
 
         it "logs that release date is not available and filtering out" do
