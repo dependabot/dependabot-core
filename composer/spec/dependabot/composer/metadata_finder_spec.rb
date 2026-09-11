@@ -129,10 +129,69 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/Seldaek/monolog") }
 
-        it "doesn't hit packagist" do
+        it "still checks packagist first, falling back to the dependency's source" do
           source_url
-          expect(WebMock).not_to have_requested(:get, packagist_url)
+          expect(WebMock).to have_requested(:get, packagist_url)
         end
+      end
+    end
+
+    context "when the dependency's source is stale (the package's canonical source has moved)" do
+      let(:packagist_response) do
+        <<~JSON
+          {
+            "minified": "composer/2.0",
+            "packages": {
+              "monolog/monolog": [
+                {
+                  "name": "monolog/monolog",
+                  "version": "2.0.0",
+                  "homepage": "https://github.com/new-org/monolog",
+                  "source": { "url": "https://github.com/new-org/monolog.git", "type": "git" }
+                }
+              ]
+            }
+          }
+        JSON
+      end
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.*",
+          groups: [],
+          source: {
+            "type" => "git",
+            "url" => "https://github.com/Seldaek/monolog.git"
+          }
+        }]
+      end
+
+      it "prefers the live packagist source over the stale embedded source" do
+        expect(source_url).to eq("https://github.com/new-org/monolog")
+      end
+    end
+
+    context "when a version entry has both homepage and source.url pointing to different hosts" do
+      let(:packagist_response) do
+        <<~JSON
+          {
+            "minified": "composer/2.0",
+            "packages": {
+              "monolog/monolog": [
+                {
+                  "name": "monolog/monolog",
+                  "version": "2.0.0",
+                  "homepage": "https://github.com/stale-org/monolog",
+                  "source": { "url": "https://github.com/current-org/monolog.git", "type": "git" }
+                }
+              ]
+            }
+          }
+        JSON
+      end
+
+      it "prefers the authoritative source.url over the free-text homepage" do
+        expect(source_url).to eq("https://github.com/current-org/monolog")
       end
     end
 

@@ -31,7 +31,10 @@ module Dependabot
 
       sig { override.returns(T.nilable(Source)) }
       def look_up_source
-        source_from_dependency || look_up_source_from_packagist
+        # Packagist reflects the package's current canonical source, whereas the
+        # dependency's embedded source is a snapshot from whenever composer.lock
+        # was last written and can go stale if the package's source repo moves.
+        look_up_source_from_packagist || source_from_dependency
       end
 
       sig { returns(T.nilable(Source)) }
@@ -54,7 +57,7 @@ module Dependabot
         # * https://github.com/composer/composer/blob/main/UPGRADE-2.0.md#for-composer-repository-implementors
         # * https://github.com/composer/metadata-minifier
         packages.each do |i|
-          [i["homepage"], i.dig("source", "url")].each do |url|
+          [i.dig("source", "url"), i["homepage"]].each do |url|
             source_url = Source.from_url(url)
             return source_url unless source_url.nil?
           end
