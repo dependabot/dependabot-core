@@ -1141,6 +1141,110 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(commands.count { |cmd| cmd.include?("--no-save") }).to eq(1)
       end
 
+      # Regression coverage for the unclassified-error flood tracked in Sentry as
+      # DELTAFORCE-1JSH. pnpm exits with ERR_PNPM_NO_MATURE_MATCHING_VERSION when the
+      # release-age gate added in dependabot/dependabot-core#15485 leaves no eligible
+      # version for a package it must resolve. That is the cooldown policy working as
+      # intended, so it must surface as an expected Dependabot error rather than an
+      # unclassified HelperSubprocessFailed reported as "unknown_error".
+      context "when pnpm reports no mature matching version" do
+        # Mirrors real pnpm output: registry `error (undefined)` warnings precede the
+        # terminal error, and only the terminal error carries the actual cause.
+        let(:no_mature_output) do
+          " WARN  GET https://registry.npmjs.org/posthog-js error (undefined)\n" \
+            " WARN  GET https://registry.npmjs.org/@posthog%2Fcore error (undefined)\n" \
+            " ERR_PNPM_NO_MATURE_MATCHING_VERSION  1 versions do not meet the " \
+            "minimumReleaseAge constraint:\n" \
+            "@posthog/core@1.271.0 was published at 2026-08-24T09:12:44.000Z\n"
+        end
+        let(:commands) { [] }
+
+        before do
+          allow(Dependabot.logger).to receive(:warn)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            if cmd.start_with?("update ")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: no_mature_output,
+                error_context: {}
+              )
+            end
+            ""
+          end
+        end
+
+        it "raises a classified error rather than an unhandled subprocess failure" do
+          expect { updated_pnpm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+
+        it "is reported as a handled updater error rather than an unknown one" do
+          error = begin
+            updated_pnpm_lock_content
+            nil
+          rescue Dependabot::DependencyFileNotResolvable => e
+            e
+          end
+
+          expect(Dependabot.updater_error_details(error).error_type)
+            .to eq("dependency_file_not_resolvable")
+        end
+
+        # The message reaches error reporting, so it must stay low-cardinality; the
+        # raw pnpm output belongs in the job logs instead.
+        it "keeps package names, versions and registry URLs out of the message" do
+          message = begin
+            updated_pnpm_lock_content
+            nil
+          rescue Dependabot::DependencyFileNotResolvable => e
+            e.message
+          end
+
+          expect(message).to be_a(String)
+          expect(message).not_to include("posthog")
+          expect(message).not_to include("1.271.0")
+          expect(message).not_to include("registry.npmjs.org")
+          expect(message).not_to include("ERR_PNPM")
+        end
+
+        it "logs the raw pnpm output so the detail is still available in the job logs" do
+          expect { updated_pnpm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+
+          expect(Dependabot.logger).to have_received(:warn).with(no_mature_output)
+        end
+
+        # The cooldown must not be weakened: retrying ungated would admit the very
+        # release the gate exists to reject.
+        it "does not retry the update without the cooldown gate" do
+          expect { updated_pnpm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+
+          updates = commands.select { |cmd| cmd.include?("--no-save") }
+          expect(updates.length).to eq(1)
+          expect(updates.first).to include("--config.minimumReleaseAge=10080")
+          expect(commands.join(" ")).not_to include("minimumReleaseAgeExclude")
+        end
+      end
+
+      # The registry warning noise that precedes the terminal error must not on its
+      # own be classified as a cooldown failure.
+      it "does not treat registry warning noise as a cooldown failure" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          if cmd.start_with?("update ")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: " WARN  GET https://registry.npmjs.org/posthog-js error (undefined)\n" \
+                       " WARN  GET https://registry.npmjs.org/@posthog%2Fcore error (undefined)\n",
+              error_context: {}
+            )
+          end
+          ""
+        end
+
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+
       # Regression coverage for dependabot/dependabot-core#13165: when a repo sets
       # `minimumReleaseAge` in pnpm-workspace.yaml *and* a Dependabot `cooldown`,
       # the longest release-age of the two takes precedence so neither policy is

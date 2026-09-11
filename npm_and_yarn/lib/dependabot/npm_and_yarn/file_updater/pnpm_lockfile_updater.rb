@@ -180,6 +180,23 @@ module Dependabot
         ERR_PNPM_TRUST_DOWNGRADE = /ERR_PNPM_TRUST_DOWNGRADE/
         TRUST_DOWNGRADE_PACKAGE = /High-risk trust downgrade for "(?<dep>[^"]+)"/
 
+        # Raised when the release-age gate leaves no eligible version for a package
+        # pnpm has to resolve — typically a transitive dependency pinned to a
+        # release younger than the cooldown window. The gate is doing its job here,
+        # so this is an expected outcome of the cooldown policy rather than a
+        # subprocess failure. Matched on the terminal error code alone: pnpm prints
+        # unrelated registry `WARN ... error (undefined)` noise ahead of it, and
+        # only the terminal error carries this code.
+        ERR_PNPM_NO_MATURE_MATCHING_VERSION = /\bERR_PNPM_NO_MATURE_MATCHING_VERSION\b/
+
+        # Deliberately free of package names, versions, registry URLs and raw
+        # stderr: those stay in the job logs, while this message is what reaches
+        # error reporting.
+        RELEASE_AGE_COOLDOWN_MESSAGE =
+          "A version required by this update was published too recently to satisfy the configured " \
+          "cooldown period (pnpm minimumReleaseAge). This update will become possible once the " \
+          "required version is old enough."
+
         sig do
           params(
             pnpm_lock: Dependabot::DependencyFile,
@@ -636,6 +653,15 @@ module Dependabot
         end
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
           error_message = error.message
+
+          # Checked first: pnpm emits registry warning noise before the terminal
+          # error, so a later matcher could otherwise classify the noise instead of
+          # the actual cause. The cooldown gate rejecting a too-young version is an
+          # expected policy outcome, not an unknown subprocess failure.
+          if error_message.match?(ERR_PNPM_NO_MATURE_MATCHING_VERSION)
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, RELEASE_AGE_COOLDOWN_MESSAGE
+          end
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
             raise_resolvability_error(error_message, pnpm_lock)
