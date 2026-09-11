@@ -3012,7 +3012,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     <Project Sdk="Microsoft.NET.Sdk">
                     </Project>
                     """),
-                ("Directory.Build.props", """
+                ("build/sdk.proj", """
                     <Project>
                       <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
                     </Project>
@@ -3025,7 +3025,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     <Project Sdk="Microsoft.NET.Sdk">
                     </Project>
                     """),
-                ("Directory.Build.props", """
+                ("build/sdk.proj", """
                     <Project>
                       <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
                     </Project>
@@ -3067,6 +3067,40 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ],
             initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
             requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAndCentralPackageVersion_AreBothUpdated()
+    {
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0" />
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Aspire.AppHost.Sdk" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0" />
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Aspire.AppHost.Sdk" Version="13.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
         );
     }
 

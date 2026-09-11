@@ -160,6 +160,24 @@ public class XmlFileWriter : IFileWriter
                 continue;
             }
 
+            if (sdkUpdated && packageManagementKind == PackageManagementKind.CentralPackageVersions)
+            {
+                var centralPackageVersionElementsAndPaths = filesAndContents
+                    .SelectMany(kvp =>
+                    {
+                        var path = kvp.Key;
+                        var doc = kvp.Value;
+                        return doc.Descendants()
+                            .Where(e => e.Name.Equals(PackageReferenceElementName, StringComparison.OrdinalIgnoreCase))
+                            .Where(e => (e.GetAttributeValue(UpdateAttributeName) ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
+                            .Select(element => KeyValuePair.Create(element, path));
+                    });
+                packageReferenceElementsAndPaths = packageReferenceElementsAndPaths
+                    .Concat(centralPackageVersionElementsAndPaths)
+                    .Distinct()
+                    .ToArray();
+            }
+
             if (sdkUpdated)
             {
                 if (packageReferenceElementsAndPaths.Length == 0)

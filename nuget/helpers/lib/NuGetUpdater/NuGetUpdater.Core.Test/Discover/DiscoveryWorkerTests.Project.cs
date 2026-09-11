@@ -413,6 +413,7 @@ public partial class DiscoveryWorkerTests
                 [
                     MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
                     MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
                 ],
                 workspacePath: "test",
                 files:
@@ -431,7 +432,7 @@ public partial class DiscoveryWorkerTests
                         </Project>
                         """),
                     ("src/helpers.csproj", """
-                        <Project Sdk="Microsoft.NET.Sdk">
+                        <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/9.0.0">
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
@@ -463,6 +464,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "../src/helpers.csproj",
                             Dependencies = [
+                                new("Aspire.AppHost.Sdk", "9.0.0", DependencyType.MSBuildSdk),
                                 new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
@@ -1067,13 +1069,13 @@ public partial class DiscoveryWorkerTests
                 files: [
                     ("project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
-                          <Import Project="build\Sdk.props" Condition="Exists('build\Sdk.props')" />
+                          <Import Project="build\Sdk.proj" Condition="Exists('build\Sdk.proj')" />
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                         </Project>
                         """),
-                    ("build/Sdk.props", """
+                    ("build/Sdk.proj", """
                         <Project>
                           <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
                         </Project>
@@ -1092,7 +1094,7 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [
-                                "build/Sdk.props",
+                                "build/Sdk.proj",
                             ],
                             AdditionalFiles = [],
                         },
@@ -1150,7 +1152,7 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
-        public async Task MSBuildSdkInDirectoryPackagesProps_IsRestoredBeforeEvaluation()
+        public async Task MSBuildSdkInCustomDirectoryPackagesPropsPath_IsRestoredBeforeEvaluation()
         {
             await TestDiscoveryAsync(
                 packages:
@@ -1166,7 +1168,14 @@ public partial class DiscoveryWorkerTests
                           </PropertyGroup>
                         </Project>
                         """),
-                    ("Directory.Packages.props", """
+                    ("src/Directory.Build.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <DirectoryPackagesPropsPath>$(MSBuildThisFileDirectory)..\config\Dependencies.props</DirectoryPackagesPropsPath>
+                          </PropertyGroup>
+                        </Project>
+                        """),
+                    ("config/Dependencies.props", """
                         <Project>
                           <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
                         </Project>
@@ -1185,7 +1194,8 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [
-                                "../Directory.Packages.props",
+                                "../config/Dependencies.props",
+                                "Directory.Build.props",
                             ],
                             AdditionalFiles = [],
                         },

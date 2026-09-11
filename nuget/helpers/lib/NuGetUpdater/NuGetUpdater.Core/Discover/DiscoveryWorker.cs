@@ -28,7 +28,8 @@ public partial class DiscoveryWorker : IDiscoveryWorker
     private readonly string _jobId;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
-    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.Ordinal); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _attemptedMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -192,7 +193,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         var msbuildSdks = dependencies
             .Where(d => d.Type == DependencyType.MSBuildSdk && !string.IsNullOrEmpty(d.Version))
             .Where(d => !d.Name.Equals("Microsoft.NET.Sdk", StringComparison.OrdinalIgnoreCase))
-            .Where(d => !_restoredMSBuildSdks.Contains($"{d.Name}/{d.Version}"))
+            .Where(d => !_attemptedMSBuildSdks.Contains($"{d.Name}/{d.Version}"))
             .ToImmutableArray();
 
         if (msbuildSdks.Length == 0)
@@ -200,17 +201,12 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             return false;
         }
 
-        var keys = msbuildSdks.Select(d => $"{d.Name}/{d.Version}");
+        var keys = msbuildSdks.Select(d => $"{d.Name}/{d.Version}").ToImmutableArray();
+        _attemptedMSBuildSdks.AddRange(keys);
 
         _logger.Info($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
 
-        var restored = await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
-        if (restored)
-        {
-            _restoredMSBuildSdks.AddRange(keys);
-        }
-
-        return restored;
+        return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
     }
 
     private static ImmutableArray<Dependency> GetMSBuildSdksForPreRestore(string repoRootPath, IEnumerable<string> projectPaths)
@@ -222,10 +218,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         foreach (var projectPath in projectPaths)
         {
-            filesToScan.Enqueue(projectPath);
-            AddNearestDirectoryBuildFile(projectPath, "Directory.Build.props");
-            AddNearestDirectoryBuildFile(projectPath, "Directory.Build.targets");
-            AddNearestDirectoryBuildFile(projectPath, "Directory.Packages.props");
+            EnqueueProjectAndImplicitImports(projectPath);
         }
 
         while (filesToScan.TryDequeue(out var buildFilePath))
@@ -233,7 +226,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             buildFilePath = Path.GetFullPath(buildFilePath);
             if (!scannedFiles.Add(buildFilePath) ||
                 !File.Exists(buildFilePath) ||
-                !IsSupportedMSBuildFile(buildFilePath) ||
+                !ProjectBuildFile.IsSupportedDependencyFile(buildFilePath) ||
                 !PathHelper.IsFileUnderDirectory(repoRoot, new FileInfo(buildFilePath)))
             {
                 continue;
@@ -245,6 +238,13 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 dependencies.TryAdd($"{dependency.Name}/{dependency.Version}", dependency);
             }
 
+            var buildFileDirectory = Path.GetDirectoryName(buildFilePath)!;
+            foreach (var property in buildFile.GetProperties().Where(p =>
+                p.Key.Equals("DirectoryPackagesPropsPath", StringComparison.OrdinalIgnoreCase)))
+            {
+                EnqueueLiteralPaths(buildFileDirectory, property.Value);
+            }
+
             foreach (var import in buildFile.ImportNodes)
             {
                 var importedPath = import.GetAttributeValueCaseInsensitive("Project");
@@ -253,19 +253,22 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     continue;
                 }
 
-                var buildFileDirectory = Path.GetDirectoryName(buildFilePath)!;
-                importedPath = importedPath.Replace(
-                    "$(MSBuildThisFileDirectory)",
-                    buildFileDirectory + Path.DirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase);
-                if (importedPath.IndexOfAny(['$', '@', '*', '?']) >= 0)
+                EnqueueLiteralPaths(buildFileDirectory, importedPath);
+            }
+
+            foreach (var projectItem in buildFile.ItemNodes.Where(item =>
+                item.Name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase) ||
+                item.Name.Equals("ProjectFile", StringComparison.OrdinalIgnoreCase)))
+            {
+                var referencedPath = projectItem.GetAttributeValueCaseInsensitive("Include");
+                if (string.IsNullOrWhiteSpace(referencedPath))
                 {
                     continue;
                 }
 
-                foreach (var pathPart in importedPath.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                foreach (var pathPart in GetLiteralPaths(buildFileDirectory, referencedPath))
                 {
-                    filesToScan.Enqueue(Path.Combine(buildFileDirectory, pathPart.NormalizePathToUnix()));
+                    EnqueueProjectAndImplicitImports(pathPart);
                 }
             }
         }
@@ -298,9 +301,37 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             }
         }
 
-        static bool IsSupportedMSBuildFile(string path) =>
-            ProjectBuildFile.IsSupportedDependencyFile(path) ||
-            Path.GetExtension(path).Equals(".proj", StringComparison.OrdinalIgnoreCase);
+        void EnqueueProjectAndImplicitImports(string projectPath)
+        {
+            filesToScan.Enqueue(projectPath);
+            AddNearestDirectoryBuildFile(projectPath, "Directory.Build.props");
+            AddNearestDirectoryBuildFile(projectPath, "Directory.Build.targets");
+            AddNearestDirectoryBuildFile(projectPath, "Directory.Packages.props");
+        }
+
+        void EnqueueLiteralPaths(string buildFileDirectory, string value)
+        {
+            foreach (var path in GetLiteralPaths(buildFileDirectory, value))
+            {
+                filesToScan.Enqueue(path);
+            }
+        }
+
+        static IEnumerable<string> GetLiteralPaths(string buildFileDirectory, string value)
+        {
+            value = value.Replace(
+                "$(MSBuildThisFileDirectory)",
+                buildFileDirectory + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase);
+            if (value.IndexOfAny(['$', '@', '*', '?']) >= 0)
+            {
+                return [];
+            }
+
+            return value
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(path => Path.Combine(buildFileDirectory, path.NormalizePathToUnix()));
+        }
     }
 
     private static bool IsConcreteMSBuildSdk(Dependency dependency) =>

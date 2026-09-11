@@ -10,6 +10,7 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         return extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".vbproj", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".fsproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".proj", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".props", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".targets", StringComparison.OrdinalIgnoreCase);
     }
