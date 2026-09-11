@@ -662,13 +662,14 @@ internal static class SdkProjectDiscovery
             var projectAndImports = imported
                 .Select(importedPath => Path.Combine(projectFullDirectory, importedPath))
                 .Prepend(projectPath)
-                .Distinct(PathComparer.Instance);
+                .Distinct(PathComparer.Instance)
+                .Where(ProjectBuildFile.IsSupportedDependencyFile);
             foreach (var buildFilePath in projectAndImports.Where(File.Exists))
             {
                 var projectBuildFile = ProjectBuildFile.Open(workspacePath, buildFilePath);
                 foreach (var sdkDep in projectBuildFile.GetDependencies().Where(d => d.Type == DependencyType.MSBuildSdk && d.Version is not null))
                 {
-                    if (!groupedDependencies.ContainsKey(sdkDep.Name))
+                    if (!groupedDependencies.TryGetValue(sdkDep.Name, out var existingDependency) || !existingDependency.IsTopLevel)
                     {
                         groupedDependencies[sdkDep.Name] = sdkDep;
                     }

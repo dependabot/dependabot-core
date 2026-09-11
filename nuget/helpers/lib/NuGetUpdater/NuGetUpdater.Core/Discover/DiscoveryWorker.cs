@@ -208,6 +208,91 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
     }
 
+    private static ImmutableArray<Dependency> GetMSBuildSdksForPreRestore(string repoRootPath, IEnumerable<string> projectPaths)
+    {
+        var repoRoot = new DirectoryInfo(repoRootPath);
+        var filesToScan = new Queue<string>();
+        var scannedFiles = new HashSet<string>(PathComparer.Instance);
+        var dependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var projectPath in projectPaths)
+        {
+            filesToScan.Enqueue(projectPath);
+            AddNearestDirectoryBuildFile(projectPath, "Directory.Build.props");
+            AddNearestDirectoryBuildFile(projectPath, "Directory.Build.targets");
+        }
+
+        while (filesToScan.TryDequeue(out var buildFilePath))
+        {
+            buildFilePath = Path.GetFullPath(buildFilePath);
+            if (!scannedFiles.Add(buildFilePath) ||
+                !File.Exists(buildFilePath) ||
+                !ProjectBuildFile.IsSupportedDependencyFile(buildFilePath) ||
+                !PathHelper.IsFileUnderDirectory(repoRoot, new FileInfo(buildFilePath)))
+            {
+                continue;
+            }
+
+            var buildFile = ProjectBuildFile.Open(repoRootPath, buildFilePath);
+            foreach (var dependency in buildFile.GetDependencies().Where(d => d.Type == DependencyType.MSBuildSdk && d.Version is not null))
+            {
+                dependencies.TryAdd($"{dependency.Name}/{dependency.Version}", dependency);
+            }
+
+            foreach (var import in buildFile.ImportNodes)
+            {
+                var importedPath = import.GetAttributeValueCaseInsensitive("Project");
+                if (string.IsNullOrWhiteSpace(importedPath))
+                {
+                    continue;
+                }
+
+                var buildFileDirectory = Path.GetDirectoryName(buildFilePath)!;
+                importedPath = importedPath.Replace(
+                    "$(MSBuildThisFileDirectory)",
+                    buildFileDirectory + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase);
+                if (importedPath.IndexOfAny(['$', '@', '*', '?']) >= 0)
+                {
+                    continue;
+                }
+
+                foreach (var pathPart in importedPath.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    filesToScan.Enqueue(Path.Combine(buildFileDirectory, pathPart));
+                }
+            }
+        }
+
+        return dependencies.Values.ToImmutableArray();
+
+        void AddNearestDirectoryBuildFile(string projectPath, string fileName)
+        {
+            var directory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
+            while (true)
+            {
+                var candidatePath = Path.Combine(directory.FullName, fileName);
+                if (!PathHelper.IsFileUnderDirectory(repoRoot, new FileInfo(candidatePath)))
+                {
+                    return;
+                }
+
+                if (File.Exists(candidatePath))
+                {
+                    filesToScan.Enqueue(candidatePath);
+                    return;
+                }
+
+                if (PathComparer.Instance.Equals(directory.FullName, repoRoot.FullName) || directory.Parent is null)
+                {
+                    return;
+                }
+
+                directory = directory.Parent;
+            }
+        }
+    }
+
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsync(string repoRootPath, string workspacePath, string? solutionDir)
     {
         _logger.Info($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
@@ -466,6 +551,8 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 _processedProjectPaths.Add(projectPath);
 
                 var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath).NormalizePathToUnix();
+                var preRestoreSdks = GetMSBuildSdksForPreRestore(repoRootPath, [projectPath]);
+                await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, preRestoreSdks, _logger);
                 var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, solutionDir, _logger);
 
                 // Determine if there were unrestored MSBuildSdks

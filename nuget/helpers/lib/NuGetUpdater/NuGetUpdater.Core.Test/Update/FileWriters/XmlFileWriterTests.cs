@@ -3041,6 +3041,24 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SdkAndPackageReference_WithMismatchedPackageVersion_DoesNotWritePartialUpdate()
+    {
+        await TestNoChangeAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0">
+                      <ItemGroup>
+                        <PackageReference Include="Aspire.AppHost.Sdk" Version="10.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"]
+        );
+    }
+
+    [Fact]
     public async Task SdkChildElement_WithVersionAttribute_UpdatesVersion()
     {
         // <Sdk Name="SomeSdk" Version="1.0.0" /> => <Sdk Name="SomeSdk" Version="2.0.0" />

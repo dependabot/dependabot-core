@@ -4,6 +4,16 @@ namespace NuGetUpdater.Core;
 
 internal sealed class ProjectBuildFile : XmlBuildFile
 {
+    public static bool IsSupportedDependencyFile(string path)
+    {
+        var extension = System.IO.Path.GetExtension(path);
+        return extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".vbproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".fsproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".props", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".targets", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static ProjectBuildFile Open(string basePath, string path)
         => Parse(basePath, path, File.ReadAllText(path));
 

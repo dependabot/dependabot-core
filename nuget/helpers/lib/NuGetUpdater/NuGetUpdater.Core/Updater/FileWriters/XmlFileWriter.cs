@@ -74,7 +74,7 @@ public class XmlFileWriter : IFileWriter
         }
 
         var filesAndContentsTasks = relativeFilePaths
-            .Where(path => SupportedProjectFileExtensions.Contains(Path.GetExtension(path)) || SupportedAdditionalFileExtensions.Contains(Path.GetExtension(path)))
+            .Where(ProjectBuildFile.IsSupportedDependencyFile)
             .Select(async path =>
             {
                 var document = await ReadFileContentsAsync(repoContentsPath, path);
@@ -157,9 +157,9 @@ public class XmlFileWriter : IFileWriter
             var sdkUpdated = TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger);
             if (sdkUpdated)
             {
-                updatesPerformed[requiredPackageVersion.Name] = true;
                 if (packageReferenceElementsAndPaths.Length == 0)
                 {
+                    updatesPerformed[requiredPackageVersion.Name] = true;
                     continue; // SDK-only reference; no <PackageReference> elements to update
                 }
                 // A PackageReference with the same ID also exists; fall through to update it too
