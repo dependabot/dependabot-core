@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/package/npm_lockfile_details"
 require "sorbet-runtime"
@@ -13,35 +14,36 @@ module Dependabot
       class YarnLock
         extend T::Sig
 
+        require_relative "yarn_lock/record"
+
         sig { params(dependency_file: Dependabot::DependencyFile, dealias_packages: T::Boolean).void }
         def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
           @dealias_packages = dealias_packages
+          @parsed = T.let(nil, T.nilable(T::Hash[String, Record]))
         end
 
-        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
+        sig { returns(T::Hash[String, Record]) }
         def parsed
-          @parsed ||= T.let(
-            T.cast(
-              SharedHelpers.in_a_temporary_directory do
-                File.write("yarn.lock", @dependency_file.content)
+          return @parsed if @parsed
 
-                SharedHelpers.run_helper_subprocess(
-                  command: NativeHelpers.helper_path,
-                  function: "yarn:parseLockfile",
-                  args: [Dir.pwd]
-                )
-              rescue SharedHelpers::HelperSubprocessFailed => e
-                raise Dependabot::OutOfDisk, e.message if e.message.end_with?("No space left on device")
-                raise Dependabot::OutOfDisk, e.message if e.message.end_with?("Out of diskspace")
-                raise Dependabot::OutOfMemory, e.message if e.message.end_with?("MemoryError")
+          result = SharedHelpers.in_a_temporary_directory do
+            File.write("yarn.lock", @dependency_file.content)
 
-                raise Dependabot::DependencyFileNotParseable, @dependency_file.path
-              end,
-              T::Hash[String, T::Hash[String, T.untyped]]
-            ),
-            T.nilable(T::Hash[String, T::Hash[String, T.untyped]])
-          )
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "yarn:parseLockfile",
+              args: [Dir.pwd]
+            )
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise Dependabot::OutOfDisk, e.message if e.message.end_with?("No space left on device")
+            raise Dependabot::OutOfDisk, e.message if e.message.end_with?("Out of diskspace")
+            raise Dependabot::OutOfMemory, e.message if e.message.end_with?("MemoryError")
+
+            raise Dependabot::DependencyFileNotParseable, @dependency_file.path
+          end
+
+          @parsed = parse_records(result)
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -50,10 +52,11 @@ module Dependabot
 
           parsed.each do |reqs, details|
             reqs.split(", ").each do |req|
-              version = Version.semver_for(details["version"])
-              next unless version
               next if workspace_package?(req)
               next if req == "__metadata"
+
+              version = Version.semver_for(details.version)
+              next unless version
 
               if alias_package?(req)
                 # Skip unless we are dealiasing packages
@@ -109,14 +112,33 @@ module Dependabot
                     end
           return if details.nil?
 
-          Dependabot::Package::NpmLockfileDetails.from_object(
-            details,
-            path: @dependency_file.path,
-            context: dependency_name
-          )
+          details.lookup_details
         end
 
         private
+
+        sig { params(value: Object).returns(T::Hash[String, Record]) }
+        def parse_records(value)
+          unless value.is_a?(Hash)
+            raise DependencyFileNotParseable.new(@dependency_file.path, "yarn helper result must be an object")
+          end
+
+          records = T.let({}, T::Hash[String, Record])
+          value.each_with_index do |(raw_key, data), index|
+            key = T.cast(raw_key, Object)
+            unless key.is_a?(String)
+              raise DependencyFileNotParseable.new(@dependency_file.path, "yarn helper descriptors must be strings")
+            end
+            next if key == "__metadata"
+
+            records[key] = Record.new(
+              T.cast(data, Object),
+              path: @dependency_file.path,
+              context: "yarn helper result[#{index}]"
+            )
+          end
+          records
+        end
 
         sig { returns(T::Boolean) }
         def dealias_packages?
