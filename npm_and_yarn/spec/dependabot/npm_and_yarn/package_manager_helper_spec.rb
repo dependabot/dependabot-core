@@ -149,7 +149,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "returns an NpmPackageManager instance from engines field" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
-        expect(helper.package_manager.detected_version).to eq("11")
+        expect(helper.package_manager.detected_version).to eq("12")
       end
 
       it "supports npm version 11" do
