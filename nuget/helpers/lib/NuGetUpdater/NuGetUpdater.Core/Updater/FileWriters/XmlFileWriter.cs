@@ -153,7 +153,13 @@ public class XmlFileWriter : IFileWriter
                 return newlyAddedNode;
             }
 
-            var sdkUpdated = TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger);
+            var sdkUpdated = TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger, out var sdkConflict);
+            if (sdkConflict)
+            {
+                _logger.Warn($"Found conflicting SDK versions for {requiredPackageVersion.Name}; no update performed.");
+                continue;
+            }
+
             if (sdkUpdated)
             {
                 if (packageReferenceElementsAndPaths.Length == 0)
@@ -1003,9 +1009,11 @@ public class XmlFileWriter : IFileWriter
         NuGetVersion oldVersion,
         NuGetVersion requiredVersion,
         Func<string, SyntaxNode, SyntaxNode, SyntaxNode> replaceNode,
-        ILogger logger)
+        ILogger logger,
+        out bool hasConflict)
     {
         var sdkFound = false;
+        var sdkConflict = false;
 
         foreach (var (filePath, doc) in filesAndContents)
         {
@@ -1020,6 +1028,7 @@ public class XmlFileWriter : IFileWriter
             sdkFound |= TryUpdateImportSdkAttribute(filePath, rootElement);
         }
 
+        hasConflict = sdkConflict;
         return sdkFound;
 
         bool TryUpdateProjectSdkAttribute(string filePath, IXmlElementSyntax rootElement)
@@ -1064,6 +1073,7 @@ public class XmlFileWriter : IFileWriter
 
                 if (candidateVersion != oldVersion)
                 {
+                    sdkConflict = true;
                     continue;
                 }
 
@@ -1114,6 +1124,7 @@ public class XmlFileWriter : IFileWriter
 
                 if (candidateVersion != oldVersion)
                 {
+                    sdkConflict = true;
                     continue;
                 }
 
@@ -1164,6 +1175,7 @@ public class XmlFileWriter : IFileWriter
 
                 if (candidateVersion != oldVersion)
                 {
+                    sdkConflict = true;
                     continue;
                 }
 

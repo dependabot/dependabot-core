@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using Microsoft.Build.Logging.StructuredLogger;
 
 using NuGet.Frameworks;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -670,7 +671,9 @@ internal static class SdkProjectDiscovery
             foreach (var buildFilePath in projectAndImports.Where(File.Exists))
             {
                 var projectBuildFile = ProjectBuildFile.Open(workspacePath, buildFilePath);
-                foreach (var sdkDep in projectBuildFile.GetDependencies().Where(d => d.Type == DependencyType.MSBuildSdk && d.Version is not null))
+                foreach (var sdkDep in projectBuildFile.GetDependencies().Where(d =>
+                    d.Type == DependencyType.MSBuildSdk &&
+                    NuGetVersion.TryParse(d.Version, out _)))
                 {
                     if (!groupedDependencies.TryGetValue(sdkDep.Name, out var existingDependency) || !existingDependency.IsTopLevel)
                     {

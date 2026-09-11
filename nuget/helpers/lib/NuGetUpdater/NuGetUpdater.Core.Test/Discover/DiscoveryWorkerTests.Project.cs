@@ -226,6 +226,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
+                                new("Microsoft.Build.CentralPackageVersions", "2.1.3", DependencyType.MSBuildSdk),
                                 new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
                                 new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
                                 new("Global.Package", "7.8.9", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
@@ -1055,6 +1056,100 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task MSBuildSdkInFileImportedWithWindowsSeparators_IsDiscoveredAsDependency()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <Import Project="build\Sdk.props" />
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                        </Project>
+                        """),
+                    ("build/Sdk.props", """
+                        <Project>
+                          <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Aspire.AppHost.Sdk", "9.0.0", DependencyType.MSBuildSdk),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "build/Sdk.props",
+                            ],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task MSBuildSdkInProjEntryPoint_IsRestoredBeforeExpansion()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateMSBuildSdkPackage(
+                        "EntryPoint.Sdk",
+                        "1.0.0",
+                        sdkPropsContent: """
+                            <Project>
+                              <ItemGroup>
+                                <ProjectFile Include="src/project.csproj" />
+                              </ItemGroup>
+                            </Project>
+                            """),
+                ],
+                workspacePath: "",
+                files: [
+                    ("dirs.proj", """
+                        <Project Sdk="EntryPoint.Sdk/1.0.0" />
+                        """),
+                    ("src/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "src/project.csproj",
+                            Dependencies = [],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
         public async Task VersionedMSBuildSdk_WithMatchingTransitivePackage_IsRestoredAndReportedAsSdk()
         {
             await TestDiscoveryAsync(
@@ -1089,6 +1184,50 @@ public partial class DiscoveryWorkerTests
                             FilePath = "project.csproj",
                             Dependencies = [
                                 new("Aspire.AppHost.Sdk", "9.0.0", DependencyType.MSBuildSdk),
+                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task MSBuildSdk_WithPropertyVersion_IsNotReportedFromRawXml()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
+                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <AspireSdkVersion>9.0.0</AspireSdkVersion>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <Sdk Name="Aspire.AppHost.Sdk" Version="$(AspireSdkVersion)" />
+                          <ItemGroup>
+                            <PackageReference Include="Package.A" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
                                 new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],

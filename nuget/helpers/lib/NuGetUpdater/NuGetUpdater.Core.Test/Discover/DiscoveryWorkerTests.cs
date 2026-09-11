@@ -1807,7 +1807,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     {
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net9.0"],
-                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        Dependencies = [
+                            new("Microsoft.Build.CentralPackageVersions.TEST", "2.1.3", DependencyType.MSBuildSdk),
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
                             "../Directory.Build.props",
@@ -2385,4 +2388,3 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 }
-
