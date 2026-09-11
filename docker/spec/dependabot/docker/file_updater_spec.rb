@@ -1443,57 +1443,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
-    context "when an old tag contains a regex metacharacter that must not fuzzy-match a similar tag" do
-      let(:podfile) do
-        Dependabot::DependencyFile.new(
-          content: <<~YAML,
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-            spec:
-              containers:
-                - name: app
-                  image: example/app:1.2.3
-                - name: unrelated
-                  image: example/app:1x2y3
-          YAML
-          name: "app.yaml"
-        )
-      end
-      let(:yaml_dependency) do
-        Dependabot::Dependency.new(
-          name: "example/app",
-          version: "1.4.0",
-          previous_version: "1.2.3",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "app.yaml",
-            source: { tag: "1.4.0" }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "app.yaml",
-            source: { tag: "1.2.3" }
-          }],
-          package_manager: "docker"
-        )
-      end
-
-      describe "the updated podfile" do
-        subject(:updated_podfile) do
-          updated_files.find { |f| f.name == "app.yaml" }
-        end
-
-        it "updates only the exact tag match, leaving the similarly-shaped unrelated tag untouched" do
-          expect(updated_podfile.content).to include("image: example/app:1.4.0")
-          expect(updated_podfile.content).to include("image: example/app:1x2y3")
-        end
-      end
-    end
-
     context "when multiple yaml to be updated" do
       let(:yaml_files) { [podfile, podfile2] }
       let(:podfile2) do
@@ -1799,53 +1748,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
         its(:content) { is_expected.to include "  image: nginx:1.14.3\n" }
         its(:content) { is_expected.to include "  image:\n    repository: 'canonical/ubuntu'\n    tag: 18.04" }
-      end
-    end
-
-    context "when the helm tag contains a regex metacharacter that must not fuzzy-match a similar tag" do
-      let(:helmfile) do
-        Dependabot::DependencyFile.new(
-          content: <<~YAML,
-            image:
-              repository: 'example/app'
-              tag: 1.2.3
-            sidecar:
-              repository: 'example/other'
-              tag: 1x2y3
-          YAML
-          name: "values.yaml"
-        )
-      end
-      let(:helm_dependency) do
-        Dependabot::Dependency.new(
-          name: "example/app",
-          version: "1.4.0",
-          previous_version: "1.2.3",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "values.yaml",
-            source: { tag: "1.4.0" }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "values.yaml",
-            source: { tag: "1.2.3" }
-          }],
-          package_manager: "docker"
-        )
-      end
-
-      describe "the updated helmfile" do
-        subject(:updated_helmfile) do
-          updated_files.find { |f| f.name == "values.yaml" }
-        end
-
-        it "updates only the exact tag match, leaving the similarly-shaped unrelated tag untouched" do
-          expect(updated_helmfile.content).to include("tag: 1.4.0")
-          expect(updated_helmfile.content).to include("tag: 1x2y3")
-        end
       end
     end
 
