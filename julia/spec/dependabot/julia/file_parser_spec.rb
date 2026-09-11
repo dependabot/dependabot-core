@@ -85,9 +85,12 @@ RSpec.describe Dependabot::Julia::FileParser do
         )
       end
 
-      it "parses runtime and weak dependencies (matching CompatHelper.jl)" do
-        # CompatHelper.jl only processes [deps] and [weakdeps], not [extras]
-        expect(dependencies.length).to eq(2) # Example (deps), JSON (weakdeps)
+      it "parses deps, weakdeps, and extras that already have compat entries" do
+        # Matches CompatHelper.jl's default IfExistingCompatExtras(): extras
+        # without a [compat] entry are ignored.
+        expect(dependencies.map(&:name)).to contain_exactly(
+          "Example", "JSON", "FilePathsBase", "Test"
+        )
 
         # deps dependency
         example_dep = dependencies.find { |d| d.name == "Example" }
@@ -104,6 +107,15 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(json_dep.version).to eq("0.21.4") # Weakdeps also get manifest versions
         expect(json_dep.requirements.first[:groups]).to eq(["weakdeps"])
         expect(json_dep.requirements.first[:requirement]).to eq("0.21")
+
+        # Extras with existing compat entries
+        filepaths_dep = dependencies.find { |d| d.name == "FilePathsBase" }
+        expect(filepaths_dep.requirements.first[:groups]).to eq(["extras"])
+        expect(filepaths_dep.requirements.first[:requirement]).to eq("0.6, 0.7, 0.8")
+
+        test_dep = dependencies.find { |d| d.name == "Test" }
+        expect(test_dep.requirements.first[:groups]).to eq(["extras"])
+        expect(test_dep.requirements.first[:requirement]).to eq("1")
       end
     end
 
