@@ -96,6 +96,46 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       RESOLVED
     end
 
+    it "preserves the original lockfile graph when SwiftPM adds a platform-specific pin" do
+      generated_lockfile = JSON.parse(fixture("projects", project_name, "Package.resolved"))
+      generated_lockfile["originHash"] = "linux-origin-hash"
+      generated_lockfile["pins"].find { |pin| pin["identity"] == "reactiveswift" }["state"] = {
+        "revision" => "40c465af19b993344e84355c00669ba2022ca3cd",
+        "version" => "7.1.1"
+      }
+      generated_lockfile["pins"] << {
+        "identity" => "opencombine",
+        "kind" => "remoteSourceControl",
+        "location" => "https://github.com/OpenSwiftUIProject/OpenCombine.git",
+        "state" => {
+          "revision" => "619bbc8d09c42921745f38659aebc0fb9a9ccde3",
+          "version" => "0.16.0"
+        }
+      }
+
+      files
+      original_lockfile = JSON.parse(files.find { |file| file.name == "Package.resolved" }.content)
+      original_lockfile["originHash"] = "original-origin-hash"
+      files.find { |file| file.name == "Package.resolved" }.content = JSON.pretty_generate(original_lockfile)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with("Package.resolved")
+                                   .and_return(JSON.pretty_generate(generated_lockfile))
+
+      lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
+      parsed_lockfile = JSON.parse(lockfile.content)
+
+      expect(parsed_lockfile["pins"].map { |pin| pin["identity"] }).not_to include("opencombine")
+      expect(parsed_lockfile["pins"].map { |pin| pin["identity"] }).to match_array(
+        JSON.parse(fixture("projects", project_name, "Package.resolved"))["pins"].map { |pin| pin["identity"] }
+      )
+      updated_pin = parsed_lockfile["pins"].find { |pin| pin["identity"] == "reactiveswift" }
+      expect(updated_pin["state"]).to include(
+        "revision" => "40c465af19b993344e84355c00669ba2022ca3cd",
+        "version" => "7.1.1"
+      )
+      expect(parsed_lockfile["originHash"]).to eq("linux-origin-hash")
+    end
+
     context "when latest version is higher than target version" do
       let(:dependencies) do
         [
