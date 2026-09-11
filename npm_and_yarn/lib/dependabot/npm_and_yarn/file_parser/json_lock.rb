@@ -4,6 +4,7 @@
 require "json"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/package/npm_lockfile_details"
 require "sorbet-runtime"
 
 module Dependabot
@@ -32,8 +33,8 @@ module Dependabot
         end
 
         sig do
-          params(dependency_name: String, _requirement: T.untyped, manifest_name: String)
-            .returns(T.nilable(T::Hash[String, T.untyped]))
+          params(dependency_name: String, _requirement: T.nilable(String), manifest_name: String)
+            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def details(dependency_name, _requirement, manifest_name)
           if Helpers.parse_npm8?(@dependency_file)
@@ -41,10 +42,17 @@ module Dependabot
             # workspace folder so we need to fallback to checking top-level
             nested_details = parsed.dig("packages", node_modules_path(manifest_name, dependency_name))
             details = nested_details || parsed.dig("packages", "node_modules/#{dependency_name}")
-            details&.slice("version", "resolved", "integrity", "dev")
+            details = details.slice("version", "resolved") if details.is_a?(Hash)
           else
-            parsed.dig("dependencies", dependency_name)
+            details = parsed.dig("dependencies", dependency_name)
           end
+          return if details.nil?
+
+          Dependabot::Package::NpmLockfileDetails.from_object(
+            details,
+            path: @dependency_file.path,
+            context: dependency_name
+          )
         end
 
         private

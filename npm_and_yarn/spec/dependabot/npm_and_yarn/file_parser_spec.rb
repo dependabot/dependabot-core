@@ -39,6 +39,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe "lockfile lookup presence" do
+    let(:locked_entries) { { "chalk" => {} } }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: { "dependencies" => { "chalk" => "1.0.0" } }.to_json
+        ),
+        Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: { "lockfileVersion" => 1, "dependencies" => locked_entries }.to_json
+        )
+      ]
+    end
+
+    it "does not use the manifest version for an unresolved locked entry" do
+      expect(parser.parse).to be_empty
+    end
+
+    context "without a matching locked entry" do
+      let(:locked_entries) { {} }
+
+      it "uses the exact manifest version" do
+        expect(parser.parse.first).to have_attributes(name: "chalk", version: "1.0.0")
+      end
+    end
+
+    context "with malformed lookup data" do
+      let(:locked_entries) { { "chalk" => { "version" => "1.0.0", "resolved" => false } } }
+
+      it "reports the lockfile field" do
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable, /chalk\.resolved must be a string or nil/)
+      end
+    end
+  end
+
   describe ".each_dependency compatibility" do
     it "keeps raw values and section order for updater callers" do
       json = {

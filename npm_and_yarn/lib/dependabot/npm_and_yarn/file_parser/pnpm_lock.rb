@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/package/npm_lockfile_details"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -115,18 +116,25 @@ module Dependabot
             requirement: T.nilable(String),
             _manifest_name: T.nilable(String)
           )
-            .returns(T.nilable(T::Hash[String, T.untyped]))
+            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def details(dependency_name, requirement, _manifest_name)
           details_candidates = parsed.select { |info| info["name"] == dependency_name }
 
           # If there's only one entry for this dependency, use it, even if
           # the requirement in the lockfile doesn't match
-          if details_candidates.one?
-            details_candidates.first
-          else
-            details_candidates.find { |info| info["specifiers"]&.include?(requirement) }
-          end
+          details = if details_candidates.one?
+                      details_candidates.first
+                    else
+                      details_candidates.find { |info| info["specifiers"]&.include?(requirement) }
+                    end
+          return if details.nil?
+
+          Dependabot::Package::NpmLockfileDetails.from_object(
+            details,
+            path: @dependency_file.path,
+            context: dependency_name
+          )
         end
 
         private

@@ -4,6 +4,7 @@
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/package/npm_lockfile_details"
 require "sorbet-runtime"
 
 module Dependabot
@@ -88,9 +89,9 @@ module Dependabot
           params(
             dependency_name: String,
             requirement: T.nilable(String),
-            _manifest_name: T.untyped
+            _manifest_name: String
           )
-            .returns(T.nilable(T::Hash[String, T.untyped]))
+            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def details(dependency_name, requirement, _manifest_name)
           details_candidates =
@@ -99,13 +100,20 @@ module Dependabot
 
           # If there's only one entry for this dependency, use it, even if
           # the requirement in the lockfile doesn't match
-          if details_candidates.one?
-            T.must(details_candidates.first).last
-          else
-            details_candidates.find do |k, _|
-              k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
-            end&.last
-          end
+          details = if details_candidates.one?
+                      T.must(details_candidates.first).last
+                    else
+                      details_candidates.find do |k, _|
+                        k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
+                      end&.last
+                    end
+          return if details.nil?
+
+          Dependabot::Package::NpmLockfileDetails.from_object(
+            details,
+            path: @dependency_file.path,
+            context: dependency_name
+          )
         end
 
         private
