@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -66,6 +66,25 @@ RSpec.describe namespace::Elm19LatestVersionFinder do
           let(:unlock_requirement) { :own }
 
           it { is_expected.to eq(elm_version("1.1.0")) }
+
+          context "with cooldown and an unavailable release date" do
+            let(:update_cooldown) do
+              Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+            end
+
+            before do
+              stub_request(:get, "https://package.elm-lang.org/packages/elm/parser/releases.json")
+                .to_return(
+                  status: 200,
+                  body: { "1.0.0" => 1_534_772_073, "1.1.0" => nil }.to_json
+                )
+            end
+
+            it "returns the resolved version and marks the dependency" do
+              expect(latest_resolvable_version).to eq(elm_version("1.1.0"))
+              expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+            end
+          end
         end
 
         context "when :all unlocks" do
