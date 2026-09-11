@@ -960,8 +960,6 @@ public partial class DiscoveryWorkerTests
         [Fact]
         public async Task MSBuildSdkChildElement_IsDiscoveredAsDependency()
         {
-            // SDK references with explicit versions in <Sdk Name="..." Version="..."> child elements
-            // should appear as MSBuildSdk dependencies so they can be updated.
             await TestDiscoveryAsync(
                 packages:
                 [
@@ -1057,7 +1055,7 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
-        public async Task VersionedMSBuildSdk_IsRestoredBeforeProjectEvaluationAndWinsOverTransitivePackage()
+        public async Task VersionedMSBuildSdk_WithMatchingTransitivePackage_IsRestoredAndReportedAsSdk()
         {
             await TestDiscoveryAsync(
                 packages:

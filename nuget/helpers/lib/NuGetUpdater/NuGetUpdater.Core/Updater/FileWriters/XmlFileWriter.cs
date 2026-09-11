@@ -153,16 +153,14 @@ public class XmlFileWriter : IFileWriter
                 return newlyAddedNode;
             }
 
-            // Check for MSBuild SDK references: <Project Sdk="SdkName/version"> and <Sdk Name="SdkName" Version="version" />
             var sdkUpdated = TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger);
             if (sdkUpdated)
             {
                 if (packageReferenceElementsAndPaths.Length == 0)
                 {
                     updatesPerformed[requiredPackageVersion.Name] = true;
-                    continue; // SDK-only reference; no <PackageReference> elements to update
+                    continue;
                 }
-                // A PackageReference with the same ID also exists; fall through to update it too
             }
 
             if (packageReferenceElementsAndPaths.Length == 0)
@@ -1024,7 +1022,6 @@ public class XmlFileWriter : IFileWriter
 
         return sdkFound;
 
-        // <Project Sdk="SdkName/version"> or <Project Sdk="Sdk1;SdkName/version">
         bool TryUpdateProjectSdkAttribute(string filePath, IXmlElementSyntax rootElement)
         {
             var sdkAttribute = rootElement.GetAttributeCaseInsensitive("Sdk");
@@ -1070,7 +1067,6 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
-                // Preserve original surrounding whitespace in each part
                 var rawSlashIndex = sdkParts[i].IndexOf('/');
                 var rawSuffix = sdkParts[i][(rawSlashIndex + 1)..];
                 sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + WithUpdatedSdkVersion(rawSuffix);
@@ -1086,7 +1082,6 @@ public class XmlFileWriter : IFileWriter
             return found;
         }
 
-        // <Sdk Name="SdkName" Version="version" />
         bool TryUpdateSdkChildElement(string filePath, IXmlElementSyntax rootElement)
         {
             var found = false;
@@ -1134,8 +1129,6 @@ public class XmlFileWriter : IFileWriter
             return found;
         }
 
-        // <Import Project="Sdk.props" Sdk="SdkName" Version="version" />
-        // Note: the embedded Sdk="Name/version" slash form is NOT valid on <Import> elements (MSBuild cannot resolve it)
         bool TryUpdateImportSdkAttribute(string filePath, IXmlElementSyntax rootElement)
         {
             var found = false;

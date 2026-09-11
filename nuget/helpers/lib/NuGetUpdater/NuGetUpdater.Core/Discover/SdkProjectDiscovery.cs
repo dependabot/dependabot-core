@@ -662,11 +662,6 @@ internal static class SdkProjectDiscovery
                 }
             }
 
-            // Add MSBuild SDK references parsed directly from the project and its imports (e.g.
-            // <Project Sdk="Name/version">, <Sdk Name="Name" Version="version" />,
-            // <Import Sdk="Name" Version="version" />).
-            // These are not surfaced by the binlog-based resolution above, so we parse the XML directly.
-            // Only include SDKs with an explicit version; version-less SDKs are handled by GlobalJsonUpdater.
             var projectAndImports = imported
                 .Select(importedPath => Path.Combine(projectFullDirectory, importedPath))
                 .Prepend(projectPath)

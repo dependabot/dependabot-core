@@ -2856,12 +2856,9 @@ public class XmlFileWriterTests : FileWriterTestsBase
         );
     }
 
-    // SDK reference update tests
-
     [Fact]
     public async Task SdkAttribute_WithEmbeddedVersion_UpdatesVersion()
     {
-        // <Project Sdk="SomeSdk/1.0.0"> => <Project Sdk="SomeSdk/2.0.0">
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -2883,7 +2880,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task SdkAttribute_WithEmbeddedVersion_AndOtherSdkFirst_UpdatesVersion()
     {
-        // <Project Sdk="Microsoft.NET.Sdk;SomeSdk/1.0.0"> - semicolon-separated SDKs in attribute
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -2905,7 +2901,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task SdkAttribute_WithWhitespaceBetweenSemicolonEntries_PreservesWhitespace()
     {
-        // Leading whitespace around semicolon-separated SDK entries is preserved
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -2927,7 +2922,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task SdkAttribute_WithTrailingWhitespaceAfterVersion_PreservesWhitespace()
     {
-        // Trailing whitespace in a semicolon-separated SDK entry is preserved
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -3061,7 +3055,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task SdkChildElement_WithVersionAttribute_UpdatesVersion()
     {
-        // <Sdk Name="SomeSdk" Version="1.0.0" /> => <Sdk Name="SomeSdk" Version="2.0.0" />
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -3085,7 +3078,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task ImportElement_WithSdkNameAndSeparateVersionAttribute_UpdatesVersion()
     {
-        // <Import Project="Sdk.props" Sdk="SomeSdk" Version="1.0.0" /> => <Import Project="Sdk.props" Sdk="SomeSdk" Version="2.0.0" />
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -3109,7 +3101,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task ImportElement_InsideImportGroup_UpdatesVersion()
     {
-        // <Import> nested inside <ImportGroup> is also updated
         await TestAsync(
             files: [
                 ("project.csproj", """

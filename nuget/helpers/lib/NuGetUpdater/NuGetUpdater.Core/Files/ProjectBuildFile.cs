@@ -95,8 +95,6 @@ internal sealed class ProjectBuildFile : XmlBuildFile
                 dependencies.Add(GetMSBuildSdkDependency(name, version));
             }
 
-            // <Import Project="Sdk.props" Sdk="SdkName" Version="version" /> form
-            // Note: the Sdk="SdkName/version" embedded slash form is NOT valid for <Import> elements
             var sdkAttr = importNode.GetAttributeValueCaseInsensitive("Sdk");
             if (sdkAttr is not null && !sdkAttr.Contains('/'))
             {

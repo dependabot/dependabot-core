@@ -1631,8 +1631,6 @@ public class EndToEndTests
     [Fact]
     public async Task WithMSBuildSdkInImportedFile()
     {
-        // Validates the full pipeline: discovery -> analysis -> update for an MSBuild SDK
-        // reference in an implicitly imported Directory.Build.props file.
         await RunAsync(
             packages: [
                 MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
