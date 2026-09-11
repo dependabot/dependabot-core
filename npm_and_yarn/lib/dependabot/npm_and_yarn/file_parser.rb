@@ -5,6 +5,7 @@
 
 require "cgi/escape"
 require "dependabot/dependency"
+require "dependabot/package/npm_package_json"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -99,7 +100,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
+            package_json_document.package_manager_config,
             lockfiles,
             registry_config_files,
             credentials
@@ -126,9 +127,9 @@ module Dependabot
         }
       end
 
-      sig { returns(T.untyped) }
-      def parsed_package_json
-        JSON.parse(T.must(package_json.content))
+      sig { returns(Dependabot::Package::NpmPackageJson) }
+      def package_json_document
+        Dependabot::Package::NpmPackageJson.from_file(package_json)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
       end
@@ -227,16 +228,14 @@ module Dependabot
         dependency_set = DependencySet.new
 
         package_files.each do |file|
-          json = JSON.parse(T.must(file.content))
+          manifest = Dependabot::Package::NpmPackageJson.from_file(file)
 
           # TODO: Currently, Dependabot can't handle flat dependency files
           # (and will error at the FileUpdater stage, because the
           # UpdateChecker doesn't take account of flat resolution).
-          next if json["flat"]
+          next if manifest.flat?
 
-          self.class.each_dependency(json) do |name, requirement, type|
-            next unless requirement.is_a?(String)
-
+          manifest.each_dependency do |name, requirement, type|
             # Skip dependencies using Yarn workspace cross-references as requirements
             next if requirement.start_with?("workspace:", "catalog:")
 
@@ -295,7 +294,7 @@ module Dependabot
       end
 
       sig do
-        params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
+        params(file: DependencyFile, type: String, name: String, requirement: String)
           .returns(T.nilable(Dependency))
       end
       def build_dependency(file:, type:, name:, requirement:)
@@ -454,7 +453,7 @@ module Dependabot
       def workspace_package_names
         @workspace_package_names ||= T.let(
           package_files.filter_map do |f|
-            JSON.parse(T.must(f.content))["name"]
+            Dependabot::Package::NpmPackageJson.from_file(f).name
           end,
           T.nilable(T::Array[String])
         )
