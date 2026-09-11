@@ -1022,6 +1022,8 @@ public class XmlFileWriter : IFileWriter
             }
 
             var sdkParts = sdkAttribute.Value.Split(';');
+            var found = false;
+            var updated = false;
             for (int i = 0; i < sdkParts.Length; i++)
             {
                 var part = sdkParts[i].Trim();
@@ -1031,22 +1033,24 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
-                var partName = part[..slashIndex];
+                var partName = part[..slashIndex].Trim();
                 var partVersion = part[(slashIndex + 1)..];
                 if (!partName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                if (!NuGetVersion.TryParse(partVersion, out var candidateVersion))
+                if (!TryParseSdkVersion(partVersion, out var candidateVersion))
                 {
                     continue;
                 }
 
+                found = true;
+
                 if (candidateVersion == requiredVersion)
                 {
                     logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
-                    return true;
+                    continue;
                 }
 
                 if (candidateVersion != oldVersion)
@@ -1057,15 +1061,17 @@ public class XmlFileWriter : IFileWriter
                 // Preserve original surrounding whitespace in each part
                 var rawSlashIndex = sdkParts[i].IndexOf('/');
                 var rawSuffix = sdkParts[i][(rawSlashIndex + 1)..];
-                var trailingSuffix = rawSuffix[rawSuffix.TrimEnd().Length..]; // trailing whitespace after version
-                sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + requiredVersion + trailingSuffix;
-                var newSdkValue = string.Join(";", sdkParts);
+                sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + WithUpdatedSdkVersion(rawSuffix);
+                updated = true;
                 logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
-                return true;
             }
 
-            return false;
+            if (updated)
+            {
+                replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(string.Join(";", sdkParts)));
+            }
+
+            return found;
         }
 
         // <Sdk Name="SdkName" Version="version" />
@@ -1075,7 +1081,7 @@ public class XmlFileWriter : IFileWriter
             foreach (var sdkElement in rootElement.GetElements("Sdk", StringComparison.OrdinalIgnoreCase))
             {
                 var nameAttr = sdkElement.GetAttributeCaseInsensitive("Name");
-                if (nameAttr is null || !nameAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                if (nameAttr is null || !nameAttr.Value.Trim().Equals(sdkName, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -1086,7 +1092,7 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
-                if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
+                if (!TryParseSdkVersion(versionAttr.Value, out var candidateVersion))
                 {
                     continue;
                 }
@@ -1110,7 +1116,7 @@ public class XmlFileWriter : IFileWriter
                     .DescendantNodes()
                     .OfType<XmlAttributeSyntax>()
                     .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == annotation));
-                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(requiredVersion.ToString()));
+                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(WithUpdatedSdkVersion(currentVersionAttr.Value)));
             }
 
             return found;
@@ -1127,7 +1133,7 @@ public class XmlFileWriter : IFileWriter
             foreach (var importElement in importElements)
             {
                 var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
-                if (importSdkAttr is null || !importSdkAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                if (importSdkAttr is null || !importSdkAttr.Value.Trim().Equals(sdkName, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -1138,7 +1144,7 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
-                if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
+                if (!TryParseSdkVersion(versionAttr.Value, out var candidateVersion))
                 {
                     continue;
                 }
@@ -1162,10 +1168,47 @@ public class XmlFileWriter : IFileWriter
                     .DescendantNodes()
                     .OfType<XmlAttributeSyntax>()
                     .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == annotation));
-                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(requiredVersion.ToString()));
+                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(WithUpdatedSdkVersion(currentVersionAttr.Value)));
             }
 
             return found;
+        }
+
+        bool TryParseSdkVersion(string value, out NuGetVersion version)
+        {
+            var trimmedValue = value.Trim();
+            if (trimmedValue.StartsWith("min=", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmedValue = trimmedValue[4..].Trim();
+            }
+
+            return NuGetVersion.TryParse(trimmedValue, out version);
+        }
+
+        string WithUpdatedSdkVersion(string value)
+        {
+            var versionStart = 0;
+            while (versionStart < value.Length && char.IsWhiteSpace(value[versionStart]))
+            {
+                versionStart++;
+            }
+
+            if (value.IndexOf("min=", versionStart, StringComparison.OrdinalIgnoreCase) == versionStart)
+            {
+                versionStart += 4;
+                while (versionStart < value.Length && char.IsWhiteSpace(value[versionStart]))
+                {
+                    versionStart++;
+                }
+            }
+
+            var versionEnd = value.Length;
+            while (versionEnd > versionStart && char.IsWhiteSpace(value[versionEnd - 1]))
+            {
+                versionEnd--;
+            }
+
+            return value[..versionStart] + requiredVersion + value[versionEnd..];
         }
     }
 }

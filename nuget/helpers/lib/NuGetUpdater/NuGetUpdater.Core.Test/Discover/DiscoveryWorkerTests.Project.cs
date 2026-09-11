@@ -1007,6 +1007,56 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task MSBuildSdkInImportedFile_IsDiscoveredAsDependency()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
+                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Package.A" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", """
+                        <Project>
+                          <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Aspire.AppHost.Sdk", "9.0.0", DependencyType.MSBuildSdk),
+                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                            ],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
         public async Task RestoreDoesNotCallBuildOnTransitiveProjectReference()
         {
             // Ensure the `Build` target isn't invoked in transitive project references.

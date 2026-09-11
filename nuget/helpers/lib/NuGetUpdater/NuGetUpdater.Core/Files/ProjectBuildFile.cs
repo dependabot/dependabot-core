@@ -98,10 +98,21 @@ internal sealed class ProjectBuildFile : XmlBuildFile
 
     private static Dependency GetMSBuildSdkDependency(string name, string? version = null)
     {
-        var parts = name.Split('/');
-        return parts.Length == 2
-            ? new Dependency(parts[0], parts[1], DependencyType.MSBuildSdk)
-            : new Dependency(name, version, DependencyType.MSBuildSdk);
+        var slashIndex = name.IndexOf('/');
+        if (slashIndex >= 0)
+        {
+            version = name[(slashIndex + 1)..];
+            name = name[..slashIndex];
+        }
+
+        name = name.Trim();
+        version = version?.Trim();
+        if (version?.StartsWith("min=", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            version = version[4..].Trim();
+        }
+
+        return new Dependency(name, string.IsNullOrEmpty(version) ? null : version, DependencyType.MSBuildSdk);
     }
 
     private static IEnumerable<Dependency>? GetPackageDependencies(IXmlElementSyntax element)

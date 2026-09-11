@@ -1629,10 +1629,10 @@ public class EndToEndTests
     }
 
     [Fact]
-    public async Task WithMSBuildSdkInProjectFile()
+    public async Task WithMSBuildSdkInImportedFile()
     {
-        // Validates the full pipeline: discovery → analysis → update for an MSBuild SDK
-        // reference specified directly in the project file as <Sdk Name="..." Version="...">
+        // Validates the full pipeline: discovery -> analysis -> update for an MSBuild SDK
+        // reference in an implicitly imported Directory.Build.props file.
         await RunAsync(
             packages: [
                 MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
@@ -1648,7 +1648,11 @@ public class EndToEndTests
                 }
             },
             files: [
-                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.props", """
+                    <Project>
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                    </Project>
+                    """),
                 ("Directory.Build.targets", "<Project />"),
                 ("Directory.Packages.props", """
                     <Project>
@@ -1659,7 +1663,6 @@ public class EndToEndTests
                     """),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
-                      <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
                       <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                       </PropertyGroup>
@@ -1738,13 +1741,10 @@ public class EndToEndTests
                         new()
                         {
                             Directory = "/",
-                            Name = "project.csproj",
+                            Name = "Directory.Build.props",
                             Content = """
-                                <Project Sdk="Microsoft.NET.Sdk">
+                                <Project>
                                   <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.1" />
-                                  <PropertyGroup>
-                                    <TargetFramework>net9.0</TargetFramework>
-                                  </PropertyGroup>
                                 </Project>
                                 """
                         },

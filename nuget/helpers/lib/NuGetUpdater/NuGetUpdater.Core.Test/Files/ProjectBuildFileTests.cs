@@ -152,6 +152,24 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", "9.2.0"
     )]
+    // Form 1c: whitespace around the SDK name and version
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk / 9.2.0 ">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    // Form 1d: minimum version expression
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Aspire.AppHost.Sdk/min=9.2.0">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
     // Form 2: Sdk attribute without version (version from global.json; handled by GlobalJsonUpdater)
     [InlineData(
         // language=xml
