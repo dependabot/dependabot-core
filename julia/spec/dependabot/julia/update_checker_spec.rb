@@ -292,6 +292,61 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
     end
   end
 
+  describe "with a standard library dependency" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "Statistics",
+        version: nil,
+        requirements: [{
+          file: "Project.toml",
+          requirement: nil,
+          groups: ["deps"],
+          source: nil
+        }],
+        package_manager: "julia",
+        metadata: {
+          julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2",
+          julia_stdlib_versions: { "Project.toml" => ["1.10.0"] }
+        }
+      )
+    end
+
+    before do
+      allow(Dependabot::Julia::Package::PackageDetailsFetcher).to receive(:new).and_call_original
+    end
+
+    it "has no registry target" do
+      expect(checker.latest_version).to be_nil
+      expect(checker.latest_resolvable_version).to be_nil
+      expect(checker.latest_resolvable_version_with_no_unlock).to be_nil
+      expect(Dependabot::Julia::Package::PackageDetailsFetcher).not_to have_received(:new)
+    end
+
+    it "adds the compat entry the project's Julia range needs" do
+      expect(checker.updated_requirements.first[:requirement]).to eq("1.10")
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    context "when the entry already covers the range" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Statistics",
+          version: nil,
+          requirements: [{ file: "Project.toml", requirement: "1", groups: ["deps"], source: nil }],
+          package_manager: "julia",
+          metadata: {
+            julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2",
+            julia_stdlib_versions: { "Project.toml" => ["1.10.0"] }
+          }
+        )
+      end
+
+      it "is up to date" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+    end
+  end
+
   describe "ignored versions" do
     let(:ignored_versions) { [">= 1.a"] }
 
