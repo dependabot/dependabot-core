@@ -174,7 +174,7 @@ module Dependabot
         replacement = new_yaml_image(file)
 
         old_images.each do |old_image|
-          old_image_regex = /^\s*(?:-\s)?image:\s+#{Regexp.escape(old_image)}(?=\s|$)/
+          old_image_regex = /^\s*(?:-\s)?image:\s+(?:docker\.io\/)?#{Regexp.escape(old_image)}(?=\s|$)/
           modified_content = modified_content&.gsub(old_image_regex) do |old_img|
             old_img.gsub(old_image.to_s, replacement.to_s)
           end

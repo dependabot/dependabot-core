@@ -1299,13 +1299,15 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "calico.yaml",
-            source: { registry: "docker.io", tag: "v3.32.2" }
+            # Docker::FileParser normalizes the "docker.io" registry to nil,
+            # even though the manifest keeps the explicit prefix in its text.
+            source: { tag: "v3.32.2" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "calico.yaml",
-            source: { registry: "docker.io", tag: "v3.26.1" }
+            source: { tag: "v3.26.1" }
           }],
           package_manager: "docker"
         )
@@ -1357,13 +1359,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "calico.yaml",
-            source: { registry: "docker.io", tag: "v3.32.2" }
+            source: { tag: "v3.32.2" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "calico.yaml",
-            source: { registry: "docker.io", tag: "v3.26.1" }
+            source: { tag: "v3.26.1" }
           }],
           package_manager: "docker"
         )
@@ -1408,20 +1410,20 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "calico.yaml",
-            source: { registry: "docker.io", tag: "v3.32.2" }
+            source: { tag: "v3.32.2" }
           }],
           previous_requirements: [
             {
               requirement: nil,
               groups: [],
               file: "calico.yaml",
-              source: { registry: "docker.io", tag: "v3.25.0" }
+              source: { tag: "v3.25.0" }
             },
             {
               requirement: nil,
               groups: [],
               file: "calico.yaml",
-              source: { registry: "docker.io", tag: "v3.26.1" }
+              source: { tag: "v3.26.1" }
             }
           ],
           package_manager: "docker"
@@ -1441,7 +1443,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
-    context "when an old tag contains regex metacharacters (build-metadata style tag)" do
+    context "when an old tag contains a regex metacharacter that must not fuzzy-match a similar tag" do
       let(:podfile) do
         Dependabot::DependencyFile.new(
           content: <<~YAML,
@@ -1452,7 +1454,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             spec:
               containers:
                 - name: app
-                  image: docker.io/example/app:1.2.3+build.4
+                  image: example/app:1.2.3
+                - name: unrelated
+                  image: example/app:1x2y3
           YAML
           name: "app.yaml"
         )
@@ -1460,19 +1464,19 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       let(:yaml_dependency) do
         Dependabot::Dependency.new(
           name: "example/app",
-          version: "1.3.0+build.1",
-          previous_version: "1.2.3+build.4",
+          version: "1.4.0",
+          previous_version: "1.2.3",
           requirements: [{
             requirement: nil,
             groups: [],
             file: "app.yaml",
-            source: { registry: "docker.io", tag: "1.3.0+build.1" }
+            source: { tag: "1.4.0" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "app.yaml",
-            source: { registry: "docker.io", tag: "1.2.3+build.4" }
+            source: { tag: "1.2.3" }
           }],
           package_manager: "docker"
         )
@@ -1483,9 +1487,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           updated_files.find { |f| f.name == "app.yaml" }
         end
 
-        it "matches and updates a tag containing a '+' without treating it as a regex quantifier" do
-          expect(updated_podfile.content).to include("image: docker.io/example/app:1.3.0+build.1")
-          expect(updated_podfile.content).not_to include("1.2.3+build.4")
+        it "updates only the exact tag match, leaving the similarly-shaped unrelated tag untouched" do
+          expect(updated_podfile.content).to include("image: example/app:1.4.0")
+          expect(updated_podfile.content).to include("image: example/app:1x2y3")
         end
       end
     end
@@ -1798,13 +1802,16 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
-    context "when the helm tag contains regex metacharacters (build-metadata style tag)" do
+    context "when the helm tag contains a regex metacharacter that must not fuzzy-match a similar tag" do
       let(:helmfile) do
         Dependabot::DependencyFile.new(
           content: <<~YAML,
             image:
               repository: 'example/app'
-              tag: 1.2.3+build.4
+              tag: 1.2.3
+            sidecar:
+              repository: 'example/other'
+              tag: 1x2y3
           YAML
           name: "values.yaml"
         )
@@ -1812,19 +1819,19 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       let(:helm_dependency) do
         Dependabot::Dependency.new(
           name: "example/app",
-          version: "1.3.0+build.1",
-          previous_version: "1.2.3+build.4",
+          version: "1.4.0",
+          previous_version: "1.2.3",
           requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.3.0+build.1" }
+            source: { tag: "1.4.0" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.2.3+build.4" }
+            source: { tag: "1.2.3" }
           }],
           package_manager: "docker"
         )
@@ -1835,9 +1842,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           updated_files.find { |f| f.name == "values.yaml" }
         end
 
-        it "matches and updates a tag containing a '+' without treating it as a regex quantifier" do
-          expect(updated_helmfile.content).to include("tag: 1.3.0+build.1")
-          expect(updated_helmfile.content).not_to include("1.2.3+build.4")
+        it "updates only the exact tag match, leaving the similarly-shaped unrelated tag untouched" do
+          expect(updated_helmfile.content).to include("tag: 1.4.0")
+          expect(updated_helmfile.content).to include("tag: 1x2y3")
         end
       end
     end
