@@ -1679,15 +1679,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           fixture("docker", "registry_manifest_headers", "generic.json")
         stub_request(:head, repo_url + "manifests/17.10")
           .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-        stub_request(:get, repo_url + "manifests/17.10")
-          .and_return(status: 200, body: fixture("docker", "registry_manifest_digests", "ubuntu_17.10.json"))
-
-        blob_headers =
-          fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
-
-        manifest_digest = "sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1"
-        stub_request(:head, repo_url + "manifests/#{manifest_digest}")
-          .and_return(status: 200, headers: JSON.parse(blob_headers))
+        stub_request(
+          :get,
+          "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/17.10"
+        ).to_return(
+          status: 200,
+          body: {
+            digest: JSON.parse(new_headers).fetch("docker_content_digest"),
+            tag_last_pushed: (Time.now - (30 * 86_400)).iso8601
+          }.to_json
+        )
       end
 
       it { is_expected.to eq("17.10") }
@@ -1728,6 +1729,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       context "when Docker Hub reports a recent tag push" do
+        let(:metadata_digest) { "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+
         before do
           stub_request(
             :get,
@@ -1735,7 +1738,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           ).to_return(
             status: 200,
             body: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608",
+              digest: metadata_digest,
               tag_last_pushed: (Time.now - (2 * 86_400)).iso8601
             }.to_json
           )
@@ -1754,6 +1757,101 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         it "keeps the current version in cooldown" do
           expect(latest_version).to eq("17.04")
           expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+
+        context "when the metadata digest does not match" do
+          let(:metadata_digest) { "sha256:#{'b' * 64}" }
+
+          it "fails open without using a date for another digest" do
+            expect(latest_version).to eq("17.10")
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
+
+        context "when the metadata digest is malformed" do
+          let(:metadata_digest) { 123 }
+
+          it "fails open without treating an invalid digest as missing" do
+            expect(latest_version).to eq("17.10")
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
+      end
+
+      context "when Docker Hub omits the digest" do
+        let(:tag_last_pushed) { (Time.now - (2 * 86_400)).iso8601 }
+        let(:tag_metadata) { {} }
+
+        before do
+          %w(17.04 17.10).each do |tag|
+            timestamp = tag == "17.10" ? tag_last_pushed : (Time.now - (30 * 86_400)).iso8601
+            stub_request(
+              :get,
+              "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/#{tag}"
+            ).to_return(status: 200, body: tag_metadata.merge(tag_last_pushed: timestamp).to_json)
+          end
+        end
+
+        it "holds the recent tag-only update in cooldown" do
+          expect(latest_version).to eq("17.04")
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+
+        context "when the digest is explicitly null" do
+          let(:tag_metadata) { { digest: nil } }
+
+          it "holds the tag-only update in cooldown" do
+            expect(latest_version).to eq("17.04")
+            expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+          end
+        end
+
+        context "when the tag push is outside cooldown" do
+          let(:tag_last_pushed) { (Time.now - (30 * 86_400)).iso8601 }
+
+          it "proposes the tag-only update without a missing-date warning" do
+            expect(latest_version).to eq("17.10")
+            expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+          end
+        end
+
+        context "when the dependency is digest-pinned" do
+          let(:source) { { tag: version, digest: "old_digest" } }
+
+          it "fails open without accepting an unverified date" do
+            expect(latest_version).to eq("17.10")
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
+
+        context "when only another requirement is digest-pinned" do
+          let(:dependency) do
+            super().tap do |dep|
+              dep.requirements << Dependabot::DependencyRequirement.create(
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile.pinned",
+                source: { tag: version, digest: "old_digest" }
+              )
+            end
+          end
+
+          it "requires digest verification for the shared publication date" do
+            expect(latest_version).to eq("17.10")
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
+
+        context "when automatic digest pinning is enabled" do
+          before do
+            allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+            allow(Dependabot::Experiments).to receive(:enabled?).with(:docker_pin_digests).and_return(true)
+          end
+
+          it "fails open without accepting an unverified date" do
+            expect(latest_version).to eq("17.10")
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
         end
       end
 
@@ -1780,11 +1878,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         mock_client = instance_double(DockerRegistry2::Registry)
         allow(checker).to receive(:docker_registry_client).and_return(mock_client)
-        allow(mock_client).to receive_messages(
-          tags: { "tags" => %w(17.04 17.10) },
-          manifest_digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608"
-        )
-        allow(mock_client).to receive(:digest)
+        allow(mock_client).to receive(:tags).and_return("tags" => %w(17.04 17.10))
+        allow(mock_client).to receive(:manifest_digest)
           .and_raise(DockerRegistry2::RegistryAuthenticationException)
         allow(Dependabot.logger).to receive(:warn)
         allow(Dependabot.logger).to receive(:info)
@@ -1802,8 +1897,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14)
       end
       let(:mock_client) { instance_double(DockerRegistry2::Registry) }
-      let(:blob_headers) { { last_modified: last_modified } }
-      let(:blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
 
       before do
         allow(checker).to receive(:docker_registry_client).and_return(mock_client)
@@ -1813,7 +1906,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           manifest_digest: "sha256:newdigest",
           manifest: { "mediaType" => "application/vnd.docker.distribution.manifest.v2+json" }
         )
-        allow(mock_client).to receive(:dohead).and_return(blob_response)
+        stub_request(
+          :get,
+          "https://hub.docker.com/v2/namespaces/library/repositories/#{dependency_name}/tags/#{version}"
+        ).to_return(status: 200, body: { digest: "sha256:newdigest", tag_last_pushed: tag_last_pushed }.to_json)
         allow(Dependabot.logger).to receive(:info)
         allow(Dependabot.logger).to receive(:warn)
       end
@@ -1827,20 +1923,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:registry_tag_names) { %w(alpine latest) }
 
         context "when the new digest is newer than the cooldown window" do
-          let(:last_modified) { (Time.now - (2 * 86_400)).httpdate }
+          let(:tag_last_pushed) { (Time.now - (2 * 86_400)).iso8601 }
 
           it { is_expected.to be false }
         end
 
         context "when the new digest is older than the cooldown window" do
-          let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+          let(:tag_last_pushed) { (Time.now - (30 * 86_400)).iso8601 }
 
           it { is_expected.to be true }
         end
 
-        context "when the registry omits the Last-Modified header" do
-          let(:blob_headers) { {} }
-          let(:last_modified) { nil }
+        context "when the registry publication date is unavailable" do
+          let(:tag_last_pushed) { nil }
 
           before do
             stub_request(
@@ -1887,13 +1982,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:registry_tag_names) { %w(4.0.2-alpine3.23 latest) }
 
         context "when the new digest is newer than the cooldown window" do
-          let(:last_modified) { (Time.now - (1 * 86_400)).httpdate }
+          let(:tag_last_pushed) { (Time.now - (1 * 86_400)).iso8601 }
 
           it { is_expected.to be false }
         end
 
         context "when the new digest is older than the cooldown window" do
-          let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+          let(:tag_last_pushed) { (Time.now - (30 * 86_400)).iso8601 }
 
           it { is_expected.to be true }
         end
@@ -3566,332 +3661,139 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
-  describe "#get_tag_publication_details" do
-    subject(:get_tag_publication_details) do
-      checker.send(:get_tag_publication_details, tag)
-    end
+  describe "registry publication dates" do
+    subject(:latest_version) { checker.latest_version }
 
-    let(:tag) { Dependabot::Docker::Tag.new("1.0.0") }
-    let(:registry_url) { "https://registry.hub.docker.com" }
     let(:dependency_name) { "ubuntu" }
-    let(:version) { "17.10" }
+    let(:version) { "1.0.0" }
+    let(:candidate_version) { "1.1.0" }
+    let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14) }
     let(:mock_client) { instance_double(DockerRegistry2::Registry) }
-    let(:blob_headers) { { last_modified: "Mon, 15 Jan 2024 10:00:00 GMT" } }
-    let(:mock_blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
+    let(:digest) { "sha256:#{'a' * 64}" }
+    let(:tag_last_pushed) { (Time.now - (2 * 86_400)).iso8601 }
+    let(:tag_metadata) { { digest: digest, tag_last_pushed: tag_last_pushed } }
+    let(:metadata_body) { tag_metadata.to_json }
+    let(:metadata_status) { 200 }
 
     before do
-      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
-      allow(mock_client).to receive(:dohead).and_return(mock_blob_response)
+      allow(checker).to receive_messages(
+        docker_registry_client: mock_client,
+        fetch_image_config_created: Time.utc(2000, 1, 1)
+      )
+      allow(mock_client).to receive_messages(
+        tags: { "tags" => [version, candidate_version] },
+        manifest_digest: digest
+      )
+      allow(mock_client).to receive(:digest)
+      allow(mock_client).to receive(:dohead)
+      allow(Dependabot.logger).to receive(:info)
+      allow(Dependabot.logger).to receive(:warn)
+      stub_request(
+        :get,
+        "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/#{candidate_version}"
+      ).to_return(status: metadata_status, body: metadata_body)
+      stub_request(
+        :get,
+        "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/#{version}"
+      ).to_return(
+        status: 200,
+        body: { digest: digest, tag_last_pushed: (Time.now - (30 * 86_400)).iso8601 }.to_json
+      )
     end
 
-    context "when the Last-Modified header is missing" do
-      let(:blob_headers) { {} }
-      let(:digest_string) { "sha256:abc123" }
-      let(:config_created) { Time.parse("Tue, 10 Jun 2025 00:00:00 GMT") }
+    it "holds a recent Hub tag without consulting image or header timestamps" do
+      expect(latest_version).to eq(version)
+      expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+      expect(mock_client).not_to have_received(:digest)
+      expect(mock_client).not_to have_received(:dohead)
+      expect(checker).not_to have_received(:fetch_image_config_created)
+    end
 
-      before do
-        allow(mock_client).to receive_messages(digest: digest_string, manifest_digest: digest_string)
-        allow(checker).to receive(:fetch_image_config_created).with("1.0.0").and_return(config_created)
-        stub_request(
-          :get,
-          "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/1.0.0"
-        ).to_return(status: 404)
+    context "when the Hub push is older than cooldown" do
+      let(:tag_last_pushed) { (Time.now - (30 * 86_400)).iso8601 }
+
+      it "selects the new tag without a missing-date warning" do
+        expect(latest_version).to eq(candidate_version)
+        expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
       end
+    end
 
-      it "does not fall back to the publisher-controlled config blob created timestamp" do
-        result = get_tag_publication_details
-        expect(result).to be_a(Dependabot::Package::PackageRelease)
-        expect(result.released_at).to be_nil
+    context "when the tag has a v prefix" do
+      let(:version) { "v2.7.2" }
+      let(:candidate_version) { "v2.8.0" }
+
+      it "applies cooldown to the prefixed version" do
+        expect(latest_version).to eq(version)
+        expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+      end
+    end
+
+    context "when Hub omits its publication timestamp" do
+      let(:tag_metadata) { { digest: digest, created: "2000-01-01T00:00:00Z" } }
+
+      it "marks the date unavailable without consulting publisher-controlled timestamps" do
+        expect(latest_version).to eq(candidate_version)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         expect(checker).not_to have_received(:fetch_image_config_created)
       end
+    end
 
-      context "when Docker Hub returns tag metadata" do
-        before do
-          allow(mock_client).to receive(:manifest_digest)
-            .with("library/ubuntu", "1.0.0")
-            .and_return("sha256:tag123")
-          stub_request(
-            :get,
-            "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/1.0.0"
-          ).to_return(
-            status: 200,
-            body: {
-              digest: "sha256:tag123",
-              tag_last_pushed: "2024-01-15T10:00:00Z"
-            }.to_json
-          )
-        end
+    [nil, "not-a-timestamp", 123].each do |timestamp|
+      context "when the Hub push timestamp is #{timestamp.inspect}" do
+        let(:tag_last_pushed) { timestamp }
 
-        it "uses the registry-managed tag push time" do
-          result = get_tag_publication_details
-
-          expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
-          expect(checker).not_to have_received(:fetch_image_config_created)
-        end
-
-        context "when the metadata digest does not match the registry" do
-          before do
-            stub_request(
-              :get,
-              "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/1.0.0"
-            ).to_return(
-              status: 200,
-              body: {
-                digest: "sha256:stale",
-                tag_last_pushed: "2024-01-15T10:00:00Z"
-              }.to_json
-            )
-          end
-
-          it "does not use stale tag metadata" do
-            expect(get_tag_publication_details.released_at).to be_nil
-          end
-        end
-      end
-
-      context "when GHCR returns package metadata" do
-        let(:source) { { tag: version, registry: "ghcr.io" } }
-        let(:dependency_name) { "astral-sh/uv" }
-
-        before do
-          allow(mock_client).to receive(:manifest_digest)
-            .with("astral-sh/uv", "1.0.0")
-            .and_return("sha256:tag123")
-          stub_request(
-            :get,
-            "https://api.github.com/orgs/astral-sh/packages/container/uv/versions"
-          ).with(
-            query: { "page" => "1", "per_page" => "100" },
-            headers: { "Authorization" => "Bearer token" }
-          ).to_return(
-            status: 200,
-            body: [{
-              name: "sha256:tag123",
-              updated_at: "2024-01-15T10:00:00Z",
-              metadata: { container: { tags: ["1.0.0"] } }
-            }].to_json
-          )
-        end
-
-        it "uses the registry-managed package version update time" do
-          result = get_tag_publication_details
-
-          expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
-        end
-
-        context "when the package version digest does not match the registry" do
-          before do
-            stub_request(
-              :get,
-              "https://api.github.com/orgs/astral-sh/packages/container/uv/versions"
-            ).with(query: { "page" => "1", "per_page" => "100" })
-              .to_return(
-                status: 200,
-                body: [{
-                  name: "sha256:stale",
-                  updated_at: "2024-01-15T10:00:00Z",
-                  metadata: { container: { tags: ["1.0.0"] } }
-                }].to_json
-              )
-          end
-
-          it "does not use stale package metadata" do
-            expect(get_tag_publication_details.released_at).to be_nil
-          end
+        it "marks the date unavailable without falling back" do
+          expect(latest_version).to eq(candidate_version)
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          expect(mock_client).not_to have_received(:dohead)
         end
       end
     end
 
-    context "when the publication HEAD request fails and Docker Hub returns tag metadata" do
+    [nil, [], 123].each do |metadata|
+      context "when the Hub metadata is #{metadata.inspect}" do
+        let(:tag_metadata) { metadata }
+
+        it "rejects the unexpected response shape without crashing" do
+          expect(latest_version).to eq(candidate_version)
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+    end
+
+    context "when Hub returns malformed JSON" do
+      let(:metadata_body) { "{" }
+
+      it "marks the date unavailable" do
+        expect(latest_version).to eq(candidate_version)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
+    [401, 403, 404, 429, 503].each do |status|
+      context "when the Hub API returns HTTP #{status}" do
+        let(:metadata_status) { status }
+
+        it "marks the date unavailable without falling back" do
+          expect(latest_version).to eq(candidate_version)
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          expect(mock_client).not_to have_received(:dohead)
+        end
+      end
+    end
+
+    context "when the Hub API times out" do
       before do
-        allow(mock_client).to receive(:digest).and_return("sha256:abc123")
-        allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::NotFound)
-        allow(mock_client).to receive(:manifest_digest)
-          .with("library/ubuntu", "1.0.0")
-          .and_return("sha256:tag123")
         stub_request(
           :get,
-          "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/1.0.0"
-        ).to_return(
-          status: 200,
-          body: {
-            digest: "sha256:tag123",
-            tag_last_pushed: "2024-01-15T10:00:00Z"
-          }.to_json
-        )
-        allow(Dependabot.logger).to receive(:warn)
+          "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/#{candidate_version}"
+        ).to_timeout
       end
 
-      it "uses the registry-managed tag push time" do
-        result = get_tag_publication_details
-
-        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
-      end
-    end
-
-    context "when client.digest returns a String" do
-      let(:digest_string) { "sha256:abc123" }
-
-      before do
-        allow(mock_client).to receive(:digest).and_return(digest_string)
-      end
-
-      it "handles the String case and returns publication details" do
-        result = get_tag_publication_details
-        expect(result).to be_a(Dependabot::Package::PackageRelease)
-        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
-      end
-
-      it "uses the blobs endpoint for a single-image digest" do
-        get_tag_publication_details
-        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/blobs/sha256:abc123")
-      end
-    end
-
-    context "when client.digest returns an Array" do
-      let(:digest_array) { [{ "digest" => "sha256:def456" }] }
-
-      before do
-        allow(mock_client).to receive(:digest).and_return(digest_array)
-      end
-
-      it "handles the Array case and returns publication details" do
-        result = get_tag_publication_details
-        expect(result).to be_a(Dependabot::Package::PackageRelease)
-        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
-      end
-
-      it "uses the manifests endpoint for a manifest-list digest" do
-        get_tag_publication_details
-        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/manifests/sha256:def456")
-      end
-    end
-
-    context "when client.digest returns an empty Array" do
-      let(:empty_array) { [] }
-
-      before do
-        allow(mock_client).to receive(:digest).and_return(empty_array)
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Empty digest_info array/
-        )
-      end
-    end
-
-    context "when client.digest returns nil" do
-      before do
-        allow(mock_client).to receive(:digest).and_return(nil)
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Unexpected digest_info type.*NilClass/
-        )
-      end
-    end
-
-    context "when tag has a 'v' prefix" do
-      let(:tag) { Dependabot::Docker::Tag.new("v2.7.2") }
-      let(:digest_string) { "sha256:abc123" }
-
-      before do
-        allow(mock_client).to receive(:digest).and_return(digest_string)
-      end
-
-      it "handles the version prefix correctly and returns publication details" do
-        result = get_tag_publication_details
-        expect(result).to be_a(Dependabot::Package::PackageRelease)
-        expect(result.version).to be_a(Dependabot::Docker::Version)
-        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
-      end
-
-      it "creates a Docker::Version instead of base Dependabot::Version" do
-        result = get_tag_publication_details
-        expect(result.version).to be_a(Dependabot::Docker::Version)
-        expect(result.version.class).to eq(Dependabot::Docker::Version)
-      end
-    end
-
-    context "when client.digest raises DockerRegistry2::NotFound" do
-      before do
-        allow(mock_client).to receive(:digest).and_raise(DockerRegistry2::NotFound)
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Failed to fetch publication details.*skipping cooldown.*NotFound/
-        )
-      end
-    end
-
-    context "when client.dohead raises DockerRegistry2::NotFound for blob" do
-      before do
-        allow(mock_client).to receive_messages(digest: "sha256:abc123", manifest_digest: "sha256:abc123")
-        allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::NotFound)
-        allow(Dependabot.logger).to receive(:warn)
-        stub_request(
-          :get,
-          "https://hub.docker.com/v2/namespaces/library/repositories/ubuntu/tags/1.0.0"
-        ).to_return(status: 404)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Failed to fetch publication details.*skipping cooldown.*NotFound/
-        )
-      end
-    end
-
-    context "when client.digest raises RegistryAuthenticationException" do
-      before do
-        allow(mock_client).to receive(:digest)
-          .and_raise(DockerRegistry2::RegistryAuthenticationException)
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Failed to fetch publication details.*skipping cooldown.*RegistryAuthenticationException/
-        )
-      end
-    end
-
-    context "when client.digest raises RestClient::Forbidden" do
-      before do
-        allow(mock_client).to receive(:digest).and_raise(RestClient::Forbidden)
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Failed to fetch publication details.*skipping cooldown.*Forbidden/
-        )
-      end
-    end
-
-    context "when client.digest raises RestClient::TooManyRequests" do
-      before do
-        allow(mock_client).to receive(:digest).and_raise(RestClient::TooManyRequests)
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "returns nil and logs a warning" do
-        expect(get_tag_publication_details).to be_nil
-        expect(Dependabot.logger).to have_received(:warn).with(
-          /Failed to fetch publication details.*skipping cooldown.*TooManyRequests/
-        )
+      it "marks the date unavailable without falling back" do
+        expect(latest_version).to eq(candidate_version)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        expect(mock_client).not_to have_received(:dohead)
       end
     end
   end

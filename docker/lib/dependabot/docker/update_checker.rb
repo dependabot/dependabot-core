@@ -86,8 +86,6 @@ module Dependabot
       # collect the remaining tags.
       TAGS_PAGE_SIZE = 100
 
-      GITHUB_PACKAGES_PAGE_SIZE = 100
-
       DockerSource = T.type_alias do
         T::Hash[Symbol, T.nilable(String)]
       end
@@ -95,9 +93,6 @@ module Dependabot
       ManifestHash = T.type_alias do
         T::Hash[T.any(String, Symbol), Object]
       end
-
-      GithubPackageVersion = T.type_alias { T::Hash[String, Object] }
-      PublicationDateResult = T.type_alias { [T.nilable(Time), T::Boolean] }
 
       ManifestList = T.type_alias do
         T::Array[ManifestHash]
@@ -480,16 +475,8 @@ module Dependabot
 
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Dependabot::Package::PackageRelease)) }
       def get_tag_publication_details(tag)
-        digest_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          client = docker_registry_client
-          client.digest(docker_repo_name, tag.name)
-        end
-
-        first_digest = extract_digest_from_response(digest_info, tag)
-        return nil unless first_digest
-
-        published_date, details_available = publication_date_for(tag, digest_info, first_digest)
-        return nil unless details_available
+        published_date = registry_tag_release_date(tag)
+        return nil unless published_date
 
         Dependabot::Package::PackageRelease.new(
           version: release_version_for(tag),
@@ -499,63 +486,17 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
-      rescue *transient_docker_errors,
-             DockerRegistry2::RegistryAuthenticationException,
-             DockerRegistry2::RegistryAuthorizationException,
-             RestClient::Forbidden,
-             RestClient::TooManyRequests => e
-        Dependabot.logger.warn(
-          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
-          "skipping cooldown: #{e.class} - #{e.message}"
-        )
-        nil
-      end
-
-      sig do
-        params(
-          tag: Dependabot::Docker::Tag,
-          digest_info: Object,
-          first_digest: String
-        ).returns(PublicationDateResult)
-      end
-      def publication_date_for(tag, digest_info, first_digest)
-        header_date = publication_date_from_registry_headers(tag, digest_info, first_digest)
-        [header_date || registry_tag_release_date(tag), true]
-      rescue *transient_docker_errors,
-             DockerRegistry2::RegistryAuthenticationException,
-             DockerRegistry2::RegistryAuthorizationException,
-             RestClient::Forbidden,
-             RestClient::TooManyRequests => e
-        fallback_date = registry_tag_release_date(tag)
-        return [fallback_date, true] if fallback_date
-
-        Dependabot.logger.warn(
-          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
-          "skipping cooldown: #{e.class} - #{e.message}"
-        )
-        [nil, false]
-      end
-
-      sig do
-        params(
-          tag: Dependabot::Docker::Tag,
-          digest_info: Object,
-          first_digest: String
-        ).returns(T.nilable(Time))
-      end
-      def publication_date_from_registry_headers(tag, digest_info, first_digest)
-        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
-        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          docker_registry_client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
-        end
-        published_date_from_response_headers(head_response.headers, tag.name)
       end
 
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
       def registry_tag_release_date(tag)
         return docker_hub_tag_release_date(tag) if using_dockerhub?
 
-        github_container_registry_tag_release_date(tag) if registry_hostname == "ghcr.io"
+        Dependabot.logger.info(
+          "No verified registry publication date source for #{registry_hostname}; " \
+          "skipping cooldown for #{docker_repo_name}:#{tag.name}"
+        )
+        nil
       rescue JSON::ParserError, ArgumentError, TypeError, Excon::Error::Socket, Excon::Error::Timeout,
              RegistryError, PrivateSourceBadResponse, PrivateSourceAuthenticationFailure,
              *transient_docker_errors,
@@ -589,10 +530,18 @@ module Dependabot
         return unless response.status == 200
 
         metadata = JSON.parse(response.body)
-        return unless matching_digest?(metadata["digest"], digest)
+        return unless metadata.is_a?(Hash)
+        return unless docker_hub_digest_matches_update?(metadata["digest"], digest)
 
         timestamp = metadata["tag_last_pushed"]
         Time.iso8601(timestamp) if timestamp.is_a?(String)
+      end
+
+      sig { params(metadata_digest: Object, digest: String).returns(T::Boolean) }
+      def docker_hub_digest_matches_update?(metadata_digest, digest)
+        return digest_requirements.empty? && !pin_digests? if metadata_digest.nil?
+
+        matching_digest?(metadata_digest, digest)
       end
 
       sig { params(namespace: String, repository: String, tag: String).returns(String) }
@@ -601,170 +550,11 @@ module Dependabot
         "https://hub.docker.com/v2/namespaces/#{escaped[0]}/repositories/#{escaped[1]}/tags/#{escaped[2]}"
       end
 
-      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
-      def github_container_registry_tag_release_date(tag)
-        digest = digest_of(tag.name)
-        return unless digest
-
-        version = github_package_version(tag, digest)
-        return unless version
-
-        timestamp = version["updated_at"]
-        Time.iso8601(timestamp) if timestamp.is_a?(String)
-      end
-
-      sig { params(tag: Dependabot::Docker::Tag, digest: String).returns(T.nilable(GithubPackageVersion)) }
-      def github_package_version(tag, digest)
-        page = 1
-        loop do
-          versions = github_package_versions(page)
-          version = versions.find do |candidate|
-            matching_digest?(candidate["name"], digest) && github_package_version_tags(candidate).include?(tag.name)
-          end
-          return version if version
-          return nil if versions.length < GITHUB_PACKAGES_PAGE_SIZE
-
-          page += 1
-        end
-      end
-
-      sig { params(page: Integer).returns(T::Array[GithubPackageVersion]) }
-      def github_package_versions(page)
-        @github_package_versions ||= T.let(
-          {},
-          T.nilable(T::Hash[Integer, T::Array[GithubPackageVersion]])
-        )
-        @github_package_versions[page] ||= fetch_github_package_versions(page)
-      end
-
-      sig { params(page: Integer).returns(T::Array[GithubPackageVersion]) }
-      def fetch_github_package_versions(page)
-        owner, package = docker_repo_name.split("/", 2)
-        return [] unless owner && package
-
-        token = github_packages_token
-        @github_package_owner_type ||= T.let("orgs", T.nilable(String))
-        response = github_package_versions_response(@github_package_owner_type, owner, package, token, page)
-        if page == 1 && response.status == 404
-          @github_package_owner_type = "users"
-          response = github_package_versions_response(@github_package_owner_type, owner, package, token, page)
-        end
-        return [] unless response.status == 200
-
-        parse_github_package_versions(response.body)
-      end
-
-      sig do
-        params(
-          owner_type: String,
-          owner: String,
-          package: String,
-          token: T.nilable(String),
-          page: Integer
-        ).returns(Excon::Response)
-      end
-      def github_package_versions_response(owner_type, owner, package, token, page)
-        escaped_owner = URI.encode_www_form_component(owner)
-        escaped_package = URI.encode_www_form_component(package)
-        url = "https://api.github.com/#{owner_type}/#{escaped_owner}/packages/container/#{escaped_package}/versions"
-        headers = {
-          "Accept" => "application/vnd.github+json",
-          "X-GitHub-Api-Version" => "2022-11-28"
-        }
-        headers["Authorization"] = "Bearer #{token}" if token
-        with_retries(max_attempts: 3, errors: [Excon::Error::Socket, Excon::Error::Timeout]) do
-          Dependabot::RegistryClient.get(
-            url: url,
-            headers: headers,
-            options: {
-              query: { per_page: GITHUB_PACKAGES_PAGE_SIZE, page: page },
-              connect_timeout: docker_open_timeout_in_seconds,
-              read_timeout: docker_read_timeout_in_seconds,
-              write_timeout: docker_read_timeout_in_seconds
-            }
-          )
-        end
-      end
-
-      sig { params(body: String).returns(T::Array[GithubPackageVersion]) }
-      def parse_github_package_versions(body)
-        parsed = JSON.parse(body)
-        return [] unless parsed.is_a?(Array)
-
-        parsed.grep(Hash)
-      end
-
-      sig { params(version: GithubPackageVersion).returns(T::Array[String]) }
-      def github_package_version_tags(version)
-        metadata = version["metadata"]
-        return [] unless metadata.is_a?(Hash)
-
-        container = metadata["container"]
-        return [] unless container.is_a?(Hash)
-
-        tags = container["tags"]
-        tags.is_a?(Array) ? tags.grep(String) : []
-      end
-
       sig { params(first: Object, second: Object).returns(T::Boolean) }
       def matching_digest?(first, second)
         return false unless first.is_a?(String) && second.is_a?(String)
 
         first.delete_prefix("sha256:").casecmp?(second.delete_prefix("sha256:")) || false
-      end
-
-      sig { returns(T.nilable(String)) }
-      def github_packages_token
-        registry_token = registry_credentials&.fetch("password", nil)
-        return registry_token if registry_token.is_a?(String)
-
-        github_credentials = credentials.find do |credential|
-          credential["type"] == "git_source" && credential["host"] == "github.com"
-        end
-        github_token = github_credentials&.fetch("password", nil)
-        github_token if github_token.is_a?(String)
-      end
-
-      sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
-      def published_date_from_response_headers(headers, tag_name)
-        last_modified = headers[:last_modified]
-        return nil unless last_modified
-
-        Time.parse(last_modified)
-      rescue ArgumentError, TypeError => e
-        Dependabot.logger.info(
-          "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
-        )
-        nil
-      end
-
-      sig do
-        params(
-          digest_info: Object,
-          tag: Dependabot::Docker::Tag
-        ).returns(T.nilable(String))
-      end
-      def extract_digest_from_response(digest_info, tag)
-        # digest_info can be either a String or an Array depending on the registry response
-        case digest_info
-        when Array
-          if digest_info.empty?
-            Dependabot.logger.warn(
-              "Empty digest_info array for #{docker_repo_name}:#{tag.name}"
-            )
-            return nil
-          end
-          digest = digest_info.first&.fetch("digest")
-          digest if digest.is_a?(String)
-        when String
-          digest_info
-        else
-          Dependabot.logger.warn(
-            "Unexpected digest_info type for #{docker_repo_name}:#{tag.name}: " \
-            "#{digest_info.class} (expected String or Array)"
-          )
-          nil
-        end
       end
 
       sig do
@@ -1302,8 +1092,7 @@ module Dependabot
       # don't change the version string, so the default cooldown window applies
       # (semver-specific windows require a version delta, and the tag may be
       # non-comparable like "alpine"). Fails open (returns false) when the
-      # publication date can't be determined, so a missing Last-Modified header
-      # never permanently blocks an update.
+      # publication date can't be determined and records an unavailable-date warning.
       sig { params(tag_name: String).returns(T::Boolean) }
       def digest_within_cooldown?(tag_name)
         return false if should_skip_cooldown?
