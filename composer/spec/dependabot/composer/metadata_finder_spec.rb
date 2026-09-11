@@ -241,7 +241,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       end
     end
 
-    context "when a version entry has both homepage and source.url pointing to different hosts" do
+    context "when a version entry has both homepage and source.url pointing to different repos" do
       let(:packagist_response) do
         <<~JSON
           {
