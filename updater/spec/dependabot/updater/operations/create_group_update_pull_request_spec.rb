@@ -200,7 +200,15 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       let(:updated_dependencies) { [] }
 
       before do
-        allow(dependency_snapshot).to receive(:handled_dependencies).and_return([dependency.name])
+        allow(dependency_snapshot).to receive(:all_handled_dependencies).and_return(Set[dependency.name])
+      end
+
+      it "does not report dependencies handled under different casing" do
+        allow(dependency_snapshot).to receive(:all_handled_dependencies)
+          .and_return(Set[dependency.name.upcase, failed_dependency.name.upcase])
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+
+        perform
       end
 
       it "reports unhandled dependencies that failed to update" do
@@ -213,6 +221,94 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
 
         perform
       end
+    end
+  end
+
+  describe "#perform with deferred security errors" do
+    let(:dependency) do
+      dependency_snapshot.all_dependencies.find { |candidate| candidate.name == "dummy-pkg-a" }
+    end
+    let(:dependency_group) do
+      Dependabot::DependencyGroup.new(name: "security", rules: { "patterns" => ["*"] }).tap do |group|
+        group.dependencies.push(dependency, successful_dependency)
+      end
+    end
+    let(:successful_dependency) do
+      dependency_snapshot.all_dependencies.find { |candidate| candidate.name == "dummy-git-dependency" }
+    end
+    let(:successful_update) do
+      Dependabot::Dependency.new(
+        name: successful_dependency.name,
+        version: "2.0.0",
+        previous_version: successful_dependency.version,
+        requirements: successful_dependency.requirements,
+        previous_requirements: successful_dependency.requirements,
+        package_manager: "bundler"
+      )
+    end
+    let(:stub_dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: job,
+        updated_dependencies: [successful_update],
+        updated_dependency_files: dependency_files
+      )
+    end
+    let(:successful_checker) do
+      instance_double(
+        Dependabot::UpdateCheckers::Base,
+        dependency: successful_dependency,
+        lowest_security_fix_version: "2.0.0",
+        up_to_date?: false,
+        requirements_unlocked_or_can_be?: true,
+        can_update?: true,
+        updated_dependencies: [successful_update]
+      )
+    end
+
+    before do
+      allow(job).to receive_messages(
+        security_updates_only?: true,
+        updating_a_pull_request?: false,
+        dependencies: %w(dummy-pkg-a dummy-git-dependency),
+        allowed_update?: true,
+        security_advisories_for: [{}]
+      )
+      allow(stub_update_checker).to receive_messages(
+        can_update?: false,
+        lowest_resolvable_security_fix_version: nil
+      )
+      allow(stub_update_checker_class).to receive(:new) do |**arguments|
+        arguments.fetch(:dependency).name == dependency.name ? stub_update_checker : successful_checker
+      end
+    end
+
+    it "resolves the error details once and reports the captured payload" do
+      expect(stub_update_checker).to receive(:conflicting_dependencies).once.and_return([])
+      expect(mock_service).to receive(:record_update_job_error).with(
+        error_type: "security_update_not_possible",
+        error_details: {
+          "dependency-name": dependency.name,
+          "latest-resolvable-version": dependency.version,
+          "lowest-non-vulnerable-version": "2.0.0",
+          "conflicting-dependencies": []
+        },
+        dependency: nil
+      )
+      expect(mock_service).to receive(:create_pull_request)
+
+      perform
+    end
+
+    it "still creates a PR when resolving another dependency's error details fails" do
+      resolver_error = RuntimeError.new("resolver failed")
+      allow(stub_update_checker).to receive(:lowest_resolvable_security_fix_version).and_raise(resolver_error)
+      expect(mock_error_handler).to receive(:handle_dependency_error)
+        .with(error: resolver_error, dependency: dependency, dependency_group: dependency_group)
+      expect(mock_service).to receive(:create_pull_request) do |change, _base_commit|
+        expect(change.updated_dependencies.map(&:name)).to eq([successful_dependency.name])
+      end
+
+      expect { perform }.not_to raise_error
     end
   end
 

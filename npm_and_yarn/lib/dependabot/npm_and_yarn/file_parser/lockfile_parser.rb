@@ -4,6 +4,7 @@
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/package/npm_lockfile_details"
 require "sorbet-runtime"
 
 module Dependabot
@@ -48,10 +49,10 @@ module Dependabot
 
         sig do
           params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
-            .returns(T.nilable(T::Hash[String, T.untyped]))
+            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
-          details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          details = T.let(nil, T.nilable(Dependabot::Package::NpmLockfileDetails))
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
             details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
 

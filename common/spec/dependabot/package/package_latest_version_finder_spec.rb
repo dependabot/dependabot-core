@@ -281,6 +281,22 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
 
     it { is_expected.to eq(TestVersion.new("7.0.0")) }
 
+    context "when a release requires an unsupported language version" do
+      subject(:latest_version) { finder.latest_version(language_version: TestVersion.new("2.6.0")) }
+
+      let(:available_releases) { [available_release_7_0_0, available_release_6_1_4] }
+      let(:cooldown_options) { nil }
+
+      it "logs why the release was filtered out" do
+        expect(Dependabot.logger).to receive(:info).with(
+          /Filtered out rails 7\.0\.0 because dummy requirement >= 2\.7\.0 is not satisfied by dummy 2\.6\.0/
+        )
+        expect(Dependabot.logger).to receive(:info).with(/Filtered out 1 unsupported Language 2\.6\.0 versions/)
+
+        expect(latest_version).to eq(TestVersion.new("6.1.4"))
+      end
+    end
+
     context "when all supported versions are ignored" do
       let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
 
@@ -727,6 +743,86 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
 
       it "returns the latest version without fallback" do
         expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+      end
+    end
+
+    context "when a release date is unavailable" do
+      let(:available_releases) do
+        [{ version: "6.0.1", released_at: nil, yanked: false }]
+      end
+
+      it "allows the version and marks the dependency" do
+        expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+
+      context "when the dependency is excluded from cooldown" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 7,
+            exclude: [dependency_name]
+          )
+        end
+
+        it "does not mark the dependency" do
+          finder.latest_version
+
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      context "when the undated release is ignored" do
+        let(:available_releases) do
+          [
+            { version: "6.0.2", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+        let(:ignored_versions) { ["6.0.1"] }
+
+        it "does not mark the dependency" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.2"))
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      context "when a newer selected release has a usable date" do
+        let(:available_releases) do
+          [
+            { version: "6.0.2", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+
+        it "does not mark the dependency" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.2"))
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      context "when a higher dated prerelease is filtered out" do
+        let(:available_releases) do
+          [
+            { version: "7.0.0.beta1", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+
+        it "marks the selected undated release" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+
+      context "when the effective cooldown is zero days" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0)
+        end
+
+        it "does not mark the dependency" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
       end
     end
 

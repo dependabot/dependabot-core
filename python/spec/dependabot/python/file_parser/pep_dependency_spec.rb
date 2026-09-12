@@ -77,4 +77,149 @@ RSpec.describe Dependabot::Python::FileParser::PepDependency do
       end
     end
   end
+
+  describe ".from_requirements_helper_result" do
+    subject(:dependencies) { described_class.from_requirements_helper_result(result) }
+
+    let(:record) do
+      {
+        "name" => "requests",
+        "version" => "2.31.0",
+        "markers" => "None",
+        "file" => "requirements.txt",
+        "requirement" => "==2.31.0",
+        "extras" => ["security"],
+        "unknown" => true
+      }
+    end
+    let(:result) { [record] }
+
+    it "returns typed records without changing the helper fields" do
+      expect(dependencies.first).to be_a(described_class)
+      expect(dependencies.first).to have_attributes(
+        name: "requests",
+        version: "2.31.0",
+        markers: "None",
+        file: "requirements.txt",
+        requirement: "==2.31.0",
+        extras: ["security"],
+        source_requirement: nil,
+        requirement_type: nil
+      )
+    end
+
+    context "with an empty result" do
+      let(:result) { [] }
+
+      it "returns no records" do
+        expect(dependencies).to be_empty
+      end
+    end
+
+    context "with multiple records" do
+      let(:result) { [record, record.merge("name" => "urllib3"), record] }
+
+      it "preserves order and duplicate records" do
+        expect(dependencies.map(&:name)).to eq(%w(requests urllib3 requests))
+      end
+    end
+
+    context "without optional fields" do
+      let(:record) { super().except("version", "markers", "requirement").merge("extras" => []) }
+
+      it "uses nil for the missing fields" do
+        expect(dependencies.first).to have_attributes(version: nil, markers: nil, requirement: nil, extras: [])
+      end
+    end
+
+    context "with null optional fields" do
+      let(:record) { super().merge("version" => nil, "markers" => nil, "requirement" => nil) }
+
+      it "preserves null fields" do
+        expect(dependencies.first).to have_attributes(version: nil, markers: nil, requirement: nil)
+      end
+    end
+
+    context "with empty strings" do
+      let(:record) { super().merge("version" => "", "markers" => "", "requirement" => "") }
+
+      it "does not coerce them to nil" do
+        expect(dependencies.first).to have_attributes(version: "", markers: "", requirement: "")
+      end
+    end
+
+    [nil, {}, "invalid", 1].each do |value|
+      context "with #{value.inspect} as the result" do
+        let(:result) { value }
+
+        it "reports a malformed requirements result" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            "parse_requirements result must be an array"
+          )
+        end
+      end
+    end
+
+    [nil, [], "invalid", 1].each do |value|
+      context "with #{value.inspect} as a record" do
+        let(:result) { [record, value] }
+
+        it "identifies the malformed record" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            /parse_requirements result\[1\].*must be an object/
+          )
+        end
+      end
+    end
+
+    %w(name file extras).each do |field|
+      context "without #{field}" do
+        let(:record) { super().except(field) }
+
+        it "identifies the missing field" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            /parse_requirements result\[0\].*#{field}/
+          )
+        end
+      end
+    end
+
+    [
+      ["name", 1],
+      ["file", false],
+      ["version", []],
+      ["markers", 1],
+      ["requirement", false],
+      ["extras", nil],
+      %w(extras not-an-extra-list),
+      ["extras", [1]]
+    ].each do |field, value|
+      context "with #{field} set to #{value.inspect}" do
+        let(:record) { super().merge(field => value) }
+
+        it "identifies the field without echoing the helper response" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            /parse_requirements result\[0\].*#{field}/
+          ) do |error|
+            expect(error.message).not_to include("not-an-extra-list")
+          end
+        end
+      end
+    end
+
+    context "with a non-string key" do
+      let(:record) { super().merge(1 => "unknown") }
+
+      it "identifies the record's key type" do
+        expect { dependencies }.to raise_error(
+          Dependabot::DependencyFileNotEvaluatable,
+          /parse_requirements result\[0\].*keys must be strings/
+        )
+      end
+    end
+  end
 end

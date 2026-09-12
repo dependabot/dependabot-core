@@ -16,6 +16,7 @@ require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/language_version_manager"
 require "dependabot/uv/package_manager"
+require "dependabot/python/file_parser/pep_dependency"
 require "toml-rb"
 
 module Dependabot
@@ -235,16 +236,16 @@ module Dependabot
         parsed_requirement_files.each do |dep|
           next if blocking_marker?(dep)
 
-          name = dep["name"]
-          file = dep["file"]
-          version = dep["version"]
+          name = dep.name
+          file = dep.file
+          version = dep.version
           original_file = get_original_file(file)
 
           requirements =
             if original_file && requirements_in_file_matcher.compiled_file?(original_file) then []
             else
               [{
-                requirement: dep["requirement"],
+                requirement: dep.requirement,
                 file: Pathname.new(file).cleanpath.to_path,
                 source: nil,
                 groups: group_from_filename(file)
@@ -256,7 +257,7 @@ module Dependabot
 
           dependencies <<
             Dependency.new(
-              name: normalised_name(name, dep["extras"]),
+              name: normalised_name(name, dep.extras),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
               package_manager: "uv"
@@ -281,35 +282,32 @@ module Dependabot
         end
       end
 
-      sig { params(dep: T.untyped).returns(T::Boolean) }
+      sig { params(dep: Dependabot::Python::FileParser::PepDependency).returns(T::Boolean) }
       def blocking_marker?(dep)
-        return false if dep["markers"] == "None"
+        marker = dep.markers
+        return false if marker.nil? || marker == "None"
 
-        marker = dep["markers"]
         version = python_raw_version
 
         if marker.include?("python_version")
           !marker_satisfied?(marker, version)
         else
-          return true if dep["markers"].include?("<")
-          return false if dep["markers"].include?(">")
-          return false if dep["requirement"].nil?
+          return true if marker.include?("<")
+          return false if marker.include?(">")
 
-          dep["requirement"].include?("<")
+          dep.requirement&.include?("<") || false
         end
       end
 
-      sig do
-        params(marker: T.untyped, python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
-      end
+      sig { params(marker: String, python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean) }
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
 
-        result = T.let(evaluate_condition?(conditions.shift, python_version), T::Boolean)
+        result = T.let(evaluate_condition?(T.must(conditions.shift), python_version), T::Boolean)
 
         until conditions.empty?
           operator = conditions.shift
-          next_condition = conditions.shift
+          next_condition = T.must(conditions.shift)
           next_result = evaluate_condition?(next_condition, python_version)
 
           result = if operator == "and"
@@ -324,12 +322,13 @@ module Dependabot
 
       sig do
         params(
-          condition: T.untyped,
+          condition: String,
           python_version: T.any(String, Integer, Gem::Version)
         ).returns(T::Boolean)
       end
       def evaluate_condition?(condition, python_version)
         operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
+        return false unless version
 
         case operator
         when "<"
@@ -347,17 +346,18 @@ module Dependabot
         end
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T::Array[Dependabot::Python::FileParser::PepDependency]) }
       def parsed_requirement_files
         SharedHelpers.in_a_temporary_directory do
           write_temporary_dependency_files
 
-          requirements = SharedHelpers.run_helper_subprocess(
+          result = SharedHelpers.run_helper_subprocess(
             command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "parse_requirements",
             args: [Dir.pwd]
           )
 
+          requirements = Dependabot::Python::FileParser::PepDependency.from_requirements_helper_result(result)
           check_requirements(requirements)
           requirements
         end
@@ -368,12 +368,13 @@ module Dependabot
         raise DependencyFileNotEvaluatable, e.message
       end
 
-      sig { params(requirements: T.untyped).returns(T.untyped) }
+      sig { params(requirements: T::Array[Dependabot::Python::FileParser::PepDependency]).void }
       def check_requirements(requirements)
         requirements.each do |dep|
-          next unless dep["requirement"]
+          requirement = dep.requirement
+          next unless requirement
 
-          Requirement.new(dep["requirement"].split(","))
+          Requirement.new(requirement.split(","))
         rescue Gem::Requirement::BadRequirementError => e
           raise DependencyFileNotEvaluatable, e.message
         end
