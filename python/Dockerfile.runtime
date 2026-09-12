@@ -1,0 +1,66 @@
+# syntax=docker.io/docker/dockerfile:1.20
+# Keep this version in sync with python/Dockerfile and uv/Dockerfile.
+# https://github.com/pyenv/pyenv/releases
+ARG PYENV_VERSION=v2.6.16
+
+FROM docker.io/library/rust:latest AS rust
+
+FROM ghcr.io/dependabot/dependabot-updater-core
+ARG PYENV_VERSION
+
+USER root
+
+# Install C libraries needed to build users' Python packages.
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    # Used by pycurl
+    libcurl4-openssl-dev \
+    # Used by mysqlclient
+    libmysqlclient-dev \
+    pkg-config \
+    # Used by psycopg Postgres Client
+    libpq-dev \
+    # Used by Python's zoneinfo core library
+    tzdata \
+    # Needed to build gssapi/krb5
+    libkrb5-dev \
+    # Used by pycairo and pygobject
+    libcairo2-dev \
+    libgirepository-2.0-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV PYENV_ROOT=/usr/local/.pyenv \
+  PATH="/usr/local/.pyenv/bin:$PATH"
+
+RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
+
+USER dependabot
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH=/opt
+
+RUN git -c advice.detachedHead=false clone \
+  https://github.com/pyenv/pyenv.git \
+  --branch "$PYENV_VERSION" \
+  --single-branch \
+  --depth=1 \
+  "$PYENV_ROOT"
+
+RUN mkdir "$PYENV_ROOT/versions"
+
+USER root
+
+ENV RUSTUP_HOME=/opt/rust \
+  CARGO_HOME=/opt/rust \
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse \
+  PATH="${PATH}:/opt/rust/bin"
+
+RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
+
+USER dependabot
+
+COPY --from=rust /usr/local/rustup $RUSTUP_HOME
+COPY --from=rust /usr/local/cargo $CARGO_HOME
+
+# Configure Cargo to use Git CLI so the Git shim works.
+RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml

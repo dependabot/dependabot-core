@@ -1,6 +1,8 @@
 # shellcheck shell=bash
 export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
 export UPDATER_CORE_LOCAL_IMAGE="dependabot-updater-core-local"
+export PYTHON_RUNTIME_IMAGE="ghcr.io/dependabot/dependabot-updater-python-runtime"
+export PYTHON_RUNTIME_LOCAL_IMAGE="dependabot-updater-python-runtime-local"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
 
@@ -140,18 +142,71 @@ function docker_build() {
     return 1
   fi
 
+  local -a core_context_args=()
+  if [[ -n "$core_oci_layout" ]]; then
+    core_context_args=(--build-context "$UPDATER_CORE_IMAGE=oci-layout://$core_oci_layout")
+  else
+    # Works around upstream bug https://github.com/moby/buildkit/issues/6956
+    # Remove when the bug is resolved.
+    core_context_args=(--build-context "$UPDATER_CORE_IMAGE=docker-image://$UPDATER_CORE_LOCAL_IMAGE")
+  fi
+
   # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
   unset DOCKER_CONTENT_TRUST
+
+  local python_runtime_oci_tempdir=""
+  local python_runtime_oci_layout=""
+  local python_runtime_output_mode="load"
+  local -a python_runtime_output_args=()
+  local -a python_runtime_context_args=()
+  if [[ "$ECOSYSTEM" == "python" || "$ECOSYSTEM" == "uv" ]]; then
+    if [[ -n "$BUILDX_GHA_CACHE" ]]; then
+      python_runtime_oci_tempdir=$(mktemp -d)
+      python_runtime_oci_layout="$python_runtime_oci_tempdir/image"
+      python_runtime_output_mode="oci"
+      python_runtime_output_args=(--output "type=oci,dest=${python_runtime_oci_layout},tar=false")
+    fi
+
+    PYTHON_RUNTIME_BUILD=$(
+      _build_cmd_and_cache_args "python-runtime" "$PYTHON_RUNTIME_IMAGE" "$python_runtime_output_mode"
+    )
+
+    # shellcheck disable=SC2086  # word-splitting is intentional for build args
+    if ! $PYTHON_RUNTIME_BUILD \
+      $DOCKER_BUILD_ARGS \
+      "${core_context_args[@]}" \
+      "${python_runtime_output_args[@]}" \
+      -t "$PYTHON_RUNTIME_IMAGE" \
+      -t "$PYTHON_RUNTIME_LOCAL_IMAGE" \
+      -f python/Dockerfile.runtime \
+      .; then
+      [[ -z "$python_runtime_oci_tempdir" ]] || rm -rf "$python_runtime_oci_tempdir"
+      [[ -z "$core_oci_tempdir" ]] || rm -rf "$core_oci_tempdir"
+      return 1
+    fi
+
+    if [[ -n "$python_runtime_oci_layout" ]]; then
+      python_runtime_context_args=(
+        --build-context "$PYTHON_RUNTIME_IMAGE=oci-layout://$python_runtime_oci_layout"
+      )
+    else
+      python_runtime_context_args=(
+        --build-context "$PYTHON_RUNTIME_IMAGE=docker-image://$PYTHON_RUNTIME_LOCAL_IMAGE"
+      )
+    fi
+  fi
 
   # pre_commit depends on go_modules and bundler images, so build them first
   # Use a guard variable to prevent infinite recursion when called recursively
   if [[ "$ECOSYSTEM" == "pre_commit" && -z "$BUILDING_DEPENDENCY" ]]; then
     echo "Building pre_commit dependencies: go_modules and bundler..."
     if ! BUILDING_DEPENDENCY=1 docker_build "go_modules"; then
+      [[ -z "$python_runtime_oci_tempdir" ]] || rm -rf "$python_runtime_oci_tempdir"
       [[ -z "$core_oci_tempdir" ]] || rm -rf "$core_oci_tempdir"
       return 1
     fi
     if ! BUILDING_DEPENDENCY=1 docker_build "bundler"; then
+      [[ -z "$python_runtime_oci_tempdir" ]] || rm -rf "$python_runtime_oci_tempdir"
       [[ -z "$core_oci_tempdir" ]] || rm -rf "$core_oci_tempdir"
       return 1
     fi
@@ -165,14 +220,7 @@ function docker_build() {
   DOCKERFILE_PATH=$(get_dockerfile_path)
 
   ECOSYSTEM_BUILD=$(_build_cmd_and_cache_args "$ECOSYSTEM" "$UPDATER_IMAGE_NAME")
-  local -a ecosystem_context_args=()
-  if [[ -n "$core_oci_layout" ]]; then
-    ecosystem_context_args=(--build-context "$UPDATER_CORE_IMAGE=oci-layout://$core_oci_layout")
-  else
-    # Works around upstream bug https://github.com/moby/buildkit/issues/6956
-    # Remove when the bug is resolved.
-    ecosystem_context_args=(--build-context "$UPDATER_CORE_IMAGE=docker-image://$UPDATER_CORE_LOCAL_IMAGE")
-  fi
+  local -a ecosystem_context_args=("${core_context_args[@]}" "${python_runtime_context_args[@]}")
 
   # shellcheck disable=SC2086  # word-splitting is intentional for build args
   if ! $ECOSYSTEM_BUILD \
@@ -181,10 +229,14 @@ function docker_build() {
     -t "$UPDATER_IMAGE_NAME" \
     -f "$DOCKERFILE_PATH" \
     .; then
+    [[ -z "$python_runtime_oci_tempdir" ]] || rm -rf "$python_runtime_oci_tempdir"
     [[ -z "$core_oci_tempdir" ]] || rm -rf "$core_oci_tempdir"
     return 1
   fi
 
+  if [[ -n "$python_runtime_oci_tempdir" ]]; then
+    rm -rf "$python_runtime_oci_tempdir"
+  fi
   if [[ -n "$core_oci_tempdir" ]]; then
     rm -rf "$core_oci_tempdir"
   fi
