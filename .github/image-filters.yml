@@ -10,6 +10,7 @@ shared: &shared
   - common/**
   - docker-bake.hcl
   - omnibus/**
+  - script/promote-image-tags
   - script/resolve-image-matrix
   - updater/**
   - '*/.bundle/**'

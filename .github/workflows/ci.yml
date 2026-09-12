@@ -122,6 +122,7 @@ jobs:
           bundler-cache: true
       - run: ./bin/lint
       - run: ./script/test-image-build-matrix
+      - run: ./script/test-promote-image-tags
       # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
       - run: yamllint .
 

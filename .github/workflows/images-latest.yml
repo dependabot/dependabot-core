@@ -10,6 +10,10 @@ on: # yamllint disable-line rule:truthy
   workflow_dispatch:
 permissions: {}
 
+concurrency:
+  group: latest-images-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   date-version:
     runs-on: ubuntu-latest
@@ -27,7 +31,11 @@ jobs:
 
   build-updater-core:
     runs-on: ubuntu-latest
-    if: github.repository == 'dependabot/dependabot-core' && github.ref == 'refs/heads/main'
+    needs: prepare
+    if: >-
+      github.repository == 'dependabot/dependabot-core' &&
+      github.ref == 'refs/heads/main' &&
+      needs.prepare.outputs.build_count != '0'
     permissions:
       contents: read
       id-token: write
@@ -86,13 +94,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'dependabot/dependabot-core' && github.ref == 'refs/heads/main'
     permissions:
+      attestations: read
       contents: read
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      proposed_build_count: ${{ steps.proposed.outputs.build_count }}
-      proposed_build_matrix: ${{ steps.proposed.outputs.build_matrix }}
-      proposed_promote_count: ${{ steps.proposed.outputs.promote_count }}
-      proposed_promote_matrix: ${{ steps.proposed.outputs.promote_matrix }}
+      build_count: ${{ steps.selection.outputs.build_count }}
+      build_matrix: ${{ steps.selection.outputs.build_matrix }}
+      promote_count: ${{ steps.selection.outputs.promote_count }}
+      promote_matrix: ${{ steps.selection.outputs.promote_matrix }}
+      source_tag: ${{ steps.source.outputs.source_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,19 +109,57 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Verify current main tip
+        if: github.event_name == 'push'
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          git fetch origin main
+          [[ "$(git rev-parse origin/main)" == "$EXPECTED_SHA" ]]
+
       - name: Generate ecosystem matrix
         id: bake-matrix
         uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         with:
           target: ecosystem
 
-      - name: Remove internal targets
-        id: matrix
+      - name: Verify predecessor image tags
+        id: source
+        if: github.event_name == 'push'
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_TAG: ${{ github.event.before }}
         run: |
-          MATRIX=$(jq -c '[.[] | select(.target != "updater-core" and (.target | endswith("-raw") | not))]' <<< "$BAKE_MATRIX")
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          AVAILABLE=true
+          MISSING=()
+          while read -r target; do
+            image="ghcr.io/dependabot/dependabot-updater-${target}:${SOURCE_TAG}"
+            if ! docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
+              AVAILABLE=false
+              MISSING+=("$target")
+              continue
+            fi
+            if ! gh attestation verify "oci://${image}" --owner dependabot > /dev/null 2>&1; then
+              AVAILABLE=false
+              MISSING+=("$target (attestation)")
+            fi
+          done < <(
+            jq -r '
+              .[].target
+              | select(
+                  . != "python-runtime" and
+                  . != "updater-core" and
+                  (endswith("-raw") | not)
+                )
+            ' <<< "$BAKE_MATRIX"
+          )
+
+          echo "available=$AVAILABLE" >> "$GITHUB_OUTPUT"
+          echo "source_tag=$SOURCE_TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$AVAILABLE" != "true" ]]; then
+            printf 'Missing predecessor image tags: %s\n' "${MISSING[*]}"
+          fi
 
       - name: Find affected ecosystems
         id: changes
@@ -125,22 +172,29 @@ jobs:
           ref: ${{ github.sha }}
           filters: .github/image-filters.yml
 
-      - name: Resolve proposed image matrix
-        id: proposed
-        continue-on-error: true
+      - name: Resolve image matrix
+        id: selection
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
-          FORCE_ALL: ${{ github.event_name != 'push' || steps.changes.outcome != 'success' }}
+          FORCE_ALL: >-
+            ${{
+              github.event_name != 'push' ||
+              steps.changes.outcome != 'success' ||
+              steps.source.outputs.available != 'true'
+            }}
         run: |
-          RESULT=$(script/resolve-image-matrix)
+          if ! RESULT=$(script/resolve-image-matrix); then
+            echo "::warning::Image selection failed; building every ecosystem"
+            RESULT=$(CHANGED_TARGETS='[]' FORCE_ALL=true script/resolve-image-matrix)
+          fi
           echo "build_count=$(jq -r '.build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "build_matrix=$(jq -c '.build' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "promote_count=$(jq -r '.promote_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "promote_matrix=$(jq -c '.promote' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
 
           {
-            echo "## Proposed image selection"
+            echo "## Image selection"
             echo
             echo "Build: $(jq -r '.build_count' <<< "$RESULT")"
             jq -r '.build[]? | "- `\(.target)`"' <<< "$RESULT"
@@ -156,6 +210,7 @@ jobs:
       - build-updater-core
       - date-version
       - prepare
+    if: needs.prepare.outputs.build_count != '0'
     permissions:
       contents: read
       id-token: write
@@ -165,7 +220,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+        include: ${{ fromJSON(needs.prepare.outputs.build_matrix) }}
     env:
       COMMIT_SHA: ${{ github.sha }}
       DATE_VERSION: ${{ needs.date-version.outputs.date }}
@@ -244,3 +299,57 @@ jobs:
             echo "$UPDATER_IMAGE:$COMMIT_SHA"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  promote-unchanged-image:
+    name: Promote unchanged
+    runs-on: ubuntu-latest
+    needs:
+      - date-version
+      - prepare
+    if: needs.prepare.outputs.promote_count != '0'
+    permissions:
+      attestations: read
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.promote_matrix) }}
+    env:
+      BACKUP_REGISTRY: "dependabot-acr-apim-production.azure-api.net"
+      COMMIT_SHA: ${{ github.sha }}
+      DATE_VERSION: ${{ needs.date-version.outputs.date }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
+      SOURCE_TAG: ${{ needs.prepare.outputs.source_tag }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote existing image digest
+        run: |
+          echo "## Promoted unchanged image" >> "$GITHUB_STEP_SUMMARY"
+          TARGETS_JSON=$(jq -cn --arg target "$TARGET" '[{target: $target}]')
+          TAGS_JSON=$(jq -cn --arg commit "$COMMIT_SHA" --arg date "$DATE_VERSION" '[$commit, $date]')
+          export TARGETS_JSON TAGS_JSON
+          script/promote-image-tags
+
+      - name: Verify existing artifact attestation
+        run: gh attestation verify "oci://${IMAGE_PREFIX}${TARGET}:${COMMIT_SHA}" --owner dependabot
+
+      - name: Pull promoted tags through backup registry
+        run: |
+          docker pull "${BACKUP_REGISTRY}/${IMAGE_PREFIX}${TARGET}:$COMMIT_SHA"
+          docker pull "${BACKUP_REGISTRY}/${IMAGE_PREFIX}${TARGET}:$DATE_VERSION"

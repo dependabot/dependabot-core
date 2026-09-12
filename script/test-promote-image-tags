@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+
+cat > "$tmpdir/docker" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$DOCKER_LOG"
+case "$*" in
+  *"imagetools inspect"*"conflict-tag"*)
+    printf '%s\n' '"sha256:fedcba9876543210"'
+    ;;
+  *"imagetools inspect"*)
+    printf '%s\n' '"sha256:0123456789abcdef"'
+    ;;
+esac
+EOF
+chmod +x "$tmpdir/docker"
+
+DOCKER_LOG="$tmpdir/docker.log" \
+GITHUB_STEP_SUMMARY="$tmpdir/summary.md" \
+IMAGE_PREFIX="registry.example/dependabot-updater-" \
+SOURCE_TAG="source-sha" \
+TARGETS_JSON='[{"target":"bundler"}]' \
+TAGS_JSON='["commit-sha","date-tag"]' \
+PATH="$tmpdir:$PATH" \
+script/promote-image-tags > "$tmpdir/output"
+
+create_call=$(grep 'imagetools create' "$tmpdir/docker.log")
+[[ "$create_call" == *"--prefer-index=false"* ]]
+[[ "$create_call" == *"--tag registry.example/dependabot-updater-bundler:commit-sha"* ]]
+[[ "$create_call" == *"--tag registry.example/dependabot-updater-bundler:date-tag"* ]]
+[[ "$create_call" == *"registry.example/dependabot-updater-bundler@sha256:0123456789abcdef"* ]]
+
+[[ "$(wc -l < "$tmpdir/docker.log")" -eq 4 ]]
+grep -q $'^bundler\tsha256:0123456789abcdef$' "$tmpdir/output"
+grep -q 'registry.example/dependabot-updater-bundler@sha256:0123456789abcdef' "$tmpdir/summary.md"
+
+if DOCKER_LOG="$tmpdir/docker.log" \
+  FAIL_ON_CONFLICT=true \
+  IMAGE_PREFIX="registry.example/dependabot-updater-" \
+  SOURCE_TAG="source-sha" \
+  TARGETS_JSON='[{"target":"bundler"}]' \
+  TAGS_JSON='["conflict-tag"]' \
+  PATH="$tmpdir:$PATH" \
+  script/promote-image-tags > /dev/null 2>&1; then
+  echo "conflicting destination tag should fail" >&2
+  exit 1
+fi
+
+if IMAGE_PREFIX="registry.example/" \
+  SOURCE_TAG="source-sha" \
+  TARGETS_JSON='[{"target":"invalid/target"}]' \
+  TAGS_JSON='["tag"]' \
+  PATH="$tmpdir:$PATH" \
+  script/promote-image-tags > /dev/null 2>&1; then
+  echo "invalid target should fail" >&2
+  exit 1
+fi
