@@ -81,7 +81,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      build_precommit: ${{ steps.selection.outputs.build_precommit }}
       build_count: ${{ steps.selection.outputs.build_count }}
+      generic_build_count: ${{ steps.selection.outputs.generic_build_count }}
       build_matrix: ${{ steps.selection.outputs.build_matrix }}
       promote_count: ${{ steps.selection.outputs.promote_count }}
       promote_matrix: ${{ steps.selection.outputs.promote_matrix }}
@@ -187,8 +189,10 @@ jobs:
             echo "::warning::Image selection failed; building every ecosystem"
             RESULT=$(CHANGED_TARGETS='[]' FORCE_ALL=true "$RUNNER_TEMP/resolve-image-matrix")
           fi
+          echo "build_precommit=$(jq -r '.build_precommit' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "build_count=$(jq -r '.build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
-          echo "build_matrix=$(jq -c '.build' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "generic_build_count=$(jq -r '.generic_build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "build_matrix=$(jq -c '.generic_build' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "promote_count=$(jq -r '.promote_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "promote_matrix=$(jq -c '.promote' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
 
@@ -287,7 +291,7 @@ jobs:
       - prepare
     if: >-
       startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN') &&
-      needs.prepare.outputs.build_count != '0'
+      needs.prepare.outputs.generic_build_count != '0'
     strategy:
       fail-fast: false
       matrix:
@@ -445,3 +449,110 @@ jobs:
 
       - name: Verify existing artifact attestation
         run: gh attestation verify "oci://${IMAGE_PREFIX}${TARGET}:${APPROVED_HEAD_SHA}" --owner dependabot
+
+  push-precommit-image:
+    runs-on: ubuntu-latest
+    needs:
+      - approval
+      - build-updater-core
+      - prepare
+      - promote-unchanged-images
+      - push-updater-images
+    if: >-
+      always() &&
+      startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN') &&
+      needs.build-updater-core.result == 'success' &&
+      needs.prepare.result == 'success' &&
+      needs.prepare.outputs.build_precommit == 'true' &&
+      (needs.promote-unchanged-images.result == 'success' || needs.promote-unchanged-images.result == 'skipped') &&
+      (needs.push-updater-images.result == 'success' || needs.push-updater-images.result == 'skipped')
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+      pull-requests: read
+      attestations: write
+      artifact-metadata: write
+    env:
+      DEPENDABOT_UPDATER_VERSION: ${{ needs.approval.outputs.head_sha }}
+      UPDATER_CORE_CONTEXT: docker-image://ghcr.io/dependabot/dependabot-updater-core@${{ needs.build-updater-core.outputs.digest }}
+      UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-pre-commit
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.approval.outputs.base_sha }}
+
+      - name: Preserve build definition
+        run: cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Checkout approved pull request
+        env:
+          APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
+          PR: ${{ needs.approval.outputs.pr }}
+        run: |
+          gh pr checkout "$PR"
+          [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
+          git submodule update --init --recursive
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push validated pre-commit image
+        id: build
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          source: .
+          files: ${{ runner.temp }}/docker-bake.hcl
+          targets: pre-commit
+          provenance: false
+          vars: |
+            BUILD_CACHE_WRITE=false
+            PRE_COMMIT_BUNDLER_CONTEXT=docker-image://ghcr.io/dependabot/dependabot-updater-bundler:${{ env.DEPENDABOT_UPDATER_VERSION }}
+            PRE_COMMIT_GOMOD_CONTEXT=docker-image://ghcr.io/dependabot/dependabot-updater-gomod:${{ env.DEPENDABOT_UPDATER_VERSION }}
+            PRE_COMMIT_PUB_CONTEXT=docker-image://ghcr.io/dependabot/dependabot-updater-pub:${{ env.DEPENDABOT_UPDATER_VERSION }}
+            UPDATER_CORE_CONTEXT=${{ env.UPDATER_CORE_CONTEXT }}
+          set: |
+            pre-commit.output=type=registry
+            pre-commit.tags=${{ env.UPDATER_IMAGE }}:${{ env.DEPENDABOT_UPDATER_VERSION }}
+
+      - name: Validate image manifest
+        env:
+          IMAGE_DIGEST: ${{ fromJSON(steps.build.outputs.metadata)['pre-commit']['containerimage.digest'] }}
+        run: |
+          IMAGE="${UPDATER_IMAGE}@${IMAGE_DIGEST}"
+          IMAGE_LAYERS=$(docker buildx imagetools inspect --raw "$IMAGE" | jq '.layers | length')
+          echo "$IMAGE contains $IMAGE_LAYERS layers"
+          [[ $IMAGE_LAYERS -lt 126 ]]
+
+          TAG_DIGEST=$(docker buildx imagetools inspect "${UPDATER_IMAGE}:${DEPENDABOT_UPDATER_VERSION}" --format '{{json .Manifest.Digest}}' | jq -r '.')
+          [[ "$TAG_DIGEST" == "$IMAGE_DIGEST" ]]
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.UPDATER_IMAGE }}
+          subject-digest: ${{ fromJSON(steps.build.outputs.metadata)['pre-commit']['containerimage.digest'] }}
+          push-to-registry: true
+          create-storage-record: true
+
+      - name: Set summary
+        run: |
+          {
+            echo "pre-commit updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`"
+            echo "\`\`\`"
+            echo "$UPDATER_IMAGE:$DEPENDABOT_UPDATER_VERSION"
+            echo "\`\`\`"
+            echo "deploy for pre-commit"
+            echo "\`\`\`"
+            echo ".dependabot set-ecosystem-version staging pre-commit $DEPENDABOT_UPDATER_VERSION"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
