@@ -156,6 +156,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             }
 
             // update or create
+            await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
             var updatedDependencyFiles = await tracker.StopTrackingAsync();
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length > 0)
