@@ -886,7 +886,7 @@ module Dependabot
         @metadata_finder[dependency.name] ||=
           MetadataFinders
           .for_package_manager(dependency.package_manager)
-          .new(dependency: dependency, credentials: credentials)
+          .new(dependency: dependency, credentials: credentials, dependency_files: files)
       end
 
       sig { returns(Dependabot::PullRequestCreator::PrNamePrefixer) }

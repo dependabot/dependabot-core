@@ -42,7 +42,7 @@ RSpec.shared_context "with stubbed message builder collaborators" do
     dependencies.each do |dependency|
       allow(DummyPackageManager::MetadataFinder)
         .to receive(:new)
-        .with(dependency: dependency, credentials: credentials)
+        .with(dependency: dependency, credentials: credentials, dependency_files: files)
         .and_return(metadata_finders.fetch(dependency.name))
     end
   end
