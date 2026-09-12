@@ -213,6 +213,7 @@ jobs:
           targets: updater-core-context
           provenance: false
           vars: |
+            BUILD_CACHE_WRITE=false
             UPDATER_CORE_CONTEXT_VERSION=${{ env.DEPENDABOT_UPDATER_VERSION }}
           set: |
             updater-core-context.output=type=registry
@@ -296,6 +297,7 @@ jobs:
           targets: ${{ matrix.target }}
           provenance: false
           vars: |
+            BUILD_CACHE_WRITE=false
             UPDATER_CORE_CONTEXT=${{ env.UPDATER_CORE_CONTEXT }}
           set: |
             ${{ matrix.target }}.output=type=registry
