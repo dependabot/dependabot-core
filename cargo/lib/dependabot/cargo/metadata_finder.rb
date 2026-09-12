@@ -16,8 +16,14 @@ module Dependabot
       SOURCE_KEYS = %w(repository homepage documentation).freeze
       CRATES_IO_API = "https://crates.io/api/v1/crates"
 
-      sig { params(dependency: Dependabot::Dependency, credentials: T::Array[Dependabot::Credential]).void }
-      def initialize(dependency:, credentials:)
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          credentials: T::Array[Dependabot::Credential],
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def initialize(dependency:, credentials:, dependency_files: [])
         super
         @crates_listing = T.let(nil, T.nilable(T::Hash[String, T.anything]))
       end

@@ -4,14 +4,16 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/composer/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Composer::MetadataFinder do
   subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
+    described_class.new(dependency: dependency, credentials: credentials, dependency_files: dependency_files)
   end
 
+  let(:dependency_files) { [] }
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
@@ -299,6 +301,115 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
 
       it { is_expected.to be_nil }
+    end
+
+    context "when the updated composer.lock has a fresher source for the dependency" do
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.*",
+          groups: [],
+          source: {
+            "type" => "git",
+            "url" => "https://github.com/Seldaek/monolog.git"
+          }
+        }]
+      end
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "composer.lock", content: composer_lock_content)
+        ]
+      end
+
+      context "when the dependency is a top-level package" do
+        let(:composer_lock_content) do
+          <<~JSON
+            {
+              "packages": [
+                {
+                  "name": "monolog/monolog",
+                  "version": "2.0.0",
+                  "source": { "url": "https://github.com/new-org/monolog.git", "type": "git" }
+                }
+              ],
+              "packages-dev": []
+            }
+          JSON
+        end
+
+        it "prefers the regenerated lockfile's source over the stale embedded source" do
+          expect(source_url).to eq("https://github.com/new-org/monolog")
+        end
+
+        it "does not need to check whether the embedded source is stale or query packagist" do
+          source_url
+          expect(WebMock).not_to have_requested(:get, packagist_url)
+        end
+      end
+
+      context "when the dependency is a dev package" do
+        let(:composer_lock_content) do
+          <<~JSON
+            {
+              "packages": [],
+              "packages-dev": [
+                {
+                  "name": "monolog/monolog",
+                  "version": "2.0.0",
+                  "source": { "url": "https://github.com/new-org/monolog.git", "type": "git" }
+                }
+              ]
+            }
+          JSON
+        end
+
+        it "finds the source in the packages-dev section" do
+          expect(source_url).to eq("https://github.com/new-org/monolog")
+        end
+      end
+
+      context "when the package name in the lockfile differs only by case" do
+        let(:composer_lock_content) do
+          <<~JSON
+            {
+              "packages": [
+                {
+                  "name": "Monolog/Monolog",
+                  "version": "2.0.0",
+                  "source": { "url": "https://github.com/new-org/monolog.git", "type": "git" }
+                }
+              ],
+              "packages-dev": []
+            }
+          JSON
+        end
+
+        it { is_expected.to eq("https://github.com/new-org/monolog") }
+      end
+
+      context "when the dependency isn't present in the updated lockfile" do
+        let(:composer_lock_content) { '{"packages":[],"packages-dev":[]}' }
+
+        before do
+          stub_request(:head, "https://github.com/Seldaek/monolog").to_return(status: 200)
+        end
+
+        it "falls back to the embedded/packagist lookup" do
+          expect(source_url).to eq("https://github.com/Seldaek/monolog")
+        end
+      end
+
+      context "when the updated lockfile isn't valid JSON" do
+        let(:composer_lock_content) { "not json" }
+
+        before do
+          stub_request(:head, "https://github.com/Seldaek/monolog").to_return(status: 200)
+        end
+
+        it "falls back to the embedded/packagist lookup instead of raising" do
+          expect(source_url).to eq("https://github.com/Seldaek/monolog")
+        end
+      end
     end
   end
 end

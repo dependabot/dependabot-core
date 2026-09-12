@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/source"
 require "dependabot/credential"
+require "dependabot/dependency_file"
 
 module Dependabot
   module MetadataFinders
@@ -23,16 +24,21 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
       sig do
         params(
           dependency: Dependabot::Dependency,
-          credentials: T::Array[Dependabot::Credential]
+          credentials: T::Array[Dependabot::Credential],
+          dependency_files: T::Array[Dependabot::DependencyFile]
         )
           .void
       end
-      def initialize(dependency:, credentials:)
+      def initialize(dependency:, credentials:, dependency_files: [])
         @dependency = dependency
         @credentials = credentials
+        @dependency_files = dependency_files
       end
 
       sig { returns(T.nilable(String)) }

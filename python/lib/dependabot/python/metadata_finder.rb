@@ -21,11 +21,12 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          credentials: T::Array[Dependabot::Credential]
+          credentials: T::Array[Dependabot::Credential],
+          dependency_files: T::Array[Dependabot::DependencyFile]
         )
           .void
       end
-      def initialize(dependency:, credentials:)
+      def initialize(dependency:, credentials:, dependency_files: [])
         super
         @pypi_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @parsed_source_urls = T.let({}, T::Hash[String, T.nilable(Dependabot::Source)])

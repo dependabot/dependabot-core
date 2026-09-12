@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
@@ -9,6 +10,7 @@ require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 require "dependabot/shared_helpers"
 require "dependabot/composer/version"
+require "dependabot/composer/package_manager"
 
 module Dependabot
   module Composer
@@ -19,11 +21,12 @@ module Dependabot
         override
           .params(
             dependency: Dependabot::Dependency,
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            dependency_files: T::Array[Dependabot::DependencyFile]
           )
           .void
       end
-      def initialize(dependency:, credentials:)
+      def initialize(dependency:, credentials:, dependency_files: [])
         @packagist_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         super
       end
@@ -32,6 +35,15 @@ module Dependabot
 
       sig { override.returns(T.nilable(Source)) }
       def look_up_source
+        # The updated composer.lock (when available) was just resolved against the
+        # registry, so its "source" entry for this package is the freshest, most
+        # authoritative signal we have - prefer it over the dependency's embedded
+        # source, which may have been carried over unchanged from before the update.
+        source_from_updated_lockfile || source_from_embedded_or_packagist
+      end
+
+      sig { returns(T.nilable(Source)) }
+      def source_from_embedded_or_packagist
         embedded_source = source_from_dependency
         return look_up_source_from_packagist if embedded_source.nil?
         return embedded_source unless stale_embedded_source?(embedded_source)
@@ -47,6 +59,41 @@ module Dependabot
       sig { returns(T.nilable(Source)) }
       def source_from_dependency
         Source.from_url(dependency.source_string("url"))
+      end
+
+      sig { returns(T.nilable(Source)) }
+      def source_from_updated_lockfile
+        package_details = updated_lockfile_package_details
+        return nil unless package_details
+
+        Source.from_url(package_details.dig("source", "url"))
+      end
+
+      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      def updated_lockfile_package_details
+        return nil unless updated_lockfile_details
+
+        %w(packages packages-dev).each do |key|
+          entries = T.cast(updated_lockfile_details&.fetch(key, []), T::Array[T::Hash[String, T.untyped]])
+          package = entries.find { |p| p["name"]&.to_s&.downcase == dependency.name.downcase }
+          return package if package
+        end
+        nil
+      end
+
+      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      def updated_lockfile_details
+        return @updated_lockfile_details if defined?(@updated_lockfile_details)
+
+        lockfile = dependency_files.find { |f| f.name == PackageManager::LOCKFILE_FILENAME }
+        content = lockfile&.content
+
+        @updated_lockfile_details = T.let(
+          content.nil? ? nil : JSON.parse(content),
+          T.nilable(T::Hash[String, T.untyped])
+        )
+      rescue JSON::ParserError
+        @updated_lockfile_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
       end
 
       sig { params(source: Source).returns(T::Boolean) }
