@@ -22,6 +22,7 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
+      require "dependabot/bundler/file_parser/helper_dependencies"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"
       require "dependabot/bundler/file_parser/gemspec_declaration_finder"
@@ -121,15 +122,15 @@ module Dependabot
           gemfile_declaration_finder = GemfileDeclarationFinder.new(gemfile: file)
 
           parsed_gemfile.each do |dep|
-            next unless gemfile_declaration_finder.gemfile_includes_dependency?(dep)
+            next unless gemfile_declaration_finder.gemfile_includes_dependency?(dep.name)
 
             dependencies << Dependency.new(
-              name: dep.fetch("name"),
-              version: dependency_version(dep.fetch("name"))&.to_s,
+              name: dep.name,
+              version: dependency_version(dep.name)&.to_s,
               requirements: [{
-                requirement: gemfile_declaration_finder.enhanced_req_string(dep),
-                groups: dep.fetch("groups").map(&:to_sym),
-                source: dep.fetch("source")&.transform_keys(&:to_sym),
+                requirement: gemfile_declaration_finder.enhanced_req_string(dep.name, dep.requirement),
+                groups: dep.groups.map(&:to_sym),
+                source: dep.source&.dup,
                 file: file.name
               }],
               package_manager: "bundler"
@@ -141,7 +142,7 @@ module Dependabot
       end
 
       sig { returns(DependencySet) }
-      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
+      def gemspec_dependencies
         @gemspec_dependencies = T.let(@gemspec_dependencies, T.nilable(DependencySet))
         return @gemspec_dependencies if @gemspec_dependencies
 
@@ -154,19 +155,19 @@ module Dependabot
             gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
 
             parsed_gemspec(gemspec).each do |dependency|
-              next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
+              next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency.name)
 
               queue << Dependency.new(
-                name: dependency.fetch("name"),
-                version: dependency_version(dependency.fetch("name"))&.to_s,
+                name: dependency.name,
+                version: dependency_version(dependency.name)&.to_s,
                 requirements: [{
-                  requirement: dependency.fetch("requirement").to_s,
-                  groups: if dependency.fetch("type") == "runtime"
+                  requirement: dependency.requirement,
+                  groups: if dependency.type == "runtime"
                             ["runtime"]
                           else
                             ["development"]
                           end,
-                  source: dependency.fetch("source")&.transform_keys(&:to_sym),
+                  source: dependency.source&.dup,
                   file: gemspec.name
                 }],
                 package_manager: "bundler"
@@ -206,7 +207,7 @@ module Dependabot
         dependencies
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[HelperDependencies::GemfileDependency]) }
       def parsed_gemfile
         @parsed_gemfile ||= T.let(
           SharedHelpers.in_a_temporary_repo_directory(
@@ -215,7 +216,7 @@ module Dependabot
           ) do
             write_temporary_dependency_files
 
-            NativeHelpers.run_bundler_subprocess(
+            result = NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "parsed_gemfile",
               options: options,
@@ -225,8 +226,9 @@ module Dependabot
                 dir: Dir.pwd
               }
             )
+            HelperDependencies.from_gemfile_result(result, file: T.must(gemfile))
           end,
-          T.nilable(T::Array[T::Hash[String, T.untyped]])
+          T.nilable(T::Array[HelperDependencies::GemfileDependency])
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
         handle_eval_error(e) if e.error_class == "JSON::ParserError"
@@ -242,9 +244,9 @@ module Dependabot
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[HelperDependencies::GemspecDependency]) }
       def parsed_gemspec(file)
-        NativeHelpers.run_bundler_subprocess(
+        result = NativeHelpers.run_bundler_subprocess(
           bundler_version: bundler_version,
           function: "parsed_gemspec",
           options: options,
@@ -254,6 +256,7 @@ module Dependabot
             dir: Dir.pwd
           }
         )
+        HelperDependencies.from_gemspec_result(result, file: file)
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.error_class + " with message: " + e.message
         raise Dependabot::DependencyFileNotEvaluatable, msg
