@@ -127,11 +127,15 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
           }]
         end
 
+        before do
+          stub_request(:head, "https://github.com/Seldaek/monolog").to_return(status: 200)
+        end
+
         it { is_expected.to eq("https://github.com/Seldaek/monolog") }
 
-        it "still checks packagist first, falling back to the dependency's source" do
+        it "does not query packagist while the embedded source is still live" do
           source_url
-          expect(WebMock).to have_requested(:get, packagist_url)
+          expect(WebMock).not_to have_requested(:get, packagist_url)
         end
       end
     end
@@ -215,9 +219,14 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       it "keeps the embedded source instead of trusting the unrelated packagist package" do
         expect(source_url).to eq("https://github.com/my-private-org/monolog")
       end
+
+      it "never queries packagist while the embedded source is still live" do
+        source_url
+        expect(WebMock).not_to have_requested(:get, packagist_url)
+      end
     end
 
-    context "when packagist is temporarily unreachable" do
+    context "when packagist is temporarily unreachable after the embedded source is found stale" do
       let(:requirements) do
         [{
           file: "composer.json",
@@ -231,6 +240,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       end
 
       before do
+        stub_request(:head, "https://github.com/Seldaek/monolog")
+          .to_return(status: 301, headers: { "Location" => "https://github.com/new-org/monolog" })
         allow(Dependabot::RegistryClient).to receive(:get)
           .with(url: packagist_url)
           .and_raise(Excon::Error::Timeout.new("timed out"))

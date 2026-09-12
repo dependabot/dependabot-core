@@ -33,18 +33,15 @@ module Dependabot
       sig { override.returns(T.nilable(Source)) }
       def look_up_source
         embedded_source = source_from_dependency
-        packagist_source = look_up_source_from_packagist
+        return look_up_source_from_packagist if embedded_source.nil?
+        return embedded_source unless stale_embedded_source?(embedded_source)
 
-        return packagist_source if embedded_source.nil?
-        return embedded_source if packagist_source.nil?
-        return embedded_source if embedded_source.url == packagist_source.url
-
-        # Packagist disagrees with the dependency's embedded source (e.g. a
-        # private/custom-registry package can coincidentally share a name with an
-        # unrelated public Packagist package). Only trust Packagist's answer once
-        # the embedded source itself confirms it's stale by redirecting elsewhere,
-        # so we never silently override a still-valid private source.
-        stale_embedded_source?(embedded_source) ? packagist_source : embedded_source
+        # The embedded source is only known to be stale once it redirects elsewhere
+        # (e.g. the package's GitHub org was renamed), so it's safe to consult
+        # Packagist at this point for its current canonical location. This avoids
+        # ever sending a private/custom-registry package's name to the public
+        # Packagist API while its embedded source is still usable.
+        look_up_source_from_packagist || embedded_source
       end
 
       sig { returns(T.nilable(Source)) }
