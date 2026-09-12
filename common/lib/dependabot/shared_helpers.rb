@@ -624,8 +624,7 @@ module Dependabot
       return nil if env.nil?
 
       env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
-        # Only redact if the key contains "TOKEN" (case-insensitive)
-        result[key] = if key.match?(/TOKEN/i)
+        result[key] = if key.match?(/TOKEN|(?:^|_)KEY\z/i)
                         "<redacted>"
                       else
                         value
