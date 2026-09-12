@@ -148,6 +148,96 @@ public class ProjectBuildFileTests
     }
 
     [Theory]
+    [InlineData(
+        """
+        <Project Sdk="Aspire.AppHost.Sdk/9.2.0">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    [InlineData(
+        """
+        <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/9.2.0">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    [InlineData(
+        """
+        <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk / 9.2.0 ">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    [InlineData(
+        """
+        <Project Sdk="Aspire.AppHost.Sdk/min=9.2.0">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    [InlineData(
+        """
+        <Project Sdk="Aspire.AppHost.Sdk">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", null
+    )]
+    [InlineData(
+        """
+        <Project Sdk="Microsoft.NET.Sdk">
+          <Sdk Name="Aspire.AppHost.Sdk" Version="9.2.0" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    [InlineData(
+        """
+        <Project Sdk="Microsoft.NET.Sdk">
+          <Sdk Name="Aspire.AppHost.Sdk" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", null
+    )]
+    [InlineData(
+        """
+        <Project>
+          <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", null
+    )]
+    [InlineData(
+        """
+        <Project>
+          <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="9.2.0" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    [InlineData(
+        """
+        <Project>
+          <ImportGroup>
+            <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="9.2.0" />
+          </ImportGroup>
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    public void SdkReference_GetDependencies_ReturnsExpectedSdkDependency(string xml, string expectedName, string? expectedVersion)
+    {
+        var buildFile = GetBuildFile(xml, "project.csproj");
+
+        var dependencies = buildFile.GetDependencies()
+            .Where(d => d.Type == DependencyType.MSBuildSdk && d.Name == expectedName);
+
+        var match = Assert.Single(dependencies);
+        Assert.Equal(expectedName, match.Name);
+        Assert.Equal(expectedVersion, match.Version);
+    }
+
+    [Theory]
     // no change made
     [InlineData(
         // language=csproj

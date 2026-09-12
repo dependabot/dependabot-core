@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using Microsoft.Build.Logging.StructuredLogger;
 
 using NuGet.Frameworks;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -659,6 +660,25 @@ internal static class SdkProjectDiscovery
 
                     var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
                     groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsTopLevel: isTopLevel);
+                }
+            }
+
+            var projectAndImports = imported
+                .Select(importedPath => Path.Combine(projectFullDirectory, importedPath))
+                .Prepend(projectPath)
+                .Distinct(PathComparer.Instance)
+                .Where(ProjectBuildFile.IsSupportedDependencyFile);
+            foreach (var buildFilePath in projectAndImports.Where(File.Exists))
+            {
+                var projectBuildFile = ProjectBuildFile.Open(workspacePath, buildFilePath);
+                foreach (var sdkDep in projectBuildFile.GetDependencies().Where(d =>
+                    d.Type == DependencyType.MSBuildSdk &&
+                    NuGetVersion.TryParse(d.Version, out _)))
+                {
+                    if (!groupedDependencies.TryGetValue(sdkDep.Name, out var existingDependency) || !existingDependency.IsTopLevel)
+                    {
+                        groupedDependencies[sdkDep.Name] = sdkDep;
+                    }
                 }
             }
 
