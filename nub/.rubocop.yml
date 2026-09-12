@@ -1,11 +1,5 @@
 inherit_from: ../.rubocop.yml
 
-Sorbet/ForbidTUnsafe:
-  Exclude:
-    - lib/dependabot/nub/update_checker.rb
-    - lib/dependabot/nub/update_checker/latest_version_finder.rb
-    - lib/dependabot/nub/update_checker/version_resolver.rb
-
 # The lib below models parsed package.json / npm-registry / lockfile JSON, which is genuinely
 # heterogeneous — the same `T::Hash[String, T.untyped]` shapes bun and npm_and_yarn carry. Those
 # gems grandfather the identical files under Sorbet/ForbidTUntyped in the root .rubocop_todo.yml;
@@ -28,7 +22,6 @@ Sorbet/ForbidTUntyped:
     - lib/dependabot/nub/update_checker/latest_version_finder.rb
     - lib/dependabot/nub/update_checker/library_detector.rb
     - lib/dependabot/nub/update_checker/version_resolver.rb
-    - lib/dependabot/nub/update_checker/vulnerability_auditor.rb
 
 # ERR_PATTERNS follows a `private` — harmless (constants ignore visibility). bun grandfathers the
 # byte-identical bun_lockfile_updater.rb for this cop in the root todo.

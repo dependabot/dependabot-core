@@ -141,7 +141,7 @@ module Dependabot
             secure_versions =
               Dependabot::UpdateCheckers::VersionFilters
               .filter_vulnerable_versions(
-                T.unsafe(secure_versions),
+                secure_versions,
                 security_advisories
               )
             secure_versions = filter_ignored_versions(secure_versions)
@@ -237,7 +237,7 @@ module Dependabot
         def possible_previous_releases
           (package_details&.releases || [])
             .reject do |r|
-            r.version.prerelease? && !related_to_current_pre?(T.unsafe(r.version))
+            r.version.prerelease? && !related_to_current_pre?(r.version)
           end
             .sort_by(&:version).reverse
         end
