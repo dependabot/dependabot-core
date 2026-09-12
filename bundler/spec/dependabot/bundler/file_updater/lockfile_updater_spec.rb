@@ -20,6 +20,35 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
 
   let(:updated_lockfile_content) { updater.updated_lockfile_content }
 
+  describe "with lockfile metadata" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "bundler"
+      )
+    end
+    let(:files) { bundler_project_dependency_files("explicit_ruby_in_lockfile") }
+    let(:lockfile) { files.find { |file| file.name == "Gemfile.lock" } }
+    let(:temporary_lockfile_contents) { [] }
+
+    before do
+      allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess) do
+        temporary_lockfile_contents << File.read("Gemfile.lock")
+
+        lockfile.content.sub("business (1.4.0)", "business (1.5.0)")
+      end
+    end
+
+    it "passes the complete lockfile to the native helper" do
+      expect(updated_lockfile_content).to include("business (1.5.0)")
+      expect(temporary_lockfile_contents).to eq([lockfile.content])
+    end
+  end
+
   describe "with lockfiles that include checksums" do
     let(:dependency) do
       Dependabot::Dependency.new(
