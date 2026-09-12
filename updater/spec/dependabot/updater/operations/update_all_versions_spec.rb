@@ -358,6 +358,51 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         update_all_versions.send(:check_and_create_pull_request, dependency)
       end
     end
+
+    context "when a group is waiting on the dependency's update type" do
+      let(:group) do
+        Dependabot::DependencyGroup.new(name: "minor-and-patch", rules: { "update-types" => %w(minor patch) })
+      end
+
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          updated_dependencies: [dependency]
+        )
+        allow(update_all_versions).to receive_messages(
+          all_versions_ignored?: false,
+          existing_pull_request: false
+        )
+        allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_return(stub_dependency_change)
+        allow(dependency_snapshot).to receive(:groups_deferred_by_semver_rules)
+          .with("dummy-pkg-a").and_return([group])
+      end
+
+      context "when the group's update-types reject the available update" do
+        before do
+          # The dependency is at 4.0.0, so this is a major update the group does not accept.
+          allow(stub_update_checker).to receive(:latest_version).and_return(Gem::Version.new("5.0.0"))
+        end
+
+        it "creates an individual pull request" do
+          expect(update_all_versions).to receive(:create_pull_request).with(stub_dependency_change)
+          update_all_versions.send(:check_and_create_pull_request, dependency)
+        end
+      end
+
+      context "when the group's update-types accept the available update" do
+        before do
+          # The dependency is at 4.0.0, so this is a minor update the group will pick up itself.
+          allow(stub_update_checker).to receive(:latest_version).and_return(Gem::Version.new("4.1.0"))
+        end
+
+        it "does not create an individual pull request" do
+          expect(update_all_versions).not_to receive(:create_pull_request)
+          update_all_versions.send(:check_and_create_pull_request, dependency)
+        end
+      end
+    end
   end
 
   describe "#update_checker_for" do
