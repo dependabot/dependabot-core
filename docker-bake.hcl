@@ -95,13 +95,13 @@ target "updater-core-publish" {
   ]
 }
 
-target "ecosystem" {
-  name = item.image
+target "_ecosystem" {
+  name = "${item.image}-raw"
   matrix = {
     item = ECOSYSTEMS
   }
 
-  description = "Published ${item.name} ecosystem image"
+  description = "Build input for the ${item.name} ecosystem image"
   context     = "."
   dockerfile  = item.dockerfile
   contexts = merge(
@@ -109,11 +109,29 @@ target "ecosystem" {
       (UPDATER_CORE_IMAGE) = "target:updater-core"
     },
     item.name == "pre_commit" ? {
-      "${UPDATER_IMAGE_PREFIX}gomod:latest"   = "target:gomod"
-      "${UPDATER_IMAGE_PREFIX}bundler:latest" = "target:bundler"
-      "${UPDATER_IMAGE_PREFIX}pub:latest"     = "target:pub"
+      "${UPDATER_IMAGE_PREFIX}gomod:latest"   = "target:gomod-raw"
+      "${UPDATER_IMAGE_PREFIX}bundler:latest" = "target:bundler-raw"
+      "${UPDATER_IMAGE_PREFIX}pub:latest"     = "target:pub-raw"
     } : {}
   )
+  cache-from = [
+    { type = "gha", scope = item.name },
+    { type = "registry", ref = "${UPDATER_IMAGE_PREFIX}${item.image}:latest" },
+  ]
+}
+
+target "ecosystem" {
+  name = item.image
+  matrix = {
+    item = ECOSYSTEMS
+  }
+
+  description = "Validated ${item.name} ecosystem image"
+  context     = "."
+  dockerfile  = "Dockerfile.validation"
+  contexts = {
+    ecosystem-image = "target:${item.image}-raw"
+  }
   cache-from = [
     { type = "gha", scope = item.name },
     { type = "registry", ref = "${UPDATER_IMAGE_PREFIX}${item.image}:latest" },
