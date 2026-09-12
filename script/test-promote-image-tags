@@ -52,6 +52,21 @@ if DOCKER_LOG="$tmpdir/docker.log" \
   exit 1
 fi
 
+: > "$tmpdir/docker.log"
+DOCKER_LOG="$tmpdir/docker.log" \
+IMAGE_PREFIX="registry.example/dependabot-updater-" \
+SOURCE_TARGET="docker" \
+SOURCE_TAG="commit-sha" \
+TARGETS_JSON='[{"target":"docker-compose"}]' \
+TAGS_JSON='["commit-sha","latest"]' \
+PATH="$tmpdir:$PATH" \
+script/promote-image-tags > /dev/null
+
+alias_create_call=$(grep 'imagetools create' "$tmpdir/docker.log")
+[[ "$alias_create_call" == *"--tag registry.example/dependabot-updater-docker-compose:commit-sha"* ]]
+[[ "$alias_create_call" == *"--tag registry.example/dependabot-updater-docker-compose:latest"* ]]
+[[ "$alias_create_call" == *"registry.example/dependabot-updater-docker@sha256:0123456789abcdef"* ]]
+
 if IMAGE_PREFIX="registry.example/" \
   SOURCE_TAG="source-sha" \
   TARGETS_JSON='[{"target":"invalid/target"}]' \
