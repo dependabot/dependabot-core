@@ -15,7 +15,9 @@ shellcheck \
   ./script/ci-test-updater \
   ./script/dependabot \
   ./script/generate-coverage-report \
+  ./script/resolve-image-matrix \
   ./script/setup \
+  ./script/test-image-build-matrix \
   ./script/updater-e2e \
   ./updater/bin/run \
   "$@"
