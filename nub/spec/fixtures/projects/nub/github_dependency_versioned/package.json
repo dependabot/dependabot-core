@@ -1,0 +1,7 @@
+{
+  "name": "bump-test",
+  "version": "0.0.1",
+  "devDependencies": {
+    "is-number": "jonschlinkert/is-number#2.0.0"
+  }
+}
