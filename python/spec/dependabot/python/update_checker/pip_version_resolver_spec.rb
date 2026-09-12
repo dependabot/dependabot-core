@@ -73,6 +73,117 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
+    context "when pip can resolve the latest version" do
+      let(:rewritten_requirements) { [] }
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .with(a_string_matching(/pyenv exec pip install .*--dry-run.*--report/), any_args) do
+            rewritten_requirements << File.read("requirements.txt")
+            File.write(
+              "dependabot-pip-report.json",
+              JSON.dump(
+                "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.4" } }]
+              )
+            )
+          end
+      end
+
+      it "checks a temporary requirement updated to the candidate version" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(rewritten_requirements).to contain_exactly(include("django==3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(a_string_matching(/pyenv exec pip install .*--dry-run.*--report/), any_args)
+      end
+    end
+
+    context "when pip cannot resolve the latest version" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .with(a_string_matching(/pyenv exec pip install .*--dry-run.*--report/), any_args)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "ERROR: ResolutionImpossible",
+              error_context: {}
+            )
+          )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the pip report does not include the candidate version" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4\n"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .with(a_string_matching(/pyenv exec pip install .*--dry-run.*--report/), any_args) do
+            File.write(
+              "dependabot-pip-report.json",
+              JSON.dump(
+                "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.3" } }]
+              )
+            )
+          end
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the requirement file contains hashes" do
+      let(:requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "django==1.2.4 --hash=sha256:abc123\n"
+        )
+      end
+
+      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+
+      it "preserves the existing candidate without invoking pip" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pyenv exec pip install/), any_args)
+      end
+    end
+
+    context "when the requirement declaration is absent" do
+      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+
+      it "preserves the existing candidate without invoking pip" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .not_to have_received(:run_shell_command)
+          .with(a_string_matching(/pyenv exec pip install/), any_args)
+      end
+    end
+
     context "with no indication of the Python version" do
       let(:dependency_files) { [requirements_file] }
 
