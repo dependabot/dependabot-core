@@ -1,0 +1,6 @@
+# Bazel configuration
+import %workspace%/tools/preset.bazelrc
+try-import %workspace%/user.bazelrc
+
+build --java_runtime_version=remotejdk_21
+test --test_output=all
