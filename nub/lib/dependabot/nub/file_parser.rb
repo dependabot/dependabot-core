@@ -5,6 +5,7 @@
 
 require "cgi/escape"
 require "dependabot/dependency"
+require "dependabot/package/npm_lockfile_details"
 require "dependabot/package/npm_package_json"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -312,7 +313,7 @@ module Dependabot
       end
 
       sig do
-        params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(requirement: String, lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def version_for(requirement, lockfile_details)
@@ -334,10 +335,10 @@ module Dependabot
         end
       end
 
-      sig { params(lockfile_details: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(String)) }
+      sig { params(lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails)).returns(T.nilable(String)) }
       def git_revision_for(lockfile_details)
-        version = T.cast(lockfile_details&.fetch("version", nil), T.nilable(String))
-        resolved = T.cast(lockfile_details&.fetch("resolved", nil), T.nilable(String))
+        version = lockfile_details&.version
+        resolved = lockfile_details&.resolved
         [
           version&.split("#")&.last,
           resolved&.split("#")&.last,
@@ -377,11 +378,11 @@ module Dependabot
       end
 
       sig do
-        params(lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def lockfile_version_for(lockfile_details)
-        semver_version_for(lockfile_details&.fetch("version", ""))
+        semver_version_for(lockfile_details&.version)
       end
 
       sig { params(version: T.nilable(String)).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
@@ -400,17 +401,17 @@ module Dependabot
       end
 
       sig do
-        params(name: String, requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(name: String, requirement: String, lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T::Hash[Symbol, T.untyped]))
       end
       def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
 
-        resolved_url = lockfile_details&.fetch("resolved", nil)
+        resolved_url = lockfile_details&.resolved
 
-        resolution = lockfile_details&.fetch("resolution", nil)
-        package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
-        resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
+        resolution = lockfile_details&.resolution
+        package_url = resolution&.[](/__archiveUrl=(.+)/, 1)
+        resolved_url = CGI.unescape(package_url) if package_url
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")

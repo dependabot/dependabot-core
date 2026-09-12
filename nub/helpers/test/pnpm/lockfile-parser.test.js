@@ -69,7 +69,7 @@ describe("generates an updated pnpm lock for the original file", () => {
                 name: 'etag',
                 version: '1.8.1',
                 resolved: undefined,
-                dev: undefined,
+                dev: false,
                 specifiers: [ '^1.0.0' ],
                 aliased: false
             }

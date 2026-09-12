@@ -28,11 +28,11 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
 
   if (!pkgSnapshot.name) {
     const pkgInfo = dependencyPath.parse(depPath);
-    name = pkgInfo.name;
-    version = pkgInfo.version;
+    name = pkgInfo.name ?? depPath;
+    version = pkgInfo.version ?? "";
   } else {
     name = pkgSnapshot.name;
-    version = pkgSnapshot.version;
+    version = pkgSnapshot.version ?? "";
   }
 
   let specifiers = [];
@@ -73,7 +73,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
     name: name,
     version: version,
     resolved: pkgSnapshot.resolution?.tarball,
-    dev: pkgSnapshot.dev,
+    dev: "dev" in pkgSnapshot && pkgSnapshot.dev === true,
     specifiers: specifiers,
     aliased: aliased
   }

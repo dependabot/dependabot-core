@@ -57,4 +57,39 @@ RSpec.describe Dependabot::Nub::FileParser::LockfileParser do
       end
     end
   end
+
+  describe "#lockfile_details" do
+    subject(:details) do
+      lockfile_parser.lockfile_details(
+        dependency_name: dependency_name,
+        requirement: requirement,
+        manifest_name: "package.json"
+      )
+    end
+
+    # The helper's output is decoded into typed records, so it must send every field with its
+    # declared type even where pnpm omits it: `dev` on most snapshots, the version of a git dependency.
+    context "with a registry dependency" do
+      let(:dependency_files) { project_dependency_files("nub/simple_v1") }
+      let(:dependency_name) { "etag" }
+      let(:requirement) { "^1.0.0" }
+
+      it "returns the locked version" do
+        expect(details).to have_attributes(version: "1.8.1")
+      end
+    end
+
+    context "with a git dependency" do
+      let(:dependency_files) { project_dependency_files("nub/github_dependency_versioned") }
+      let(:dependency_name) { "is-number" }
+      let(:requirement) { "jonschlinkert/is-number#2.0.0" }
+
+      it "returns the tarball the dependency resolved to" do
+        expect(details).to have_attributes(
+          version: "",
+          resolved: "https://codeload.github.com/jonschlinkert/is-number/tar.gz/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8"
+        )
+      end
+    end
+  end
 end
