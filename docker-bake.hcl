@@ -6,6 +6,14 @@ variable "UPDATER_CORE_IMAGE" {
   default = "ghcr.io/dependabot/dependabot-updater-core"
 }
 
+variable "UPDATER_CORE_CONTEXT" {
+  default = "target:updater-core"
+}
+
+variable "UPDATER_CORE_CONTEXT_VERSION" {
+  default = ""
+}
+
 variable "UPDATER_CORE_VERSION_TAG" {
   default = ""
 }
@@ -56,15 +64,17 @@ target "_updater-core" {
   context    = "."
   dockerfile = "Dockerfile.updater-core"
   args = {
-    USER_UID                    = "1000"
-    USER_GID                    = "1000"
-    DEPENDABOT_UPDATER_VERSION = DEPENDABOT_UPDATER_VERSION
+    USER_UID = "1000"
+    USER_GID = "1000"
   }
 }
 
 target "updater-core" {
   inherits    = ["_updater-core"]
   description = "Updater-core base for ecosystem images"
+  args = {
+    DEPENDABOT_UPDATER_VERSION = DEPENDABOT_UPDATER_VERSION
+  }
   cache-from = [
     { type = "gha", scope = "updater-core" },
     { type = "registry", ref = "${UPDATER_CORE_IMAGE}:latest" },
@@ -78,7 +88,8 @@ target "updater-core-publish" {
   inherits    = ["_updater-core"]
   description = "Published updater-core image"
   args = {
-    BUILDKIT_INLINE_CACHE = "1"
+    BUILDKIT_INLINE_CACHE        = "1"
+    DEPENDABOT_UPDATER_VERSION = DEPENDABOT_UPDATER_VERSION
   }
   cache-from = [
     { type = "registry", ref = "${UPDATER_CORE_IMAGE}:latest" },
@@ -95,6 +106,21 @@ target "updater-core-publish" {
   ]
 }
 
+target "updater-core-context" {
+  inherits    = ["_updater-core"]
+  description = "Updater-core image consumed by published ecosystem images"
+  args = {
+    BUILDKIT_INLINE_CACHE        = "1"
+    DEPENDABOT_UPDATER_VERSION = UPDATER_CORE_CONTEXT_VERSION
+  }
+  cache-from = [
+    { type = "registry", ref = "${UPDATER_CORE_IMAGE}:latest" },
+  ]
+  cache-to = [
+    { type = "inline" },
+  ]
+}
+
 target "_ecosystem" {
   name = "${item.image}-raw"
   matrix = {
@@ -106,7 +132,7 @@ target "_ecosystem" {
   dockerfile  = item.dockerfile
   contexts = merge(
     {
-      (UPDATER_CORE_IMAGE) = "target:updater-core"
+      (UPDATER_CORE_IMAGE) = UPDATER_CORE_CONTEXT
     },
     item.name == "pre_commit" ? {
       "${UPDATER_IMAGE_PREFIX}gomod:latest"   = "target:gomod-raw"
