@@ -1385,6 +1385,17 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
       end
 
+      context "when a tag has no release date" do
+        let(:refs_with_detail) do
+          [Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: nil)]
+        end
+
+        it "allows the tag and marks the dependency" do
+          expect(latest_tag[:tag]).to eq("v1.13.0")
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+
       context "when a GitHub Release publish date is available" do
         let(:refs_with_detail) do
           [
