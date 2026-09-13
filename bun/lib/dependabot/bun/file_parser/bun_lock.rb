@@ -143,7 +143,7 @@ module Dependabot
 
         sig { returns(T::Array[Workspace]) }
         def parse_workspaces
-          raw_workspaces = T.cast(parsed["workspaces"], Object)
+          raw_workspaces = parsed["workspaces"]
           return [] unless raw_workspaces.is_a?(Hash)
 
           raw_workspaces.filter_map do |raw_path, raw_details|

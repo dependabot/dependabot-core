@@ -19,7 +19,7 @@ module Dependabot
           sig { params(details: T::Hash[Object, Object], sections: T::Array[String]).returns(T::Array[String]) }
           def self.section_names(details, sections)
             sections.flat_map do |section|
-              names = T.cast(details[section], Object)
+              names = details[section]
               next [] unless names.is_a?(Hash)
 
               names.keys.filter_map do |raw_name|
