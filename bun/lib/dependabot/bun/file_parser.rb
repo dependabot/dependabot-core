@@ -19,6 +19,7 @@ require "dependabot/bun/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "sorbet-runtime"
 
 module Dependabot
@@ -202,6 +203,23 @@ module Dependabot
         lockfile_parser.parse_set
       end
 
+      # Names of packages that the lockfile shows are installed through a production
+      # dependency. A package declared only in devDependencies can be one of them, and
+      # its manifest requirement would otherwise hide that when the entries are combined.
+      sig { returns(T::Set[String]) }
+      def production_reachable_names
+        @production_reachable_names ||= T.let(
+          if Dependabot::Experiments.enabled?(:enable_bun_subdependency_types)
+            lockfile_dependencies.dependencies.filter_map do |dep|
+              dep.name if dep.subdependency_metadata&.any? { |data| data[:production] == true }
+            end.to_set
+          else
+            Set.new
+          end,
+          T.nilable(T::Set[String])
+        )
+      end
+
       sig do
         params(file: DependencyFile, type: String, name: String, requirement: String)
           .returns(T.nilable(Dependency))
@@ -244,7 +262,8 @@ module Dependabot
             file: file.name,
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
-          }]
+          }],
+          metadata: production_reachable_names.include?(name) ? { reachable_from_production: true } : {}
         )
       end
 

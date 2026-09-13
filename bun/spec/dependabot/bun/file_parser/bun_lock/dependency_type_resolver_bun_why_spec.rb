@@ -67,7 +67,13 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock::DependencyTypeResolver do
     end
   end
 
-  %w(simple_v1 grapher_with_subdeps wildcard workspace_dependency_types).each do |fixture_name|
+  %w(
+    simple_v1
+    grapher_with_subdeps
+    wildcard
+    workspace_dependency_types
+    direct_dev_transitive_production
+  ).each do |fixture_name|
     context "with the #{fixture_name} fixture" do
       before do
         fixture_dir = File.expand_path("../../../../fixtures/projects/bun/#{fixture_name}", __dir__)

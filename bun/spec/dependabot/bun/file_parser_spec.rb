@@ -226,6 +226,37 @@ RSpec.describe Dependabot::Bun::FileParser do
         end
       end
     end
+
+    describe "dependency types" do
+      # ms is a direct devDependency, and debug (a production dependency) also installs it.
+      let(:files) { project_dependency_files("bun/direct_dev_transitive_production") }
+
+      after { Dependabot::Experiments.reset! }
+
+      def production?(name)
+        dependencies.find { |dep| dep.name == name }.production?
+      end
+
+      it "uses only the manifest group when the experiment is disabled" do
+        expect(production?("ms")).to be(false)
+      end
+
+      context "when the experiment is enabled" do
+        before { Dependabot::Experiments.register(:enable_bun_subdependency_types, true) }
+
+        it "treats a devDependency that a production dependency also installs as production" do
+          ms = dependencies.find { |dep| dep.name == "ms" }
+
+          expect(ms).to be_top_level
+          expect(ms.production?).to be(true)
+        end
+
+        it "keeps the other dependencies' types" do
+          expect(production?("etag")).to be(false)
+          expect(production?("debug")).to be(true)
+        end
+      end
+    end
   end
 
   describe "alias detection" do
