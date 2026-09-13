@@ -40,6 +40,7 @@ jobs:
           - { path: helm, name: helm, ecosystem: helm }
           - { path: hex, name: hex, ecosystem: mix }
           - { path: julia, name: julia, ecosystem: julia }
+          - { path: kotlin_toolchain, name: kotlin_toolchain, ecosystem: kotlin-toolchain }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: nix, name: nix, ecosystem: nix }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }

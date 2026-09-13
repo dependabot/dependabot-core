@@ -40,6 +40,9 @@
 "L: java:gradle":
     - '(gradle)'
 
+"L: kotlin-toolchain":
+    - '(kotlin[-_ ]toolchain|amper)'
+
 "L: elixir:hex":
     - '(hex)'
 

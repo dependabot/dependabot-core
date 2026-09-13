@@ -47,6 +47,11 @@ gradle:
 hex:
   - *common
   - 'hex/**'
+kotlin_toolchain:
+  - *common
+  - 'gradle/**'
+  - 'maven/**'
+  - 'kotlin_toolchain/**'
 maven:
   - *common
   - 'maven/**'

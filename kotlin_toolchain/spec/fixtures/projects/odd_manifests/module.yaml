@@ -1,0 +1,6 @@
+product: jvm/app
+apply:
+  - ../escape.module-template.yaml
+  - not-a-template.yaml
+  - absent.module-template.yaml
+  - //shared.module-template.yaml

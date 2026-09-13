@@ -140,6 +140,15 @@ PATH
       dependabot-common (= 0.395.0)
 
 PATH
+  remote: kotlin_toolchain
+  specs:
+    dependabot-kotlin_toolchain (0.395.0)
+      dependabot-common (= 0.395.0)
+      dependabot-gradle (= 0.395.0)
+      dependabot-maven (= 0.395.0)
+      toml-rb (~> 4.2)
+
+PATH
   remote: maven
   specs:
     dependabot-maven (0.395.0)
@@ -496,6 +505,7 @@ DEPENDENCIES
   dependabot-helm!
   dependabot-hex!
   dependabot-julia!
+  dependabot-kotlin_toolchain!
   dependabot-maven!
   dependabot-npm_and_yarn!
   dependabot-nuget!
@@ -567,6 +577,7 @@ CHECKSUMS
   dependabot-helm (0.395.0)
   dependabot-hex (0.395.0)
   dependabot-julia (0.395.0)
+  dependabot-kotlin_toolchain (0.395.0)
   dependabot-maven (0.395.0)
   dependabot-npm_and_yarn (0.395.0)
   dependabot-nuget (0.395.0)

@@ -34,6 +34,7 @@
 # - gradle
 # - helm
 # - hex
+# - kotlin_toolchain
 # - maven
 # - npm_and_yarn
 # - nuget
@@ -78,6 +79,7 @@ $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./julia/lib"
+$LOAD_PATH << "./kotlin_toolchain/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
@@ -137,6 +139,7 @@ require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
+require "dependabot/kotlin_toolchain"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
@@ -388,6 +391,7 @@ valid_package_managers = %w(
   gradle
   helm
   hex
+  kotlin_toolchain
   maven
   npm_and_yarn
   nuget

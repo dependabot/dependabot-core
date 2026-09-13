@@ -18,7 +18,7 @@ module GithubApi
         "npm" => %w(npm_and_yarn bun),
         "pypi" => %w(pip uv),
         "golang" => %w(go_modules),
-        "maven" => %w(maven),
+        "maven" => %w(maven kotlin_toolchain),
         "gradle" => %w(gradle),
         "nuget" => %w(nuget)
       }.freeze,

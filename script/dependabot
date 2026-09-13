@@ -28,6 +28,7 @@ dependabot \
   -v "$(pwd)"/helm:/home/dependabot/helm \
   -v "$(pwd)"/hex:/home/dependabot/hex \
   -v "$(pwd)"/julia:/home/dependabot/julia \
+  -v "$(pwd)"/kotlin_toolchain:/home/dependabot/kotlin_toolchain \
   -v "$(pwd)"/maven:/home/dependabot/maven \
   -v "$(pwd)"/npm_and_yarn:/home/dependabot/npm_and_yarn \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
