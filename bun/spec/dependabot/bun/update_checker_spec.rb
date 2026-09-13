@@ -1342,5 +1342,95 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           )
         )
     end
+
+    context "when a devDependency is reachable from production" do
+      let(:reachable_dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.6.0",
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: "^1.6.0", groups: ["devDependencies"], source: nil }],
+          metadata: { reachable_from_production: true }
+        )
+      end
+
+      before do
+        version_resolver = instance_double(
+          described_class::VersionResolver,
+          dependency_updates_from_full_unlock: [{
+            dependency: reachable_dependency,
+            version: Dependabot::Bun::Version.new("1.7.0"),
+            previous_version: "1.6.0"
+          }]
+        )
+        allow(described_class::VersionResolver).to receive(:new).and_return(version_resolver)
+      end
+
+      it "keeps the dependency production" do
+        updated_dependency = checker.send(:updated_dependencies_after_full_unlock).first
+
+        expect(updated_dependency.metadata).to include(reachable_from_production: true)
+        expect(updated_dependency.production?).to be(true)
+      end
+
+      it "adds explicit metadata without dropping the parsed metadata" do
+        updated_dependency = checker.send(
+          :build_updated_dependency,
+          dependency: reachable_dependency,
+          version: "1.7.0",
+          previous_version: "1.6.0",
+          metadata: { information_only: true }
+        )
+
+        expect(updated_dependency.metadata).to eq(reachable_from_production: true, information_only: true)
+      end
+    end
+
+    context "when a security fix updates a parent that is reachable from production" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "etag",
+            package_manager: "bun",
+            vulnerable_versions: ["< 1.7.0"]
+          )
+        ]
+      end
+      let(:parent_dependency) do
+        Dependabot::Dependency.new(
+          name: "express",
+          version: "4.0.0",
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: "^4.0.0", groups: ["devDependencies"], source: nil }],
+          metadata: { reachable_from_production: true }
+        )
+      end
+
+      before do
+        audit = Dependabot::UpdateCheckers::VulnerabilityAudit.from_object(
+          "dependency_name" => "etag",
+          "current_version" => "1.0.0",
+          "target_version" => "1.7.0",
+          "fix_available" => true,
+          "top_level_ancestors" => ["express"],
+          "fix_updates" => [
+            { "dependency_name" => "express", "current_version" => "4.0.0", "target_version" => "4.1.0" }
+          ]
+        )
+        allow(checker).to receive_messages(
+          vulnerability_audit: audit,
+          top_level_dependency_lookup: { "express" => parent_dependency }
+        )
+      end
+
+      it "keeps the parent's parsed metadata" do
+        updated_dependencies = checker.send(:updated_dependencies_after_full_unlock)
+
+        expect(updated_dependencies.to_h { |dep| [dep.name, dep.metadata] }).to eq(
+          "etag" => { information_only: true },
+          "express" => { reachable_from_production: true }
+        )
+      end
+    end
   end
 end
