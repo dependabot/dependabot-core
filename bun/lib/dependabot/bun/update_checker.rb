@@ -349,7 +349,9 @@ module Dependabot
           previous_requirements: original_dep.requirements,
           package_manager: original_dep.package_manager,
           removed: removed,
-          metadata: metadata
+          metadata: metadata,
+          # Carries the development or production type of transitive dependencies.
+          subdependency_metadata: original_dep.subdependency_metadata
         )
       end
 
