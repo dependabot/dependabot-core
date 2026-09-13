@@ -276,13 +276,14 @@ module Dependabot
         updated_deps = []
         vulnerability_audit.fix_updates.each do |update|
           dependency_name = update.dependency_name
-          requirements = top_level_dependencies[dependency_name]&.requirements || []
+          top_level_dependency = top_level_dependencies[dependency_name]
 
           updated_deps << build_updated_dependency(
             dependency: Dependency.new(
               name: dependency_name,
               package_manager: "bun",
-              requirements: requirements
+              requirements: top_level_dependency&.requirements || [],
+              metadata: top_level_dependency&.metadata || {}
             ),
             version: update.target_version,
             previous_version: update.current_version
@@ -331,7 +332,9 @@ module Dependabot
         removed = update_details.fetch(:removed, false)
         version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
-        metadata = update_details.fetch(:metadata, {})
+        # Keep what the parser recorded (such as reachable_from_production, which decides
+        # the dependency type) and let explicit details such as information_only add to it.
+        metadata = original_dep.metadata.merge(update_details.fetch(:metadata, {}))
 
         Dependency.new(
           name: original_dep.name,
