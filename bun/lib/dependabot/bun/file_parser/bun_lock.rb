@@ -3,6 +3,7 @@
 
 require "yaml"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/helpers"
@@ -16,6 +17,7 @@ module Dependabot
 
         require_relative "bun_lock/record"
         require_relative "bun_lock/workspace"
+        require_relative "bun_lock/dependency_type_resolver"
 
         DEVELOPMENT_SECTIONS = %w(devDependencies).freeze
 
@@ -85,7 +87,9 @@ module Dependabot
           packages = records
           raise_invalid!("expected 'packages' to be an object") unless packages
 
-          packages.each_value do |record|
+          production_by_key = production_by_key_for(packages)
+
+          packages.each do |key, record|
             name = record.name
             next if name.empty?
 
@@ -96,12 +100,36 @@ module Dependabot
               name: name,
               version: semver,
               package_manager: "bun",
-              requirements: []
+              requirements: [],
+              subdependency_metadata: subdependency_metadata_for(key, production_by_key)
             )
           end
 
           dependency_set
         end
+
+        sig { params(packages: T::Hash[String, Record]).returns(T.nilable(T::Hash[String, T::Boolean])) }
+        def production_by_key_for(packages)
+          return unless Dependabot::Experiments.enabled?(:enable_bun_subdependency_types)
+
+          DependencyTypeResolver.new(workspaces: workspaces, records: packages).production_by_key
+        end
+        private :production_by_key_for
+
+        # Record the type for every package, not only development ones. DependencySet joins
+        # metadata across copies of a package, so a copy with no entry next to one marked
+        # { production: false } would make the package look development-only.
+        sig do
+          params(key: String, production_by_key: T.nilable(T::Hash[String, T::Boolean]))
+            .returns(T::Array[T::Hash[Symbol, T::Boolean]])
+        end
+        def subdependency_metadata_for(key, production_by_key)
+          return [] unless production_by_key
+
+          # Packages that no workspace reaches keep the previous default of production.
+          [{ production: production_by_key.fetch(key, true) }]
+        end
+        private :subdependency_metadata_for
 
         sig do
           params(dependency_name: String, _requirement: T.nilable(String), _manifest_name: String)
