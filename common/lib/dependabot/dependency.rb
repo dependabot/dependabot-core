@@ -240,6 +240,10 @@ module Dependabot
     sig { returns(T::Boolean) }
     def production?
       return subdependency_production_check unless top_level?
+      # A lockfile can show that a dependency declared only for development is also
+      # installed through a production dependency, so it ships to production anyway.
+      # Ecosystems that can tell set this flag, because requirement groups cannot say so.
+      return true if metadata[:reachable_from_production] == true
 
       groups = requirements.flat_map do |requirement|
         requirement_groups = requirement.groups
