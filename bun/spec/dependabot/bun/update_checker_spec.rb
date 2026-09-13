@@ -9,6 +9,7 @@ require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/bun/metadata_finder"
 require "dependabot/bun/update_checker"
+require "dependabot/pull_request_creator/pr_name_prefixer"
 require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -1345,6 +1346,48 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         )
     end
 
+    # An explicit prefix avoids looking up the repository's previous commits.
+    def commit_prefix_for(dependencies)
+      Dependabot::PullRequestCreator::PrNamePrefixer.new(
+        source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump"),
+        dependencies: dependencies,
+        credentials: credentials,
+        commit_message_options: { prefix: "build", prefix_development: "chore", include_scope: true }
+      ).pr_name_prefix
+    end
+
+    context "when a transitive dependency is only used in development" do
+      let(:transitive_dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.6.0",
+          package_manager: "bun",
+          requirements: [],
+          subdependency_metadata: [{ production: false }]
+        )
+      end
+
+      before do
+        version_resolver = instance_double(
+          described_class::VersionResolver,
+          dependency_updates_from_full_unlock: [{
+            dependency: transitive_dependency,
+            version: Dependabot::Bun::Version.new("1.7.0"),
+            previous_version: "1.6.0"
+          }]
+        )
+        allow(described_class::VersionResolver).to receive(:new).and_return(version_resolver)
+      end
+
+      it "keeps the dependency development" do
+        updated_dependency = checker.send(:updated_dependencies_after_full_unlock).first
+
+        expect(updated_dependency.subdependency_metadata).to eq([{ production: false }])
+        expect(updated_dependency.production?).to be(false)
+        expect(commit_prefix_for([updated_dependency])).to eq("chore(deps-dev): ")
+      end
+    end
+
     context "when a devDependency is reachable from production" do
       let(:reachable_dependency) do
         Dependabot::Dependency.new(
@@ -1373,6 +1416,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
         expect(updated_dependency.metadata).to include(reachable_from_production: true)
         expect(updated_dependency.production?).to be(true)
+        expect(commit_prefix_for([updated_dependency])).to eq("build(deps): ")
       end
 
       it "adds explicit metadata without dropping the parsed metadata" do
@@ -1421,7 +1465,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         )
         allow(checker).to receive_messages(
           vulnerability_audit: audit,
-          top_level_dependency_lookup: { "express" => parent_dependency }
+          parsed_dependency_lookup: { "express" => parent_dependency }
         )
       end
 
@@ -1432,6 +1476,53 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           "etag" => { information_only: true },
           "express" => { reachable_from_production: true }
         )
+      end
+    end
+
+    context "when a security fix updates a transitive dependency used only in development" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "braces",
+            package_manager: "bun",
+            vulnerable_versions: ["< 3.0.3"]
+          )
+        ]
+      end
+      let(:transitive_dependency) do
+        Dependabot::Dependency.new(
+          name: "braces",
+          version: "3.0.2",
+          package_manager: "bun",
+          requirements: [],
+          subdependency_metadata: [{ production: false }]
+        )
+      end
+
+      before do
+        audit = Dependabot::UpdateCheckers::VulnerabilityAudit.from_object(
+          "dependency_name" => "braces",
+          "current_version" => "3.0.2",
+          "target_version" => "3.0.3",
+          "fix_available" => true,
+          "top_level_ancestors" => ["eslint"],
+          "fix_updates" => [
+            { "dependency_name" => "braces", "current_version" => "3.0.2", "target_version" => "3.0.3" }
+          ]
+        )
+        allow(checker).to receive_messages(
+          vulnerability_audit: audit,
+          parsed_dependency_lookup: { "braces" => transitive_dependency }
+        )
+      end
+
+      it "keeps the dependency development" do
+        updated_dependency = checker.send(:updated_dependencies_after_full_unlock)
+                                    .find { |dep| dep.name == "braces" }
+
+        expect(updated_dependency.subdependency_metadata).to eq([{ production: false }])
+        expect(updated_dependency.production?).to be(false)
+        expect(commit_prefix_for([updated_dependency])).to eq("chore(deps-dev): ")
       end
     end
   end
