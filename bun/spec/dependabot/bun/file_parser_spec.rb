@@ -242,6 +242,16 @@ RSpec.describe Dependabot::Bun::FileParser do
           expect(production?("etag")).to be(false)
           expect(production?("debug")).to be(true)
         end
+
+        it "reads the lockfile dependencies once" do
+          lockfile_parser = Dependabot::Bun::FileParser::LockfileParser.new(dependency_files: files)
+          allow(Dependabot::Bun::FileParser::LockfileParser).to receive(:new).and_return(lockfile_parser)
+          allow(lockfile_parser).to receive(:parse_set).and_call_original
+
+          dependencies
+
+          expect(lockfile_parser).to have_received(:parse_set).once
+        end
       end
     end
   end

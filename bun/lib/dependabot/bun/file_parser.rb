@@ -197,9 +197,14 @@ module Dependabot
         )
       end
 
+      # Cached because both manifest dependencies (for production reachability) and
+      # #parse read it, and building it walks the whole lockfile graph.
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def lockfile_dependencies
-        lockfile_parser.parse_set
+        @lockfile_dependencies ||= T.let(
+          lockfile_parser.parse_set,
+          T.nilable(Dependabot::FileParsers::Base::DependencySet)
+        )
       end
 
       # Names of packages that the lockfile shows are installed through a production
