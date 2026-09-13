@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/bun/metadata_finder"
 require "dependabot/bun/update_checker"
+require "dependabot/pull_request_creator/pr_name_prefixer"
 require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -1343,6 +1344,48 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         )
     end
 
+    # An explicit prefix avoids looking up the repository's previous commits.
+    def commit_prefix_for(dependencies)
+      Dependabot::PullRequestCreator::PrNamePrefixer.new(
+        source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump"),
+        dependencies: dependencies,
+        credentials: credentials,
+        commit_message_options: { prefix: "build", prefix_development: "chore", include_scope: true }
+      ).pr_name_prefix
+    end
+
+    context "when a transitive dependency is only used in development" do
+      let(:transitive_dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.6.0",
+          package_manager: "bun",
+          requirements: [],
+          subdependency_metadata: [{ production: false }]
+        )
+      end
+
+      before do
+        version_resolver = instance_double(
+          described_class::VersionResolver,
+          dependency_updates_from_full_unlock: [{
+            dependency: transitive_dependency,
+            version: Dependabot::Bun::Version.new("1.7.0"),
+            previous_version: "1.6.0"
+          }]
+        )
+        allow(described_class::VersionResolver).to receive(:new).and_return(version_resolver)
+      end
+
+      it "keeps the dependency development" do
+        updated_dependency = checker.send(:updated_dependencies_after_full_unlock).first
+
+        expect(updated_dependency.subdependency_metadata).to eq([{ production: false }])
+        expect(updated_dependency.production?).to be(false)
+        expect(commit_prefix_for([updated_dependency])).to eq("chore(deps-dev): ")
+      end
+    end
+
     context "when a devDependency is reachable from production" do
       let(:reachable_dependency) do
         Dependabot::Dependency.new(
@@ -1371,6 +1414,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
         expect(updated_dependency.metadata).to include(reachable_from_production: true)
         expect(updated_dependency.production?).to be(true)
+        expect(commit_prefix_for([updated_dependency])).to eq("build(deps): ")
       end
 
       it "adds explicit metadata without dropping the parsed metadata" do
