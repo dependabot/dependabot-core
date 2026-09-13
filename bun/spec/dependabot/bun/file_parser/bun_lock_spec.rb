@@ -63,6 +63,47 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
     end
   end
 
+  describe "dependency types" do
+    let(:file) do
+      Dependabot::DependencyFile.new(name: "bun.lock", content: fixture("projects", "bun", fixture_name, "bun.lock"))
+    end
+    let(:fixture_name) { "workspace_dependency_types" }
+    let(:dependency_set) { reader.dependencies }
+
+    after { Dependabot::Experiments.reset! }
+
+    context "when the experiment is disabled" do
+      it "leaves subdependency metadata unset" do
+        expect(dependency_set.dependencies.map(&:subdependency_metadata)).to all(be_nil)
+      end
+    end
+
+    context "when the experiment is enabled" do
+      before { Dependabot::Experiments.register(:enable_bun_subdependency_types, true) }
+
+      it "records the type of each copy" do
+        types = dependency_set.all_versions_for_name("ms").to_h { |dep| [dep.version, dep.production?] }
+        expect(types).to eq("0.7.1" => false, "2.0.0" => true, "2.1.2" => true)
+      end
+
+      it "treats a package as production when any copy is production" do
+        expect(dependency_set.dependency_for_name("ms").production?).to be(true)
+        expect(dependency_set.dependency_for_name("is-number").production?).to be(true)
+      end
+
+      context "with a development-only chain" do
+        let(:fixture_name) { "simple_v1" }
+
+        it "marks every package in the chain as development" do
+          development = %w(@types/bun bun-types @types/node @types/ws undici-types etag)
+
+          expect(development.map { |name| dependency_set.dependency_for_name(name).production? }).to all(be(false))
+          expect(dependency_set.dependency_for_name("whatwg-fetch").production?).to be(true)
+        end
+      end
+    end
+  end
+
   describe "record edge names" do
     let(:entry) do
       [
