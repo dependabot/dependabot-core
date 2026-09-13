@@ -133,6 +133,34 @@ RSpec.describe Dependabot::Dependency do
       it { is_expected.to be(true) }
     end
 
+    context "with development groups on a dependency reachable from production" do
+      let(:groups) { ["development"] }
+      let(:package_manager) { "development_groups" }
+      let(:dependency_args) do
+        {
+          name: "dep",
+          requirements: [{ file: "a.rb", requirement: "1", groups: groups, source: nil }],
+          package_manager: package_manager,
+          metadata: { reachable_from_production: true }
+        }
+      end
+
+      before do
+        described_class.register_production_check(
+          package_manager,
+          ->(received_groups) { received_groups.include?("production") }
+        )
+      end
+
+      it { is_expected.to be(true) }
+
+      context "without the flag" do
+        let(:dependency_args) { super().merge(metadata: {}) }
+
+        it { is_expected.to be(false) }
+      end
+    end
+
     context "when dealing with a requirement that isn't top-level" do
       let(:dependency_args) do
         { name: "dep", requirements: [], package_manager: package_manager }
