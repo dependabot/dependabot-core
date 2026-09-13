@@ -15,12 +15,16 @@ module Dependabot
         extend T::Sig
 
         require_relative "bun_lock/record"
+        require_relative "bun_lock/workspace"
+
+        DEVELOPMENT_SECTIONS = %w(devDependencies).freeze
 
         sig { params(dependency_file: DependencyFile).void }
         def initialize(dependency_file)
           @dependency_file = dependency_file
           @parsed = T.let(nil, T.nilable(T::Hash[Object, Object]))
           @records = T.let(nil, T.nilable(T::Hash[String, Record]))
+          @workspaces = T.let(nil, T.nilable(T::Array[Workspace]))
         end
 
         sig { returns(T::Hash[Object, Object]) }
@@ -63,6 +67,14 @@ module Dependabot
           end
         end
 
+        # The roots of the dependency graph, one per entry in the "workspaces" object.
+        # Malformed entries are skipped rather than reported, because only dependency
+        # type classification reads them.
+        sig { returns(T::Array[Workspace]) }
+        def workspaces
+          @workspaces ||= parse_workspaces
+        end
+
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -100,6 +112,25 @@ module Dependabot
         end
 
         private
+
+        sig { returns(T::Array[Workspace]) }
+        def parse_workspaces
+          raw_workspaces = T.cast(parsed["workspaces"], Object)
+          return [] unless raw_workspaces.is_a?(Hash)
+
+          raw_workspaces.filter_map do |raw_path, raw_details|
+            path = T.cast(raw_path, Object)
+            details = T.cast(raw_details, Object)
+            next unless path.is_a?(String) && details.is_a?(Hash)
+
+            name = T.cast(details["name"], Object)
+            Workspace.new(
+              key_prefix: path.empty? || !name.is_a?(String) ? nil : name,
+              production_names: Record.section_names(details, Record::EDGE_SECTIONS),
+              development_names: Record.section_names(details, DEVELOPMENT_SECTIONS)
+            )
+          end
+        end
 
         sig { returns(T::Hash[Object, Object]) }
         def parse_document
