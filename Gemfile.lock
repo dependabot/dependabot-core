@@ -238,11 +238,11 @@ GEM
       public_suffix (>= 2.0.2, < 8.0)
     ast (2.4.3)
     aws-eventstream (1.4.0)
-    aws-partitions (1.1282.0)
-    aws-sdk-codecommit (1.103.0)
-      aws-sdk-core (~> 3, >= 3.254.0)
+    aws-partitions (1.1286.0)
+    aws-sdk-codecommit (1.104.0)
+      aws-sdk-core (~> 3, >= 3.255.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-core (3.254.1)
+    aws-sdk-core (3.256.0)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
       aws-sigv4 (~> 1.9)
@@ -250,14 +250,15 @@ GEM
       bigdecimal
       jmespath (~> 1, >= 1.6.1)
       logger
-    aws-sdk-ecr (1.132.0)
-      aws-sdk-core (~> 3, >= 3.254.0)
+      rexml (~> 3.4, >= 3.4.2)
+    aws-sdk-ecr (1.133.0)
+      aws-sdk-core (~> 3, >= 3.255.0)
       aws-sigv4 (~> 1.5)
     aws-sigv4 (1.12.1)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.3.0)
     benchmark (0.5.0)
-    bigdecimal (4.1.2)
+    bigdecimal (4.1.3)
     citrus (3.0.2)
     commonmarker (2.10.0-arm64-darwin)
     commonmarker (2.10.0-x86_64-linux)
@@ -276,7 +277,7 @@ GEM
       faraday-net_http
     erb (6.0.1.1)
     erubi (1.13.1)
-    excon (1.7.0)
+    excon (1.7.1)
       logger
     faraday (2.14.3)
       faraday-net_http (>= 2.0, < 3.5)
@@ -330,7 +331,7 @@ GEM
       opentelemetry-api (~> 1.0)
     opentelemetry-metrics-api (0.7.0)
       opentelemetry-api (~> 1.0)
-    parallel (2.1.0)
+    parallel (2.2.0)
     parallel_tests (4.10.1)
       parallel
     parseconfig (1.1.2)
@@ -416,14 +417,14 @@ GEM
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
     simplecov (1.1.1)
-    sorbet (0.6.13449)
-      sorbet-static (= 0.6.13449)
-    sorbet-runtime (0.6.13449)
-    sorbet-static (0.6.13449-universal-darwin)
-    sorbet-static (0.6.13449-x86_64-linux)
-    sorbet-static-and-runtime (0.6.13449)
-      sorbet (= 0.6.13449)
-      sorbet-runtime (= 0.6.13449)
+    sorbet (0.6.13497)
+      sorbet-static (= 0.6.13497)
+    sorbet-runtime (0.6.13497)
+    sorbet-static (0.6.13497-universal-darwin)
+    sorbet-static (0.6.13497-x86_64-linux)
+    sorbet-static-and-runtime (0.6.13497)
+      sorbet (= 0.6.13497)
+      sorbet-runtime (= 0.6.13497)
     spoom (1.8.7)
       erubi (>= 1.10.0)
       prism (>= 0.28.0)
@@ -531,14 +532,14 @@ CHECKSUMS
   addressable (2.9.0) sha256=7fdf6ac3660f7f4e867a0838be3f6cf722ace541dd97767fa42bc6cfa980c7af
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
   aws-eventstream (1.4.0) sha256=116bf85c436200d1060811e6f5d2d40c88f65448f2125bc77ffce5121e6e183b
-  aws-partitions (1.1282.0) sha256=d6c7c4ad2e4f8cd4ca56445bfbb3958fec0deecd959c1e2bcd3a83c9aa308c18
-  aws-sdk-codecommit (1.103.0) sha256=126c92be8d646d730cfb870c8e7ba3d34c9adef2bb99baec62317f71dc797ef6
-  aws-sdk-core (3.254.1) sha256=518089e32134c3478cd4ec63d07fb966546a45e9e4cbf5f80d2cf16d5699d29b
-  aws-sdk-ecr (1.132.0) sha256=06fd08ab57b94f08373820ef35e84d3845d920af27ffc587c71dcbd944b2255e
+  aws-partitions (1.1286.0) sha256=955672fb6cbeccff69b4566a32147d9b8b899afe59220ca786dc60a798f18950
+  aws-sdk-codecommit (1.104.0) sha256=84da03aba4c76ff9fb5ed4ae82ab6b0dab02a2039693dff5a24ea4e5c75c918d
+  aws-sdk-core (3.256.0) sha256=54680a6818323ad1a977dd2aab88a98f294f11fd603852af53e5718e9ce11a12
+  aws-sdk-ecr (1.133.0) sha256=fc345640b6b5686de4b2dfb88343efbf005643f97c2d3c3c36ebc7545ccfbc10
   aws-sigv4 (1.12.1) sha256=6973ff95cb0fd0dc58ba26e90e9510a2219525d07620c8babeb70ef831826c00
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   benchmark (0.5.0) sha256=465df122341aedcb81a2a24b4d3bd19b6c67c1530713fd533f3ff034e419236c
-  bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
+  bigdecimal (4.1.3) sha256=61ebe1e5e559bdc3cc6f2c0ee7f427321fc838f59611c294356eb04d6e21cf66
   bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
   commonmarker (2.10.0-arm64-darwin) sha256=39ecc891d1e4308b5233cc28b40383de854a2bfbefe17d68e49174347a8aa79e
@@ -585,7 +586,7 @@ CHECKSUMS
   docker_registry2 (1.19.0) sha256=e50fbe316422b33740c5c2c49b68d938314c2cf4367a381fa3277eb1c79b8623
   erb (6.0.1.1) sha256=ce5357460652a9a94667c5769eaffc551eea2b14a8531ac7c7b1d77b860758b9
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
-  excon (1.7.0) sha256=b8deec2bf978123b7e4b13a103ffec61557c6feaba34706dbc1ce4a94dec33e0
+  excon (1.7.1) sha256=dd2d870eece1b5ce4e4f9efd938e67a69ccd8c003c3825b638b937e1082eaac2
   faraday (2.14.3) sha256=1882247e6766615c8220b4392bf1d27f6ebb63d8e28267587cef1fb0bf37f278
   faraday-follow_redirects (0.5.0) sha256=5cde93c894b30943a5d2b93c2fe9284216a6b756f7af406a1e55f211d97d10ad
   faraday-net_http (3.4.4) sha256=0e78af151747ed1b00f33e25973b4bc220d7f16c00c39676817c8b12331eb588
@@ -612,7 +613,7 @@ CHECKSUMS
   opentelemetry-api (1.11.0) sha256=218c840170fa473974756668b32b6989570de07c7d3864627960209f189247e2
   opentelemetry-logs-api (0.4.1) sha256=9db6c9a0c172df4e302e490c80697ea9fc1223501f4358acfc01dd4c2307ca4a
   opentelemetry-metrics-api (0.7.0) sha256=ac00aed7f4e817c855a48561ad620705b420fa3fe4c3ae6bd899b79c606191bb
-  parallel (2.1.0) sha256=b35258865c2e31134c5ecb708beaaf6772adf9d5efae28e93e99260877b09356
+  parallel (2.2.0) sha256=e1059c5fd7b649558a0aec38a769f06a42942bdb40503d005a59c352fe011cd8
   parallel_tests (4.10.1) sha256=df05458c691462b210f7a41fc2651d4e4e8a881e8190e6d1e122c92c07735d70
   parseconfig (1.1.2) sha256=e52247d15070fb47f9e58f44f7888d1e7f65775274cd60f9ab4b7acd7943b291
   parser (3.3.12.0) sha256=21a6d7f755d5a24dfbdc6e6b772e4e879a52e7631a88bc5a3a134606052c9828
@@ -648,11 +649,11 @@ CHECKSUMS
   rubydex (0.3.0-x86_64-linux) sha256=dfe4026591f226b4a1b53f82f86dc14fad2e7c221ee8a5be99a0a46bf2d58b04
   sawyer (0.9.3) sha256=0d0f19298408047037638639fe62f4794483fb04320269169bd41af2bdcf5e41
   simplecov (1.1.1) sha256=25825ef13f0b2e74694d769817dad6ab8e90131dabdaa666e522fea105521e78
-  sorbet (0.6.13449) sha256=2551a7a7d63e6fa4ab08e83d5469b51aacaaa7f077a44649133c3844167ca668
-  sorbet-runtime (0.6.13449) sha256=59f52645c702a43115ac0dc74cc12b7cfba6f2f56f55c8a3f2f4abdc6df9c31e
-  sorbet-static (0.6.13449-universal-darwin) sha256=71cbbab8d240902b0d42bf996bc4709c2fcc2a6c34afb3790bb34832362ebaaa
-  sorbet-static (0.6.13449-x86_64-linux) sha256=f97ec699ca5f1db42457b116aaed567058e4ee67fdce741c1ad223904b9d25b3
-  sorbet-static-and-runtime (0.6.13449) sha256=55009d028fca31857a38c76f77ae10811d089feff2e0210ba9e3a77a0a60adac
+  sorbet (0.6.13497) sha256=3d9a27a703d75c7f5a6f412c3e7145c426d328a65e4f8f830f0ce0211117aebf
+  sorbet-runtime (0.6.13497) sha256=d62db88a296352254418e40768d89da1316a4463e7cd7bc0660181970cf01d71
+  sorbet-static (0.6.13497-universal-darwin) sha256=fbc540726705f282b82c0f953404630e0f1355107f5920854d453d58b4fac451
+  sorbet-static (0.6.13497-x86_64-linux) sha256=f5ea971166c2d54b7ba6ebdaaf8e1adab724ba12a84fa4316d9a34756631d439
+  sorbet-static-and-runtime (0.6.13497) sha256=4b1df5ef9e37fa9ee50b4e982b941876cb0ca233a1a8918ded208e5be4f7a28e
   spoom (1.8.7) sha256=81960502cdf23aa991f015988aa5dd43325e23ae4318b8e00d541299cbdb70f6
   stackprof (0.2.28) sha256=4ec2ace02f386012b40ca20ef80c030ad711831f59511da12e83b34efb0f9a04
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
