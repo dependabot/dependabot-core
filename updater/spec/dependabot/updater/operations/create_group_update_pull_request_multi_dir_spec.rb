@@ -225,7 +225,12 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         directories.flat_map do |directory|
           [
             Dependabot::DependencyFile.new(name: "main.tf", content: "# terraform config", directory: directory),
-            Dependabot::DependencyFile.new(name: "../shared.tf", content: "original", directory: directory),
+            Dependabot::DependencyFile.new(
+              name: "../shared.tf",
+              content: "original",
+              directory: directory,
+              support_file: directory == "/dir2"
+            ),
             Dependabot::DependencyFile.new(name: "../deleted.tf", content: "remove me", directory: directory)
           ]
         end
@@ -288,7 +293,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         expect(shared_file).to have_attributes(
           content: "c2hhcmVk",
           content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
-          mode: Dependabot::DependencyFile::Mode::EXECUTABLE
+          mode: Dependabot::DependencyFile::Mode::EXECUTABLE,
+          support_file: true
         )
 
         created_file = second_directory_files.find { |file| file.name == "../created.tf" }

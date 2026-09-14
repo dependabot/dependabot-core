@@ -257,7 +257,14 @@ module Dependabot
         original_paths = original_aliases.to_h { |file| [file.path, true] }
         files = original_aliases.filter_map do |file_alias|
           working_file = working_files_by_path[file_alias.path]
-          rebase_dependency_file(working_file, file_alias.name, directory) if working_file
+          if working_file
+            rebase_dependency_file(
+              working_file,
+              file_alias.name,
+              directory,
+              support_file: file_alias.support_file?
+            )
+          end
         end
 
         created_paths.each do |path|
@@ -277,13 +284,15 @@ module Dependabot
         params(
           file: Dependabot::DependencyFile,
           name: String,
-          directory: String
+          directory: String,
+          support_file: T::Boolean
         ).returns(Dependabot::DependencyFile)
       end
-      def rebase_dependency_file(file, name, directory)
+      def rebase_dependency_file(file, name, directory, support_file: file.support_file?)
         rebased_file = file.dup
         rebased_file.name = name
         rebased_file.directory = directory
+        rebased_file.support_file = support_file
         rebased_file
       end
 
