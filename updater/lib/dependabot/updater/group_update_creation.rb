@@ -75,11 +75,17 @@ module Dependabot
       sig do
         params(
           group: Dependabot::DependencyGroup,
-          dependency_files: T::Array[Dependabot::DependencyFile]
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          workspace_files: T.nilable(T::Array[Dependabot::DependencyFile])
         ).returns(T.nilable(Dependabot::DependencyChange))
       end
-      def compile_all_dependency_changes_for(group, dependency_files: dependency_snapshot.dependency_files)
-        prepare_workspace
+      def compile_all_dependency_changes_for(
+        group,
+        dependency_files: dependency_snapshot.dependency_files,
+        workspace_files: nil
+      )
+        prepare_workspace(directory: workspace_files ? Pathname.new("/") : nil)
+        materialize_workspace_files(workspace_files) if workspace_files
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_files
@@ -193,7 +199,11 @@ module Dependabot
           dependency_snapshot.current_directory = directory
 
           dependency_files = working_dependency_files_for(directory, working_files_by_path, created_paths)
-          change = compile_all_dependency_changes_for(group, dependency_files: dependency_files)
+          change = compile_all_dependency_changes_for(
+            group,
+            dependency_files: dependency_files,
+            workspace_files: changed_files_by_path.values
+          )
           change&.updated_dependencies&.each do |dependency|
             dependency.directory = directory
             dependency.metadata[:directory] = directory
@@ -717,14 +727,36 @@ module Dependabot
         DEBUG
       end
 
-      sig { void }
-      def prepare_workspace
+      sig { params(directory: T.nilable(Pathname)).void }
+      def prepare_workspace(directory: nil)
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.setup(
           repo_contents_path: T.must(job.repo_contents_path),
-          directory: Pathname.new(job.source.directory || "/").cleanpath
+          directory: directory || Pathname.new(job.source.directory || "/").cleanpath
         )
+      end
+
+      sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+      def materialize_workspace_files(files)
+        return unless job.clone? && job.repo_contents_path
+
+        files.each do |file|
+          path = File.join(T.must(job.repo_contents_path), file.path.delete_prefix("/"))
+          if file.deleted?
+            FileUtils.rm_f(path)
+            next
+          end
+
+          FileUtils.mkdir_p(File.dirname(path))
+          FileUtils.rm_f(path)
+          if file.type == "symlink"
+            FileUtils.ln_s(T.must(file.symlink_target), path)
+          else
+            File.binwrite(path, file.decoded_content)
+            FileUtils.chmod(file.mode == Dependabot::DependencyFile::Mode::EXECUTABLE ? 0o755 : 0o644, path)
+          end
+        end
       end
 
       sig do

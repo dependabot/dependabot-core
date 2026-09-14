@@ -68,6 +68,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     let(:job) do
       Dependabot::Job.new_update_job(
         job_id: "1234",
+        repo_contents_path: repo_contents_path,
         job_definition: {
           "job" => {
             "package-manager" => "terraform",
@@ -103,6 +104,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         }
       )
     end
+    let(:repo_contents_path) { nil }
 
     let(:dependency_snapshot) do
       Dependabot::DependencySnapshot.create_from_job_definition(
@@ -221,6 +223,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
 
     context "when directories change shared file lifecycle and metadata" do
       let(:directories) { ["/dir1", "/dir2"] }
+      let(:repo_contents_path) { build_tmp_repo("maven_multi_directory_group", path: "") }
       let(:dependency_files) do
         directories.flat_map do |directory|
           [
@@ -236,15 +239,24 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         end
       end
       let(:received_files_by_directory) { {} }
+      let(:workspace_contents_by_directory) { {} }
 
       before do
         received_files = received_files_by_directory
+        workspace_contents = workspace_contents_by_directory
+        repo_path = repo_contents_path
+        capture_workspace_contents = lambda do |directory|
+          next unless directory == "/dir2"
+
+          workspace_contents[directory] = File.binread(File.join(repo_path, "shared.tf"))
+        end
         Dependabot::FileUpdaters.register(
           "terraform",
           Class.new(Dependabot::FileUpdaters::Base) do
             define_method(:updated_dependency_files) do
               directory = dependency_files.first.directory
               received_files[directory] ||= dependency_files.map(&:dup)
+              capture_workspace_contents.call(directory)
 
               if directory == "/dir1"
                 shared_file = dependency_files.find { |file| file.name == "../shared.tf" }.dup
@@ -280,11 +292,18 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         )
       end
 
+      after do
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
       it "passes the complete working file set to the next directory" do
         dependency_change = nil
         allow(mock_service).to receive(:create_pull_request) { |change| dependency_change = change }
 
         create_operation.perform
+
+        expect(workspace_contents_by_directory.fetch("/dir2")).to eq("shared")
+        expect(File).not_to exist(File.join(repo_contents_path, "shared.tf"))
 
         second_directory_files = received_files_by_directory.fetch("/dir2")
         expect(second_directory_files.map(&:name)).not_to include("../deleted.tf")
