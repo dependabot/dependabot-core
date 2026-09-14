@@ -219,6 +219,95 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       expect(dependency_change.updated_dependencies.length).to eq(9)
     end
 
+    context "when directories change shared file lifecycle and metadata" do
+      let(:directories) { ["/dir1", "/dir2"] }
+      let(:dependency_files) do
+        directories.flat_map do |directory|
+          [
+            Dependabot::DependencyFile.new(name: "main.tf", content: "# terraform config", directory: directory),
+            Dependabot::DependencyFile.new(name: "../shared.tf", content: "original", directory: directory),
+            Dependabot::DependencyFile.new(name: "../deleted.tf", content: "remove me", directory: directory)
+          ]
+        end
+      end
+      let(:received_files_by_directory) { {} }
+
+      before do
+        received_files = received_files_by_directory
+        Dependabot::FileUpdaters.register(
+          "terraform",
+          Class.new(Dependabot::FileUpdaters::Base) do
+            define_method(:updated_dependency_files) do
+              directory = dependency_files.first.directory
+              received_files[directory] ||= dependency_files.map(&:dup)
+
+              if directory == "/dir1"
+                shared_file = dependency_files.find { |file| file.name == "../shared.tf" }.dup
+                shared_file.content = "c2hhcmVk"
+                shared_file.content_encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
+                shared_file.mode = Dependabot::DependencyFile::Mode::EXECUTABLE
+
+                deleted_file = dependency_files.find { |file| file.name == "../deleted.tf" }.dup
+                deleted_file.content = nil
+                deleted_file.operation = Dependabot::DependencyFile::Operation::DELETE
+
+                created_file = Dependabot::DependencyFile.new(
+                  name: "../created.tf",
+                  content: nil,
+                  directory: directory,
+                  type: "symlink",
+                  symlink_target: "target.tf",
+                  operation: Dependabot::DependencyFile::Operation::CREATE,
+                  mode: Dependabot::DependencyFile::Mode::SYMLINK
+                )
+                [shared_file, deleted_file, created_file]
+              else
+                created_file = dependency_files.find { |file| file.name == "../created.tf" }.dup
+                created_file.operation = Dependabot::DependencyFile::Operation::UPDATE
+                [
+                  Dependabot::DependencyFile.new(name: "main.tf", content: "# updated", directory: directory),
+                  created_file
+                ]
+              end
+            end
+            define_method(:check_required_files) { nil }
+          end
+        )
+      end
+
+      it "passes the complete working file set to the next directory" do
+        dependency_change = nil
+        allow(mock_service).to receive(:create_pull_request) { |change| dependency_change = change }
+
+        create_operation.perform
+
+        second_directory_files = received_files_by_directory.fetch("/dir2")
+        expect(second_directory_files.map(&:name)).not_to include("../deleted.tf")
+
+        shared_file = second_directory_files.find { |file| file.name == "../shared.tf" }
+        expect(shared_file).to have_attributes(
+          content: "c2hhcmVk",
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+          mode: Dependabot::DependencyFile::Mode::EXECUTABLE
+        )
+
+        created_file = second_directory_files.find { |file| file.name == "../created.tf" }
+        expect(created_file).to have_attributes(
+          directory: "/dir2",
+          operation: Dependabot::DependencyFile::Operation::CREATE,
+          type: "symlink",
+          symlink_target: "target.tf",
+          mode: Dependabot::DependencyFile::Mode::SYMLINK
+        )
+
+        changed_files_by_path = dependency_change.updated_dependency_files.to_h { |file| [file.path, file] }
+        expect(changed_files_by_path.fetch("/deleted.tf").operation)
+          .to eq(Dependabot::DependencyFile::Operation::DELETE)
+        expect(changed_files_by_path.fetch("/created.tf").operation)
+          .to eq(Dependabot::DependencyFile::Operation::CREATE)
+      end
+    end
+
     context "when no directory produces a change" do
       before do
         # Re-register an update checker whose updates are missing a previous version and
