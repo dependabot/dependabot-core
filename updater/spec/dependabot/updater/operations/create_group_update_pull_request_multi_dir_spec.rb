@@ -360,7 +360,10 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     end
   end
 
-  describe "#perform with Maven directories that share a parent POM" do
+  describe "#perform with Maven directories that share a parent POM",
+           maven_file_parser: Dependabot::Maven::FileParser,
+           maven_file_updater: Dependabot::Maven::FileUpdater,
+           maven_version: Dependabot::Maven::Version do
     subject(:create_operation) do
       described_class.new(
         service: mock_service,
@@ -460,11 +463,15 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     let(:mock_error_handler) do
       instance_double(Dependabot::Updater::ErrorHandler, handle_dependency_error: nil)
     end
+    let(:maven_file_parser) { RSpec.current_example.metadata.fetch(:maven_file_parser) }
+    let(:maven_file_updater) { RSpec.current_example.metadata.fetch(:maven_file_updater) }
+    let(:maven_version) { RSpec.current_example.metadata.fetch(:maven_version) }
     let(:update_checker) do
       available_versions = versions
+      version_class = maven_version
       Class.new(Dependabot::UpdateCheckers::Base) do
         define_method(:updated_version) { available_versions.fetch(dependency.name) }
-        define_method(:latest_version) { Dependabot::Maven::Version.new(updated_version) }
+        define_method(:latest_version) { version_class.new(updated_version) }
         define_method(:latest_resolvable_version) { latest_version }
         define_method(:latest_resolvable_version_with_no_unlock) { latest_version }
         define_method(:lowest_security_fix_version) { latest_version }
@@ -493,11 +500,11 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       allow(Dependabot::FileParsers)
         .to receive(:for_package_manager)
         .with("maven")
-        .and_return(Dependabot::Maven::FileParser)
+        .and_return(maven_file_parser)
       allow(Dependabot::FileUpdaters)
         .to receive(:for_package_manager)
         .with("maven")
-        .and_return(Dependabot::Maven::FileUpdater)
+        .and_return(maven_file_updater)
       allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).with("maven").and_return(update_checker)
     end
 
