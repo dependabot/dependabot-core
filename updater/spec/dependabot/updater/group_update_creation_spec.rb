@@ -591,12 +591,16 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
 
     it "sets up and cleans up the workspace for clone jobs" do
-      test_instance.compile_all_dependency_changes_for(group)
+      workspace_file = Dependabot::DependencyFile.new(name: "Gemfile", content: "source 'https://rubygems.org'")
+      allow(test_instance).to receive(:materialize_workspace_files)
+
+      test_instance.compile_all_dependency_changes_for(group, workspace_files: [workspace_file])
 
       expect(Dependabot::Workspace).to have_received(:setup).with(
         repo_contents_path: repo_contents_path,
         directory: Pathname.new(source_directory).cleanpath
       )
+      expect(test_instance).to have_received(:materialize_workspace_files).with([workspace_file])
       expect(Dependabot::Workspace).to have_received(:cleanup!).once
     end
 

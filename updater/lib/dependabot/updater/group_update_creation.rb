@@ -84,7 +84,7 @@ module Dependabot
         dependency_files: dependency_snapshot.dependency_files,
         workspace_files: nil
       )
-        prepare_workspace(directory: workspace_files ? Pathname.new("/") : nil)
+        prepare_workspace
         materialize_workspace_files(workspace_files) if workspace_files
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -727,13 +727,13 @@ module Dependabot
         DEBUG
       end
 
-      sig { params(directory: T.nilable(Pathname)).void }
-      def prepare_workspace(directory: nil)
+      sig { void }
+      def prepare_workspace
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.setup(
           repo_contents_path: T.must(job.repo_contents_path),
-          directory: directory || Pathname.new(job.source.directory || "/").cleanpath
+          directory: Pathname.new(job.source.directory || "/").cleanpath
         )
       end
 

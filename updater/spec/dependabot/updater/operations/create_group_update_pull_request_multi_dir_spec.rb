@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         create_operation.perform
 
         expect(workspace_contents_by_directory.fetch("/dir2")).to eq("shared")
-        expect(File).not_to exist(File.join(repo_contents_path, "shared.tf"))
+        expect(File).not_to exist(File.join(repo_contents_path, "created.tf"))
 
         second_directory_files = received_files_by_directory.fetch("/dir2")
         expect(second_directory_files.map(&:name)).not_to include("../deleted.tf")
