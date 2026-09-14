@@ -15,6 +15,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/maven"
 
 # End-to-end test for multi-directory grouped PR creation.
 #
@@ -261,6 +262,172 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         # mark the group handled, so assert it directly rather than just "no PR".
         expect(result).to be_nil
       end
+    end
+  end
+
+  describe "#perform with Maven directories that share a parent POM" do
+    subject(:create_operation) do
+      described_class.new(
+        service: mock_service,
+        job: job,
+        dependency_snapshot: dependency_snapshot,
+        error_handler: mock_error_handler,
+        group: dependency_group
+      )
+    end
+
+    let(:directories) { ["/", "/module-b", "/module-a"] }
+    let(:versions) do
+      {
+        "junit:junit" => "4.13.2",
+        "org.springframework:spring-core" => "5.3.39",
+        "com.fasterxml.jackson.core:jackson-databind" => "2.9.10.8",
+        "org.mybatis:mybatis" => "3.5.19"
+      }
+    end
+    let(:root_pom) { fixture("maven_multi_directory_group/pom.xml") }
+    let(:module_a_pom) { fixture("maven_multi_directory_group/module-a/pom.xml") }
+    let(:module_b_pom) { fixture("maven_multi_directory_group/module-b/pom.xml") }
+    let(:dependency_files) do
+      [
+        dependency_file("pom.xml", root_pom, "/"),
+        dependency_file("module-a/pom.xml", module_a_pom, "/"),
+        dependency_file("module-b/pom.xml", module_b_pom, "/"),
+        dependency_file("pom.xml", module_b_pom, "/module-b"),
+        dependency_file("../pom.xml", root_pom, "/module-b"),
+        dependency_file("pom.xml", module_a_pom, "/module-a"),
+        dependency_file("../pom.xml", root_pom, "/module-a")
+      ]
+    end
+    let(:job) do
+      Dependabot::Job.new_update_job(
+        job_id: "1234",
+        job_definition: {
+          "job" => {
+            "package-manager" => "maven",
+            "source" => {
+              "provider" => "github",
+              "repo" => "test/maven-monorepo",
+              "directories" => directories,
+              "branch" => nil,
+              "api-endpoint" => "https://api.github.com/",
+              "hostname" => "github.com"
+            },
+            "dependencies" => versions.keys,
+            "existing-pull-requests" => [],
+            "existing-group-pull-requests" => [],
+            "updating-a-pull-request" => false,
+            "lockfile-only" => false,
+            "update-subdependencies" => false,
+            "ignore-conditions" => [],
+            "requirements-update-strategy" => nil,
+            "allowed-updates" => [{ "dependency-type" => "all", "update-type" => "all" }],
+            "credentials-metadata" => [],
+            "security-advisories" => versions.map do |name, _version|
+              {
+                "dependency-name" => name,
+                "affected-versions" => [">= 0"],
+                "patched-versions" => [],
+                "unaffected-versions" => []
+              }
+            end,
+            "vendor-dependencies" => false,
+            "experiments" => {},
+            "reject-external-code" => false,
+            "commit-message-options" => {},
+            "security-updates-only" => true,
+            "dependency-groups" => [{
+              "name" => "maven",
+              "rules" => { "patterns" => versions.keys },
+              "applies-to" => "security-updates"
+            }]
+          }
+        }
+      )
+    end
+    let(:dependency_snapshot) do
+      Dependabot::DependencySnapshot.create_from_job_definition(
+        job: job,
+        fetched_files: Dependabot::FetchedFiles.new(
+          base_commit_sha: "mock-sha",
+          dependency_files: dependency_files
+        )
+      )
+    end
+    let(:dependency_group) { dependency_snapshot.groups.find { |group| group.name == "maven" } }
+    let(:mock_service) do
+      instance_double(
+        Dependabot::Service,
+        record_ecosystem_meta: nil,
+        record_cooldown_meta: nil
+      )
+    end
+    let(:mock_error_handler) do
+      instance_double(Dependabot::Updater::ErrorHandler, handle_dependency_error: nil)
+    end
+    let(:update_checker) do
+      available_versions = versions
+      Class.new(Dependabot::UpdateCheckers::Base) do
+        define_method(:updated_version) { available_versions.fetch(dependency.name) }
+        define_method(:latest_version) { Dependabot::Maven::Version.new(updated_version) }
+        define_method(:latest_resolvable_version) { latest_version }
+        define_method(:latest_resolvable_version_with_no_unlock) { latest_version }
+        define_method(:lowest_security_fix_version) { latest_version }
+        define_method(:lowest_resolvable_security_fix_version) { latest_version }
+        define_method(:updated_requirements) do
+          dependency.requirements.map { |requirement| requirement.merge(requirement: updated_version) }
+        end
+        define_method(:up_to_date?) { false }
+        define_method(:requirements_unlocked_or_can_be?) { true }
+        define_method(:can_update?) { |**_kwargs| true }
+        define_method(:updated_dependencies) do |**_kwargs|
+          [Dependabot::Dependency.new(
+            name: dependency.name,
+            version: updated_version,
+            requirements: updated_requirements,
+            previous_version: dependency.version,
+            previous_requirements: dependency.requirements,
+            package_manager: "maven",
+            directory: dependency.directory
+          )]
+        end
+      end
+    end
+
+    before do
+      original_update_checker = Dependabot::UpdateCheckers.for_package_manager("maven")
+      stub_const("OriginalMavenUpdateChecker", original_update_checker)
+      Dependabot::UpdateCheckers.register("maven", update_checker)
+    end
+
+    after do
+      Dependabot::UpdateCheckers.register("maven", OriginalMavenUpdateChecker)
+    end
+
+    it "combines every property update in the shared root POM" do
+      dependency_change = nil
+      allow(mock_service).to receive(:create_pull_request) { |change| dependency_change = change }
+
+      expect(dependency_group.dependencies.map(&:name).uniq).to match_array(versions.keys)
+      create_operation.perform
+
+      dependency_counts = dependency_change.updated_dependencies
+                                           .group_by(&:directory)
+                                           .transform_values { |dependencies| dependencies.map(&:name).uniq.count }
+      expect(dependency_counts).to eq("/" => 4, "/module-b" => 3, "/module-a" => 2)
+
+      root_files = dependency_change.updated_dependency_files.select { |file| file.path == "/pom.xml" }
+      expect(root_files.length).to eq(1)
+      expect(root_files.first.content).to include(
+        "<junit.version>4.13.2</junit.version>",
+        "<spring.version>5.3.39</spring.version>",
+        "<fasterxml-jackson.version>2.9.10.8</fasterxml-jackson.version>",
+        "<mybatis.version>3.5.19</mybatis.version>"
+      )
+    end
+
+    def dependency_file(name, content, directory)
+      Dependabot::DependencyFile.new(name: name, content: content, directory: directory)
     end
   end
 end

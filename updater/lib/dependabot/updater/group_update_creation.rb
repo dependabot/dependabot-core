@@ -72,12 +72,17 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/CyclomaticComplexity
-      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
-      def compile_all_dependency_changes_for(group)
+      sig do
+        params(
+          group: Dependabot::DependencyGroup,
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T.nilable(Dependabot::DependencyChange))
+      end
+      def compile_all_dependency_changes_for(group, dependency_files: dependency_snapshot.dependency_files)
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
-          initial_dependency_files: dependency_snapshot.dependency_files
+          initial_dependency_files: dependency_files
         )
 
         # deduplicate the dependencies.
@@ -172,6 +177,38 @@ module Dependabot
         dependency_change
       ensure
         cleanup_workspace
+      end
+
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
+      def compile_all_dependency_changes_for_directories(group)
+        updated_files_by_path = T.let({}, T::Hash[String, Dependabot::DependencyFile])
+        dependency_changes = T.must(job.source.directories).filter_map do |directory|
+          job.source.directory = directory
+          dependency_snapshot.current_directory = directory
+
+          dependency_files = dependency_snapshot.dependency_files.map do |file|
+            previous_file = updated_files_by_path[file.path]
+            next file unless previous_file
+
+            updated_file = file.dup
+            updated_file.content = previous_file.content
+            updated_file
+          end
+          change = compile_all_dependency_changes_for(group, dependency_files: dependency_files)
+          change&.updated_dependencies&.each do |dependency|
+            dependency.directory = directory
+            dependency.metadata[:directory] = directory
+          end
+          change&.updated_dependency_files&.each { |file| updated_files_by_path[file.path] = file }
+          change
+        end
+
+        first_change = dependency_changes.first
+        if first_change && dependency_changes.count > 1
+          first_change.merge_changes!(T.must(dependency_changes[1..-1]))
+          first_change.updated_dependency_files.replace(updated_files_by_path.values)
+        end
+        first_change
       end
 
       sig do
