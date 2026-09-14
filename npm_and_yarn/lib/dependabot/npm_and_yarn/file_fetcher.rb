@@ -179,17 +179,9 @@ module Dependabot
         end
 
         known_registries = []
-        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
-          "dependencies",
-          {}
-        ).each do |dependency_name, details|
-          resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
-
-          begin
-            uri = URI.parse(resolved)
-          rescue URI::InvalidURIError
-            next
-          end
+        FileParser::JsonLock.new(T.must(package_lock)).legacy_dependencies.each do |dependency_name, details|
+          uri = details.registry_uri(DEFAULT_NPM_REGISTRY)
+          next unless uri
 
           next unless uri.scheme && uri.host
 
