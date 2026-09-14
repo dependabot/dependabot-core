@@ -182,6 +182,7 @@ module Dependabot
 
         dependency_change
       ensure
+        cleanup_created_workspace_files(workspace_files) if workspace_files
         cleanup_workspace
       end
 
@@ -776,6 +777,16 @@ module Dependabot
           ],
           cwd: repo_contents_path
         )
+      end
+
+      sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+      def cleanup_created_workspace_files(files)
+        return unless job.clone? && job.repo_contents_path
+
+        files.select { |file| file.operation == Dependabot::DependencyFile::Operation::CREATE }.each do |file|
+          path = File.join(T.must(job.repo_contents_path), file.path.delete_prefix("/"))
+          FileUtils.rm_rf(path)
+        end
       end
 
       sig do

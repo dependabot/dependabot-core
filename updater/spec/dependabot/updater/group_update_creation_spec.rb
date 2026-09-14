@@ -640,6 +640,40 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         )
       end
     end
+
+    context "with a cumulative file created outside the active directory" do
+      let(:repo_contents_path) { build_tmp_repo("maven_multi_directory_group", path: "") }
+      let(:source_directory) { "/module-a" }
+      let(:created_file) do
+        Dependabot::DependencyFile.new(
+          name: "created.tf",
+          content: "created",
+          operation: Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+      let(:created_path) { File.join(repo_contents_path, "created.tf") }
+      let(:materialized_file_seen) { [] }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:setup).and_call_original
+        allow(Dependabot::Workspace).to receive(:cleanup!).and_call_original
+        allow(test_instance).to receive(:dependency_file_parser) do
+          materialized_file_seen << File.exist?(created_path)
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
+        end
+      end
+
+      after do
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
+      it "removes the created file after compilation" do
+        test_instance.compile_all_dependency_changes_for(group, workspace_files: [created_file])
+
+        expect(materialized_file_seen).to eq([true])
+        expect(File).not_to exist(created_path)
+      end
+    end
   end
 
   describe "#compile_updates_for blocked versions ignored metric" do
