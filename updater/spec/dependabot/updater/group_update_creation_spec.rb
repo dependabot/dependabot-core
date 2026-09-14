@@ -599,6 +599,43 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
       expect(Dependabot::Workspace).to have_received(:cleanup!).once
     end
+
+    context "with a cumulative submodule update" do
+      let(:repo_contents_path) { build_tmp_repo("maven_multi_directory_group", path: "") }
+      let(:submodule_file) do
+        Dependabot::DependencyFile.new(
+          name: "submodule",
+          content: "1111111111111111111111111111111111111111",
+          type: "submodule",
+          mode: Dependabot::DependencyFile::Mode::SUBMODULE
+        )
+      end
+      let(:staged_submodule) { [] }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:setup).and_call_original
+        allow(Dependabot::Workspace).to receive(:cleanup!).and_call_original
+        allow(test_instance).to receive(:dependency_file_parser) do
+          staged_submodule << Dependabot::SharedHelpers.run_shell_command(
+            ["git", "ls-files", "--stage", "submodule"],
+            cwd: repo_contents_path
+          )
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
+        end
+      end
+
+      after do
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
+      it "stages the submodule as a gitlink before parsing" do
+        test_instance.compile_all_dependency_changes_for(group, workspace_files: [submodule_file])
+
+        expect(staged_submodule.first).to start_with(
+          "160000 1111111111111111111111111111111111111111"
+        )
+      end
+    end
   end
 
   describe "#compile_updates_for blocked versions ignored metric" do

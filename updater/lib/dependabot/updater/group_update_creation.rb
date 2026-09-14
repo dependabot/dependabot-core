@@ -749,14 +749,33 @@ module Dependabot
           end
 
           FileUtils.mkdir_p(File.dirname(path))
-          FileUtils.rm_f(path)
-          if file.type == "symlink"
+          if file.type == "submodule"
+            materialize_workspace_submodule(file)
+          elsif file.type == "symlink"
+            FileUtils.rm_f(path)
             FileUtils.ln_s(T.must(file.symlink_target), path)
           else
+            FileUtils.rm_f(path)
             File.binwrite(path, file.decoded_content)
             FileUtils.chmod(file.mode == Dependabot::DependencyFile::Mode::EXECUTABLE ? 0o755 : 0o644, path)
           end
         end
+      end
+
+      sig { params(file: Dependabot::DependencyFile).void }
+      def materialize_workspace_submodule(file)
+        repo_contents_path = T.must(job.repo_contents_path)
+        SharedHelpers.run_shell_command(
+          [
+            "git", "update-index", "--add", "--cacheinfo",
+            [
+              Dependabot::DependencyFile::Mode::SUBMODULE,
+              file.decoded_content,
+              file.path.delete_prefix("/")
+            ].join(",")
+          ],
+          cwd: repo_contents_path
+        )
       end
 
       sig do

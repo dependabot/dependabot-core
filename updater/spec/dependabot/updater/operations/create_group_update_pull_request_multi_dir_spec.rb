@@ -380,9 +380,10 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
   end
 
   describe "#perform with Maven directories that share a parent POM",
-           maven_file_parser: Dependabot::Maven::FileParser,
-           maven_file_updater: Dependabot::Maven::FileUpdater,
-           maven_version: Dependabot::Maven::Version do
+           maven_file_parser: defined?(Dependabot::Maven::FileParser) ? Dependabot::Maven::FileParser : nil,
+           maven_file_updater: defined?(Dependabot::Maven::FileUpdater) ? Dependabot::Maven::FileUpdater : nil,
+           maven_version: defined?(Dependabot::Maven::Version) ? Dependabot::Maven::Version : nil,
+           skip: !defined?(Dependabot::Maven::FileParser) do
     subject(:create_operation) do
       described_class.new(
         service: mock_service,
