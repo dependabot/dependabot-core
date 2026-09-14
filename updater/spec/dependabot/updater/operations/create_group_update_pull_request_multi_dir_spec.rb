@@ -395,13 +395,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     end
 
     before do
-      original_update_checker = Dependabot::UpdateCheckers.for_package_manager("maven")
-      stub_const("OriginalMavenUpdateChecker", original_update_checker)
-      Dependabot::UpdateCheckers.register("maven", update_checker)
-    end
-
-    after do
-      Dependabot::UpdateCheckers.register("maven", OriginalMavenUpdateChecker)
+      allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).with("maven").and_return(update_checker)
     end
 
     it "combines every property update in the shared root POM" do
