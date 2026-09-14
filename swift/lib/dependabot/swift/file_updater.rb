@@ -179,6 +179,7 @@ module Dependabot
         LockfileUpdater.new(
           dependency: dependency,
           manifest: T.must(updated_manifest || manifest),
+          lockfile: lockfile,
           repo_contents_path: T.must(repo_contents_path),
           credentials: credentials,
           target_version: dependency.version
