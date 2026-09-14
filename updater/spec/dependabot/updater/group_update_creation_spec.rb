@@ -676,6 +676,46 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#compile_all_dependency_changes_for_directories" do
+    let(:original_file) do
+      Dependabot::DependencyFile.new(name: "Gemfile", content: "original")
+    end
+    let(:raw_updated_file) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile",
+        content: "updated",
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+    end
+    let(:first_change) do
+      instance_double(
+        Dependabot::DependencyChange,
+        updated_dependencies: [],
+        updated_dependency_files: [raw_updated_file]
+      )
+    end
+
+    before do
+      allow(source).to receive(:directories).and_return(["/dir1", "/dir2"])
+      allow(source).to receive(:directory=)
+      allow(dependency_snapshot).to receive_messages(
+        all_dependency_files: [original_file],
+        dependency_files: [original_file]
+      )
+      allow(dependency_snapshot).to receive(:current_directory=)
+      allow(test_instance).to receive(:compile_all_dependency_changes_for).and_return(first_change, nil)
+    end
+
+    it "uses the normalized file set when only one directory changes" do
+      change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+      expect(change.updated_dependency_files.first).to have_attributes(
+        content: "updated",
+        operation: Dependabot::DependencyFile::Operation::UPDATE
+      )
+    end
+  end
+
   describe "#compile_updates_for blocked versions ignored metric" do
     let(:dependency) { dependencies.first }
     let(:group) do

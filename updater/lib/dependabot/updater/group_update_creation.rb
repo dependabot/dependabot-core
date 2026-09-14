@@ -216,8 +216,8 @@ module Dependabot
         end
 
         first_change = dependency_changes.first
-        if first_change && dependency_changes.count > 1
-          first_change.merge_changes!(T.must(dependency_changes[1..-1]))
+        if first_change
+          first_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
           first_change.updated_dependency_files.replace(changed_files_by_path.values)
         end
         first_change
