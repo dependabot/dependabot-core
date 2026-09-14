@@ -10,6 +10,7 @@ require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
+require "dependabot/npm_and_yarn/update_checker/pnpm_transitive_update"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/security_advisory"
 require "dependabot/shared_helpers"
@@ -69,6 +70,7 @@ module Dependabot
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
           @security_advisories = security_advisories
+          @pnpm_update = T.let(nil, T.nilable(PnpmTransitiveUpdate))
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -133,8 +135,23 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          audit_fix_version = audit_fix_best_version(parsed_dep, current_version)
-          audit_fix_version || combined
+          candidate = audit_fix_best_version(parsed_dep, current_version) || combined
+          return candidate unless pnpm_update.pin_dropped
+
+          candidate if pnpm_update.within_bound?(
+            candidate: candidate, before: dependency_files_builder.lockfiles, after: updated_lockfiles
+          )
+        end
+
+        sig { returns(PnpmTransitiveUpdate) }
+        def pnpm_update
+          @pnpm_update ||= PnpmTransitiveUpdate.new(dependency: dependency, latest_allowable_version: allowable_version)
+        end
+
+        sig { returns(T.nilable(Gem::Version)) }
+        def allowable_version
+          allowable = latest_allowable_version
+          allowable.is_a?(String) ? version_class.new(allowable) : allowable
         end
 
         sig do
@@ -160,11 +177,7 @@ module Dependabot
           ).returns(T.nilable(Gem::Version))
         end
         def best_candidate_version(all_versions, current_version)
-          allowable = if latest_allowable_version.is_a?(String)
-                        version_class.new(latest_allowable_version)
-                      else
-                        latest_allowable_version
-                      end
+          allowable = allowable_version
 
           all_versions
             .filter_map { |d| version_class.new(d.version) if d.version }
@@ -236,10 +249,7 @@ module Dependabot
             Dir.chdir(path) do
               original_content = File.read(lockfile_name)
 
-              Helpers.run_pnpm_command(
-                pnpm_update_command,
-                fingerprint: pnpm_update_fingerprint
-              )
+              pnpm_update.run
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
@@ -257,29 +267,12 @@ module Dependabot
           end
         end
 
-        sig { returns(String) }
-        def pnpm_update_command
-          if latest_allowable_version
-            "update #{dependency.name}@#{latest_allowable_version} --lockfile-only --no-save -r"
-          else
-            "update #{dependency.name} --lockfile-only"
-          end
-        end
-
-        sig { returns(String) }
-        def pnpm_update_fingerprint
-          if latest_allowable_version
-            "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save -r"
-          else
-            "update <dependency_name> --lockfile-only"
-          end
-        end
-
         # First-tier fallback: try `pnpm update --depth Infinity <dep>` to
         # update transitive dependencies in the lockfile without modifying
         # manifests or relying on older pnpm audit fixes that may add overrides.
         sig { void }
         def run_pnpm_deep_update_fallback
+          pnpm_update.resolved_without_pin
           recursive = Dir.glob("**/pnpm-workspace.yaml").any?
           NativeHelpers.run_pnpm_deep_update_command(dependency.name, recursive: recursive)
           dependency.metadata[:deep_update_used] = true

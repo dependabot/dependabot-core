@@ -119,7 +119,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "returns a PNPMPackageManager instance from engines field" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
-        expect(helper.package_manager.detected_version).to eq("11")
+        expect(helper.package_manager.detected_version).to eq("12")
       end
     end
 
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "selects the highest matching supported pnpm version" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
-        expect(helper.package_manager.detected_version).to eq("11")
+        expect(helper.package_manager.detected_version).to eq("12")
       end
     end
 
@@ -245,6 +245,19 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "returns the deprecated version" do
         expect(package_manager.detected_version.to_s).to eq "6"
+      end
+    end
+
+    context "when packageManager pins a pnpm version below the supported range" do
+      let(:lockfiles) { { pnpm: pnpm_lockfile } }
+      let(:package_json) { { "packageManager" => "pnpm@6.0.2" } }
+
+      it "raises ToolVersionNotSupported listing every supported pnpm major" do
+        expect { helper.setup("pnpm") }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+          expect(error.tool_name).to eq("PNPM")
+          expect(error.detected_version).to eq("6.0.2")
+          expect(error.supported_versions).to eq("7.*, 8.*, 9.*, 10.*, 11.*, 12.*")
+        end
       end
     end
   end
