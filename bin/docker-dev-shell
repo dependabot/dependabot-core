@@ -262,7 +262,6 @@ docker run --rm -ti \
   -v "$(pwd)/nuget/script:$CODE_DIR/nuget/script" \
   -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
   -v "$(pwd)/omnibus/.rubocop.yml:$CODE_DIR/omnibus/.rubocop.yml" \
-  -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
   -v "$(pwd)/opentofu/.rubocop.yml:$CODE_DIR/opentofu/.rubocop.yml" \
