@@ -490,6 +490,14 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     end
 
     before do
+      allow(Dependabot::FileParsers)
+        .to receive(:for_package_manager)
+        .with("maven")
+        .and_return(Dependabot::Maven::FileParser)
+      allow(Dependabot::FileUpdaters)
+        .to receive(:for_package_manager)
+        .with("maven")
+        .and_return(Dependabot::Maven::FileUpdater)
       allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).with("maven").and_return(update_checker)
     end
 
