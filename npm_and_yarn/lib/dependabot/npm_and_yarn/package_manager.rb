@@ -444,7 +444,7 @@ module Dependabot
 
         begin
           Helpers.package_manager_install(name, version.to_s, env: corepack_env)
-        rescue StandardError => e
+        rescue SharedHelpers::HelperSubprocessFailed, RegistryError => e
           Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
           Helpers.fallback_to_local_version(name, env: corepack_env)
         end
