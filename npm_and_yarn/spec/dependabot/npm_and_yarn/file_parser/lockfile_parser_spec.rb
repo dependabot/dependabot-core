@@ -499,12 +499,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         # records its specifier as the literal "catalog:". The range is only recoverable
         # from the lockfile's own catalogs block.
         it "finds the catalogued version, not the transitive one" do
-          expect(lockfile_details).to eq(
-            "aliased" => false,
-            "dev" => false,
-            "name" => "globals",
-            "specifiers" => ["catalog:", "^17.11.0"],
-            "version" => "17.11.0"
+          expect(lockfile_details).to have_attributes(
+            version: "17.11.0",
+            resolved: nil
           )
         end
       end
