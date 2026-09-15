@@ -265,6 +265,20 @@ RSpec.describe Dependabot::Bun::FileParser do
             expect(ms.production?).to be(false)
           end
         end
+
+        context "when a later manifest declares a production-reachable copy" do
+          # The root's ms@2.0.0 is development-only. app's ms@2.1.2 is also a devDependency, but
+          # app's production debug@4.3.4 installs that same app/ms copy. The root is parsed first.
+          let(:files) { project_dependency_files("bun/multi_manifest_dev_dependency") }
+
+          it "treats the combined dependency as production" do
+            ms = dependencies.find { |dep| dep.name == "ms" }
+
+            expect(ms.requirements.map(&:file)).to contain_exactly("package.json", "packages/app/package.json")
+            expect(ms.requirements.map(&:groups)).to all(eq(["devDependencies"]))
+            expect(ms.production?).to be(true)
+          end
+        end
       end
     end
   end

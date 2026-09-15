@@ -63,7 +63,10 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock::DependencyTypeResolver do
     lockfile.records.each_with_object({}) do |(key, record), result|
       next unless record.version
 
-      result["#{record.name}@#{record.version}"] = !production_by_key.fetch(key, true)
+      # bun why reports each name@version once, across every copy (such as "app/ms" and
+      # "debug/ms"), so it is development only when every copy is.
+      label = "#{record.name}@#{record.version}"
+      result[label] = result.fetch(label, true) && !production_by_key.fetch(key, true)
     end
   end
 
@@ -74,6 +77,7 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock::DependencyTypeResolver do
     workspace_dependency_types
     direct_dev_transitive_production
     direct_dev_unrelated_production_copy
+    multi_manifest_dev_dependency
   ).each do |fixture_name|
     context "with the #{fixture_name} fixture" do
       before do
