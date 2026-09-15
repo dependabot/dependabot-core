@@ -59,6 +59,18 @@ module Dependabot
           details
         end
 
+        # Whether the lockfile copy that a manifest dependency resolves to is installed
+        # through a production dependency. False unless dependency types are enabled.
+        sig do
+          params(dependency_name: String, workspace_name: T.nilable(String), manifest_name: String)
+            .returns(T::Boolean)
+        end
+        def reachable_from_production?(dependency_name:, workspace_name:, manifest_name:)
+          potential_lockfiles_for_manifest(manifest_name).any? do |lockfile|
+            lockfile_for(lockfile).production_reachable?(dependency_name, workspace_name)
+          end
+        end
+
         private
 
         sig { returns(T::Array[DependencyFile]) }
