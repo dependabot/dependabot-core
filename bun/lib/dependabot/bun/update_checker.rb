@@ -335,9 +335,14 @@ module Dependabot
         removed = update_details.fetch(:removed, false)
         version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
-        # Keep what the parser recorded (such as reachable_from_production, which decides
-        # the dependency type) and let explicit details such as information_only add to it.
-        metadata = original_dep.metadata.merge(update_details.fetch(:metadata, {}))
+        # Keep the type flags the parser recorded (such as reachable_from_production) and
+        # let explicit details such as information_only add to them. Only those flags
+        # carry over: the rest of the parsed metadata, such as the all_versions list,
+        # describes the dependency before this update.
+        metadata = Dependency.combine_metadata(
+          original_dep.metadata.slice(*Dependency::ANY_TRUE_METADATA_KEYS),
+          update_details.fetch(:metadata, {})
+        )
 
         Dependency.new(
           name: original_dep.name,

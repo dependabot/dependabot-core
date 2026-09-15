@@ -1430,6 +1430,19 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
         expect(updated_dependency.metadata).to eq(reachable_from_production: true, information_only: true)
       end
+
+      it "does not let explicit metadata drop reachable_from_production" do
+        updated_dependency = checker.send(
+          :build_updated_dependency,
+          dependency: reachable_dependency,
+          version: "1.7.0",
+          previous_version: "1.6.0",
+          metadata: { reachable_from_production: false }
+        )
+
+        expect(updated_dependency.metadata).to eq(reachable_from_production: true)
+        expect(updated_dependency.production?).to be(true)
+      end
     end
 
     context "when a security fix updates a parent that is reachable from production" do
@@ -1476,6 +1489,16 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           "etag" => { information_only: true },
           "express" => { reachable_from_production: true }
         )
+      end
+
+      it "does not carry the parsed all_versions list onto the update" do
+        parent_dependency.metadata[:all_versions] = [parent_dependency]
+
+        updated_dependencies = checker.send(:updated_dependencies_after_full_unlock)
+        express = updated_dependencies.find { |dep| dep.name == "express" }
+
+        expect(express.metadata).to eq(reachable_from_production: true)
+        expect(express.all_versions).to eq(["4.1.0"])
       end
     end
 
