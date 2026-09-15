@@ -18,13 +18,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         requirement: nil,
         groups: [],
         file: "values.yaml",
-        source: { tag: "1.14.3" }
+        source: { registry: "registry.example.com", tag: "1.14.3" }
       }],
       previous_requirements: [{
         requirement: nil,
         groups: [],
         file: "values.yaml",
-        source: { tag: "1.14.2" }
+        source: { registry: "registry.example.com", tag: "1.14.2" }
       }],
       package_manager: "docker"
     )
@@ -1637,7 +1637,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       let(:helmfile_body) { fixture("helm", "yaml", "digest.yaml") }
       let(:helm_dependency) do
         Dependabot::Dependency.new(
-          name: "ubuntu",
+          name: "canonical/ubuntu",
           version: "sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a764c077aed54bbc5bb25368",
           previous_version: "sha256:295c7be079025306c4f1d65997fcf7adb411c88f139ad1d34b537164aa060369",
           requirements: [{
@@ -1686,13 +1686,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.3" }
+            source: { registry: "burns.azurecr.io", tag: "1.14.3" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.2" }
+            source: { registry: "burns.azurecr.io", tag: "1.14.2" }
           }],
           package_manager: "docker"
         )
@@ -1707,6 +1707,59 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
         its(:content) { is_expected.to include "  image:\n    repository: 'nginx'\n    tag: 1.14.3\n" }
         its(:content) { is_expected.to include "  image:\n    repository: 'canonical/ubuntu'\n    tag: 18.04" }
+      end
+    end
+
+    context "when unrelated Helm images have the same tag" do
+      let(:helmfile_body) { fixture("helm", "yaml", "matching-tags.yaml") }
+      let(:expected_helmfile_body) { fixture("helm", "yaml", "matching-tags.yaml.updated") }
+      let(:registry) { "registry.example.com" }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "example/api",
+          version: "1.3.0",
+          previous_version: "1.2.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { registry: registry, tag: "1.3.0" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { registry: registry, tag: "1.2.0" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      it "updates only matching image tags, preserving unrelated values and formatting" do
+        expect(updated_files.first.content).to eq(expected_helmfile_body)
+      end
+
+      context "without a trailing newline" do
+        let(:helmfile_body) { super().chomp }
+        let(:expected_helmfile_body) { super().chomp }
+
+        it "preserves the missing trailing newline" do
+          expect(updated_files.first.content).to eq(expected_helmfile_body)
+        end
+      end
+
+      context "with Docker Hub images" do
+        let(:registry) { nil }
+        let(:helmfile_body) do
+          fixture("helm", "yaml", "matching-tags.yaml").gsub("registry.example.com", "docker.io")
+        end
+        let(:expected_helmfile_body) do
+          fixture("helm", "yaml", "matching-tags.yaml.updated").gsub("registry.example.com", "docker.io")
+        end
+
+        it "matches explicit Docker Hub registries to normalized dependency sources" do
+          expect(updated_files.first.content).to eq(expected_helmfile_body)
+        end
       end
     end
 
@@ -1768,13 +1821,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.3" }
+            source: { registry: "registry.example.com", tag: "1.14.3" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.2" }
+            source: { registry: "registry.example.com", tag: "1.14.2" }
           }],
           package_manager: "docker"
         )
@@ -1808,13 +1861,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.3" }
+            source: { registry: "registry.example.com", tag: "1.14.3" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.2" }
+            source: { registry: "registry.example.com", tag: "1.14.2" }
           }],
           package_manager: "docker"
         )
@@ -1848,13 +1901,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.3" }
+            source: { registry: "registry.example.com", tag: "1.14.3" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "1.14.2" }
+            source: { registry: "registry.example.com", tag: "1.14.2" }
           }],
           package_manager: "docker"
         )
@@ -1888,13 +1941,13 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "v1.2.4" }
+            source: { registry: "mcr.microsoft.com", tag: "v1.2.4" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "values.yaml",
-            source: { tag: "v1.2.3" }
+            source: { registry: "mcr.microsoft.com", tag: "v1.2.3" }
           }],
           package_manager: "docker"
         )
