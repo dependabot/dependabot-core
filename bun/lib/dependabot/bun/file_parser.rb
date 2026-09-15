@@ -177,7 +177,12 @@ module Dependabot
 
             requirement = "*" if requirement == ""
             dep = build_dependency(
-              file: file, type: type, name: name, requirement: requirement
+              file: file,
+              type: type,
+              name: name,
+              requirement: requirement,
+              # Bun keys a workspace's own nested copies under its package name.
+              workspace_name: file.name == MANIFEST_FILENAME ? nil : manifest.name
             )
             dependency_set << dep if dep
           end
@@ -196,21 +201,31 @@ module Dependabot
         )
       end
 
+      # Cached so the lockfile dependency set, and the graph walk behind it, is built once per parser.
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def lockfile_dependencies
-        lockfile_parser.parse_set
+        @lockfile_dependencies ||= T.let(
+          lockfile_parser.parse_set,
+          T.nilable(Dependabot::FileParsers::Base::DependencySet)
+        )
       end
 
       sig do
-        params(file: DependencyFile, type: String, name: String, requirement: String)
-          .returns(T.nilable(Dependency))
+        params(
+          file: DependencyFile,
+          type: String,
+          name: String,
+          requirement: String,
+          workspace_name: T.nilable(String)
+        ).returns(T.nilable(Dependency))
       end
-      def build_dependency(file:, type:, name:, requirement:)
-        lockfile_details = lockfile_parser.lockfile_details(
+      def build_dependency(file:, type:, name:, requirement:, workspace_name:)
+        manifest_copy = lockfile_parser.manifest_copy(
           dependency_name: name,
-          requirement: requirement,
+          workspace_name: workspace_name,
           manifest_name: file.name
         )
+        lockfile_details = manifest_copy&.details
         version = version_for(requirement, lockfile_details)
         converted_version = T.let(
           if version.nil?
@@ -243,8 +258,16 @@ module Dependabot
             file: file.name,
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
-          }]
+          }],
+          metadata: production_metadata(manifest_copy)
         )
+      end
+
+      # A package declared only in devDependencies is still production when the copy it
+      # resolves to is installed through a production dependency. Only that copy counts.
+      sig { params(manifest_copy: T.nilable(LockfileParser::ManifestCopy)).returns(T::Hash[Symbol, T::Boolean]) }
+      def production_metadata(manifest_copy)
+        manifest_copy&.reachable_from_production ? { reachable_from_production: true } : {}
       end
 
       sig { override.void }

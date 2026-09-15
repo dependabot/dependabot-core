@@ -213,6 +213,83 @@ RSpec.describe Dependabot::Bun::FileParser do
         its(:length) { is_expected.to eq(0) }
       end
     end
+
+    describe "dependency types" do
+      # ms is a direct devDependency, and debug (a production dependency) also installs it.
+      let(:files) { project_dependency_files("bun/direct_dev_transitive_production") }
+
+      after { Dependabot::Experiments.reset! }
+
+      def production?(name)
+        dependencies.find { |dep| dep.name == name }.production?
+      end
+
+      it "uses only the manifest group when the experiment is disabled" do
+        expect(production?("ms")).to be(false)
+      end
+
+      context "when the experiment is enabled" do
+        before { Dependabot::Experiments.register(:enable_bun_subdependency_types, true) }
+
+        it "treats a devDependency that a production dependency also installs as production" do
+          ms = dependencies.find { |dep| dep.name == "ms" }
+
+          expect(ms).to be_top_level
+          expect(ms.production?).to be(true)
+        end
+
+        it "keeps the other dependencies' types" do
+          expect(production?("etag")).to be(false)
+          expect(production?("debug")).to be(true)
+        end
+
+        it "reads the lockfile dependencies once" do
+          lockfile_parser = Dependabot::Bun::FileParser::LockfileParser.new(dependency_files: files)
+          allow(Dependabot::Bun::FileParser::LockfileParser).to receive(:new).and_return(lockfile_parser)
+          allow(lockfile_parser).to receive(:parse_set).and_call_original
+
+          dependencies
+
+          expect(lockfile_parser).to have_received(:parse_set).once
+        end
+
+        context "when only an unrelated nested copy is reachable from production" do
+          # The root declares ms@2.0.0 for development; debug installs its own debug/ms@2.1.2.
+          let(:files) { project_dependency_files("bun/direct_dev_unrelated_production_copy") }
+
+          it "keeps the direct devDependency development" do
+            ms = dependencies.find { |dep| dep.name == "ms" }
+
+            expect(ms).to be_top_level
+            expect(ms.metadata).not_to include(:reachable_from_production)
+            expect(ms.production?).to be(false)
+          end
+        end
+
+        context "when a later manifest declares a production-reachable copy" do
+          # The root's ms@2.0.0 is development-only. app's ms@2.1.2 is also a devDependency, but
+          # app's production debug@4.3.4 installs that same app/ms copy. The root is parsed first.
+          let(:files) { project_dependency_files("bun/multi_manifest_dev_dependency") }
+
+          it "treats the combined dependency as production" do
+            ms = dependencies.find { |dep| dep.name == "ms" }
+
+            expect(ms.requirements.map(&:file)).to contain_exactly("package.json", "packages/app/package.json")
+            expect(ms.requirements.map(&:groups)).to all(eq(["devDependencies"]))
+            expect(ms.production?).to be(true)
+          end
+
+          it "takes each declaration's version from its own copy" do
+            ms = dependencies.find { |dep| dep.name == "ms" }
+            versions_by_file = ms.metadata[:all_versions].select(&:top_level?).to_h do |dep|
+              [dep.requirements.map(&:file).sort, dep.version]
+            end
+
+            expect(versions_by_file).to eq(["package.json"] => "2.0.0", ["packages/app/package.json"] => "2.1.2")
+          end
+        end
+      end
+    end
   end
 
   describe "missing package.json manifest file" do
