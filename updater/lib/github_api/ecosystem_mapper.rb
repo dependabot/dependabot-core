@@ -15,7 +15,7 @@ module GithubApi
     ECOSYSTEM_TO_PACKAGE_MANAGERS = T.let(
       {
         "rubygems" => %w(bundler),
-        "npm" => %w(npm_and_yarn bun),
+        "npm" => %w(npm_and_yarn bun nub),
         "pypi" => %w(pip uv),
         "golang" => %w(go_modules),
         "maven" => %w(maven),

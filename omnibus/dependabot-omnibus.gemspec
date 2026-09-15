@@ -49,6 +49,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-maven", Dependabot::VERSION
   spec.add_dependency "dependabot-nix", Dependabot::VERSION
   spec.add_dependency "dependabot-npm_and_yarn", Dependabot::VERSION
+  spec.add_dependency "dependabot-nub", Dependabot::VERSION
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
   spec.add_dependency "dependabot-opentofu", Dependabot::VERSION
   spec.add_dependency "dependabot-pre_commit", Dependabot::VERSION
