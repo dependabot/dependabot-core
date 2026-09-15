@@ -1,6 +1,7 @@
 module DependabotHelper
 
 import Downloads
+import HistoricalStdlibVersions
 import JSON
 import Pkg
 import TOML
@@ -8,6 +9,7 @@ using PrecompileTools
 
 # Include all the logical function modules
 include("utilities.jl")
+include("stdlibs.jl")
 include("project_parsing.jl")
 include("version_constraints.jl")
 include("package_discovery.jl")

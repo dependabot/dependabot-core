@@ -148,6 +148,11 @@ module Dependabot
         return if versions.empty?
 
         dependencies_map.transform_values! do |dep|
+          # Julia pins a stdlib itself, so its manifest entry is not something
+          # Dependabot can bump; with no version recorded only the compat
+          # entry is maintained
+          next dep if dep.metadata.key?(:julia_stdlib_versions)
+
           uuid = T.cast(dep.metadata[:julia_uuid], T.nilable(String))
           version = uuid && versions[uuid]
           next dep unless version
@@ -250,7 +255,7 @@ module Dependabot
           uuid = dependency.uuid
           requirement_string = dependency.requirement
 
-          next if skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
+          next if skip_dependency?(dependency, file_name, workspace_package_uuids)
 
           new_requirement = {
             requirement: requirement_string,
@@ -270,7 +275,7 @@ module Dependabot
               version: nil,
               requirements: existing_requirements,
               package_manager: "julia",
-              metadata: existing_dep.metadata
+              metadata: dependency_metadata(dependency, file_name, existing_dep.metadata)
             )
           else
             # Create new dependency
@@ -279,10 +284,26 @@ module Dependabot
               version: nil,
               requirements: [new_requirement],
               package_manager: "julia",
-              metadata: { julia_uuid: uuid }
+              metadata: dependency_metadata(dependency, file_name, { julia_uuid: uuid })
             )
           end
         end
+      end
+
+      # A stdlib carries the versions its compat entry has to admit, keyed by
+      # project file since every file has its own julia compat entry
+      sig do
+        params(
+          dependency: Dependabot::Julia::RegistryClient::Result::ProjectDependency,
+          file_name: String,
+          metadata: T::Hash[Symbol, T.untyped]
+        ).returns(T::Hash[Symbol, T.untyped])
+      end
+      def dependency_metadata(dependency, file_name, metadata)
+        return metadata unless dependency.stdlib
+
+        versions_by_file = T.cast(metadata[:julia_stdlib_versions], T.nilable(T::Hash[String, T::Array[String]])) || {}
+        metadata.merge(julia_stdlib_versions: versions_by_file.merge(file_name => dependency.stdlib_versions))
       end
 
       # UUID is a package's identity in Julia: two same-named entries with
@@ -313,20 +334,34 @@ module Dependabot
 
       sig do
         params(
-          uuid: T.nilable(String),
-          requirement_string: T.nilable(String),
+          dependency: Dependabot::Julia::RegistryClient::Result::ProjectDependency,
           file_name: String,
           workspace_package_uuids: T::Array[String]
         ).returns(T::Boolean)
       end
-      def skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
-        return true if uuid && workspace_package_uuids.include?(uuid)
+      def skip_dependency?(dependency, file_name, workspace_package_uuids)
+        return true if workspace_package_uuids.include?(dependency.uuid)
+
+        # Pkg pins a standard library to the version bundled with Julia, so
+        # a compat entry tracking its registry releases (a legacy bridge for
+        # older Julia, or an "upgradable" stdlib release) can make the
+        # project uninstallable on part of its supported Julia range. The
+        # helper flags packages that ship with any Julia release admitted by
+        # the project's julia compat and reports the versions the entry has
+        # to admit instead; without those there is nothing safe to propose.
+        if dependency.stdlib && dependency.stdlib_versions.empty?
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} in #{file_name}: standard library with no known versions " \
+            "for the project's Julia range"
+          )
+          return true
+        end
 
         # A dep with no compat entry in a workspace member file (test/,
         # docs/, ...) must not get one synthesized: Julia convention
         # (CompatHelper) only adds compat bounds to the package's own
         # Project.toml. Existing member compat entries are still updated.
-        requirement_string.nil? && workspace_member_file?(file_name)
+        dependency.requirement.nil? && workspace_member_file?(file_name)
       end
 
       # Anything outside the target directory ("test/Project.toml", or
