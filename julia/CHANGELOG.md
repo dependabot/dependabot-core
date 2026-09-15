@@ -18,6 +18,8 @@
 ### Fixed
 
 - Fixed registry lookups on Julia 1.13, where Pkg changed `registry_info` to also take the registry instance
+- Fixed suggested `[compat]` entries for JLL packages carrying the build number (e.g. `Zlib_jll = "1.6.10+0"`), which Pkg rejects as an invalid version specifier
+- A JLL rebuild (`0.0.43+1`) now satisfies a compat entry admitting `0.0.43`, as it does for Pkg, instead of proposing a redundant `=0.0.43, 0.0.43` widening
 - Weakdeps and extras that appear in the manifest as indirect dependencies no longer get a manifest version, which announced a version bump the manifest update then refused to apply
 - Compat entries for standard libraries are now derived from the versions bundled across the project's `julia` compat range (using HistoricalStdlibVersions.jl) instead of the latest registry release, which produced bounds like `Artifacts = "1.3.0"` from a legacy bridge package or `Statistics = "1.11.5"` from an upgradable stdlib release; stdlib entries are only ever widened and their manifest entries are left alone (#16227, #16228)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification

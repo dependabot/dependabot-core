@@ -65,6 +65,14 @@ module Dependabot
         requirements_array(requirement_string)
       end
 
+      # Pkg compares a bound against major.minor.patch only, so a JLL rebuild
+      # ("0.0.43+1") satisfies "=0.0.43" or "0.0.42 - 0.0.43" exactly as the
+      # version it rebuilds does.
+      sig { params(version: T.any(Gem::Version, String)).returns(T::Boolean) }
+      def satisfied_by?(version)
+        T.cast(super(Dependabot::Julia::Version.new(version.to_s).without_build_metadata), T::Boolean)
+      end
+
       sig { params(version: String).returns(String) }
       def self.normalize_version(version)
         # Remove 'v' prefix if present (common in Julia)
