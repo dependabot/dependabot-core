@@ -697,7 +697,10 @@ module Dependabot
         ).void
       end
       def note_security_update_not_possible(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return unless job.security_advisories_for(dependency).any?
+
+        log_security_dependency_details(dependency)
+        return unless checker.vulnerable?
 
         conflicting_dependencies = checker.conflicting_dependencies
         explanation = vulnerability_conflict_explanation(conflicting_dependencies)
@@ -728,10 +731,7 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def security_update_required?(dependency, checker)
-        return false unless job.security_advisories_for(dependency).any?
-
-        log_security_dependency_details(dependency)
-        checker.vulnerable?
+        job.security_advisories_for(dependency).any? && checker.vulnerable?
       end
 
       sig { params(dependency: Dependabot::Dependency).void }
