@@ -19,7 +19,6 @@ require "dependabot/bun/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
-require "dependabot/experiments"
 require "sorbet-runtime"
 
 module Dependabot
@@ -178,7 +177,12 @@ module Dependabot
 
             requirement = "*" if requirement == ""
             dep = build_dependency(
-              file: file, type: type, name: name, requirement: requirement
+              file: file,
+              type: type,
+              name: name,
+              requirement: requirement,
+              # Bun keys a workspace's own nested copies under its package name.
+              workspace_name: file.name == MANIFEST_FILENAME ? nil : manifest.name
             )
             dependency_set << dep if dep
           end
@@ -197,8 +201,7 @@ module Dependabot
         )
       end
 
-      # Cached because both manifest dependencies (for production reachability) and
-      # #parse read it, and building it walks the whole lockfile graph.
+      # Cached so the lockfile dependency set, and the graph walk behind it, is built once per parser.
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def lockfile_dependencies
         @lockfile_dependencies ||= T.let(
@@ -207,28 +210,16 @@ module Dependabot
         )
       end
 
-      # Names of packages that the lockfile shows are installed through a production
-      # dependency. A package declared only in devDependencies can be one of them, and
-      # its manifest requirement would otherwise hide that when the entries are combined.
-      sig { returns(T::Set[String]) }
-      def production_reachable_names
-        @production_reachable_names ||= T.let(
-          if Dependabot::Experiments.enabled?(:enable_bun_subdependency_types)
-            lockfile_dependencies.dependencies.filter_map do |dep|
-              dep.name if dep.subdependency_metadata&.any? { |data| data[:production] == true }
-            end.to_set
-          else
-            Set.new
-          end,
-          T.nilable(T::Set[String])
-        )
-      end
-
       sig do
-        params(file: DependencyFile, type: String, name: String, requirement: String)
-          .returns(T.nilable(Dependency))
+        params(
+          file: DependencyFile,
+          type: String,
+          name: String,
+          requirement: String,
+          workspace_name: T.nilable(String)
+        ).returns(T.nilable(Dependency))
       end
-      def build_dependency(file:, type:, name:, requirement:)
+      def build_dependency(file:, type:, name:, requirement:, workspace_name:)
         lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
           requirement: requirement,
@@ -267,7 +258,19 @@ module Dependabot
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
           }],
-          metadata: production_reachable_names.include?(name) ? { reachable_from_production: true } : {}
+          metadata: reachable_from_production?(file, name, workspace_name) ? { reachable_from_production: true } : {}
+        )
+      end
+
+      # A package declared only in devDependencies is still production when the lockfile
+      # copy it resolves to is installed through a production dependency. Only that copy
+      # counts: an unrelated nested copy of the same name can be production on its own.
+      sig { params(file: DependencyFile, name: String, workspace_name: T.nilable(String)).returns(T::Boolean) }
+      def reachable_from_production?(file, name, workspace_name)
+        lockfile_parser.reachable_from_production?(
+          dependency_name: name,
+          workspace_name: workspace_name,
+          manifest_name: file.name
         )
       end
 
