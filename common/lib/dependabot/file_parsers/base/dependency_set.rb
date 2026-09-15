@@ -155,9 +155,24 @@ module Dependabot
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
-              metadata: old_dep.metadata,
+              metadata: combined_metadata(old_dep, new_dep),
               subdependency_metadata: subdependency_metadata
             )
+          end
+
+          # Keeps the first dependency's metadata. A dependency is reachable from production
+          # if any of its declarations is, so that flag is combined across both.
+          sig do
+            params(
+              old_dep: Dependabot::Dependency,
+              new_dep: Dependabot::Dependency
+            )
+              .returns(T::Hash[Symbol, Object])
+          end
+          def combined_metadata(old_dep, new_dep)
+            return old_dep.metadata unless new_dep.metadata[:reachable_from_production] == true
+
+            old_dep.metadata.merge(reachable_from_production: true)
           end
 
           sig do
