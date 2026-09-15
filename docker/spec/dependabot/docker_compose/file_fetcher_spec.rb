@@ -147,6 +147,21 @@ RSpec.describe Dependabot::DockerCompose::FileFetcher do
     end
   end
 
+  describe "::filename_regex" do
+    subject(:filename_regex) { described_class.filename_regex }
+
+    it "matches filenames with multiple dot-separated segments" do
+      expect(filename_regex.match?("compose.ci.yaml")).to be(true)
+      expect(filename_regex.match?("compose.ci.cache.yaml")).to be(true)
+      expect(filename_regex.match?("compose.ci.hermetic.yaml")).to be(true)
+      expect(filename_regex.match?("docker-compose.override.local.yml")).to be(true)
+    end
+
+    it "does not match unrelated files" do
+      expect(filename_regex.match?("something.yaml")).to be(false)
+    end
+  end
+
   context "with a directory that doesn't exist" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
