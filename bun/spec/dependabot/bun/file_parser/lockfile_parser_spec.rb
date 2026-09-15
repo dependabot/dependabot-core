@@ -9,6 +9,46 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
     described_class.new(dependency_files: dependency_files)
   end
 
+  describe "#reachable_from_production?" do
+    # packages/app has its own bun.lock, where ms is only a devDependency.
+    # The root bun.lock also has ms, and there it is a production dependency.
+    let(:dependency_files) do
+      [
+        bun_lock("bun.lock", "dependencies" => { "ms" => "2.1.2" }),
+        bun_lock("packages/app/bun.lock", "devDependencies" => { "ms" => "2.1.2" })
+      ]
+    end
+
+    def bun_lock(name, root_workspace)
+      content = {
+        "lockfileVersion" => 1,
+        "workspaces" => { "" => root_workspace },
+        "packages" => { "ms" => ["ms@2.1.2", "", {}, "sha512-example"] }
+      }.to_json
+      Dependabot::DependencyFile.new(name: name, content: content)
+    end
+
+    def reachable_from_production?(manifest_name, workspace_name)
+      lockfile_parser.reachable_from_production?(
+        dependency_name: "ms",
+        workspace_name: workspace_name,
+        manifest_name: manifest_name
+      )
+    end
+
+    before { Dependabot::Experiments.register(:enable_bun_subdependency_types, true) }
+
+    after { Dependabot::Experiments.reset! }
+
+    it "reads the closest lockfile that has the dependency, not a farther one" do
+      expect(reachable_from_production?("packages/app/package.json", "app")).to be(false)
+    end
+
+    it "reads the root lockfile for the root manifest" do
+      expect(reachable_from_production?("package.json", nil)).to be(true)
+    end
+  end
+
   describe "#parse" do
     subject(:dependencies) { lockfile_parser.parse }
 
