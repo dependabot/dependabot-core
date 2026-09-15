@@ -72,17 +72,6 @@ RSpec.describe Dependabot::Julia::Version do
     end
   end
 
-  describe "#without_build_metadata" do
-    it "compares equal to the version being rebuilt" do
-      expect(described_class.new("1.6.10+1").without_build_metadata).to eq(described_class.new("1.6.10"))
-      expect(described_class.new("1.6.10+1").without_build_metadata.to_s).to eq("1.6.10")
-    end
-
-    it "keeps prerelease tags" do
-      expect(described_class.new("1.0.0-rc.1+3").without_build_metadata.to_s).to eq("1.0.0-rc.1")
-    end
-  end
-
   describe "ordering" do
     it "orders numeric builds of the same version" do
       expect(described_class.new("1.6.10+1")).to be > described_class.new("1.6.10+0")

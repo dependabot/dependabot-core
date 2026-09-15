@@ -90,7 +90,7 @@ module Dependabot
       sig { params(requirement_string: String, versions: T::Array[Dependabot::Julia::Version]).returns(String) }
       def widened_stdlib_requirement(requirement_string, versions)
         reqs = Dependabot::Julia::Requirement.requirements_array(requirement_string)
-        missing = versions.reject { |version| reqs.any? { |req| req.satisfied_by?(version) } }
+        missing = versions.reject { |version| reqs.any? { |req| req.admits?(version) } }
 
         missing.reduce(requirement_string) do |entry, version|
           append_spec_string(entry, stdlib_version_spec(version))
@@ -143,7 +143,7 @@ module Dependabot
 
         # Check if any requirement is satisfied by the target version
         # Note: This uses the implicit caret semantics from the Requirement class
-        satisfied = reqs.any? { |req| req.satisfied_by?(target_version) }
+        satisfied = reqs.any? { |req| req.admits?(target_version) }
 
         case update_strategy
         when :bump_versions

@@ -65,12 +65,16 @@ module Dependabot
         requirements_array(requirement_string)
       end
 
-      # Pkg compares a bound against major.minor.patch only, so a JLL rebuild
-      # ("0.0.43+1") satisfies "=0.0.43" or "0.0.42 - 0.0.43" exactly as the
-      # version it rebuilds does.
+      # Whether a compat entry admits the version. Pkg compares a bound
+      # against major.minor.patch only, so a JLL rebuild ("0.0.43+1") is
+      # admitted by "=0.0.43" or "0.0.42 - 0.0.43" exactly as the version it
+      # rebuilds is, and a prerelease exactly as its release ("1" rejects
+      # "2.0.0-rc1"). Ignore conditions go through satisfied_by? instead and
+      # keep the ordering between builds ("> 1.6.10" ignores "1.6.10+1").
       sig { params(version: T.any(Gem::Version, String)).returns(T::Boolean) }
-      def satisfied_by?(version)
-        T.cast(super(Dependabot::Julia::Version.new(version.to_s).without_build_metadata), T::Boolean)
+      def admits?(version)
+        release = Dependabot::Julia::Version.new(version.to_s).compat_version_string
+        T.cast(satisfied_by?(Dependabot::Julia::Version.new(release)), T::Boolean)
       end
 
       sig { params(version: String).returns(String) }
