@@ -77,6 +77,20 @@ result=$(
 )
 assert_equal '3' "$(jq -r '.build_count' <<< "$result")" "fallback build count"
 
+alias_matrix='[
+  {"target":"docker","dockerfile":"docker/Dockerfile"},
+  {"target":"docker-compose","dockerfile":"docker/Dockerfile"},
+  {"target":"nuget","dockerfile":"nuget/Dockerfile"}
+]'
+result=$(
+  BAKE_MATRIX="$alias_matrix" \
+  CHANGED_TARGETS='["docker-compose"]' \
+  script/resolve-image-matrix
+)
+assert_equal 'true' "$(jq -r '.build_docker_family' <<< "$result")" "Docker family build flag"
+assert_equal '["docker","docker-compose"]' "$(jq -c '[.build[].target] | sort' <<< "$result")" "Docker family targets"
+assert_equal '0' "$(jq -r '.generic_build_count' <<< "$result")" "Docker family generic count"
+
 bake_targets=$(
   docker buildx bake --print ecosystem 2> /dev/null |
     jq -c '.group.ecosystem.targets | map(select(. != "updater-core")) | sort'
