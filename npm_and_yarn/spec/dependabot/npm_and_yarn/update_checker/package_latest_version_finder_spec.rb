@@ -165,6 +165,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:registry_response) do
+        response = JSON.parse(super())
+        response.fetch("time").delete("1.7.0")
+        JSON.dump(response)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version_from_registry).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when the latest version is a prerelease" do
       before do
         body = fixture("npm_responses", "prerelease.json")

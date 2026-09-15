@@ -308,6 +308,31 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           expect(result).to eq(Dependabot::Bundler::Version.new("1.4.0"))
         end
       end
+
+      context "when the release date is unavailable" do
+        let(:release) do
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Bundler::Version.new("1.5.0"),
+            released_at: nil
+          )
+        end
+        let(:package_details) do
+          Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+        end
+        let(:package_details_fetcher) do
+          instance_double(Dependabot::Bundler::Package::PackageDetailsFetcher, fetch: package_details)
+        end
+
+        before do
+          allow(Dependabot::Bundler::Package::PackageDetailsFetcher)
+            .to receive(:new).and_return(package_details_fetcher)
+        end
+
+        it "allows the release and marks the dependency" do
+          expect(finder.latest_version).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
     end
 
     context "with cooldown enabled with private registry" do

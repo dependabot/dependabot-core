@@ -411,6 +411,34 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when the release date is unavailable" do
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Composer::Version.new("3.2.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details) do
+        Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Composer::Package::PackageDetailsFetcher,
+          fetch_releases: [release]
+        )
+      end
+
+      before do
+        allow(Dependabot::Composer::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(finder.latest_version).to eq(Dependabot::Composer::Version.new("3.2.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do

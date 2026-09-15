@@ -393,7 +393,8 @@ module Dependabot
             dependency: nil,
             lockfile: pipfile_lock,
             language_version_manager: language_version_manager,
-            dependency_files: dependency_files
+            dependency_files: dependency_files,
+            repo_contents_path: file_parser.repo_contents_path
           ),
           T.nilable(PipenvRunner)
         )

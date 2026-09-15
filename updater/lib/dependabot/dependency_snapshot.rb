@@ -77,7 +77,7 @@ module Dependabot
     sig { returns(T::Array[Dependabot::Dependency]) }
     def allowed_dependencies
       if job.security_updates_only?
-        dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
+        job_dependencies
       else
         dependencies.select { |d| job.allowed_update?(d) }
       end
@@ -164,6 +164,13 @@ module Dependabot
     def handled_dependencies
       assert_current_directory_set!
       T.must(@handled_dependencies[@current_directory])
+    end
+
+    # Handled dependencies across every directory, for job-scoped decisions that must not
+    # depend on whichever directory happens to be current.
+    sig { returns(T::Set[String]) }
+    def all_handled_dependencies
+      @handled_dependencies.values.reduce(Set.new) { |all, names| all.merge(names) }
     end
 
     sig { params(dir: String).void }

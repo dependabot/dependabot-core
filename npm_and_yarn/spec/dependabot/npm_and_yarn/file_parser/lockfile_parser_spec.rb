@@ -376,13 +376,53 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     let(:requirement) { nil }
     let(:manifest_name) { "package.json" }
 
+    context "with an unresolved entry in the manifest's lockfile" do
+      let(:manifest_name) { "nested/package.json" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: { "lockfileVersion" => 1, "dependencies" => { "etag" => { "version" => "1.0.0" } } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "nested/package-lock.json",
+            content: { "lockfileVersion" => 1, "dependencies" => { "etag" => {} } }.to_json
+          )
+        ]
+      end
+
+      it "does not fall back to the root lockfile" do
+        expect(lockfile_details).to have_attributes(version: nil, resolved: nil, resolution: nil)
+      end
+    end
+
+    context "with unconsumed fields in a modern npm entry" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: {
+              "lockfileVersion" => 3,
+              "packages" => {
+                "node_modules/etag" => { "version" => "1.0.0", "resolution" => { "unconsumed" => true } }
+              }
+            }.to_json
+          )
+        ]
+      end
+
+      it "keeps npm lookup projection separate from Yarn resolution fields" do
+        expect(lockfile_details).to have_attributes(version: "1.0.0", resolved: nil, resolution: nil)
+      end
+    end
+
     context "when dealing with yarn lockfiles" do
       let(:dependency_files) { project_dependency_files("yarn/only_dev_dependencies") }
 
       it "finds the dependency" do
-        expect(lockfile_details).to eq(
-          "resolved" => "https://registry.yarnpkg.com/etag/-/etag-1.8.0.tgz#6f631aef336d6c46362b51764044ce216be3c051",
-          "version" => "1.8.0"
+        expect(lockfile_details).to have_attributes(
+          resolved: "https://registry.yarnpkg.com/etag/-/etag-1.8.0.tgz#6f631aef336d6c46362b51764044ce216be3c051",
+          version: "1.8.0"
         )
       end
 
@@ -392,11 +432,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:requirement) { "^2.2.1" }
 
         it "finds the one matching the requirement" do
-          expect(lockfile_details).to eq(
-            "version" => "2.2.1",
-            "resolved" => "https://registry.yarnpkg.com/ansi-styles/-/" \
-                          "ansi-styles-2.2.1.tgz#" \
-                          "b432dd3358b634cf75e1e4664368240533c1ddbe"
+          expect(lockfile_details).to have_attributes(
+            version: "2.2.1",
+            resolved: "https://registry.yarnpkg.com/ansi-styles/-/" \
+                      "ansi-styles-2.2.1.tgz#" \
+                      "b432dd3358b634cf75e1e4664368240533c1ddbe"
           )
         end
 
@@ -413,14 +453,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:requirement) { "^8.4.17" }
 
         it "finds the one matching the requirement" do
-          expect(lockfile_details).to eq(
-            "version" => "8.4.17",
-            "resolution" => "postcss@npm:8.4.17",
-            "dependencies" => { "nanoid" => "^3.3.4", "picocolors" => "^1.0.0", "source-map-js" => "^1.0.2" },
-            "checksum" => "a6d9096dd711e17f7b1d18ff5dcb4fdedf3941d5a3dc8b0e4ea" \
-                          "873b8f31972d57f73d6da9a8aed7ff389eb52190ed34f6a94f299a7f5ddc68b08a24a48f77eb9",
-            "languageName" => "node",
-            "linkType" => "hard"
+          expect(lockfile_details).to have_attributes(
+            version: "8.4.17",
+            resolution: "postcss@npm:8.4.17"
           )
         end
       end
@@ -430,12 +465,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       let(:dependency_files) { project_dependency_files("pnpm/only_dev_dependencies") }
 
       it "finds the dependency" do
-        expect(lockfile_details).to eq(
-          "aliased" => false,
-          "dev" => true,
-          "name" => "etag",
-          "specifiers" => ["^1.0.0"],
-          "version" => "1.8.0"
+        expect(lockfile_details).to have_attributes(
+          version: "1.8.0",
+          resolved: nil
         )
       end
 
@@ -445,12 +477,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:requirement) { "^6.24.1" }
 
         it "finds the one matching the requirement" do
-          expect(lockfile_details).to eq(
-            "aliased" => false,
-            "dev" => true,
-            "name" => "babel-register",
-            "specifiers" => ["^6.24.1"],
-            "version" => "6.24.1"
+          expect(lockfile_details).to have_attributes(
+            version: "6.24.1",
+            resolved: nil
           )
         end
 
@@ -467,12 +496,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:requirement) { "^5.0.0" }
 
         it "finds the one matching the requirement" do
-          expect(lockfile_details).to eq(
-            "aliased" => false,
-            "dev" => true,
-            "name" => "@typescript-eslint/parser",
-            "specifiers" => ["^5.0.0"],
-            "version" => "5.59.0"
+          expect(lockfile_details).to have_attributes(
+            version: "5.59.0",
+            resolved: nil
           )
         end
       end
@@ -483,12 +509,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:requirement) { "^5.0.0" }
 
         it "finds the one matching the requirement" do
-          expect(lockfile_details).to eq(
-            "aliased" => false,
-            "dev" => true,
-            "name" => "@typescript-eslint/parser",
-            "specifiers" => ["^5.0.0"],
-            "version" => "5.59.0"
+          expect(lockfile_details).to have_attributes(
+            version: "5.59.0",
+            resolved: nil
           )
         end
       end
@@ -499,13 +522,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:requirement) { "^6.26.0" }
 
         it "includes the URL in the details" do
-          expect(lockfile_details).to eq(
-            "aliased" => false,
-            "dev" => true,
-            "name" => "babel-core",
-            "resolved" => "https://registry.npmjs.org/babel-core/-/babel-core-6.26.3.tgz",
-            "specifiers" => ["^6.26.0"],
-            "version" => "6.26.3"
+          expect(lockfile_details).to have_attributes(
+            resolved: "https://registry.npmjs.org/babel-core/-/babel-core-6.26.3.tgz",
+            version: "6.26.3"
           )
         end
       end
@@ -515,11 +534,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       let(:dependency_files) { project_dependency_files("npm6/only_dev_dependencies") }
 
       it "finds the dependency" do
-        expect(lockfile_details).to eq(
-          "version" => "1.8.1",
-          "resolved" => "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
-          "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
-          "dev" => true
+        expect(lockfile_details).to have_attributes(
+          version: "1.8.1",
+          resolved: "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz"
         )
       end
 
@@ -527,11 +544,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm6/irrelevant_nested_lockfile") }
 
         it "finds the correct dependency" do
-          expect(lockfile_details).to eq(
-            "version" => "1.8.1",
-            "resolved" => "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
-            "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
-            "dev" => true
+          expect(lockfile_details).to have_attributes(
+            version: "1.8.1",
+            resolved: "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz"
           )
         end
 
@@ -539,10 +554,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           let(:manifest_name) { "nested/package.json" }
 
           it "finds the correct dependency" do
-            expect(lockfile_details).to eq(
-              "version" => "1.8.0",
-              "resolved" => "https://registry.npmjs.org/etag/-/etag-1.8.0.tgz",
-              "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSm111c="
+            expect(lockfile_details).to have_attributes(
+              version: "1.8.0",
+              resolved: "https://registry.npmjs.org/etag/-/etag-1.8.0.tgz"
             )
           end
         end
@@ -553,11 +567,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_only_dev_dependencies") }
 
       it "finds the dependency" do
-        expect(lockfile_details).to eq(
-          "version" => "1.8.1",
-          "resolved" => "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
-          "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
-          "dev" => true
+        expect(lockfile_details).to have_attributes(
+          version: "1.8.1",
+          resolved: "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz"
         )
       end
     end
@@ -569,11 +581,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:manifest_name) { "packages/build/package.json" }
 
         it "finds the correct dependency" do
-          expect(lockfile_details).to eq(
-            "version" => "16.2.0",
-            "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
-            "integrity" =>
-              "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+          expect(lockfile_details).to have_attributes(
+            version: "16.2.0",
+            resolved: "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz"
           )
         end
       end
@@ -586,11 +596,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:manifest_name) { "api/package.json" }
 
         it "finds the correct dependency" do
-          expect(lockfile_details).to eq(
-            "version" => "8.3.2",
-            "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
-            "integrity" =>
-              "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+          expect(lockfile_details).to have_attributes(
+            version: "8.3.2",
+            resolved: "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz"
           )
         end
       end
@@ -602,10 +610,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       let(:manifest_name) { "package.json" }
 
       it "finds the dependency" do
-        expect(lockfile_details).to eq(
-          "version" => "0.0.1",
-          "resolved" => "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz",
-          "integrity" => "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE="
+        expect(lockfile_details).to have_attributes(
+          version: "0.0.1",
+          resolved: "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz"
         )
       end
     end
@@ -618,11 +625,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           let(:manifest_name) { "packages/build/package.json" }
 
           it "finds the correct dependency" do
-            expect(lockfile_details).to eq(
-              "version" => "16.2.0",
-              "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
-              "integrity" =>
-              "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+            expect(lockfile_details).to have_attributes(
+              version: "16.2.0",
+              resolved: "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz"
             )
           end
         end
@@ -635,11 +640,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           let(:manifest_name) { "api/package.json" }
 
           it "finds the correct dependency" do
-            expect(lockfile_details).to eq(
-              "version" => "8.3.2",
-              "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
-              "integrity" =>
-              "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+            expect(lockfile_details).to have_attributes(
+              version: "8.3.2",
+              resolved: "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz"
             )
           end
         end
@@ -651,10 +654,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:manifest_name) { "package.json" }
 
         it "finds the dependency" do
-          expect(lockfile_details).to eq(
-            "version" => "0.0.1",
-            "resolved" => "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz",
-            "integrity" => "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE="
+          expect(lockfile_details).to have_attributes(
+            version: "0.0.1",
+            resolved: "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz"
           )
         end
       end

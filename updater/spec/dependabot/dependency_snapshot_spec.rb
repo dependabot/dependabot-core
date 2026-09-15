@@ -173,6 +173,16 @@ RSpec.describe Dependabot::DependencySnapshot do
         snapshot.current_directory = "/foo"
         expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
       end
+
+      it "exposes handled dependencies across every directory" do
+        snapshot = create_dependency_snapshot
+        snapshot.current_directory = "/foo"
+        snapshot.add_handled_dependencies(%w(a b))
+        snapshot.current_directory = "/bar"
+        snapshot.add_handled_dependencies(%w(c d))
+
+        expect(snapshot.all_handled_dependencies).to eq(Set.new(%w(a b c d)))
+      end
     end
   end
 

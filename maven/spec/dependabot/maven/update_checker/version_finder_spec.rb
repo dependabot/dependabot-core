@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -849,8 +849,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           stub_request(:head, version_1_2_jar_url).to_return(status: 200)
         end
 
-        it "treats the release as outside the cooldown window" do
+        it "selects the release and marks the unavailable cooldown date" do
           expect(latest_version_details[:version]).to eq(version_class.new("1.2.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
       end
 
@@ -865,6 +866,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
         it "selects the newest release without issuing fallback requests" do
           expect(latest_version_details[:version]).to eq(version_class.new("1.2.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).not_to be(true)
           expect(a_request(:head, version_1_2_pom_url)).not_to have_been_made
           expect(a_request(:head, version_1_1_pom_url)).not_to have_been_made
           expect(a_request(:head, version_1_0_pom_url)).not_to have_been_made

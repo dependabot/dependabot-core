@@ -19,7 +19,7 @@ function get_latest_version(package_name::String, package_uuid::String)
 
                 if name_matches && uuid_matches
                     # Get versions from the registry, excluding yanked ones
-                    versions = Pkg.Registry.registry_info(entry).version_info
+                    versions = registry_info(reg, entry).version_info
                     if !isempty(versions)
                         # Filter out yanked versions
                         non_yanked_versions = [ver for (ver, info) in versions if !info.yanked]
@@ -72,7 +72,7 @@ function get_package_metadata(package_name::String, package_uuid::String)
         for reg in Pkg.Registry.reachable_registries()
             for (uuid, entry) in reg.pkgs
                 if entry.name == package_name && string(uuid) == package_uuid
-                    reg_info = Pkg.Registry.registry_info(entry)
+                    reg_info = registry_info(reg, entry)
 
                     # Get available versions, excluding yanked ones
                     non_yanked = [v for (v, info) in reg_info.version_info if !info.yanked]
@@ -126,7 +126,7 @@ function fetch_package_versions(package_name::String, package_uuid::String)
                 uuid_matches = string(uuid) == package_uuid
 
                 if name_matches && uuid_matches
-                    version_info = Pkg.Registry.registry_info(entry).version_info
+                    version_info = registry_info(reg, entry).version_info
                     versions = [string(v) for (v, info) in version_info if !info.yanked]
                     break
                 end
@@ -189,7 +189,7 @@ function fetch_package_info(package_name::String, package_uuid::String)
                 uuid_matches = string(uuid) == package_uuid
 
                 if name_matches && uuid_matches
-                    reg_info = Pkg.Registry.registry_info(entry)
+                    reg_info = registry_info(reg, entry)
 
                     # Get all versions, excluding yanked ones
                     non_yanked = [v for (v, info) in reg_info.version_info if !info.yanked]
@@ -285,7 +285,7 @@ function source_url_from_registry(package_name::String, package_uuid::String)
                         continue  # Skip this entry if UUID doesn't match
                     end
 
-                    reg_info = Pkg.Registry.registry_info(entry)
+                    reg_info = registry_info(reg, entry)
 
                     # Get repository URL from PkgInfo.repo field
                     if reg_info.repo !== nothing && !isempty(reg_info.repo)
@@ -388,7 +388,7 @@ function get_available_versions(package_name::String, package_uuid::String)
                 uuid_matches = string(uuid) == package_uuid
 
                 if name_matches && uuid_matches
-                    version_info = Pkg.Registry.registry_info(entry).version_info
+                    version_info = registry_info(reg, entry).version_info
                     # Filter out yanked versions so callers (e.g. latest version finder)
                     # never consider retracted releases.
                     versions = [string(ver) for (ver, info) in version_info if !info.yanked]

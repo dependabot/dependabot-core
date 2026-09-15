@@ -40,6 +40,133 @@ RSpec.describe Dependabot::Python::FileParser do
 
     its(:length) { is_expected.to eq(5) }
 
+    context "with requirements helper results" do
+      let(:requirements_body) { "requests[security]==2.31.0\n" }
+      let(:helper_record) do
+        {
+          "name" => "requests",
+          "version" => "2.31.0",
+          "markers" => "None",
+          "file" => "requirements.txt",
+          "requirement" => "==2.31.0",
+          "extras" => ["security"]
+        }
+      end
+      let(:helper_result) { [helper_record] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "parse_requirements")).and_return(helper_result)
+        allow(parser).to receive(:python_raw_version).and_return("3.13.1")
+      end
+
+      it "preserves Python's dependency name and extras metadata" do
+        expect(dependencies.first).to have_attributes(name: "requests", version: "2.31.0", package_manager: "pip")
+        expect(dependencies.first.metadata).to include(extras: "security")
+        expect(dependencies.first.requirements).to eq(
+          [{
+            requirement: "==2.31.0",
+            file: "requirements.txt",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      [nil, "None"].each do |marker|
+        context "with #{marker.inspect} as the marker" do
+          let(:helper_record) { super().merge("markers" => marker, "version" => nil, "requirement" => "<3") }
+
+          it "does not filter an unmarked requirement" do
+            expect(dependencies.map(&:name)).to eq(["requests"])
+          end
+        end
+      end
+
+      context "without a marker field" do
+        let(:helper_record) { super().except("markers") }
+
+        it "treats the requirement as unmarked" do
+          expect(dependencies.map(&:name)).to eq(["requests"])
+        end
+      end
+
+      context "with an empty marker and an upper-bound requirement" do
+        let(:helper_record) { super().merge("markers" => "", "requirement" => "<3") }
+
+        it "preserves the existing upper-bound filtering" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "with a missing helper result" do
+        let(:helper_result) { nil }
+
+        it "reports a malformed requirements result" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            "parse_requirements result must be an array"
+          )
+        end
+      end
+
+      context "with a malformed record excluded by its marker" do
+        let(:helper_result) do
+          [
+            helper_record,
+            helper_record.merge("name" => "ignored", "markers" => "python_version < \"3.0\"", "extras" => [1])
+          ]
+        end
+
+        it "rejects the complete result before filtering records" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            /parse_requirements result\[1\].*extras/
+          )
+        end
+      end
+
+      context "with invalid requirement syntax" do
+        let(:helper_record) { super().merge("requirement" => "not a requirement") }
+
+        it "preserves the requirement evaluation error" do
+          expect { dependencies }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        end
+      end
+
+      [
+        ["InstallationError: invalid input", Dependabot::DependencyFileNotEvaluatable],
+        ["Unexpected helper failure", Dependabot::SharedHelpers::HelperSubprocessFailed]
+      ].each do |message, error_class|
+        context "when the helper reports #{message}" do
+          let(:helper_error) do
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+          end
+
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+              .with(hash_including(function: "parse_requirements")).and_raise(helper_error)
+          end
+
+          it "preserves the existing helper error mapping" do
+            expect { dependencies }.to raise_error(error_class, message)
+          end
+        end
+      end
+
+      context "when the helper call itself raises a type error" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "parse_requirements")).and_raise(TypeError, "unexpected helper type error")
+        end
+
+        it "does not treat it as a malformed result" do
+          expect { dependencies }.to raise_error(TypeError, "unexpected helper type error")
+        end
+      end
+    end
+
     context "with a version specified" do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
