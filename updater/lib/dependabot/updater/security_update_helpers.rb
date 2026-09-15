@@ -83,7 +83,7 @@ module Dependabot
       end
       def security_update_not_possible_error_details(checker, conflicting_dependencies: nil)
         latest_allowed_version =
-          ((checker.lowest_resolvable_security_fix_version if checker.vulnerable?) ||
+          (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
         lowest_non_vulnerable_version =
           checker.lowest_security_fix_version&.to_s

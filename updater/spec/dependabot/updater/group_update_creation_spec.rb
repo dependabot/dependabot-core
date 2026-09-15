@@ -84,8 +84,22 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
   let(:dependencies) do
     [
-      instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", metadata: {}),
-      instance_double(Dependabot::Dependency, name: "dep2", version: "2.0.0", metadata: {})
+      instance_double(
+        Dependabot::Dependency,
+        name: "dep1",
+        version: "1.0.0",
+        all_versions: ["1.0.0"],
+        requirements: [],
+        metadata: {}
+      ),
+      instance_double(
+        Dependabot::Dependency,
+        name: "dep2",
+        version: "2.0.0",
+        all_versions: ["2.0.0"],
+        requirements: [],
+        metadata: {}
+      )
     ]
   end
 
@@ -162,17 +176,30 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           test_instance.report_security_update_failure(dependency.name)
         end
 
-        it "uses the current version when the dependency is no longer vulnerable" do
+        it "does not record a security error when the dependency is not vulnerable" do
           allow(checker).to receive(:vulnerable?).and_return(false)
           expect(checker).not_to receive(:lowest_resolvable_security_fix_version)
-          expect(service).to receive(:record_update_job_error).with(
-            error_type: "security_update_not_possible",
-            error_details: hash_including("latest-resolvable-version": dependency.version),
-            dependency: nil
-          )
+          expect(service).not_to receive(:record_update_job_error)
 
           test_instance.note_security_update_not_possible(dependency, checker, group)
           test_instance.report_security_update_failure(dependency.name)
+        end
+
+        it "logs every detected version and requirement for the dependency" do
+          requirements = [
+            Dependabot::DependencyRequirement.create(file: "package.json", requirement: "^1.0.0"),
+            Dependabot::DependencyRequirement.create(file: "package-lock.json", requirement: "^2.0.0")
+          ]
+          allow(dependency).to receive_messages(
+            all_versions: %w(1.0.0 2.0.0),
+            requirements: requirements
+          )
+          expect(Dependabot.logger).to receive(:info).with(
+            'Security advisory check for dep1: versions=["1.0.0", "2.0.0"], ' \
+            'requirements=["package.json: ^1.0.0", "package-lock.json: ^2.0.0"]'
+          )
+
+          test_instance.note_security_update_not_possible(dependency, checker, group)
         end
 
         context "when checker has conflicting dependencies with vulnerability explanation" do
