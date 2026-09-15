@@ -139,32 +139,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     )
   end
 
-  describe "#notices" do
-    subject(:notices) { updater.notices }
-
-    context "when cooldown could not be applied" do
-      before do
-        dependency.metadata[:docker_cooldown_date_unavailable] = true
-      end
-
-      it "returns a warning for the pull request" do
-        expect(notices.map(&:to_h)).to contain_exactly(
-          mode: Dependabot::Notice::NoticeMode::WARN,
-          type: "docker_cooldown_date_unavailable",
-          package_manager_name: "docker",
-          title: "Docker cooldown was not applied",
-          description: "Cooldown could not be applied because no publication date was available from the registry.",
-          show_in_pr: true,
-          show_alert: false
-        )
-      end
-    end
-
-    context "when cooldown was applied" do
-      it { is_expected.to be_empty }
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -1294,6 +1268,177 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           end
 
           its(:content) { is_expected.to include "kind: Pod" }
+        end
+      end
+    end
+
+    context "when the same image is referenced multiple times in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.26.1
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            # Docker::FileParser normalizes the "docker.io" registry to nil,
+            # even though the manifest keeps the explicit prefix in its text.
+            source: { tag: "v3.32.2" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.26.1" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image: docker.io/calico/cni:v3.32.2" }
+        its(:content) { is_expected.to include "- name: upgrade-ipam" }
+        its(:content) { is_expected.to include "- name: install-cni" }
+
+        it "updates every occurrence and leaves none on the old version" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(2)
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when the same image is referenced three times in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.26.1
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+              containers:
+                - name: calico-node
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.32.2" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.26.1" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        it "updates all three occurrences" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(3)
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when the same image name has different old tags in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.25.0
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.32.2" }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "calico.yaml",
+              source: { tag: "v3.25.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "calico.yaml",
+              source: { tag: "v3.26.1" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        it "updates both differently-tagged occurrences to the new tag" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(2)
+          expect(updated_podfile.content).not_to include("v3.25.0")
+          expect(updated_podfile.content).not_to include("v3.26.1")
         end
       end
     end

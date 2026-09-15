@@ -8,7 +8,7 @@
 # From https://github.com/sigstore/cosign/releases
 FROM ghcr.io/sigstore/cosign/cosign:v3.1.3@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8 AS cosign
 # From https://github.com/regclient/regclient/releases
-FROM ghcr.io/regclient/regctl:v0.11.5@sha256:dbe356c6cf9f8f85e302b9e47fed481ef3f1b04807350e99b02ab2cadee0a993 AS regctl
+FROM ghcr.io/regclient/regctl:v0.11.6@sha256:db2e5f3a5de80b24d53fea5af9edf7021a53f2689f1e166ef2f0e200dad4fb3a AS regctl
 # From https://github.com/helm/helm/releases
 FROM alpine/helm:4.2.4@sha256:76c375eed56144c68d6197c55bc5a4552fb42002190b796729901cbab3ae6e51 AS helm
 # From https://github.com/oras-project/oras/releases

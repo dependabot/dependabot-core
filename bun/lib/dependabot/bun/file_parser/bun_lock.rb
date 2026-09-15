@@ -1,8 +1,9 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "yaml"
 require "dependabot/errors"
+require "dependabot/bun/file_parser"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/helpers"
 require "sorbet-runtime"
@@ -13,22 +14,19 @@ module Dependabot
       class BunLock
         extend T::Sig
 
+        require_relative "bun_lock/record"
+
         sig { params(dependency_file: DependencyFile).void }
         def initialize(dependency_file)
           @dependency_file = dependency_file
+          @parsed = T.let(nil, T.nilable(T::Hash[Object, Object]))
+          @records = T.let(nil, T.nilable(T::Hash[String, Record]))
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(T::Hash[Object, Object]) }
         def parsed
           @parsed ||= begin
-            content = begin
-              # Since bun.lock is a JSONC file, which is a subset of YAML, we can use YAML to parse it
-              YAML.load(T.must(@dependency_file.content))
-            rescue Psych::SyntaxError => e
-              raise_invalid!("malformed JSONC at line #{e.line}, column #{e.column}")
-            end
-            raise_invalid!("expected to be an object") unless content.is_a?(Hash)
-
+            content = parse_document
             version = content["lockfileVersion"]
             raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
             raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
@@ -45,7 +43,23 @@ module Dependabot
               end
             end
 
-            T.let(content, T.untyped)
+            content
+          end
+        end
+        private :parsed
+
+        sig { returns(T.nilable(T::Hash[String, Record])) }
+        def records
+          return @records if @records
+
+          packages = parsed["packages"]
+          return unless packages.is_a?(Hash)
+
+          @records = packages.to_h do |raw_key, value|
+            key = T.cast(raw_key, Object)
+            raise_invalid!("expected package keys to be strings") unless key.is_a?(String)
+
+            [key, Record.new(T.cast(value, Object), path: @dependency_file.path, context: "packages.#{key}")]
           end
         end
 
@@ -56,24 +70,19 @@ module Dependabot
           # bun.lock v0 format:
           # https://github.com/oven-sh/bun/blob/c130df6c589fdf28f9f3c7f23ed9901140bc9349/src/install/bun.lock.zig#L595-L605
 
-          packages = parsed["packages"]
-          raise_invalid!("expected 'packages' to be an object") unless packages.is_a?(Hash)
+          packages = records
+          raise_invalid!("expected 'packages' to be an object") unless packages
 
-          packages.each do |key, details|
-            raise_invalid!("expected 'packages.#{key}' to be an array") unless details.is_a?(Array)
-
-            resolution = details.first
-            raise_invalid!("expected 'packages.#{key}[0]' to be a string") unless resolution.is_a?(String)
-
-            name, version = resolution.split(/(?<=\w)\@/)
+          packages.each_value do |record|
+            name = record.name
             next if name.empty?
 
-            semver = Version.semver_for(version)
+            semver = record.version
             next unless semver
 
             dependency_set << Dependency.new(
               name: name,
-              version: semver.to_s,
+              version: semver,
               package_manager: "bun",
               requirements: []
             )
@@ -83,33 +92,27 @@ module Dependabot
         end
 
         sig do
-          params(dependency_name: String, requirement: T.untyped, _manifest_name: String)
-            .returns(T.nilable(T::Hash[String, T.untyped]))
+          params(dependency_name: String, _requirement: T.nilable(String), _manifest_name: String)
+            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
-        def details(dependency_name, requirement, _manifest_name)
-          packages = parsed["packages"]
-          return unless packages.is_a?(Hash)
-
-          candidates =
-            packages
-            .select { |name, _| name == dependency_name }
-            .values
-
-          # If there's only one entry for this dependency, use it, even if
-          # the requirement in the lockfile doesn't match
-          if candidates.one?
-            parse_details(candidates.first)
-          else
-            candidate = candidates.find do |label, _|
-              label.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
-            end&.last
-            parse_details(candidate)
-          end
+        def details(dependency_name, _requirement, _manifest_name)
+          records&.[](dependency_name)&.lookup_details
         end
 
         private
 
-        sig { params(message: String).void }
+        sig { returns(T::Hash[Object, Object]) }
+        def parse_document
+          # Since bun.lock is a JSONC file, which is a subset of YAML, we can use YAML to parse it
+          content = T.cast(YAML.load(T.must(@dependency_file.content)), Object)
+          raise_invalid!("expected to be an object") unless content.is_a?(Hash)
+
+          content.to_h { |key, value| [T.cast(key, Object), T.cast(value, Object)] }
+        rescue Psych::SyntaxError => e
+          raise_invalid!("malformed JSONC at line #{e.line}, column #{e.column}")
+        end
+
+        sig { params(message: String).returns(T.noreturn) }
         def raise_invalid!(message)
           raise Dependabot::DependencyFileNotParseable.new(@dependency_file.path, "Invalid bun.lock file: #{message}")
         end
@@ -123,40 +126,6 @@ module Dependabot
                 "Unsupported bun.lock 'lockfileVersion' #{version} in #{@dependency_file.path}. " \
                 "The bun version Dependabot runs supports up to " \
                 "#{BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION}."
-        end
-
-        sig do
-          params(entry: T.nilable(T::Array[T.untyped])).returns(T.nilable(T::Hash[String, T.untyped]))
-        end
-        def parse_details(entry)
-          return unless entry.is_a?(Array)
-
-          # Either:
-          # - "{name}@{version}", registry, details, integrity
-          # - "{name}@{resolution}", details
-          resolution = entry.first
-          return unless resolution.is_a?(String)
-
-          name, version = resolution.split(/(?<=\w)\@/)
-          semver = Version.semver_for(version)
-
-          if semver
-            registry, details, integrity = entry[1..3]
-            {
-              "name" => name,
-              "version" => semver.to_s,
-              "registry" => registry,
-              "details" => details,
-              "integrity" => integrity
-            }
-          else
-            details = entry[1]
-            {
-              "name" => name,
-              "resolution" => version,
-              "details" => details
-            }
-          end
         end
       end
     end

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/dependency"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/version"
 
@@ -16,6 +17,14 @@ module Dependabot
       extend T::Sig
 
       DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+      DATE_UNAVAILABLE_METADATA_KEY = :cooldown_date_unavailable
+
+      # Shared by the pull request notice and the job-level warning so both channels
+      # report the same diagnostic, whether or not the update produced a pull request.
+      DATE_UNAVAILABLE_NOTICE_TYPE = "cooldown_date_unavailable"
+      DATE_UNAVAILABLE_TITLE = "Cooldown was not applied"
+      DATE_UNAVAILABLE_DESCRIPTION =
+        "Cooldown could not be applied because no publication date was available from the registry."
 
       sig { params(release_date: Time, cooldown_days: Integer).returns(T::Boolean) }
       def self.within_cooldown_window?(release_date, cooldown_days)
@@ -49,6 +58,18 @@ module Dependabot
       end
       def self.skip_cooldown?(cooldown, dependency_name, cooldown_enabled: true)
         cooldown.nil? || !cooldown_enabled || !cooldown.included?(dependency_name)
+      end
+
+      sig { params(dependency: Dependabot::Dependency, cooldown_days: Integer).void }
+      def self.mark_cooldown_date_unavailable(dependency, cooldown_days:)
+        return unless cooldown_days.positive?
+
+        dependency.metadata[DATE_UNAVAILABLE_METADATA_KEY] = true
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def self.cooldown_date_unavailable?(dependency)
+        dependency.metadata[DATE_UNAVAILABLE_METADATA_KEY] == true
       end
     end
   end

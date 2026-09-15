@@ -1720,7 +1720,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "marks the dependency with the missing cooldown date" do
         latest_version
 
-        expect(dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
 
       context "when no cooldown days are configured" do
@@ -1731,7 +1731,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         it "does not mark the dependency" do
           latest_version
 
-          expect(dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
         end
       end
     end
@@ -1831,7 +1831,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             it "marks the dependency with the missing cooldown date" do
               can_update
 
-              expect(dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+              expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
             end
           end
         end

@@ -156,8 +156,8 @@ ENV DEPENDABOT=true
 ENV GIT_LFS_SKIP_SMUDGE=1
 
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-${TARGETARCH}.tar.gz"
-RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.5.0/git-shim-v1.5.0-linux-${TARGETARCH}.tar.gz"
+RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && mv ~/bin/git-shim ~/bin/git && rm git-shim.tar.gz
 
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
 

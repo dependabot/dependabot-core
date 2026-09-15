@@ -20,13 +20,11 @@ module Dependabot
           parsed = FileParser::YarnLock.new(@lockfile).parsed
 
           parsed.each_with_object({}) do |(req, details), rels|
-            next unless details.is_a?(Hash)
-
-            version = details["version"]
+            version = details.version
             parent_name = T.must(req.split(/(?<=\w)\@/).first)
-            children = details.fetch("dependencies", {})
+            children = details.dependencies
 
-            next if children.nil? || children.empty?
+            next if children.empty?
 
             key = "#{parent_name}@#{version}"
             resolved_children = resolve_children(children, parsed)
@@ -38,7 +36,10 @@ module Dependabot
 
         private
 
-        sig { params(children: T::Hash[String, String], parsed: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+        sig do
+          params(children: T::Hash[String, String], parsed: T::Hash[String, FileParser::YarnLock::Record])
+            .returns(T::Array[String])
+        end
         def resolve_children(children, parsed)
           children.filter_map do |child_name, child_req|
             version = resolve_child_version(child_name, child_req, parsed)
@@ -46,21 +47,25 @@ module Dependabot
           end
         end
 
-        sig { params(child_name: String, child_req: String, parsed: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+        sig do
+          params(child_name: String, child_req: String, parsed: T::Hash[String, FileParser::YarnLock::Record])
+            .returns(T.nilable(String))
+        end
         def resolve_child_version(child_name, child_req, parsed)
           # Try exact key first
           child_entry = parsed["#{child_name}@#{child_req}"]
-          return child_entry["version"] if child_entry && child_entry["version"]
+          return child_entry.version if child_entry&.version
 
           # Yarn groups multiple requirements into single keys like "foo@^1.0.0, foo@^1.2.0"
           target_req = "#{child_name}@#{child_req}"
           grouped_match = parsed.find { |k, _| k.split(", ").include?(target_req) }
-          return grouped_match.last["version"] if grouped_match && grouped_match.last["version"]
+          grouped_version = grouped_match&.last&.version
+          return grouped_version if grouped_version
 
           # Fallback: find by name only if there's exactly one candidate
           candidates = parsed.select { |k, _| k.split(/(?<=\w)\@/).first == child_name }
           candidate = candidates.first
-          candidate.last["version"] if candidates.size == 1 && candidate
+          candidate.last.version if candidates.size == 1 && candidate
         end
       end
     end

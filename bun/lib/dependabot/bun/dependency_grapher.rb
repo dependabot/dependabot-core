@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -110,17 +110,15 @@ module Dependabot
       def fetch_package_relationships
         return {} unless lockfile
 
-        parsed_lockfile = FileParser::BunLock.new(T.must(lockfile)).parsed
-        packages = parsed_lockfile.fetch("packages", nil)
-        return {} unless packages.is_a?(Hash)
+        packages = FileParser::BunLock.new(T.must(lockfile)).records
+        return {} unless packages
 
-        # bun.lock entries are arrays: ["{name}@{version}", registry, {details}, integrity]
-        packages.each_with_object({}) do |(_key, entry), rels|
-          next unless entry.is_a?(Array) && entry.first.is_a?(String)
+        packages.each_with_object({}) do |(_key, record), rels|
+          next unless record.graph_compatible?
 
-          parent_name = T.must(T.cast(entry.first, String).split(/(?<=\w)\@/).first)
-          children = entry.dig(2, "dependencies")&.keys
-          next unless children&.any?
+          parent_name = record.name
+          children = record.dependency_names
+          next if children.empty?
 
           rels[parent_name] = children
         end

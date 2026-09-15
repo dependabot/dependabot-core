@@ -5,6 +5,8 @@
 
 require "cgi/escape"
 require "dependabot/dependency"
+require "dependabot/package/npm_lockfile_details"
+require "dependabot/package/npm_package_json"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -98,7 +100,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
+            package_json_document.package_manager_config,
             lockfiles,
             registry_config_files,
             credentials
@@ -121,9 +123,9 @@ module Dependabot
         }
       end
 
-      sig { returns(T.untyped) }
-      def parsed_package_json
-        JSON.parse(T.must(package_json.content))
+      sig { returns(Dependabot::Package::NpmPackageJson) }
+      def package_json_document
+        Dependabot::Package::NpmPackageJson.from_file(package_json)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
       end
@@ -162,16 +164,14 @@ module Dependabot
         dependency_set = DependencySet.new
 
         package_files.each do |file|
-          json = JSON.parse(T.must(file.content))
+          manifest = Dependabot::Package::NpmPackageJson.from_file(file)
 
           # TODO: Currently, Dependabot can't handle flat dependency files
           # (and will error at the FileUpdater stage, because the
           # UpdateChecker doesn't take account of flat resolution).
-          next if json["flat"]
+          next if manifest.flat?
 
-          self.class.each_dependency(json) do |name, requirement, type|
-            next unless requirement.is_a?(String)
-
+          manifest.each_dependency do |name, requirement, type|
             # Skip dependencies using Yarn workspace cross-references as requirements
             next if requirement.start_with?("workspace:", "catalog:")
 
@@ -202,7 +202,7 @@ module Dependabot
       end
 
       sig do
-        params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
+        params(file: DependencyFile, type: String, name: String, requirement: String)
           .returns(T.nilable(Dependency))
       end
       def build_dependency(file:, type:, name:, requirement:)
@@ -303,14 +303,14 @@ module Dependabot
       def workspace_package_names
         @workspace_package_names ||= T.let(
           package_files.filter_map do |f|
-            JSON.parse(T.must(f.content))["name"]
+            Dependabot::Package::NpmPackageJson.from_file(f).name
           end,
           T.nilable(T::Array[String])
         )
       end
 
       sig do
-        params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(requirement: String, lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def version_for(requirement, lockfile_details)
@@ -332,10 +332,10 @@ module Dependabot
         end
       end
 
-      sig { params(lockfile_details: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(String)) }
+      sig { params(lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails)).returns(T.nilable(String)) }
       def git_revision_for(lockfile_details)
-        version = T.cast(lockfile_details&.fetch("version", nil), T.nilable(String))
-        resolved = T.cast(lockfile_details&.fetch("resolved", nil), T.nilable(String))
+        version = lockfile_details&.version
+        resolved = lockfile_details&.resolved
         [
           version&.split("#")&.last,
           resolved&.split("#")&.last,
@@ -375,11 +375,11 @@ module Dependabot
       end
 
       sig do
-        params(lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def lockfile_version_for(lockfile_details)
-        semver_version_for(lockfile_details&.fetch("version", ""))
+        semver_version_for(lockfile_details&.version)
       end
 
       sig { params(version: T.nilable(String)).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
@@ -398,17 +398,17 @@ module Dependabot
       end
 
       sig do
-        params(name: String, requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(name: String, requirement: String, lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T::Hash[Symbol, T.untyped]))
       end
       def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
 
-        resolved_url = lockfile_details&.fetch("resolved", nil)
+        resolved_url = lockfile_details&.resolved
 
-        resolution = lockfile_details&.fetch("resolution", nil)
-        package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
-        resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
+        resolution = lockfile_details&.resolution
+        package_url = resolution&.[](/__archiveUrl=(.+)/, 1)
+        resolved_url = CGI.unescape(package_url) if package_url
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")
