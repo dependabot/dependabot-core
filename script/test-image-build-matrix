@@ -7,7 +7,9 @@ cd "$(dirname "$0")/.."
 matrix='[
   {"target":"updater-core","dockerfile":"Dockerfile.updater-core"},
   {"target":"bundler","dockerfile":"bundler/Dockerfile"},
+  {"target":"bundler-raw","dockerfile":"bundler/Dockerfile"},
   {"target":"nuget","dockerfile":"nuget/Dockerfile"},
+  {"target":"nuget-raw","dockerfile":"nuget/Dockerfile"},
   {"target":"pre-commit","dockerfile":"pre_commit/Dockerfile"}
 ]'
 
