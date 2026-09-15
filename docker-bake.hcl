@@ -22,6 +22,17 @@ variable "UPDATER_IMAGE_PREFIX" {
   default = "ghcr.io/dependabot/dependabot-updater-"
 }
 
+# Main builds overwrite one cache tag per target. Branch builds import these
+# caches without updating them, preventing pull request builds from evicting
+# the shared main-branch working set.
+variable "BUILD_CACHE_IMAGE" {
+  default = "ghcr.io/dependabot/dependabot-build-cache"
+}
+
+variable "BUILD_CACHE_WRITE" {
+  default = false
+}
+
 variable "ECOSYSTEMS" {
   default = [
     { name = "bazel", image = "bazel", dockerfile = "bazel/Dockerfile" },
@@ -76,12 +87,18 @@ target "updater-core" {
     DEPENDABOT_UPDATER_VERSION = DEPENDABOT_UPDATER_VERSION
   }
   cache-from = [
-    { type = "gha", scope = "updater-core" },
+    { type = "registry", ref = "${BUILD_CACHE_IMAGE}:updater-core" },
     { type = "registry", ref = "${UPDATER_CORE_IMAGE}:latest" },
   ]
-  cache-to = [
-    { type = "gha", mode = "max", scope = "updater-core" },
-  ]
+  cache-to = BUILD_CACHE_WRITE ? [
+    {
+      type           = "registry"
+      ref            = "${BUILD_CACHE_IMAGE}:updater-core"
+      mode           = "max"
+      image-manifest = true
+      oci-mediatypes = true
+    },
+  ] : []
 }
 
 target "updater-core-publish" {
@@ -92,11 +109,21 @@ target "updater-core-publish" {
     DEPENDABOT_UPDATER_VERSION = DEPENDABOT_UPDATER_VERSION
   }
   cache-from = [
+    { type = "registry", ref = "${BUILD_CACHE_IMAGE}:updater-core-publish" },
     { type = "registry", ref = "${UPDATER_CORE_IMAGE}:latest" },
   ]
-  cache-to = [
-    { type = "inline" },
-  ]
+  cache-to = concat(
+    [{ type = "inline" }],
+    BUILD_CACHE_WRITE ? [
+      {
+        type           = "registry"
+        ref            = "${BUILD_CACHE_IMAGE}:updater-core-publish"
+        mode           = "max"
+        image-manifest = true
+        oci-mediatypes = true
+      },
+    ] : []
+  )
   tags = [
     "${UPDATER_CORE_IMAGE}:latest",
     notequal("", UPDATER_CORE_VERSION_TAG) ? "${UPDATER_CORE_IMAGE}:${UPDATER_CORE_VERSION_TAG}" : "",
@@ -114,11 +141,21 @@ target "updater-core-context" {
     DEPENDABOT_UPDATER_VERSION = UPDATER_CORE_CONTEXT_VERSION
   }
   cache-from = [
+    { type = "registry", ref = "${BUILD_CACHE_IMAGE}:updater-core-context" },
     { type = "registry", ref = "${UPDATER_CORE_IMAGE}:latest" },
   ]
-  cache-to = [
-    { type = "inline" },
-  ]
+  cache-to = concat(
+    [{ type = "inline" }],
+    BUILD_CACHE_WRITE ? [
+      {
+        type           = "registry"
+        ref            = "${BUILD_CACHE_IMAGE}:updater-core-context"
+        mode           = "max"
+        image-manifest = true
+        oci-mediatypes = true
+      },
+    ] : []
+  )
 }
 
 target "_ecosystem" {
@@ -141,7 +178,7 @@ target "_ecosystem" {
     } : {}
   )
   cache-from = [
-    { type = "gha", scope = item.name },
+    { type = "registry", ref = "${BUILD_CACHE_IMAGE}:${item.image}" },
     { type = "registry", ref = "${UPDATER_IMAGE_PREFIX}${item.image}:latest" },
   ]
 }
@@ -159,10 +196,19 @@ target "ecosystem" {
     ecosystem-image = "target:${item.image}-raw"
   }
   cache-from = [
-    { type = "gha", scope = item.name },
+    { type = "registry", ref = "${BUILD_CACHE_IMAGE}:${item.image}" },
     { type = "registry", ref = "${UPDATER_IMAGE_PREFIX}${item.image}:latest" },
   ]
-  cache-to = [
-    { type = "gha", mode = "max", scope = item.name },
-  ]
+  cache-to = concat(
+    [{ type = "inline" }],
+    BUILD_CACHE_WRITE ? [
+      {
+        type           = "registry"
+        ref            = "${BUILD_CACHE_IMAGE}:${item.image}"
+        mode           = "max"
+        image-manifest = true
+        oci-mediatypes = true
+      },
+    ] : []
+  )
 }
