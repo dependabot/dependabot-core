@@ -59,6 +59,21 @@ module Dependabot
         @version_string
       end
 
+      # The "major.minor.patch" part, which is all a [compat] entry can carry:
+      # Pkg rejects "1.6.10+0" or "1.6.10-rc1" as a specifier, and its bounds
+      # compare major, minor and patch only, so "1.6.10" admits both.
+      sig { returns(String) }
+      def compat_version_string
+        T.must(@version_string[/\A\d+(?:\.\d+){0,2}/])
+      end
+
+      # Build metadata orders JLL rebuilds of a version but has no bearing on
+      # whether a compat entry admits it
+      sig { returns(Dependabot::Julia::Version) }
+      def without_build_metadata
+        self.class.new(T.must(@version_string.split("+", 2).first))
+      end
+
       sig { override.returns(String) }
       def to_semver
         @version_string

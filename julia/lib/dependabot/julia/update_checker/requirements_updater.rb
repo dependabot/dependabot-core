@@ -121,9 +121,11 @@ module Dependabot
       def update_requirement(requirement, target_version)
         current_requirement = requirement.requirement_string
 
-        # If requirement is nil (no compat entry), use target version
+        # If requirement is nil (no compat entry), use target version. A JLL's
+        # "1.6.10+0" has to be written as "1.6.10": Pkg rejects the build
+        # number in a compat entry, and the bound admits every build anyway.
         new_requirement = if current_requirement.nil?
-                            target_version.to_s
+                            target_version.compat_version_string
                           else
                             updated_version_requirement(current_requirement, target_version)
                           end
