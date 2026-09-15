@@ -87,9 +87,6 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 push!(dependencies, dep_info)
             end
 
-            # Note: We don't process [extras] to match CompatHelper.jl behavior
-            # CompatHelper only processes [deps] and [weakdeps]
-
             # Get weak dependencies (weakdeps) - available in Julia 1.9+
             # Read directly from TOML since Pkg may not populate project_info.weakdeps
             weak_dependencies = []
@@ -121,6 +118,32 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 end
             end
 
+            # Process [extras] that already have a [compat] entry, matching
+            # CompatHelper.jl's default `IfExistingCompatExtras()` policy.
+            # Extras without a compat bound are ignored to avoid opening PRs for
+            # every undeclared test-only dependency.
+            extra_dependencies = []
+            if haskey(project_toml, "extras")
+                extras_section = project_toml["extras"]
+                for (dep_name, dep_uuid_str) in extras_section
+                    haskey(sources, dep_name) && continue
+                    haskey(project_info.compat, dep_name) || continue
+
+                    compat_spec = project_info.compat[dep_name]
+                    constraint_str = if isa(compat_spec, Pkg.Types.Compat)
+                        compat_spec.str
+                    else
+                        string(compat_spec)
+                    end
+
+                    push!(extra_dependencies, Dict{String,Any}(
+                        "name" => dep_name,
+                        "uuid" => dep_uuid_str,
+                        "requirement" => constraint_str
+                    ))
+                end
+            end
+
             # Get Julia version requirement
             julia_version = ""
             if haskey(project_info.compat, "julia")
@@ -139,6 +162,7 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 "julia_version" => julia_version,
                 "dependencies" => dependencies,
                 "weak_dependencies" => weak_dependencies,
+                "extra_dependencies" => extra_dependencies,
                 "project_path" => ctx.env.project_file
             )
         end

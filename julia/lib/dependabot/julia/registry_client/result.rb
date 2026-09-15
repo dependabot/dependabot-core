@@ -188,6 +188,7 @@ module Dependabot
           const :julia_version, String
           const :dependencies, T::Array[ProjectDependency]
           const :weak_dependencies, T::Array[ProjectDependency]
+          const :extra_dependencies, T::Array[ProjectDependency]
           const :project_path, String
 
           sig { params(value: Object).returns(T.any(Project, Failure)) }
@@ -204,6 +205,7 @@ module Dependabot
               julia_version: ValueParser.string(hash, "julia_version", context),
               dependencies: parse_dependencies(hash, "dependencies", context),
               weak_dependencies: parse_dependencies(hash, "weak_dependencies", context),
+              extra_dependencies: parse_dependencies(hash, "extra_dependencies", context),
               project_path: ValueParser.string(hash, "project_path", context)
             )
           end
