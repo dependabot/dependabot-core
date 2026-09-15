@@ -106,6 +106,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       Dependabot::UpdateCheckers::Base,
       dependency: dependencies.first,
       up_to_date?: false,
+      vulnerable?: true,
       lowest_resolvable_security_fix_version: nil,
       lowest_security_fix_version: "3.0.0",
       conflicting_dependencies: [],
@@ -154,6 +155,19 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           expect(service).to receive(:record_update_job_error).with(
             error_type: "security_update_not_possible",
             error_details: hash_including("dependency-name": dependency.name),
+            dependency: nil
+          )
+
+          test_instance.note_security_update_not_possible(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
+        end
+
+        it "uses the current version when the dependency is no longer vulnerable" do
+          allow(checker).to receive(:vulnerable?).and_return(false)
+          expect(checker).not_to receive(:lowest_resolvable_security_fix_version)
+          expect(service).to receive(:record_update_job_error).with(
+            error_type: "security_update_not_possible",
+            error_details: hash_including("latest-resolvable-version": dependency.version),
             dependency: nil
           )
 
