@@ -541,29 +541,42 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         )
       end
 
-      it "passes the private registry env variables to the local version fallback" do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack install npm@11 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only",
-          env: expected_env
-        ).and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                      message: "failed", error_context: {}
-                    ))
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("npm -v", fingerprint: "npm -v").and_return("11.0.0")
+      shared_examples "a fallback to the local version" do |install_error_message|
+        it "passes the private registry env variables to the local version fallback" do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack install npm@11 --global --cache-only",
+            fingerprint: "corepack install <name>@<version> --global --cache-only",
+            env: expected_env
+          ).and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                        message: install_error_message, error_context: {}
+                      ))
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("npm -v", fingerprint: "npm -v").and_return("11.0.0")
 
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack prepare npm@11.0.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: expected_env
-        ).and_return("")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack prepare npm@11.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: expected_env
+          ).and_return("")
 
-        expect(helper.installed_version("npm")).to eq("11.0.0")
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack prepare npm@11.0.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: expected_env
-        )
+          expect(helper.installed_version("npm")).to eq("11.0.0")
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack prepare npm@11.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: expected_env
+          )
+        end
+      end
+
+      context "when the install fails with a subprocess error" do
+        it_behaves_like "a fallback to the local version", "failed"
+      end
+
+      # A 404 from the private registry is re-raised by Helpers as a
+      # Dependabot::RegistryError, which must also fall back to the local version.
+      context "when the install fails with a registry error" do
+        it_behaves_like "a fallback to the local version",
+                        "Response Code: 404 (Not Found) - The remote server failed to provide the requested resource"
       end
     end
 
