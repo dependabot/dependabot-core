@@ -87,10 +87,11 @@ class TestParseRequirementsTxt:
         assert deps == []
 
     def test_constraint_file_deps(self):
-        """Requirements with -c constraints should still parse the deps."""
+        """Requirements with -c constraints should include deps from
+        both the main file and the constraint file."""
         result = parse("requirements")
         deps = result["result"]
-        # with_constraints.txt has requests
+        # with_constraints.txt has requests - direct requirements are included
         req_files = [d["file"] for d in deps if d["name"] == "requests"]
         assert any("with_constraints" in f for f in req_files)
 
