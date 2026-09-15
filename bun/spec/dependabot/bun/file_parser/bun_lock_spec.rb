@@ -76,6 +76,10 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
       it "leaves subdependency metadata unset" do
         expect(dependency_set.dependencies.map(&:subdependency_metadata)).to all(be_nil)
       end
+
+      it "reports no production reachability" do
+        expect(reader.production_reachable?("debug", nil)).to be(false)
+      end
     end
 
     context "when the experiment is enabled" do
@@ -89,6 +93,16 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
       it "treats a package as production when any copy is production" do
         expect(dependency_set.dependency_for_name("ms").production?).to be(true)
         expect(dependency_set.dependency_for_name("is-number").production?).to be(true)
+      end
+
+      it "answers production reachability for the copy a manifest dependency resolves to" do
+        # The root's own ms@0.7.1 is development, even though app/ms and debug/ms are production.
+        expect(reader.production_reachable?("ms", nil)).to be(false)
+        expect(reader.production_reachable?("ms", "app")).to be(true)
+        # app has no nested is-number, so it resolves to the hoisted development copy.
+        expect(reader.production_reachable?("is-number", "app")).to be(false)
+        expect(reader.production_reachable?("is-number", "tool")).to be(true)
+        expect(reader.production_reachable?("missing", nil)).to be(false)
       end
 
       context "with a development-only chain" do

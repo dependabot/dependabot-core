@@ -73,6 +73,7 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock::DependencyTypeResolver do
     wildcard
     workspace_dependency_types
     direct_dev_transitive_production
+    direct_dev_unrelated_production_copy
   ).each do |fixture_name|
     context "with the #{fixture_name} fixture" do
       before do

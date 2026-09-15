@@ -265,6 +265,19 @@ RSpec.describe Dependabot::Bun::FileParser do
 
           expect(lockfile_parser).to have_received(:parse_set).once
         end
+
+        context "when only an unrelated nested copy is reachable from production" do
+          # The root declares ms@2.0.0 for development; debug installs its own debug/ms@2.1.2.
+          let(:files) { project_dependency_files("bun/direct_dev_unrelated_production_copy") }
+
+          it "keeps the direct devDependency development" do
+            ms = dependencies.find { |dep| dep.name == "ms" }
+
+            expect(ms).to be_top_level
+            expect(ms.metadata).not_to include(:reachable_from_production)
+            expect(ms.production?).to be(false)
+          end
+        end
       end
     end
   end
