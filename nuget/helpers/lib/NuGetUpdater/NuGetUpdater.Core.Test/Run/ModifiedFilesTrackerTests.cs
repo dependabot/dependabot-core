@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using System.Text;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Utilities;
@@ -12,6 +14,60 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class ModifiedFilesTrackerTests
 {
+    [Fact]
+    public async Task CSharpFileBasedAppIsTrackedAndRestoresBomAndLineEndings()
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
+        var filePath = Path.Combine(tempDirectory.DirectoryPath, "app.cs");
+        var bomEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+        await File.WriteAllTextAsync(
+            filePath,
+            "#:package Some.Package@1.0.0\r\n\r\nConsole.WriteLine();\r\n",
+            bomEncoding,
+            TestContext.Current.CancellationToken);
+        await GitTestHelper.InitializeRepositoryAsync(tempDirectory.DirectoryPath, ["app.cs"]);
+
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
+        Assert.Contains("app.cs", initialFiles);
+
+        var discoveryResult = new WorkspaceDiscoveryResult
+        {
+            Path = "/",
+            Projects =
+            [
+                new ProjectDiscoveryResult
+                {
+                    FilePath = "app.cs",
+                    Dependencies = [],
+                    TargetFrameworks = ["net10.0"],
+                    ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
+                },
+            ],
+        };
+        var tracker = new ModifiedFilesTracker(repoContentsPath, initialFiles, new TestLogger());
+        await tracker.StartTrackingAsync(discoveryResult);
+
+        await File.WriteAllTextAsync(
+            filePath,
+            "#:package Some.Package@2.0.0\n\nConsole.WriteLine();\n",
+            TestContext.Current.CancellationToken);
+
+        var updatedFiles = await tracker.StopTrackingAsync();
+
+        var updatedFile = Assert.Single(updatedFiles);
+        Assert.Equal("app.cs", updatedFile.Name);
+        Assert.Equal("base64", updatedFile.ContentEncoding);
+        var updatedBytes = await File.ReadAllBytesAsync(filePath, TestContext.Current.CancellationToken);
+        Assert.True(updatedBytes.AsSpan().StartsWith(bomEncoding.GetPreamble()));
+        Assert.Equal(updatedBytes, Convert.FromBase64String(updatedFile.Content));
+        var updatedContents = await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken);
+        Assert.Contains("\r\n", updatedContents);
+        Assert.DoesNotContain("\n", updatedContents.Replace("\r\n", ""));
+    }
+
     [Fact]
     public async Task LockFileCreatedByDiscoveryIsNotTracked()
     {
@@ -590,7 +646,7 @@ public class ModifiedFilesTrackerTests
         var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
 
-        // Should find all 11 editable file types
+        // Should find all editable file types
         Assert.Contains("project.csproj", initialFiles);
         Assert.Contains("lib.fsproj", initialFiles);
         Assert.Contains("app.vbproj", initialFiles);
@@ -602,10 +658,10 @@ public class ModifiedFilesTrackerTests
         Assert.Contains("packages.lock.json", initialFiles);
         Assert.Contains("global.json", initialFiles);
         Assert.Contains(".config/dotnet-tools.json", initialFiles);
+        Assert.Contains("src/code.cs", initialFiles);
 
         // Should NOT find non-editable files
         Assert.DoesNotContain("readme.md", initialFiles);
-        Assert.DoesNotContain("src/code.cs", initialFiles);
     }
 
     [Theory]
@@ -622,7 +678,7 @@ public class ModifiedFilesTrackerTests
     [InlineData("packages.lock.json", true)]
     [InlineData("readme.md", false)]
     [InlineData("nuget.config", false)]
-    [InlineData("code.cs", false)]
+    [InlineData("code.cs", true)]
     [InlineData("some.dll", false)]
     public void MatchesAllowedEditablePattern(string fileName, bool expected)
     {
