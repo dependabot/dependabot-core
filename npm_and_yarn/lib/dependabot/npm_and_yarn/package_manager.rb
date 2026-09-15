@@ -161,6 +161,7 @@ module Dependabot
 
         @installed_versions = T.let({}, T::Hash[String, String])
         @registries = T.let({}, T::Hash[String, String])
+        @corepack_env = T.let(nil, T.nilable(T::Hash[String, String]))
 
         @language = T.let(nil, T.nilable(Ecosystem::VersionManager))
         @language_requirement = T.let(nil, T.nilable(Requirement))
@@ -411,12 +412,12 @@ module Dependabot
         return T.must(@installed_versions[name]) if @installed_versions.key?(name)
 
         # Attempt to get the installed version through the package manager version command
-        @installed_versions[name] = Helpers.package_manager_version(name)
+        @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
 
         # If we can't get the installed version, we need to install the package manager and get the version
         unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
           setup(name)
-          @installed_versions[name] = Helpers.package_manager_version(name)
+          @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
         end
 
         # If we can't get the installed version or the version is invalid, we need to get inferred version
@@ -442,14 +443,22 @@ module Dependabot
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
-          SharedHelpers.run_shell_command(
-            "corepack install #{name}@#{version} --global --cache-only",
-            fingerprint: "corepack install <name>@<version> --global --cache-only"
-          )
-        rescue SharedHelpers::HelperSubprocessFailed => e
+          Helpers.package_manager_install(name, version.to_s, env: corepack_env)
+        rescue SharedHelpers::HelperSubprocessFailed, RegistryError => e
           Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
-          Helpers.fallback_to_local_version(name)
+          Helpers.fallback_to_local_version(name, env: corepack_env)
         end
+      end
+
+      # Environment variables (e.g. COREPACK_NPM_REGISTRY) that point Corepack at
+      # the configured private registry. Without these, Corepack reaches out to
+      # the public npm registry, which fails when egress is restricted to a
+      # private proxy such as Artifactory.
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      def corepack_env
+        env = @corepack_env ||= @registry_helper.find_corepack_env_variables
+
+        env.empty? ? nil : env
       end
 
       sig { params(name: T.nilable(String)).returns(String) }
