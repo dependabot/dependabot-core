@@ -74,13 +74,19 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
 
     after { Dependabot::Experiments.reset! }
 
+    # The pair the parser uses: resolve the manifest's own copy, then read its type.
+    def reachable?(name, workspace_name)
+      key = reader.manifest_key(name, workspace_name)
+      key ? reader.production_key?(key) : false
+    end
+
     context "when the experiment is disabled" do
       it "leaves subdependency metadata unset" do
         expect(dependency_set.dependencies.map(&:subdependency_metadata)).to all(be_nil)
       end
 
       it "reports no production reachability" do
-        expect(reader.production_reachable?("debug", nil)).to be(false)
+        expect(reader.production_key?("debug")).to be(false)
       end
     end
 
@@ -99,12 +105,19 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
 
       it "answers production reachability for the copy a manifest dependency resolves to" do
         # The root's own ms@0.7.1 is development, even though app/ms and debug/ms are production.
-        expect(reader.production_reachable?("ms", nil)).to be(false)
-        expect(reader.production_reachable?("ms", "app")).to be(true)
+        expect(reachable?("ms", nil)).to be(false)
+        expect(reachable?("ms", "app")).to be(true)
         # app has no nested is-number, so it resolves to the hoisted development copy.
-        expect(reader.production_reachable?("is-number", "app")).to be(false)
-        expect(reader.production_reachable?("is-number", "tool")).to be(true)
-        expect(reader.production_reachable?("missing", nil)).to be(false)
+        expect(reachable?("is-number", "app")).to be(false)
+        expect(reachable?("is-number", "tool")).to be(true)
+        expect(reachable?("missing", nil)).to be(false)
+      end
+
+      it "finds the key a manifest dependency resolves to" do
+        expect(reader.manifest_key("ms", "app")).to eq("app/ms")
+        expect(reader.manifest_key("is-number", "app")).to eq("is-number")
+        expect(reader.manifest_key("ms", nil)).to eq("ms")
+        expect(reader.manifest_key("missing", "app")).to be_nil
       end
 
       context "with a development-only chain" do
