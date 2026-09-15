@@ -186,6 +186,8 @@ module Dependabot
             url: format(GEM_URL, registry_url, "#{dependency.name}-#{version_and_platform}"),
             ruby_version: metadata["ruby"]&.tr("&", ",")
           )
+        rescue Gem::Requirement::BadRequirementError
+          nil
         end
 
         sig { params(created_at: T.nilable(String)).returns(T.nilable(Time)) }

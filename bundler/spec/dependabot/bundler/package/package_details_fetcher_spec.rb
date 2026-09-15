@@ -307,6 +307,20 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
             expect(fetch.releases.map { |release| release.version.to_s }).to eq(["1.0.0"])
           end
         end
+
+        context "with a malformed Ruby requirement" do
+          let(:compact_index_response) do
+            <<~INDEX
+              ---
+              1.0.0 |checksum:abc,created_at:2025-01-01T12:34:56Z
+              1.1.0 |checksum:def,ruby:invalid,created_at:2025-03-20T14:48:33Z
+            INDEX
+          end
+
+          it "skips the malformed release without losing valid releases" do
+            expect(fetch.releases.map { |release| release.version.to_s }).to eq(["1.0.0"])
+          end
+        end
       end
     end
 
