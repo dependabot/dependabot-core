@@ -52,13 +52,10 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             # for version information. Dependabot should update based on [compat]
             # constraints in Project.toml, not locked versions in Manifest.toml.
 
-            # Parse Project.toml directly to get weakdeps (Julia's Pkg may not populate this field)
-            project_toml = TOML.parsefile(project_path)
-
             # Packages pinned to a path or git source via [sources] (Julia 1.11+)
             # are not registry-updatable; Dependabot must not propose version
             # updates for them.
-            sources = get(project_toml, "sources", Dict{String,Any}())
+            sources = project_info.sources
 
             # Packages that ship with any Julia release the project supports
             # must not have their compat entries track registry releases; they
@@ -75,81 +72,44 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 return dep_info
             end
 
-            # Get dependencies and add compat requirements
-            dependencies = []
-            for (dep_name, dep_uuid) in project_info.deps
-                haskey(sources, dep_name) && continue
-
-                dep_info = Dict{String,Any}(
-                    "name" => dep_name,
-                    "uuid" => string(dep_uuid)
-                )
-                add_stdlib_info!(dep_info, dep_uuid)
-
-                # Add version constraint if available in compat
-                if haskey(project_info.compat, dep_name)
-                    compat_spec = project_info.compat[dep_name]
-                    # Extract the original constraint string
-                    constraint_str = if isa(compat_spec, Pkg.Types.Compat)
-                        compat_spec.str
-                    else
-                        string(compat_spec)
-                    end
-                    dep_info["requirement"] = constraint_str
-                end
-                # Note: If no compat entry exists, we don't add a requirement field
-                # Missing compat entry means any version is acceptable in Julia
-
-                push!(dependencies, dep_info)
+            # The [compat] entry for a package as written in the project file
+            function compat_string(dep_name)
+                compat_spec = project_info.compat[dep_name]
+                return isa(compat_spec, Pkg.Types.Compat) ? compat_spec.str : string(compat_spec)
             end
 
-            # Note: We don't process [extras] to match CompatHelper.jl behavior
-            # CompatHelper only processes [deps] and [weakdeps]
-
-            # Get weak dependencies (weakdeps) - available in Julia 1.9+
-            # Read directly from TOML since Pkg may not populate project_info.weakdeps
-            weak_dependencies = []
-            if haskey(project_toml, "weakdeps")
-                weakdeps_section = project_toml["weakdeps"]
-                for (dep_name, dep_uuid_str) in weakdeps_section
+            # A [deps], [weakdeps] or [extras] section as dependency records
+            function section_dependencies(section)
+                deps = []
+                for (dep_name, dep_uuid) in section
                     haskey(sources, dep_name) && continue
 
-                    weak_dep_info = Dict{String,Any}(
+                    dep_info = Dict{String,Any}(
                         "name" => dep_name,
-                        "uuid" => dep_uuid_str,
-                        "stdlib" => false
+                        "uuid" => string(dep_uuid)
                     )
-                    weak_dep_uuid = tryparse(Base.UUID, string(dep_uuid_str))
-                    weak_dep_uuid === nothing || add_stdlib_info!(weak_dep_info, weak_dep_uuid)
-
-                    # Add version constraint if available in compat
+                    add_stdlib_info!(dep_info, dep_uuid)
+                    # No compat entry means any version is acceptable in Julia,
+                    # so no requirement field is emitted
                     if haskey(project_info.compat, dep_name)
-                        compat_spec = project_info.compat[dep_name]
-                        # Extract the original constraint string
-                        constraint_str = if isa(compat_spec, Pkg.Types.Compat)
-                            compat_spec.str
-                        else
-                            string(compat_spec)
-                        end
-                        weak_dep_info["requirement"] = constraint_str
+                        dep_info["requirement"] = compat_string(dep_name)
                     end
-                    # Note: If no compat entry exists, we don't add a requirement field
-                    # Missing compat entry means any version is acceptable in Julia
-
-                    push!(weak_dependencies, weak_dep_info)
+                    push!(deps, dep_info)
                 end
+                return deps
             end
 
-            # Get Julia version requirement
-            julia_version = ""
-            if haskey(project_info.compat, "julia")
-                compat_spec = project_info.compat["julia"]
-                julia_version = if isa(compat_spec, Pkg.Types.Compat)
-                    compat_spec.str
-                else
-                    string(compat_spec)
-                end
+            dependencies = section_dependencies(project_info.deps)
+            weak_dependencies = section_dependencies(project_info.weakdeps)
+            # Pkg allows a package under [extras] as well as [deps] or
+            # [weakdeps] (the documented way to test an extension); that
+            # section already covers it
+            extras = filter(project_info.extras) do (dep_name, _)
+                !haskey(project_info.deps, dep_name) && !haskey(project_info.weakdeps, dep_name)
             end
+            extra_dependencies = section_dependencies(extras)
+
+            julia_version = haskey(project_info.compat, "julia") ? compat_string("julia") : ""
 
             return Dict{String,Any}(
                 "name" => name,
@@ -158,6 +118,7 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 "julia_version" => julia_version,
                 "dependencies" => dependencies,
                 "weak_dependencies" => weak_dependencies,
+                "extra_dependencies" => extra_dependencies,
                 "project_path" => ctx.env.project_file
             )
         end
