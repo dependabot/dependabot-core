@@ -334,7 +334,7 @@ module Dependabot
         previous_version = update_details.fetch(:previous_version)&.to_s
         # Keep what the parser recorded (such as reachable_from_production, which decides
         # the dependency type) and let explicit details such as information_only add to it.
-        metadata = original_dep.metadata.merge(update_details.fetch(:metadata, {}))
+        metadata = Dependency.combine_metadata(original_dep.metadata, update_details.fetch(:metadata, {}))
 
         Dependency.new(
           name: original_dep.name,

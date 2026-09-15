@@ -1428,6 +1428,19 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
         expect(updated_dependency.metadata).to eq(reachable_from_production: true, information_only: true)
       end
+
+      it "does not let explicit metadata drop reachable_from_production" do
+        updated_dependency = checker.send(
+          :build_updated_dependency,
+          dependency: reachable_dependency,
+          version: "1.7.0",
+          previous_version: "1.6.0",
+          metadata: { reachable_from_production: false }
+        )
+
+        expect(updated_dependency.metadata).to eq(reachable_from_production: true)
+        expect(updated_dependency.production?).to be(true)
+      end
     end
 
     context "when a security fix updates a parent that is reachable from production" do
