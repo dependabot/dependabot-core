@@ -247,7 +247,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             dependencyInfo.Version,
             versionResult,
             projectFrameworks,
-            findLowestVersion: dependencyInfo.IsVulnerable,
+            isVulnerable: dependencyInfo.IsVulnerable,
             nugetContext,
             logger,
             cancellationToken);
@@ -258,19 +258,28 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         string versionString,
         VersionResult versionResult,
         ImmutableArray<NuGetFramework> projectFrameworks,
-        bool findLowestVersion,
+        bool isVulnerable,
         NuGetContext nugetContext,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         var versions = versionResult.GetVersions();
+        var currentVersion = VersionRange.Parse(versionString).MinVersion;
+        versions = versions
+            .Where(version => VersionFinder.IsVersionAllowedByPatchOnlyDefault(
+                packageIds,
+                currentVersion,
+                version,
+                isVulnerable))
+            .ToImmutableArray();
+
         if (versions.Length == 0)
         {
             // if absolutely nothing was found, then we can't update
             return null;
         }
 
-        var orderedVersions = findLowestVersion
+        var orderedVersions = isVulnerable
             ? versions.OrderBy(v => v) // If we are fixing a vulnerability, then we want the lowest version that is safe.
             : versions.OrderByDescending(v => v); // If we are just updating versions, then we want the highest version possible.
 
