@@ -251,6 +251,10 @@ module Dependabot
             dependencies.each do |dependency|
               version = dependency.version
               next unless version
+              # Only a [deps] entry has a manifest entry of its own to bump;
+              # the helper leaves weakdeps and extras alone, so their updates
+              # are compat-only and need no Pkg run
+              next unless dependency.requirements.any? { |req| req.groups&.include?("deps") }
 
               uuid = dependency.metadata[:julia_uuid]
               unless uuid.is_a?(String)

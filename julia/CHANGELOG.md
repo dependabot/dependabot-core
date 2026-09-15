@@ -7,6 +7,7 @@
 - Added support for Julia workspaces (multiple packages sharing a common manifest file)
 - Added warning notices to PRs when manifest updates fail due to dependency conflicts
 - Added absolute path resolution for workspace manifests in user-facing notices
+- `[extras]` packages that already have a `[compat]` entry now get compat updates, matching CompatHelper.jl's default `IfExistingCompatExtras()` policy; they are reported as development dependencies
 
 ### Changed
 
@@ -17,6 +18,7 @@
 ### Fixed
 
 - Fixed registry lookups on Julia 1.13, where Pkg changed `registry_info` to also take the registry instance
+- Weakdeps and extras that appear in the manifest as indirect dependencies no longer get a manifest version, which announced a version bump the manifest update then refused to apply
 - Compat entries for standard libraries are now derived from the versions bundled across the project's `julia` compat range (using HistoricalStdlibVersions.jl) instead of the latest registry release, which produced bounds like `Artifacts = "1.3.0"` from a legacy bridge package or `Statistics = "1.11.5"` from an upgradable stdlib release; stdlib entries are only ever widened and their manifest entries are left alone (#16227, #16228)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
