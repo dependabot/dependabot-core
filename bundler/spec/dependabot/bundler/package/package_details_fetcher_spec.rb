@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -70,6 +70,7 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         expect(result).to be_a(Dependabot::Package::PackageDetails)
         expect(result.releases).not_to be_empty
         expect(a_request(:get, json_url)).to have_been_made.once
+        expect(a_request(:get, "https://rubygems.org/info/#{dependency_name}")).not_to have_been_made
 
         expect(result.releases.size).to be(882)
 
@@ -190,9 +191,12 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
       let(:private_versions_url) do
         "https://gems.private-registry.example.com/api/v1/versions/my-private-gem.json"
       end
+      let(:compact_index_url) { "https://gems.private-registry.example.com/info/my-private-gem" }
 
       before do
         stub_request(:get, private_versions_url)
+          .to_return(status: 404, body: "Not Found")
+        stub_request(:get, compact_index_url)
           .to_return(status: 404, body: "Not Found")
       end
 
@@ -202,6 +206,107 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         expect(result).to be_a(Dependabot::Package::PackageDetails)
         expect(result.releases).to be_empty
         expect(a_request(:get, private_versions_url)).to have_been_made.once
+      end
+
+      context "when the registry supports Compact Index v2" do
+        let(:compact_index_response) { fixture("releases_api", "compact_index_v2") }
+
+        before do
+          stub_request(:get, compact_index_url)
+            .to_return(status: 200, body: compact_index_response)
+        end
+
+        it "fetches publication dates and requirements from the compact index" do
+          releases = fetch.releases
+
+          expect(releases.map { |release| release.version.to_s }).to eq(%w(1.1.0 1.0.0))
+          expect(releases.map(&:released_at)).to eq(
+            [Time.iso8601("2025-03-20T14:48:33Z"), Time.iso8601("2025-01-01T12:34:56Z")]
+          )
+          expect(releases.first.language.requirement)
+            .to eq(Dependabot::Bundler::Requirement.new(">= 3.1.0, < 4.0"))
+          expect(releases.first.url)
+            .to eq("https://gems.private-registry.example.com/gems/my-private-gem-1.1.0.gem")
+          expect(a_request(:get, compact_index_url)).to have_been_made.once
+        end
+
+        context "with platform-specific versions" do
+          let(:compact_index_response) do
+            "---\n1.1.0-x86_64-linux |checksum:abc,created_at:2025-03-20T14:48:33Z\n"
+          end
+
+          it "separates the version from the platform" do
+            release = fetch.releases.first
+
+            expect(release.version.to_s).to eq("1.1.0")
+            expect(release.released_at).to eq(Time.iso8601("2025-03-20T14:48:33Z"))
+            expect(release.url)
+              .to eq("https://gems.private-registry.example.com/gems/my-private-gem-1.1.0-x86_64-linux.gem")
+          end
+        end
+
+        context "with a replaces_base registry" do
+          let(:source) { nil }
+          let(:credentials) do
+            [
+              Dependabot::Credential.new(
+                "type" => "rubygems_server",
+                "host" => "gems.private-registry.example.com",
+                "replaces-base" => true
+              )
+            ]
+          end
+
+          it "uses the replacement registry for compact index metadata" do
+            expect(fetch.releases).not_to be_empty
+            expect(a_request(:get, compact_index_url)).to have_been_made.once
+            expect(a_request(:get, json_url)).not_to have_been_made
+          end
+        end
+
+        context "with missing or invalid publication dates" do
+          let(:compact_index_response) do
+            <<~INDEX
+              ---
+              1.0.0 |checksum:abc
+              1.1.0 |checksum:def,created_at:invalid
+              1.2.0 |checksum:ghi,created_at:2025-03-20T14:48:33Z
+            INDEX
+          end
+
+          it "retains undated releases without losing valid publication dates" do
+            releases = fetch.releases
+
+            expect(releases.map { |release| release.version.to_s }).to eq(%w(1.2.0 1.1.0 1.0.0))
+            expect(releases.map(&:released_at)).to eq([Time.iso8601("2025-03-20T14:48:33Z"), nil, nil])
+          end
+        end
+
+        context "with an empty response" do
+          let(:compact_index_response) { "" }
+
+          it "returns empty package details" do
+            expect(fetch.releases).to be_empty
+          end
+        end
+
+        context "with a malformed response" do
+          let(:compact_index_response) { "<html>Not Found</html>" }
+
+          it "returns empty package details" do
+            expect(fetch.releases).to be_empty
+          end
+        end
+
+        context "with malformed lines" do
+          let(:compact_index_response) do
+            "---\ninvalid\ninvalid |checksum:abc\n1.0.0 |checksum:def,created_at:2025-01-01T12:34:56Z\n"
+          end
+
+          it "retains valid releases" do
+            expect(fetch.releases.map { |release| release.version.to_s }).to eq(["1.0.0"])
+          end
+        end
       end
     end
 
