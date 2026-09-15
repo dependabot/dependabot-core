@@ -1068,6 +1068,33 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         @test floor(styledstrings_uuid, "1.10") == [v"1.0.3"]  # registry on 1.10, stdlib 1.11.0 after
         @test floor(styledstrings_uuid, "1.11") == [v"1.11.0"]
         @test isempty(DependabotHelper.stdlib_versions_for_julia_compat(test_uuid, Pkg.Versions.VersionSpec(Pkg.Versions.VersionRange[])))
+
+        # Where those versions come from, for the PR notice: adjacent eras
+        # with the same source and caret line are merged
+        sources(uuid, compat) = map(DependabotHelper.stdlib_version_source_dict,
+                                    DependabotHelper.stdlib_version_sources(uuid, Pkg.Types.semver_spec(compat)))
+        statistics_sources = sources(statistics_uuid, "1")
+        # Statistics is still shipped from 1.11 but resolved from the registry
+        @test [s["source"] for s in statistics_sources] == ["bundled", "upgradable", "test_sandbox"]
+        @test statistics_sources[1]["julia"] == "1.0.0 - 1.10.x"
+        @test statistics_sources[1]["versions"] == "1.0.0 - 1.10.0"
+        @test statistics_sources[2]["julia"] == "1.11.0 - 1.x"
+        @test startswith(statistics_sources[2]["versions"], "1.11.5")
+        @test statistics_sources[3]["julia"] == "1.0.0 - 1.9.x"
+        @test statistics_sources[3]["versions"] == "0.0.0"
+        # A different caret line starts a new record even for the same source
+        sha_sources = sources(sha_uuid, "1.10")
+        @test [(s["source"], s["julia"]) for s in sha_sources] == [("bundled", "1.10.0 - 1.12.x"), ("bundled", "1.13.0 - 1.x")]
+        @test sha_sources[1]["versions"] == "0.7.0"
+        @test startswith(sha_sources[2]["versions"], "1.0.0")
+        # A legacy registry bridge, then the bundled copy
+        artifacts_sources = sources(artifacts_uuid, "1")
+        @test [(s["source"], s["julia"]) for s in artifacts_sources] == [("registry", "1.0.0 - 1.5.x"), ("bundled", "1.6.0 - 1.x"), ("test_sandbox", "1.0.0 - 1.9.x")]
+        @test artifacts_sources[1]["versions"] == "1.3.0"
+        @test startswith(artifacts_sources[2]["versions"], "1.6.0 - ")
+        @test DependabotHelper.julia_range_string(Pkg.Versions.VersionBound(1, 13, 0), Pkg.Versions.VersionBound()) == "1.13.0 and later"
+        @test DependabotHelper.julia_range_string(Pkg.Versions.VersionBound(), Pkg.Versions.VersionBound(1, 9)) == "up to 1.9.x"
+        @test DependabotHelper.julia_range_string(Pkg.Versions.VersionBound(1, 10, 0), Pkg.Versions.VersionBound(1, 10, 0)) == "1.10.0"
         @test DependabotHelper.lowest_per_line([v"1.2.0", v"1.0.5", v"0.7.1", v"0.7.0", v"0.0.3", v"2.0.0"]) == [v"0.0.3", v"0.7.0", v"1.0.5", v"2.0.0"]
 
         @test DependabotHelper.bound_below(v"1.6.2") == Pkg.Versions.VersionBound(1, 6, 1)

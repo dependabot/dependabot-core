@@ -83,36 +83,114 @@ function is_stdlib_for_julia_versions(uuid::Base.UUID, julia_versions::Vector{Ve
 end
 
 """
-    stdlib_versions_for_julia_compat(uuid, julia_compat) -> Vector{VersionNumber}
+    stdlib_version_sources(uuid, julia_compat) -> Vector{StdlibVersionSource}
 
-The versions of stdlib `uuid` a project admitting `julia_compat` has to accept,
-reduced to the lowest one per caret-compatible line: the bundled version where
-the package is a pinned stdlib (the Julia version itself when the stdlib is
-unversioned, which is how Pkg resolves it), or the newest installable registry
-release where it is upgradable or not yet a stdlib. Includes v0.0.0 when the
-range reaches releases whose test sandbox pins stdlibs to 0.0.0.
+Where the versions of stdlib `uuid` that a project admitting `julia_compat`
+has to accept come from, in Julia release order: the bundled version where the
+package is a pinned stdlib (the Julia version itself when the stdlib is
+unversioned, which is how Pkg resolves it), the newest installable registry
+release where it is upgradable or not yet a stdlib, and v0.0.0 when the range
+reaches releases whose test sandbox pins stdlibs to 0.0.0. Adjacent eras with
+the same source and caret line are merged into one record, so a record spans
+a Julia range and the versions met across it.
 """
-function stdlib_versions_for_julia_compat(uuid::Base.UUID, julia_compat::Union{Nothing, Pkg.Versions.VersionSpec})
-    eras = stdlib_eras(julia_compat)
-    isempty(eras) && return VersionNumber[]
+struct StdlibVersionSource
+    # "bundled": pinned to the copy shipped with Julia; "upgradable": shipped
+    # with Julia but resolved from the registry (Pkg's UPGRADABLE_STDLIBS,
+    # e.g. Statistics from 1.11); "registry": not a stdlib in those releases;
+    # "test_sandbox": the pre-1.10 Pkg.test() pin to 0.0.0
+    source::String
+    julia_lower::Pkg.Versions.VersionBound
+    julia_upper::Pkg.Versions.VersionBound
+    lowest::VersionNumber
+    highest::VersionNumber
+end
 
-    versions = Set{VersionNumber}()
+function stdlib_version_sources(uuid::Base.UUID, julia_compat::Union{Nothing, Pkg.Versions.VersionSpec})
+    eras = stdlib_eras(julia_compat)
+    sources = StdlibVersionSource[]
+    isempty(eras) && return sources
+
+    # Populates UPGRADABLE_STDLIBS_UUIDS as a side effect
+    Pkg.Types.stdlib_infos()
+    upgradable = uuid in Pkg.Types.UPGRADABLE_STDLIBS_UUIDS
     registry_versions = registry_versions_with_julia_compat(uuid)
     for (_, admitted, stdlibs) in eras
         info = get(stdlibs, uuid, nothing)
         if info !== nothing
-            push!(versions, something(info.version, lowest_version(admitted)))
+            source = "bundled"
+            version = something(info.version, lowest_version(admitted))
         else
             installable = [v for (v, julia_spec) in registry_versions if !isempty(intersect(julia_spec, admitted))]
-            isempty(installable) || push!(versions, maximum(installable))
+            isempty(installable) && continue
+            source = upgradable ? "upgradable" : "registry"
+            version = maximum(installable)
+        end
+        lower, upper = spec_bounds(admitted)
+        previous = isempty(sources) ? nothing : last(sources)
+        if previous !== nothing && previous.source == source && caret_line(previous.lowest) == caret_line(version)
+            sources[end] = StdlibVersionSource(source, previous.julia_lower, upper,
+                                               min(previous.lowest, version), max(previous.highest, version))
+        else
+            push!(sources, StdlibVersionSource(source, lower, upper, version, version))
         end
     end
 
     spec = something(julia_compat, Pkg.Versions.VersionSpec())
     before_fix = Pkg.Versions.VersionSpec(Pkg.Versions.VersionRange(Pkg.Versions.VersionBound(), bound_below(STDLIB_TEST_SANDBOX_FIXED)))
-    isempty(intersect(spec, before_fix)) || push!(versions, v"0.0.0")
+    sandbox = intersect(spec, before_fix)
+    if !isempty(sandbox)
+        lower, upper = spec_bounds(sandbox)
+        push!(sources, StdlibVersionSource("test_sandbox", lower, upper, v"0.0.0", v"0.0.0"))
+    end
 
-    return lowest_per_line(versions)
+    return sources
+end
+
+# Outermost bounds of a spec; the eras are contiguous so a single range
+# describes each record
+function spec_bounds(spec::Pkg.Versions.VersionSpec)
+    ranges = [r for r in spec.ranges if !isempty(r)]
+    return minimum(r.lower for r in ranges), maximum(r.upper for r in ranges)
+end
+
+# A partial lower bound ("1") admits from 1.0.0; a partial upper bound ("1.9")
+# admits every 1.9.x, written "1.9.x" since "1.0.0 - 1.9" reads as a release
+lower_bound_string(b::Pkg.Versions.VersionBound) = join((b.t[1:b.n]..., ntuple(_ -> 0, 3 - b.n)...), ".")
+upper_bound_string(b::Pkg.Versions.VersionBound) = b.n == 3 ? join(b.t, ".") : join((b.t[1:b.n]..., "x"), ".")
+
+# "1.0.0 - 1.9.x", "1.13.0 and later", "up to 1.9.x", or "1.10.0" for a single release
+function julia_range_string(lower::Pkg.Versions.VersionBound, upper::Pkg.Versions.VersionBound)
+    lower.n == 0 && upper.n == 0 && return "any release"
+    lower.n == 0 && return "up to $(upper_bound_string(upper))"
+    upper.n == 0 && return "$(lower_bound_string(lower)) and later"
+    lower == upper && upper.n == 3 && return lower_bound_string(lower)
+    return "$(lower_bound_string(lower)) - $(upper_bound_string(upper))"
+end
+
+function version_range_string(source::StdlibVersionSource)
+    source.lowest == source.highest && return string(source.lowest)
+    return "$(source.lowest) - $(source.highest)"
+end
+
+# The JSON form handed to Ruby, which writes the PR notice from it
+function stdlib_version_source_dict(source::StdlibVersionSource)
+    return Dict{String,Any}(
+        "source" => source.source,
+        "julia" => julia_range_string(source.julia_lower, source.julia_upper),
+        "versions" => version_range_string(source)
+    )
+end
+
+"""
+    stdlib_versions_for_julia_compat(uuid, julia_compat) -> Vector{VersionNumber}
+
+The versions of stdlib `uuid` a project admitting `julia_compat` has to accept
+(see `stdlib_version_sources`), reduced to the lowest one per caret-compatible
+line.
+"""
+function stdlib_versions_for_julia_compat(uuid::Base.UUID, julia_compat::Union{Nothing, Pkg.Versions.VersionSpec})
+    return lowest_per_line(source.lowest for source in stdlib_version_sources(uuid, julia_compat))
 end
 
 # Non-yanked registry releases of `uuid` with the Julia versions each admits
@@ -143,12 +221,14 @@ function lowest_version(spec::Pkg.Versions.VersionSpec)
 end
 
 # Caret compatibility: versions sharing a leading non-zero component (or the
-# 0.0.x patch) are interchangeable for a compat entry, so only the lowest of
-# each line needs to be listed
+# 0.0.x patch) are interchangeable for a compat entry
+caret_line(v::VersionNumber) = v.major > 0 ? (Int(v.major), 0, 0) : v.minor > 0 ? (0, Int(v.minor), 0) : (0, 0, Int(v.patch))
+
+# Only the lowest version of each caret line needs to be listed in an entry
 function lowest_per_line(versions)
     lines = Dict{Tuple{Int, Int, Int}, VersionNumber}()
     for v in versions
-        key = v.major > 0 ? (Int(v.major), 0, 0) : v.minor > 0 ? (0, Int(v.minor), 0) : (0, 0, Int(v.patch))
+        key = caret_line(v)
         lines[key] = min(v, get(lines, key, v))
     end
     return sort!(collect(values(lines)))

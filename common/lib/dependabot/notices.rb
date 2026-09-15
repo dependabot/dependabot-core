@@ -158,15 +158,16 @@ module Dependabot
 
     sig { params(mode: String).returns(String) }
     def self.markdown_mode(mode)
+      # GitHub renders NOTE, TIP, IMPORTANT, WARNING and CAUTION as alerts
       case mode
       when NoticeMode::INFO
-        "INFO"
+        "NOTE"
       when NoticeMode::WARN
         "WARNING"
       when NoticeMode::ERROR
         "IMPORTANT"
       else
-        "INFO"
+        "NOTE"
       end
     end
   end

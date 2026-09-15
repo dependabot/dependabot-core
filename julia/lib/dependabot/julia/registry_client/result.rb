@@ -176,6 +176,31 @@ module Dependabot
           end
         end
 
+        # Where a stdlib's versions come from over a range of Julia releases;
+        # see the helper's stdlib_version_sources
+        class StdlibVersionSource < T::ImmutableStruct
+          extend T::Sig
+
+          # "bundled", "upgradable" (shipped but resolved from the registry),
+          # "registry" (not a stdlib in those releases) or "test_sandbox"
+          const :source, String
+          # The Julia releases, as Pkg prints a range ("1.0.0 - 1.9")
+          const :julia, String
+          # The versions met across them ("1.0.0" or "1.0.0 - 1.9.0")
+          const :versions, String
+
+          sig { params(value: Object, context: String).returns(StdlibVersionSource) }
+          def self.from_object(value, context)
+            hash = ValueParser.object_hash(value, context)
+
+            new(
+              source: ValueParser.string(hash, "source", context),
+              julia: ValueParser.string(hash, "julia", context),
+              versions: ValueParser.string(hash, "versions", context)
+            )
+          end
+        end
+
         class ProjectDependency < T::ImmutableStruct
           extend T::Sig
 
@@ -189,6 +214,8 @@ module Dependabot
           # that Julia range (lowest per caret line, sorted); see the helper's
           # stdlib_versions_for_julia_compat
           const :stdlib_versions, T::Array[String], default: []
+          # And where they come from, in Julia release order
+          const :stdlib_version_sources, T::Array[StdlibVersionSource], default: []
 
           sig { params(value: Object).returns(ProjectDependency) }
           def self.from_object(value)
@@ -200,9 +227,22 @@ module Dependabot
               uuid: ValueParser.string(hash, "uuid", context),
               requirement: ValueParser.optional_string(hash, "requirement", context),
               stdlib: ValueParser.optional_boolean(hash, "stdlib", context),
-              stdlib_versions: ValueParser.optional_string_array(hash, "stdlib_versions", context)
+              stdlib_versions: ValueParser.optional_string_array(hash, "stdlib_versions", context),
+              stdlib_version_sources: parse_version_sources(hash, context)
             )
           end
+
+          sig { params(hash: ObjectHash, context: String).returns(T::Array[StdlibVersionSource]) }
+          def self.parse_version_sources(hash, context)
+            value = hash["stdlib_version_sources"]
+            return [] if value.nil?
+
+            source_context = "#{context} stdlib_version_sources"
+            ValueParser.object_array(value, source_context).map do |source|
+              StdlibVersionSource.from_object(source, "#{source_context} entry")
+            end
+          end
+          private_class_method :parse_version_sources
         end
 
         class Project < T::ImmutableStruct

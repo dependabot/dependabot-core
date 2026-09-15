@@ -74,6 +74,140 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       expect(manifest_toml.content).to include('version = "0.5.5"')
     end
 
+    context "when a stdlib compat entry is written" do
+      let(:dependency_files) { [project_file] }
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "TestProject"
+            uuid = "1234e567-e89b-12d3-a456-789012345678"
+            version = "0.1.0"
+
+            [deps]
+            Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+            [compat]
+            julia = "1"
+          TOML
+        )
+      end
+      let(:julia_compat) { "1" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Statistics",
+          version: nil,
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{ requirement: "< 0.0.1, 1", file: "Project.toml", groups: ["deps"], source: nil }],
+          previous_requirements: [{ requirement: nil, file: "Project.toml", groups: ["deps"], source: nil }],
+          metadata: {
+            julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2",
+            julia_stdlib_versions: { "Project.toml" => ["0.0.0", "1.0.0"] },
+            # As the file parser records them from the helper
+            julia_stdlib_sources: {
+              "Project.toml" => [
+                { source: "bundled", julia: "1.0.0 - 1.10.x", versions: "1.0.0 - 1.10.0" },
+                { source: "upgradable", julia: "1.11.0 - 1.x", versions: "1.11.5" },
+                { source: "test_sandbox", julia: "1.0.0 - 1.9.x", versions: "0.0.0" }
+              ]
+            },
+            julia_compat: { "Project.toml" => julia_compat }
+          }
+        )
+      end
+
+      it "adds the entry and explains it in a notice" do
+        updated_files = updater.updated_dependency_files
+        expect(updated_files.map(&:name)).to eq(["Project.toml"])
+        expect(updated_files.first.content).to include('Statistics = "< 0.0.1, 1"')
+
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.mode).to eq(Dependabot::Notice::NoticeMode::INFO)
+        expect(notice.type).to eq("julia_stdlib_compat_entry")
+        expect(notice.show_in_pr).to be true
+        expect(notice.show_alert).to be false
+        expect(notice.title).to eq('Why `Statistics = "< 0.0.1, 1"`')
+        expect(notice.description).to include('across the Julia releases its `julia = "1"` compat entry admits')
+        expect(notice.description).to include("- Julia 1.0.0 - 1.10.x bundles `Statistics` 1.0.0 - 1.10.0.")
+        expect(notice.description).to include(
+          "- Julia 1.11.0 - 1.x bundles `Statistics` as an upgradable standard library, so Pkg resolves it from " \
+          "the registry there, and the newest release that installs there is 1.11.5."
+        )
+        expect(notice.description).to include(
+          "- `Pkg.test()` on Julia 1.0.0 - 1.9.x pinned standard libraries to version 0.0.0 in the test sandbox, " \
+          "which the entry admits as `< 0.0.1`. Raising the `julia` compat entry to `1.10`, the current " \
+          "long-term support release, would drop that bound."
+        )
+        expect(notice.description).to include('gives `Statistics = "< 0.0.1, 1"`.')
+        expect(notice.description).to include("https://discourse.julialang.org/t/psa-compat-requirements")
+      end
+
+      context "when the project has no julia compat entry" do
+        let(:julia_compat) { "" }
+
+        it "says so instead of quoting one" do
+          updater.updated_dependency_files
+
+          expect(updater.notices.first.description)
+            .to include("across every Julia release, since `Project.toml` has no `julia` compat entry")
+        end
+      end
+
+      context "when the package was a registry package before becoming a stdlib" do
+        let(:project_file) do
+          Dependabot::DependencyFile.new(
+            name: "Project.toml",
+            content: <<~TOML
+              name = "TestProject"
+              uuid = "1234e567-e89b-12d3-a456-789012345678"
+              version = "0.1.0"
+
+              [deps]
+              Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+
+              [compat]
+              julia = "1"
+            TOML
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Artifacts",
+            version: nil,
+            previous_version: nil,
+            package_manager: "julia",
+            requirements: [{ requirement: "< 0.0.1, 1.3", file: "Project.toml", groups: ["deps"], source: nil }],
+            previous_requirements: [{ requirement: nil, file: "Project.toml", groups: ["deps"], source: nil }],
+            metadata: {
+              julia_uuid: "56f22d72-fd6d-98f1-02f0-08ddc0907c33",
+              julia_stdlib_versions: { "Project.toml" => ["0.0.0", "1.3.0"] },
+              julia_stdlib_sources: {
+                "Project.toml" => [
+                  { source: "registry", julia: "1.0.0 - 1.5.x", versions: "1.3.0" },
+                  { source: "bundled", julia: "1.6.0 - 1.x", versions: "1.6.0 - 1.11.0" },
+                  { source: "test_sandbox", julia: "1.0.0 - 1.9.x", versions: "0.0.0" }
+                ]
+              },
+              julia_compat: { "Project.toml" => "1" }
+            }
+          )
+        end
+
+        it "describes the registry bridge" do
+          updater.updated_dependency_files
+
+          description = updater.notices.first.description
+          expect(description).to include(
+            "- On Julia 1.0.0 - 1.5.x, `Artifacts` is not a standard library and comes from the registry, and the " \
+            "newest release that installs there is 1.3.0."
+          )
+          expect(description).to include("- Julia 1.6.0 - 1.x bundles `Artifacts` 1.6.0 - 1.11.0.")
+        end
+      end
+    end
+
     context "when only Project.toml exists" do
       let(:dependency_files) { [project_file] }
 
