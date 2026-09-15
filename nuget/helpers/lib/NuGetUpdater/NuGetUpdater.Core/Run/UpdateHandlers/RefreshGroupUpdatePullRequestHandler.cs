@@ -67,6 +67,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var updateOperationsPerformed = new List<UpdateOperationBase>();
         var updatedDependencies = new List<ReportedDependency>();
+        var updatedDependenciesWithDirectories = new List<ReportedDependencyWithDirectory>();
         var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
@@ -138,6 +139,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                         .ToArray();
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
+                    updatedDependenciesWithDirectories.AddRange(updatedDependenciesForThis.Select(d => ReportedDependencyWithDirectory.From(d, directory)));
                     updateOperationsPerformed.AddRange(patchedUpdateOperations);
                     foreach (var o in patchedUpdateOperations)
                     {
@@ -162,7 +164,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
         var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
         var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-        var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
+        var existingPullRequest = job.GetExistingPullRequestForDependencies(updatedDependenciesWithDirectories, considerVersions: true);
         if (existingPullRequest is not null)
         {
             await apiHandler.UpdatePullRequest(new UpdatePullRequest()
@@ -178,7 +180,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         }
         else
         {
-            var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
+            var existingPrButDifferent = job.GetExistingPullRequestForDependencies(updatedDependenciesWithDirectories, considerVersions: false);
             if (existingPrButDifferent is not null)
             {
                 await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
@@ -186,7 +188,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
 
             await apiHandler.CreatePullRequest(new CreatePullRequest()
             {
-                Dependencies = [.. updatedDependencies],
+                Dependencies = [.. updatedDependenciesWithDirectories],
                 UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
                 BaseCommitSha = baseCommitSha,
                 CommitMessage = commitMessage,

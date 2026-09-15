@@ -348,7 +348,7 @@ module Dependabot
           return unless TomlRB.parse(T.must(cargo_toml).content)["workspace"]
 
           msg = "This project is part of a Rust workspace but is not the " \
-                "workspace root." \
+                "workspace root."
 
           if T.must(cargo_toml).directory != "/"
             msg += "Please update your settings so Dependabot points at the " \

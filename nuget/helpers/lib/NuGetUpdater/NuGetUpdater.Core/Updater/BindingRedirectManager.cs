@@ -107,7 +107,7 @@ internal static class BindingRedirectManager
 
         static void AddConfigFileToProject(ProjectBuildFile projectBuildFile, ConfigurationFile configFile)
         {
-            var projectNode = projectBuildFile.Contents.RootSyntax;
+            var projectNode = projectBuildFile.ProjectNode;
             var itemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax("ItemGroup")
                 .AddChild(
                     XmlExtensions.CreateSingleLineXmlElementSyntax("None")

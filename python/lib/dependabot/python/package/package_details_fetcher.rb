@@ -12,6 +12,7 @@ require "dependabot/python/name_normaliser"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/python/package/package_registry_finder"
+require "dependabot/python/package/simple_api_parser"
 
 # Stores metadata for a package, including all its available versions
 module Dependabot
@@ -21,6 +22,7 @@ module Dependabot
       CREDENTIALS_PASSWORD = "password"
 
       APPLICATION_JSON = "application/json"
+      APPLICATION_PYPI_SIMPLE_JSON = "application/vnd.pypi.simple.v1+json"
       APPLICATION_TEXT = "text/html"
       CPYTHON = "cpython"
       PYTHON = "python"
@@ -42,11 +44,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(
-          dependency:,
-          dependency_files:,
-          credentials:
-        )
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
@@ -70,7 +68,7 @@ module Dependabot
                              .flat_map do |index_url|
             fetch_from_registry(index_url) || [] # Ensure it always returns an array
           rescue Excon::Error::Timeout, Excon::Error::Socket
-            raise if MAIN_PYPI_INDEXES.include?(index_url)
+            raise if main_pypi_index?(index_url)
 
             raise PrivateSourceTimedOut, sanitized_url(index_url)
           rescue URI::InvalidURIError
@@ -90,15 +88,46 @@ module Dependabot
             .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
-          metadata = fetch_from_json_registry(index_url)
+          return fetch_from_simple_registry(index_url) unless main_pypi_index?(index_url)
 
-          return metadata if metadata&.any?
+          begin
+            metadata = fetch_from_json_registry(index_url)
 
-          Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
-          fetch_from_html_registry(index_url)
-        rescue StandardError => e
-          Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
-          fetch_from_html_registry(index_url)
+            return metadata if metadata&.any?
+
+            Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
+            fetch_from_html_registry(index_url)
+          rescue Dependabot::DependencyFileNotResolvable
+            raise
+          rescue StandardError => e
+            Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
+            fetch_from_html_registry(index_url)
+          end
+        end
+
+        sig { params(index_url: String).returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def fetch_from_simple_registry(index_url)
+          Dependabot.logger.info(
+            "Fetching release information from simple registry at #{sanitized_url(index_url)} for #{dependency.name}"
+          )
+          response = registry_response_for_dependency(index_url, accept: simple_api_accept)
+          project_url = response.path ? Excon::Utils.request_uri(response.data) : index_url + normalised_name + "/"
+          check_authentication_response(response, index_url)
+
+          version_releases = if simple_json_response?(response)
+                               SimpleApiParser.new(
+                                 dependency: dependency,
+                                 project_url: project_url
+                               ).parse(response.body)
+                             else
+                               extract_release_details_json_from_html(response.body)
+                             end
+
+          format_version_releases(version_releases, preserve_distributions: simple_json_response?(response))
+            .sort_by(&:version).reverse
+        rescue JSON::ParserError
+          Dependabot.logger.warn("JSON parsing error for #{sanitized_url(index_url)}.")
+          []
         end
 
         # Example JSON Response Format:
@@ -203,19 +232,34 @@ module Dependabot
           Dependabot.logger.info(
             "Fetching release information from html registry at #{sanitized_url(index_url)} for #{dependency.name}"
           )
-          index_response = registry_response_for_dependency(index_url)
-          if index_response.status == 401 || index_response.status == 403
-            registry_index_response = registry_index_response(index_url)
-
-            if registry_index_response.status == 401 || registry_index_response.status == 403
-              raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
-            end
-          end
+          index_response = registry_response_for_dependency(index_url, accept: APPLICATION_TEXT)
+          check_authentication_response(index_response, index_url)
 
           version_releases = extract_release_details_json_from_html(index_response.body)
           releases = format_version_releases(version_releases)
 
           releases.sort_by(&:version).reverse
+        end
+
+        sig { params(response: Excon::Response).returns(T::Boolean) }
+        def simple_json_response?(response)
+          response.headers["Content-Type"].to_s.split(";", 2).first.to_s.strip.downcase == APPLICATION_PYPI_SIMPLE_JSON
+        end
+
+        sig { returns(String) }
+        def simple_api_accept
+          "application/vnd.pypi.simple.v1+json, " \
+            "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+        end
+
+        sig { params(response: Excon::Response, index_url: String).void }
+        def check_authentication_response(response, index_url)
+          return unless [401, 403].include?(response.status)
+
+          index_response = registry_index_response(index_url)
+          return unless [401, 403].include?(index_response.status)
+
+          raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
         end
 
         sig do
@@ -266,23 +310,17 @@ module Dependabot
 
         sig do
           params(
-            releases_json: T.nilable(T::Hash[String, T::Array[T::Hash[String, T.untyped]]])
+            releases_json: T.nilable(T::Hash[String, T::Array[T::Hash[String, T.untyped]]]),
+            preserve_distributions: T::Boolean
           )
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def format_version_releases(releases_json)
+        def format_version_releases(releases_json, preserve_distributions: false)
           return [] unless releases_json
 
           releases_json.each_with_object([]) do |(version, release_data_array), versions|
-            release_data = release_data_array.last
-
-            next unless release_data
-
-            release = format_version_release(version, release_data)
-
-            next unless release
-
-            versions << release
+            release_data_array = [release_data_array.last].compact unless preserve_distributions
+            versions.concat(release_data_array.filter_map { |data| format_version_release(version, data) })
           end
         end
 
@@ -397,11 +435,11 @@ module Dependabot
           )
         end
 
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_response_for_dependency(index_url)
+        sig { params(index_url: String, accept: String).returns(Excon::Response) }
+        def registry_response_for_dependency(index_url, accept:)
           Dependabot::RegistryClient.get(
             url: index_url + normalised_name + "/",
-            headers: { "Accept" => APPLICATION_TEXT }
+            headers: { "Accept" => accept }
           )
         end
 
@@ -485,6 +523,14 @@ module Dependabot
         sig { params(index_url: String).returns(String) }
         def sanitized_url(index_url)
           index_url.sub(%r{//([^/@]+)@}, "//redacted@")
+        end
+
+        sig { params(index_url: String).returns(T::Boolean) }
+        def main_pypi_index?(index_url)
+          uri = URI.parse(index_url)
+          T.must(uri.scheme.to_s.casecmp("https")).zero? && uri.port == 443 &&
+            uri.path.to_s.split("/").reject(&:empty?) == ["simple"] &&
+            %w(pypi.org pypi.python.org).include?(uri.host.to_s.downcase)
         end
 
         sig { params(dep_name: String).returns(String) }

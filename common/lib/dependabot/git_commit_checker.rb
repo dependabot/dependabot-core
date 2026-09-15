@@ -23,7 +23,7 @@ require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/git_cooldown_date_resolver"
 module Dependabot
-  # rubocop:disable Metrics/ClassLength
+  # rubocop:disable-next Metrics/ClassLength
   class GitCommitChecker
     extend T::Sig
     include Dependabot::GitCooldownDateResolver
@@ -265,6 +265,7 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def local_tag_for_pinned_sha
+      return @local_tag_for_pinned_sha if defined?(@local_tag_for_pinned_sha)
       return unless pinned_ref_looks_like_commit_sha?
 
       @local_tag_for_pinned_sha = T.let(
@@ -957,5 +958,4 @@ module Dependabot
       SourceDetails.from_hash(details) if details
     end
   end
-  # rubocop:enable Metrics/ClassLength
 end

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "tempfile"
@@ -114,22 +114,20 @@ module Dependabot
         # a sibling member) resolve by path within the workspace, never from a
         # registry, so they must not be treated as updatable dependencies.
         workspace_package_uuids = parsed_projects.filter_map do |_, result|
-          T.cast(result["uuid"], T.nilable(String))
+          result.uuid
         end
 
         parsed_projects.each do |proj_file, result|
-          parsed_deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
           merge_dependencies_from_list(
-            parsed_deps,
+            result.dependencies,
             ["deps"],
             proj_file.name,
             dependencies_map,
             workspace_package_uuids
           )
 
-          parsed_weak_deps = T.cast(result["weak_dependencies"] || [], T::Array[T.untyped])
           merge_dependencies_from_list(
-            parsed_weak_deps,
+            result.weak_dependencies,
             ["weakdeps"],
             proj_file.name,
             dependencies_map,
@@ -171,34 +169,34 @@ module Dependabot
 
         result = parse_manifest_content(T.must(manifest.content))
 
-        if result["error"]
-          Dependabot.logger.warn("Failed to parse Julia manifest: #{result['error']}")
+        if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+          Dependabot.logger.warn("Failed to parse Julia manifest: #{result.message}")
           return {}
         end
 
-        deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
-        deps.each_with_object({}) do |dep_info, map|
-          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
-          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          version = T.cast(dep_hash["version"], T.nilable(String)).to_s
-          next if uuid.nil? || version.empty?
+        result.dependencies.each_with_object({}) do |dependency, map|
+          next if dependency.version.empty?
 
-          map[uuid] = version
+          map[dependency.uuid] = dependency.version
         end
       end
 
-      sig { params(content: String).returns(T::Hash[String, T.untyped]) }
+      sig do
+        params(content: String)
+          .returns(T.any(
+                     Dependabot::Julia::RegistryClient::Result::Manifest,
+                     Dependabot::Julia::RegistryClient::Result::Failure
+                   ))
+      end
       def parse_manifest_content(content)
-        result = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         Dir.mktmpdir("julia_manifest") do |temp_dir|
           # Written under a fixed name: version-suffixed manifests
           # (Manifest-v1.11.toml) would otherwise be skipped by Pkg when the
           # helper's Julia version doesn't match.
           manifest_path = File.join(temp_dir, "Manifest.toml")
           File.write(manifest_path, content)
-          result = registry_client.parse_manifest(manifest_path)
+          registry_client.parse_manifest(manifest_path)
         end
-        T.must(result)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -208,7 +206,10 @@ module Dependabot
         end
       end
 
-      sig { params(proj_file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig do
+        params(proj_file: Dependabot::DependencyFile)
+          .returns(T.nilable(Dependabot::Julia::RegistryClient::Result::Project))
+      end
       def parse_project_file(proj_file)
         temp_dir = Dir.mktmpdir("julia_project")
         # File names like "../Project.toml" (a workspace root fetched from a
@@ -224,7 +225,7 @@ module Dependabot
         begin
           result = registry_client.parse_project(project_path: project_path)
 
-          return nil if result["error"]
+          return nil if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
 
           result
         ensure
@@ -234,7 +235,7 @@ module Dependabot
 
       sig do
         params(
-          dep_list: T::Array[T.untyped],
+          dep_list: T::Array[Dependabot::Julia::RegistryClient::Result::ProjectDependency],
           groups: T::Array[String],
           file_name: String,
           dependencies_map: T::Hash[String, Dependabot::Dependency],
@@ -242,13 +243,12 @@ module Dependabot
         ).void
       end
       def merge_dependencies_from_list(dep_list, groups, file_name, dependencies_map, workspace_package_uuids)
-        dep_list.each do |dep_info|
-          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
-          name = T.cast(dep_hash["name"], String)
+        dep_list.each do |dependency|
+          name = dependency.name
           next if name == "julia" # Skip Julia version requirement
 
-          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          requirement_string = T.cast(dep_hash["requirement"], T.nilable(String))
+          uuid = dependency.uuid
+          requirement_string = dependency.requirement
 
           next if skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
 
@@ -279,7 +279,7 @@ module Dependabot
               version: nil,
               requirements: [new_requirement],
               package_manager: "julia",
-              metadata: uuid ? { julia_uuid: uuid } : {}
+              metadata: { julia_uuid: uuid }
             )
           end
         end

@@ -105,8 +105,7 @@ module Dependabot
       sig { params(details: ObjectHash, version: String).returns(T.nilable(String)) }
       def self.parse_node_requirement(details, version)
         engines = details["engines"]
-        return if engines.nil?
-        return if engines.is_a?(Array)
+        return unless engines.is_a?(Hash)
 
         engines_hash = object_hash(engines, "version #{version} engines")
         optional_string(
@@ -133,8 +132,17 @@ module Dependabot
             type: type,
             git: type == "git"
           )
+        when Array
+          repositories = T.let([], T::Array[Repository])
+          value.each do |raw_repository|
+            repository_value = T.cast(raw_repository, Object)
+            parsed_repository = parse_repository(repository_value, version)
+            repositories << parsed_repository if parsed_repository
+          end
+
+          repositories.find(&:git?) || repositories.first
         else
-          raise TypeError, "version #{version} repository must be a string or object"
+          raise TypeError, "version #{version} repository must be a string, object, or array"
         end
       end
       private_class_method :parse_repository

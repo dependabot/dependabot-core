@@ -208,14 +208,59 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       it "returns the release without a Node requirement" do
         release = details.releases.find { |candidate| candidate.version.to_s == "0.1.0" }
 
-        expect(release&.language).to be_nil
+        expect(release).not_to be_nil
+        expect(release.language).to be_nil
+      end
+    end
+
+    context "when registry metadata uses a legacy engines string" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => {
+              "5.1.0" => { "engines" => ">=0.10.40" }
+            }
+          )
+        )
+      end
+
+      it "returns the release without a Node requirement" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "5.1.0" }
+
+        expect(release).not_to be_nil
+        expect(release.language).to be_nil
+      end
+    end
+
+    context "when registry metadata uses a repository array" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => {
+              "0.0.4" => {
+                "repository" => [{
+                  "type" => "git",
+                  "url" => "git://github.com/raszi/tmp.git"
+                }]
+              }
+            }
+          )
+        )
+      end
+
+      it "returns the release as a Git package" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "0.0.4" }
+
+        expect(release).not_to be_nil
+        expect(release.package_type).to eq("git")
       end
     end
 
     [
       ["time", { "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }],
       ["dist-tags", { "dist-tags" => { "latest" => 1 } }],
-      ["engines", { "versions" => { "1.0.0" => { "engines" => "invalid" } } }],
       ["repository", { "versions" => { "1.0.0" => { "repository" => 1 } } }]
     ].each do |field, response_body|
       context "when #{field} has the wrong shape" do

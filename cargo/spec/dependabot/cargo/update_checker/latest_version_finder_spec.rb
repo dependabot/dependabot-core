@@ -538,6 +538,34 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
           it { is_expected.to eq(Gem::Version.new("2.0.0")) }
         end
+
+        context "when the release date is unavailable" do
+          let(:sparse_registry_response) do
+            <<~BODY
+              {"name":"hello-world","vers":"1.0.0","created_at":"2024-12-02T20:07:38.990663Z","deps":[],"cksum":"abc123","features":{},"yanked":false,"links":null}
+              {"name":"hello-world","vers":"2.0.0","created_at":null,"deps":[],"cksum":"def456","features":{},"yanked":false,"links":null}
+            BODY
+          end
+          let(:requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: "~2.0.0",
+              groups: ["dependencies"],
+              source: {
+                type: "registry",
+                name: "honeyankit-test",
+                index: "sparse+https://cargo.cloudsmith.io/honeyankit/test/",
+                dl: "https://dl.cloudsmith.io/basic/honeyankit/test/cargo/{crate}-{version}.crate",
+                api: "https://cargo.cloudsmith.io/honeyankit/test"
+              }
+            }]
+          end
+
+          it "allows the release and marks the dependency" do
+            expect(latest_version).to eq(Gem::Version.new("2.0.0"))
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
       end
     end
   end

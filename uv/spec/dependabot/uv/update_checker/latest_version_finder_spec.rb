@@ -10,11 +10,20 @@ require "dependabot/uv/update_checker/latest_version_finder"
 RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
   before do
     stub_request(:get, pypi_url)
-      .with(headers: { "Accept" => "text/html" })
-      .to_return(status: 200, body: pypi_response)
+      .with(headers: { "Accept" => registry_accept })
+      .to_return(status: 200, headers: pypi_response_headers, body: pypi_response)
   end
 
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:registry_accept) do
+    if pypi_url.start_with?("https://pypi.org/", "https://pypi.python.org/")
+      "text/html"
+    else
+      "application/vnd.pypi.simple.v1+json, " \
+        "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+    end
+  end
+  let(:pypi_response_headers) { {} }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
     described_class.new(
@@ -296,6 +305,28 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
     context "with a custom index-url" do
       let(:pypi_url) do
         "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"
+      end
+
+      context "when the index returns PEP 691 JSON" do
+        let(:requirements_fixture_name) { "custom_index.txt" }
+        let(:pypi_response_headers) do
+          { "Content-Type" => "application/vnd.pypi.simple.v1+json" }
+        end
+        let(:pypi_response) do
+          JSON.dump(
+            "meta" => { "api-version" => "1.1" },
+            "name" => dependency_name,
+            "files" => [
+              {
+                "filename" => "luigi-3.0.0-py3-none-any.whl",
+                "url" => "../files/luigi-3.0.0-py3-none-any.whl",
+                "yanked" => false
+              }
+            ]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
       end
 
       context "when setting in a pip.conf file" do
@@ -705,6 +736,51 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
       let(:version) { nil }
 
       it { is_expected.to eq(Gem::Version.new("2.5.0")) }
+    end
+  end
+
+  describe "#eligible_releases" do
+    subject(:eligible_versions) do
+      finder.eligible_releases(language_version: language_version)&.map(&:version)
+    end
+
+    let(:ignored_versions) { ["== 2.4.0"] }
+    let(:language_version) { nil }
+
+    it "applies the same release filters used for latest_version" do
+      expect(eligible_versions).to include(Gem::Version.new("2.6.0"))
+      expect(eligible_versions).not_to include(Gem::Version.new("2.4.0"))
+    end
+
+    context "with a detected Python version" do
+      let(:language_version) { "3.11.0" }
+      let(:supported_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Uv::Version.new("2.5.0"),
+          language: Dependabot::Package::PackageLanguage.new(
+            name: "python",
+            requirement: Dependabot::Uv::Requirement.new(">=3.11")
+          )
+        )
+      end
+      let(:unsupported_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Uv::Version.new("2.6.0"),
+          language: Dependabot::Package::PackageLanguage.new(
+            name: "python",
+            requirement: Dependabot::Uv::Requirement.new(">=3.12")
+          )
+        )
+      end
+
+      before do
+        allow(finder).to receive(:available_versions)
+          .and_return([supported_release, unsupported_release])
+      end
+
+      it "excludes releases that require a newer Python version" do
+        expect(eligible_versions).to eq([Dependabot::Uv::Version.new("2.5.0")])
+      end
     end
   end
 

@@ -11,7 +11,7 @@ module EcosystemScaffoldTests
 
   module_function
 
-  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+  # rubocop:disable-next Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
   def test_ecosystem_scaffold?
     puts "\n=== Testing rake ecosystem:scaffold ==="
 
@@ -96,5 +96,4 @@ module EcosystemScaffoldTests
       FileUtils.rm_rf("test_eco_temp")
     end
   end
-  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 end

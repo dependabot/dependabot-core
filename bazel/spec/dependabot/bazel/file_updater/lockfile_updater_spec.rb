@@ -169,9 +169,8 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
     context "when .bazelversion file does not exist" do
       let(:dependency_files) { bazel_project_dependency_files("simple_module_with_lockfile") }
 
-      it "returns DEFAULT_BAZEL_VERSION" do
-        expect(lockfile_updater.determine_bazel_version)
-          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+      it "returns Bazel 8.5.1" do
+        expect(lockfile_updater.determine_bazel_version).to eq("8.5.1")
       end
     end
 
@@ -186,9 +185,8 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
         files
       end
 
-      it "returns DEFAULT_BAZEL_VERSION" do
-        expect(lockfile_updater.determine_bazel_version)
-          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+      it "returns Bazel 8.5.1" do
+        expect(lockfile_updater.determine_bazel_version).to eq("8.5.1")
       end
     end
 
@@ -203,9 +201,8 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
         files
       end
 
-      it "returns DEFAULT_BAZEL_VERSION" do
-        expect(lockfile_updater.determine_bazel_version)
-          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+      it "returns Bazel 8.5.1" do
+        expect(lockfile_updater.determine_bazel_version).to eq("8.5.1")
       end
     end
   end

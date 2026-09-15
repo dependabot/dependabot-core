@@ -102,25 +102,34 @@ public sealed record Job
         return existingPullRequests;
     }
 
-    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(IEnumerable<Dependency> dependencies, bool considerVersions)
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(IEnumerable<ReportedDependencyWithDirectory> dependencies, bool considerVersions)
     {
-        if (dependencies.Any(d => d.Version is null))
+        var desiredDependencies = dependencies.ToArray();
+        if (desiredDependencies.Any(d => d.Version is null))
         {
             return null;
         }
 
-        string CreateIdentifier(string dependencyName, string dependencyVersion)
+        bool NamesAndVersionsMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
         {
-            return $"{dependencyName}/{(considerVersions ? dependencyVersion : null)}";
+            return desiredDependency.Name.Equals(existingDependency.DependencyName, StringComparison.OrdinalIgnoreCase) &&
+                (!considerVersions ||
+                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion.ToString(), StringComparison.OrdinalIgnoreCase));
         }
 
-        var desiredDependencySet = dependencies.Select(d => CreateIdentifier(d.Name, d.Version!)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
+        {
+            return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
+                (existingDependency.Directory is null ||
+                    desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
+        }
+
         var existingPullRequests = GetAllExistingPullRequests();
         var existingPullRequest = existingPullRequests
             .FirstOrDefault(pr =>
             {
-                var prDependencySet = pr.Item2.Select(d => CreateIdentifier(d.DependencyName, d.DependencyVersion.ToString())).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                return prDependencySet.SetEquals(desiredDependencySet);
+                return desiredDependencies.All(desired => pr.Item2.Any(existing => DependenciesMatch(desired, existing))) &&
+                    pr.Item2.All(existing => desiredDependencies.Any(desired => DependenciesMatch(desired, existing)));
             });
         return existingPullRequest;
     }

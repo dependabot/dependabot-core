@@ -5,7 +5,7 @@ require "sorbet-runtime"
 require "dependabot/error_details"
 require "dependabot/utils"
 
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module Dependabot
   extend T::Sig
 
@@ -1010,4 +1010,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ModuleLength

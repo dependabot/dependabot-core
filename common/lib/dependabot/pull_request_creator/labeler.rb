@@ -9,7 +9,7 @@ require "dependabot/credential"
 
 module Dependabot
   class PullRequestCreator
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class Labeler
       extend T::Sig
 
@@ -155,9 +155,8 @@ module Dependabot
             new_version_parts = T.must(version(dep)).split(/[.+]/)
             old_version_parts = previous_version(dep)&.split(/[.+]/) || []
             all_parts = new_version_parts.first(3) + old_version_parts.first(3)
-            # rubocop:disable Performance/RedundantEqualityComparisonBlock
+            # rubocop:disable-next Performance/RedundantEqualityComparisonBlock
             next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
-            # rubocop:enable Performance/RedundantEqualityComparisonBlock
             next 1 if new_version_parts[0] != old_version_parts[0]
             next 2 if new_version_parts[1] != old_version_parts[1]
 
@@ -556,6 +555,5 @@ module Dependabot
         Utils.version_class_for_package_manager(package_manager)
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end

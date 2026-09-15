@@ -1185,16 +1185,19 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "when a YAML file cannot be parsed" do
+      let(:unparseable_yaml) do
+        <<~YAML
+          metadata:
+            annotations:
+              a.b/c: "true"
+             invalid: yaml
+        YAML
+      end
       let(:unparseable_file) do
         Dependabot::DependencyFile.new(
           name: "unparseable.yaml",
           directory: "/",
-          content: <<~YAML
-            metadata:
-              annotations:
-                a.b/c: "true"
-               invalid: yaml
-          YAML
+          content: unparseable_yaml
         )
       end
 
@@ -1246,14 +1249,55 @@ RSpec.describe Dependabot::Docker::FileParser do
       context "without a Dockerfile or parseable YAML file" do
         let(:podfiles) { [unparseable_file] }
 
-        it "raises a missing dependency file error" do
-          expect { dependencies }.to raise_error(
-            Dependabot::DependencyFileNotFound,
-            "No parseable Dockerfiles or YAML files found"
-          )
+        it "warns and returns no dependencies" do
+          expect(dependencies).to be_empty
           expect(Dependabot.logger).to have_received(:warn).with(
             a_string_including("Failed to parse YAML file /unparseable.yaml")
           )
+        end
+      end
+
+      context "with multiple directories" do
+        let(:files_by_directory) do
+          {
+            "/invalid-one" => [
+              Dependabot::DependencyFile.new(
+                name: "unparseable.yaml",
+                directory: "/invalid-one",
+                content: unparseable_yaml
+              )
+            ],
+            "/invalid-two" => [
+              Dependabot::DependencyFile.new(
+                name: "unparseable.yaml",
+                directory: "/invalid-two",
+                content: unparseable_yaml
+              )
+            ],
+            "/valid" => [
+              Dependabot::DependencyFile.new(
+                name: "valid.yaml",
+                directory: "/valid",
+                content: fixture("kubernetes", "yaml", "pod.yaml")
+              )
+            ]
+          }
+        end
+
+        it "continues parsing later directories" do
+          dependencies_by_directory = files_by_directory.to_h do |directory, directory_files|
+            directory_source = source.dup.tap { |configured_source| configured_source.directory = directory }
+            directory_dependencies = described_class.new(
+              dependency_files: directory_files,
+              source: directory_source
+            ).parse
+
+            [directory, directory_dependencies]
+          end
+
+          expect(dependencies_by_directory.fetch("/invalid-one")).to be_empty
+          expect(dependencies_by_directory.fetch("/invalid-two")).to be_empty
+          expect(dependencies_by_directory.fetch("/valid").map(&:name)).to eq(["nginx"])
         end
       end
     end

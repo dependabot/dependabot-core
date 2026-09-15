@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "time"
@@ -89,35 +89,41 @@ module Dependabot
         def fetch_release_dates_batch(registry_client, available_versions, uuid)
           return {} if available_versions.empty?
 
-          packages_versions = [{
-            name: dependency.name,
-            uuid: uuid || "",
-            versions: available_versions
-          }]
+          packages_versions = [
+            RegistryClient::Result::PackageVersionsRequest.new(
+              name: dependency.name,
+              uuid: uuid || "",
+              versions: available_versions
+            )
+          ]
 
           result = registry_client.batch_fetch_version_release_dates(packages_versions)
-          dates_for_package = result[dependency.name] || {}
+          return {} if result.is_a?(RegistryClient::Result::Failure)
+
+          dates_for_package = result.packages[dependency.name]
+          return {} unless dates_for_package.is_a?(RegistryClient::Result::ReleaseDates)
 
           convert_dates_to_time_objects(dates_for_package)
         end
 
         sig do
           params(
-            dates_hash: T::Hash[String, T.untyped]
+            release_dates: RegistryClient::Result::ReleaseDates
           ).returns(T::Hash[String, T.nilable(Time)])
         end
-        def convert_dates_to_time_objects(dates_hash)
-          dates_hash.transform_values do |date_value|
-            convert_single_date(date_value)
+        def convert_dates_to_time_objects(release_dates)
+          release_dates.dates.transform_values do |result|
+            next if result.is_a?(RegistryClient::Result::Failure)
+
+            convert_single_date(result.release_date)
           end
         end
 
-        sig { params(date_value: T.untyped).returns(T.nilable(Time)) }
+        sig { params(date_value: T.nilable(String)).returns(T.nilable(Time)) }
         def convert_single_date(date_value)
           return nil if date_value.nil?
-          return nil if date_value.is_a?(Hash) && date_value["error"]
 
-          Time.parse(date_value.to_s)
+          Time.parse(date_value)
         rescue ArgumentError, TypeError
           nil
         end

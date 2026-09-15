@@ -67,7 +67,8 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   let(:register_config_files) { {} }
 
   let(:package_json) { { "packageManager" => "npm@7" } }
-  let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
+  let(:config) { Dependabot::Package::NpmPackageManagerConfig.from_package_json(package_json) }
+  let(:helper) { described_class.new(config, lockfiles, register_config_files, []) }
 
   describe "#package_manager" do
     context "when npm lockfile exists" do
@@ -249,7 +250,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   end
 
   describe "#detect_version" do
-    let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
+    let(:helper) { described_class.new(config, lockfiles, register_config_files, []) }
 
     context "when packageManager field exists" do
       let(:package_json) { { "packageManager" => "npm@7.5.2" } }

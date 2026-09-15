@@ -8,7 +8,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module Clients
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class Azure
       extend T::Sig
       include JsonResponseParser
@@ -550,6 +550,5 @@ module Dependabot
       sig { returns(Dependabot::Source) }
       attr_reader :source
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end

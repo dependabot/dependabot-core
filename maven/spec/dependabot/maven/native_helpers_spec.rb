@@ -135,17 +135,18 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
     let(:env) { { "SOME_VAR" => "value" } }
 
     it "passes an argument vector (not a pre-escaped shell string) to run_shell_command" do
-      expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **kwargs|
         expect(cmd).to be_an(Array)
         expect(cmd).to eq(
           [
             "mvn",
             "org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper",
             "-Dmaven=3.6.3",
-            "-Dtype=only-script",
-            "--no-transfer-progress"
+            "-Dtype=only-script"
           ]
         )
+        # A bounded inactivity timeout is passed explicitly, not left to the 900s DEFAULT.
+        expect(kwargs[:timeout]).to eq(Dependabot::CommandHelpers::TIMEOUTS::LONG_RUNNING)
         # No shell escaping should leak into the arguments.
         expect(cmd.join(" ")).not_to include("\\")
         ""
@@ -157,6 +158,90 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
         env: env,
         distribution_type: "only-script"
       )
+    end
+
+    context "with a resolved registry base" do
+      it "routes resolution through a generated settings mirror passed via -s" do
+        captured_settings = nil
+
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+          s_index = cmd.index("-s")
+          expect(s_index).not_to be_nil
+          settings_path = cmd[s_index + 1]
+          captured_settings = File.read(settings_path)
+          ""
+        end
+
+        described_class.run_mvnw_wrapper(
+          version: "3.6.3",
+          wrapper_plugin_version: "3.3.4",
+          env: env,
+          distribution_type: "only-script",
+          registry_base: "https://repo.example.test/maven/releases"
+        )
+
+        expect(captured_settings).to include("<mirrorOf>external:*</mirrorOf>")
+        expect(captured_settings).to include("<url>https://repo.example.test/maven/releases</url>")
+        # The proxy block is retained so auth still flows through the Dependabot proxy.
+        expect(captured_settings).to include("${env.PROXY_HOST}")
+      end
+
+      it "removes the temporary settings file after the invocation" do
+        settings_path = nil
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+          settings_path = cmd[cmd.index("-s") + 1]
+          ""
+        end
+
+        described_class.run_mvnw_wrapper(
+          version: "3.6.3",
+          wrapper_plugin_version: "3.3.4",
+          env: env,
+          distribution_type: "only-script",
+          registry_base: "https://repo.example.test/maven/releases"
+        )
+
+        expect(File.exist?(settings_path)).to be(false)
+      end
+
+      it "removes the temporary settings file even when the invocation fails" do
+        settings_path = nil
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+          settings_path = cmd[cmd.index("-s") + 1]
+          raise wrapper_failure("[ERROR] boom")
+        end
+
+        expect do
+          described_class.run_mvnw_wrapper(
+            version: "3.6.3",
+            wrapper_plugin_version: "3.3.4",
+            env: env,
+            distribution_type: "only-script",
+            registry_base: "https://repo.example.test/maven/releases"
+          )
+        end.to raise_error(Dependabot::DependabotError)
+
+        expect(settings_path).not_to be_nil
+        expect(File.exist?(settings_path)).to be(false)
+      end
+    end
+
+    context "without a resolved registry base" do
+      it "does not pass -s, leaving the baked Central default settings in place" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+          expect(cmd).not_to include("-s")
+          ""
+        end
+
+        described_class.run_mvnw_wrapper(
+          version: "3.6.3",
+          wrapper_plugin_version: "3.3.4",
+          env: env,
+          distribution_type: "only-script"
+        )
+      end
     end
 
     it "appends extra_args and forwards a non-'.' cwd" do

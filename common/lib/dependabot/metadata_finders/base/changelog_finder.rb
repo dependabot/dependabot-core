@@ -24,7 +24,7 @@ module Dependabot
         const :api_url, T.nilable(String), default: nil
       end
 
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class ChangelogFinder
         extend T::Sig
 
@@ -653,7 +653,6 @@ module Dependabot
             )
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

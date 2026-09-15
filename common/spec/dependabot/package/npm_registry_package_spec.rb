@@ -133,6 +133,38 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       end
     end
 
+    context "with legacy repository array metadata" do
+      let(:payload) do
+        {
+          "versions" => {
+            "0.0.4" => {
+              "repository" => [
+                {
+                  "type" => "npm",
+                  "url" => "https://registry.npmjs.org/example"
+                },
+                {
+                  "type" => "git",
+                  "url" => "git://github.com/raszi/tmp.git"
+                }
+              ]
+            }
+          }
+        }
+      end
+
+      it "uses the first Git repository and preserves the original details" do
+        release = package.releases.fetch("0.0.4")
+
+        expect(release.package_type).to eq("git")
+        expect(release.repository).to have_attributes(
+          type: "git",
+          url: "git://github.com/raszi/tmp.git"
+        )
+        expect(release.details["repository"]).to eq(payload.dig("versions", "0.0.4", "repository"))
+      end
+    end
+
     context "with legacy engines metadata" do
       let(:payload) do
         {
@@ -144,6 +176,23 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
 
       it "treats an engines array as having no Node requirement" do
         expect(package.releases.fetch("1.0.0").node_requirement).to be_nil
+      end
+    end
+
+    context "with string engines metadata" do
+      let(:payload) do
+        {
+          "versions" => {
+            "5.1.0" => { "engines" => ">=0.10.40" }
+          }
+        }
+      end
+
+      it "preserves the release without a Node requirement" do
+        release = package.releases.fetch("5.1.0")
+
+        expect(release.node_requirement).to be_nil
+        expect(release.details["engines"]).to eq(">=0.10.40")
       end
     end
 
@@ -180,14 +229,11 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       [{ "dist-tags" => [] }, "dist-tags must be an object"],
       [{ "dist-tags" => { "latest" => 1 } }, "dist-tags values must be strings"],
       [{
-        "versions" => { "1.0.0" => { "engines" => "invalid" } }
-      }, "version 1.0.0 engines must be an object"],
-      [{
         "versions" => { "1.0.0" => { "engines" => { "node" => 18 } } }
       }, "version 1.0.0 engines.node must be a string"],
       [{
-        "versions" => { "1.0.0" => { "repository" => [] } }
-      }, "version 1.0.0 repository must be a string or object"],
+        "versions" => { "1.0.0" => { "repository" => 1 } }
+      }, "version 1.0.0 repository must be a string, object, or array"],
       [{
         "versions" => { "1.0.0" => { "repository" => { "type" => 1 } } }
       }, "version 1.0.0 repository.type must be a string"]

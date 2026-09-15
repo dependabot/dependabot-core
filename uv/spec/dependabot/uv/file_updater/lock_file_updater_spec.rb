@@ -13,7 +13,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       dependencies: dependencies,
       dependency_files: dependency_files,
       credentials: credentials,
-      index_urls: index_urls
+      index_urls: index_urls,
+      target_requirement: target_requirement
     )
   end
 
@@ -29,6 +30,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     )]
   end
   let(:index_urls) { [] }
+  let(:target_requirement) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -164,7 +166,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "raises an error" do
-        expect { updated_files }.to raise_error("Expected lockfile to change!")
+        expect { updated_files }
+          .to raise_error(Dependabot::DependencyFileContentNotChanged, "Expected lockfile to change!")
       end
     end
 
@@ -1411,6 +1414,24 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(updater).to have_received(:run_command).with(
           expected_command,
           fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+    end
+
+    context "with a target requirement" do
+      let(:target_requirement) { ">=2.19.0,<=2.20.0" }
+
+      it "constrains the package upgrade" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests>=2.19.0,<=2.20.0 " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: anything,
           env: {}
         )
       end
