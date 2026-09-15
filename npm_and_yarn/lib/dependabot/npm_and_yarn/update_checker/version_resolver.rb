@@ -17,6 +17,7 @@ require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
+require "yaml"
 
 # rubocop:disable-next Metrics/ClassLength
 module Dependabot
@@ -145,6 +146,7 @@ module Dependabot
           @resolve_latest_previous_version = T.let({}, T::Hash[Dependabot::Dependency, T.nilable(String)])
           @paths_requiring_update_check = T.let(nil, T.nilable(T::Array[String]))
           @top_level_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
+          @peer_dependency_names = T.let(nil, T.nilable(T::Array[String]))
           # @peer_dependency_errors_checked = T.let(false, T::Boolean)
           @old_peer_dependency_errors = T.let(
             nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
@@ -159,6 +161,7 @@ module Dependabot
           return if part_of_tightly_locked_monorepo?
           return if types_update_available?
           return if original_package_update_available?
+          return latest_allowable_version if pnpm_peer_dependency_check_unnecessary?(latest_allowable_version)
 
           # Trigger peer dependency check which also detects trust downgrades
           has_unmet_peers = relevant_unmet_peer_dependencies.any?
@@ -777,6 +780,123 @@ module Dependabot
         def newly_broken_peer_reqs_from_dep
           relevant_unmet_peer_dependencies
             .select { |dep| dep[:requiring_dep_name] == dependency.name }
+        end
+
+        sig do
+          params(
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T::Boolean)
+        end
+        def pnpm_peer_dependency_check_unnecessary?(version)
+          return false unless version
+          return false unless uses_pnpm_for_peer_dependency_check?
+          return false if pnpm_trust_policy_no_downgrade?
+
+          details = version_details(version)
+          return false unless details
+          peer_dependencies = details["peerDependencies"]
+          return false if peer_dependencies.is_a?(Hash) && peer_dependencies.any?
+          return false if peer_dependency_names.include?(dependency.name)
+
+          Dependabot.logger.info(
+            "Skipping pnpm peer dependency check for #{dependency.name}; no peer dependencies found"
+          )
+          true
+        end
+
+        sig { returns(T::Boolean) }
+        def uses_pnpm_for_peer_dependency_check?
+          return false if dependency_files_builder.pnpm_locks.empty?
+
+          paths_requiring_update_check.all? do |path|
+            next false if lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path).any?
+            next true if lockfiles_for_path(lockfiles: dependency_files_builder.pnpm_locks, path: path).any?
+            next false if lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path).any?
+            next false if dependency_files_builder.root_yarn_lock
+            next true if dependency_files_builder.root_pnpm_lock
+
+            false
+          end
+        end
+
+        sig { params(version: T.any(String, Gem::Version)).returns(T.nilable(T::Hash[String, T.untyped])) }
+        def version_details(version)
+          _, details =
+            latest_version_finder(dependency).possible_versions_with_details.find do |candidate_version, _details|
+              candidate_version.to_s == version.to_s
+            end
+          details
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_trust_policy_no_downgrade?
+          pnpm_workspace_file = dependency_files.find { |file| file.name.end_with?("pnpm-workspace.yaml") }
+          return false unless pnpm_workspace_file
+          return true unless pnpm_workspace_file.content
+
+          parsed = YAML.safe_load(T.must(pnpm_workspace_file.content), aliases: true)
+          parsed.is_a?(Hash) && parsed["trustPolicy"] == "no-downgrade"
+        rescue Psych::Exception
+          true
+        end
+
+        sig { returns(T::Array[String]) }
+        def peer_dependency_names
+          @peer_dependency_names ||= T.let(
+            dependency_files.flat_map do |file|
+              if file.name.end_with?("package.json")
+                package_json_peer_dependency_names(file)
+              elsif file.name.end_with?("pnpm-lock.yaml")
+                pnpm_lock_peer_dependency_names(file)
+              else
+                []
+              end
+            end.uniq,
+            T.nilable(T::Array[String])
+          )
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def package_json_peer_dependency_names(file)
+          return [dependency.name] unless file.content
+
+          peer_dependencies = JSON.parse(T.must(file.content)).fetch("peerDependencies", {})
+          return [] unless peer_dependencies.is_a?(Hash)
+
+          peer_dependencies.keys.map(&:to_s)
+        rescue JSON::ParserError
+          [dependency.name]
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def pnpm_lock_peer_dependency_names(file)
+          return [dependency.name] unless file.content
+
+          YAML.safe_load_stream(T.must(file.content), aliases: true).flat_map do |document|
+            peer_dependency_names_from(document)
+          end.uniq
+        rescue Psych::Exception
+          [dependency.name]
+        end
+
+        sig { params(object: T.untyped).returns(T::Array[String]) }
+        def peer_dependency_names_from(object)
+          case object
+          when Hash
+            peer_dependency_names_from_hash(object)
+          when Array
+            object.flat_map { |value| peer_dependency_names_from(value) }
+          else
+            []
+          end
+        end
+
+        sig { params(hash: T::Hash[T.untyped, T.untyped]).returns(T::Array[String]) }
+        def peer_dependency_names_from_hash(hash)
+          hash.flat_map do |key, value|
+            names = key == "peerDependencies" && value.is_a?(Hash) ? value.keys.map(&:to_s) : []
+            names + peer_dependency_names_from(value)
+          end
         end
 
         sig do
