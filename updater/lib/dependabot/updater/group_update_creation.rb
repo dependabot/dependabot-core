@@ -697,11 +697,9 @@ module Dependabot
         ).void
       end
       def note_security_update_not_possible(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
         log_security_dependency_details(dependency)
-        return unless checker.vulnerable?
-
         conflicting_dependencies = checker.conflicting_dependencies
         explanation = vulnerability_conflict_explanation(conflicting_dependencies)
         if explanation
