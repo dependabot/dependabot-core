@@ -1748,6 +1748,14 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
       end
 
+      context "with an anchored tag shared by another image" do
+        let(:helmfile_body) { fixture("helm", "yaml", "anchored-tag.yaml") }
+
+        it "refuses to modify the shared anchor" do
+          expect { updated_files }.to raise_error("Expected content to change!")
+        end
+      end
+
       context "with Docker Hub images" do
         let(:registry) { nil }
         let(:helmfile_body) do

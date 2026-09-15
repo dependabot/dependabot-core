@@ -34,3 +34,28 @@ api:
   image: {repository: registry.example.com/example/api, tag: "1.2.0"}
 worker:
   image: {repository: registry.example.com/example/worker, tag: "1.2.0"}
+defaults: &defaults
+  repository: &api_repository registry.example.com/example/api
+aliased_repository:
+  image:
+    repository: *api_repository
+    tag: 1.2.0
+merged_repository:
+  image:
+    <<: *defaults
+    tag: 1.2.0
+overridden_repository:
+  image:
+    <<: *defaults
+    repository: registry.example.com/example/worker
+    tag: 1.2.0
+worker_repository: &api_repository registry.example.com/example/worker
+reused_worker_alias:
+  image:
+    repository: *api_repository
+    tag: 1.2.0
+api_repository: &api_repository registry.example.com/example/api
+reused_api_alias:
+  image:
+    repository: *api_repository
+    tag: 1.2.0
