@@ -49,29 +49,39 @@ module Dependabot
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
-          details = T.let(nil, T.nilable(Dependabot::Package::NpmLockfileDetails))
-          potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
-            details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
+          lockfile = lockfile_containing(dependency_name, requirement, manifest_name)
+          return unless lockfile
 
-            break if details
-          end
-
-          details
+          lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
         end
 
         # Whether the lockfile copy that a manifest dependency resolves to is installed
-        # through a production dependency. False unless dependency types are enabled.
+        # through a production dependency. It reads the same lockfile as #lockfile_details,
+        # so a farther lockfile cannot override the one the dependency was resolved from.
+        # False unless dependency types are enabled.
         sig do
           params(dependency_name: String, workspace_name: T.nilable(String), manifest_name: String)
             .returns(T::Boolean)
         end
         def reachable_from_production?(dependency_name:, workspace_name:, manifest_name:)
-          potential_lockfiles_for_manifest(manifest_name).any? do |lockfile|
-            lockfile_for(lockfile).production_reachable?(dependency_name, workspace_name)
-          end
+          lockfile = lockfile_containing(dependency_name, nil, manifest_name)
+          return false unless lockfile
+
+          lockfile_for(lockfile).production_reachable?(dependency_name, workspace_name)
         end
 
         private
+
+        # The first lockfile, closest to the manifest first, that has an entry for the dependency.
+        sig do
+          params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
+            .returns(T.nilable(DependencyFile))
+        end
+        def lockfile_containing(dependency_name, requirement, manifest_name)
+          potential_lockfiles_for_manifest(manifest_name).find do |lockfile|
+            lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
+          end
+        end
 
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
