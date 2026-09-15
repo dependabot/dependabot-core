@@ -105,6 +105,32 @@ RSpec.describe Dependabot::Dependency do
     end
   end
 
+  describe ".combine_metadata" do
+    it "merges extra metadata over the base" do
+      expect(described_class.combine_metadata({ source: "base", all_versions: [] }, { source: "extra" }))
+        .to eq(source: "extra", all_versions: [])
+    end
+
+    it "symbolizes keys" do
+      expect(described_class.combine_metadata({ "source" => "base" }, { "information_only" => true }))
+        .to eq(source: "base", information_only: true)
+    end
+
+    it "adds reachable_from_production from either side" do
+      expect(described_class.combine_metadata({}, { reachable_from_production: true }))
+        .to eq(reachable_from_production: true)
+    end
+
+    it "does not let extra metadata drop reachable_from_production" do
+      combined = described_class.combine_metadata(
+        { reachable_from_production: true },
+        { reachable_from_production: false }
+      )
+
+      expect(combined).to eq(reachable_from_production: true)
+    end
+  end
+
   describe "#production?" do
     subject(:production?) { described_class.new(**dependency_args).production? }
 
