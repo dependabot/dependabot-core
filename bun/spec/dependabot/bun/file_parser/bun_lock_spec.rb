@@ -105,6 +105,13 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
         expect(reader.production_reachable?("missing", nil)).to be(false)
       end
 
+      it "finds the key a manifest dependency resolves to" do
+        expect(reader.manifest_key("ms", "app")).to eq("app/ms")
+        expect(reader.manifest_key("is-number", "app")).to eq("is-number")
+        expect(reader.manifest_key("ms", nil)).to eq("ms")
+        expect(reader.manifest_key("missing", "app")).to be_nil
+      end
+
       context "with a development-only chain" do
         let(:fixture_name) { "simple_v1" }
 
