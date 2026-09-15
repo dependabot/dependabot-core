@@ -15,9 +15,12 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      cooldown_options: cooldown_options
     )
   end
+
+  let(:cooldown_options) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -69,6 +72,37 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
         expect(versions.latest_resolvable_version).to be_a(String).or be_nil
         expect(versions.latest_resolvable_version_with_no_unlock).to be_a(String).or be_nil
         expect(versions.latest_version_resolvable_with_full_unlock).to be_a(String).or be_nil
+      end
+    end
+  end
+
+  describe "#latest_version with cooldown" do
+    context "when the release date is unavailable" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Pub::Version.new("1.0.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Pub::Package::PackageDetailsFetcher,
+          report: [{ "name" => dependency_name, "latest" => "1.0.0" }],
+          package_details_metadata: [release]
+        )
+      end
+
+      before do
+        allow(Dependabot::Pub::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version_finder.latest_version).to eq("1.0.0")
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
   end
