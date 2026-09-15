@@ -133,6 +133,14 @@ module Dependabot
             dependencies_map,
             workspace_package_uuids
           )
+
+          merge_dependencies_from_list(
+            result.extra_dependencies,
+            ["extras"],
+            proj_file.name,
+            dependencies_map,
+            workspace_package_uuids
+          )
         end
 
         apply_manifest_versions(dependencies_map)
@@ -153,6 +161,12 @@ module Dependabot
           # entry is maintained
           next dep if dep.metadata.key?(:julia_stdlib_versions)
 
+          # A weakdep or extra found in the manifest is there as an indirect
+          # dependency of something else; the helper only bumps [deps]
+          # entries, so a version would announce a manifest update that never
+          # happens. It gets compat updates only.
+          next dep unless direct_dependency?(dep)
+
           uuid = T.cast(dep.metadata[:julia_uuid], T.nilable(String))
           version = uuid && versions[uuid]
           next dep unless version
@@ -165,6 +179,11 @@ module Dependabot
             metadata: dep.metadata
           )
         end
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+      def direct_dependency?(dep)
+        dep.requirements.any? { |req| req.groups&.include?("deps") }
       end
 
       sig { returns(T::Hash[String, String]) }
@@ -255,7 +274,7 @@ module Dependabot
           uuid = dependency.uuid
           requirement_string = dependency.requirement
 
-          next if skip_dependency?(dependency, file_name, workspace_package_uuids)
+          next if skip_dependency?(dependency, groups, file_name, workspace_package_uuids)
 
           new_requirement = {
             requirement: requirement_string,
@@ -335,12 +354,18 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Julia::RegistryClient::Result::ProjectDependency,
+          groups: T::Array[String],
           file_name: String,
           workspace_package_uuids: T::Array[String]
         ).returns(T::Boolean)
       end
-      def skip_dependency?(dependency, file_name, workspace_package_uuids)
+      def skip_dependency?(dependency, groups, file_name, workspace_package_uuids)
         return true if workspace_package_uuids.include?(dependency.uuid)
+
+        # A test dependency under [extras] is only maintained once the project
+        # has given it a compat entry, as CompatHelper does by default
+        # (IfExistingCompatExtras); nothing is synthesized for the rest.
+        return true if dependency.requirement.nil? && groups.include?("extras")
 
         # Pkg pins a standard library to the version bundled with Julia, so
         # a compat entry tracking its registry releases (a legacy bridge for
