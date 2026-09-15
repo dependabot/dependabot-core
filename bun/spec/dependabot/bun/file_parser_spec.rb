@@ -291,6 +291,15 @@ RSpec.describe Dependabot::Bun::FileParser do
             expect(ms.requirements.map(&:groups)).to all(eq(["devDependencies"]))
             expect(ms.production?).to be(true)
           end
+
+          it "takes each declaration's version from its own copy" do
+            ms = dependencies.find { |dep| dep.name == "ms" }
+            versions_by_file = ms.metadata[:all_versions].select(&:top_level?).to_h do |dep|
+              [dep.requirements.map(&:file).sort, dep.version]
+            end
+
+            expect(versions_by_file).to eq(["package.json"] => "2.0.0", ["packages/app/package.json"] => "2.1.2")
+          end
         end
       end
     end

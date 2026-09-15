@@ -44,44 +44,37 @@ module Dependabot
           Helpers.dependencies_with_all_versions_metadata(parse_set)
         end
 
-        sig do
-          params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
-            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
-        end
-        def lockfile_details(dependency_name:, requirement:, manifest_name:)
-          lockfile = lockfile_containing(dependency_name, requirement, manifest_name)
-          return unless lockfile
-
-          lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
+        # The lockfile copy a manifest dependency resolves to. It is found once, so the
+        # version, source and dependency type all describe the same copy.
+        class ManifestCopy < T::Struct
+          const :details, Dependabot::Package::NpmLockfileDetails
+          # False unless dependency types are enabled.
+          const :reachable_from_production, T::Boolean
         end
 
-        # Whether the lockfile copy that a manifest dependency resolves to is installed
-        # through a production dependency. It reads the same lockfile as #lockfile_details,
-        # so a farther lockfile cannot override the one the dependency was resolved from.
-        # False unless dependency types are enabled.
+        # The closest lockfile to the manifest that has the dependency wins. In it, the
+        # workspace's own nested copy (such as "app/ms") comes before the hoisted copy, so
+        # a lockfile with only the nested copy is still used rather than a farther one.
         sig do
           params(dependency_name: String, workspace_name: T.nilable(String), manifest_name: String)
-            .returns(T::Boolean)
+            .returns(T.nilable(ManifestCopy))
         end
-        def reachable_from_production?(dependency_name:, workspace_name:, manifest_name:)
-          lockfile = lockfile_containing(dependency_name, nil, manifest_name)
-          return false unless lockfile
+        def manifest_copy(dependency_name:, workspace_name:, manifest_name:)
+          potential_lockfiles_for_manifest(manifest_name).each do |file|
+            lockfile = lockfile_for(file)
+            key = lockfile.manifest_key(dependency_name, workspace_name)
+            next unless key
 
-          lockfile_for(lockfile).production_reachable?(dependency_name, workspace_name)
+            details = lockfile.details(key, nil, manifest_name)
+            next unless details
+
+            return ManifestCopy.new(details: details, reachable_from_production: lockfile.production_key?(key))
+          end
+
+          nil
         end
 
         private
-
-        # The first lockfile, closest to the manifest first, that has an entry for the dependency.
-        sig do
-          params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
-            .returns(T.nilable(DependencyFile))
-        end
-        def lockfile_containing(dependency_name, requirement, manifest_name)
-          potential_lockfiles_for_manifest(manifest_name).find do |lockfile|
-            lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
-          end
-        end
 
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files

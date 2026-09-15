@@ -221,11 +221,12 @@ module Dependabot
         ).returns(T.nilable(Dependency))
       end
       def build_dependency(file:, type:, name:, requirement:, workspace_name:)
-        lockfile_details = lockfile_parser.lockfile_details(
+        manifest_copy = lockfile_parser.manifest_copy(
           dependency_name: name,
-          requirement: requirement,
+          workspace_name: workspace_name,
           manifest_name: file.name
         )
+        lockfile_details = manifest_copy&.details
         version = version_for(requirement, lockfile_details)
         converted_version = T.let(
           if version.nil?
@@ -259,20 +260,15 @@ module Dependabot
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
           }],
-          metadata: reachable_from_production?(file, name, workspace_name) ? { reachable_from_production: true } : {}
+          metadata: production_metadata(manifest_copy)
         )
       end
 
-      # A package declared only in devDependencies is still production when the lockfile
-      # copy it resolves to is installed through a production dependency. Only that copy
-      # counts: an unrelated nested copy of the same name can be production on its own.
-      sig { params(file: DependencyFile, name: String, workspace_name: T.nilable(String)).returns(T::Boolean) }
-      def reachable_from_production?(file, name, workspace_name)
-        lockfile_parser.reachable_from_production?(
-          dependency_name: name,
-          workspace_name: workspace_name,
-          manifest_name: file.name
-        )
+      # A package declared only in devDependencies is still production when the copy it
+      # resolves to is installed through a production dependency. Only that copy counts.
+      sig { params(manifest_copy: T.nilable(LockfileParser::ManifestCopy)).returns(T::Hash[Symbol, T::Boolean]) }
+      def production_metadata(manifest_copy)
+        manifest_copy&.reachable_from_production ? { reachable_from_production: true } : {}
       end
 
       sig { override.void }

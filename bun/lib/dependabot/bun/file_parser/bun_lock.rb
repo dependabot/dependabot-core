@@ -118,22 +118,38 @@ module Dependabot
         end
         private :production_by_key_for
 
-        # Whether the copy a manifest dependency resolves to is installed through a
-        # production dependency. A workspace's own nested copy (such as "app/ms") comes
-        # first, then the hoisted copy. Other copies of the name do not count: a
-        # production-only "debug/ms" says nothing about the root's own "ms".
-        sig { params(dependency_name: String, workspace_name: T.nilable(String)).returns(T::Boolean) }
-        def production_reachable?(dependency_name, workspace_name)
+        # The packages key a manifest dependency resolves to in this lockfile: the
+        # workspace's own nested copy (such as "app/ms") first, then the hoisted copy.
+        sig { params(dependency_name: String, workspace_name: T.nilable(String)).returns(T.nilable(String)) }
+        def manifest_key(dependency_name, workspace_name)
+          packages = records
+          return unless packages
+
+          [workspace_name && "#{workspace_name}/#{dependency_name}", dependency_name]
+            .compact
+            .find { |candidate| packages.key?(candidate) }
+        end
+
+        # Whether the copy at a packages key is installed through a production dependency.
+        # False unless dependency types are enabled, or when no workspace reaches the key.
+        sig { params(key: String).returns(T::Boolean) }
+        def production_key?(key)
           packages = records
           return false unless packages
 
           production_by_key = production_by_key_for(packages)
           return false unless production_by_key
 
-          key = [workspace_name && "#{workspace_name}/#{dependency_name}", dependency_name]
-                .compact
-                .find { |candidate| packages.key?(candidate) }
-          key ? production_by_key.fetch(key, false) : false
+          production_by_key.fetch(key, false)
+        end
+
+        # Whether the copy a manifest dependency resolves to is installed through a
+        # production dependency. Other copies of the name do not count: a production-only
+        # "debug/ms" says nothing about the root's own "ms".
+        sig { params(dependency_name: String, workspace_name: T.nilable(String)).returns(T::Boolean) }
+        def production_reachable?(dependency_name, workspace_name)
+          key = manifest_key(dependency_name, workspace_name)
+          key ? production_key?(key) : false
         end
 
         # Record the type for every package, not only development ones. DependencySet joins
