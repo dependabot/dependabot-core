@@ -27,6 +27,7 @@ module Dependabot
           @parsed = T.let(nil, T.nilable(T::Hash[Object, Object]))
           @records = T.let(nil, T.nilable(T::Hash[String, Record]))
           @workspaces = T.let(nil, T.nilable(T::Array[Workspace]))
+          @production_by_key_for = T.let(nil, T.nilable(T::Hash[String, T::Boolean]))
         end
 
         sig { returns(T::Hash[Object, Object]) }
@@ -112,9 +113,28 @@ module Dependabot
         def production_by_key_for(packages)
           return unless Dependabot::Experiments.enabled?(:enable_bun_subdependency_types)
 
-          DependencyTypeResolver.new(workspaces: workspaces, records: packages).production_by_key
+          @production_by_key_for ||=
+            DependencyTypeResolver.new(workspaces: workspaces, records: packages).production_by_key
         end
         private :production_by_key_for
+
+        # Whether the copy a manifest dependency resolves to is installed through a
+        # production dependency. A workspace's own nested copy (such as "app/ms") comes
+        # first, then the hoisted copy. Other copies of the name do not count: a
+        # production-only "debug/ms" says nothing about the root's own "ms".
+        sig { params(dependency_name: String, workspace_name: T.nilable(String)).returns(T::Boolean) }
+        def production_reachable?(dependency_name, workspace_name)
+          packages = records
+          return false unless packages
+
+          production_by_key = production_by_key_for(packages)
+          return false unless production_by_key
+
+          key = [workspace_name && "#{workspace_name}/#{dependency_name}", dependency_name]
+                .compact
+                .find { |candidate| packages.key?(candidate) }
+          key ? production_by_key.fetch(key, false) : false
+        end
 
         # Record the type for every package, not only development ones. DependencySet joins
         # metadata across copies of a package, so a copy with no entry next to one marked
