@@ -68,7 +68,10 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             function add_stdlib_info!(dep_info, dep_uuid)
                 dep_info["stdlib"] = is_stdlib_for_julia_versions(dep_uuid, stdlib_julia_versions)
                 if dep_info["stdlib"]
-                    dep_info["stdlib_versions"] = [string(v) for v in stdlib_versions_for_julia_compat(dep_uuid, julia_compat)]
+                    version_sources = stdlib_version_sources(dep_uuid, julia_compat)
+                    dep_info["stdlib_versions"] = [string(v) for v in lowest_per_line(s.lowest for s in version_sources)]
+                    # Where each version comes from, for the PR notice
+                    dep_info["stdlib_version_sources"] = [stdlib_version_source_dict(s) for s in version_sources]
                 end
                 return dep_info
             end

@@ -7,6 +7,7 @@
 - Added support for Julia workspaces (multiple packages sharing a common manifest file)
 - Added warning notices to PRs when manifest updates fail due to dependency conflicts
 - Added absolute path resolution for workspace manifests in user-facing notices
+- Pull requests that add or widen a standard library's compat entry now carry a notice explaining which Julia releases require which versions of it, and why (for instance the `< 0.0.1` bound for the pre-1.10 test sandbox), with a link to the stdlib compat PSA
 
 ### Changed
 
