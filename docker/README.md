@@ -45,3 +45,19 @@ Dependabot will recognize build numbers and will update to the highest build num
 
 As an example, `21-ea-32`, `22-ea-7`, and `22-ea-jdk-nanoserver-1809` are mapped to `<version>-ea-<build_num>`, `<version>-ea-<build_num>`, and `<version>-ea-jdk-nanoserver-<build_num>` respectively.
 That means only "22-ea-7" will be considered as a viable update candidate for `21-ea-32`, since it's the only one that respects that format.
+
+### Cooldown publication dates
+
+Cooldown uses only registry-assigned publication timestamps, not dates that an image publisher can supply or backdate. Docker Hub's `tag_last_pushed` is currently the only accepted source.
+
+- **Docker Hub:** Dependabot reads `tag_last_pushed` from the tag metadata API. Pushing a tag again can restart its cooldown. A reported digest must match the resolved manifest digest. Legacy responses that omit the digest or return `null` are accepted only when every requirement is unpinned and automatic digest pinning is disabled.
+- **GitHub Container Registry (GHCR):** Cooldown publication dates are unavailable. GitHub Packages `updated_at` has not been established as the publication time of the relevant tag or digest, so Dependabot does not use it or query that API for cooldown. Normal GHCR dependency updates remain supported.
+- **Other registries:** Publication dates remain unavailable until a registry-assigned timestamp source and its semantics are verified.
+
+Generic `Last-Modified` headers, image-config `created`, OCI creation annotations, package-version `created_at`, and local first-seen times are not cooldown date sources. Missing, conflicting, or unusable metadata never falls back to one of these dates. An old child-manifest header cannot establish the publication age of a new multi-platform index.
+
+Existing and newly introduced digest pins require an exact metadata match. For a multi-platform index, matching one child is insufficient. Dependabot retains the checked digest when generating the update, even if the tag moves during the check. Unpinned tags remain mutable after the check, so their cooldown cannot guarantee the age of the image eventually pulled.
+
+The registry operator is a trust boundary: registry dates cannot protect against an attacker-operated or compromised registry. Adding a source requires establishing that publishers cannot choose or backdate its timestamps, that the timestamp describes the relevant publication, and that hosted authentication works. New pushes, repushes, and retagging existing digests must be covered; successful mocked API responses alone do not establish those guarantees.
+
+When no verified publication date is available, Dependabot retains its existing policy: allow the update and record a `cooldown_date_unavailable` warning. This avoids using an untrusted date but does not guarantee that every update waits through cooldown. Requiring that guarantee would need a separate policy to hold updates with unavailable dates.
