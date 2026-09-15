@@ -113,6 +113,7 @@ opentofu:
   - 'opentofu/**'
 uv:
   - *shared
+  - 'python/**'
   - 'uv/**'
 helm:
   - *shared

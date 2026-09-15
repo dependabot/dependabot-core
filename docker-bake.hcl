@@ -14,6 +14,14 @@ variable "UPDATER_CORE_CONTEXT_VERSION" {
   default = ""
 }
 
+variable "PYTHON_RUNTIME_IMAGE" {
+  default = "ghcr.io/dependabot/dependabot-updater-python-runtime"
+}
+
+variable "PYTHON_RUNTIME_CONTEXT" {
+  default = "target:python-runtime"
+}
+
 variable "UPDATER_CORE_VERSION_TAG" {
   default = ""
 }
@@ -170,6 +178,28 @@ target "updater-core-context" {
   )
 }
 
+target "python-runtime" {
+  context     = "."
+  dockerfile  = "python/Dockerfile.runtime"
+  description = "Shared runtime for Pip and UV ecosystem images"
+  contexts = {
+    (UPDATER_CORE_IMAGE) = UPDATER_CORE_CONTEXT
+  }
+  cache-from = [
+    { type = "registry", ref = "${BUILD_CACHE_IMAGE}:python-runtime" },
+    { type = "registry", ref = "${PYTHON_RUNTIME_IMAGE}:latest" },
+  ]
+  cache-to = BUILD_CACHE_WRITE ? [
+    {
+      type           = "registry"
+      ref            = "${BUILD_CACHE_IMAGE}:python-runtime"
+      mode           = "max"
+      image-manifest = true
+      oci-mediatypes = true
+    },
+  ] : []
+}
+
 target "_ecosystem" {
   name = "${item.image}-raw"
   matrix = {
@@ -183,6 +213,9 @@ target "_ecosystem" {
     {
       (UPDATER_CORE_IMAGE) = UPDATER_CORE_CONTEXT
     },
+    item.name == "python" || item.name == "uv" ? {
+      (PYTHON_RUNTIME_IMAGE) = PYTHON_RUNTIME_CONTEXT
+    } : {},
     item.name == "pre_commit" ? {
       "${UPDATER_IMAGE_PREFIX}gomod:latest"   = PRE_COMMIT_GOMOD_CONTEXT
       "${UPDATER_IMAGE_PREFIX}bundler:latest" = PRE_COMMIT_BUNDLER_CONTEXT
