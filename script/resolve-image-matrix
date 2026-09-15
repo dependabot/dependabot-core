@@ -37,7 +37,7 @@ targets=$(
 )
 unknown_targets=$(jq -cn --argjson changed "$changed_targets" --argjson targets "$targets" '$changed - $targets')
 
-if [[ "$(jq 'length' <<< "$unknown_targets")" -ne 0 ]]; then
+if [[ "$force_all" != "true" && "$(jq 'length' <<< "$unknown_targets")" -ne 0 ]]; then
   echo "CHANGED_TARGETS contains unknown targets: $(jq -c '.' <<< "$unknown_targets")" >&2
   exit 1
 fi
