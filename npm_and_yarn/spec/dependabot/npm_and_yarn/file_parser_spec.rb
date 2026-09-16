@@ -39,6 +39,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe "lockfile lookup presence" do
+    let(:locked_entries) { { "chalk" => {} } }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: { "dependencies" => { "chalk" => "1.0.0" } }.to_json
+        ),
+        Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: { "lockfileVersion" => 1, "dependencies" => locked_entries }.to_json
+        )
+      ]
+    end
+
+    it "does not use the manifest version for an unresolved locked entry" do
+      expect(parser.parse).to be_empty
+    end
+
+    context "without a matching locked entry" do
+      let(:locked_entries) { {} }
+
+      it "uses the exact manifest version" do
+        expect(parser.parse.first).to have_attributes(name: "chalk", version: "1.0.0")
+      end
+    end
+
+    context "with malformed lookup data" do
+      let(:locked_entries) { { "chalk" => { "version" => "1.0.0", "resolved" => false } } }
+
+      it "reports the lockfile field" do
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable, /chalk\.resolved must be a string or nil/)
+      end
+    end
+  end
+
   describe ".each_dependency compatibility" do
     it "keeps raw values and section order for updater callers" do
       json = {
@@ -1821,6 +1858,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependencies[index].version).to eq(expected[:version])
             expect(dependencies[index].requirements).to eq(expected[:requirements])
           end
+        end
+      end
+
+      context "when a catalogued dependency also resolves to an older transitive version" do
+        subject(:globals) { top_level_dependencies.find { |dep| dep.name == "globals" } }
+
+        let(:files) { project_dependency_files("pnpm/catalog_duplicate_versions") }
+
+        # globals is catalogued at ^17.11.0 and resolves to 17.11.0, but @eslint/eslintrc
+        # pins a second copy at 14.0.0. Reporting the transitive version here makes the
+        # updater try to bump a dependency that is already current, which yields no file
+        # change at all.
+        it "reports the catalogued version, not the transitive one" do
+          expect(globals.version).to eq("17.11.0")
+        end
+
+        it "keeps the catalog requirement" do
+          expect(globals.requirements).to eq(
+            [{ requirement: "^17.11.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }]
+          )
+        end
+
+        it "still sees both resolutions" do
+          expect(globals.metadata[:all_versions].map(&:version)).to contain_exactly("14.0.0", "17.11.0")
         end
       end
     end

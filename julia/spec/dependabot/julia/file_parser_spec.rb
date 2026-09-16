@@ -369,6 +369,123 @@ RSpec.describe Dependabot::Julia::FileParser do
       end
     end
 
+    context "when a dependency ships as a standard library" do
+      let(:dependency_files) { [stdlib_project_file] }
+      let(:julia_compat) { "1.10" }
+      let(:stdlib_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "StdlibUser"
+            uuid = "11111111-1111-1111-1111-111111111111"
+            version = "1.0.0"
+
+            [deps]
+            Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+            Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+            [weakdeps]
+            StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
+
+            [compat]
+            Example = "0.5"
+            julia = "#{julia_compat}"
+          TOML
+        )
+      end
+
+      def stdlib_versions_of(name)
+        dependencies.find { |d| d.name == name }.metadata[:julia_stdlib_versions]
+      end
+
+      it "records the versions the compat entry has to admit instead of a registry target" do
+        # Artifacts 1.3.0 is a legacy bridge for Julia 1.0-1.5 (#16227) and
+        # Statistics 1.11.x an upgradable stdlib release (#16228); Julia 1.10
+        # pins both to the bundled 1.10.0 copy
+        expect(dependencies.map(&:name)).to contain_exactly("Example", "Artifacts", "Statistics", "StyledStrings")
+        expect(stdlib_versions_of("Artifacts")).to eq("Project.toml" => ["1.10.0"])
+        expect(stdlib_versions_of("Statistics")).to eq("Project.toml" => ["1.10.0"])
+        # StyledStrings comes from the registry on 1.10 and ships with 1.11+
+        expect(stdlib_versions_of("StyledStrings")).to eq("Project.toml" => ["1.0.3"])
+        expect(stdlib_versions_of("Example")).to be_nil
+
+        artifacts_dep = dependencies.find { |d| d.name == "Artifacts" }
+        expect(artifacts_dep.requirements.first[:requirement]).to be_nil
+      end
+
+      context "when the julia compat admits every 1.x release" do
+        let(:julia_compat) { "1" }
+
+        it "floors the stdlibs at what Julia 1.0 ships and admits the old test sandbox pin" do
+          expect(stdlib_versions_of("Statistics")).to eq("Project.toml" => ["0.0.0", "1.0.0"])
+          expect(stdlib_versions_of("Artifacts")).to eq("Project.toml" => ["0.0.0", "1.3.0"])
+        end
+      end
+
+      context "when the julia compat predates the packages becoming stdlibs" do
+        let(:julia_compat) { "1.0 - 1.5" }
+
+        it "treats their registry releases as regular dependencies" do
+          # Artifacts became a stdlib in 1.6 and StyledStrings in 1.11;
+          # Statistics has always been one
+          expect(stdlib_versions_of("Artifacts")).to be_nil
+          expect(stdlib_versions_of("StyledStrings")).to be_nil
+          expect(stdlib_versions_of("Statistics")).to eq("Project.toml" => ["0.0.0", "1.0.0"])
+        end
+      end
+
+      context "when the manifest pins the stdlib" do
+        let(:dependency_files) { [stdlib_project_file, stdlib_manifest_file] }
+        let(:stdlib_manifest_file) do
+          Dependabot::DependencyFile.new(
+            name: "Manifest.toml",
+            content: <<~TOML
+              # This file is machine-generated - editing it directly is not advised
+
+              julia_version = "1.11.0"
+              manifest_format = "2.0"
+
+              [[deps.Artifacts]]
+              uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+              version = "1.11.0"
+
+              [[deps.Example]]
+              git-tree-sha1 = "6cb40eba4dd78fc0fa3ebeb8cb7e125ba645be6e"
+              uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
+              version = "0.4.1"
+            TOML
+          )
+        end
+
+        it "leaves the stdlib version unset so no manifest update is proposed" do
+          expect(dependencies.find { |d| d.name == "Artifacts" }.version).to be_nil
+          expect(dependencies.find { |d| d.name == "Example" }.version).to eq("0.4.1")
+        end
+      end
+
+      context "when workspace files have different julia compat entries" do
+        let(:dependency_files) { [stdlib_project_file, member_project_file] }
+        let(:member_project_file) do
+          Dependabot::DependencyFile.new(
+            name: "test/Project.toml",
+            content: <<~TOML
+              [deps]
+              Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+              [compat]
+              Statistics = "1"
+            TOML
+          )
+        end
+
+        it "keeps a floor per file" do
+          expect(stdlib_versions_of("Statistics"))
+            .to eq("Project.toml" => ["1.10.0"], "test/Project.toml" => ["0.0.0", "1.0.0"])
+        end
+      end
+    end
+
     context "when the root project has a dependency without a compat entry" do
       let(:dependency_files) { [root_without_compat] }
       let(:root_without_compat) do

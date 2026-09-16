@@ -70,6 +70,10 @@ module Dependabot
             name, requirement = feature.split(":")
             next if name.nil?
 
+            # Skip features referenced without a version tag (e.g. "ghcr.io/owner/feature"
+            # instead of ".../feature:1"): there is no pinned requirement to update.
+            next if requirement.nil? || requirement.empty?
+
             # Skip sha pinned tags for now. Ideally the devcontainers CLI would give us updated SHA info
             next if name.end_with?("@sha256")
 
