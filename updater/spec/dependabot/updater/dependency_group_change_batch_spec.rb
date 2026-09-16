@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -9,6 +9,8 @@ require "dependabot/updater/operations"
 require "spec_helper"
 
 RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
+  extend T::Sig
+
   describe "#merge" do
     let(:initial_file) do
       Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "initial", directory: "/")
@@ -124,6 +126,28 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       )
     end
 
+    it "uses update when an initial non-vendored file is deleted and recreated" do
+      deleted_file = Dependabot::DependencyFile.new(
+        name: initial_file.name,
+        content: nil,
+        directory: initial_file.directory,
+        deleted: true
+      )
+      recreated_file = Dependabot::DependencyFile.new(
+        name: initial_file.name,
+        content: "recreated",
+        directory: initial_file.directory,
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+
+      batch.merge(dependency_change_for(deleted_file))
+      batch.merge(dependency_change_for(recreated_file))
+
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(content: "recreated", operation: Dependabot::DependencyFile::Operation::UPDATE)
+      )
+    end
+
     it "drops a new vendored file that is deleted before the group is complete" do
       created_file = Dependabot::DependencyFile.new(
         name: "vendor/cache/transient.gem",
@@ -169,12 +193,19 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
     end
   end
 
+  sig do
+    params(files: Dependabot::DependencyFile)
+      .returns(Dependabot::DependencyChange)
+  end
   def dependency_change_for(*files)
-    instance_double(
-      Dependabot::DependencyChange,
-      updated_dependencies: [],
-      updated_dependency_files: files,
-      notices: []
+    T.cast(
+      instance_double(
+        Dependabot::DependencyChange,
+        updated_dependencies: [],
+        updated_dependency_files: files,
+        notices: []
+      ),
+      Dependabot::DependencyChange
     )
   end
 
