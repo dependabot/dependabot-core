@@ -1133,6 +1133,15 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       end
 
       context "when a secondary installed version is within the advisory range" do
+        let(:multi_version_checker_class) do
+          Class.new(Dependabot::UpdateCheckers::Base) do
+            def vulnerable?
+              dependency.all_versions.any? do |version|
+                security_advisories.any? { |advisory| advisory.affects_version?(version) }
+              end
+            end
+          end
+        end
         let(:locked_versions) do
           %w(2.0.0 1.0.0).map do |version|
             Dependabot::Dependency.new(
@@ -1152,7 +1161,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
             metadata: { all_versions: locked_versions }
           )
         end
-        let(:checker) { advisory_checker }
+        let(:checker) do
+          multi_version_checker_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: [],
+            security_advisories: security_advisories
+          )
+        end
         let(:security_advisories) { [security_advisory] }
 
         before do

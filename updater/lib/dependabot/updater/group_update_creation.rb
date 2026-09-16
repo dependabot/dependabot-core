@@ -915,14 +915,8 @@ module Dependabot
       def security_update_required?(dependency, checker)
         security_advisories = job.security_advisories_for(dependency)
         return false if security_advisories.none?
-        return true if checker.vulnerable?
 
-        versions = dependency.all_versions.compact.uniq
-        return false if versions.one?
-
-        security_advisories.any? do |advisory|
-          versions.any? { |version| advisory.affects_version?(version) }
-        end
+        checker.vulnerable?
       end
 
       sig { params(dependency: Dependabot::Dependency).void }
