@@ -539,9 +539,17 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
-            paths_requiring_update_check.flat_map do |path|
-              run_checker(path: path, version: version)
-            end.compact
+            begin
+              paths_requiring_update_check.flat_map do |path|
+                run_checker(path: path, version: version)
+              end.compact
+            ensure
+              # The checkers rewrite the manifests and lockfiles on disk. pnpm,
+              # for one, replaces a `catalog:` specifier with the pinned
+              # version. When this runs in the repo's working tree the
+              # FileUpdater reuses those files, so put the originals back.
+              dependency_files_builder.write_temporary_dependency_files
+            end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
