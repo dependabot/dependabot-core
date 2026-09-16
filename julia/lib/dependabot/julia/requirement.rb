@@ -65,6 +65,16 @@ module Dependabot
         requirements_array(requirement_string)
       end
 
+      # Whether a compat entry admits the version. Pkg compares a bound
+      # against major.minor.patch only, so a JLL rebuild ("0.0.43+1") is
+      # admitted by "=0.0.43" or "0.0.42 - 0.0.43" exactly as the version it
+      # rebuilds is. Ignore conditions go through satisfied_by? instead and
+      # keep the ordering between builds ("> 1.6.10" ignores "1.6.10+1").
+      sig { params(version: T.any(Gem::Version, String)).returns(T::Boolean) }
+      def admits?(version)
+        T.cast(satisfied_by?(Dependabot::Julia::Version.new(version.to_s).without_build_metadata), T::Boolean)
+      end
+
       sig { params(version: String).returns(String) }
       def self.normalize_version(version)
         # Remove 'v' prefix if present (common in Julia)

@@ -96,7 +96,7 @@ module Dependabot
                  candidates.max
                else
                  reqs = requirement_class.requirements_array(current_requirement)
-                 candidates.select { |version| reqs.any? { |req| req.satisfied_by?(version) } }.max
+                 candidates.select { |version| reqs.any? { |req| req.admits?(version) } }.max
                end
         return nil unless best
 

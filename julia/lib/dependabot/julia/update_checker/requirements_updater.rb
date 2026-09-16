@@ -90,7 +90,7 @@ module Dependabot
       sig { params(requirement_string: String, versions: T::Array[Dependabot::Julia::Version]).returns(String) }
       def widened_stdlib_requirement(requirement_string, versions)
         reqs = Dependabot::Julia::Requirement.requirements_array(requirement_string)
-        missing = versions.reject { |version| reqs.any? { |req| req.satisfied_by?(version) } }
+        missing = versions.reject { |version| reqs.any? { |req| req.admits?(version) } }
 
         missing.reduce(requirement_string) do |entry, version|
           append_spec_string(entry, stdlib_version_spec(version))
@@ -121,9 +121,11 @@ module Dependabot
       def update_requirement(requirement, target_version)
         current_requirement = requirement.requirement_string
 
-        # If requirement is nil (no compat entry), use target version
+        # If requirement is nil (no compat entry), use target version. A JLL's
+        # "1.6.10+0" has to be written as "1.6.10": Pkg rejects the build
+        # number in a compat entry, and the bound admits every build anyway.
         new_requirement = if current_requirement.nil?
-                            target_version.to_s
+                            target_version.compat_version_string
                           else
                             updated_version_requirement(current_requirement, target_version)
                           end
@@ -141,7 +143,7 @@ module Dependabot
 
         # Check if any requirement is satisfied by the target version
         # Note: This uses the implicit caret semantics from the Requirement class
-        satisfied = reqs.any? { |req| req.satisfied_by?(target_version) }
+        satisfied = reqs.any? { |req| req.admits?(target_version) }
 
         case update_strategy
         when :bump_versions
