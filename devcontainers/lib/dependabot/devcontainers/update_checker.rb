@@ -34,7 +34,12 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         dependency.requirements.map do |requirement|
-          original_requirement = T.must(requirement.requirement_string)
+          original_requirement = requirement.requirement_string
+          # Features referenced without a version tag (e.g. "ghcr.io/owner/feature"
+          # instead of ".../feature:1") carry no pinned requirement to bump, so leave
+          # them unchanged rather than dereferencing a nil pin.
+          next requirement if original_requirement.nil?
+
           required_version = T.cast(version_class.new(original_requirement), Dependabot::Devcontainers::Version)
           versions = T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version])
           precision_matches = remove_precision_changes(versions, required_version)
