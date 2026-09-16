@@ -68,6 +68,84 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       expect(batch.updated_dependency_files).to eq([second_update])
     end
 
+    it "retains create when a new vendored file changes again" do
+      created_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/new.gem",
+        content: "created",
+        directory: "/",
+        vendored_file: true,
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+      changed_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/new.gem",
+        content: "changed",
+        directory: "/",
+        vendored_file: true,
+        operation: Dependabot::DependencyFile::Operation::UPDATE
+      )
+
+      batch.merge(dependency_change_for(created_file))
+      batch.merge(dependency_change_for(changed_file))
+
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(content: "changed", operation: Dependabot::DependencyFile::Operation::CREATE)
+      )
+    end
+
+    it "uses update when an existing vendored file is deleted and recreated" do
+      changed_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/existing.gem",
+        content: "changed",
+        directory: "/",
+        vendored_file: true,
+        operation: Dependabot::DependencyFile::Operation::UPDATE
+      )
+      deleted_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/existing.gem",
+        content: nil,
+        directory: "/",
+        vendored_file: true,
+        deleted: true
+      )
+      recreated_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/existing.gem",
+        content: "recreated",
+        directory: "/",
+        vendored_file: true,
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+
+      batch.merge(dependency_change_for(changed_file))
+      batch.merge(dependency_change_for(deleted_file))
+      batch.merge(dependency_change_for(recreated_file))
+
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(content: "recreated", operation: Dependabot::DependencyFile::Operation::UPDATE)
+      )
+    end
+
+    it "drops a new vendored file that is deleted before the group is complete" do
+      created_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/transient.gem",
+        content: "created",
+        directory: "/",
+        vendored_file: true,
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+      deleted_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/transient.gem",
+        content: nil,
+        directory: "/",
+        vendored_file: true,
+        deleted: true
+      )
+
+      batch.merge(dependency_change_for(created_file))
+      batch.merge(dependency_change_for(deleted_file))
+
+      expect(batch.updated_dependency_files).to be_empty
+    end
+
     it "deduplicates notices from dependency changes" do
       notice = Dependabot::Notice.new(
         mode: Dependabot::Notice::NoticeMode::WARN,
@@ -89,6 +167,15 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
 
       expect(batch.notices).to contain_exactly(notice)
     end
+  end
+
+  def dependency_change_for(*files)
+    instance_double(
+      Dependabot::DependencyChange,
+      updated_dependencies: [],
+      updated_dependency_files: files,
+      notices: []
+    )
   end
 
   describe "current_dependency_files" do
