@@ -1518,6 +1518,19 @@ public class EndToEndTests
             </Project>
             """, TestContext.Current.CancellationToken);
 
+        // `ModifiedFilesTracker.StopTrackingAsync` reads line endings from the Git index, so the fixture has to be a
+        // real repository; this runs after the restore above so the generated lock file is tracked too
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "Directory.Packages.props",
+                "src/dirs.proj",
+                "src/solution.slnx",
+                "src/library/library.csproj",
+                "src/app/app.csproj",
+                "src/app/packages.lock.json",
+            ]);
+
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
         var logger = new StringLogger();
@@ -1662,6 +1675,16 @@ public class EndToEndTests
             </Project>
             """, TestContext.Current.CancellationToken);
 
+        // `ModifiedFilesTracker.StopTrackingAsync` reads line endings from the Git index, so the fixture has to be a
+        // real repository; this runs after the restore above so the generated lock file is tracked too
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "Directory.Packages.props",
+                "src/app/app.csproj",
+                "src/app/packages.lock.json",
+            ]);
+
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
         var logger = new StringLogger();
@@ -1707,6 +1730,224 @@ public class EndToEndTests
 
         // the lock file was regenerated despite the project being in locked mode
         var lockFileDependencies = JsonDocument.Parse(updatedFiles["/src/app/packages.lock.json"]).RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0");
+        Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Some.Package").GetProperty("resolved").GetString());
+        Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Transitive.Package").GetProperty("resolved").GetString());
+    }
+
+    [Fact]
+    public async Task LockFileIsRegeneratedThroughProjectReferenceForUngroupedUpdate()
+    {
+        // `shell` only reaches `library` through a `<ProjectReference>`, so its dependency on `Some.Package` is never
+        // top-level and the update is never permitted for `shell` directly; the only way `shell`'s lock file ends up
+        // in the pull request is through the explicit `LockFileUpdater.UpdateLockFilesAsync` call for its directory
+
+        // arrange
+        using var tempDirectory = await CreateProjectReferenceLockFileFixtureAsync();
+        var repoContentsPath = tempDirectory.DirectoryPath;
+
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new StringLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+        var updaterWorker = new UpdaterWorker(jobId, experimentsManager, logger);
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "/src",
+            }
+        };
+
+        // act
+        await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        AssertShellLockFileWasRegeneratedThroughLockFileUpdater(logger);
+
+        // assert
+        var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
+        var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content.Replace("\r", ""));
+
+        AssertProjectReferenceLockFileFixtureResult(updatedFiles);
+    }
+
+    [Fact]
+    public async Task LockFileIsRegeneratedThroughProjectReferenceForGroupedUpdate()
+    {
+        // same scenario as `LockFileIsRegeneratedThroughProjectReferenceForUngroupedUpdate`, but with a dependency
+        // group covering every dependency, so the update is performed by
+        // `GroupUpdateAllVersionsHandler.RunGroupedDependencyUpdates` instead; with a single directory this only shows
+        // that the grouped call site fires, not that its per-directory snapshot gate differs from a plain count check
+
+        // arrange
+        using var tempDirectory = await CreateProjectReferenceLockFileFixtureAsync();
+        var repoContentsPath = tempDirectory.DirectoryPath;
+
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new StringLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+        var updaterWorker = new UpdaterWorker(jobId, experimentsManager, logger);
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "/src",
+            },
+            DependencyGroups = [
+                new()
+                {
+                    Name = "test-group",
+                    Rules = new() { ["patterns"] = new[] { "*" } },
+                }
+            ],
+        };
+
+        // act
+        await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        AssertShellLockFileWasRegeneratedThroughLockFileUpdater(logger);
+
+        // assert
+        var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
+        Assert.Equal("test-group", createPr.DependencyGroup);
+        var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content.Replace("\r", ""));
+
+        AssertProjectReferenceLockFileFixtureResult(updatedFiles);
+    }
+
+    // shared fixture for `LockFileIsRegeneratedThroughProjectReferenceForUngroupedUpdate` and
+    // `LockFileIsRegeneratedThroughProjectReferenceForGroupedUpdate`: `library` owns a top-level `PackageReference`
+    // to `Some.Package` under central package management, and `shell` only reaches `Some.Package`/`Transitive.Package`
+    // through a `<ProjectReference>` to `library` while owning the only `packages.lock.json` in the repo
+    private static async Task<TemporaryDirectory> CreateProjectReferenceLockFileFixtureAsync()
+    {
+        var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/solution.slnx", """
+                <Solution>
+                  <Project Path="library/library.csproj" />
+                  <Project Path="shell/shell.csproj" />
+                </Solution>
+                """),
+            ("src/library/library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/shell/shell.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="..\library\library.csproj" />
+                  </ItemGroup>
+                </Project>
+                """)
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0", [(null, [("Transitive.Package", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+        ], repoContentsPath);
+
+        // the lock file can't be hand-authored because the mock packages get a different `contentHash` on every run, so
+        // a real restore has to produce it; `RestoreLockedMode` is only turned on afterwards, which is also the order
+        // these repos are built in practice - the committed lock file comes from an ordinary restore and only later
+        // builds are locked
+        var shellProjectPath = Path.Join(repoContentsPath, "src", "shell", "shell.csproj");
+        var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", shellProjectPath], repoContentsPath);
+        Assert.True(exitCode == 0, $"Initial restore failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+
+        await File.WriteAllTextAsync(shellProjectPath, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0</TargetFramework>
+                <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                <RestoreLockedMode>true</RestoreLockedMode>
+              </PropertyGroup>
+              <ItemGroup>
+                <ProjectReference Include="..\library\library.csproj" />
+              </ItemGroup>
+            </Project>
+            """, TestContext.Current.CancellationToken);
+
+        // `ModifiedFilesTracker.StopTrackingAsync` reads line endings from the Git index, so the fixture has to be a
+        // real repository; this runs after the restore above so the generated lock file is tracked too
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "Directory.Packages.props",
+                "src/solution.slnx",
+                "src/library/library.csproj",
+                "src/shell/shell.csproj",
+                "src/shell/packages.lock.json",
+            ]);
+
+        return tempDirectory;
+    }
+
+    private static void AssertShellLockFileWasRegeneratedThroughLockFileUpdater(StringLogger logger)
+    {
+        // the writer is never invoked for `shell`; its dependency arrives only through a `<ProjectReference>`, so it's
+        // never top-level and `Job.IsUpdatePermitted` filters it out before `updaterWorker.RunAsync` is ever called;
+        // the positive case for `library` is asserted first so the negative one can't pass because the message format drifted
+        Assert.Contains(logger.Messages, m => m.Contains("Attempting to update Some.Package for /src/library/library.csproj"));
+        Assert.DoesNotContain(logger.Messages, m => m.Contains("Attempting to update Some.Package for /src/shell/shell.csproj"));
+
+        // the only way `shell`'s lock file can have been brought up to date is through the explicit
+        // `LockFileUpdater.UpdateLockFilesAsync` call for its directory
+        Assert.Contains(logger.Messages, m => m.Contains("Regenerating lock file for project [") && m.Contains("shell.csproj"));
+    }
+
+    private static void AssertProjectReferenceLockFileFixtureResult(Dictionary<string, string> updatedFiles)
+    {
+        // `library.csproj` itself isn't changed; the version only lives in the central package management file
+        Assert.False(updatedFiles.ContainsKey("/src/library/library.csproj"));
+        Assert.Equal("""
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Some.Package" Version="2.0.0" />
+              </ItemGroup>
+            </Project>
+            """.Replace("\r", ""), updatedFiles["/Directory.Packages.props"]);
+
+        // `shell`'s lock file was regenerated despite `shell` never being visited by the writer
+        var lockFileDependencies = JsonDocument.Parse(updatedFiles["/src/shell/packages.lock.json"]).RootElement
             .GetProperty("dependencies")
             .GetProperty("net9.0");
         Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Some.Package").GetProperty("resolved").GetString());
