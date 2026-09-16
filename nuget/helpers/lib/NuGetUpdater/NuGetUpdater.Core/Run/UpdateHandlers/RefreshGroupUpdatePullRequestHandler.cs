@@ -72,6 +72,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
+            var operationsPerformedBeforeDirectory = updateOperationsPerformed.Count;
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);
             if (discoveryResult.Error is not null)
@@ -148,7 +149,11 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
-            await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
+            if (updateOperationsPerformed.Count > operationsPerformedBeforeDirectory)
+            {
+                await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
+            }
+
             var updatedDependencyFiles = await tracker.StopTrackingAsync();
             allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
         }
