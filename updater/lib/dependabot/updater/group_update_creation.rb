@@ -881,8 +881,9 @@ module Dependabot
         ).void
       end
       def note_security_update_not_possible(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
+        log_security_dependency_details(dependency)
         conflicting_dependencies = checker.conflicting_dependencies
         explanation = vulnerability_conflict_explanation(conflicting_dependencies)
         if explanation
@@ -902,6 +903,32 @@ module Dependabot
             error_details: security_update_not_possible_error_details(checker, conflicting_dependencies:),
             dependency: nil
           )
+        )
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base
+        ).returns(T::Boolean)
+      end
+      def security_update_required?(dependency, checker)
+        security_advisories = job.security_advisories_for(dependency)
+        return false if security_advisories.none?
+
+        checker.vulnerable?
+      end
+
+      sig { params(dependency: Dependabot::Dependency).void }
+      def log_security_dependency_details(dependency)
+        versions = dependency.all_versions.compact.uniq
+        requirements = dependency.requirements.map do |requirement|
+          "#{requirement.file || 'unknown file'}: #{requirement.requirement || 'none'}"
+        end.uniq
+
+        Dependabot.logger.info(
+          "Security advisory check for #{dependency.name}: versions=#{versions.inspect}, " \
+          "requirements=#{requirements.inspect}"
         )
       end
 
@@ -927,7 +954,7 @@ module Dependabot
         ).void
       end
       def note_security_update_not_found(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "Security update not found for #{dependency.name} in group #{group.name} - " \
@@ -954,7 +981,7 @@ module Dependabot
         ).void
       end
       def note_security_update_ignored(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"
