@@ -15,6 +15,7 @@ module Dependabot
         extend T::Sig
 
         require_relative "npmrc_builder"
+        require "dependabot/npm_and_yarn/pnpm_resolutions"
         require_relative "package_json_updater"
 
         sig do
@@ -40,6 +41,7 @@ module Dependabot
           @repo_contents_path = repo_contents_path
           @credentials = credentials
           @security_updates_only = security_updates_only
+          @unpinned_dependency_names = T.let([], T::Array[String])
           @release_age_days = release_age_days
           @trust_existing_lockfile = T.let(nil, T.nilable(T::Boolean))
           @error_handler = T.let(
@@ -218,6 +220,8 @@ module Dependabot
                 updated_content = File.read(pnpm_lock.name)
               end
 
+              # After the fallbacks: they resolve without a version too.
+              verify_unpinned_updates!(original_content, updated_content) if updated_content != original_content
               updated_content
             end
           end
@@ -225,11 +229,57 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_update_packages
-          dependency_updates = dependencies.map do |d|
-            "#{d.name}@#{d.version}"
-          end.join(" ")
+          run_pnpm_update_specs(dependencies.map { |d| "#{d.name}@#{d.version}" })
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          indirect = Helpers.pnpm_indirect_dependency_names(e.message)
+          raise if indirect.empty?
 
-          cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
+          # pnpm 11.23+ refuses to pin a package no manifest declares. Older pnpm
+          # ignored the version for such packages, so drop it and let pnpm resolve
+          # them as a fresh install would, which is what happened before.
+          Dependabot.logger.info(
+            "pnpm refused to pin #{indirect.join(', ')} because they are not direct dependencies; " \
+            "retrying the update without a version for them"
+          )
+          @unpinned_dependency_names = indirect
+          run_pnpm_update_specs(
+            dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
+          )
+        end
+
+        # An update retried without a version resolves whatever a fresh install
+        # would, at every depth, which can differ from the version Dependabot
+        # selected under its ignore and cooldown rules. A dependent whose range
+        # cannot reach the requested version keeps a lower one, which bypasses
+        # nothing. Refuse the lockfile unless it holds the requested version and
+        # no edge the update moved sits above it, rather than open a pull
+        # request that names one version and installs another.
+        sig { params(original_content: String, updated_content: String).void }
+        def verify_unpinned_updates!(original_content, updated_content)
+          unpinned = @unpinned_dependency_names
+          return if unpinned.empty?
+
+          resolutions = PnpmResolutions.new(updated_content)
+          dependencies.select { |d| unpinned.include?(d.name) }.each do |dep|
+            requested = Version.new(dep.version)
+            changed = PnpmResolutions.changed_versions(original_content, updated_content, dep.name)
+            above = changed.reject { |v| Version.correct?(v) && Version.new(v) <= requested }
+            next if above.empty? && resolutions.versions(dep.name).include?(dep.version)
+
+            outcome = if above.empty?
+                        "to #{changed.join(', ')} instead of the requested #{dep.version}"
+                      else
+                        "to #{above.join(', ')}, above the requested #{dep.version}"
+                      end
+            raise Dependabot::DependencyFileNotResolvable,
+                  "pnpm resolved #{dep.name} #{outcome}. It is not a direct dependency, so pnpm " \
+                  "updates it to what a fresh install would resolve rather than to the requested version."
+          end
+        end
+
+        sig { params(specs: T::Array[String]).returns(T.nilable(String)) }
+        def run_pnpm_update_specs(specs)
+          cmd = "update #{specs.join(' ')}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
         end
