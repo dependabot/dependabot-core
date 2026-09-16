@@ -591,13 +591,128 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
 
     it "sets up and cleans up the workspace for clone jobs" do
-      test_instance.compile_all_dependency_changes_for(group)
+      workspace_file = Dependabot::DependencyFile.new(name: "Gemfile", content: "source 'https://rubygems.org'")
+      allow(test_instance).to receive(:materialize_workspace_files)
+
+      test_instance.compile_all_dependency_changes_for(group, workspace_files: [workspace_file])
 
       expect(Dependabot::Workspace).to have_received(:setup).with(
         repo_contents_path: repo_contents_path,
         directory: Pathname.new(source_directory).cleanpath
       )
+      expect(test_instance).to have_received(:materialize_workspace_files).with([workspace_file])
       expect(Dependabot::Workspace).to have_received(:cleanup!).once
+    end
+
+    context "with a cumulative submodule update" do
+      let(:repo_contents_path) { build_tmp_repo("maven_multi_directory_group", path: "") }
+      let(:submodule_file) do
+        Dependabot::DependencyFile.new(
+          name: "submodule",
+          content: "1111111111111111111111111111111111111111",
+          type: "submodule",
+          mode: Dependabot::DependencyFile::Mode::SUBMODULE
+        )
+      end
+      let(:staged_submodule) { [] }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:setup).and_call_original
+        allow(Dependabot::Workspace).to receive(:cleanup!).and_call_original
+        allow(test_instance).to receive(:dependency_file_parser) do
+          staged_submodule << Dependabot::SharedHelpers.run_shell_command(
+            ["git", "ls-files", "--stage", "submodule"],
+            cwd: repo_contents_path
+          )
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
+        end
+      end
+
+      after do
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
+      it "stages the submodule as a gitlink before parsing" do
+        test_instance.compile_all_dependency_changes_for(group, workspace_files: [submodule_file])
+
+        expect(staged_submodule.first).to start_with(
+          "160000 1111111111111111111111111111111111111111"
+        )
+      end
+    end
+
+    context "with a cumulative file created outside the active directory" do
+      let(:repo_contents_path) { build_tmp_repo("maven_multi_directory_group", path: "") }
+      let(:source_directory) { "/module-a" }
+      let(:created_file) do
+        Dependabot::DependencyFile.new(
+          name: "created.tf",
+          content: "created",
+          operation: Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+      let(:created_path) { File.join(repo_contents_path, "created.tf") }
+      let(:materialized_file_seen) { [] }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:setup).and_call_original
+        allow(Dependabot::Workspace).to receive(:cleanup!).and_call_original
+        allow(test_instance).to receive(:dependency_file_parser) do
+          materialized_file_seen << File.exist?(created_path)
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
+        end
+      end
+
+      after do
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
+      it "removes the created file after compilation" do
+        test_instance.compile_all_dependency_changes_for(group, workspace_files: [created_file])
+
+        expect(materialized_file_seen).to eq([true])
+        expect(File).not_to exist(created_path)
+      end
+    end
+  end
+
+  describe "#compile_all_dependency_changes_for_directories" do
+    let(:original_file) do
+      Dependabot::DependencyFile.new(name: "Gemfile", content: "original")
+    end
+    let(:raw_updated_file) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile",
+        content: "updated",
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+    end
+    let(:first_change) do
+      instance_double(
+        Dependabot::DependencyChange,
+        updated_dependencies: [],
+        updated_dependency_files: [raw_updated_file]
+      )
+    end
+
+    before do
+      allow(source).to receive(:directories).and_return(["/dir1", "/dir2"])
+      allow(source).to receive(:directory=)
+      allow(dependency_snapshot).to receive_messages(
+        all_dependency_files: [original_file],
+        dependency_files: [original_file]
+      )
+      allow(dependency_snapshot).to receive(:current_directory=)
+      allow(test_instance).to receive(:compile_all_dependency_changes_for).and_return(first_change, nil)
+    end
+
+    it "uses the normalized file set when only one directory changes" do
+      change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+      expect(change.updated_dependency_files.first).to have_attributes(
+        content: "updated",
+        operation: Dependabot::DependencyFile::Operation::UPDATE
+      )
     end
   end
 
