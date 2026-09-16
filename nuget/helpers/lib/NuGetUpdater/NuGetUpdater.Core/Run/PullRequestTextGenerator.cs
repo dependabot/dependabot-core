@@ -18,8 +18,18 @@ public class PullRequestTextGenerator
     {
         var shortTitle = GetPullRequestShortTitle(job, updateOperationsPerformed, dependencyGroupName);
         var titlePrefix = GetPullRequestTitlePrefix(job);
+        if (!CapitalizeFirstWord(titlePrefix))
+        {
+            shortTitle = char.ToLowerInvariant(shortTitle[0]) + shortTitle[1..];
+        }
+
         var fullTitle = $"{titlePrefix}{shortTitle}";
         return fullTitle;
+    }
+
+    private static bool CapitalizeFirstWord(string titlePrefix)
+    {
+        return !Regex.IsMatch(titlePrefix, "^[a-z]");
     }
 
     private static string GetPullRequestTitlePrefix(Job job)
