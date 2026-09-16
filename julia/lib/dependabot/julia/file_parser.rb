@@ -39,6 +39,9 @@ module Dependabot
         super
         @registry_client = T.let(nil, T.nilable(Dependabot::Julia::RegistryClient))
         @custom_registries = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+        # Each project file's julia compat entry, as written, for the stdlib
+        # notice (see dependency_metadata)
+        @julia_compat_by_file = T.let({}, T::Hash[String, String])
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
@@ -118,6 +121,8 @@ module Dependabot
         end
 
         parsed_projects.each do |proj_file, result|
+          @julia_compat_by_file[proj_file.name] = result.julia_version
+
           merge_dependencies_from_list(
             result.dependencies,
             ["deps"],
@@ -291,7 +296,9 @@ module Dependabot
       end
 
       # A stdlib carries the versions its compat entry has to admit, keyed by
-      # project file since every file has its own julia compat entry
+      # project file since every file has its own julia compat entry, along
+      # with where they come from and that julia entry, for the PR notice
+      # the file updater writes (see FileUpdater#add_stdlib_compat_notice)
       sig do
         params(
           dependency: Dependabot::Julia::RegistryClient::Result::ProjectDependency,
@@ -303,7 +310,20 @@ module Dependabot
         return metadata unless dependency.stdlib
 
         versions_by_file = T.cast(metadata[:julia_stdlib_versions], T.nilable(T::Hash[String, T::Array[String]])) || {}
-        metadata.merge(julia_stdlib_versions: versions_by_file.merge(file_name => dependency.stdlib_versions))
+        sources_by_file = T.cast(
+          metadata[:julia_stdlib_sources],
+          T.nilable(T::Hash[String, T::Array[T::Hash[Symbol, String]]])
+        ) || {}
+        compat_by_file = T.cast(metadata[:julia_compat], T.nilable(T::Hash[String, String])) || {}
+        sources = dependency.stdlib_version_sources.map do |source|
+          { source: source.source, julia: source.julia, versions: source.versions }
+        end
+
+        metadata.merge(
+          julia_stdlib_versions: versions_by_file.merge(file_name => dependency.stdlib_versions),
+          julia_stdlib_sources: sources_by_file.merge(file_name => sources),
+          julia_compat: compat_by_file.merge(file_name => @julia_compat_by_file.fetch(file_name, ""))
+        )
       end
 
       # UUID is a package's identity in Julia: two same-named entries with

@@ -421,6 +421,19 @@ RSpec.describe Dependabot::Julia::FileParser do
           expect(stdlib_versions_of("Statistics")).to eq("Project.toml" => ["0.0.0", "1.0.0"])
           expect(stdlib_versions_of("Artifacts")).to eq("Project.toml" => ["0.0.0", "1.3.0"])
         end
+
+        it "records where each version comes from and the julia entry, for the PR notice" do
+          statistics_dep = dependencies.find { |d| d.name == "Statistics" }
+          expect(statistics_dep.metadata[:julia_compat]).to eq("Project.toml" => "1")
+
+          sources = statistics_dep.metadata[:julia_stdlib_sources]["Project.toml"]
+          expect(sources.map { |source| source[:source] }).to eq(%w(bundled upgradable test_sandbox))
+          # Bundled (and unversioned, so resolved as the Julia version) up to
+          # 1.10; still shipped from 1.11 but resolved from the registry
+          expect(sources.first).to eq(source: "bundled", julia: "1.0.0 - 1.10.x", versions: "1.0.0 - 1.10.0")
+          expect(sources[1]).to include(source: "upgradable", julia: "1.11.0 - 1.x")
+          expect(sources.last).to eq(source: "test_sandbox", julia: "1.0.0 - 1.9.x", versions: "0.0.0")
+        end
       end
 
       context "when the julia compat predates the packages becoming stdlibs" do

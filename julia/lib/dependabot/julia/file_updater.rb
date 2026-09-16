@@ -8,6 +8,7 @@ require "pathname"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/julia/registry_client"
+require "dependabot/julia/file_updater/stdlib_compat_notice"
 require "dependabot/notices"
 
 module Dependabot
@@ -45,6 +46,9 @@ module Dependabot
       def updated_dependency_files
         # If no project file, cannot proceed
         raise "No Project.toml file found" unless project_file
+
+        # A stdlib compat entry needs explaining in the PR; see StdlibCompatNotice
+        dependencies.each { |dependency| @notices.concat(StdlibCompatNotice.for_dependency(dependency)) }
 
         # Use DependabotHelper.jl for manifest updating
         # This works for both standard packages and workspace packages
