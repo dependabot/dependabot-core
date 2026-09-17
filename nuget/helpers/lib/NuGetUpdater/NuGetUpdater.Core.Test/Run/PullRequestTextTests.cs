@@ -148,9 +148,38 @@ public class PullRequestTextTests
             // dependencyGroupName
             null,
             // expectedTitle
-            "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
+            "chore(deps): bump Some.Package from 1.0.0 to 1.2.3",
             // expectedCommitMessage
-            "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
+            "chore(deps): bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3
+            """
+        ];
+
+        // single dependency, prefix given, starts with an uppercase letter
+        yield return
+        [
+            // job
+            FromCommitOptions(new(){ Prefix = "Chore" }),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                }
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "Chore: Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedCommitMessage
+            "Chore: Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedBody
             """
             Performed the following updates:
