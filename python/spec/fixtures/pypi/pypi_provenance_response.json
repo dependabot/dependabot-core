@@ -1,0 +1,19 @@
+{
+  "attestation_bundles": [
+    {
+      "publisher": {
+        "kind": "GitHub",
+        "repository": "spotify/luigi",
+        "environment": "release",
+        "workflow": ".github/workflows/publish.yml"
+      },
+      "attestations": [
+        {
+          "envelope": {
+            "statement": "eyJ0eXBlIjoiaHR0cHM6Ly9pbi10b3RvLmlvL1N0YXRlbWVudC92MSIsInN1YmplY3QiOlt7Im5hbWUiOiJsdWlnaS0yLjYuMC50YXIuZ3oiLCJkaWdlc3QiOnsiU0hBMjU2IjoiZXhhbXBsZSJ9fV0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb3ZlbmFuY2UudGVzdC9TTFNBMSA7InByZWRpY2F0ZSI6e319"
+          }
+        }
+      ]
+    }
+  ]
+}
