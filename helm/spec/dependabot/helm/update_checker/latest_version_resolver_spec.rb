@@ -177,16 +177,16 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     end
   end
 
-  describe "#release_date_to_seconds" do
-    it "parses a valid release date into seconds" do
+  describe "#parse_release_date" do
+    it "parses a valid release date into a Time" do
       release_date = "2023-01-01T00:00:00Z"
-      expect(resolver.release_date_to_seconds(release_date)).to eq(Time.parse(release_date).to_i)
+      expect(resolver.parse_release_date(release_date)).to eq(Time.parse(release_date))
     end
 
-    it "returns 0 for an invalid release date" do
+    it "returns nil for an invalid release date" do
       invalid_release_date = "invalid-date"
       expect(Dependabot.logger).to receive(:error).with(/Invalid release date format/)
-      expect(resolver.release_date_to_seconds(invalid_release_date)).to eq(0)
+      expect(resolver.parse_release_date(invalid_release_date)).to be_nil
     end
   end
 end
