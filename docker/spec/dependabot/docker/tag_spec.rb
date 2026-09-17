@@ -226,5 +226,27 @@ RSpec.describe Dependabot::Docker::Tag do
       expect(described_class.new("17.10").numeric_version).to eq("17.10")
       expect(described_class.new("2.4.0-slim").numeric_version).to eq("2.4.0")
     end
+
+    it "parses numeric-leading hash suffix tags as comparable versions" do
+      current = described_class.new("1.43.1.10611-1e34174b1")
+      newer = described_class.new("1.43.3.10828-00f62d37d")
+
+      expect(current.comparable?).to be true
+      expect(newer.comparable?).to be true
+      expect(current.format).to eq(:sha_suffixed)
+      expect(newer.format).to eq(:sha_suffixed)
+      expect(current.version).to eq("1.43.1.10611")
+      expect(newer.version).to eq("1.43.3.10828")
+      expect(current.suffix).to eq("-1e34174b1")
+      expect(newer.suffix).to eq("-00f62d37d")
+      expect(current.comparable_to?(newer)).to be true
+      expect(newer.comparable_to?(current)).to be true
+    end
+
+    it "does not treat complex date-plus-hash suffixes as comparable" do
+      tag = described_class.new("3.2025.123.4567-123abc-20250305t1309")
+
+      expect(tag.comparable?).to be false
+    end
   end
 end
