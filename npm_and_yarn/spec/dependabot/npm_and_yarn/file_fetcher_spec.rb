@@ -2687,6 +2687,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "when generating .npmrc from credential scope for a nested package directory" do
+    let(:directory) { "/packages/nested-app" }
+    let(:credentials) do
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ), Dependabot::Credential.new(
+        {
+          "type" => "npm_registry",
+          "registry" => "npm.pkg.github.com",
+          "token" => "my_token",
+          "scope" => "@my-company"
+        }
+      )]
+    end
+
+    before do
+      Dependabot::Experiments.register(:enable_npmrc_credential_generation, true)
+    end
+
+    after { Dependabot::Experiments.reset! }
+
+    it "sets the generated .npmrc directory to the package directory" do
+      npmrc = file_fetcher_instance.send(:generate_npmrc_from_credentials)
+
+      expect(npmrc).not_to be_nil
+      expect(npmrc.content).to eq("@my-company:registry=https://npm.pkg.github.com")
+      expect(npmrc.directory).to eq(directory)
+    end
+  end
+
   context "with no .npmrc, lockfile inference fails, but credentials have replaces-base" do
     let(:credentials) do
       [Dependabot::Credential.new(
