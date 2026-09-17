@@ -30,6 +30,11 @@ public class PullRequestTextGenerator
         }
 
         var prefix = job.CommitMessageOptions?.Prefix ?? string.Empty;
+        if (job.CommitMessageOptions?.IncludeScope == true)
+        {
+            prefix += "(deps)";
+        }
+
         if (Regex.IsMatch(prefix, @"[a-z0-9\)\]]$", RegexOptions.IgnoreCase))
         {
             prefix += ":";

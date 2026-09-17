@@ -158,6 +158,35 @@ public class PullRequestTextTests
             """
         ];
 
+        // single dependency, prefix given, include scope
+        yield return
+        [
+            // job
+            FromCommitOptions(new(){ Prefix = "build", IncludeScope = true }),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                }
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "build(deps): Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedCommitMessage
+            "build(deps): Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3
+            """
+        ];
+
         // single dependency, multiple versions
         yield return
         [
