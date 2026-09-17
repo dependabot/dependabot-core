@@ -441,6 +441,21 @@ module Dependabot
       super(sanitize_message(message))
     end
 
+    # Builds an error that is reported without ever being raised.
+    #
+    # An exception's backtrace is nil unless it is raised, and error trackers
+    # rely on the backtrace to group errors, so we capture the call stack of
+    # the code reporting the error instead.
+    sig { params(message: T.any(T.nilable(String), MatchData)).returns(T.attached_class) }
+    def self.with_backtrace(message = nil)
+      # Skip the sorbet-runtime frames that wrap sig-checked methods so the
+      # first frame points at the code reporting the error.
+      backtrace = caller.drop_while { |frame| frame.include?("/sorbet-runtime-") }
+      error = new(message)
+      error.set_backtrace(backtrace)
+      error
+    end
+
     private
 
     sig { params(message: T.any(T.nilable(String), MatchData)).returns(T.any(T.nilable(String), MatchData)) }
