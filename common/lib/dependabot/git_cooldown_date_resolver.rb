@@ -41,7 +41,7 @@ module Dependabot
 
     # Resolves the best available date for a candidate tag.
     # Priority: GitHub Release published_at > tag creation date > commit date.
-    sig { params(tag_name: String, commit_sha: String).returns(Time) }
+    sig { params(tag_name: String, commit_sha: String).returns(T.nilable(Time)) }
     def resolve_candidate_date(tag_name, commit_sha)
       releases = cached_github_releases
       unless releases.empty?
@@ -71,7 +71,7 @@ module Dependabot
 
     # Returns the tag creation date for cooldown purposes (used inside bare clone).
     # Priority: tag creation date from for-each-ref > commit date fallback.
-    sig { params(tag_name: String, commit_sha: String).returns(Time) }
+    sig { params(tag_name: String, commit_sha: String).returns(T.nilable(Time)) }
     def tag_creation_date(tag_name, commit_sha)
       tag_date_str = SharedHelpers.run_shell_command(
         "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/#{tag_name}\"",
@@ -84,6 +84,8 @@ module Dependabot
           fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_sha>"
         ).strip
       end
+
+      return if tag_date_str.empty?
 
       Time.parse(tag_date_str)
     end

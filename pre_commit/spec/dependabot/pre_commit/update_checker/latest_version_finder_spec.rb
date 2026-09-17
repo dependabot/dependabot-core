@@ -639,6 +639,38 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when no publication date can be resolved" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      it "keeps the current version and marks the dependency" do
+        latest_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([latest_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything)).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything)).and_return("")
+
+        expect(finder.latest_release_version.to_s).to eq("4.4.0")
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when GitHub Release published_at is available" do
       let(:update_cooldown) do
         Dependabot::Package::ReleaseCooldownOptions.new(

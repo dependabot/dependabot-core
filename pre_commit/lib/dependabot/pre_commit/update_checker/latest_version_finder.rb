@@ -273,6 +273,13 @@ module Dependabot
 
             tag_name = normalize_tag_name((tag[:tag] || "v#{tag[:version]}").to_s)
             release_date = resolve_candidate_date(tag_name, commit_sha)
+            unless release_date
+              Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+                dependency,
+                cooldown_days: T.must(@cooldown_options).default_days
+              )
+              return nil
+            end
 
             if release_in_cooldown_period?(release_date)
               filtered_count += 1
