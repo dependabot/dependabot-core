@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Sentry::ErrorFingerprint do
       it { is_expected.to be_nil }
     end
 
-    context "with an error raised from a Dependabot call site" do
+    context "with an error carrying a Dependabot call site" do
       let(:error) do
         Dependabot::DependabotError.new("Security update failed for lodash 1.2.3").tap do |raised|
           raised.set_backtrace(
