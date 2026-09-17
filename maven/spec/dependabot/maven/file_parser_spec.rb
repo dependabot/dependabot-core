@@ -393,6 +393,43 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+
+    context "when a plugin is declared in pluginManagement with a property version " \
+            "that is also declared (with a different version) in a remote parent POM" do
+      # Regression test: when maven-apache-parent declares maven-clean-plugin@3.5.0
+      # and the root POM redeclares it in pluginManagement with lifecycle.version.*@3.4.0,
+      # Dependabot should still detect it and be able to update the local declaration.
+      let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
+
+      let(:maven_apache_parent_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/maven/maven-apache-parent/43/maven-apache-parent-43.pom"
+      end
+
+      before do
+        stub_request(:get, maven_apache_parent_url)
+          .to_return(status: 200, body: fixture("poms", "maven_apache_parent_pom.xml"))
+      end
+
+      it "includes the locally-declared plugin" do
+        expect(dependencies.map(&:name)).to include("org.apache.maven.plugins:maven-clean-plugin")
+      end
+
+      describe "the maven-clean-plugin dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "org.apache.maven.plugins:maven-clean-plugin" } }
+
+        it "has the right version" do
+          expect(dependency.version).to eq("3.4.0")
+        end
+
+        it "has property_source pointing to the local pom.xml (not remote_pom.xml)" do
+          property_source = dependency.requirements.first.dig(:metadata, :property_source)
+          expect(property_source).to eq("pom.xml")
+          expect(property_source).not_to eq("remote_pom.xml")
+        end
+      end
+    end
+
     context "when dealing with versions defined by a property" do
       let(:pom_body) { fixture("poms", "property_pom.xml") }
 

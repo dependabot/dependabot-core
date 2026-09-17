@@ -1168,6 +1168,56 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
         it { is_expected.to be(false) }
       end
+
+      context "when a plugin has requirements from both a local file and a remote parent POM" do
+        # Regression: maven-apache-parent declares maven-clean-plugin@3.5.0,
+        # and our root POM redeclares it in pluginManagement@3.4.0 with a local property.
+        # requirements_unlocked_or_can_be? should return true because we CAN update
+        # the local pom.xml — it should not be blocked by the remote_pom.xml requirement.
+        let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
+        let(:dependency_name) { "org.apache.maven.plugins:maven-clean-plugin" }
+        let(:dependency_version) { "3.4.0" }
+        let(:dependency_requirements) do
+          [
+            {
+              # Requirement from local pom.xml (our pluginManagement entry)
+              file: "pom.xml",
+              requirement: "3.4.0",
+              groups: ["plugin"],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                property_name: "lifecycle.version.maven-clean-plugin",
+                property_source: "pom.xml"
+              }
+            },
+            {
+              # Requirement inherited from remote parent (maven-apache-parent)
+              file: "pom.xml",
+              requirement: "3.5.0",
+              groups: ["plugin"],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                property_name: "version.maven-clean-plugin",
+                property_source: "remote_pom.xml"
+              }
+            }
+          ]
+        end
+
+        let(:maven_apache_parent_url) do
+          "https://repo.maven.apache.org/maven2/" \
+            "org/apache/maven/maven-apache-parent/43/maven-apache-parent-43.pom"
+        end
+
+        before do
+          stub_request(:get, maven_apache_parent_url)
+            .to_return(status: 200, body: fixture("poms", "maven_apache_parent_pom.xml"))
+        end
+
+        it { is_expected.to be(true) }
+      end
     end
   end
 end
