@@ -1032,14 +1032,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "routes the audit-fix fallback through the release-age gate" do
         allow(Dir).to receive(:glob).and_return([])
-        pnpm_lock = Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "original")
         gated = false
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           gated ||= cmd.include?("audit --fix") && cmd.include?("--config.minimumReleaseAge=10080")
           ""
         end
 
-        updater.send(:run_pnpm_audit_fix_fallback, pnpm_lock, "original")
+        updater.send(:run_pnpm_audit_fix_fallback, { "pnpm-lock.yaml" => "original" })
         expect(gated).to be(true)
       end
 

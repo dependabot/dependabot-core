@@ -55,24 +55,43 @@ module Dependabot
 
         sig do
           params(
+            pnpm_locks: T::Array[Dependabot::DependencyFile],
+            updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
+          ).returns(T::Hash[String, String])
+        end
+        def updated_pnpm_lock_contents(pnpm_locks, updated_pnpm_workspace_content: nil)
+          @updated_pnpm_lock_content ||= T.let(
+            {},
+            T.nilable(T::Hash[String, String])
+          )
+          cache = @updated_pnpm_lock_content
+          pending = pnpm_locks.reject { |lock| cache.key?(lock.name) }
+          return cache if pending.empty?
+
+          begin
+            cache.merge!(
+              run_pnpm_update_all(
+                pnpm_locks: pending,
+                updated_pnpm_workspace_content: updated_pnpm_workspace_content
+              )
+            )
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            handle_pnpm_lock_updater_error(e, pending)
+          end
+        end
+
+        sig do
+          params(
             pnpm_lock: Dependabot::DependencyFile,
             updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
           ).returns(String)
         end
         def updated_pnpm_lock_content(pnpm_lock, updated_pnpm_workspace_content: nil)
-          @updated_pnpm_lock_content ||= T.let(
-            {},
-            T.nilable(T::Hash[String, String])
-          )
-          return T.must(@updated_pnpm_lock_content[pnpm_lock.name]) if @updated_pnpm_lock_content[pnpm_lock.name]
-
-          new_content = run_pnpm_update(
-            pnpm_lock: pnpm_lock,
+          contents = updated_pnpm_lock_contents(
+            [pnpm_lock],
             updated_pnpm_workspace_content: updated_pnpm_workspace_content
           )
-          @updated_pnpm_lock_content[pnpm_lock.name] = new_content
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_pnpm_lock_updater_error(e, pnpm_lock)
+          T.must(contents[pnpm_lock.name])
         end
 
         private
@@ -184,21 +203,22 @@ module Dependabot
 
         sig do
           params(
-            pnpm_lock: Dependabot::DependencyFile,
+            pnpm_locks: T::Array[Dependabot::DependencyFile],
             updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
           )
-            .returns(String)
+            .returns(T::Hash[String, String])
         end
-        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
+        def run_pnpm_update_all(pnpm_locks:, updated_pnpm_workspace_content: nil)
           # Set dependency files and credentials for automatic env variable injection
           Helpers.dependency_files = dependency_files
           Helpers.credentials = credentials
 
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-            File.write(".npmrc", npmrc_content(pnpm_lock))
+            File.write(".npmrc", workspace_npmrc_content(pnpm_locks))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              original_content = File.read(pnpm_lock.name)
+              names = pnpm_locks.map(&:name)
+              original_contents = read_lockfiles(names)
 
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
@@ -209,22 +229,40 @@ module Dependabot
 
               run_pnpm_install
 
-              updated_content = File.read(pnpm_lock.name)
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+              updated_contents = read_lockfiles(names)
+              if updated_contents == original_contents && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 run_pnpm_deep_update_fallback
-                updated_content = File.read(pnpm_lock.name)
+                updated_contents = read_lockfiles(names)
               end
 
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
-                updated_content = File.read(pnpm_lock.name)
+              if updated_contents == original_contents && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                run_pnpm_audit_fix_fallback(original_contents)
+                updated_contents = read_lockfiles(names)
               end
 
               # After the fallbacks: they resolve without a version too.
-              verify_unpinned_updates!(original_content, updated_content) if updated_content != original_content
-              updated_content
+              original_contents.each do |name, original_content|
+                updated_content = T.must(updated_contents[name])
+                verify_unpinned_updates!(original_content, updated_content) if updated_content != original_content
+              end
+
+              updated_contents
             end
           end
+        end
+
+        sig { params(names: T::Array[String]).returns(T::Hash[String, String]) }
+        def read_lockfiles(names)
+          names.to_h { |name| [name, File.read(name)] }
+        end
+
+        sig { params(pnpm_locks: T::Array[Dependabot::DependencyFile]).returns(String) }
+        def workspace_npmrc_content(pnpm_locks)
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files,
+            dependencies: pnpm_locks.flat_map { |lock| lockfile_dependencies(lock) }.uniq(&:name)
+          ).npmrc_content
         end
 
         sig { returns(T.nilable(String)) }
@@ -628,8 +666,8 @@ module Dependabot
         # pnpm 11 updates the lockfile directly, while older versions may add
         # `overrides` to package.json. Since only lockfile content can be returned,
         # revert any manifest and lockfile changes so the operation remains consistent.
-        sig { params(pnpm_lock: Dependabot::DependencyFile, original_content: String).void }
-        def run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+        sig { params(original_contents: T::Hash[String, String]).void }
+        def run_pnpm_audit_fix_fallback(original_contents)
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
@@ -643,7 +681,7 @@ module Dependabot
                 "pnpm audit --fix modified package.json (overrides) — reverting fallback"
               )
               package_json_snapshots.each { |f, c| File.write(f, c) }
-              File.write(pnpm_lock.name, original_content)
+              original_contents.each { |name, content| File.write(name, content) }
             else
               dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
             end
@@ -680,11 +718,12 @@ module Dependabot
         sig do
           params(
             error: SharedHelpers::HelperSubprocessFailed,
-            pnpm_lock: Dependabot::DependencyFile
+            pnpm_locks: T::Array[Dependabot::DependencyFile]
           )
             .returns(T.noreturn)
         end
-        def handle_pnpm_lock_updater_error(error, pnpm_lock)
+        def handle_pnpm_lock_updater_error(error, pnpm_locks)
+          pnpm_lock = T.must(pnpm_locks.first)
           error_message = error.message
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
@@ -709,7 +748,7 @@ module Dependabot
             next unless error_message.match?(regexp)
 
             dependency_url = T.must(error_message.match(regexp)&.named_captures&.[]("dependency_url"))
-            raise_package_access_error(error_message, dependency_url, pnpm_lock)
+            raise_package_access_error(error_message, dependency_url, pnpm_locks)
           end
 
           # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
@@ -864,17 +903,17 @@ module Dependabot
           params(
             error_message: String,
             dependency_url: String,
-            pnpm_lock: Dependabot::DependencyFile
+            pnpm_locks: T::Array[Dependabot::DependencyFile]
           )
             .returns(T.noreturn)
         end
-        def raise_package_access_error(error_message, dependency_url, pnpm_lock)
+        def raise_package_access_error(error_message, dependency_url, pnpm_locks)
           package_name = RegistryParser.new(
             resolved_url: dependency_url,
             credentials: credentials
           ).dependency_name
-          missing_dep = lockfile_dependencies(pnpm_lock)
-                        .find { |dep| dep.name == package_name }
+          missing_dep = pnpm_locks.flat_map { |lock| lockfile_dependencies(lock) }
+                                  .find { |dep| dep.name == package_name }
           raise DependencyNotFound, package_name unless missing_dep
 
           reg = Package::RegistryFinder.new(
@@ -929,15 +968,6 @@ module Dependabot
           end
 
           nil
-        end
-
-        sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
-        def npmrc_content(pnpm_lock)
-          NpmrcBuilder.new(
-            credentials: credentials,
-            dependency_files: dependency_files,
-            dependencies: lockfile_dependencies(pnpm_lock)
-          ).npmrc_content
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(String) }
