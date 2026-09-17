@@ -123,6 +123,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           original_files: T::Array[Dependabot::DependencyFile],
@@ -140,25 +141,31 @@ module Dependabot
 
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req.file == T.must(old_req).file
-          next if new_req.requirement == T.must(old_req).requirement
+          raise "Bad req match" if old_req.nil? || new_req.file != old_req.file
+          next if new_req.requirement == old_req.requirement
+
+          # A dependency with no inline version (dependencyManagement, parent/BOM
+          # inheritance, import scope) has no requirement string to rewrite, so there
+          # is nothing to update in the manifest. This is spec-legal, not a failure.
+          next if new_req.requirement_string.nil? || old_req.requirement_string.nil?
 
           file_name = T.must(new_req.file || new_req.metadata_string("pom_file"))
           if new_req.metadata_string("property_name")
             files = update_pomfiles_for_property_change(files, new_req)
             pom = files.find { |f| f.name == file_name }
             files[T.must(files.index(pom))] =
-              remove_property_suffix_in_pom(dependency, T.must(pom), T.must(old_req))
+              remove_property_suffix_in_pom(dependency, T.must(pom), old_req)
           else
             file = files.find { |f| f.name == file_name }
             files[T.must(files.index(file))] =
-              update_version_in_file(dependency, T.must(file), T.must(old_req), new_req)
+              update_version_in_file(dependency, T.must(file), old_req, new_req)
           end
         end
 
         files
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig do
         params(

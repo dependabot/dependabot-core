@@ -83,6 +83,11 @@ module Dependabot
           raise "Bad req match" if old_req.nil? || new_req.file != old_req.file
           next if new_req.requirement == old_req.requirement
 
+          # A dependency with no inline version (no-version declaration, platform/BOM,
+          # version catalog) has no requirement string to rewrite, so there is nothing
+          # to update in the buildfile. This is spec-legal, not a failure.
+          next if new_req.requirement_string.nil? || old_req.requirement_string.nil?
+
           buildfile = files.find { |f| f.name == new_req.file }
 
           # Currently, Dependabot assumes that Gradle projects using Gradle submodules are all in a single

@@ -78,6 +78,41 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when a dependency has no inline version" do
+      # Version supplied by a platform/BOM or version catalog, so the requirement
+      # carries no version string to rewrite. The updater must skip it, not crash.
+      let(:no_version_dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.inject:guice",
+          version: "4.2.0",
+          requirements: [{
+            file: "build.gradle",
+            requirement: nil,
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          previous_requirements: [{
+            file: "build.gradle",
+            requirement: "4.2.0",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          package_manager: "gradle"
+        )
+      end
+      let(:dependencies) { [dependency, no_version_dependency] }
+
+      it "skips the versionless dependency and still updates the others" do
+        expect { updated_files }.not_to raise_error
+
+        buildfile = updated_files.find { |f| f.name == "build.gradle" }
+        expect(buildfile&.content).to include("version: '0.6.0-SNAPSHOT'")
+        expect(buildfile&.content).to include("name: 'guice', version: '4.2.0'")
+      end
+    end
+
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do
         updated_files.find do |f|

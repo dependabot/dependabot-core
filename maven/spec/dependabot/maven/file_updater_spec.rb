@@ -87,6 +87,41 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when a dependency has no inline version" do
+      # Managed by dependencyManagement / a parent BOM, so the requirement carries
+      # no version string to rewrite. The updater must skip it rather than crash.
+      let(:no_version_dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.guava:guava",
+          version: "23.3-jre",
+          requirements: [{
+            file: "pom.xml",
+            requirement: nil,
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "23.3-jre",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+      let(:dependencies) { [dependency, no_version_dependency] }
+
+      it "skips the versionless dependency and still updates the others" do
+        expect { updated_files }.not_to raise_error
+
+        pom = updated_files.find { |f| f.name == "pom.xml" }
+        expect(pom&.content).to include("<version>4.6.1</version>")
+        expect(pom&.content).to include("<version>23.3-jre</version>")
+      end
+    end
+
     context "when updating a dependency declared in a .target file" do
       let(:target_body) { fixture("target-files", "example.target") }
       let(:target_file) do
