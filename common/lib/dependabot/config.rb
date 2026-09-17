@@ -3,6 +3,7 @@
 
 module Dependabot
   module Config
+    # Error raised when the configuration is invalid.
     class InvalidConfigError < StandardError; end
   end
 end
