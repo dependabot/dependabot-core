@@ -26,6 +26,8 @@ There are some notable differences:
 - **Conflict Notifications**: When manifest updates fail due to dependency conflicts (common in workspaces), Dependabot adds warning notices to pull requests explaining the issue.
 - **Standard Libraries**: Dependabot derives the compat entry of a package that ships with Julia from the versions bundled across the project's supported Julia releases, whereas CompatHelper.jl treats its registry releases like any other package (see [Standard Libraries](#standard-libraries)).
 
+`[extras]` dependencies are included when they already have a `[compat]` entry, matching CompatHelper.jl's default `IfExistingCompatExtras()` policy.
+
 Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
 
 ## Julia Documentation References
