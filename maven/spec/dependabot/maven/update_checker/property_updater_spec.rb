@@ -120,6 +120,27 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       it { is_expected.to be(false) }
     end
 
+    context "when a dependency sharing the property has no locatable inline version" do
+      let(:pom_body) { fixture("poms", "property_pom_unlocatable_declaration.xml") }
+      let(:dependency_name) { "io.grpc:protoc-gen-grpc-java" }
+      let(:dependency_version) { "1.81.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.81.0",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "grpc.version",
+            property_source: "pom.xml",
+            packaging_type: "jar"
+          }
+        }]
+      end
+
+      it { is_expected.to be(false) }
+    end
+
     context "when one dependency isn't listed" do
       before do
         stub_request(:get, maven_central_metadata_url_context)
