@@ -393,7 +393,6 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-
     context "when a plugin is declared in pluginManagement with a property version " \
             "that is also declared (with a different version) in a remote parent POM" do
       # Regression test: when maven-apache-parent declares maven-clean-plugin@3.5.0

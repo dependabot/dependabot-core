@@ -1220,4 +1220,72 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
     end
   end
+
+  describe "#updated_requirements" do
+    context "when a plugin has requirements from both a local file and a remote parent POM" do
+      # Regression: updated_requirements must only include local properties in
+      # properties_to_update. Including remote properties causes FileUpdater to
+      # try to resolve remote_pom.xml (not in dependency_files) and crash.
+      let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
+      let(:dependency_name) { "org.apache.maven.plugins:maven-clean-plugin" }
+      let(:dependency_version) { "3.4.0" }
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "3.4.0",
+            groups: ["plugin"],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              property_name: "lifecycle.version.maven-clean-plugin",
+              property_source: "pom.xml"
+            }
+          },
+          {
+            file: "pom.xml",
+            requirement: "3.5.0",
+            groups: ["plugin"],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              property_name: "version.maven-clean-plugin",
+              property_source: "remote_pom.xml"
+            }
+          }
+        ]
+      end
+
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/maven/plugins/maven-clean-plugin/maven-metadata.xml"
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/maven/plugins/maven-clean-plugin/23.6-jre/maven-clean-plugin-23.6-jre.jar"
+      end
+      let(:maven_apache_parent_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/maven/maven-apache-parent/43/maven-apache-parent-43.pom"
+      end
+
+      before do
+        stub_request(:get, maven_apache_parent_url)
+          .to_return(status: 200, body: fixture("poms", "maven_apache_parent_pom.xml"))
+      end
+
+      it "only includes the local property in properties_to_update" do
+        expect(described_class::RequirementsUpdater)
+          .to receive(:new)
+          .with(
+            requirements: dependency_requirements,
+            latest_version: anything,
+            source_url: anything,
+            properties_to_update: ["lifecycle.version.maven-clean-plugin"]
+          )
+          .and_call_original
+        checker.updated_requirements
+      end
+    end
+  end
 end
