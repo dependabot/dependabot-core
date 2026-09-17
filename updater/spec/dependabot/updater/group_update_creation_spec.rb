@@ -84,8 +84,22 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
   let(:dependencies) do
     [
-      instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", metadata: {}),
-      instance_double(Dependabot::Dependency, name: "dep2", version: "2.0.0", metadata: {})
+      instance_double(
+        Dependabot::Dependency,
+        name: "dep1",
+        version: "1.0.0",
+        all_versions: ["1.0.0"],
+        requirements: [],
+        metadata: {}
+      ),
+      instance_double(
+        Dependabot::Dependency,
+        name: "dep2",
+        version: "2.0.0",
+        all_versions: ["2.0.0"],
+        requirements: [],
+        metadata: {}
+      )
     ]
   end
 
@@ -101,11 +115,29 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   let(:all_dependencies) { dependencies }
   let(:security_advisories) { [] }
 
+  let(:security_advisory) do
+    Dependabot::SecurityAdvisory.new(
+      dependency_name: "dep1",
+      package_manager: "dummy",
+      vulnerable_versions: ["<= 1.0.0"]
+    )
+  end
+
+  let(:advisory_checker) do
+    Dependabot::UpdateCheckers::Base.new(
+      dependency: dependency,
+      dependency_files: [],
+      credentials: [],
+      security_advisories: security_advisories
+    )
+  end
+
   let(:checker) do
     instance_double(
       Dependabot::UpdateCheckers::Base,
       dependency: dependencies.first,
       up_to_date?: false,
+      vulnerable?: true,
       lowest_resolvable_security_fix_version: nil,
       lowest_security_fix_version: "3.0.0",
       conflicting_dependencies: [],
@@ -159,6 +191,32 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
           test_instance.note_security_update_not_possible(dependency, checker, group)
           test_instance.report_security_update_failure(dependency.name)
+        end
+
+        it "does not record a security error when the dependency is not vulnerable" do
+          allow(checker).to receive(:vulnerable?).and_return(false)
+          expect(checker).not_to receive(:lowest_resolvable_security_fix_version)
+          expect(service).not_to receive(:record_update_job_error)
+
+          test_instance.note_security_update_not_possible(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
+        end
+
+        it "logs every detected version and requirement for the dependency" do
+          requirements = [
+            Dependabot::DependencyRequirement.create(file: "package.json", requirement: "^1.0.0"),
+            Dependabot::DependencyRequirement.create(file: "package-lock.json", requirement: "^2.0.0")
+          ]
+          allow(dependency).to receive_messages(
+            all_versions: %w(1.0.0 2.0.0),
+            requirements: requirements
+          )
+          expect(Dependabot.logger).to receive(:info).with(
+            'Security advisory check for dep1: versions=["1.0.0", "2.0.0"], ' \
+            'requirements=["package.json: ^1.0.0", "package-lock.json: ^2.0.0"]'
+          )
+
+          test_instance.note_security_update_not_possible(dependency, checker, group)
         end
 
         context "when checker has conflicting dependencies with vulnerability explanation" do
@@ -273,6 +331,26 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           test_instance.report_security_update_failure(dependency.name)
         end
       end
+
+      context "when the installed version is outside the advisory range" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dep1",
+            version: "2.0.0",
+            requirements: [],
+            package_manager: "dummy"
+          )
+        end
+        let(:checker) { advisory_checker }
+        let(:security_advisories) { [security_advisory] }
+
+        it "does not record a security update not found error" do
+          expect(service).not_to receive(:record_update_job_error)
+
+          test_instance.note_security_update_not_found(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
+        end
+      end
     end
   end
 
@@ -309,6 +387,26 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
         it "does not log or record any error" do
           expect(Dependabot.logger).not_to receive(:info)
+          expect(service).not_to receive(:record_update_job_error)
+
+          test_instance.note_security_update_ignored(dependency, checker, group)
+          test_instance.report_security_update_failure(dependency.name)
+        end
+      end
+
+      context "when the installed version is outside the advisory range" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dep1",
+            version: "2.0.0",
+            requirements: [],
+            package_manager: "dummy"
+          )
+        end
+        let(:checker) { advisory_checker }
+        let(:security_advisories) { [security_advisory] }
+
+        it "does not record an ignored security update error" do
           expect(service).not_to receive(:record_update_job_error)
 
           test_instance.note_security_update_ignored(dependency, checker, group)
@@ -1010,6 +1108,89 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
 
     context "when checking security updates" do
+      context "when an update is not possible for a version outside the advisory range" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dep1",
+            version: "2.0.0",
+            requirements: [],
+            package_manager: "dummy"
+          )
+        end
+        let(:checker) { advisory_checker }
+        let(:security_advisories) { [security_advisory] }
+
+        before do
+          allow(test_instance).to receive(:requirements_to_unlock).and_return(:update_not_possible)
+        end
+
+        it "does not record a security update failure" do
+          expect(service).not_to receive(:record_update_job_error)
+
+          test_instance.compile_updates_for(dependency, dependency_files, group)
+          test_instance.report_security_update_failure(dependency.name)
+        end
+      end
+
+      context "when a secondary installed version is within the advisory range" do
+        let(:multi_version_checker_class) do
+          Class.new(Dependabot::UpdateCheckers::Base) do
+            def vulnerable?
+              dependency.all_versions.any? do |version|
+                security_advisories.any? { |advisory| advisory.affects_version?(version) }
+              end
+            end
+          end
+        end
+        let(:locked_versions) do
+          %w(2.0.0 1.0.0).map do |version|
+            Dependabot::Dependency.new(
+              name: "dep1",
+              version: version,
+              requirements: [],
+              package_manager: "dummy"
+            )
+          end
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dep1",
+            version: "2.0.0",
+            requirements: [],
+            package_manager: "dummy",
+            metadata: { all_versions: locked_versions }
+          )
+        end
+        let(:checker) do
+          multi_version_checker_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: [],
+            security_advisories: security_advisories
+          )
+        end
+        let(:security_advisories) { [security_advisory] }
+
+        before do
+          allow(test_instance).to receive(:requirements_to_unlock).and_return(:update_not_possible)
+          allow(checker).to receive_messages(
+            lowest_resolvable_security_fix_version: nil,
+            lowest_security_fix_version: Gem::Version.new("1.0.1")
+          )
+        end
+
+        it "records a security update failure for the vulnerable version" do
+          expect(service).to receive(:record_update_job_error).with(
+            error_type: "security_update_not_possible",
+            error_details: hash_including("dependency-name": dependency.name),
+            dependency: nil
+          )
+
+          test_instance.compile_updates_for(dependency, dependency_files, group)
+          test_instance.report_security_update_failure(dependency.name)
+        end
+      end
+
       context "when all versions are ignored and dependency has security advisories" do
         before do
           allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
