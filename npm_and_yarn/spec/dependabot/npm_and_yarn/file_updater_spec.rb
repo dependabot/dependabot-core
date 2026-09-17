@@ -3971,6 +3971,33 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_files.map(&:name)).not_to include("pnpm-lock.yaml")
         end
 
+        it "resolves the workspace once, not once per lockfile" do
+          resolutions = 0
+          allow(Dependabot::SharedHelpers)
+            .to receive(:in_a_temporary_repo_directory).and_wrap_original do |original, *args, &block|
+              resolutions += 1
+              original.call(*args, &block)
+            end
+
+          expect(updated_files.map(&:name))
+            .to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+          expect(resolutions).to eq(1)
+        end
+
+        it "writes one .npmrc covering every project being updated" do
+          builders = []
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder)
+            .to receive(:new).and_wrap_original do |original, **kwargs|
+              builders << kwargs[:dependencies].map(&:name)
+              original.call(**kwargs)
+            end
+
+          updated_files
+
+          expect(builders.size).to eq(1)
+          expect(builders.first).to include("lodash")
+        end
+
         context "when only one workspace project is updated" do
           let(:requirements) do
             [{
