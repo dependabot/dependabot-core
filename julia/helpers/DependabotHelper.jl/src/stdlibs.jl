@@ -155,12 +155,37 @@ function lowest_per_line(versions)
 end
 
 """
-    julia_compat_spec(project::Pkg.Types.Project)
+    effective_julia_compat(env::Pkg.Types.EnvCache) -> VersionSpec
 
-The project's `julia` compat entry as a `VersionSpec`, or `nothing` when absent.
+The Julia releases `env` has to resolve under, following what Pkg enforces:
+
+- A package (name and uuid; `env.pkg`) is also installed on its own, from a
+  registry or by path, where only its own `julia` entry applies. Its compat
+  entries have to hold there, so the workspace it may sit in doesn't narrow
+  them.
+- A workspace environment (`test/`, `docs/`, ...) only ever resolves through
+  the workspace manifest, which Pkg resolves under every workspace project's
+  `julia` entry; `Pkg.test` runs a member `test/` environment in place rather
+  than in a sandbox.
+- A package's `test/` environment outside a workspace runs in the `Pkg.test`
+  sandbox with the package loaded, and Pkg refuses a Julia the package's
+  `julia` entry excludes (`Pkg.Operations.collect_project`).
 """
-function julia_compat_spec(project::Pkg.Types.Project)
-    haskey(project.compat, "julia") || return nothing
-    compat = project.compat["julia"]
-    return compat isa Pkg.Types.Compat ? compat.val : Pkg.Types.semver_spec(string(compat))
+function effective_julia_compat(env::Pkg.Types.EnvCache)
+    env.pkg === nothing || return Pkg.Operations.get_compat(env.project, "julia")
+    isempty(env.workspace) || return Pkg.Operations.get_compat_workspace(env, "julia")
+    spec = Pkg.Operations.get_compat(env.project, "julia")
+    package = test_sandbox_package(env)
+    return package === nothing ? spec : intersect(spec, Pkg.Operations.get_compat(package, "julia"))
+end
+
+# The package `Pkg.test` would load into the sandbox for environment `env`,
+# or `nothing`. Pkg only knows the other direction, `testdir(package_dir)`.
+function test_sandbox_package(env::Pkg.Types.EnvCache)
+    package_dir = dirname(dirname(env.project_file))
+    samefile(Pkg.Operations.testdir(package_dir), dirname(env.project_file)) || return nothing
+    package_file = Base.env_project_file(package_dir)
+    package_file isa String || return nothing
+    package_env = Pkg.Types.EnvCache(package_file)
+    return package_env.pkg === nothing ? nothing : package_env.project
 end
