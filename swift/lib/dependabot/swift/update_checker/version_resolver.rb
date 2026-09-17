@@ -44,6 +44,7 @@ module Dependabot
           updated_lockfile_content = FileUpdater::LockfileUpdater.new(
             dependency: dependency,
             manifest: manifest,
+            lockfile: lockfile,
             repo_contents_path: T.must(repo_contents_path),
             credentials: credentials
           ).updated_lockfile_content
