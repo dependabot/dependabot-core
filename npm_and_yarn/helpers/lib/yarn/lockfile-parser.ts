@@ -114,8 +114,10 @@ function normalizeLockfile(
       if (!match) continue;
 
       const edge = normalizeDescriptor(match[1], match[2]);
-      // Give each descriptor its own object so that callers mutating one entry
-      // don't affect the other descriptors sharing this resolution.
+      // Give each descriptor its own entry object and dependency list so that
+      // callers mutating one entry don't affect the other descriptors sharing
+      // this resolution. The edges themselves are treated as immutable values
+      // and are intentionally shared.
       normalized[edgeKey(edge)] = {
         version: pkg.version,
         resolved: pkg.resolved,

@@ -54,7 +54,7 @@ describe("parseNormalized", () => {
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "yarn-lockfile-parser-"));
   });
-  afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
+  afterEach(() => fs.rmSync(tempDir, { recursive: true, force: true }));
 
   it("returns dependency edges for yarn v1 lockfiles", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);
