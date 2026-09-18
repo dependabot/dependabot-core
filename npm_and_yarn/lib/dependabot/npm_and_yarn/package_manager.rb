@@ -443,7 +443,14 @@ module Dependabot
       def install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
-        Helpers.install(name, version.to_s, env: corepack_env)
+        return Helpers.install(name, version.to_s, env: corepack_env) if name == NpmPackageManager::NAME
+
+        begin
+          Helpers.package_manager_install(name, version.to_s, env: corepack_env)
+        rescue SharedHelpers::HelperSubprocessFailed, RegistryError => e
+          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Helpers.fallback_to_local_version(name, env: corepack_env)
+        end
       end
 
       # Environment variables (e.g. COREPACK_NPM_REGISTRY) that point Corepack at
