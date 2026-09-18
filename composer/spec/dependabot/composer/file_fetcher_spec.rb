@@ -119,6 +119,22 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     end
   end
 
+  context "with an invalid lockfile" do
+    before do
+      stub_request(:get, url + "composer.lock?ref=sha")
+        .to_return(
+          status: 200,
+          body: { type: "file", encoding: "base64", content: Base64.strict_encode64("{ invalid") }.to_json,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "still fetches the original files and detects Composer" do
+      expect(file_fetcher_instance.files.map(&:name)).to eq(%w(composer.json composer.lock))
+      expect(file_fetcher_instance.ecosystem_versions).to eq(package_managers: { "composer" => "2" })
+    end
+  end
+
   context "without a composer.json" do
     before do
       stub_request(:get, url + "composer.json?ref=sha")
@@ -348,6 +364,28 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       it "fetches the composer.json and composer.lock" do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(composer.json composer.lock))
+      end
+
+      context "with malformed distribution URLs outside the missing directory" do
+        before do
+          content = {
+            "packages" => [
+              { "dist" => { "type" => "path", "url" => nil } },
+              { "dist" => { "type" => "path", "url" => 123 } },
+              { "dist" => { "type" => "zip", "url" => false } }
+            ]
+          }.to_json
+          stub_request(:get, url + "composer.lock?ref=sha")
+            .to_return(
+              status: 200,
+              body: { type: "file", encoding: "base64", content: Base64.strict_encode64(content) }.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "does not consume unmatched URLs" do
+          expect(file_fetcher_instance.files.map(&:name)).to eq(%w(composer.json composer.lock))
+        end
       end
 
       context "when there is no lockfile" do

@@ -37,6 +37,25 @@ module Dependabot
         end
       end
 
+      class Repository
+        extend T::Sig
+
+        sig { params(type: String, url: Object, context: String).void }
+        def initialize(type:, url:, context:)
+          @type = type
+          @url = url
+          @context = context
+        end
+
+        sig { returns(String) }
+        attr_reader :type
+
+        sig { returns(String) }
+        def url
+          DocumentValueParser.string(@url, "#{@context} url")
+        end
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(ManifestDocument) }
       def self.from_file(file)
         new(data: T.cast(JSON.parse(T.must(file.content)), Object), context: file.path)
@@ -84,6 +103,29 @@ module Dependabot
       def dependency_constraint(name)
         requirements = section(@data, "require", "require")
         DocumentValueParser.optional_string(requirements&.[](name), "#{@context} require.#{name}")
+      end
+
+      sig { returns(T::Array[Repository]) }
+      def repositories
+        value = @data["repositories"]
+        entries =
+          case value
+          when Hash then value.values
+          when Array then value
+          else return []
+          end
+
+        entries.each_with_index.filter_map do |raw_entry, index|
+          entry = T.cast(raw_entry, Object)
+          next unless entry.is_a?(Hash)
+
+          context = "#{@context} repositories[#{index}]"
+          details = DocumentValueParser.object_hash(entry, context)
+          type = details["type"]
+          next unless type.is_a?(String) && (type == "path" || type == "artifact")
+
+          Repository.new(type: type, url: details["url"], context: context)
+        end
       end
 
       private

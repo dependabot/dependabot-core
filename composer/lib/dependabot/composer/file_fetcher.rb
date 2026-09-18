@@ -30,10 +30,7 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            PackageManager::NAME => Helpers.composer_version(
-              ManifestDocument.new(data: parsed_composer_json, context: composer_json.path),
-              LockfileDocument.new(data: parsed_lockfile, context: PackageManager::LOCKFILE_FILENAME)
-            )
+            PackageManager::NAME => Helpers.composer_version(manifest_document, lockfile_document)
           }
         }
       end
@@ -155,31 +152,17 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def artifact_sources
-        sources.select { |details| details["type"] == "artifact" }.map { |details| details["url"] }
+        sources.select { |details| details.type == "artifact" }.map(&:url)
       end
 
       sig { returns(T::Array[String]) }
       def path_sources
-        sources.select { |details| details["type"] == "path" }.map { |details| details["url"] }
+        sources.select { |details| details.type == "path" }.map(&:url)
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[ManifestDocument::Repository]) }
       def sources
-        @sources ||= T.let(
-          begin
-            repos = parsed_composer_json.fetch("repositories", [])
-            if repos.is_a?(Hash) || repos.is_a?(Array)
-              repos = repos.values if repos.is_a?(Hash)
-              repos = repos.grep(Hash)
-
-              repos
-                .select { |details| details["type"] == "path" || details["type"] == "artifact" }
-            else
-              []
-            end
-          end,
-          T.nilable(T::Array[T::Hash[String, T.untyped]])
-        )
+        @sources ||= T.let(manifest_document.repositories, T.nilable(T::Array[ManifestDocument::Repository]))
       end
 
       sig { params(unfetchable_deps: T::Array[String]).returns(T::Array[Dependabot::DependencyFile]) }
@@ -215,44 +198,38 @@ module Dependabot
         end
         directories
       rescue Octokit::NotFound, Gitlab::Error::NotFound
-        lockfile_path_dependency_paths
-          .select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
+        lockfile_path_dependency_paths(prefix: path.gsub(/\*$/, ""))
       end
 
-      sig { returns(T::Array[String]) }
-      def lockfile_path_dependency_paths
+      sig { params(prefix: String).returns(T::Array[String]) }
+      def lockfile_path_dependency_paths(prefix:)
         keys = FileParser::DEPENDENCY_GROUP_KEYS
                .map { |h| h.fetch(:lockfile) }
 
         keys.flat_map do |key|
-          next [] unless parsed_lockfile[key]
-
-          parsed_lockfile[key]
-            .select { |details| details.dig("dist", "type") == "path" }
-            .map { |details| details.dig("dist", "url") }
+          lockfile_document.path_packages(key)
+                           .select { |package| package.dist_url_starts_with?(prefix) }
+                           .map(&:dist_url)
         end
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_composer_json
-        @parsed_composer_json ||= T.let(
-          JSON.parse(T.must(composer_json.content)),
-          T.nilable(T::Hash[String, T.untyped])
-        )
+      sig { returns(ManifestDocument) }
+      def manifest_document
+        @manifest_document ||= T.let(ManifestDocument.from_file(composer_json), T.nilable(ManifestDocument))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, composer_json.path
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_lockfile
-        return {} unless composer_lock
+      sig { returns(LockfileDocument) }
+      def lockfile_document
+        return LockfileDocument.new(data: {}, context: PackageManager::LOCKFILE_FILENAME) unless composer_lock
 
-        @parsed_lockfile ||= T.let(
-          JSON.parse(T.must(T.must(composer_lock).content)),
-          T.nilable(T::Hash[String, T.untyped])
+        @lockfile_document ||= T.let(
+          LockfileDocument.from_file(T.must(composer_lock)),
+          T.nilable(LockfileDocument)
         )
       rescue JSON::ParserError
-        {}
+        LockfileDocument.new(data: {}, context: PackageManager::LOCKFILE_FILENAME)
       end
 
       sig { params(filename: String).returns(Dependabot::DependencyFile) }
