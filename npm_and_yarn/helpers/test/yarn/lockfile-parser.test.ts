@@ -18,17 +18,22 @@ describe("normalizeDescriptor", () => {
     });
   });
 
-  it("resolves npm aliases", () => {
+  it("retains the alias descriptor while tracking the real package name", () => {
     expect(normalizeDescriptor("objnest-alias", "npm:objnest@^4.1.2")).toEqual({
-      name: "objnest",
-      requirement: "^4.1.2",
+      name: "objnest-alias",
+      requirement: "npm:objnest@^4.1.2",
+      realName: "objnest",
     });
   });
 
-  it("resolves scoped npm aliases", () => {
+  it("resolves scoped npm aliases while preserving descriptor identity", () => {
     expect(
       normalizeDescriptor("objnest-alias", "npm:@scope/objnest@^4.1.2")
-    ).toEqual({ name: "@scope/objnest", requirement: "^4.1.2" });
+    ).toEqual({
+      name: "objnest-alias",
+      requirement: "npm:@scope/objnest@^4.1.2",
+      realName: "@scope/objnest",
+    });
   });
 
   it("keeps plain yarn v1 requirements", () => {
@@ -93,23 +98,30 @@ describe("parseNormalized", () => {
     ]);
   });
 
-  it("dealiases yarn v1 alias entries", async () => {
+  it("retains yarn v1 alias descriptor identity", async () => {
     const lockfile = await parseFixture("aliased");
 
-    expect(lockfile.map(edgeKey)).toContain("objnest@^4.1.2");
+    expect(lockfile.map(edgeKey)).toContain(
+      "objnest-alias@npm:objnest@^4.1.2"
+    );
   });
 
   it("keeps every entry when distinct descriptors normalize to the same edge", async () => {
     const lockfile = await parseFixture("aliased-distinct");
 
-    const entries = findEntries(lockfile, {
+    const plainEntries = findEntries(lockfile, {
       name: "objnest",
       requirement: "^4.1.2",
     });
-    expect(entries.map((entry) => entry.version).sort()).toEqual([
-      "4.1.2",
+    expect(plainEntries.map((entry) => entry.version).sort()).toEqual([
       "4.1.4",
     ]);
+
+    const aliasEntries = findEntries(lockfile, {
+      name: "objnest-alias",
+      requirement: "npm:objnest@^4.1.2",
+    });
+    expect(aliasEntries.map((entry) => entry.version)).toEqual(["4.1.2"]);
   });
 
   it("splits multi-descriptor keys and strips protocols", async () => {
@@ -136,7 +148,11 @@ describe("parseNormalized", () => {
         .dependencies
     ).toEqual([
       { name: "abind", requirement: "^2.0.0" },
-      { name: "abind", requirement: "^1.0.0" },
+      {
+        name: "abind-v1",
+        requirement: "npm:abind@^1.0.0",
+        realName: "abind",
+      },
     ]);
   });
 
@@ -161,12 +177,14 @@ describe("parseNormalized", () => {
       "abind@^1.0.0",
       "extend@patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch",
       "local-pkg@workspace:packages/local-pkg",
-      "objnest@^4.1.2",
+      "my-objnest@npm:objnest@^4.1.2",
       "test@workspace:.",
     ]);
     expect(
-      findEntries(lockfile, { name: "objnest", requirement: "^4.1.2" })[0]
-        .dependencies
+      findEntries(lockfile, {
+        name: "my-objnest",
+        requirement: "npm:objnest@^4.1.2",
+      })[0].dependencies
     ).toEqual([
       { name: "abind", requirement: "^1.0.0" },
       { name: "local-pkg", requirement: "workspace:*" },

@@ -20,6 +20,7 @@ import {
   type DependencyEdge,
   type NormalizedLockfileEntry,
 } from "./lockfile-parser.js";
+import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
 interface ConflictingDependency {
   explanation: string;
@@ -32,6 +33,7 @@ interface ParentSpec {
   name: string;
   version: string;
   requirement: string;
+  realName?: string;
   transitiveSpec: TransitiveSpec;
   topLevelSpec: TopLevelSpec;
 }
@@ -39,6 +41,7 @@ interface ParentSpec {
 interface TopLevelSpec {
   name: string;
   requirement: string;
+  realName?: string;
   version?: string;
 }
 
@@ -46,6 +49,7 @@ interface TransitiveSpec {
   name: string;
   version: string;
   requirement?: string;
+  realName?: string;
 }
 
 export async function findConflictingDependencies(
@@ -82,6 +86,7 @@ export async function findConflictingDependencies(
       const topLevelSpec: TopLevelSpec = {
         name: topLevelEdge.name,
         requirement: topLevelEdge.requirement,
+        realName: topLevelEdge.realName ?? topLevelEdge.name,
       };
 
       return Array.from(
@@ -102,7 +107,7 @@ export async function findConflictingDependencies(
   const conflicts = new Map<string, ConflictingDependency>();
   for (const parentSpec of conflictingParents) {
     const key = [
-      parentSpec.name,
+      realNameOf(parentSpec),
       parentSpec.version,
       parentSpec.requirement,
     ].join("\u0000");
@@ -110,7 +115,7 @@ export async function findConflictingDependencies(
 
     conflicts.set(key, {
       explanation: buildExplanation(parentSpec, depName),
-      name: parentSpec.name,
+      name: realNameOf(parentSpec),
       version: parentSpec.version,
       requirement: parentSpec.requirement,
     });
@@ -119,35 +124,42 @@ export async function findConflictingDependencies(
   return Array.from(conflicts.values());
 }
 
+function realNameOf(edge: { name: string; realName?: string }): string {
+  return edge.realName ?? edge.name;
+}
+
 function buildExplanation(
   parentSpec: ParentSpec,
   targetDepName: string
 ): string {
+  const parentName = realNameOf(parentSpec);
+  const topLevelName = realNameOf(parentSpec.topLevelSpec);
+
   if (
-    parentSpec.name === parentSpec.topLevelSpec.name &&
+    parentName === topLevelName &&
     parentSpec.version === parentSpec.topLevelSpec.version
   ) {
-    // The nodes parent is top-level
+    // The node's parent is top-level.
     return (
-      `${parentSpec.name}@${parentSpec.version} requires ${targetDepName}` +
+      `${parentName}@${parentSpec.version} requires ${targetDepName}` +
       `@${parentSpec.requirement}`
     );
   } else if (
-    parentSpec.transitiveSpec.name === parentSpec.topLevelSpec.name &&
+    realNameOf(parentSpec.transitiveSpec) === topLevelName &&
     parentSpec.transitiveSpec.version === parentSpec.topLevelSpec.version
   ) {
-    // The nodes parent is a direct dependency of the top-level dependency
+    // The node's parent is a direct dependency of the top-level dependency.
     return (
-      `${parentSpec.topLevelSpec.name}@${parentSpec.topLevelSpec.version} requires ` +
+      `${topLevelName}@${parentSpec.topLevelSpec.version} requires ` +
       `${targetDepName}@${parentSpec.requirement} ` +
-      `via ${parentSpec.name}@${parentSpec.version}`
+      `via ${parentName}@${parentSpec.version}`
     );
   } else {
-    // The nodes parent is a transitive dependency of the top-level dependency
+    // The node's parent is a transitive dependency of the top-level dependency.
     return (
-      `${parentSpec.topLevelSpec.name}@${parentSpec.topLevelSpec.version} requires ` +
+      `${topLevelName}@${parentSpec.topLevelSpec.version} requires ` +
       `${targetDepName}@${parentSpec.requirement} ` +
-      `via a transitive dependency on ${parentSpec.name}@${parentSpec.version}`
+      `via a transitive dependency on ${parentName}@${parentSpec.version}`
     );
   }
 }
@@ -155,10 +167,23 @@ function buildExplanation(
 // A dependency only conflicts if it declares a semver range that excludes the
 // target version. Specs we can't parse as a semver range (e.g. yarn berry
 // `patch:` or `workspace:` protocols) are not treated as conflicts.
-function conflictsWith(targetVersion: string, spec: string): boolean {
-  if (!semver.validRange(spec)) return false;
+function realRequirementOf(requirement: string): string {
+  if (!requirement.startsWith("npm:")) return requirement;
 
-  return !semver.satisfies(targetVersion, spec);
+  const rest = requirement.slice("npm:".length);
+  const aliasMatch = rest.match(LOCKFILE_ENTRY_REGEX);
+  if (aliasMatch && aliasMatch[2]) {
+    return aliasMatch[2];
+  }
+
+  return rest;
+}
+
+function conflictsWith(targetVersion: string, spec: string): boolean {
+  const requirement = realRequirementOf(spec);
+  if (!semver.validRange(requirement)) return false;
+
+  return !semver.satisfies(targetVersion, requirement);
 }
 
 function findConflictingParentDependencies(
@@ -194,18 +219,19 @@ function findConflictingParentDependencies(
     // allow the target version of the vulnerable dependency to be installed
     for (const subDep of pkg.dependencies) {
       if (
-        subDep.name === targetDep &&
+        realNameOf(subDep) === targetDep &&
         conflictsWith(targetversion, subDep.requirement)
       ) {
         // Only add the conflicting parent once per version preventing
-        // duplicate dependencies from circular graphs
-        const key = [pkg.name, pkg.version].join("@");
+        // duplicate dependencies from circular graphs.
+        const key = [realNameOf(pkg), pkg.version].join("@");
         // Snapshot the specs as they are mutated while traversing the other
         // resolutions of this descriptor.
         conflictingParents.set(key, {
-          name: pkg.name,
+          name: realNameOf(pkg),
           version: pkg.version,
-          requirement: subDep.requirement,
+          requirement: realRequirementOf(subDep.requirement),
+          realName: pkg.realName ?? pkg.name,
           transitiveSpec: { ...transitiveSpec },
           topLevelSpec: { ...topLevelSpec },
         });
@@ -217,6 +243,7 @@ function findConflictingParentDependencies(
           name: pkg.name,
           version: pkg.version,
           requirement: pkg.requirement,
+          realName: pkg.realName ?? pkg.name,
         };
         findConflictingParentDependencies(
           subDep,

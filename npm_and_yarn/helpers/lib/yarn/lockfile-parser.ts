@@ -40,14 +40,13 @@ export async function parse(
   return parseLockfile(data).object;
 }
 
-// A single `name -> requirement` edge of the dependency graph. The name is the
-// real package name (npm aliases are resolved) and the requirement is a plain
-// semver range, unless the descriptor uses a protocol that isn't a semver range
-// (`workspace:`, `patch:`, `file:`, git, ...), in which case it is kept
-// verbatim and matched by `findEntries`.
+// A single `name -> requirement` edge of the dependency graph. The original
+// descriptor identity is preserved for lockfile lookups, while `realName`
+// stores the de-aliased package name for vulnerability comparisons.
 export interface DependencyEdge {
   name: string;
   requirement: string;
+  realName?: string;
 }
 
 export interface NormalizedLockfileEntry extends DependencyEdge {
@@ -77,12 +76,10 @@ export async function parseNormalized(
   return normalizeLockfile(await parse(directory));
 }
 
-// Resolves a `name`/`requirement` descriptor pair into a dependency edge,
-// stripping the `npm:` protocol and resolving npm aliases (e.g.
-// `alias@npm:real-pkg@^1.0.0` becomes `real-pkg@^1.0.0`).
-//
-// Requirements using any other protocol are kept verbatim; `findEntries`
-// knows how to match them against their lockfile entry.
+// Resolves a `name`/`requirement` descriptor pair into a dependency edge.
+// The alias name and original descriptor requirement are kept so lockfile entry
+// lookup remains exact, but the de-aliased package name is stored separately for
+// real-package comparisons (e.g. vulnerable dependency checks).
 export function normalizeDescriptor(
   name: string,
   requirement: string
@@ -90,11 +87,12 @@ export function normalizeDescriptor(
   if (requirement.startsWith(NPM_PROTOCOL)) {
     const rest = requirement.slice(NPM_PROTOCOL.length);
     const aliasMatch = rest.match(LOCKFILE_ENTRY_REGEX);
-    // An alias always carries both a package name and a requirement, e.g.
-    // `npm:real-pkg@^1.0.0`. A plain requirement such as `npm:^1.0.0` has no
-    // package name to extract.
     if (aliasMatch && aliasMatch[2]) {
-      return { name: aliasMatch[1], requirement: aliasMatch[2] };
+      return {
+        name,
+        requirement,
+        realName: aliasMatch[1],
+      };
     }
     return { name, requirement: rest };
   }
@@ -155,6 +153,7 @@ function normalizeLockfile(
       normalized.push({
         name: edge.name,
         requirement: edge.requirement,
+        ...(edge.realName && { realName: edge.realName }),
         version: pkg.version,
         resolved: pkg.resolved,
         dependencies: [...dependencies],
