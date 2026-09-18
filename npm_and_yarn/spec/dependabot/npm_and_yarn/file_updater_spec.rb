@@ -3924,9 +3924,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       context "with a sub-dependency" do
         let(:project_name) { "pnpm/no_lockfile_change" }
 
+        # pnpm resolves a transitive package to what a fresh install would, so
+        # the requested version is the one the parents' ranges reach.
         let(:dependency_name) { "acorn" }
-        let(:version) { "6.7.3" }
-        let(:previous_version) { "6.4.2" }
+        let(:version) { "6.4.2" }
+        let(:previous_version) { "5.2.1" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
@@ -4014,19 +4016,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       context "when updating a sub dependency with multiple requirements" do
         let(:project_name) { "pnpm/multiple_sub_dependencies" }
 
+        # The fixture's pnpm-workspace.yaml overrides js-yaml 3.x to 3.14.1, so
+        # the transitive update resolves to a fixed version whatever the
+        # registry publishes.
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.15.0" }
+        let(:version) { "3.14.1" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
-        # As with the yarn spec above, pnpm resolves the ranges against the
-        # registry, so assert a single resolved 3.x entry rather than a literal
-        # version that every js-yaml release invalidates.
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content.scan(/js-yaml@3\.\d+\.\d+:\n    resolution/).size).to eq(1)
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.1:\n    resolution").once
         end
       end
 

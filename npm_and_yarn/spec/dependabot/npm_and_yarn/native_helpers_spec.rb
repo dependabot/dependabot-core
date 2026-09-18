@@ -14,7 +14,7 @@ RSpec.describe Dependabot::NpmAndYarn::NativeHelpers do
     end
 
     context "with pnpm 11" do
-      let(:pnpm_version) { "Corepack warning\n11.17.0\n" }
+      let(:pnpm_version) { "Corepack warning\n11.25.0\n" }
 
       it "uses the lockfile update fix method" do
         described_class.run_pnpm_audit_fix_command

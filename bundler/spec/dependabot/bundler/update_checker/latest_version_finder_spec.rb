@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -87,6 +87,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         before do
           stub_request(:get, rubygems_url + "versions/business.json")
             .to_return(status: 404, body: "This rubygem could not be found.")
+          stub_request(:get, "https://rubygems.org/info/business")
+            .to_return(status: 404, body: "Not Found")
         end
 
         it { is_expected.to be_nil }
@@ -420,10 +422,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       let(:private_versions_url) do
         "https://gems.private-registry.example.com/api/v1/versions/business.json"
       end
+      let(:compact_index_url) { "https://gems.private-registry.example.com/info/business" }
       let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
 
       before do
         stub_request(:get, private_versions_url)
+          .to_return(status: 404, body: "Not Found")
+        stub_request(:get, compact_index_url)
           .to_return(status: 404, body: "Not Found")
 
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
@@ -448,6 +453,36 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         it "resolves the latest version" do
           expect(result).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+        end
+      end
+
+      context "when Compact Index v2 provides publication dates" do
+        let(:compact_index_response) do
+          <<~INDEX
+            ---
+            1.4.0 |checksum:abc,created_at:2015-01-01T12:00:00Z
+            1.5.0 |checksum:def,created_at:2015-06-01T12:00:00Z
+          INDEX
+        end
+
+        before do
+          stub_request(:get, compact_index_url)
+            .to_return(status: 200, body: compact_index_response)
+          allow(Time).to receive(:now).and_return(Time.iso8601("2015-06-03T17:30:00Z"))
+        end
+
+        it "excludes recent releases without reporting unavailable publication dates" do
+          expect(finder.latest_version).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).not_to be(true)
+        end
+
+        context "when the registry still serves Compact Index v1" do
+          let(:compact_index_response) { "---\n1.4.0 |checksum:abc\n1.5.0 |checksum:def\n" }
+
+          it "allows undated releases and reports the missing publication date" do
+            expect(finder.latest_version).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
         end
       end
     end
