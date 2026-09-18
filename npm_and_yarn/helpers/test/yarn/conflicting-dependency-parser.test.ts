@@ -171,7 +171,7 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
-  it("traverses workspace packages in a yarn berry lockfile", async () => {
+  it("traverses workspace packages not referenced by the root manifest", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/berry-workspace",
       tempDir

@@ -7,8 +7,5 @@
   "license": "ISC",
   "workspaces": [
     "packages/*"
-  ],
-  "dependencies": {
-    "local-pkg": "workspace:*"
-  }
+  ]
 }

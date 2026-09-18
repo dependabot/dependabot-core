@@ -75,14 +75,19 @@ export async function findConflictingDependencies(
     }
   );
 
-  const conflictingParents = topLevelDependencies.flatMap(
-    ([topLevelDepName, rawTopLevelRequirement]) => {
-      // Normalize the manifest requirement the same way the lockfile entries
-      // are normalized, so that aliases and yarn berry protocols match up.
-      const topLevelEdge = normalizeDescriptor(
-        topLevelDepName,
-        rawTopLevelRequirement
-      );
+  // Normalize manifest requirements to match lockfile descriptors, and include
+  // every workspace entry because workspaces are independent dependency roots.
+  const topLevelEdges = [
+    ...topLevelDependencies.map(([name, requirement]) =>
+      normalizeDescriptor(name, requirement)
+    ),
+    ...lockfileJson.filter((entry) =>
+      entry.requirement.startsWith("workspace:")
+    ),
+  ];
+
+  const conflictingParents = topLevelEdges.flatMap(
+    (topLevelEdge) => {
       const topLevelSpec: TopLevelSpec = {
         name: topLevelEdge.name,
         requirement: topLevelEdge.requirement,
