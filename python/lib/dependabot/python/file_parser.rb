@@ -24,6 +24,8 @@ module Dependabot
       require_relative "file_parser/pyproject_document"
       require_relative "file_parser/poetry_lock"
       require_relative "file_parser/pep_dependency"
+      require_relative "file_parser/pipfile_document"
+      require_relative "file_parser/pipfile_lock_document"
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
