@@ -227,8 +227,8 @@ module Dependabot
 
           @resolve_latest_previous_version[dep] ||= begin
             relevant_versions = latest_version_finder(dependency)
-                                .possible_previous_versions_with_details
-                                .map(&:first)
+                                .possible_previous_releases
+                                .map(&:version)
             reqs = dep.requirements.filter_map(&:requirement_string)
                       .map { |r| requirement_class.requirements_array(r) }
 
@@ -512,14 +512,14 @@ module Dependabot
         sig { returns(T::Array[T.any(String, Gem::Version)]) }
         def satisfying_versions
           latest_version_finder(dependency)
-            .possible_versions_with_details
-            .select do |versions_with_details|
-              version, details = versions_with_details
+            .possible_releases
+            .select do |release|
+              version = release.version
               next false unless satisfies_peer_reqs_on_dep?(version)
               next true if version == version_for_dependency(dependency)
 
               peer_requirements = Dependabot::Package::NpmRegistryPackage.peer_dependencies(
-                details: details,
+                details: release.details,
                 package_name: dependency.name,
                 version: version.to_s
               )
@@ -535,11 +535,7 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
-            end.map do |versions_with_details| # rubocop:disable Style/MultilineBlockChain
-              # Return just the version
-              version, = versions_with_details
-              version
-            end
+            end.map(&:version)
         end
 
         # rubocop:enable Metrics/PerceivedComplexity
@@ -562,16 +558,16 @@ module Dependabot
         sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.any(String, Gem::Version))) }
         def latest_version_of_dep_with_satisfied_peer_reqs(dep)
           dependency_version = version_for_dependency(dep)
-          version_with_detail =
+          release =
             latest_version_finder(dep)
-            .possible_versions_with_details
-            .find do |version_details|
-              version, details = version_details
+            .possible_releases
+            .find do |candidate|
+              version = candidate.version
 
               next false unless !dependency_version || version > dependency_version
 
               peer_requirements = Dependabot::Package::NpmRegistryPackage.peer_dependencies(
-                details: details,
+                details: candidate.details,
                 package_name: dep.name,
                 version: version.to_s
               )
@@ -587,7 +583,7 @@ module Dependabot
                 false
               end
             end
-          version_with_detail.is_a?(Array) ? version_with_detail.first : version_with_detail
+          release&.version
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
