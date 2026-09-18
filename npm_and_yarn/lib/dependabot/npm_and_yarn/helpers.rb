@@ -261,6 +261,7 @@ module Dependabot
       # Used to gate `--min-release-age`, added in npm 11.10.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
+        activate_effective_package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
         raw = package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
         Version.new(raw)
       rescue StandardError => e
@@ -284,6 +285,29 @@ module Dependabot
           )
         end
         supported
+      end
+
+      sig { params(name: String).returns(T.nilable(String)) }
+      def self.effective_package_manager_version(name)
+        versions_by_directory = Thread.current[:dependabot_corepack_effective_versions]
+        return nil unless versions_by_directory.is_a?(Hash)
+
+        versions_by_directory.fetch(Dir.pwd, {}).fetch(name, nil)
+      end
+
+      sig { params(name: String, version: String).void }
+      def self.set_effective_package_manager_version(name, version)
+        Thread.current[:dependabot_corepack_effective_versions] ||= {}
+        Thread.current[:dependabot_corepack_effective_versions][Dir.pwd] ||= {}
+        Thread.current[:dependabot_corepack_effective_versions][Dir.pwd][name] = version
+      end
+
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).void }
+      def self.activate_effective_package_manager_version(name, env: nil)
+        version = effective_package_manager_version(name)
+        return unless version
+
+        package_manager_activate(name, version, env: merge_corepack_env(env))
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -461,12 +485,15 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
+        merged_env = merge_corepack_env(env)
+        activate_effective_package_manager_version(NpmPackageManager::NAME, env: merged_env)
+
         package_manager_run_command(
           NpmPackageManager::NAME,
           command,
           fingerprint: fingerprint,
           output_observer: ->(output) { command_observer(output) },
-          env: merge_corepack_env(env)
+          env: merged_env
         )
       end
 
@@ -573,6 +600,7 @@ module Dependabot
       end
       def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+        set_effective_package_manager_version(name, version)
 
         begin
           # Try to activate the specified version
@@ -594,6 +622,7 @@ module Dependabot
 
         # Verify the installed version
         installed_version = package_manager_version(name, env: env)
+        set_effective_package_manager_version(name, installed_version)
 
         installed_version
       end
@@ -607,6 +636,7 @@ module Dependabot
 
         # Fetch the currently installed version directly from the environment
         current_version = local_package_manager_version(name)
+        set_effective_package_manager_version(name, current_version)
         Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
 
         # Prepare the existing version
