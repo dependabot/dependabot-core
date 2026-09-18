@@ -194,6 +194,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     it "builds package-manager metadata from the typed manifest config" do
       expect(parser.ecosystem.package_manager.name).to eq("npm")
     end
+
+    context "when the manifest selects npm through engines" do
+      let(:files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: JSON.dump("engines" => { "npm" => "^10" }),
+          directory: "/frontend"
+        )]
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm", env: nil).and_return("11.0.0", "10.0.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
+          .with("npm").and_return("11.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: nil
+        ).and_return("Preparing npm@10.0.0 for immediate activation...")
+      end
+
+      after do
+        Thread.current[:dependabot_corepack_effective_versions] = nil
+      end
+
+      it "persists the selected npm version for the manifest directory" do
+        parser.ecosystem
+
+        expect(Dependabot::NpmAndYarn::Helpers.effective_package_manager_version("npm", directory: "/frontend"))
+          .to eq("10.0.0")
+        expect(
+          Dependabot::NpmAndYarn::Helpers.explicitly_selected_package_manager_version(
+            "npm",
+            directory: "/frontend"
+          )
+        ).to eq("10.0.0")
+      end
+    end
   end
 
   describe "parse" do

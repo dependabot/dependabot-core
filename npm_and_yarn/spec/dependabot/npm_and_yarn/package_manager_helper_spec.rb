@@ -264,6 +264,35 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when packageManager selects a major-only npm version" do
+      let(:lockfiles) { { npm: npm_lockfile } }
+      let(:package_json) { { "packageManager" => "npm@7" } }
+
+      before do
+        allow(helper).to receive(:package_manager).and_return(
+          Dependabot::NpmAndYarn::NpmPackageManager.new(detected_version: "7")
+        )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
+          .with("npm").and_return("11.0.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm", env: nil).and_return("7.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@7 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: nil
+        ).and_return("Preparing npm@7 for immediate activation...")
+      end
+
+      it "activates the requested npm version" do
+        expect(helper.setup("npm")).to eq("7")
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack prepare npm@7 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: nil
+        )
+      end
+    end
+
     context "when packageManager pins a pnpm version below the supported range" do
       let(:lockfiles) { { pnpm: pnpm_lockfile } }
       let(:package_json) { { "packageManager" => "pnpm@6.0.2" } }

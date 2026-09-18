@@ -86,11 +86,16 @@ module Dependabot
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            package_manager: package_manager_helper.package_manager,
-            language: package_manager_helper.language
-          ),
+          begin
+            package_manager = package_manager_helper.package_manager
+            package_manager_helper.setup(package_manager.name) if package_manager.name == NpmPackageManager::NAME
+
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              package_manager: package_manager,
+              language: package_manager_helper.language
+            )
+          end,
           T.nilable(Ecosystem)
         )
       end

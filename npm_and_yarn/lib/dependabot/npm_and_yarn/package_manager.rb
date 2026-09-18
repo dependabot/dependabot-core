@@ -345,9 +345,7 @@ module Dependabot
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
         # Prioritize version mentioned in "packageManager" instead of "engines"
-        if @manifest_package_manager&.start_with?("#{name}@")
-          detected_version = @manifest_package_manager.split("@").last.to_s
-        end
+        detected_version = requested_version(name)
 
         # If "packageManager" has no version specified, check if we can extract "engines" information
         detected_version ||= check_engine_version(name) if detected_version.to_s.empty?
@@ -487,7 +485,9 @@ module Dependabot
       def requested_version(name)
         return unless @manifest_package_manager
 
-        match = @manifest_package_manager.match(/^#{name}@(?<version>\d+.\d+.\d+)/)
+        match = @manifest_package_manager.match(
+          /^#{Regexp.escape(name)}@(?<version>#{ConstraintHelper::VERSION})$/
+        )
         return unless match
 
         Dependabot.logger.info("Requested version #{match['version']}")
