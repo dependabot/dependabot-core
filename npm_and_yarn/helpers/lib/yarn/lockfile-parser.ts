@@ -120,6 +120,10 @@ function normalizeBerryLockfile(
   return normalized;
 }
 
+// Unlike lockfile entries, which are dropped when they use an unsupported
+// protocol, dependency specs are kept verbatim so that the dependency isn't
+// silently dropped from the graph. Callers must therefore be prepared to see
+// raw protocols (e.g. `patch:`, `workspace:`) in dependency requirements.
 function normalizeDependencies(
   dependencies: Record<string, string>
 ): Record<string, string> {
