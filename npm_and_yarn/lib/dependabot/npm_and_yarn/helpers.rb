@@ -359,7 +359,7 @@ module Dependabot
       def self.activate_image_package_manager_version(name, directory: package_manager_directory, env: nil)
         version = image_package_manager_version(name)
         set_effective_package_manager_version(name, version, directory: directory, explicit: false)
-        package_manager_activate(name, version, env: merge_corepack_env(env))
+        package_manager_activate(name, version, env: env)
       end
 
       sig { void }
@@ -555,7 +555,11 @@ module Dependabot
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
         merged_env = merge_corepack_env(env)
-        activate_effective_package_manager_version(NpmPackageManager::NAME, env: merged_env)
+        if effective_package_manager_version(NpmPackageManager::NAME)
+          activate_effective_package_manager_version(NpmPackageManager::NAME, env: merged_env)
+        else
+          activate_image_package_manager_version(NpmPackageManager::NAME, env: merged_env)
+        end
 
         package_manager_run_command(
           NpmPackageManager::NAME,

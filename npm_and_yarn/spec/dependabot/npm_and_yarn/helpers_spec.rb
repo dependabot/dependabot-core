@@ -24,6 +24,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   describe "::run_npm_command" do
     it "runs npm through Corepack and passes through the environment" do
       env = { "CUSTOM_VAR" => "custom-value" }
+      described_class.set_effective_package_manager_version("npm", "11.0.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
 
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack npm install",
@@ -70,6 +72,53 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         fingerprint: "corepack prepare <name>@<version> --activate",
         env: nil
       )
+    end
+
+    it "activates the image npm version when the directory has no effective version" do
+      dependency_file = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: "{}",
+        directory: "/frontend"
+      )
+      described_class.dependency_files = [dependency_file]
+
+      allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.0.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@11.0.0 for immediate activation...")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm install",
+        fingerprint: "corepack npm install",
+        output_observer: kind_of(Proc),
+        env: nil
+      ).and_return("")
+
+      described_class.run_npm_command("install")
+
+      expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("11.0.0")
+    end
+  end
+
+  describe "::activate_image_package_manager_version" do
+    it "uses the supplied environment without merging stale thread-local registry context" do
+      described_class.dependency_files = [Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "registry=https://registry.example.com",
+        directory: "/previous"
+      )]
+      described_class.credentials = []
+      allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.0.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@11.0.0 for immediate activation...")
+
+      described_class.activate_image_package_manager_version("npm", directory: "/current", env: nil)
+
+      expect(described_class.effective_package_manager_version("npm", directory: "/current")).to eq("11.0.0")
     end
   end
 
