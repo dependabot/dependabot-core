@@ -95,4 +95,54 @@ RSpec.describe Dependabot::Uv::LockfileDocument do
       expect { document }.to raise_error(TomlRB::ParseError)
     end
   end
+
+  describe "#each_dependency" do
+    let(:content) do
+      <<~TOML
+        package = [
+          false,
+          { name = false, version = "1" },
+          { name = "same", version = "1" },
+          { name = "same", version = "1" },
+          { name = "invalid", version = 2 },
+          { name = "after", version = "3" },
+        ]
+      TOML
+    end
+
+    it "yields valid occurrences before a later consumed-field failure" do
+      packages = []
+      expect { document.each_dependency { |package| packages << [package.name, package.version] } }
+        .to raise_error(TypeError, /uv.lock.*package.*version.*string/)
+      expect(packages).to eq([%w(same 1), %w(same 1)])
+    end
+  end
+
+  describe "#resolution_packages" do
+    let(:content) do
+      <<~TOML
+        package = [
+          "ignored",
+          { name = "same", version = "1" },
+          { name = "same", version = "1" },
+          { name = "same", version = "invalid" },
+          { name = "missing" },
+          { version = "2" },
+        ]
+      TOML
+    end
+
+    it "retains duplicate occurrences and leaves version syntax to the resolver" do
+      expect(document.resolution_packages.map { |package| [package.name, package.version] })
+        .to eq([%w(same 1), %w(same 1), %w(same invalid)])
+    end
+
+    context "with false fields" do
+      let(:content) { 'package = [{ name = false, version = "1" }]' }
+
+      it "rejects the field that the dependency parser skips" do
+        expect { document.resolution_packages }.to raise_error(TypeError, /uv.lock.*package.*name.*string/)
+      end
+    end
+  end
 end
