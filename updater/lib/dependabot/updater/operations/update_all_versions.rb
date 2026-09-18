@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/updater/semver_grouping_rules"
 require "dependabot/notices"
 
 # This class implements our strategy for iterating over all of the dependencies
@@ -130,6 +131,12 @@ module Dependabot
 
           return if all_versions_ignored?(dependency, checker)
           return log_up_to_date(dependency) if checker.up_to_date?
+
+          if (group = group_claiming_dependency(dependency, checker))
+            return Dependabot.logger.info(
+              "Skipping #{dependency.name} as its update is covered by the '#{group.name}' group"
+            )
+          end
 
           if pr_exists_for_latest_version?(checker)
             latest_version = checker.latest_version&.to_s
@@ -306,6 +313,25 @@ module Dependabot
 
           job.existing_pull_requests.find { |pr| pr == new_pr } ||
             created_pull_requests.find { |pr| pr == new_pr }
+        end
+
+        # A dependency reaches this operation while a group still has a claim on it when that group was
+        # skipped without resolving any versions, e.g. because it already has an open pull request. Now
+        # that the latest version is known we can apply the group's update-types rules: if they accept
+        # this update the group's own job will raise it, so no individual pull request is opened. If they
+        # reject it the group will never include it, and this is the only chance it has to be updated.
+        sig do
+          params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base)
+            .returns(T.nilable(Dependabot::DependencyGroup))
+        end
+        def group_claiming_dependency(dependency, checker)
+          groups = dependency_snapshot.groups_deferred_by_semver_rules(dependency.name)
+          return nil if groups.empty?
+
+          semver_grouping_rules = SemverGroupingRules.new(job: job)
+          groups.find do |group|
+            semver_grouping_rules.allow_grouping?(group, dependency, checker) { requirements_to_unlock(checker) }
+          end
         end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
