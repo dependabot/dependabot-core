@@ -9,11 +9,15 @@ require "dependabot/shared_helpers"
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
   before do
     Thread.current[:dependabot_corepack_effective_versions] = nil
+    described_class.dependency_files = []
+    described_class.credentials = []
     described_class.package_manager_directory = nil
   end
 
   after do
     Thread.current[:dependabot_corepack_effective_versions] = nil
+    described_class.dependency_files = []
+    described_class.credentials = []
     described_class.package_manager_directory = nil
   end
 
