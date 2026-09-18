@@ -178,6 +178,79 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
         expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
       end
     end
+
+    context "when the checker succeeds" do
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command)
+          .and_return("react-dom@16.3.1 requires a peer of react@^16 but none is installed.")
+      end
+
+      it "ignores successful stdout and caches the empty result" do
+        2.times { expect(resolver.latest_resolvable_version).to eq(latest_allowable_version) }
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).once
+      end
+    end
+
+    context "with an unrecognized helper failure" do
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "unrecognized failure", error_context: {})
+        )
+      end
+
+      it "preserves the fallback to the latest version" do
+        expect(resolved_version).to eq(latest_allowable_version)
+      end
+    end
+
+    context "with an unrelated execution error" do
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_raise(TypeError, "unrelated error")
+      end
+
+      it "does not disguise the error as an empty conflict list" do
+        expect { resolved_version }.to raise_error(TypeError, "unrelated error")
+      end
+    end
+
+    context "with a pre-existing conflict for the same names and a different range" do
+      let(:peers) { ["unconsumed"] }
+
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command) do |command, **|
+          range = command.include?("@16.3.1") ? "^16.0.0" : "^14.0.0"
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "react-dom@16.3.1 requires a peer of react@#{range} but none is installed.",
+            error_context: {}
+          )
+        end
+      end
+
+      it "removes the pre-existing conflict by name pair" do
+        expect(resolved_version).to eq(latest_allowable_version)
+      end
+    end
+
+    context "when the updated dependency is required by a peer" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "bun",
+          requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+        )
+      end
+      let(:current_peers) { ["unconsumed"] }
+
+      it "preserves full-unlock payloads and skips non-newer peer candidates before decoding" do
+        updates = resolver.dependency_updates_from_full_unlock
+
+        expect(updates.first[:dependency]).to be(dependency)
+        expect(updates.map(&:keys)).to eq([%i(dependency version previous_version)] * 2)
+        expect(updates.map { |update| [update[:dependency].name, update[:version].to_s, update[:previous_version]] })
+          .to eq([["react", "16.3.1", "15.2.0"], ["react-dom", "16.3.1", "15.2.0"]])
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
