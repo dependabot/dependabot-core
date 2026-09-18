@@ -165,6 +165,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::npm_version" do
     it "returns the npm version selected by Corepack" do
+      described_class.set_effective_package_manager_version("npm", "11.10.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("corepack npm -v", fingerprint: "corepack npm -v", env: nil)
         .and_return("11.10.0\n")
@@ -204,6 +206,30 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           )
         end
       end
+    end
+
+    it "activates the image npm version before probing an uninitialized directory" do
+      dependency_file = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: "{}",
+        directory: "/frontend"
+      )
+      described_class.dependency_files = [dependency_file]
+
+      allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.10.0")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.10.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@11.10.0 for immediate activation...")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).and_return("11.10.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
+      expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("11.10.0")
     end
 
     it "returns nil when the local npm version cannot be determined" do

@@ -272,8 +272,13 @@ module Dependabot
       # Used to gate `--min-release-age`, added in npm 11.10.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
-        activate_effective_package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
-        raw = package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
+        env = merge_corepack_env(nil)
+        if effective_package_manager_version(NpmPackageManager::NAME)
+          activate_effective_package_manager_version(NpmPackageManager::NAME, env: env)
+        else
+          activate_image_package_manager_version(NpmPackageManager::NAME, env: env)
+        end
+        raw = package_manager_version(NpmPackageManager::NAME, env: env)
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
