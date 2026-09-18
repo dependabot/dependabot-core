@@ -230,6 +230,20 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
         expect(helper.setup("npm")).to be_nil
       end
+
+      it "refreshes npm metadata with the image version without activating it" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm", env: nil).and_return("10.0.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:image_package_manager_version)
+          .with("npm").and_return("11.0.0")
+        expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:activate_image_package_manager_version)
+
+        expect(helper.package_manager.version).to eq(Dependabot::NpmAndYarn::Version.new("10.0.0"))
+
+        helper.setup("npm")
+
+        expect(helper.package_manager.version).to eq(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+      end
     end
 
     context "when only a yarn lockfile exists" do

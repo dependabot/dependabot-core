@@ -443,11 +443,12 @@ module Dependabot
       sig { params(name: String).void }
       def restore_image_package_manager_version(name)
         return unless name == NpmPackageManager::NAME
+
+        @installed_versions[name] = Helpers.image_package_manager_version(name)
         return unless @lockfiles[name.to_sym] ||
                       @manifest_package_manager&.match?(/\A#{Regexp.escape(name)}(?:@|\z)/) ||
                       @engines&.key?(name)
 
-        @installed_versions[name] = Helpers.image_package_manager_version(name)
         Helpers.activate_image_package_manager_version(name, directory: @directory, env: corepack_env)
       end
 
