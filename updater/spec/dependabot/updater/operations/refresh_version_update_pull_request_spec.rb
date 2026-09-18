@@ -200,6 +200,48 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       end
     end
 
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still raise
+      # AllVersionsIgnored. A non-security refresh must close the PR as no-longer-possible
+      # without the error reaching the run-level handler, while a security refresh surfaces it.
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          can_update?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          dependencies: ["dummy-pkg-a"],
+          blocked_versions_for?: false
+        )
+      end
+
+      context "when the job is not a security update" do
+        before { allow(job).to receive(:security_updates_only?).and_return(false) }
+
+        it "closes the pull request without raising or reporting a job error" do
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:close_pull_request)
+
+          expect { perform }.not_to raise_error
+        end
+      end
+
+      context "when the job is a security update" do
+        before { allow(job).to receive(:security_updates_only?).and_return(true) }
+
+        it "surfaces AllVersionsIgnored through the run-level error handler" do
+          allow(mock_error_handler).to receive(:handle_dependency_error)
+
+          perform
+
+          expect(mock_error_handler).to have_received(:handle_dependency_error)
+            .with(hash_including(error: an_instance_of(Dependabot::AllVersionsIgnored)))
+        end
+      end
+    end
+
     context "when the refresh job carries more than one directory" do
       let(:job_definition) do
         definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
