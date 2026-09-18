@@ -445,6 +445,7 @@ module Dependabot
         return unless name == NpmPackageManager::NAME
         return unless @package_manager_detector.detect_package_manager == name
 
+        @installed_versions[name] = Helpers.image_package_manager_version(name)
         Helpers.activate_image_package_manager_version(name, directory: @directory, env: corepack_env)
       end
 

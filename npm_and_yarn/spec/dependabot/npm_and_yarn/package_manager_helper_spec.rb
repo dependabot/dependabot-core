@@ -521,6 +521,18 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         expect(Dependabot::NpmAndYarn::Helpers.effective_package_manager_version("npm", directory: "/"))
           .to eq("11.0.0")
       end
+
+      it "refreshes package manager metadata with the image default" do
+        allow(helper).to receive(:package_manager).and_call_original
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm", env: nil).and_return("10.0.0")
+
+        expect(helper.package_manager.version).to eq(Dependabot::NpmAndYarn::Version.new("10.0.0"))
+
+        helper.setup("npm")
+
+        expect(helper.package_manager.version).to eq(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+      end
     end
 
     context "when the pnpm version is inferred from the lockfile" do
