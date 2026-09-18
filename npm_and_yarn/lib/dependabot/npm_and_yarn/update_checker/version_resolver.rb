@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -18,6 +18,7 @@ require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/peer_dependency_conflict"
 
 # rubocop:disable-next Metrics/ClassLength
 module Dependabot
@@ -27,6 +28,8 @@ module Dependabot
         extend T::Sig
 
         require_relative "latest_version_finder"
+
+        PeerDependencyConflict = Dependabot::UpdateCheckers::PeerDependencyConflict
 
         TIGHTLY_COUPLED_MONOREPOS = T.let(
           {
@@ -115,7 +118,7 @@ module Dependabot
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize( # rubocop:disable Metrics/AbcSize
+        def initialize(
           dependency:,
           dependency_files:,
           credentials:,
@@ -148,9 +151,9 @@ module Dependabot
           @top_level_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           # @peer_dependency_errors_checked = T.let(false, T::Boolean)
           @old_peer_dependency_errors = T.let(
-            nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
+            nil, T.nilable(T::Array[PeerDependencyConflict])
           )
-          @peer_dependency_errors = T.let(nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]))
+          @peer_dependency_errors = T.let(nil, T.nilable(T::Array[PeerDependencyConflict]))
           @trust_downgrade_detected = T.let(false, T::Boolean)
         end
 
@@ -209,7 +212,7 @@ module Dependabot
             )
           }]
           newly_broken_peer_reqs_on_dep.each do |peer_req|
-            dep_name = peer_req.fetch(:requiring_dep_name)
+            dep_name = peer_req.requiring_dep_name
             dep = top_level_dependencies.find { |d| d.name == dep_name }
 
             # Can't handle reqs from sub-deps or git source deps (yet)
@@ -509,7 +512,7 @@ module Dependabot
           }]
         end
 
-        sig { returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def peer_dependency_errors
           return @peer_dependency_errors if @peer_dependency_errors
 
@@ -517,7 +520,7 @@ module Dependabot
           @peer_dependency_errors
         end
 
-        sig { returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def old_peer_dependency_errors
           return @old_peer_dependency_errors if @old_peer_dependency_errors
 
@@ -530,7 +533,7 @@ module Dependabot
         sig do
           params(
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def fetch_peer_dependency_errors(version:)
           # TODO: Add all of the error handling that the FileUpdater does
@@ -542,7 +545,7 @@ module Dependabot
 
             paths_requiring_update_check.flat_map do |path|
               run_checker(path: path, version: version)
-            end.compact
+            end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
@@ -560,12 +563,12 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
+        sig { params(message: String).returns(T::Array[PeerDependencyConflict]) }
         def handle_peer_dependency_errors(message)
-          errors = []
+          errors = T.let([], T::Array[T::Hash[String, T.nilable(String)]])
           if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
             message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match&.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
             message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
@@ -594,7 +597,7 @@ module Dependabot
           else
             raise
           end
-          errors
+          errors.filter_map { |captures| PeerDependencyConflict.from_captures(captures) }
         end
         # rubocop:enable Metrics/AbcSize
 
@@ -625,42 +628,12 @@ module Dependabot
           errors
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def unmet_peer_dependencies
-          peer_dependency_errors
-            .map { |captures| error_details_from_captures(captures) }
-        end
-
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def old_unmet_peer_dependencies
-          old_peer_dependency_errors
-            .map { |captures| error_details_from_captures(captures) }
-        end
-
-        sig do
-          params(captures: T.any(T::Hash[String, T.nilable(String)], String))
-            .returns(T::Hash[Symbol, T.nilable(String)])
-        end
-        def error_details_from_captures(captures)
-          return {} unless captures.is_a?(Hash)
-
-          required_dep_captures  = captures.fetch("required_dep")
-          requiring_dep_captures = captures.fetch("requiring_dep")
-          return {} unless required_dep_captures && requiring_dep_captures
-
-          {
-            requirement_name: required_dep_captures.sub(/@[^@]+$/, ""),
-            requirement_version: required_dep_captures.split("@").last&.delete('"'),
-            requiring_dep_name: requiring_dep_captures.sub(/@[^@]+$/, "")
-          }
-        end
-
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def relevant_unmet_peer_dependencies # rubocop:disable Metrics/PerceivedComplexity
           relevant_unmet_peer_dependencies =
-            unmet_peer_dependencies.select do |dep|
-              dep[:requirement_name] == dependency.name ||
-                dep[:requiring_dep_name] == dependency.name
+            peer_dependency_errors.select do |dep|
+              dep.requirement_name == dependency.name ||
+                dep.requiring_dep_name == dependency.name
             end
 
           unless dependency_group.nil?
@@ -668,8 +641,8 @@ module Dependabot
             # the update is also updating those dependencies.
             relevant_unmet_peer_dependencies.reject! do |dep|
               dependency_group&.dependencies&.any? do |group_dep|
-                dep[:requirement_name] == group_dep.name ||
-                  dep[:requiring_dep_name] == group_dep.name
+                dep.requirement_name == group_dep.name ||
+                  dep.requiring_dep_name == group_dep.name
               end
             end
           end
@@ -678,10 +651,7 @@ module Dependabot
 
           # Prune out any pre-existing warnings
           relevant_unmet_peer_dependencies.reject do |issue|
-            old_unmet_peer_dependencies.any? do |old_issue|
-              old_issue.slice(:requirement_name, :requiring_dep_name) ==
-                issue.slice(:requirement_name, :requiring_dep_name)
-            end
+            old_peer_dependency_errors.any? { |old_issue| old_issue.same_dependencies?(issue) }
           end
         end
 
@@ -720,7 +690,7 @@ module Dependabot
         sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T::Boolean) }
         def satisfies_peer_reqs_on_dep?(version)
           newly_broken_peer_reqs_on_dep.all? do |peer_req|
-            req = peer_req.fetch(:requirement_version)
+            req = peer_req.requirement_version
 
             # Git requirements can't be satisfied by a version
             next false if req&.include?("/")
@@ -771,16 +741,16 @@ module Dependabot
             .git_dependency?
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def newly_broken_peer_reqs_on_dep
           relevant_unmet_peer_dependencies
-            .select { |dep| dep[:requirement_name] == dependency.name }
+            .select { |dep| dep.requirement_name == dependency.name }
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def newly_broken_peer_reqs_from_dep
           relevant_unmet_peer_dependencies
-            .select { |dep| dep[:requiring_dep_name] == dependency.name }
+            .select { |dep| dep.requiring_dep_name == dependency.name }
         end
 
         sig do
@@ -799,7 +769,7 @@ module Dependabot
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_checker(path:, version:)
           yarn_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
@@ -824,7 +794,7 @@ module Dependabot
               "pnpm trust downgrade detected in run_checker; version will be skipped"
             )
             @trust_downgrade_detected = true
-            return nil
+            return []
           end
 
           handle_peer_dependency_errors(e.message)
@@ -835,7 +805,7 @@ module Dependabot
             path: String,
             version: T.nilable(T.any(String, Gem::Version)),
             lockfile: T.nilable(Dependabot::DependencyFile)
-          ).returns(T.untyped)
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_yarn_checker(path:, version:, lockfile:)
           return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfile)
@@ -847,7 +817,7 @@ module Dependabot
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.untyped)
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_pnpm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
@@ -868,13 +838,14 @@ module Dependabot
               end
             end
           end
+          []
         end
 
         sig do
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.untyped)
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_yarn_berry_checker(path:, version:)
           # This method mimics calling a native helper in order to comply with the caller's expectations
@@ -895,45 +866,38 @@ module Dependabot
               end
             end
           end
+          []
         end
 
         sig do
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_yarn_classic_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: NativeHelpers.helper_path,
-                  function: "yarn:checkPeerDependencies",
-                  args: [
-                    Dir.pwd,
-                    dependency.name,
-                    version,
-                    requirements_for_path(dependency.requirements, path)
-                  ]
-                ),
-                T.nilable(
-                  T.any(
-                    T::Hash[String, T.untyped],
-                    String,
-                    T::Array[T::Hash[String, T.untyped]]
-                  )
-                )
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "yarn:checkPeerDependencies",
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  version,
+                  requirements_for_path(dependency.requirements, path)
+                ]
               )
             end
           end
+          []
         end
 
         sig do
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_npm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
@@ -945,34 +909,26 @@ module Dependabot
 
               return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.parse_npm8?(package_lock)
 
-              T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: NativeHelpers.helper_path,
-                  function: "npm6:checkPeerDependencies",
-                  args: [
-                    Dir.pwd,
-                    dependency.name,
-                    version,
-                    requirements_for_path(dependency.requirements, path),
-                    top_level_dependencies.map(&:to_h)
-                  ]
-                ),
-                T.nilable(
-                  T.any(
-                    T::Hash[String, T.untyped],
-                    String,
-                    T::Array[T::Hash[String, T.untyped]]
-                  )
-                )
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "npm6:checkPeerDependencies",
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  version,
+                  requirements_for_path(dependency.requirements, path),
+                  top_level_dependencies.map(&:to_h)
+                ]
               )
             end
           end
+          []
         end
 
         sig do
           params(
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_npm8_checker(version:)
           cmd =
@@ -982,8 +938,11 @@ module Dependabot
             error_context = { command: cmd, process_exit_value: 1 }
             raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)
           end
+          []
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise if e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
+
+          []
         end
 
         sig do
