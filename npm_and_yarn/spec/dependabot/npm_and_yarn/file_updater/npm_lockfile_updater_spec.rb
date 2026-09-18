@@ -122,8 +122,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:files) { project_dependency_files("npm8/engines") }
 
       it "raises a helpful error" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          node_version: "20.18.1",
+          npm_version: Dependabot::NpmAndYarn::Version.new("10.9.2")
+        )
+
         expect { updated_npm_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Dependabot uses Node.js 20.18.1 and NPM 10.9.2. " \
+            "Due to the engine-strict setting, the update will not succeed."
+          )
       end
     end
 

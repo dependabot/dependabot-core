@@ -316,6 +316,9 @@ module Dependabot
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
         def run_npm_updater(path, lockfile_name)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               original_content = File.read(lockfile_name)
@@ -345,6 +348,10 @@ module Dependabot
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
         def run_npm6_updater(path, lockfile_name)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+          Helpers.ensure_legacy_npm_lockfile_compatible!
+
           T.cast(
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
