@@ -329,6 +329,7 @@ module Dependabot
           raise_if_unsupported!(name, version.to_s)
           install(name, version)
         else
+          restore_image_package_manager_version(name)
           version = guessed_version(name)
 
           if version
@@ -439,6 +440,13 @@ module Dependabot
 
         supported_versions = PNPMPackageManager::SUPPORTED_VERSIONS.map { |v| "#{v}.*" }.join(", ")
         raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, supported_versions)
+      end
+
+      sig { params(name: String).void }
+      def restore_image_package_manager_version(name)
+        return unless name == NpmPackageManager::NAME
+
+        Helpers.activate_image_package_manager_version(name, directory: @directory, env: corepack_env)
       end
 
       sig { params(name: String, version: T.nilable(String)).void }

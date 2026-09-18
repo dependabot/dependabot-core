@@ -306,12 +306,69 @@ module Dependabot
         versions_by_directory.dig(directory || Dir.pwd, name)
       end
 
-      sig { params(name: String, version: String, directory: T.nilable(String)).void }
-      def self.set_effective_package_manager_version(name, version, directory: package_manager_directory)
+      sig do
+        params(
+          name: String,
+          version: String,
+          directory: T.nilable(String),
+          explicit: T.nilable(T::Boolean)
+        ).void
+      end
+      def self.set_effective_package_manager_version(
+        name,
+        version,
+        directory: package_manager_directory,
+        explicit: nil
+      )
         directory ||= Dir.pwd
-        Thread.current[:dependabot_corepack_effective_versions] ||= {}
-        Thread.current[:dependabot_corepack_effective_versions][directory] ||= {}
-        Thread.current[:dependabot_corepack_effective_versions][directory][name] = version
+        versions = Thread.current[:dependabot_corepack_effective_versions] ||= {}
+        versions[directory] ||= {}
+        versions[directory][name] = version
+        versions[:explicit_versions] ||= {}
+        versions[:explicit_versions][directory] ||= {}
+
+        if explicit == true
+          versions[:explicit_versions][directory][name] = version
+        elsif explicit == false
+          versions[:explicit_versions][directory].delete(name)
+        end
+      end
+
+      sig { params(name: String, directory: T.nilable(String)).returns(T.nilable(String)) }
+      def self.explicitly_selected_package_manager_version(name, directory: package_manager_directory)
+        versions = Thread.current[:dependabot_corepack_effective_versions]
+        return nil unless versions.is_a?(Hash)
+
+        versions.dig(:explicit_versions, directory || Dir.pwd, name)
+      end
+
+      sig { params(name: String).returns(String) }
+      def self.image_package_manager_version(name)
+        versions = Thread.current[:dependabot_corepack_effective_versions] ||= {}
+        versions[:image_defaults] ||= {}
+        versions[:image_defaults][name] ||= local_package_manager_version(name)
+      end
+
+      sig do
+        params(
+          name: String,
+          directory: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).void
+      end
+      def self.activate_image_package_manager_version(name, directory: package_manager_directory, env: nil)
+        version = image_package_manager_version(name)
+        set_effective_package_manager_version(name, version, directory: directory, explicit: false)
+        package_manager_activate(name, version, env: merge_corepack_env(env))
+      end
+
+      sig { void }
+      def self.ensure_legacy_npm_lockfile_compatible!
+        version = explicitly_selected_package_manager_version(NpmPackageManager::NAME)
+        return unless version && Version.new(version).major >= 7
+
+        raise Dependabot::DependencyFileNotResolvable,
+              "npm #{version} cannot be used with a v1 lockfile because Dependabot's legacy lockfile helper uses npm 6."
       end
 
       sig { params(name: String, env: T.nilable(T::Hash[String, String])).void }
@@ -613,7 +670,8 @@ module Dependabot
       end
       def self.install(name, version, directory: package_manager_directory, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-        set_effective_package_manager_version(name, version, directory: directory)
+        image_package_manager_version(name) if name == NpmPackageManager::NAME
+        set_effective_package_manager_version(name, version, directory: directory, explicit: true)
 
         begin
           # Try to activate the specified version

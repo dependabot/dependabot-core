@@ -932,6 +932,9 @@ module Dependabot
           ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
         end
         def run_npm_checker(path:, version:)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               package_lock = dependency_files_builder.package_locks.find do |f|
@@ -940,6 +943,8 @@ module Dependabot
               end
 
               return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.parse_npm8?(package_lock)
+
+              Helpers.ensure_legacy_npm_lockfile_compatible!
 
               T.cast(
                 SharedHelpers.run_helper_subprocess(

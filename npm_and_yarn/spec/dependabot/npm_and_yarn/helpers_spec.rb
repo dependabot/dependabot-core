@@ -569,6 +569,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     context "when corepack succeeds" do
       it "installs, activates, and retrieves the version of the package manager" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).and_return("11.0.0")
+
         # Mock for `package_manager_activate("npm", "8.0.0")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@8.0.0 --activate",
@@ -641,6 +646,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Test the result
         result = described_class.install("npm", "8.0.0")
         expect(result).to eq("10.8.2")
+        expect(described_class.explicitly_selected_package_manager_version("npm")).to eq("8.0.0")
       end
 
       it "preserves the fallback version for the current directory when activation fails" do
@@ -733,6 +739,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "retries activation with COREPACK_INTEGRITY_KEYS disabled instead of falling back" do
         retry_env = private_registry_env.merge("COREPACK_INTEGRITY_KEYS" => "")
 
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).once.ordered.and_return("11.9.0")
+
         # First call: corepack prepare npm@10.0.0 --activate WITH private registry env
         # Fails with signature error (Artifactory strips signatures from its version endpoint)
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
@@ -758,12 +769,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           fingerprint: "corepack npm -v",
           env: private_registry_env
         ).and_return("10.0.0")
-
-        # It must not fall back to the locally installed npm version
-        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(
-          "npm -v",
-          fingerprint: "npm -v"
-        )
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
         expect(result).to eq("10.0.0")
