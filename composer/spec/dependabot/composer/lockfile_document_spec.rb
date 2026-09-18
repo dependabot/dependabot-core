@@ -71,4 +71,25 @@ RSpec.describe Dependabot::Composer::LockfileDocument do
       expect { document.find_package("packages", "vendor/package") }.to raise_error(TypeError, /packages.*array/)
     end
   end
+
+  describe "distribution reads" do
+    let(:record) { { "dist" => { "type" => "path", "url" => "packages/one" }, "unknown" => [false, nil] } }
+    let(:data) { { "packages" => [record, { "dist" => { "type" => "path", "url" => nil } }] } }
+
+    it "keeps unknown fields and defers path URL validation until after matching" do
+      package = document.find_path_package("packages", "packages/one")
+      expect(package.to_manifest_json).to eq(record.to_json)
+      expect(package.dist_url).to eq("packages/one")
+      expect(package.dist_url_starts_with?("packages/")).to be(true)
+      expect(document.path_packages("packages").last.dist_url_starts_with?("packages/")).to be(false)
+    end
+
+    context "with an invalid later record" do
+      let(:data) { { "packages" => [record, false] } }
+
+      it "stops at the first matching path" do
+        expect(document.find_path_package("packages", "packages/one").to_manifest_json).to eq(record.to_json)
+      end
+    end
+  end
 end
