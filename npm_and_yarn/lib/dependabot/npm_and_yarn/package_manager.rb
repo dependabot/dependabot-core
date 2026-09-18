@@ -453,7 +453,8 @@ module Dependabot
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         if name == NpmPackageManager::NAME
-          return Helpers.install(name, version.to_s, directory: @directory, env: corepack_env)
+          @installed_versions[name] = Helpers.install(name, version.to_s, directory: @directory, env: corepack_env)
+          return
         end
 
         begin

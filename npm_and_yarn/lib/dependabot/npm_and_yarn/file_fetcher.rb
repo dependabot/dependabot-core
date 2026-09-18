@@ -298,6 +298,8 @@ module Dependabot
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version
+        return unless selected_package_manager_name == NpmPackageManager::NAME
+
         @npm_version ||= T.let(package_manager_helper.setup(NpmPackageManager::NAME), T.nilable(T.any(Integer, String)))
       end
 
@@ -321,7 +323,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
+            package_manager_config,
             lockfiles,
             registry_config_files,
             credentials,
@@ -345,10 +347,20 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def registry_config_files
         {
-          npmrc: npmrc,
+          npmrc: npmrc || (inferred_npmrc if selected_package_manager_name == NpmPackageManager::NAME),
           yarnrc: yarnrc,
           yarnrc_yml: yarnrc_yml
         }
+      end
+
+      sig { returns(Dependabot::Package::NpmPackageManagerConfig) }
+      def package_manager_config
+        Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json)
+      end
+
+      sig { returns(String) }
+      def selected_package_manager_name
+        PackageManagerDetector.new(lockfiles, package_manager_config).detect_package_manager
       end
 
       sig { returns(DependencyFile) }

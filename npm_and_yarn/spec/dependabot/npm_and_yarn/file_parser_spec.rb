@@ -221,7 +221,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
 
       it "persists the selected npm version for the manifest directory" do
-        parser.ecosystem
+        ecosystem = parser.ecosystem
 
         expect(Dependabot::NpmAndYarn::Helpers.effective_package_manager_version("npm", directory: "/frontend"))
           .to eq("10.0.0")
@@ -231,6 +231,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             directory: "/frontend"
           )
         ).to eq("10.0.0")
+        expect(ecosystem.package_manager.version).to eq(Dependabot::NpmAndYarn::Version.new("10.0.0"))
       end
     end
   end
