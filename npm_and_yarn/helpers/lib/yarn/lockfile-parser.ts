@@ -112,8 +112,14 @@ function normalizeBerryLockfile(
       if (!normalizedRequirement) continue;
 
       const normalizedName = normalizedRequirement.name || name;
-      normalized[`${normalizedName}@${normalizedRequirement.requirement}`] =
-        normalizedPkg;
+      // Give each descriptor its own object so that callers mutating one entry
+      // don't affect the other descriptors sharing this resolution.
+      normalized[`${normalizedName}@${normalizedRequirement.requirement}`] = {
+        ...normalizedPkg,
+        ...(normalizedPkg.dependencies
+          ? { dependencies: { ...normalizedPkg.dependencies } }
+          : {}),
+      };
     }
   }
 
