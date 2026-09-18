@@ -141,7 +141,7 @@ module Dependabot
         Channel.channel_name_from_url(dependency.source_string("url", allowed_types: ["tarball"]))
       end
 
-      # Preserve the flake's existing tarball suffix (xz, gz, bz2) on a bump.
+      # Preserve the flake's existing tarball suffix (xz, gz, bz2, zst) on a bump.
       sig { returns(String) }
       def tarball_channel_extension
         url = dependency.source_string("url", allowed_types: ["tarball"])

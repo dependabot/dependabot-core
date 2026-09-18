@@ -1,5 +1,13 @@
 # Core utility functions for DependabotHelper.jl
 
+# Pkg 1.13 changed `registry_info` to take the `RegistryInstance` alongside the
+# `PkgEntry`; earlier versions only accept the entry. Dispatch on what this Pkg has.
+if hasmethod(Pkg.Registry.registry_info, Tuple{Pkg.Registry.RegistryInstance, Pkg.Registry.PkgEntry})
+    registry_info(reg::Pkg.Registry.RegistryInstance, entry::Pkg.Registry.PkgEntry) = Pkg.Registry.registry_info(reg, entry)
+else
+    registry_info(::Pkg.Registry.RegistryInstance, entry::Pkg.Registry.PkgEntry) = Pkg.Registry.registry_info(entry)
+end
+
 """
     with_autoprecompilation_disabled(f::Function)
 

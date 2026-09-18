@@ -7,6 +7,7 @@ dependencies = [
     "requests>=2.31.0",
     "local-package",
     "git-package",
+    "tagged-package",
     "registry-package",
 ]
 
@@ -16,6 +17,9 @@ local-package = { path = "./local-package" }
 
 # Git dependency - should NOT be detected as path dependency
 git-package = { git = "https://github.com/example/package.git" }
+
+# Git dependency carrying a tag - the tag gives an ordering, so this one is not skipped
+tagged-package = { git = "https://github.com/example/tagged.git", tag = "1.2.3" }
 
 # Registry dependency with custom index - should NOT be detected as path dependency
 registry-package = { index = "https://custom-pypi.example.com/simple" }
