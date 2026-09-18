@@ -1,0 +1,23 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      lodash:
+        specifier: 1.2.0
+        version: 1.2.0
+
+packages:
+
+  lodash@1.2.0:
+    resolution: {integrity: sha512-ExQAVirH2oQGyLAJv8jODSh25/hP2Fz24nn/7Yu6XeYcJKs5l/AY/9N1CZ85nykxoRkJBB6CyWrv+AxO3eSXyg==}
+    engines: {'0': node, '1': rhino}
+
+snapshots:
+
+  lodash@1.2.0: {}
