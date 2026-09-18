@@ -287,6 +287,22 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       it "returns the deprecated version" do
         expect(package_manager.detected_version.to_s).to eq "6"
       end
+
+      it "activates an explicitly selected npm version" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
+          .with("npm").and_return("11.0.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm", env: nil).and_return("6.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@6 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: nil
+        ).and_return("Preparing npm@6 for immediate activation...")
+
+        expect(helper.setup("npm")).to eq("6")
+        expect(Dependabot::NpmAndYarn::Helpers.explicitly_selected_package_manager_version("npm", directory: "/"))
+          .to eq("6")
+      end
     end
 
     context "when packageManager selects a major-only npm version" do

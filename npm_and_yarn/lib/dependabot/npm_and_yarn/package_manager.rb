@@ -288,7 +288,6 @@ module Dependabot
               :requirement_for_group,
               :current_engine_version
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
@@ -296,13 +295,9 @@ module Dependabot
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
 
-        unless @manifest_package_manager&.start_with?("#{name}@") ||
-               (@manifest_package_manager&.==name.to_s) ||
-               @manifest_package_manager.nil?
-          return
-        end
+        return unless package_manager_selected?(name)
 
-        return package_manager.version.to_s if package_manager.deprecated? || package_manager.unsupported?
+        return setup_deprecated_package_manager(name) if package_manager.deprecated? || package_manager.unsupported?
 
         if @engines && @manifest_package_manager.nil?
           # if "packageManager" doesn't exists in manifest file,
@@ -339,7 +334,6 @@ module Dependabot
         end
         version
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(name: String).returns(T.nilable(String)) }
@@ -430,6 +424,33 @@ module Dependabot
       end
 
       private
+
+      sig { params(name: String).returns(T::Boolean) }
+      def package_manager_selected?(name)
+        @manifest_package_manager&.start_with?("#{name}@") ||
+          @manifest_package_manager == name ||
+          @manifest_package_manager.nil?
+      end
+
+      sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
+      def setup_deprecated_package_manager(name)
+        version = explicit_legacy_npm_version(name)
+        return package_manager.version.to_s unless version
+
+        install(name, version)
+        version
+      end
+
+      sig { params(name: String).returns(T.nilable(String)) }
+      def explicit_legacy_npm_version(name)
+        return unless name == NpmPackageManager::NAME
+
+        version = requested_version(name)
+        version ||= check_engine_version(name) if @manifest_package_manager.nil? || @manifest_package_manager == name
+        return unless version && Version.new(version).major == NpmPackageManager::NPM_V6.to_i
+
+        version
+      end
 
       sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
