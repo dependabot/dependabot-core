@@ -81,6 +81,90 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     Dependabot::Experiments.reset!
   end
 
+  describe "#latest_resolvable_version peer metadata boundary" do
+    subject(:resolved_version) { resolver.latest_resolvable_version }
+
+    let(:project_name) { "pnpm/peer_dependency" }
+    let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "react-dom",
+        version: "15.2.0",
+        package_manager: "npm_and_yarn",
+        requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+      )
+    end
+    let(:peers) { { "react" => "^16.0.0" } }
+    let(:current_peers) { { "react" => "^15.0.0" } }
+    let(:react_dom_registry_response) do
+      {
+        "versions" => {
+          "15.2.0" => { "peerDependencies" => current_peers },
+          "16.3.1" => { "peerDependencies" => peers },
+          "17.0.0" => { "deprecated" => "unused", "peerDependencies" => ["unconsumed"] }
+        },
+        "dist-tags" => { "latest" => "16.3.1" }
+      }.to_json
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+        next "" unless command.include?("@16.3.1")
+
+        raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "react-dom@16.3.1 requires a peer of react@^16.0.0 but none is installed.",
+          error_context: {}
+        )
+      end
+    end
+
+    it "rejects an unsatisfied candidate without reading deprecated release metadata" do
+      expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+    end
+
+    [nil, false, {}].each do |value|
+      context "with peer requirements set to #{value.inspect}" do
+        let(:peers) { value }
+
+        it "retains the no-peer-requirements behavior" do
+          expect(resolved_version).to eq(latest_allowable_version)
+        end
+      end
+    end
+
+    context "with malformed peer metadata on the current version" do
+      let(:current_peers) { ["unconsumed"] }
+
+      it "retains the current-version shortcut" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "with a malformed candidate peer map" do
+      let(:peers) { ["invalid"] }
+
+      it "raises a contextual type error instead of a helper fallback" do
+        expect { resolved_version }.to raise_error(TypeError, /react-dom.*16\.3\.1.*peerDependencies/)
+      end
+    end
+
+    context "with a malformed later peer requirement" do
+      let(:peers) { { "react" => "<0", "other" => 1 } }
+
+      it "decodes the complete map before checking compatibility" do
+        expect { resolved_version }.to raise_error(TypeError, /peerDependencies values must be strings/)
+      end
+    end
+
+    context "with invalid requirement syntax" do
+      let(:peers) { { "react" => "not a requirement" } }
+
+      it "rejects the candidate through the existing syntax handling" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
