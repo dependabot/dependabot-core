@@ -733,6 +733,7 @@ module Dependabot
         # can't enumerate an image's tags). Surface a generic RegistryError with
         # the status rather than a private-source error, since the registry may
         # well be public (e.g. Docker Hub).
+        warn_about_docker_hub_tag_timeout(e)
         raise_registry_error(e)
       rescue JSON::ParserError => e
         if e.message.include?("unexpected token")
@@ -767,6 +768,17 @@ module Dependabot
         raise if page_size || registry_http_status(e) == 429
 
         fetch_tags_from_registry(page_size: TAGS_PAGE_SIZE)
+      end
+
+      sig { params(error: DockerRegistry2::RegistryHTTPException).void }
+      def warn_about_docker_hub_tag_timeout(error)
+        return unless using_dockerhub? && registry_http_status(error) == 504
+
+        Dependabot.logger.warn(
+          "Docker Hub timed out (HTTP 504) while listing tags for #{docker_repo_name}. " \
+          "Dependabot could not check this image for updates. This is a registry-side timeout, " \
+          "not a dependency file parsing error. Retry later; if it persists, contact Docker Hub support."
+        )
       end
 
       # docker_registry2 1.19.0 only exposes the status in the exception message.
