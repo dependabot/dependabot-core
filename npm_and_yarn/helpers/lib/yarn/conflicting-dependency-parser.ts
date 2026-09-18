@@ -105,7 +105,7 @@ export async function findConflictingDependencies(
       parentSpec.name,
       parentSpec.version,
       parentSpec.requirement,
-    ].join("@");
+    ].join("\u0000");
     if (conflicts.has(key)) continue;
 
     conflicts.set(key, {
@@ -183,7 +183,7 @@ function findConflictingParentDependencies(
   // A descriptor can resolve to more than one entry, e.g. when a manifest
   // depends on both a package and an npm alias of it, so every resolution is
   // traversed.
-  const isTopLevelEdge = edgeKey(edge) === edgeKey(topLevelSpec);
+  const isTopLevelEdge = checkedEntry === edgeKey(topLevelSpec);
 
   for (const pkg of findEntries(lockfile, edge)) {
     // Decorate the top-level dependency spec with an installed version as we
