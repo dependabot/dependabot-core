@@ -257,11 +257,11 @@ module Dependabot
         nil
       end
 
-      # The concrete npm version that will run. Returns nil when it can't be determined.
+      # The concrete npm version that will run through Corepack. Returns nil when it can't be determined.
       # Used to gate `--min-release-age`, added in npm 11.10.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
-        raw = local_package_manager_version(NpmPackageManager::NAME)
+        raw = package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
@@ -461,11 +461,12 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "npm #{command}",
-          fingerprint: "npm #{fingerprint}",
+        package_manager_run_command(
+          NpmPackageManager::NAME,
+          command,
+          fingerprint: fingerprint,
           output_observer: ->(output) { command_observer(output) },
-          env: env
+          env: merge_corepack_env(env)
         )
       end
 
