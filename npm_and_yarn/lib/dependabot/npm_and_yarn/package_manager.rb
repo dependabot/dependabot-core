@@ -445,6 +445,7 @@ module Dependabot
       sig { params(name: String).void }
       def restore_image_package_manager_version(name)
         return unless name == NpmPackageManager::NAME
+        return unless @package_manager_detector.detect_package_manager == name
 
         Helpers.activate_image_package_manager_version(name, directory: @directory, env: corepack_env)
       end

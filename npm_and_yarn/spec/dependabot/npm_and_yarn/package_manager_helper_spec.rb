@@ -221,6 +221,17 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   end
 
   describe "#setup" do
+    context "when only a yarn lockfile exists" do
+      let(:lockfiles) { { yarn: yarn_lockfile } }
+      let(:package_json) { {} }
+
+      it "does not restore npm while probing its version" do
+        expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:activate_image_package_manager_version)
+
+        helper.setup("npm")
+      end
+    end
+
     context "when lockfile specifies a deprecated version" do
       subject(:package_manager) { helper.package_manager }
 
