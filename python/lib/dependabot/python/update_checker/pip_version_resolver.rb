@@ -13,6 +13,7 @@ require "dependabot/python/package/package_registry_finder"
 require "dependabot/python/update_checker"
 require "dependabot/python/update_checker/latest_version_finder"
 require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/file_parser/pyproject_document"
 
 module Dependabot
   module Python
@@ -62,7 +63,7 @@ module Dependabot
           @constraints_files = T.let(nil, T.nilable(T::Array[String]))
           @constraints_file_basenames = T.let(nil, T.nilable(T::Array[String]))
           @requirement_file_directories = T.let(nil, T.nilable(T::Array[String]))
-          @pyproject_content_cache = T.let({}, T::Hash[String, T::Hash[String, Object]])
+          @pyproject_document_cache = T.let({}, T::Hash[String, FileParser::PyprojectDocument])
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -201,19 +202,8 @@ module Dependabot
 
         sig { params(pyproject: Dependabot::DependencyFile).returns(T::Array[[String, String]]) }
         def pinned_pyproject_dependencies_for(pyproject)
-          pyproject_content = pyproject_content_for(pyproject)
-          project_obj = pyproject_content["project"]
-          return [] unless project_obj.is_a?(Hash)
-
-          project_hash = project_obj
-          dependencies_obj = T.cast(project_hash["dependencies"], T.nilable(Object))
-          return [] unless dependencies_obj.is_a?(Array)
-
-          dependencies_obj.filter_map do |entry|
-            entry_obj = T.cast(entry, T.nilable(Object))
-            next unless entry_obj.is_a?(String)
-
-            requirement_string, marker = split_requirement_and_marker(entry_obj)
+          pyproject_document_for(pyproject).pip_dependencies.filter_map do |entry|
+            requirement_string, marker = split_requirement_and_marker(entry)
             next unless marker_satisfied_for_python?(marker)
             next if requirement_string.nil? || requirement_string.empty?
 
@@ -432,23 +422,8 @@ module Dependabot
 
         sig { params(pyproject: Dependabot::DependencyFile).returns(T::Array[String]) }
         def constraints_for_pyproject(pyproject)
-          pyproject_content = pyproject_content_for(pyproject)
-          tool_obj = pyproject_content["tool"]
-          return [] unless tool_obj.is_a?(Hash)
-
-          pip_obj = T.cast(tool_obj["pip"], T.nilable(Object))
-          return [] unless pip_obj.is_a?(Hash)
-
-          constraints_obj = T.cast(pip_obj["constraints"], T.nilable(Object))
-          case constraints_obj
-          when String
-            [resolve_constraint_path(path: constraints_obj, declaring_file: pyproject)]
-          when Array
-            constraints_obj.grep(String).map do |path|
-              resolve_constraint_path(path: path, declaring_file: pyproject)
-            end
-          else
-            []
+          pyproject_document_for(pyproject).pip_constraint_paths.map do |path|
+            resolve_constraint_path(path: path, declaring_file: pyproject)
           end
         end
 
@@ -556,23 +531,22 @@ module Dependabot
           marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)
         end
 
-        sig { params(pyproject: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }
-        def pyproject_content_for(pyproject)
+        sig { params(pyproject: Dependabot::DependencyFile).returns(FileParser::PyprojectDocument) }
+        def pyproject_document_for(pyproject)
           cache_key = pyproject.name
-          return T.must(@pyproject_content_cache[cache_key]) if @pyproject_content_cache.key?(cache_key)
+          return T.must(@pyproject_document_cache[cache_key]) if @pyproject_document_cache.key?(cache_key)
 
-          content =
-            if pyproject.content
-              T.let(TomlRB.parse(pyproject.content), T::Hash[String, Object])
+          content = pyproject.content
+          document =
+            if content
+              FileParser::PyprojectDocument.from_content(content)
             else
-              T.let({}, T::Hash[String, Object])
+              FileParser::PyprojectDocument.new({})
             end
 
-          @pyproject_content_cache[cache_key] = content
-          content
+          @pyproject_document_cache[cache_key] = document
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          @pyproject_content_cache[pyproject.name] = {}
-          T.must(@pyproject_content_cache[pyproject.name])
+          @pyproject_document_cache[pyproject.name] = FileParser::PyprojectDocument.new({})
         end
       end
     end

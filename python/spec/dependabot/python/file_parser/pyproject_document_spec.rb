@@ -132,6 +132,56 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     end
   end
 
+  describe "pip resolver fields" do
+    let(:content) do
+      <<~TOML
+        [project]
+        dependencies = ["requests==2; python_version >= '3.10'", false, 123, ""]
+        [tool.pip]
+        constraints = ["nested/../pins.txt", 123, false, "https://example.com/pins.txt", ""]
+      TOML
+    end
+
+    it "returns only strings without interpreting requirements or paths" do
+      expect(document.pip_dependencies).to eq(["requests==2; python_version >= '3.10'", ""])
+      expect(document.pip_constraint_paths).to eq(["nested/../pins.txt", "https://example.com/pins.txt", ""])
+    end
+
+    context "with a scalar constraint" do
+      let(:content) { "[tool.pip]\nconstraints = \"pins.txt\"\n" }
+
+      it "returns one declared path" do
+        expect(document.pip_constraint_paths).to eq(["pins.txt"])
+        expect(document.pip_dependencies).to eq([])
+      end
+    end
+
+    [
+      "",
+      "project = false\ntool = false",
+      "[project]\ndependencies = false\n[tool]\npip = 123",
+      "[project]\ndependencies = 'not an array'\n[tool.pip]\nconstraints = false"
+    ].each do |value|
+      context "with unsupported containers #{value.inspect}" do
+        let(:content) { value }
+
+        it "retains the pip resolver's empty field results" do
+          expect(document.pip_dependencies).to eq([])
+          expect(document.pip_constraint_paths).to eq([])
+        end
+      end
+    end
+
+    context "with a malformed project section" do
+      let(:content) { "project = false" }
+
+      it "does not weaken the existing metadata reader" do
+        expect(document.pip_dependencies).to eq([])
+        expect { document.project_metadata }.to raise_error(TypeError, "project must be an object")
+      end
+    end
+  end
+
   describe "library metadata" do
     let(:content) do
       <<~TOML
