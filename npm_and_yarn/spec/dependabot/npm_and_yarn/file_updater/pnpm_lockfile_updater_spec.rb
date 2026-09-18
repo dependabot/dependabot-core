@@ -1411,12 +1411,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
-      context "when shared-workspace-lockfile is disabled on pnpm 10.x" do
+      context "when sharedWorkspaceLockfile is disabled in pnpm-workspace.yaml on pnpm 10.x" do
         let(:files) do
           project_dependency_files(project_name) +
             [Dependabot::DependencyFile.new(
               name: "pnpm-workspace.yaml",
-              content: "shared-workspace-lockfile: false\nminimumReleaseAge: 20160\n"
+              content: "sharedWorkspaceLockfile: false\nminimumReleaseAge: 20160\n"
             )]
         end
 
@@ -1426,6 +1426,57 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
 
         it "warns even when the repo declares a longer gate that pnpm 10.x ignores" do
+          allow(Dependabot.logger).to receive(:warn)
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+
+          expect(Dependabot.logger).to have_received(:warn).with(/shared-workspace-lockfile/)
+        end
+      end
+
+      context "when pnpm-workspace.yaml uses the kebab-case spelling pnpm ignores" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "shared-workspace-lockfile: false\n"
+            )]
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "still applies the cooldown, because the lockfile is shared" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).to include("--config.minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when shared-workspace-lockfile is disabled in .npmrc on pnpm 10.x" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "shared-workspace-lockfile=false\n"
+            )]
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "skips the cooldown, because pnpm 10.x honours the .npmrc spelling" do
           allow(Dependabot.logger).to receive(:warn)
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
             expect(cmd).not_to include("minimumReleaseAge")
