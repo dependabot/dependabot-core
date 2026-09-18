@@ -12,7 +12,11 @@
 import fs from "fs";
 import path from "path";
 import semver from "semver";
-import { parse, type LockfileEntry } from "./lockfile-parser.js";
+import {
+  parseNormalized,
+  normalizeRequirement,
+  type LockfileEntry,
+} from "./lockfile-parser.js";
 import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
 interface ConflictingDependency {
@@ -47,7 +51,7 @@ export async function findConflictingDependencies(
   depName: string,
   targetVersion: string
 ): Promise<ConflictingDependency[]> {
-  const lockfileJson = await parse(directory);
+  const lockfileJson = await parseNormalized(directory);
   const packageJson = fs
     .readFileSync(path.join(directory, "package.json"))
     .toString();
@@ -66,15 +70,22 @@ export async function findConflictingDependencies(
   );
 
   const conflictingParents = topLevelDependencies.flatMap(
-    ([topLevelDepName, topLevelRequirement]) => {
+    ([topLevelDepName, rawTopLevelRequirement]) => {
+      const normalized = normalizeRequirement(rawTopLevelRequirement);
+      // Skip dependencies declared with a protocol we can't match against a
+      // lockfile entry, e.g. `workspace:*` or `file:../pkg`.
+      if (!normalized) return [];
+
+      const name = normalized.name || topLevelDepName;
+      const topLevelRequirement = normalized.requirement;
       const topLevelSpec: TopLevelSpec = {
-        name: topLevelDepName,
+        name,
         requirement: topLevelRequirement,
       };
 
       return Array.from(
         findConflictingParentDependencies(
-          topLevelDepName,
+          name,
           topLevelRequirement,
           depName,
           targetVersion,
@@ -129,6 +140,15 @@ function buildExplanation(
   }
 }
 
+// A dependency only conflicts if it declares a semver range that excludes the
+// target version. Specs we can't parse as a semver range (e.g. yarn berry
+// `patch:` or `workspace:` protocols) are not treated as conflicts.
+function conflictsWith(targetVersion: string, spec: string): boolean {
+  if (!semver.validRange(spec)) return false;
+
+  return !semver.satisfies(targetVersion, spec);
+}
+
 function findConflictingParentDependencies(
   dependency: string,
   requirement: string,
@@ -173,10 +193,7 @@ function findConflictingParentDependencies(
         string,
         string,
       ][]) {
-        if (
-          subDepName === targetDep &&
-          !semver.satisfies(targetversion, spec)
-        ) {
+        if (subDepName === targetDep && conflictsWith(targetversion, spec)) {
           // Only add the conflicting parent once per version preventing
           // duplicate dependencies from circular graphs
           const key = [parentDepName, pkg.version].join("@");

@@ -83,7 +83,11 @@ module Dependabot
               )
             end
           end
-        rescue SharedHelpers::HelperSubprocessFailed
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.warn(
+            "ConflictingDependencyResolver: failed to find conflicting dependencies for " \
+            "#{dependency.name}: #{e.message}"
+          )
           []
         end
 

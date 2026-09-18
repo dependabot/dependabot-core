@@ -78,4 +78,65 @@ describe("findConflictingDependencies", () => {
       },
     ]);
   });
+
+  it("finds conflicting dependencies in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-simple",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("finds the top-level conflicting dependency in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-nested",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "askconfig@4.0.4 requires abind@^1.0.4 via objnest@5.0.10",
+        name: "objnest",
+        version: "5.0.10",
+        requirement: "^1.0.4",
+      },
+    ]);
+  });
+
+  it("resolves aliases and ignores non-npm protocols in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-protocols",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("returns no conflicts when the yarn berry lockfile allows the target version", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-simple",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "1.0.5");
+    expect(result).toEqual([]);
+  });
 });
