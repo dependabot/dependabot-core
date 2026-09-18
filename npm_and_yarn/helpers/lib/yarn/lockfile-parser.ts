@@ -23,6 +23,7 @@ export interface LockfileEntry {
 // e.g. `abind@npm:^1.0.0` or `my-app@workspace:.`. Only the `npm:` protocol
 // resolves to a semver range we can reason about.
 const NPM_PROTOCOL = "npm:";
+const WORKSPACE_PROTOCOL = "workspace:";
 
 // Yarn berry entries can list several descriptors for the same resolution,
 // e.g. `"abind@npm:^1.0.0, abind@npm:^1.0.4"`.
@@ -41,31 +42,38 @@ export async function parse(
 
 // A single `name -> requirement` edge of the dependency graph. The name is the
 // real package name (npm aliases are resolved) and the requirement is a plain
-// semver range, unless the descriptor uses a protocol we can't express as a
-// semver range, in which case it is kept verbatim.
+// semver range, unless the descriptor uses a protocol that isn't a semver range
+// (`workspace:`, `patch:`, `file:`, git, ...), in which case it is kept
+// verbatim and matched by `findEntries`.
 export interface DependencyEdge {
   name: string;
   requirement: string;
 }
 
-export interface NormalizedLockfileEntry {
+export interface NormalizedLockfileEntry extends DependencyEdge {
   version: string;
   resolved?: string;
   dependencies: DependencyEdge[];
 }
 
-// Parses a yarn.lock into a `name@requirement` keyed object where the keys and
-// the dependency edges are normalized in the same way, so that they can be
-// compared against the requirements declared in a package.json manifest (also
-// normalized, via `normalizeDescriptor`).
+// Parses a yarn.lock into a flat list of entries, one per descriptor, where the
+// descriptors and the dependency edges are normalized in the same way so they
+// can be compared against the requirements declared in a package.json manifest
+// (also normalized, via `normalizeDescriptor`).
 //
 // Normalizing is required because yarn berry lockfiles, which are parsed by the
 // yarn v1 parser too, keep the berry protocol prefixes and may group several
 // descriptors under a single key. Yarn v1 lockfiles are normalized with the
 // same rules, which only affects npm aliases (`alias@npm:real-pkg@^1.0.0`).
+//
+// A list is used rather than an object keyed by the normalized descriptor
+// because distinct descriptors can normalize to the same edge while resolving
+// to different versions, e.g. a manifest depending on both `foo@^1.0.0` and
+// `foo-alias@npm:foo@^1.0.0`. Keying would discard one of the resolutions along
+// with its dependency subtree.
 export async function parseNormalized(
   directory: string
-): Promise<Record<string, NormalizedLockfileEntry>> {
+): Promise<NormalizedLockfileEntry[]> {
   return normalizeLockfile(await parse(directory));
 }
 
@@ -73,9 +81,8 @@ export async function parseNormalized(
 // stripping the `npm:` protocol and resolving npm aliases (e.g.
 // `alias@npm:real-pkg@^1.0.0` becomes `real-pkg@^1.0.0`).
 //
-// Requirements using a protocol we can't express as a semver range
-// (`workspace:`, `patch:`, `file:`, git, ...) are kept verbatim so that the
-// descriptor still matches its lockfile entry, which is normalized identically.
+// Requirements using any other protocol are kept verbatim; `findEntries`
+// knows how to match them against their lockfile entry.
 export function normalizeDescriptor(
   name: string,
   requirement: string
@@ -99,10 +106,37 @@ export function edgeKey(edge: DependencyEdge): string {
   return `${edge.name}@${edge.requirement}`;
 }
 
+// Finds every lockfile entry a dependency edge resolves to.
+//
+// Workspace ranges are matched by name alone: a `workspace:` range such as
+// `workspace:*` or `workspace:^` is resolved by yarn to the workspace package
+// of that name, whose lockfile descriptor carries the workspace's path
+// (`local-pkg@workspace:packages/local-pkg`), so the two are never equal.
+export function findEntries(
+  lockfile: NormalizedLockfileEntry[],
+  edge: DependencyEdge
+): NormalizedLockfileEntry[] {
+  if (isWorkspaceRequirement(edge.requirement)) {
+    return lockfile.filter(
+      (entry) =>
+        entry.name === edge.name && isWorkspaceRequirement(entry.requirement)
+    );
+  }
+
+  return lockfile.filter(
+    (entry) =>
+      entry.name === edge.name && entry.requirement === edge.requirement
+  );
+}
+
+function isWorkspaceRequirement(requirement: string): boolean {
+  return requirement.startsWith(WORKSPACE_PROTOCOL);
+}
+
 function normalizeLockfile(
   lockfileJson: Record<string, LockfileEntry>
-): Record<string, NormalizedLockfileEntry> {
-  const normalized: Record<string, NormalizedLockfileEntry> = {};
+): NormalizedLockfileEntry[] {
+  const normalized: NormalizedLockfileEntry[] = [];
 
   for (const [entry, pkg] of Object.entries(lockfileJson)) {
     if (entry === METADATA_KEY) continue;
@@ -118,11 +152,13 @@ function normalizeLockfile(
       // callers mutating one entry don't affect the other descriptors sharing
       // this resolution. The edges themselves are treated as immutable values
       // and are intentionally shared.
-      normalized[edgeKey(edge)] = {
+      normalized.push({
+        name: edge.name,
+        requirement: edge.requirement,
         version: pkg.version,
         resolved: pkg.resolved,
         dependencies: [...dependencies],
-      };
+      });
     }
   }
 

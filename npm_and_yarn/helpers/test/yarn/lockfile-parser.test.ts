@@ -2,8 +2,11 @@ import path from "path";
 import os from "os";
 import fs from "fs";
 import {
+  edgeKey,
+  findEntries,
   normalizeDescriptor,
   parseNormalized,
+  type NormalizedLockfileEntry,
 } from "../../lib/yarn/lockfile-parser.js";
 import * as helpers from "./helpers.js";
 
@@ -56,75 +59,115 @@ describe("parseNormalized", () => {
   });
   afterEach(() => fs.rmSync(tempDir, { recursive: true, force: true }));
 
-  it("returns dependency edges for yarn v1 lockfiles", async () => {
-    helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);
+  const parseFixture = (
+    fixture: string
+  ): Promise<NormalizedLockfileEntry[]> => {
+    helpers.copyDependencies(
+      `conflicting-dependency-parser/${fixture}`,
+      tempDir
+    );
+    return parseNormalized(tempDir);
+  };
 
-    const lockfileJson = await parseNormalized(tempDir);
-    expect(Object.keys(lockfileJson).sort()).toEqual([
+  it("returns dependency edges for yarn v1 lockfiles", async () => {
+    const lockfile = await parseFixture("simple");
+
+    expect(lockfile.map(edgeKey).sort()).toEqual([
       "abind@^1.0.0",
       "extend@^3.0.0",
       "objnest@^4.1.2",
     ]);
-    expect(lockfileJson["objnest@^4.1.2"].dependencies).toEqual([
-      { name: "abind", requirement: "^1.0.0" },
-      { name: "extend", requirement: "^3.0.0" },
+    expect(
+      findEntries(lockfile, { name: "objnest", requirement: "^4.1.2" })
+    ).toEqual([
+      {
+        name: "objnest",
+        requirement: "^4.1.2",
+        version: "4.1.4",
+        resolved: expect.any(String),
+        dependencies: [
+          { name: "abind", requirement: "^1.0.0" },
+          { name: "extend", requirement: "^3.0.0" },
+        ],
+      },
     ]);
   });
 
   it("dealiases yarn v1 alias entries", async () => {
-    helpers.copyDependencies("conflicting-dependency-parser/aliased", tempDir);
+    const lockfile = await parseFixture("aliased");
 
-    const lockfileJson = await parseNormalized(tempDir);
-    expect(Object.keys(lockfileJson)).toContain("objnest@^4.1.2");
+    expect(lockfile.map(edgeKey)).toContain("objnest@^4.1.2");
+  });
+
+  it("keeps every entry when distinct descriptors normalize to the same edge", async () => {
+    const lockfile = await parseFixture("aliased-distinct");
+
+    const entries = findEntries(lockfile, {
+      name: "objnest",
+      requirement: "^4.1.2",
+    });
+    expect(entries.map((entry) => entry.version).sort()).toEqual([
+      "4.1.2",
+      "4.1.4",
+    ]);
   });
 
   it("splits multi-descriptor keys and strips protocols", async () => {
-    helpers.copyDependencies(
-      "conflicting-dependency-parser/berry-nested",
-      tempDir
-    );
+    const lockfile = await parseFixture("berry-nested");
 
-    const lockfileJson = await parseNormalized(tempDir);
-    expect(Object.keys(lockfileJson).sort()).toEqual([
+    expect(lockfile.map(edgeKey).sort()).toEqual([
       "abind@^1.0.4",
       "abind@^1.0.5",
       "askconfig@^4.0.4",
       "objnest@^5.0.6",
       "test@workspace:.",
     ]);
-    expect(lockfileJson["objnest@^5.0.6"].dependencies).toEqual([
-      { name: "abind", requirement: "^1.0.4" },
-    ]);
+    expect(
+      findEntries(lockfile, { name: "objnest", requirement: "^5.0.6" })[0]
+        .dependencies
+    ).toEqual([{ name: "abind", requirement: "^1.0.4" }]);
   });
 
   it("preserves every edge when aliases resolve to the same package", async () => {
-    helpers.copyDependencies(
-      "conflicting-dependency-parser/aliased-duplicate",
-      tempDir
-    );
+    const lockfile = await parseFixture("aliased-duplicate");
 
-    const lockfileJson = await parseNormalized(tempDir);
-    expect(lockfileJson["askconfig@^4.0.4"].dependencies).toEqual([
+    expect(
+      findEntries(lockfile, { name: "askconfig", requirement: "^4.0.4" })[0]
+        .dependencies
+    ).toEqual([
       { name: "abind", requirement: "^2.0.0" },
       { name: "abind", requirement: "^1.0.0" },
     ]);
   });
 
-  it("keeps unsupported protocols verbatim so descriptors still match", async () => {
-    helpers.copyDependencies(
-      "conflicting-dependency-parser/berry-protocols",
-      tempDir
-    );
+  it("resolves workspace ranges to their workspace entry", async () => {
+    const lockfile = await parseFixture("berry-workspace");
 
-    const lockfileJson = await parseNormalized(tempDir);
-    expect(Object.keys(lockfileJson).sort()).toEqual([
+    const entries = findEntries(lockfile, {
+      name: "local-pkg",
+      requirement: "workspace:*",
+    });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].requirement).toBe("workspace:packages/local-pkg");
+    expect(entries[0].dependencies).toEqual([
+      { name: "objnest", requirement: "^4.1.2" },
+    ]);
+  });
+
+  it("keeps other protocols verbatim", async () => {
+    const lockfile = await parseFixture("berry-protocols");
+
+    expect(lockfile.map(edgeKey).sort()).toEqual([
       "abind@^1.0.0",
       "extend@patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch",
       "local-pkg@workspace:packages/local-pkg",
       "objnest@^4.1.2",
       "test@workspace:.",
     ]);
-    expect(lockfileJson["objnest@^4.1.2"].dependencies).toEqual([
+    expect(
+      findEntries(lockfile, { name: "objnest", requirement: "^4.1.2" })[0]
+        .dependencies
+    ).toEqual([
       { name: "abind", requirement: "^1.0.0" },
       { name: "local-pkg", requirement: "workspace:*" },
     ]);

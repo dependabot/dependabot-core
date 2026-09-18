@@ -170,4 +170,45 @@ describe("findConflictingDependencies", () => {
       },
     ]);
   });
+
+  it("traverses workspace packages in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-workspace",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation:
+          "local-pkg@0.0.0-use.local requires abind@^1.0.0 via objnest@4.1.4",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("traverses every resolution when a package and its alias share a requirement", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-distinct",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+      {
+        explanation: "objnest@4.1.2 requires abind@^1.0.4",
+        name: "objnest",
+        version: "4.1.2",
+        requirement: "^1.0.4",
+      },
+    ]);
+  });
 });

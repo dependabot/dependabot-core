@@ -1,0 +1,14 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "local-pkg": "workspace:*"
+  }
+}
