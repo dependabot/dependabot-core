@@ -298,8 +298,6 @@ module Dependabot
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version
-        return unless selected_package_manager_name == NpmPackageManager::NAME
-
         @npm_version ||= T.let(package_manager_helper.setup(NpmPackageManager::NAME), T.nilable(T.any(Integer, String)))
       end
 

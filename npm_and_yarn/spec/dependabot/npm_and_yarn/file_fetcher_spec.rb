@@ -293,6 +293,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       )
     end
 
+    context "when packageManager explicitly selects npm" do
+      let(:package_manager_helper) { instance_double(Dependabot::NpmAndYarn::PackageManagerHelper) }
+
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              "content" => Base64.encode64(JSON.dump("packageManager" => "npm@10"))
+            ),
+            headers: json_header
+          )
+        allow(Dependabot::NpmAndYarn::PackageManagerHelper).to receive(:new).and_return(package_manager_helper)
+        allow(package_manager_helper).to receive(:setup).with("npm").and_return("10")
+        allow(package_manager_helper).to receive(:setup).with("yarn").and_return(nil)
+        allow(package_manager_helper).to receive(:setup).with("pnpm").and_return(nil)
+      end
+
+      it "reports the manifest-selected npm version" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          { package_managers: { "npm" => "10" } }
+        )
+      end
+    end
+
     context "with a .yarnrc file" do
       before do
         stub_request(:get, url + "?ref=sha")
