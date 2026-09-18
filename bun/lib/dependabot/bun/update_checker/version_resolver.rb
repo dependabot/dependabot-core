@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
 require "dependabot/logger"
+require "dependabot/package/npm_registry_package"
 require "dependabot/bun/dependency_files_filterer"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/file_updater/npmrc_builder"
@@ -515,10 +516,14 @@ module Dependabot
             .select do |versions_with_details|
               version, details = versions_with_details
               next false unless satisfies_peer_reqs_on_dep?(version)
-              next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
 
-              details["peerDependencies"].all? do |dep, req|
+              peer_requirements = Dependabot::Package::NpmRegistryPackage.peer_dependencies(
+                details: details,
+                package_name: dependency.name,
+                version: version.to_s
+              )
+              peer_requirements.all? do |dep, req|
                 dep = top_level_dependencies.find { |d| d.name == dep }
                 next false unless dep
                 next git_dependency?(dep) if req.include?("/")
@@ -555,7 +560,7 @@ module Dependabot
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.any(String, Gem::Version))) }
-        def latest_version_of_dep_with_satisfied_peer_reqs(dep) # rubocop:disable Metrics/PerceivedComplexity
+        def latest_version_of_dep_with_satisfied_peer_reqs(dep)
           dependency_version = version_for_dependency(dep)
           version_with_detail =
             latest_version_finder(dep)
@@ -564,9 +569,13 @@ module Dependabot
               version, details = version_details
 
               next false unless !dependency_version || version > dependency_version
-              next true unless details["peerDependencies"]
 
-              details["peerDependencies"].all? do |peer_dep_name, req|
+              peer_requirements = Dependabot::Package::NpmRegistryPackage.peer_dependencies(
+                details: details,
+                package_name: dep.name,
+                version: version.to_s
+              )
+              peer_requirements.all? do |peer_dep_name, req|
                 # Can't handle multiple peer dependencies
                 next false unless peer_dep_name == dependency.name
                 next git_dependency?(dependency) if req.include?("/")
