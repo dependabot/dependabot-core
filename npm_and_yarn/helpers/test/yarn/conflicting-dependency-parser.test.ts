@@ -139,4 +139,35 @@ describe("findConflictingDependencies", () => {
     const result = await findConflictingDependencies(tempDir, "abind", "1.0.5");
     expect(result).toEqual([]);
   });
+
+  it("finds conflicting dependencies behind a yarn v1 npm alias", async () => {
+    helpers.copyDependencies("conflicting-dependency-parser/aliased", tempDir);
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("evaluates every edge when aliases resolve to the same package", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-duplicate",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "askconfig@4.0.4 requires abind@^1.0.0",
+        name: "askconfig",
+        version: "4.0.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
 });
