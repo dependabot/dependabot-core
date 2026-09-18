@@ -324,7 +324,8 @@ module Dependabot
             Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
             lockfiles,
             registry_config_files,
-            credentials
+            credentials,
+            package_json.directory
           ),
           T.nilable(PackageManagerHelper)
         )

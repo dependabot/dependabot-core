@@ -104,7 +104,8 @@ module Dependabot
             package_json_document.package_manager_config,
             lockfiles,
             registry_config_files,
-            credentials
+            credentials,
+            package_json.directory
           ),
           T.nilable(PackageManagerHelper)
         )

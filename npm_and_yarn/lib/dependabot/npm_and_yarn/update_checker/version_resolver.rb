@@ -971,6 +971,9 @@ module Dependabot
           ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
         end
         def run_npm8_checker(version:)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           cmd =
             "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
           output = Helpers.run_npm_command(cmd)

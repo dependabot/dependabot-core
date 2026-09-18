@@ -22,6 +22,7 @@ module Dependabot
         sig { params(files: T::Array[Dependabot::DependencyFile]).void }
         def dependency_files=(files)
           Thread.current[:npm_and_yarn_dependency_files] = files
+          self.package_manager_directory = files.first&.directory
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
@@ -37,6 +38,16 @@ module Dependabot
         sig { returns(T.nilable(T::Array[Dependabot::Credential])) }
         def credentials
           T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
+        end
+
+        sig { params(directory: T.nilable(String)).void }
+        def package_manager_directory=(directory)
+          Thread.current[:npm_and_yarn_package_manager_directory] = directory
+        end
+
+        sig { returns(T.nilable(String)) }
+        def package_manager_directory
+          T.cast(Thread.current[:npm_and_yarn_package_manager_directory], T.nilable(String))
         end
       end
 
@@ -287,19 +298,20 @@ module Dependabot
         supported
       end
 
-      sig { params(name: String).returns(T.nilable(String)) }
-      def self.effective_package_manager_version(name)
+      sig { params(name: String, directory: T.nilable(String)).returns(T.nilable(String)) }
+      def self.effective_package_manager_version(name, directory: package_manager_directory)
         versions_by_directory = Thread.current[:dependabot_corepack_effective_versions]
         return nil unless versions_by_directory.is_a?(Hash)
 
-        versions_by_directory.fetch(Dir.pwd, {}).fetch(name, nil)
+        versions_by_directory.dig(directory || Dir.pwd, name)
       end
 
-      sig { params(name: String, version: String).void }
-      def self.set_effective_package_manager_version(name, version)
+      sig { params(name: String, version: String, directory: T.nilable(String)).void }
+      def self.set_effective_package_manager_version(name, version, directory: package_manager_directory)
+        directory ||= Dir.pwd
         Thread.current[:dependabot_corepack_effective_versions] ||= {}
-        Thread.current[:dependabot_corepack_effective_versions][Dir.pwd] ||= {}
-        Thread.current[:dependabot_corepack_effective_versions][Dir.pwd][name] = version
+        Thread.current[:dependabot_corepack_effective_versions][directory] ||= {}
+        Thread.current[:dependabot_corepack_effective_versions][directory][name] = version
       end
 
       sig { params(name: String, env: T.nilable(T::Hash[String, String])).void }
@@ -594,13 +606,14 @@ module Dependabot
         params(
           name: String,
           version: String,
+          directory: T.nilable(String),
           env: T.nilable(T::Hash[String, String])
         )
           .returns(String)
       end
-      def self.install(name, version, env: {})
+      def self.install(name, version, directory: package_manager_directory, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-        set_effective_package_manager_version(name, version)
+        set_effective_package_manager_version(name, version, directory: directory)
 
         begin
           # Try to activate the specified version
@@ -613,30 +626,36 @@ module Dependabot
             Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name, env: env)
+            fallback_to_local_version(name, directory: directory, env: env)
           end
         rescue StandardError => e
           Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
-          fallback_to_local_version(name, env: env)
+          fallback_to_local_version(name, directory: directory, env: env)
         end
 
         # Verify the installed version
         installed_version = package_manager_version(name, env: env)
-        set_effective_package_manager_version(name, installed_version)
+        set_effective_package_manager_version(name, installed_version, directory: directory)
 
         installed_version
       end
 
       # Attempt to activate the local version of the package manager
-      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
-      def self.fallback_to_local_version(name, env: {})
+      sig do
+        params(
+          name: String,
+          directory: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.fallback_to_local_version(name, directory: package_manager_directory, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
 
         # Fetch the currently installed version directly from the environment
         current_version = local_package_manager_version(name)
-        set_effective_package_manager_version(name, current_version)
+        set_effective_package_manager_version(name, current_version, directory: directory)
         Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
 
         # Prepare the existing version

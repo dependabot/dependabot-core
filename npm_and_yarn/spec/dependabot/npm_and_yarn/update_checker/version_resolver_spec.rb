@@ -234,7 +234,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+        it "provides dependency files and credentials to npm commands" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do
+            expect(Dependabot::NpmAndYarn::Helpers.dependency_files).to eq(dependency_files)
+            expect(Dependabot::NpmAndYarn::Helpers.credentials).to eq(credentials)
+            ""
+          end
+
+          expect(latest_resolvable_version).to eq(Gem::Version.new("16.3.1"))
+        end
       end
 
       describe "updating a dependency with a peer requirement and some badly written peer dependency requirements" do
@@ -2337,14 +2345,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )]
       end
 
-      it "does not pass the Corepack registry override to the npm command" do
+      it "passes the Corepack registry override to the npm command" do
         resolver.send(:run_npm8_checker, version: "4.17.21")
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
             anything, # The actual command
             hash_including(
-              env: nil
+              env: {
+                "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/artifactory/api/npm/npm",
+                "npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm",
+                "COREPACK_NPM_TOKEN" => "auth-token",
+                "registry" => "https://artifactory.example.com/artifactory/api/npm/npm"
+              }
             )
           )
       end

@@ -6,6 +6,11 @@ require "dependabot/npm_and_yarn/helpers"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
+  after do
+    Thread.current[:dependabot_corepack_effective_versions] = nil
+    Dependabot::NpmAndYarn::Helpers.package_manager_directory = nil
+  end
+
   let(:npm_lockfile) do
     instance_double(
       Dependabot::DependencyFile,
@@ -68,7 +73,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
   let(:package_json) { { "packageManager" => "npm@7" } }
   let(:config) { Dependabot::Package::NpmPackageManagerConfig.from_package_json(package_json) }
-  let(:helper) { described_class.new(config, lockfiles, register_config_files, []) }
+  let(:helper) { described_class.new(config, lockfiles, register_config_files, [], "/") }
 
   describe "#package_manager" do
     context "when npm lockfile exists" do
@@ -263,7 +268,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   end
 
   describe "#detect_version" do
-    let(:helper) { described_class.new(config, lockfiles, register_config_files, []) }
+    let(:helper) { described_class.new(config, lockfiles, register_config_files, [], "/") }
 
     context "when packageManager field exists" do
       let(:package_json) { { "packageManager" => "npm@7.5.2" } }
@@ -460,6 +465,8 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       it "uses the inferred version without installing it" do
         expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
           .with(/corepack install npm/, anything)
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
+          .with(/corepack prepare npm/, any_args)
 
         expect(helper.installed_version("npm")).to eq("7")
       end
@@ -519,7 +526,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           )
         ]
       end
-      let(:helper) { described_class.new(config, lockfiles, register_config_files, credentials) }
+      let(:helper) { described_class.new(config, lockfiles, register_config_files, credentials, "/") }
 
       let(:expected_env) do
         {

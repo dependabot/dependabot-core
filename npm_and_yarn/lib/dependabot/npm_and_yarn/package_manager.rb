@@ -146,11 +146,13 @@ module Dependabot
           config: Dependabot::Package::NpmPackageManagerConfig,
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          credentials: T.nilable(T::Array[Dependabot::Credential])
+          credentials: T.nilable(T::Array[Dependabot::Credential]),
+          directory: String
         ).void
       end
-      def initialize(config, lockfiles, registry_config_files, credentials)
+      def initialize(config, lockfiles, registry_config_files, credentials, directory)
         @lockfiles = lockfiles
+        @directory = directory
         @registry_helper = T.let(
           RegistryHelper.new(registry_config_files, credentials),
           Dependabot::NpmAndYarn::RegistryHelper
@@ -443,7 +445,9 @@ module Dependabot
       def install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
-        return Helpers.install(name, version.to_s, env: corepack_env) if name == NpmPackageManager::NAME
+        if name == NpmPackageManager::NAME
+          return Helpers.install(name, version.to_s, directory: @directory, env: corepack_env)
+        end
 
         begin
           Helpers.package_manager_install(name, version.to_s, env: corepack_env)

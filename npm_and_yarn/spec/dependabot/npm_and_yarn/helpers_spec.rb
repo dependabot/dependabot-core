@@ -9,6 +9,12 @@ require "dependabot/shared_helpers"
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
   before do
     Thread.current[:dependabot_corepack_effective_versions] = nil
+    described_class.package_manager_directory = nil
+  end
+
+  after do
+    Thread.current[:dependabot_corepack_effective_versions] = nil
+    described_class.package_manager_directory = nil
   end
 
   describe "::run_npm_command" do
@@ -29,6 +35,36 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         fingerprint: "corepack npm install dependencies",
         output_observer: kind_of(Proc),
         env: env
+      )
+    end
+
+    it "reactivates the manifest directory's npm version from a temporary directory" do
+      dependency_file = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: "{}",
+        directory: "/frontend"
+      )
+      described_class.set_effective_package_manager_version("npm", "10.9.2", directory: "/frontend")
+      described_class.dependency_files = [dependency_file]
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@10.9.2 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@10.9.2 for immediate activation...")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm install",
+        fingerprint: "corepack npm install",
+        output_observer: kind_of(Proc),
+        env: nil
+      ).and_return("")
+
+      Dir.mktmpdir { |dir| Dir.chdir(dir) { described_class.run_npm_command("install") } }
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "corepack prepare npm@10.9.2 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
       )
     end
   end
