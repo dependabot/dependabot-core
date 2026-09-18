@@ -1101,6 +1101,64 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "with lockfile-only dependency records" do
+      let(:files) { [pyproject, uv_lock] }
+      let(:pyproject) { Dependabot::DependencyFile.new(name: "pyproject.toml", content: "") }
+      let(:lockfile_name) { "uv.lock" }
+      let(:uv_lock) { Dependabot::DependencyFile.new(name: lockfile_name, content: lockfile_content) }
+      let(:lockfile_content) do
+        <<~TOML
+          package = [
+            false,
+            { name = "missing" },
+            { name = false, version = "1" },
+            { name = "Foo_Bar", version = "1.2", dependencies = false },
+            { name = "other", version = "2" },
+          ]
+        TOML
+      end
+
+      it "skips absent values and non-object entries without reading graph fields" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(dependencies.map { |dep| [dep.name, dep.version, dep.requirements] })
+          .to eq([["foo-bar", "1.2", []], ["other", "2", []]])
+      end
+
+      context "when a consumed field is malformed after a valid entry" do
+        let(:lockfile_content) do
+          <<~TOML
+            package = [
+              { name = "before", version = "1" },
+              { name = "invalid", version = 2 },
+              { name = "after", version = "3" },
+            ]
+          TOML
+        end
+
+        it "keeps earlier dependencies and logs the file failure" do
+          expect(Dependabot.logger).to receive(:warn).with(/Error parsing uv.lock:/)
+          expect(dependencies.map(&:name)).to eq(["before"])
+        end
+      end
+
+      context "when package is an object instead of an array" do
+        let(:lockfile_content) { 'package = { name = "ignored", version = "1" }' }
+
+        it "retains the parser's empty result without a warning" do
+          expect(Dependabot.logger).not_to receive(:warn)
+          expect(dependencies).to eq([])
+        end
+      end
+
+      context "when the lockfile is nested" do
+        let(:lockfile_name) { "nested/uv.lock" }
+
+        it "does not add nested lockfile dependencies" do
+          expect(dependencies).to eq([])
+        end
+      end
+    end
+
     context "with uv workspace member pyprojects" do
       let(:files) { [pyproject, workspace_member_pyproject] }
       let(:parsed_files) { [] }
