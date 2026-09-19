@@ -313,6 +313,46 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
+      context "when the contents response is nil" do
+        # Sawyer decodes an empty response body to nil, so Octokit#contents
+        # hands back nil rather than a resource or an array of resources.
+        let(:github_response) { nil }
+
+        before do
+          stub_request(:get, github_url + "?ref=v1.4.0")
+            .to_return(status: github_status,
+                       body: github_response,
+                       headers: { "Content-Type" => "application/json" })
+        end
+
+        it "does not raise an error" do
+          expect { changelog_url }.not_to raise_error
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "when the contents response contains a nil entry" do
+        let(:github_response) do
+          files = JSON.parse(fixture("github", "business_files.json"))
+          JSON.dump(files + [nil])
+        end
+
+        it "ignores the nil entry and still finds the changelog" do
+          expect(changelog_url)
+            .to eq("https://github.com/gocardless/business/blob/master/CHANGELOG.md")
+        end
+      end
+
+      context "when the contents response contains no nils" do
+        let(:github_response) { fixture("github", "business_files.json") }
+
+        it "still finds the changelog" do
+          expect(changelog_url)
+            .to eq("https://github.com/gocardless/business/blob/master/CHANGELOG.md")
+        end
+      end
+
       context "with a file containing changelog name in the middle" do
         let(:github_response) do
           fixture("github", "business_files_with_misleading_release_doc.json")
@@ -937,6 +977,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           finder.changelog_text
           expect(WebMock).to have_requested(:get, github_url).once
           expect(WebMock).to have_requested(:get, github_changelog_url).once
+        end
+
+        context "when the contents response contains a nil entry" do
+          let(:github_contents_response) do
+            files = JSON.parse(fixture("github", "business_files.json"))
+            JSON.dump(files + [nil])
+          end
+
+          it { is_expected.to eq(expected_pruned_changelog) }
         end
 
         context "when dealing with non-standard characters" do
