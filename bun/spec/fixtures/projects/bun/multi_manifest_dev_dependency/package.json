@@ -1,0 +1,9 @@
+{
+  "name": "multi-manifest-dev-dependency",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "devDependencies": {
+    "debug": "4.3.3",
+    "ms": "2.0.0"
+  }
+}

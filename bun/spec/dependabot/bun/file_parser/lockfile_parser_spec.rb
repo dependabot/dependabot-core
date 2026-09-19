@@ -9,6 +9,105 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
     described_class.new(dependency_files: dependency_files)
   end
 
+  describe "#manifest_copy" do
+    def bun_lock(name, workspaces, packages)
+      content = { "lockfileVersion" => 1, "workspaces" => workspaces, "packages" => packages }.to_json
+      Dependabot::DependencyFile.new(name: name, content: content)
+    end
+
+    def entry(version)
+      ["ms@#{version}", "", {}, "sha512-example"]
+    end
+
+    def manifest_copy(manifest_name, workspace_name)
+      lockfile_parser.manifest_copy(dependency_name: "ms", workspace_name: workspace_name, manifest_name: manifest_name)
+    end
+
+    before { Dependabot::Experiments.register(:enable_bun_subdependency_types, true) }
+
+    after { Dependabot::Experiments.reset! }
+
+    context "when a workspace has its own lockfile" do
+      # packages/app/bun.lock has ms only as a devDependency. The root bun.lock also has
+      # ms, and there it is a production dependency.
+      let(:dependency_files) do
+        [
+          bun_lock("bun.lock", { "" => { "dependencies" => { "ms" => "2.1.2" } } }, { "ms" => entry("2.1.2") }),
+          bun_lock(
+            "packages/app/bun.lock",
+            { "" => { "devDependencies" => { "ms" => "2.0.0" } } },
+            { "ms" => entry("2.0.0") }
+          )
+        ]
+      end
+
+      it "uses the closest lockfile for both the version and the type" do
+        copy = manifest_copy("packages/app/package.json", "app")
+
+        expect(copy.details.version).to eq("2.0.0")
+        expect(copy.reachable_from_production).to be(false)
+      end
+
+      it "uses the root lockfile for the root manifest" do
+        copy = manifest_copy("package.json", nil)
+
+        expect(copy.details.version).to eq("2.1.2")
+        expect(copy.reachable_from_production).to be(true)
+      end
+    end
+
+    context "when the closest lockfile has only the workspace's nested copy" do
+      let(:dependency_files) do
+        [
+          bun_lock("bun.lock", { "" => { "dependencies" => { "ms" => "2.1.2" } } }, { "ms" => entry("2.1.2") }),
+          bun_lock(
+            "packages/app/bun.lock",
+            { "" => {}, "packages/app" => { "name" => "app", "devDependencies" => { "ms" => "2.2.0" } } },
+            { "app/ms" => entry("2.2.0") }
+          )
+        ]
+      end
+
+      it "does not fall through to a farther lockfile" do
+        copy = manifest_copy("packages/app/package.json", "app")
+
+        expect(copy.details.version).to eq("2.2.0")
+        expect(copy.reachable_from_production).to be(false)
+      end
+    end
+
+    context "when one lockfile has both a workspace copy and a hoisted copy" do
+      let(:dependency_files) do
+        [
+          bun_lock(
+            "bun.lock",
+            {
+              "" => { "devDependencies" => { "ms" => "2.0.0" } },
+              "packages/app" => { "name" => "app", "dependencies" => { "ms" => "2.1.2" } }
+            },
+            { "ms" => entry("2.0.0"), "app/ms" => entry("2.1.2") }
+          )
+        ]
+      end
+
+      it "gives each manifest its own copy" do
+        root_copy = manifest_copy("package.json", nil)
+        app_copy = manifest_copy("packages/app/package.json", "app")
+
+        expect([root_copy.details.version, root_copy.reachable_from_production]).to eq(["2.0.0", false])
+        expect([app_copy.details.version, app_copy.reachable_from_production]).to eq(["2.1.2", true])
+      end
+    end
+
+    context "when no lockfile has the dependency" do
+      let(:dependency_files) { [bun_lock("bun.lock", { "" => {} }, {})] }
+
+      it "returns nil" do
+        expect(manifest_copy("package.json", nil)).to be_nil
+      end
+    end
+  end
+
   describe "#parse" do
     subject(:dependencies) { lockfile_parser.parse }
 
