@@ -81,6 +81,216 @@ RSpec.describe Dependabot::Nub::UpdateChecker::VersionResolver do
     Dependabot::Experiments.reset!
   end
 
+  describe "#latest_resolvable_version peer metadata boundary" do
+    subject(:resolved_version) { resolver.latest_resolvable_version }
+
+    let(:project_name) { "javascript/peer_dependency_no_lockfile" }
+    let(:dependency_files) do
+      [
+        *super(),
+        # nub.lock is a pnpm v9 lockfile, not bun's JSON one. Both packages must parse as locked at
+        # 15.2.0, or the full-unlock path reads react-dom's current version from the registry instead.
+        Dependabot::DependencyFile.new(
+          name: "nub.lock",
+          content: <<~YAML
+            lockfileVersion: '9.0'
+
+            settings:
+              autoInstallPeers: true
+              excludeLinksFromLockfile: false
+
+            importers:
+
+              .:
+                dependencies:
+                  react:
+                    specifier: ^15.2.0
+                    version: 15.2.0
+                  react-dom:
+                    specifier: ^15.2.0
+                    version: 15.2.0(react@15.2.0)
+
+            packages:
+
+              react-dom@15.2.0:
+                resolution: {integrity: sha1-zJuaL1HkYNanJ8eyMFj+lPQsh0w=}
+                peerDependencies:
+                  react: ^15.2.0
+
+              react@15.2.0:
+                resolution: {integrity: sha1-y4VEmxDHS6jNS94M0oZ7Xu4JqXQ=}
+
+            snapshots:
+
+              react-dom@15.2.0(react@15.2.0):
+                dependencies:
+                  react: 15.2.0
+
+              react@15.2.0: {}
+          YAML
+        )
+      ]
+    end
+    let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "react-dom",
+        version: "15.2.0",
+        package_manager: "nub",
+        requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+      )
+    end
+    let(:peers) { { "react" => "^16.0.0" } }
+    let(:current_peers) { { "react" => "^15.0.0" } }
+    let(:react_dom_registry_response) do
+      {
+        "versions" => {
+          "15.2.0" => { "peerDependencies" => current_peers },
+          "16.3.1" => { "peerDependencies" => peers },
+          "17.0.0" => { "deprecated" => "unused", "peerDependencies" => ["unconsumed"] }
+        },
+        "dist-tags" => { "latest" => "16.3.1" }
+      }.to_json
+    end
+
+    # Bun names the candidate on the command line (`update <name>@<version>`). Nub pins it into
+    # package.json and re-resolves with `install --lockfile-only`, so these stubs read it back from
+    # the manifest that run_nub_checker has just written.
+    def candidate_pinned?
+      JSON.parse(File.read("package.json")).fetch("dependencies").value?("16.3.1")
+    end
+
+    before do
+      allow(Dependabot::Nub::Helpers).to receive(:run_nub_command) do
+        next "" unless candidate_pinned?
+
+        raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "react-dom@16.3.1 requires a peer of react@^16.0.0 but none is installed.",
+          error_context: {}
+        )
+      end
+    end
+
+    it "rejects an unsatisfied candidate without reading deprecated release metadata" do
+      expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+    end
+
+    [nil, false, {}].each do |value|
+      context "with peer requirements set to #{value.inspect}" do
+        let(:peers) { value }
+
+        it "retains the no-peer-requirements behavior" do
+          expect(resolved_version).to eq(latest_allowable_version)
+        end
+      end
+    end
+
+    context "with malformed peer metadata on the current version" do
+      let(:current_peers) { ["unconsumed"] }
+
+      it "retains the current-version shortcut" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "with a malformed candidate peer map" do
+      let(:peers) { ["invalid"] }
+
+      it "raises a contextual type error instead of a helper fallback" do
+        expect { resolved_version }.to raise_error(TypeError, /react-dom.*16\.3\.1.*peerDependencies/)
+      end
+    end
+
+    context "with a malformed later peer requirement" do
+      let(:peers) { { "react" => "<0", "other" => 1 } }
+
+      it "decodes the complete map before checking compatibility" do
+        expect { resolved_version }.to raise_error(TypeError, /peerDependencies values must be strings/)
+      end
+    end
+
+    context "with invalid requirement syntax" do
+      let(:peers) { { "react" => "not a requirement" } }
+
+      it "rejects the candidate through the existing syntax handling" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "when the checker succeeds" do
+      before do
+        allow(Dependabot::Nub::Helpers).to receive(:run_nub_command)
+          .and_return("react-dom@16.3.1 requires a peer of react@^16 but none is installed.")
+      end
+
+      it "ignores successful stdout and caches the empty result" do
+        2.times { expect(resolver.latest_resolvable_version).to eq(latest_allowable_version) }
+        expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).once
+      end
+    end
+
+    context "with an unrecognized helper failure" do
+      before do
+        allow(Dependabot::Nub::Helpers).to receive(:run_nub_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "unrecognized failure", error_context: {})
+        )
+      end
+
+      it "preserves the fallback to the latest version" do
+        expect(resolved_version).to eq(latest_allowable_version)
+      end
+    end
+
+    context "with an unrelated execution error" do
+      before do
+        allow(Dependabot::Nub::Helpers).to receive(:run_nub_command).and_raise(TypeError, "unrelated error")
+      end
+
+      it "does not disguise the error as an empty conflict list" do
+        expect { resolved_version }.to raise_error(TypeError, "unrelated error")
+      end
+    end
+
+    context "with a pre-existing conflict for the same names and a different range" do
+      let(:peers) { ["unconsumed"] }
+
+      before do
+        allow(Dependabot::Nub::Helpers).to receive(:run_nub_command) do
+          range = candidate_pinned? ? "^16.0.0" : "^14.0.0"
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "react-dom@16.3.1 requires a peer of react@#{range} but none is installed.",
+            error_context: {}
+          )
+        end
+      end
+
+      it "removes the pre-existing conflict by name pair" do
+        expect(resolved_version).to eq(latest_allowable_version)
+      end
+    end
+
+    context "when the updated dependency is required by a peer" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "nub",
+          requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+        )
+      end
+      let(:current_peers) { ["unconsumed"] }
+
+      it "preserves full-unlock payloads and skips non-newer peer candidates before decoding" do
+        updates = resolver.dependency_updates_from_full_unlock
+
+        expect(updates.first[:dependency]).to be(dependency)
+        expect(updates.map(&:keys)).to eq([%i(dependency version previous_version)] * 2)
+        expect(updates.map { |update| [update[:dependency].name, update[:version].to_s, update[:previous_version]] })
+          .to eq([["react", "16.3.1", "15.2.0"], ["react-dom", "16.3.1", "15.2.0"]])
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
