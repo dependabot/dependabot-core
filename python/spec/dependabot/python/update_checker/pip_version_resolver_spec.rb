@@ -266,17 +266,51 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       let(:requirements_file) do
         Dependabot::DependencyFile.new(
           name: "requirements.txt",
-          content: "django==1.2.4 --hash=sha256:abc123\n"
+          content: <<~REQUIREMENTS
+            --require-hashes
+            -r requirements/base.txt
+            django==1.2.4 \\
+                --hash=sha256:django-wheel \\
+                --hash=sha256:django-sdist
+          REQUIREMENTS
         )
       end
+      let(:dependency_files) { [requirements_file, base_requirements_file, python_version_file] }
+      let(:base_requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/base.txt",
+          content: "urllib3==1.26.20 --hash=sha256:urllib3-wheel\n"
+        )
+      end
+      let(:resolver_files) { [] }
 
-      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
 
-      it "uses the policy candidate without invoking pip" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
-        expect(Dependabot::SharedHelpers)
-          .not_to have_received(:run_shell_command)
-          .with(a_string_matching(/pip install/), any_args)
+          resolver_files << {
+            requirements: File.read("requirements.txt"),
+            base: File.read("requirements/base.txt")
+          }
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.3" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "resolves with hash-free temporary requirement files" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.3"))
+        expect(resolver_files).to contain_exactly(
+          {
+            requirements: "-r requirements/base.txt\ndjango>1.2.4,<=3.2.4\n",
+            base: "urllib3==1.26.20\n"
+          }
+        )
       end
     end
 
