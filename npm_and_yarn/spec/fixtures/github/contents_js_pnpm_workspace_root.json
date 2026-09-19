@@ -1,0 +1,66 @@
+[
+  {
+    "name": "package.json",
+    "path": "package.json",
+    "sha": "1111111111111111111111111111111111111111",
+    "size": 100,
+    "url": "https://api.github.com/repos/org/repo/contents/package.json?ref=main",
+    "html_url": "https://github.com/org/repo/blob/main/package.json",
+    "git_url": "https://api.github.com/repos/org/repo/git/blobs/1111111111111111111111111111111111111111",
+    "download_url": "https://raw.githubusercontent.com/org/repo/main/package.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/org/repo/contents/package.json?ref=main",
+      "git": "https://api.github.com/repos/org/repo/git/blobs/1111111111111111111111111111111111111111",
+      "html": "https://github.com/org/repo/blob/main/package.json"
+    }
+  },
+  {
+    "name": "packages",
+    "path": "packages",
+    "sha": "2222222222222222222222222222222222222222",
+    "size": 100,
+    "url": "https://api.github.com/repos/org/repo/contents/packages?ref=main",
+    "html_url": "https://github.com/org/repo/blob/main/packages",
+    "git_url": "https://api.github.com/repos/org/repo/git/blobs/2222222222222222222222222222222222222222",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/org/repo/contents/packages?ref=main",
+      "git": "https://api.github.com/repos/org/repo/git/blobs/2222222222222222222222222222222222222222",
+      "html": "https://github.com/org/repo/blob/main/packages"
+    }
+  },
+  {
+    "name": "pnpm-lock.yaml",
+    "path": "pnpm-lock.yaml",
+    "sha": "3333333333333333333333333333333333333333",
+    "size": 100,
+    "url": "https://api.github.com/repos/org/repo/contents/pnpm-lock.yaml?ref=main",
+    "html_url": "https://github.com/org/repo/blob/main/pnpm-lock.yaml",
+    "git_url": "https://api.github.com/repos/org/repo/git/blobs/3333333333333333333333333333333333333333",
+    "download_url": "https://raw.githubusercontent.com/org/repo/main/pnpm-lock.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/org/repo/contents/pnpm-lock.yaml?ref=main",
+      "git": "https://api.github.com/repos/org/repo/git/blobs/3333333333333333333333333333333333333333",
+      "html": "https://github.com/org/repo/blob/main/pnpm-lock.yaml"
+    }
+  },
+  {
+    "name": "pnpm-workspace.yaml",
+    "path": "pnpm-workspace.yaml",
+    "sha": "4444444444444444444444444444444444444444",
+    "size": 100,
+    "url": "https://api.github.com/repos/org/repo/contents/pnpm-workspace.yaml?ref=main",
+    "html_url": "https://github.com/org/repo/blob/main/pnpm-workspace.yaml",
+    "git_url": "https://api.github.com/repos/org/repo/git/blobs/4444444444444444444444444444444444444444",
+    "download_url": "https://raw.githubusercontent.com/org/repo/main/pnpm-workspace.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/org/repo/contents/pnpm-workspace.yaml?ref=main",
+      "git": "https://api.github.com/repos/org/repo/git/blobs/4444444444444444444444444444444444444444",
+      "html": "https://github.com/org/repo/blob/main/pnpm-workspace.yaml"
+    }
+  }
+]
