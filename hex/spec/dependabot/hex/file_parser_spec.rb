@@ -516,7 +516,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "hex"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "2.3.1"
+        expect(package_manager.version.to_s).to eq "2.5.1"
       end
     end
 
@@ -526,7 +526,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "elixir"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.19.5"
+        expect(language.version.to_s).to eq "1.20.3"
       end
     end
   end
