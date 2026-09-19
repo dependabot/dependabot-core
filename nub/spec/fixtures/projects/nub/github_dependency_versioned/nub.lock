@@ -1,0 +1,23 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      is-number:
+        specifier: jonschlinkert/is-number#2.0.0
+        version: https://codeload.github.com/jonschlinkert/is-number/tar.gz/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8
+
+packages:
+
+  is-number@https://codeload.github.com/jonschlinkert/is-number/tar.gz/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8:
+    resolution: {gitHosted: true, integrity: sha512-GgHZHB+MPNjqfxL4rsMBmxayLMVUPQdyrevKR8oNif8C27lpfer1ZcLw4HnCa7JFSJJgaQ3jJZWn0iFzOH7e1w==, tarball: https://codeload.github.com/jonschlinkert/is-number/tar.gz/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8}
+    version: 2.0.0
+
+snapshots:
+
+  is-number@https://codeload.github.com/jonschlinkert/is-number/tar.gz/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8: {}

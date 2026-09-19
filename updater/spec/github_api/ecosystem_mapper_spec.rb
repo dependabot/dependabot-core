@@ -11,6 +11,7 @@ RSpec.describe GithubApi::EcosystemMapper do
       "bundler" => "rubygems",
       "npm_and_yarn" => "npm",
       "bun" => "npm",
+      "nub" => "npm",
       "pip" => "pypi",
       "uv" => "pypi",
       "go_modules" => "golang",

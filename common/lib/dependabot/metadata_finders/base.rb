@@ -15,7 +15,7 @@ module Dependabot
       require "dependabot/metadata_finders/base/release_finder"
       require "dependabot/metadata_finders/base/commits_finder"
 
-      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = %w(bun npm_and_yarn pub).freeze
+      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = %w(bun npm_and_yarn nub pub).freeze
 
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
