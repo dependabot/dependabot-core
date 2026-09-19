@@ -76,5 +76,28 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         )
       end
     end
+
+    context "with yarn berry lockfiles" do
+      let(:dependency_files) { project_dependency_files("yarn_berry/subdependency_out_of_range_gt") }
+
+      it "returns the right array of blocking dependencies" do
+        expect(conflicting_dependencies).to contain_exactly(
+          {
+            "explanation" => "objnest@4.1.4 requires abind@^1.0.0",
+            "name" => "objnest",
+            "requirement" => "^1.0.0",
+            "version" => "4.1.4"
+          }
+        )
+      end
+
+      context "with no blocking dependencies" do
+        let(:target_version) { "1.0.0" }
+
+        it "returns an empty array" do
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
+    end
   end
 end
