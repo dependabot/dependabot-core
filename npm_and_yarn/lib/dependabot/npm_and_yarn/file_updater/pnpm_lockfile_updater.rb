@@ -723,11 +723,10 @@ module Dependabot
             .returns(T.noreturn)
         end
         def handle_pnpm_lock_updater_error(error, pnpm_locks)
-          pnpm_lock = T.must(pnpm_locks.first)
           error_message = error.message
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
-            raise_resolvability_error(error_message, pnpm_lock)
+            raise_resolvability_error(error_message, pnpm_locks)
           end
 
           if error_message.match?(UNREACHABLE_GIT)
@@ -819,7 +818,7 @@ module Dependabot
           end
 
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
-          raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
+          raise_unsupported_engine_error(error_message, pnpm_locks) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
           if error_message.match?(ERR_INVALID_THIS) && error_message.match?(URL_SEARCH_PARAMS)
             msg = "Error while resolving dependencies."
@@ -828,7 +827,7 @@ module Dependabot
           end
 
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
-            raise_unsupported_platform_error(error_message, pnpm_lock)
+            raise_unsupported_platform_error(error_message, pnpm_locks)
           end
 
           if error_message.match?(ERR_PNPM_TRUST_DOWNGRADE)
@@ -849,11 +848,12 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
 
-        sig { params(error_message: String, pnpm_lock: Dependabot::DependencyFile).returns(T.noreturn) }
-        def raise_resolvability_error(error_message, pnpm_lock)
+        sig { params(error_message: String, pnpm_locks: T::Array[Dependabot::DependencyFile]).returns(T.noreturn) }
+        def raise_resolvability_error(error_message, pnpm_locks)
           dependency_names = dependencies.map(&:name).join(", ")
+          paths = pnpm_locks.map(&:path).join(", ")
           msg = "Error whilst updating #{dependency_names} in " \
-                "#{pnpm_lock.path}:\n#{error_message}"
+                "#{paths}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
@@ -869,10 +869,10 @@ module Dependabot
         sig do
           params(
             error_message: String,
-            _pnpm_lock: Dependabot::DependencyFile
+            _pnpm_locks: T::Array[Dependabot::DependencyFile]
           ).returns(T.nilable(T.noreturn))
         end
-        def raise_unsupported_engine_error(error_message, _pnpm_lock)
+        def raise_unsupported_engine_error(error_message, _pnpm_locks)
           match_pkg_mgr = error_message.match(PACAKGE_MANAGER)
           match_version = error_message.match(VERSION_REQUIREMENT)
 
@@ -937,11 +937,11 @@ module Dependabot
         sig do
           params(
             error_message: String,
-            _pnpm_lock: Dependabot::DependencyFile
+            _pnpm_locks: T::Array[Dependabot::DependencyFile]
           )
             .returns(T.nilable(T.noreturn))
         end
-        def raise_unsupported_platform_error(error_message, _pnpm_lock)
+        def raise_unsupported_platform_error(error_message, _pnpm_locks)
           match_dep = error_message.match(PLATFORM_PACAKGE_DEP)
           match_version = error_message.match(PLATFORM_VERSION_REQUIREMENT)
 

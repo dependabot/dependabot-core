@@ -1576,4 +1576,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
   end
+
+  describe "error attribution across a batch" do
+    let(:files) { project_dependency_files("pnpm/workspaces_separate_lockfiles") }
+    let(:repo_contents_path) { build_tmp_repo("pnpm/workspaces_separate_lockfiles", path: "projects") }
+    let(:pnpm_locks) do
+      files.select { |f| f.name.end_with?("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml") }
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "ERR_PNPM_NO_MATCHING_VERSION no matching version found",
+          error_context: {}
+        )
+      )
+    end
+
+    it "names every lockfile the batch was resolving" do
+      expect { updater.updated_pnpm_lock_contents(pnpm_locks) }
+        .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("packages/package1/pnpm-lock.yaml")
+          expect(error.message).to include("packages/package2/pnpm-lock.yaml")
+        end
+    end
+  end
 end
