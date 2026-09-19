@@ -7,6 +7,7 @@ on: # yamllint disable-line rule:truthy
       - main
     paths-ignore:
       - "common/lib/dependabot.rb"
+  workflow_dispatch:
 permissions: {}
 
 jobs:
@@ -31,10 +32,15 @@ jobs:
       contents: read
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      proposed_build_count: ${{ steps.proposed.outputs.build_count }}
+      proposed_build_matrix: ${{ steps.proposed.outputs.build_matrix }}
+      proposed_promote_count: ${{ steps.proposed.outputs.promote_count }}
+      proposed_promote_matrix: ${{ steps.proposed.outputs.promote_matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Generate ecosystem matrix
@@ -50,6 +56,41 @@ jobs:
         run: |
           MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+      - name: Find affected ecosystems
+        id: changes
+        if: github.event_name == 'push'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          token: ''
+          base: ${{ github.event.before }}
+          ref: ${{ github.sha }}
+          filters: .github/image-filters.yml
+
+      - name: Resolve proposed image matrix
+        id: proposed
+        continue-on-error: true
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
+          FORCE_ALL: ${{ github.event_name != 'push' || steps.changes.outcome != 'success' }}
+        run: |
+          RESULT=$(script/resolve-image-matrix)
+          echo "build_count=$(jq -r '.build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "build_matrix=$(jq -c '.build' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "promote_count=$(jq -r '.promote_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "promote_matrix=$(jq -c '.promote' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Proposed image selection"
+            echo
+            echo "Build: $(jq -r '.build_count' <<< "$RESULT")"
+            jq -r '.build[]? | "- `\(.target)`"' <<< "$RESULT"
+            echo
+            echo "Promote unchanged: $(jq -r '.promote_count' <<< "$RESULT")"
+            jq -r '.promote[]? | "- `\(.target)`"' <<< "$RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   push-updater-image:
     name: Deploy
