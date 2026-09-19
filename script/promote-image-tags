@@ -10,7 +10,9 @@ fi
 targets_json="${TARGETS_JSON:-[]}"
 tags_json="${TAGS_JSON:-[]}"
 fail_on_conflict="${FAIL_ON_CONFLICT:-false}"
+source_image_prefix="${SOURCE_IMAGE_PREFIX:-$IMAGE_PREFIX}"
 source_tag="${SOURCE_TAG:-}"
+source_target="${SOURCE_TARGET:-}"
 
 if [[ -z "$source_tag" ]]; then
   echo "SOURCE_TAG must identify the immutable source image tag" >&2
@@ -35,6 +37,11 @@ fi
 mapfile -t targets < <(jq -r '.[].target' <<< "$targets_json")
 mapfile -t tags < <(jq -r '.[]' <<< "$tags_json")
 
+if [[ -n "$source_target" && "${#targets[@]}" -ne 1 ]]; then
+  echo "SOURCE_TARGET can only be used with one destination target" >&2
+  exit 1
+fi
+
 for target in "${targets[@]}"; do
   if [[ ! "$target" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
     echo "Invalid image target: $target" >&2
@@ -42,9 +49,15 @@ for target in "${targets[@]}"; do
   fi
 
   image="${IMAGE_PREFIX}${target}"
+  resolved_source_target="${source_target:-$target}"
+  if [[ ! "$resolved_source_target" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
+    echo "Invalid source image target: $resolved_source_target" >&2
+    exit 1
+  fi
+  source_image="${source_image_prefix}${resolved_source_target}"
   source_digest=$(
     docker buildx imagetools inspect \
-      "${image}:${source_tag}" \
+      "${source_image}:${source_tag}" \
       --format '{{json .Manifest.Digest}}' |
       jq -er 'select(type == "string" and startswith("sha256:"))'
   )
@@ -69,7 +82,7 @@ for target in "${targets[@]}"; do
   for tag in "${tags[@]}"; do
     create_args+=(--tag "${image}:${tag}")
   done
-  create_args+=("${image}@${source_digest}")
+  create_args+=("${source_image}@${source_digest}")
 
   docker "${create_args[@]}"
 
