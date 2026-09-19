@@ -144,7 +144,7 @@ module Dependabot
             .reject { |dep| handled.include?(dep.name.downcase) }
             .each do |dep|
               error_handler.handle_dependency_error(
-                error: Dependabot::DependabotError.new(
+                error: Dependabot::DependabotError.with_backtrace(
                   "Security update failed for #{dep.name} #{dep.version}"
                 ),
                 dependency: dep,
