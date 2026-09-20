@@ -62,8 +62,10 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
 
             # Packages that ship with any Julia release the project supports
             # must not have their compat entries track registry releases; they
-            # get the versions the project has to accept instead
-            julia_compat = julia_compat_spec(project_info)
+            # get the versions the project has to accept instead. An
+            # environment is bounded by the julia compat of the projects it
+            # resolves with too, so those must be laid out on disk around it.
+            julia_compat = effective_julia_compat(ctx.env)
             stdlib_julia_versions = julia_versions_for_compat(julia_compat)
             function add_stdlib_info!(dep_info, dep_uuid)
                 dep_info["stdlib"] = is_stdlib_for_julia_versions(dep_uuid, stdlib_julia_versions)

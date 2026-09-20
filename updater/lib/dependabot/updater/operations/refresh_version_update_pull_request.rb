@@ -302,6 +302,13 @@ module Dependabot
           else
             :update_not_possible
           end
+        rescue Dependabot::AllVersionsIgnored
+          # Security updates rely on this being surfaced to halt the run, so only
+          # non-security jobs treat every ignored version as "no update possible".
+          raise if job.security_updates_only?
+
+          Dependabot.logger.info("All updates for #{checker.dependency.name} were ignored")
+          :update_not_possible
         end
 
         sig do
