@@ -291,6 +291,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with a package-lock.json and a bun.lock" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_npm_and_bun.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "bun.lock?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "bun_lock_content.json"),
+          headers: json_header
+        )
+    end
+
+    it "does not raise, since npm is genuinely in use" do
+      expect { file_fetcher_instance.files }.not_to raise_error
+    end
+  end
+
   context "with a yarn.lock but no package-lock.json file" do
     before do
       stub_request(:get, url + "?ref=sha")
