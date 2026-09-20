@@ -81,6 +81,180 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     Dependabot::Experiments.reset!
   end
 
+  describe "#latest_resolvable_version peer metadata boundary" do
+    subject(:resolved_version) { resolver.latest_resolvable_version }
+
+    let(:project_name) { "pnpm/peer_dependency" }
+    let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "react-dom",
+        version: "15.2.0",
+        package_manager: "npm_and_yarn",
+        requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+      )
+    end
+    let(:peers) { { "react" => "^16.0.0" } }
+    let(:current_peers) { { "react" => "^15.0.0" } }
+    let(:react_dom_registry_response) do
+      {
+        "versions" => {
+          "15.2.0" => { "peerDependencies" => current_peers },
+          "16.3.1" => { "peerDependencies" => peers },
+          "17.0.0" => { "deprecated" => "unused", "peerDependencies" => ["unconsumed"] }
+        },
+        "dist-tags" => { "latest" => "16.3.1" }
+      }.to_json
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+        next "" unless command.include?("@16.3.1")
+
+        raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "react-dom@16.3.1 requires a peer of react@^16.0.0 but none is installed.",
+          error_context: {}
+        )
+      end
+    end
+
+    it "rejects an unsatisfied candidate without reading deprecated release metadata" do
+      expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+    end
+
+    [nil, false, {}].each do |value|
+      context "with peer requirements set to #{value.inspect}" do
+        let(:peers) { value }
+
+        it "retains the no-peer-requirements behavior" do
+          expect(resolved_version).to eq(latest_allowable_version)
+        end
+      end
+    end
+
+    context "with malformed peer metadata on the current version" do
+      let(:current_peers) { ["unconsumed"] }
+
+      it "retains the current-version shortcut" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "with a malformed candidate peer map" do
+      let(:peers) { ["invalid"] }
+
+      it "raises a contextual type error instead of a helper fallback" do
+        expect { resolved_version }.to raise_error(TypeError, /react-dom.*16\.3\.1.*peerDependencies/)
+      end
+    end
+
+    context "with a malformed later peer requirement" do
+      let(:peers) { { "react" => "<0", "other" => 1 } }
+
+      it "decodes the complete map before checking compatibility" do
+        expect { resolved_version }.to raise_error(TypeError, /peerDependencies values must be strings/)
+      end
+    end
+
+    context "with invalid requirement syntax" do
+      let(:peers) { { "react" => "not a requirement" } }
+
+      it "rejects the candidate through the existing syntax handling" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "when the checker succeeds" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("ordinary successful output")
+      end
+
+      it "caches a completed empty result" do
+        2.times { expect(resolver.latest_resolvable_version).to eq(latest_allowable_version) }
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command).once
+      end
+    end
+
+    context "when pnpm's follow-up check returns successful stdout" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+          if command == "--filter . peers check"
+            "✕ unmet peer react\n    ^16.0.0:\n      react-dom@16.3.1\n"
+          else
+            'Run "pnpm peers check" to list them.'
+          end
+        end
+      end
+
+      it "does not start interpreting successful output as a failure" do
+        expect(resolved_version).to eq(latest_allowable_version)
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+          .with("--filter . peers check", fingerprint: "--filter . peers check").once
+      end
+    end
+
+    context "with an unrecognized helper failure" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "unrecognized failure", error_context: {})
+        )
+      end
+
+      it "preserves the fallback to the latest version" do
+        expect(resolved_version).to eq(latest_allowable_version)
+      end
+    end
+
+    context "with an unrelated execution error" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(TypeError, "unrelated error")
+      end
+
+      it "does not disguise the error as an empty conflict list" do
+        expect { resolved_version }.to raise_error(TypeError, "unrelated error")
+      end
+    end
+
+    context "with a pre-existing conflict for the same names and a different range" do
+      let(:peers) { ["unconsumed"] }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+          range = command.include?("@16.3.1") ? "^16.0.0" : "^14.0.0"
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "react-dom@16.3.1 requires a peer of react@#{range} but none is installed.",
+            error_context: {}
+          )
+        end
+      end
+
+      it "removes the pre-existing conflict by name pair" do
+        expect(resolved_version).to eq(latest_allowable_version)
+      end
+    end
+
+    context "when the updated dependency is required by a peer" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+        )
+      end
+      let(:current_peers) { ["unconsumed"] }
+
+      it "preserves full-unlock payloads and skips non-newer peer candidates before decoding" do
+        updates = resolver.dependency_updates_from_full_unlock
+
+        expect(updates.first[:dependency]).to be(dependency)
+        expect(updates.map(&:keys)).to eq([%i(dependency version previous_version)] * 2)
+        expect(updates.map { |update| [update[:dependency].name, update[:version].to_s, update[:previous_version]] })
+          .to eq([["react", "16.3.1", "15.2.0"], ["react-dom", "16.3.1", "15.2.0"]])
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
@@ -1367,6 +1541,36 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
           it "returns nil after checking only the limited number of versions" do
             expect(resolver.latest_resolvable_version).to be_nil
+            expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command).exactly(3).times
+          end
+        end
+
+        context "when a fallback probe raises an unrelated error" do
+          let(:commands) { [] }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+              commands << command
+              if command.include?("@1.3.0")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "ERR_PNPM_TRUST_DOWNGRADE left-pad@1.3.0",
+                  error_context: {}
+                )
+              end
+              if command.include?("@1.2.0") && commands.one? { |entry| entry.include?("@1.2.0") }
+                raise TypeError, "unrelated probe failure"
+              end
+
+              ""
+            end
+          end
+
+          it "restores the original trust state and cached peer check before retrying" do
+            expect { resolver.latest_resolvable_version }.to raise_error(TypeError, "unrelated probe failure")
+
+            expect(resolver.latest_resolvable_version).to eq(Gem::Version.new("1.2.0"))
+            expect(commands.count { |command| command.include?("@1.3.0") }).to eq(1)
+            expect(commands.count { |command| command.include?("@1.2.0") }).to eq(2)
           end
         end
 
