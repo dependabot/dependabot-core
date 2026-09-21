@@ -95,6 +95,73 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
+      context "when the new requirement has no version specifier" do
+        # A version specifier is optional in Python packaging, so the shared
+        # updater must leave such requirements untouched rather than crashing.
+        subject(:updated_files) { updater.updated_dependency_files }
+
+        context "with a bare package name" do
+          let(:requirements) do
+            Dependabot::DependencyFile.new(
+              content: "psycopg2\n",
+              name: "requirements.txt"
+            )
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "psycopg2",
+              version: "2.8.1",
+              requirements: [{
+                file: "requirements.txt",
+                requirement: nil,
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [],
+              package_manager: "uv"
+            )
+          end
+
+          it "does not raise and leaves the file unchanged" do
+            expect { updated_files }.not_to raise_error
+            expect(updated_files).to be_empty
+          end
+        end
+
+        context "with a URL/VCS direct reference" do
+          let(:requirements) do
+            Dependabot::DependencyFile.new(
+              content: "psycopg2 @ git+https://github.com/psycopg/psycopg2.git@2.6.1\n",
+              name: "requirements.txt"
+            )
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "psycopg2",
+              version: "2.8.1",
+              requirements: [{
+                file: "requirements.txt",
+                requirement: nil,
+                groups: [],
+                source: { type: "git", url: "https://github.com/psycopg/psycopg2.git", ref: "2.8.1" }
+              }],
+              previous_requirements: [{
+                file: "requirements.txt",
+                requirement: nil,
+                groups: [],
+                source: { type: "git", url: "https://github.com/psycopg/psycopg2.git", ref: "2.6.1" }
+              }],
+              package_manager: "uv"
+            )
+          end
+
+          it "does not raise and leaves the file unchanged" do
+            expect { updated_files }.not_to raise_error
+            expect(updated_files).to be_empty
+          end
+        end
+      end
+
       context "with an unknown package" do
         let(:dependency) do
           Dependabot::Dependency.new(
