@@ -2708,6 +2708,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       npmrc_files = file_fetcher_instance.files.select { |f| f.name == ".npmrc" }
       expect(npmrc_files.count).to eq(1)
     end
+
+    it "uses the generated .npmrc for package manager setup" do
+      registry_config_files = nil
+      allow(Dependabot::NpmAndYarn::PackageManagerHelper).to receive(:new).and_wrap_original do |method, *args|
+        registry_config_files = args.fetch(2)
+        method.call(*args)
+      end
+
+      generated_npmrc = file_fetcher_instance.files.find { |file| file.name == ".npmrc" }
+
+      expect(registry_config_files.fetch(:npmrc)).to eq(generated_npmrc)
+    end
   end
 
   context "with no .npmrc, lockfile inference fails, but credentials have scope" do

@@ -345,7 +345,11 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def registry_config_files
         {
-          npmrc: npmrc || (inferred_npmrc if selected_package_manager_name == NpmPackageManager::NAME),
+          npmrc: if scope_overrides_npmrc?
+                   inferred_npmrc
+                 else
+                   npmrc || (inferred_npmrc if selected_package_manager_name == NpmPackageManager::NAME)
+                 end,
           yarnrc: yarnrc,
           yarnrc_yml: yarnrc_yml
         }
