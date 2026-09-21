@@ -687,6 +687,7 @@ module Dependabot
           end
         end
         set_effective_package_manager_version(name, version, directory: directory, explicit: true)
+        activated_requested_version = false
 
         begin
           # Try to activate the specified version
@@ -697,6 +698,7 @@ module Dependabot
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
 
             Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
+            activated_requested_version = true
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
             fallback_to_local_version(name, directory: directory, env: env)
@@ -708,7 +710,9 @@ module Dependabot
 
         # Verify the installed version
         installed_version = package_manager_version(name, directory: directory, env: env)
-        set_effective_package_manager_version(name, installed_version, directory: directory)
+        unless activated_requested_version
+          set_effective_package_manager_version(name, installed_version, directory: directory)
+        end
 
         installed_version
       end

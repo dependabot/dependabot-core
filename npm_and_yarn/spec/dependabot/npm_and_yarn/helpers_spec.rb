@@ -687,6 +687,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("10.0.0")
       end
 
+      it "preserves an integrity-qualified npm selector after activation" do
+        selector = "10.9.2+sha512.test"
+        allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@#{selector} --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@#{selector} for immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@#{selector} -v",
+          fingerprint: "corepack npm -v",
+          env: {}
+        ).and_return("10.9.2")
+
+        expect(described_class.install("npm", selector)).to eq("10.9.2")
+        expect(described_class.effective_package_manager_version("npm")).to eq(selector)
+      end
+
       it "installs, activates, and retrieves the version of the package manager" do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "npm -v",
