@@ -99,5 +99,46 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         end
       end
     end
+
+    context "when preparing dependency files fails" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
+      let(:dependency_files_builder) do
+        instance_double(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
+      end
+      let(:helper_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "failed to prepare dependency files",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
+          .to receive(:new).and_return(dependency_files_builder)
+        allow(dependency_files_builder).to receive(:write_temporary_dependency_files).and_raise(helper_error)
+      end
+
+      it "raises the helper error" do
+        expect { conflicting_dependencies }.to raise_error(helper_error)
+      end
+    end
+
+    context "when the conflicting dependency helper fails" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
+      let(:helper_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "failed to find conflicting dependencies",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
+      end
+
+      it "returns an empty array" do
+        expect(conflicting_dependencies).to be_empty
+      end
+    end
   end
 end
