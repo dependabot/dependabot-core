@@ -707,7 +707,7 @@ module Dependabot
         end
 
         # Verify the installed version
-        installed_version = package_manager_version(name, env: env)
+        installed_version = package_manager_version(name, directory: directory, env: env)
         set_effective_package_manager_version(name, installed_version, directory: directory)
 
         installed_version
@@ -777,11 +777,17 @@ module Dependabot
       end
 
       # Get the version of the package manager by using corepack
-      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
-      def self.package_manager_version(name, env: nil)
+      sig do
+        params(
+          name: String,
+          directory: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.package_manager_version(name, directory: package_manager_directory, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        version = package_manager_run_command(name, "-v", env: env).strip
+        version = package_manager_run_command(name, "-v", directory: directory, env: env).strip
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 
@@ -796,6 +802,7 @@ module Dependabot
         params(
           name: String,
           command: String,
+          directory: T.nilable(String),
           fingerprint: T.nilable(String),
           output_observer: CommandHelpers::OutputObserver,
           env: T.nilable(T::Hash[String, String])
@@ -804,11 +811,14 @@ module Dependabot
       def self.package_manager_run_command(
         name,
         command,
+        directory: package_manager_directory,
         fingerprint: nil,
         output_observer: nil,
         env: nil
       )
-        effective_version = effective_package_manager_version(name) if name == NpmPackageManager::NAME
+        if name == NpmPackageManager::NAME
+          effective_version = effective_package_manager_version(name, directory: directory)
+        end
         executable = effective_version ? "#{name}@#{effective_version}" : name
 
         run_corepack_command(

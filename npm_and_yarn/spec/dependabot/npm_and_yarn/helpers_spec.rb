@@ -668,6 +668,25 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     context "when corepack succeeds" do
+      it "verifies npm using the installation directory's effective version" do
+        described_class.package_manager_directory = "/previous"
+        described_class.set_effective_package_manager_version("npm", "9.0.0", directory: "/previous")
+        allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@10.0.0 for immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10.0.0 -v",
+          fingerprint: "corepack npm -v",
+          env: {}
+        ).and_return("10.0.0")
+
+        expect(described_class.install("npm", "10.0.0", directory: "/frontend")).to eq("10.0.0")
+        expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("10.0.0")
+      end
+
       it "installs, activates, and retrieves the version of the package manager" do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "npm -v",

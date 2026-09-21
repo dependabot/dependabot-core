@@ -407,12 +407,12 @@ module Dependabot
         return T.must(@installed_versions[name]) if @installed_versions.key?(name)
 
         # Attempt to get the installed version through the package manager version command
-        @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
+        @installed_versions[name] = Helpers.package_manager_version(name, directory: @directory, env: corepack_env)
 
         # If we can't get the installed version, we need to install the package manager and get the version
         unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
           setup(name)
-          @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
+          @installed_versions[name] = Helpers.package_manager_version(name, directory: @directory, env: corepack_env)
         end
 
         # If we can't get the installed version or the version is invalid, we need to get inferred version

@@ -148,6 +148,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             "Due to the engine-strict setting, the update will not succeed."
           )
       end
+
+      it "reports an unknown Node.js version when version detection fails" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          node_version: nil,
+          npm_version: Dependabot::NpmAndYarn::Version.new("10.9.2")
+        )
+
+        expect { updated_npm_lock_content }
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Dependabot uses Node.js unknown and NPM 10.9.2. " \
+            "Due to the engine-strict setting, the update will not succeed."
+          )
+      end
     end
 
     context "when the lockfile does not have indentation" do

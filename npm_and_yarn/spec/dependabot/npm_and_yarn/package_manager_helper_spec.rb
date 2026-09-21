@@ -233,7 +233,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "refreshes npm metadata with the image version without activating it" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return("10.0.0")
+          .with("npm", directory: "/", env: nil).and_return("10.0.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:image_package_manager_version)
           .with("npm").and_return("11.0.0")
         expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:activate_image_package_manager_version)
@@ -292,7 +292,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
           .with("npm").and_return("11.0.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return("6.0.0")
+          .with("npm", directory: "/", env: nil).and_return("6.0.0")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@6 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
           .with("npm").and_return("11.0.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return("7.0.0")
+          .with("npm", directory: "/", env: nil).and_return("7.0.0")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@7 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
@@ -515,7 +515,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
           .with("npm").and_return("11.0.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return(nil, "10.2.3")
+          .with("npm", directory: "/", env: nil).and_return(nil, "10.2.3")
       end
 
       it "installs the requested version" do
@@ -544,7 +544,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
           .with("npm").and_return("11.0.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return(nil)
+          .with("npm", directory: "/", env: nil).and_return(nil)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@11.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
@@ -566,7 +566,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       it "refreshes package manager metadata with the image default" do
         allow(helper).to receive(:package_manager).and_call_original
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return("10.0.0")
+          .with("npm", directory: "/", env: nil).and_return("10.0.0")
 
         expect(helper.package_manager.version).to eq(Dependabot::NpmAndYarn::Version.new("10.0.0"))
 
@@ -584,7 +584,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           Dependabot::NpmAndYarn::PNPMPackageManager.new(detected_version: "7")
         )
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("pnpm", env: nil).and_return(nil, "7.1.0")
+          .with("pnpm", directory: "/", env: nil).and_return(nil, "7.1.0")
       end
 
       it "installs the inferred version" do
@@ -649,7 +649,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           .with("npm").and_return("11.0.0")
         allow(Dependabot::NpmAndYarn::RegistryHelper).to receive(:corepack_integrity_keys).and_return(nil)
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: expected_env).and_return(nil, "11.0.0")
+          .with("npm", directory: "/", env: expected_env).and_return(nil, "11.0.0")
       end
 
       it "passes the private registry env variables to corepack" do
