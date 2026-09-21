@@ -2552,7 +2552,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
         .with("npm").and_return("11.0.0")
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-        .with("npm", env: corepack_env).and_return("11.0.0")
+        .with("npm", directory: "/", env: corepack_env).and_return("11.0.0")
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:activate_image_package_manager_version)
         .with("npm", directory: "/", env: corepack_env).and_return("11.0.0")
 
@@ -2593,7 +2593,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             headers: json_header
           )
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: corepack_env).and_return("11.0.0", "10.0.0")
+          .with("npm", directory: "/", env: corepack_env).and_return("11.0.0", "10.0.0")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@10.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",

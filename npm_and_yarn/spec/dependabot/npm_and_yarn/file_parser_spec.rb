@@ -206,7 +206,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("npm", env: nil).and_return("11.0.0", "10.0.0")
+          .with("npm", directory: "/frontend", env: nil).and_return("11.0.0", "10.0.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
           .with("npm").and_return("11.0.0")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
