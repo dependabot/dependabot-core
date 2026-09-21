@@ -2373,7 +2373,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
-            anything, # The actual command
+            "corepack npm install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
             hash_including(
               env: {
                 "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/artifactory/api/npm/npm",
@@ -2394,7 +2394,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
-            anything, # The actual command
+            "corepack npm install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
             hash_including(
               env: nil
             )
