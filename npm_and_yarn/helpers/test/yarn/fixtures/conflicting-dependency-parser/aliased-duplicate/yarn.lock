@@ -12,9 +12,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"abind@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "abind@npm:2.0.0"
+"abind@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "abind@npm:0.1.0"
   checksum: 10c0/2222
   languageName: node
   linkType: hard
@@ -23,8 +23,8 @@ __metadata:
   version: 4.0.4
   resolution: "askconfig@npm:4.0.4"
   dependencies:
-    abind: "npm:^2.0.0"
     abind-v1: "npm:abind@^1.0.0"
+    abind-v0: "npm:abind@^0.1.0"
   checksum: 10c0/3333
   languageName: node
   linkType: hard

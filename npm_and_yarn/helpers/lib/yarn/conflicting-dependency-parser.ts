@@ -86,25 +86,23 @@ export async function findConflictingDependencies(
     ),
   ];
 
-  const conflictingParents = topLevelEdges.flatMap(
-    (topLevelEdge) => {
-      const topLevelSpec: TopLevelSpec = {
-        name: topLevelEdge.name,
-        requirement: topLevelEdge.requirement,
-        realName: topLevelEdge.realName ?? topLevelEdge.name,
-      };
+  const conflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
+    const topLevelSpec: TopLevelSpec = {
+      name: topLevelEdge.name,
+      requirement: topLevelEdge.requirement,
+      realName: topLevelEdge.realName ?? topLevelEdge.name,
+    };
 
-      return Array.from(
-        findConflictingParentDependencies(
-          topLevelEdge,
-          depName,
-          targetVersion,
-          topLevelSpec,
-          lockfileJson
-        ).values()
-      );
-    }
-  );
+    return Array.from(
+      findConflictingParentDependencies(
+        topLevelEdge,
+        depName,
+        targetVersion,
+        topLevelSpec,
+        lockfileJson
+      ).values()
+    );
+  });
 
   // The same blocking dependency can be reached through several top-level
   // dependencies (e.g. a package and an npm alias of it), so it is only
@@ -229,13 +227,14 @@ function findConflictingParentDependencies(
       ) {
         // Only add the conflicting parent once per version preventing
         // duplicate dependencies from circular graphs.
-        const key = [realNameOf(pkg), pkg.version].join("@");
+        const requirement = realRequirementOf(subDep.requirement);
+        const key = [realNameOf(pkg), pkg.version, requirement].join("\u0000");
         // Snapshot the specs as they are mutated while traversing the other
         // resolutions of this descriptor.
         conflictingParents.set(key, {
           name: realNameOf(pkg),
           version: pkg.version,
-          requirement: realRequirementOf(subDep.requirement),
+          requirement,
           realName: pkg.realName ?? pkg.name,
           transitiveSpec: { ...transitiveSpec },
           topLevelSpec: { ...topLevelSpec },

@@ -168,6 +168,12 @@ describe("findConflictingDependencies", () => {
         version: "4.0.4",
         requirement: "^1.0.0",
       },
+      {
+        explanation: "askconfig@4.0.4 requires abind@^0.1.0",
+        name: "askconfig",
+        version: "4.0.4",
+        requirement: "^0.1.0",
+      },
     ]);
   });
 

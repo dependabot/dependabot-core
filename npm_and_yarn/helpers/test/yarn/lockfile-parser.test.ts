@@ -101,9 +101,7 @@ describe("parseNormalized", () => {
   it("retains yarn v1 alias descriptor identity", async () => {
     const lockfile = await parseFixture("aliased");
 
-    expect(lockfile.map(edgeKey)).toContain(
-      "objnest-alias@npm:objnest@^4.1.2"
-    );
+    expect(lockfile.map(edgeKey)).toContain("objnest-alias@npm:objnest@^4.1.2");
   });
 
   it("keeps every entry when distinct descriptors normalize to the same edge", async () => {
@@ -147,10 +145,14 @@ describe("parseNormalized", () => {
       findEntries(lockfile, { name: "askconfig", requirement: "^4.0.4" })[0]
         .dependencies
     ).toEqual([
-      { name: "abind", requirement: "^2.0.0" },
       {
         name: "abind-v1",
         requirement: "npm:abind@^1.0.0",
+        realName: "abind",
+      },
+      {
+        name: "abind-v0",
+        requirement: "npm:abind@^0.1.0",
         realName: "abind",
       },
     ]);
