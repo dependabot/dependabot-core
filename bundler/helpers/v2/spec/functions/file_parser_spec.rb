@@ -3,6 +3,7 @@
 
 require "native_spec_helper"
 require "shared_contexts"
+require "json"
 
 RSpec.describe Functions::FileParser do
   include_context "when in a temporary bundler directory"
@@ -23,87 +24,87 @@ RSpec.describe Functions::FileParser do
     let(:project_name) { "gemfile" }
 
     it "parses gemfile" do
-      parsed_gemfile = [
+      expected = [
         {
-          groups: [:default],
-          name: "business",
-          requirement: Gem::Requirement.new("~> 1.4.0"),
-          source: nil,
-          type: :runtime
+          "groups" => ["default"],
+          "name" => "business",
+          "requirement" => "~> 1.4.0",
+          "source" => nil,
+          "type" => "runtime"
         },
         {
-          groups: [:default],
-          name: "statesman",
-          requirement: Gem::Requirement.new("~> 1.2.0"),
-          source: nil,
-          type: :runtime
+          "groups" => ["default"],
+          "name" => "statesman",
+          "requirement" => "~> 1.2.0",
+          "source" => nil,
+          "type" => "runtime"
         }
       ]
-      expect(parsed_gemfile).not_to be_nil # to get past IdenticalEqualityAssertion and NamedSubject
+      expect(JSON.parse(JSON.dump(parsed_gemfile))).to eq(expected)
     end
 
     context "with a git source" do
       let(:project_name) { "git_source" }
 
       it "parses gemfile" do
-        parsed_gemfile = [
+        expected = [
           {
-            groups: [:default],
-            name: "business",
-            requirement: Gem::Requirement.new("~> 1.6.0"),
-            source: {
-              branch: nil,
-              ref: "a1b78a9",
-              type: "git",
-              url: "git@github.com:dependabot-fixtures/business"
+            "groups" => ["default"],
+            "name" => "business",
+            "requirement" => "~> 1.6.0",
+            "source" => {
+              "branch" => nil,
+              "ref" => "a1b78a9",
+              "type" => "git",
+              "url" => "git@github.com:dependabot-fixtures/business"
             },
-            type: :runtime
+            "type" => "runtime"
           },
           {
-            groups: [:default],
-            name: "statesman",
-            requirement: Gem::Requirement.new("~> 1.2.0"),
-            source: nil,
-            type: :runtime
+            "groups" => ["default"],
+            "name" => "statesman",
+            "requirement" => "~> 1.2.0",
+            "source" => nil,
+            "type" => "runtime"
           },
           {
-            groups: [:default],
-            name: "prius",
-            requirement: Gem::Requirement.new(">= 0"),
-            source: {
-              branch: nil,
-              ref: nil,
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/prius"
+            "groups" => ["default"],
+            "name" => "prius",
+            "requirement" => ">= 0",
+            "source" => {
+              "branch" => nil,
+              "ref" => nil,
+              "type" => "git",
+              "url" => "https://github.com/dependabot-fixtures/prius"
             },
-            type: :runtime
+            "type" => "runtime"
           },
           {
-            groups: [:default],
-            name: "que",
-            requirement: Gem::Requirement.new(">= 0"),
-            source: {
-              branch: nil,
-              ref: "v0.11.6",
-              type: "git",
-              url: "git@github.com:dependabot-fixtures/que"
+            "groups" => ["default"],
+            "name" => "que",
+            "requirement" => ">= 0",
+            "source" => {
+              "branch" => nil,
+              "ref" => "v0.11.6",
+              "type" => "git",
+              "url" => "git@github.com:dependabot-fixtures/que"
             },
-            type: :runtime
+            "type" => "runtime"
           },
           {
-            groups: [:default],
-            name: "uk_phone_numbers",
-            requirement: Gem::Requirement.new(">= 0"),
-            source: {
-              branch: nil,
-              ref: nil,
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/uk_phone_numbers"
+            "groups" => ["default"],
+            "name" => "uk_phone_numbers",
+            "requirement" => ">= 0",
+            "source" => {
+              "branch" => nil,
+              "ref" => nil,
+              "type" => "git",
+              "url" => "https://github.com/dependabot-fixtures/uk_phone_numbers"
             },
-            type: :runtime
+            "type" => "runtime"
           }
         ]
-        expect(parsed_gemfile).not_to be_nil # to get past IdenticalEqualityAssertion and NamedSubject
+        expect(JSON.parse(JSON.dump(parsed_gemfile))).to eq(expected)
       end
     end
   end
@@ -118,23 +119,23 @@ RSpec.describe Functions::FileParser do
     let(:project_name) { "gemfile_exact" }
 
     it "parses gemspec" do
-      parsed_gemspec = [
+      expected = [
         {
-          groups: nil,
-          name: "business",
-          requirement: Gem::Requirement.new("= 1.0.0"),
-          source: nil,
-          type: :runtime
+          "groups" => nil,
+          "name" => "business",
+          "requirement" => "= 1.0.0",
+          "source" => nil,
+          "type" => "runtime"
         },
         {
-          groups: nil,
-          name: "statesman",
-          requirement: Gem::Requirement.new("= 1.0.0"),
-          source: nil,
-          type: :runtime
+          "groups" => nil,
+          "name" => "statesman",
+          "requirement" => "= 1.0.0",
+          "source" => nil,
+          "type" => "runtime"
         }
       ]
-      expect(parsed_gemspec).not_to be_nil # to get past IdenticalEqualityAssertion and NamedSubject
+      expect(JSON.parse(JSON.dump(parsed_gemspec))).to eq(expected)
     end
   end
 end

@@ -25,6 +25,24 @@ Each ecosystem implements these 7 required classes that inherit from `dependabot
 
 ## Key Patterns & Conventions
 
+### Ecosystem Families & Shared Code
+
+Ecosystems are **not always** independent. Many are different tools for the **same language**, so they often target the same dependencies and registries and *may* share logic (resolution, version comparison, requirement parsing), even where each keeps its own manifest/build-file handling. A bug or improvement is therefore often — **but not always** — general to the whole family rather than specific to one ecosystem. Treat the family as a **prompt to check the siblings**, not a guarantee they share code.
+
+Families:
+
+- **JavaScript / TypeScript** — `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno`
+- **Python** — `python` (pip, pip-compile, pipenv, Poetry), `uv`, `conda`
+- **JVM** — `maven`, `gradle`, `sbt`
+- **Containers** — `docker`, `docker_compose`
+
+When fixing a bug, first classify the root cause as **ecosystem-specific** or **potentially general to a family** (dependency resolution, registry handling, version comparison, requirement parsing, error handling, etc.). If it could be general, check the siblings and — with tests — fix the ones that are actually affected. Confirm the real relationship in the code before assuming a fix carries over:
+
+- **Possibly shared in code** — a sibling may reuse another's classes (e.g. the JVM tools may lean on `maven`; `uv`/`conda` may lean on `python`; `docker_compose` may lean on `docker`). Where so, the fix reaches them at runtime, but still run their test suites.
+- **Possibly duplicated / independent** — a sibling may reimplement the same behavior (e.g. `bun` and `npm_and_yarn`) or be largely its own implementation (`deno`). Where logic is duplicated, fix each affected sibling; prefer consolidating shared behavior into a common base when practical, otherwise fix each duplicate. Don't add new duplication just to match a sibling. If a sibling intentionally differs, note why instead of forcing parity.
+
+See [`ECOSYSTEM_FAMILIES.md`](../ECOSYSTEM_FAMILIES.md) for the full relationship map and fix-propagation workflow.
+
 ### Error Handling
 
 - Use ecosystem-specific error classes inheriting from `Dependabot::DependabotError`
