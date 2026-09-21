@@ -706,7 +706,8 @@ module Dependabot
           end
 
           if error_message.include?("EBADENGINE")
-            msg = "Dependabot uses Node.js #{Helpers.node_version} and NPM #{Helpers.npm_version}. " \
+            npm_version = Helpers.npm_version || "unknown"
+            msg = "Dependabot uses Node.js #{Helpers.node_version} and NPM #{npm_version}. " \
                   "Due to the engine-strict setting, the update will not succeed."
             raise Dependabot::DependencyFileNotResolvable, msg
           end

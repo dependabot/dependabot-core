@@ -396,7 +396,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
             env: corepack_env
           ).and_return("Preparing npm@10.9.2 for immediate activation...")
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-            "corepack npm update acorn --force --ignore-scripts --package-lock-only",
+            "corepack npm@10.9.2 update acorn --force --ignore-scripts --package-lock-only",
             fingerprint: "corepack npm update <dependency_names> --force --ignore-scripts --package-lock-only",
             output_observer: kind_of(Proc),
             env: corepack_env
@@ -412,7 +412,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
             env: corepack_env
           )
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-            "corepack npm update acorn --force --ignore-scripts --package-lock-only",
+            "corepack npm@10.9.2 update acorn --force --ignore-scripts --package-lock-only",
             fingerprint: "corepack npm update <dependency_names> --force --ignore-scripts --package-lock-only",
             output_observer: kind_of(Proc),
             env: corepack_env

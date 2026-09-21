@@ -134,6 +134,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             "Due to the engine-strict setting, the update will not succeed."
           )
       end
+
+      it "reports an unknown npm version when version detection fails" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          node_version: "20.18.1",
+          npm_version: nil
+        )
+
+        expect { updated_npm_lock_content }
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Dependabot uses Node.js 20.18.1 and NPM unknown. " \
+            "Due to the engine-strict setting, the update will not succeed."
+          )
+      end
     end
 
     context "when the lockfile does not have indentation" do

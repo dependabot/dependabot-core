@@ -679,7 +679,13 @@ module Dependabot
       end
       def self.install(name, version, directory: package_manager_directory, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-        image_package_manager_version(name) if name == NpmPackageManager::NAME
+        if name == NpmPackageManager::NAME
+          begin
+            image_package_manager_version(name)
+          rescue StandardError => e
+            Dependabot.logger.warn("Could not determine the image npm version before activation: #{e.message}")
+          end
+        end
         set_effective_package_manager_version(name, version, directory: directory, explicit: true)
 
         begin
@@ -802,8 +808,11 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
+        effective_version = effective_package_manager_version(name) if name == NpmPackageManager::NAME
+        executable = effective_version ? "#{name}@#{effective_version}" : name
+
         run_corepack_command(
-          "corepack #{name} #{command}",
+          "corepack #{executable} #{command}",
           fingerprint: "corepack #{name} #{fingerprint || command}",
           output_observer: output_observer,
           env: env

@@ -2558,6 +2558,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("npm install successful")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
+        .with("npm").and_return("11.19.0")
     end
 
     context "when registry override is configured" do
@@ -2577,7 +2579,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
-            "corepack npm install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
+            "corepack npm@11.19.0 install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
             hash_including(
               env: {
                 "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/artifactory/api/npm/npm",
@@ -2598,7 +2600,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
-            "corepack npm install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
+            "corepack npm@11.19.0 install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
             hash_including(
               env: nil
             )

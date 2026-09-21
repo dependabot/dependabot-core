@@ -32,6 +32,27 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       let(:package_manager) { "npm" }
       let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
 
+      it "initializes an engines-selected npm version before generating the lockfile" do
+        package_json = dependency_files.find { |file| file.name == "package.json" }
+        T.must(package_json).content = JSON.dump(
+          JSON.parse(T.must(package_json&.content)).merge(
+            "engines" => { "npm" => "^10" }
+          )
+        )
+        package_manager_helper = instance_double(Dependabot::NpmAndYarn::PackageManagerHelper)
+        allow(Dependabot::NpmAndYarn::PackageManagerHelper).to receive(:new).and_return(package_manager_helper)
+        allow(package_manager_helper).to receive(:setup).with("npm")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with("package-lock.json").and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with("package-lock.json").and_return("{}")
+
+        generator.generate
+
+        expect(package_manager_helper).to have_received(:setup).with("npm")
+      end
+
       it "attempts to generate a package-lock.json" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
 

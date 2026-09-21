@@ -22,13 +22,28 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::run_npm_command" do
+    it "runs the recorded npm version explicitly" do
+      described_class.set_effective_package_manager_version("npm", "7.0.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+      described_class.run_npm_command("install")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "corepack npm@7.0.0 install",
+        fingerprint: "corepack npm install",
+        output_observer: kind_of(Proc),
+        env: nil
+      )
+    end
+
     it "runs npm through Corepack and passes through the environment" do
       env = { "CUSTOM_VAR" => "custom-value" }
       described_class.set_effective_package_manager_version("npm", "11.0.0")
       allow(described_class).to receive(:activate_effective_package_manager_version)
 
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm install",
+        "corepack npm@11.0.0 install",
         fingerprint: "corepack npm install dependencies",
         output_observer: kind_of(Proc),
         env: env
@@ -37,7 +52,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
 
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-        "corepack npm install",
+        "corepack npm@11.0.0 install",
         fingerprint: "corepack npm install dependencies",
         output_observer: kind_of(Proc),
         env: env
@@ -59,7 +74,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env: nil
       ).and_return("Preparing npm@10.9.2 for immediate activation...")
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm install",
+        "corepack npm@10.9.2 install",
         fingerprint: "corepack npm install",
         output_observer: kind_of(Proc),
         env: nil
@@ -89,7 +104,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env: nil
       ).and_return("Preparing npm@11.0.0 for immediate activation...")
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm install",
+        "corepack npm@11.0.0 install",
         fingerprint: "corepack npm install",
         output_observer: kind_of(Proc),
         env: nil
@@ -164,16 +179,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::npm_version" do
+    it "probes the recorded npm version explicitly" do
+      described_class.set_effective_package_manager_version("npm", "7.0.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("corepack npm@7.0.0 -v", fingerprint: "corepack npm -v", env: nil)
+        .and_return("7.0.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("7.0.0"))
+    end
+
     it "returns the npm version selected by Corepack" do
       described_class.set_effective_package_manager_version("npm", "11.10.0")
       allow(described_class).to receive(:activate_effective_package_manager_version)
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("corepack npm -v", fingerprint: "corepack npm -v", env: nil)
+        .with("corepack npm@11.10.0 -v", fingerprint: "corepack npm -v", env: nil)
         .and_return("11.10.0\n")
 
       expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-        .with("corepack npm -v", fingerprint: "corepack npm -v", env: nil)
+        .with("corepack npm@11.10.0 -v", fingerprint: "corepack npm -v", env: nil)
     end
 
     it "re-activates the effective npm version for the current directory before checking it" do
@@ -193,7 +218,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           ).and_return("Preparing npm@9.0.0 for immediate activation...")
 
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-            "corepack npm -v",
+            "corepack npm@9.0.0 -v",
             fingerprint: "corepack npm -v",
             env: nil
           ).and_return("9.0.0\n")
@@ -223,7 +248,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env: nil
       ).and_return("Preparing npm@11.10.0 for immediate activation...")
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm -v",
+        "corepack npm@11.10.0 -v",
         fingerprint: "corepack npm -v",
         env: nil
       ).and_return("11.10.0\n")
@@ -516,7 +541,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           ).and_return("Preparing npm@9.0.0 for immediate activation...")
 
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-            "corepack npm -v",
+            "corepack npm@9.0.0 -v",
             fingerprint: "corepack npm -v",
             env: nil
           ).and_return("9.0.0\n")
@@ -658,7 +683,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@8.0.0 -v",
           fingerprint: "corepack npm -v",
           env: {}
         ).and_return("8.0.0")
@@ -700,7 +725,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@10.8.2 -v",
           fingerprint: "corepack npm -v",
           env: {}
         ).and_return("10.8.2")
@@ -745,7 +770,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           ).and_return("Preparing npm@10.8.2 for immediate activation...")
 
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-            "corepack npm -v",
+            "corepack npm@10.8.2 -v",
             fingerprint: "corepack npm -v",
             env: {}
           ).and_return("10.8.2")
@@ -753,6 +778,23 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           expect(described_class.install("npm", "10.0.0")).to eq("10.8.2")
           expect(described_class.effective_package_manager_version("npm")).to eq("10.8.2")
         end
+      end
+
+      it "activates the requested npm when probing the image version fails" do
+        allow(described_class).to receive(:local_package_manager_version).with("npm")
+                                                                         .and_raise(StandardError, "missing npm")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@10.0.0 for immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10.0.0 -v",
+          fingerprint: "corepack npm -v",
+          env: {}
+        ).and_return("10.0.0")
+
+        expect(described_class.install("npm", "10.0.0")).to eq("10.0.0")
       end
     end
 
@@ -780,7 +822,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@10.8.2 -v",
           fingerprint: "corepack npm -v",
           env: {}
         ).and_return("10.8.2")
@@ -840,7 +882,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # package_manager_version after successful activation
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@10.0.0 -v",
           fingerprint: "corepack npm -v",
           env: private_registry_env
         ).and_return("10.0.0")
@@ -872,7 +914,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@11.9.0 -v",
           fingerprint: "corepack npm -v",
           env: private_registry_env
         ).and_return("11.9.0")
@@ -902,7 +944,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         )
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@11.9.0 -v",
           fingerprint: "corepack npm -v",
           env: private_registry_env
         )
