@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "time"
 require "uri"
 
 require "dependabot/package/package_details"
@@ -32,26 +33,29 @@ module Dependabot
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          if all_versions.nil? || all_versions.empty?
+          if all_releases.nil? || all_releases.empty?
             raise Dependabot::DependencyFileNotResolvable, "No versions found in manifests.txt"
           end
 
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: all_versions.map { |v| Dependabot::Package::PackageRelease.new(version: v) },
+            releases: all_releases,
             dist_tags: nil
           )
         end
 
         private
 
-        sig { returns(T::Array[Dependabot::RustToolchain::Version]) }
-        def all_versions
-          @all_versions ||= T.let(fetch_and_parse_manifests, T.nilable(T::Array[Dependabot::RustToolchain::Version]))
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def all_releases
+          @all_releases ||= T.let(
+            fetch_and_parse_manifests,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
-        # Fetch the manifests.txt file and parse each line to extract version information
-        sig { returns(T::Array[Dependabot::RustToolchain::Version]) }
+        # Fetch the manifests.txt file and parse each line to extract release information
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_and_parse_manifests
           # Cache bust by appending a timestamp query param so CDN treats each request uniquely
           # This avoids relying on headers that might be ignored by intermediate caches.
@@ -59,17 +63,28 @@ module Dependabot
           response = Dependabot::RegistryClient.get(url: busted_url)
           manifests_content = response.body
 
-          channels = T.let([], T::Array[Dependabot::RustToolchain::Version])
+          releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
 
           manifests_content.each_line do |line|
             line = line.strip
             next if line.empty?
 
-            channel = parse_manifest_line(line)
-            channels << channel if channel
+            version = parse_manifest_line(line)
+            next unless version
+
+            releases << Dependabot::Package::PackageRelease.new(
+              version: version,
+              released_at: manifest_release_date(line)
+            )
           end
 
-          channels.uniq
+          releases.uniq(&:version)
+        end
+
+        sig { params(line: String).returns(Time) }
+        def manifest_release_date(line)
+          date = T.must(line.match(%r{/dist/(\d{4}-\d{2}-\d{2})/}))[1]
+          Time.iso8601("#{date}T00:00:00Z")
         end
 
         sig { params(line: String).returns(T.nilable(Dependabot::RustToolchain::Version)) }
