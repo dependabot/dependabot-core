@@ -1,0 +1,285 @@
+{
+  "_id": "@dependabot-fixtures/npm-parent-dependency",
+  "_rev": "6-96f7ae291b7dd7f6027ea0737e4b14da",
+  "name": "@dependabot-fixtures/npm-parent-dependency",
+  "dist-tags": {
+    "latest": "2.0.2"
+  },
+  "versions": {
+    "1.0.0": {
+      "name": "@dependabot-fixtures/npm-parent-dependency",
+      "version": "1.0.0",
+      "description": "a test fixture for testing transitive dependency updates",
+      "main": "index.js",
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dependabot-fixtures/npm-parent-dependency.git"
+      },
+      "author": "",
+      "license": "ISC",
+      "bugs": {
+        "url": "https://github.com/dependabot-fixtures/npm-parent-dependency/issues"
+      },
+      "homepage": "https://github.com/dependabot-fixtures/npm-parent-dependency#readme",
+      "dependencies": {
+        "@dependabot-fixtures/npm-transitive-dependency": "1.0.0"
+      },
+      "gitHead": "5834ba13e7ad2db3fe089aa48ad7d71800bb6f05",
+      "_id": "@dependabot-fixtures/npm-parent-dependency@1.0.0",
+      "_nodeVersion": "16.15.0",
+      "_npmVersion": "8.5.5",
+      "dist": {
+        "integrity": "sha512-ByzMz4/mCS0QnX4lh+hXjIzmS2suMcTCYE3tCwGPzuE60I+9RUnyEnm8mYTNmd4t5BNGhidO76srF7valWZh9Q==",
+        "shasum": "d73bc26fab8fa890804b84c3cf60116b6fc251e4",
+        "tarball": "https://registry.npmjs.org/@dependabot-fixtures/npm-parent-dependency/-/npm-parent-dependency-1.0.0.tgz",
+        "fileCount": 2,
+        "unpackedSize": 761,
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIBpIHNub+ejTV2z/cRzSZDrKAw9/XhoW2ZqvSUK7Se25AiEAoNF8cCMMpidWC+pw0WwSqJxVwQtKKfg1ICBSxVOP0SQ="
+          }
+        ],
+        "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJioSBPACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2Vmq4tQ/+LMENrejIJ2CKGBDNMz/WfIh3ph/rvt//HqnSU3Qw0wePUEOM\r\nNVeUe3t3BwNgmRWUOSofgJzBiTqGre5sFpGfaIhRwnlp0oZlFnli3ViiAaVq\r\ncESbHOxItnF+OcWLMnzxTFMVbJTNmTvsYFPtFPSl460fAMjXwaQkkcQBzbYm\r\n7uB6mYAbPJJso6KcjBN227ZR4fgR5MKI7iv/hkr2u+Hu/btZhtH3YMJ5O37t\r\nLGs4ppSKuiS4xlZFUKDkzWAK/H9rDPghXhl51RglFNC8KJFpvrTRDZrcKw6L\r\nO7Lr6538BKVMnMr2gVKEHmOy7xbupxBycFx0gWE0RZtzp4JYsJGfVO2pDp/+\r\n7JAGPXuZ2hNYE1reRvp0vetDO/cXQDNf5U2NBfw/AWtak+knUIEcl0XByZ2F\r\nbxxvZAUlZKRfBgmoYIcKb3jpU+l0KM0Tiwe09oUogS886Zav8QpryfwicPU8\r\nUwsvKnRNARqIuGnI0FH0HoGwhsYnhR8VdArWLl63oJrfrXYJiD3wnMc66qwO\r\n9YScOQCLW6meI+pgrUq0ERnw7/wE4Vmww/oWJVg1xGHpEMFyVdQinTJgr/sC\r\nN5PM3ZwRYmQPO7shY4NgRSAvzJRjiJLfAPRXJ4a3uplYBggo7zzr0RGqqTC5\r\n7zxmpVQgPXU4FBzeWWT/yb93PXOcwF4/Kbk=\r\n=hRyI\r\n-----END PGP SIGNATURE-----\r\n"
+      },
+      "_npmUser": {
+        "name": "mctofu",
+        "email": "mctofu@github.com"
+      },
+      "directories": {},
+      "maintainers": [
+        {
+          "name": "nishnha",
+          "email": "nishnha@gmail.com"
+        },
+        {
+          "name": "mctofu",
+          "email": "mctofu@github.com"
+        }
+      ],
+      "_npmOperationalInternal": {
+        "host": "s3://npm-registry-packages",
+        "tmp": "tmp/npm-parent-dependency_1.0.0_1654726735095_0.2536001102935952"
+      },
+      "_hasShrinkwrap": false
+    },
+    "2.0.0": {
+      "name": "@dependabot-fixtures/npm-parent-dependency",
+      "version": "2.0.0",
+      "description": "a test fixture for testing transitive dependency updates",
+      "main": "index.js",
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dependabot-fixtures/npm-parent-dependency.git"
+      },
+      "author": "",
+      "license": "ISC",
+      "bugs": {
+        "url": "https://github.com/dependabot-fixtures/npm-parent-dependency/issues"
+      },
+      "homepage": "https://github.com/dependabot-fixtures/npm-parent-dependency#readme",
+      "dependencies": {
+        "@dependabot-fixtures/npm-intermediate-dependency": "0.0.1"
+      },
+      "gitHead": "7463baa2d845fccba060105ce8d830f80851acd8",
+      "_id": "@dependabot-fixtures/npm-parent-dependency@2.0.0",
+      "_nodeVersion": "16.15.0",
+      "_npmVersion": "8.5.5",
+      "dist": {
+        "integrity": "sha512-5LtLEL1yzO2TdkNX3R9cvr+nKmhw5h4xM0wkFTJeK14wxlI9d8gEYA+I2hUi+IP96ucBSztAnOgZVwoJHEZb6A==",
+        "shasum": "1059c39be45a9840d39807593397a5ff650ed5e1",
+        "tarball": "https://registry.npmjs.org/@dependabot-fixtures/npm-parent-dependency/-/npm-parent-dependency-2.0.0.tgz",
+        "fileCount": 2,
+        "unpackedSize": 763,
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQCklzPak9tCeZ2jmAW/OMy+7/TAr65uDzbUkS+/0qJ5rgIgFLAhllLdb3KeUa7PnO21J/xc6ObFpaQMzPc7ElNouHY="
+          }
+        ],
+        "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJioTpcACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmpvWhAAh7wEa22ZeOlkuFTEDZHyJKNKYfvZ4ccRQr/ySnVNELcjhqkl\r\nJdbHa0F4N/VYAwNli+i4wQAq/o2LfeHLcv2auHr91UojT2v3nd9GMDjxKev2\r\nYVeJWYF8wkyvBRK9orCDwHLeqW739Dic2jTrbl3+OacvkY9dsdR/gWBK7Ixu\r\nWh2OUZlbh3Rri94foxYLCSiYr5k0tevqCxIG6EBrqI71KpaYc80TnvYAICNX\r\nU5DOQEd4ufCIcACZMiL1aTfn7tyCns6s4seuxDGQNuViIe+8Pum7BSi/NpYM\r\nSp+zBL/7jMTJmo8dK16vSVSJm5UgEV3WO8zznAJV3kBpYhQAP+iN7RUmWfbp\r\nDSghBwRn4uaGWDQ+uXgwb61uVPU85Z+XO7/QiIeR19emWMN4Hi8H1lza6sDr\r\nUA5xQt2QXby2cDhRMNmrFR4u8fG+ZUwqOujleZ5SvhtU+MrjTR3oectxSSgJ\r\ntWpGEu498nqQYHlFeJMrEotzC8wDQjjel7Q4CZkjKgrxBuuvXvSm5jyLxOlC\r\n/mdSmC900hdn8T8YHxTp8RXZMMGnXwkc3bvoIGQYhD+Y98g6iIfA24XZWGv6\r\n/NPJloSQhnEMB19xvaUocv0rr9a7cTiAc6VLGQlZS+AqYR4bdvdfkwS2MZL9\r\nHPg29HRuJL3IHvQbCGFIoews4wmVhnLyM4Y=\r\n=8TvU\r\n-----END PGP SIGNATURE-----\r\n"
+      },
+      "_npmUser": {
+        "name": "mctofu",
+        "email": "mctofu@github.com"
+      },
+      "directories": {},
+      "maintainers": [
+        {
+          "name": "nishnha",
+          "email": "nishnha@gmail.com"
+        },
+        {
+          "name": "mctofu",
+          "email": "mctofu@github.com"
+        }
+      ],
+      "_npmOperationalInternal": {
+        "host": "s3://npm-registry-packages",
+        "tmp": "tmp/npm-parent-dependency_2.0.0_1654733404264_0.8065572315359433"
+      },
+      "_hasShrinkwrap": false
+    },
+    "2.0.1": {
+      "name": "@dependabot-fixtures/npm-parent-dependency",
+      "version": "2.0.1",
+      "description": "a test fixture for testing transitive dependency updates",
+      "main": "index.js",
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dependabot-fixtures/npm-parent-dependency.git"
+      },
+      "author": "",
+      "license": "ISC",
+      "bugs": {
+        "url": "https://github.com/dependabot-fixtures/npm-parent-dependency/issues"
+      },
+      "homepage": "https://github.com/dependabot-fixtures/npm-parent-dependency#readme",
+      "dependencies": {
+        "@dependabot-fixtures/npm-intermediate-dependency": "^0.0.1"
+      },
+      "gitHead": "317948bb8ac846efcb9fe9342335613204504899",
+      "_id": "@dependabot-fixtures/npm-parent-dependency@2.0.1",
+      "_nodeVersion": "16.15.0",
+      "_npmVersion": "8.5.5",
+      "dist": {
+        "integrity": "sha512-iKNiUvswqiwhJLmP6yJv45anOm43uEuKm90LK70bhwdMMbTg2XzK7TqPv5UzmHQHCxUE8zTy82piqDf/Uqui3Q==",
+        "shasum": "9036b2f73edbe43d6d154ba51d1034aa7b1e2218",
+        "tarball": "https://registry.npmjs.org/@dependabot-fixtures/npm-parent-dependency/-/npm-parent-dependency-2.0.1.tgz",
+        "fileCount": 2,
+        "unpackedSize": 764,
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEQCIE4n/+lzRuUHDkGwwuljQmzI5aVuBPDzMMlBJWo9FBRqAiBDZXj6j8A5kwo70+BhokdYuUglmJH6VRtxWR/GtCAYiw=="
+          }
+        ],
+        "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJioTtLACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmobBg/9F2EqVndz7hRpcaWQ+xB47EA4Jb+cjCty1LrRGoHkc8MXTQd4\r\npOBpvF66/CeVHcVzWkrjCR8Jip7cejFDUS6x3445gWZwishm/iaVQ4aj6p3K\r\np7oog73MskxjXu6l7Zo+HxGTD5otHxz2bU2pvEQ2XcvUfU+gvb3QPWdNLZ+W\r\nYSA7n+XU+UhgLCCE496lb8pW7KrwkOzPtFWZP/xH02vKGahqvTC/bvC9BjI/\r\nt/TQ3uky2YnCECntd2b9XfMoUJitKhfoFcBabu8BhlGRwtZK6pmCDR/XcYew\r\n0seDUtvHvguJ2iuJ9ofyf7MBUDAlT/LmamRQRkJf06CYVZEKrOuCj5Zw6glO\r\nRUHTyHhdMomeem13rn6uCwpDIJbMUFSrCob/Ctfjjhk/0Jhy01wuhACqnHA8\r\ngxT9wMrDxeEnsNLwATijPbKmM+vRo1ltDhYFh5mPdOdS9qYIppFJwYrlqU+n\r\niSZFbvAGQ/t6tHw8eVgAwA0Pg0iO9ppECEFp5NPaoVVV41r96466TnP0uAzn\r\nNjIXgeSftJLpRmpGe1+GyD7+pNurGwVXVGtwCsk3TwJejrpwGS3BeqsNJjM9\r\n+HdyHErre/qnJvZOruRkmphaL6vkp0AFdEjohlffvzzyn0Iqkg1Q6hmYjDBw\r\nXrCk+JhKHMZb2UBj6DdVZxlrbhhzKsuB8fs=\r\n=9G2z\r\n-----END PGP SIGNATURE-----\r\n"
+      },
+      "_npmUser": {
+        "name": "mctofu",
+        "email": "mctofu@github.com"
+      },
+      "directories": {},
+      "maintainers": [
+        {
+          "name": "nishnha",
+          "email": "nishnha@gmail.com"
+        },
+        {
+          "name": "mctofu",
+          "email": "mctofu@github.com"
+        }
+      ],
+      "_npmOperationalInternal": {
+        "host": "s3://npm-registry-packages",
+        "tmp": "tmp/npm-parent-dependency_2.0.1_1654733643002_0.039059993052343644"
+      },
+      "_hasShrinkwrap": false
+    },
+    "2.0.2": {
+      "name": "@dependabot-fixtures/npm-parent-dependency",
+      "version": "2.0.2",
+      "description": "a test fixture for testing transitive dependency updates",
+      "main": "index.js",
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dependabot-fixtures/npm-parent-dependency.git"
+      },
+      "author": "",
+      "license": "ISC",
+      "bugs": {
+        "url": "https://github.com/dependabot-fixtures/npm-parent-dependency/issues"
+      },
+      "homepage": "https://github.com/dependabot-fixtures/npm-parent-dependency#readme",
+      "dependencies": {
+        "@dependabot-fixtures/npm-intermediate-dependency": "~0.0.1"
+      },
+      "gitHead": "42d65e3eca93f76a73fbc251bbcc0afbebf5b943",
+      "_id": "@dependabot-fixtures/npm-parent-dependency@2.0.2",
+      "_nodeVersion": "16.15.0",
+      "_npmVersion": "8.5.5",
+      "dist": {
+        "integrity": "sha512-r1uDMPr0w1LQ3V0ekkMMYyucBDKj3kWbUI/067iDVAmF1DRwVJurPf7W4NzkuOuEe/EgPx5qCBAMAq8TjdlH7w==",
+        "shasum": "751e8e0ebb4b2032081fa83569090016c77d1534",
+        "tarball": "https://registry.npmjs.org/@dependabot-fixtures/npm-parent-dependency/-/npm-parent-dependency-2.0.2.tgz",
+        "fileCount": 2,
+        "unpackedSize": 764,
+        "signatures": [
+          {
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA",
+            "sig": "MEUCIQCE4s1MwGy0RnAC5O8xEQc+zzc1HG/LIq1/rZ2YSDF9hQIgNANI0o5N4bjbx+AUZ8K03c5diGDxZY+tKnIfTg8BFHw="
+          }
+        ],
+        "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJioUNUACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmqZfg/+JFyfy7AgVuG2yvtncxUOt0tTHHmCvM4nC90KciomyEq+edKU\r\noDUiaySNIW0MtfN+D852I6i+cVoGDX/uwEMRvSKwLSn61pwQkQ9j2SWf2i3p\r\nOCbFprCS/v2WGPbfVgKiai6c6N8geuNWncD8/CFcNEMUQe6KISNYTaTOqrO1\r\nnj4Z034rglCXpgUt7ms00LK9HCYaDd4pCxOq99ulbEyqUUgWVl0FfdiZ2L6t\r\nG0KrQ9owVyj0m2KoebWd5P+/uIbZIeC7gQCaQxKOkYfzEP/+H8Np07HHicgf\r\nmQvWGlJutJuS60V+rZhFNi12CKHw79EXoeAqKj7i/+pvd2U8xKLeMy/9Q2Nm\r\n1lXZrh4W/9QPn6igT0cmwdz8zAJMmJZybCnZCla5izjJpQ94tP+sP6lK0SEl\r\nwNSng4ffNF03/e8N45VR/ygSLwIjHpcC3s/ch8cDXYhqze9hpExyTHe7Y8yn\r\n3xFNqUYA5O2lTaAkzgVh9l+49/lLxrlzAIqvfkvY4vfcVNT+OMq8FE0tpRfa\r\nHPv8OlYy+Qn/uEb91NlT3w5l45aITPK1FtFcN2aaqSutD+O1WVWEt76E0DvI\r\ngkYKtUzKsOjw9/l9X0W7mkBTa/HMNfQsqFvCGMDz21VTcSnw3PjG/DgWb6p4\r\nwTiaky8NCgtrVzQ//8GaK28PXJnuM2NGc7Q=\r\n=IHjM\r\n-----END PGP SIGNATURE-----\r\n"
+      },
+      "_npmUser": {
+        "name": "mctofu",
+        "email": "mctofu@github.com"
+      },
+      "directories": {},
+      "maintainers": [
+        {
+          "name": "nishnha",
+          "email": "nishnha@gmail.com"
+        },
+        {
+          "name": "mctofu",
+          "email": "mctofu@github.com"
+        }
+      ],
+      "_npmOperationalInternal": {
+        "host": "s3://npm-registry-packages",
+        "tmp": "tmp/npm-parent-dependency_2.0.2_1654735700557_0.23859835097700555"
+      },
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2022-06-08T22:18:55.042Z",
+    "1.0.0": "2022-06-08T22:18:55.229Z",
+    "modified": "2022-06-10T17:08:30.408Z",
+    "1.0.1": "2022-06-08T22:21:52.375Z",
+    "2.0.0": "2022-06-09T00:10:04.480Z",
+    "2.0.1": "2022-06-09T00:14:03.193Z",
+    "2.0.2": "2022-06-09T00:48:20.695Z"
+  },
+  "maintainers": [
+    {
+      "email": "bdragon@github.com",
+      "name": "bryandragon"
+    },
+    {
+      "email": "nishnha@gmail.com",
+      "name": "nishnha"
+    },
+    {
+      "email": "mctofu@github.com",
+      "name": "mctofu"
+    }
+  ],
+  "description": "a test fixture for testing transitive dependency updates",
+  "homepage": "https://github.com/dependabot-fixtures/npm-parent-dependency#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dependabot-fixtures/npm-parent-dependency.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dependabot-fixtures/npm-parent-dependency/issues"
+  },
+  "license": "ISC",
+  "readme": "# npm-parent-dependency\nA dependency that uses npm-transitive-dependency\n",
+  "readmeFilename": "README.md"
+}

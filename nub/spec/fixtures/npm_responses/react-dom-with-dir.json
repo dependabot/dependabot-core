@@ -1,0 +1,105 @@
+{
+    "_hasShrinkwrap": false,
+    "_id": "react-dom@16.8.2",
+    "_nodeVersion": "8.10.0",
+    "_npmOperationalInternal": {
+        "host": "s3://npm-registry-packages",
+        "tmp": "tmp/react-dom_16.8.2_1550170899672_0.6266335928232099"
+    },
+    "_npmUser": {
+        "email": "dan.abramov@gmail.com",
+        "name": "gaearon"
+    },
+    "_npmVersion": "6.4.1",
+    "browser": {
+        "./server.js": "./server.browser.js",
+        "./unstable-fizz.js": "./unstable-fizz.browser.js"
+    },
+    "browserify": {
+        "transform": [
+            "loose-envify"
+        ]
+    },
+    "bugs": {
+        "url": "https://github.com/facebook/react/issues"
+    },
+    "dependencies": {
+        "loose-envify": "^1.1.0",
+        "object-assign": "^4.1.1",
+        "prop-types": "^15.6.2",
+        "scheduler": "^0.13.2"
+    },
+    "description": "React package for working with the DOM.",
+    "directories": {},
+    "dist": {
+        "fileCount": 46,
+        "integrity": "sha512-cPGfgFfwi+VCZjk73buu14pYkYBR1b/SRMSYqkLDdhSEHnSwcuYTPu6/Bh6ZphJFIk80XLvbSe2azfcRzNF+Xg==",
+        "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJcZbsUCRA9TVsSAnZWagAAZrcP/A7008ceiHOp3XFgFIym\n2Q6hio33/Q/4odxm08HPoU/Yowx2nM6kikilpHlx+8SgyzLbSXij45KEVqSN\nDVVtf8tHONANUAZW8baPtBh7E9LotQ1EPvQl4tZdL6qCOsqFcIlQfSxf9Kcy\nS3+oK4TA7RJ/OPCGlDohT8SO6JhmXnevCxTgNFRk9xS8ekbe5x0bX6OltqSw\nbtiQSXJBGV8j8Y3lqInXQeyMrKzI6GjoPS0XXb4iPrp3RSOz/1io6z7OEIST\n3/fGrXUepUglyc52euuUMznROndtZzRHLv8YS3XMzlUeh3Mustl1r2L1y2gX\nLcFGkg8U+4HT7mu+4gqVdrqSI3x3/dIIl+yNrYbjiESuggujA+DNgnPdICBg\nVKliAmcdgTg0Iy0uIQi5zYzz2EcGSyNdGmFtlPCJ0WCBNldSdQ8p1XlfxHO5\nZNoxSB589DwKgzljvXpTlBnSb1YDTT/jwB5Jn06miWTRsjCwqoC3+/NWGK+H\nSD0DKoPoxPRq9Dmjx54C9PmDCNaDEWXsXTryQDGS2t7wo+wKIIp22dA/Jm2s\nzWQHHdaoplmeuY9YleXf4pjyFj64TJimbfQdVuQb1NVWrcMF965Py98x65ET\nh/blJUa2TORzJh9hX1eJEDCMo3Y5hwEZuujwlidJvE6nsXIWLWEw3sm4w3Fz\nIORr\r\n=cYnr\r\n-----END PGP SIGNATURE-----\r\n",
+        "shasum": "7c8a69545dd554d45d66442230ba04a6a0a3c3d3",
+        "tarball": "https://registry.npmjs.org/react-dom/-/react-dom-16.8.2.tgz",
+        "unpackedSize": 4726725
+    },
+    "homepage": "https://reactjs.org/",
+    "keywords": [
+        "react"
+    ],
+    "license": "MIT",
+    "main": "index.js",
+    "maintainers": [
+        {
+            "email": "npm@andrewclark.io",
+            "name": "acdlite"
+        },
+        {
+            "email": "briandavidvaughn@gmail.com",
+            "name": "brianvaughn"
+        },
+        {
+            "email": "opensource+npm@fb.com",
+            "name": "fb"
+        },
+        {
+            "email": "flarnie.npm@gmail.com",
+            "name": "flarnie"
+        },
+        {
+            "email": "dan.abramov@gmail.com",
+            "name": "gaearon"
+        },
+        {
+            "email": "sebastian@calyptus.eu",
+            "name": "sebmarkbage"
+        },
+        {
+            "email": "npm@sophiebits.com",
+            "name": "sophiebits"
+        },
+        {
+            "email": "threepointone@gmail.com",
+            "name": "threepointone"
+        },
+        {
+            "email": "dg@domgan.com",
+            "name": "trueadm"
+        },
+        {
+            "email": "paul@oshannessy.com",
+            "name": "zpao"
+        }
+    ],
+    "name": "react-dom",
+    "peerDependencies": {
+        "react": "^16.0.0"
+    },
+    "readme": "# `react-dom`\n\nThis package serves as the entry point to the DOM and server renderers for React. It is intended to be paired with the generic React package, which is shipped as `react` to npm.\n\n## Installation\n\n```sh\nnpm install react react-dom\n```\n\n## Usage\n\n### In the browser\n\n```js\nvar React = require('react');\nvar ReactDOM = require('react-dom');\n\nclass MyComponent extends React.Component {\n  render() {\n    return <div>Hello World</div>;\n  }\n}\n\nReactDOM.render(<MyComponent />, node);\n```\n\n### On the server\n\n```js\nvar React = require('react');\nvar ReactDOMServer = require('react-dom/server');\n\nclass MyComponent extends React.Component {\n  render() {\n    return <div>Hello World</div>;\n  }\n}\n\nReactDOMServer.renderToString(<MyComponent />);\n```\n\n## API\n\n### `react-dom`\n\n- `findDOMNode`\n- `render`\n- `unmountComponentAtNode`\n\n### `react-dom/server`\n\n- `renderToString`\n- `renderToStaticMarkup`\n",
+    "readmeFilename": "README.md",
+    "repository": {
+        "directory": "packages/react-dom",
+        "type": "git",
+        "url": "git+https://github.com/facebook/react.git"
+    },
+    "scripts": {
+        "start": "node server.js"
+    },
+    "version": "16.8.2"
+}

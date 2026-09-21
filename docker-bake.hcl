@@ -38,6 +38,7 @@ variable "ECOSYSTEMS" {
     { name = "maven", image = "maven", dockerfile = "maven/Dockerfile" },
     { name = "nix", image = "nix", dockerfile = "nix/Dockerfile" },
     { name = "npm_and_yarn", image = "npm", dockerfile = "npm_and_yarn/Dockerfile" },
+    { name = "nub", image = "nub", dockerfile = "nub/Dockerfile" },
     { name = "nuget", image = "nuget", dockerfile = "nuget/Dockerfile" },
     { name = "pre_commit", image = "pre-commit", dockerfile = "pre_commit/Dockerfile" },
     { name = "pub", image = "pub", dockerfile = "pub/Dockerfile" },
