@@ -130,6 +130,26 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it.each([
+    ["workspace", "local-pkg"],
+    ["patch", "extend"],
+  ])(
+    "does not treat a %s requirement as a conflict",
+    async (_protocol, dependency) => {
+      helpers.copyDependencies(
+        "conflicting-dependency-parser/berry-protocols",
+        tempDir
+      );
+
+      const result = await findConflictingDependencies(
+        tempDir,
+        dependency,
+        "2.0.0"
+      );
+      expect(result).toEqual([]);
+    }
+  );
+
   it("returns no conflicts when the yarn berry lockfile allows the target version", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/berry-simple",

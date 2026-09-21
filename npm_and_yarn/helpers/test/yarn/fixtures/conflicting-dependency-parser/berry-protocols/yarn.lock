@@ -30,6 +30,7 @@ __metadata:
   resolution: "objnest@npm:4.1.4"
   dependencies:
     abind: "npm:^1.0.0"
+    extend: "patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch"
     local-pkg: "workspace:*"
   checksum: 10c0/3333
   languageName: node

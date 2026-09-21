@@ -189,6 +189,10 @@ describe("parseNormalized", () => {
       })[0].dependencies
     ).toEqual([
       { name: "abind", requirement: "^1.0.0" },
+      {
+        name: "extend",
+        requirement: "patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch",
+      },
       { name: "local-pkg", requirement: "workspace:*" },
     ]);
   });
