@@ -146,12 +146,8 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
       end
 
-      it "logs the helper failure and returns an empty array" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          "ConflictingDependencyResolver: helper subprocess failed while checking abind: unexpected helper failure"
-        )
-
-        expect(conflicting_dependencies).to be_empty
+      it "raises the helper error" do
+        expect { conflicting_dependencies }.to raise_error(helper_error)
       end
     end
   end
