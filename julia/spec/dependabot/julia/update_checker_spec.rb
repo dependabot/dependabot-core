@@ -493,4 +493,46 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
       end
     end
   end
+
+  describe "security updates" do
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: "Example",
+          package_manager: "julia",
+          vulnerable_versions: ["< 0.5.1"]
+        )
+      ]
+    end
+
+    before do
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return(
+          %w(0.4.1 0.5.0 0.5.1 0.6.0 1.0.0).map do |v|
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new(v),
+              released_at: Time.now - (100 * 24 * 60 * 60)
+            )
+          end
+        )
+    end
+
+    it "finds the lowest non-vulnerable release" do
+      expect(checker.lowest_security_fix_version).to eq(Gem::Version.new("0.5.1"))
+      expect(checker.lowest_resolvable_security_fix_version).to eq(Gem::Version.new("0.5.1"))
+    end
+
+    it "widens the compat entry to the fix rather than the latest release" do
+      expect(checker.updated_requirements.first[:requirement]).to eq("0.4, 0.5")
+    end
+
+    context "when the fix is ignored" do
+      let(:ignored_versions) { ["0.5.1"] }
+
+      it "skips it" do
+        expect(checker.lowest_security_fix_version).to eq(Gem::Version.new("0.6.0"))
+      end
+    end
+  end
 end

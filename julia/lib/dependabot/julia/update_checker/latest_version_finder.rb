@@ -55,6 +55,13 @@ module Dependabot
         @available_versions ||= T.let(fetch_available_versions, T.nilable(T::Array[Gem::Version]))
       end
 
+      # Lowest non-vulnerable version above the current one. Like
+      # Package::PackageLatestVersionFinder, security fixes skip the cooldown.
+      sig { returns(T.nilable(Gem::Version)) }
+      def lowest_security_fix_version
+        @lowest_security_fix_version ||= T.let(fetch_lowest_security_fix_version, T.nilable(Gem::Version))
+      end
+
       private
 
       sig { returns(Dependabot::Dependency) }
@@ -81,16 +88,29 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
       attr_reader :custom_registries
 
+      sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+      def package_releases
+        @package_releases ||= T.let(
+          Julia::Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            credentials: credentials,
+            custom_registries: custom_registries
+          ).fetch_package_releases,
+          T.nilable(T::Array[Dependabot::Package::PackageRelease])
+        )
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def fetch_lowest_security_fix_version
+        versions = filter_prerelease_versions(package_releases.map(&:version).sort)
+        versions = filter_ignored_versions(versions)
+        versions = filter_lower_versions(versions)
+        Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories).min
+      end
+
       sig { returns(T::Array[Gem::Version]) }
       def fetch_available_versions
-        # Fetch all package releases using the PackageDetailsFetcher
-        package_fetcher = Julia::Package::PackageDetailsFetcher.new(
-          dependency: dependency,
-          credentials: credentials,
-          custom_registries: custom_registries
-        )
-
-        releases = package_fetcher.fetch_package_releases
+        releases = package_releases
         return [] if releases.empty?
 
         # Filter releases based on cooldown
