@@ -60,6 +60,21 @@ module Dependabot
       SYMLINK = "120000"
     end
 
+    # The role a file plays in an update, used to decide what crosses the
+    # fetch/update trust boundary. Derived from the existing
+    # +vendored_file+ and +support_file+ flags so that classification lives in
+    # one place rather than being re-derived ad hoc by each consumer.
+    class Category
+      # A repo-resident dependency tree (e.g. bundler `vendor/`, go `vendor/`)
+      # that some updates need at resolution time.
+      VENDORED = "vendored"
+      # A file the update reads for context but does not itself update
+      # (e.g. path-dependency manifests, workspace manifests, .npmrc).
+      SUPPORT = "support"
+      # A manifest or lockfile the update directly resolves and may rewrite.
+      PRIMARY = "primary"
+    end
+
     # See https://github.com/git/git/blob/a36e024e989f4d35f35987a60e3af8022cac3420/object.h#L144-L153
     VALID_MODES = T.let(
       [Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze,
@@ -181,6 +196,14 @@ module Dependabot
     sig { returns(T::Boolean) }
     def vendored_file?
       @vendored_file
+    end
+
+    sig { returns(String) }
+    def category
+      return Category::VENDORED if vendored_file?
+      return Category::SUPPORT if support_file?
+
+      Category::PRIMARY
     end
 
     sig { returns(T::Boolean) }
