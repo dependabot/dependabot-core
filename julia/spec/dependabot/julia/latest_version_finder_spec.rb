@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
       # Ignore conditions keep the ordering between builds, unlike compat
       # entries, so the rebuild is ignored too
       it "does not offer the rebuild" do
-        expect(finder.latest_version).to be_nil
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.6.10+0"))
       end
     end
   end

@@ -180,6 +180,34 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
     end
   end
 
+  describe "with a Manifest version that is already the latest release" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "Example",
+        version: "0.5.0",
+        requirements: [{ file: "Project.toml", requirement: "0.5", groups: ["deps"], source: nil }],
+        package_manager: "julia",
+        metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+      )
+    end
+
+    before do
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return(
+          %w(0.4.1 0.5.0).map do |version|
+            Dependabot::Package::PackageRelease.new(version: Dependabot::Julia::Version.new(version))
+          end
+        )
+    end
+
+    it "is up to date and needs no unlock" do
+      expect(checker.latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+      expect(checker.up_to_date?).to be(true)
+      expect(checker.can_update?(requirements_to_unlock: :all)).to be(false)
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 

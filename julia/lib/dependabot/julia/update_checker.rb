@@ -115,6 +115,12 @@ module Dependabot
 
       private
 
+      sig { override.returns(T::Boolean) }
+      def latest_version_resolvable_with_full_unlock?
+        # Full unlock checks aren't implemented for Julia (yet)
+        false
+      end
+
       # Versions a stdlib's compat entry has to admit, by project file; set by
       # the file parser for packages that ship with any Julia release the
       # project supports

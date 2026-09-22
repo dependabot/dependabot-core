@@ -110,8 +110,10 @@ module Dependabot
         versions = filter_ignored_versions(versions)
         return [] if versions.empty?
 
-        # Filter out lower versions
-        versions = filter_lower_versions(versions)
+        # Filter out lower versions, keeping the current release so that an
+        # up-to-date dependency reports it as the latest: the base class takes
+        # a nil latest_version as out of date and goes on to look for unlocks
+        versions = filter_lower_versions(versions, keep_current: true)
         return [] if versions.empty?
 
         # Filter out vulnerable versions
@@ -168,12 +170,12 @@ module Dependabot
         filtered
       end
 
-      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
-      def filter_lower_versions(versions)
+      sig { params(versions: T::Array[Gem::Version], keep_current: T::Boolean).returns(T::Array[Gem::Version]) }
+      def filter_lower_versions(versions, keep_current: false)
         return versions unless dependency.version
 
         current_version = Dependabot::Julia::Version.new(dependency.version)
-        versions.select { |v| v > current_version }
+        versions.select { |v| v > current_version || (keep_current && v == current_version) }
       end
 
       sig { returns(T::Array[Dependabot::Requirement]) }
