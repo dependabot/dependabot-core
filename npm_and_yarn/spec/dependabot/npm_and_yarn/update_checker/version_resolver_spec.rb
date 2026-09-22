@@ -825,7 +825,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+
+        context "when the manifest explicitly selects modern npm" do
+          before do
+            directory = dependency_files.find { |file| file.name == "package.json" }&.directory
+            Dependabot::NpmAndYarn::Helpers.set_effective_package_manager_version(
+              "npm",
+              "10.9.2",
+              directory: directory,
+              explicit: true
+            )
+          end
+
+          after do
+            Thread.current[:dependabot_corepack_effective_versions] = nil
+          end
+
+          it "rejects the incompatible shrinkwrap without invoking the npm6 helper" do
+            expect(Dependabot::SharedHelpers).not_to receive(:run_helper_subprocess)
+
+            expect { latest_resolvable_version }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, /npm 10\.9\.2.*v1 lockfile/i)
+          end
+        end
       end
     end
 
