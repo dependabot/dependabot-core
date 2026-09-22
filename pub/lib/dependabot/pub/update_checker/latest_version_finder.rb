@@ -7,6 +7,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
 require "dependabot/pub/package/package_details_fetcher"
 require "dependabot/package/package_latest_version_finder"
+require "dependabot/update_checkers/cooldown_calculation"
 require "sorbet-runtime"
 
 module Dependabot
@@ -119,6 +120,47 @@ module Dependabot
           return unparsed_version unless cooldown_options
 
           @package_details ||= T.let(
+            package_details_fetcher.package_details_metadata,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
+
+          version_release = @package_details.find do |release|
+            release.version.to_s == unparsed_version
+          end
+
+          if version_release&.released_at
+            return unparsed_version unless in_cooldown_period?(version_release)
+
+            return dependency.version
+          end
+
+          # No dated release for this candidate. A Pub release always carries a
+          # publication date, so a candidate is only missing here for one of two
+          # reasons, handled differently:
+          #
+          #   metadata present, candidate absent -> the date source is healthy and the
+          #     candidate simply isn't published on pub.dev (the resolver and registry
+          #     listings diverge). Skip cooldown quietly.
+          #
+          #   metadata empty -> we have no dates at all, so cooldown can't be applied.
+          #     Surface the shared "cooldown not applied" notice, matching docker/common.
+          unless @package_details.empty?
+            Dependabot.logger.info(
+              "No matching release metadata for #{dependency.name} #{unparsed_version}; skipping cooldown"
+            )
+            return unparsed_version
+          end
+
+          record_cooldown_date_unavailable(unparsed_version)
+          unparsed_version
+        rescue StandardError => e
+          Dependabot.logger.error("Failed to filter cooldown versions for \"#{dependency.name}\": #{e.backtrace}")
+          unparsed_version
+        end
+
+        sig { returns(PackageDetailsFetcher) }
+        def package_details_fetcher
+          @package_details_fetcher ||= T.let(
             PackageDetailsFetcher.new(
               dependency: dependency,
               dependency_files: dependency_files,
@@ -126,27 +168,46 @@ module Dependabot
               ignored_versions: ignored_versions,
               security_advisories: security_advisories,
               options: options
-            ).package_details_metadata,
-            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+            ),
+            T.nilable(PackageDetailsFetcher)
           )
+        end
 
-          return unparsed_version unless @package_details.any?
+        sig { params(unparsed_version: String).void }
+        def record_cooldown_date_unavailable(unparsed_version)
+          return unless version_class.correct?(unparsed_version)
 
-          version_release = @package_details.find do |release|
-            release.version == unparsed_version
+          new_version = version_class.new(unparsed_version)
+          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
+
+          # Nothing to cool down when the candidate isn't an upgrade, or when it is
+          # ignored and would be discarded anyway; mirrors the common cooldown
+          # tracker's relevance check and avoids job-wide warnings when no update can
+          # be produced.
+          return if current_version && new_version <= current_version
+          return if ignored?(new_version)
+
+          Dependabot.logger.info(
+            "No publication date available for #{dependency.name} #{unparsed_version}; cooldown not applied"
+          )
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            dependency,
+            cooldown_days: cooldown_days_for(current_version, new_version)
+          )
+        end
+
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        def ignored?(version)
+          requirements = ignored_versions.flat_map do |requirement|
+            dependency.requirement_class.requirements_array(requirement)
           end
-
-          return unparsed_version unless in_cooldown_period?(version_release)
-
-          dependency.version
-        rescue StandardError => e
-          Dependabot.logger.error("Failed to filter cooldown versions for \"#{dependency.name}\": #{e.backtrace}")
-          unparsed_version
+          requirements.any? { |requirement| requirement.satisfied_by?(version) }
         end
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
-          unless release.released_at
+          released_at = release.released_at
+          unless released_at
             Dependabot.logger.info("Release date not available for version #{release.version}")
             return false
           end
@@ -155,7 +216,7 @@ module Dependabot
           days = cooldown_days_for(current_version, release.version)
 
           # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release.released_at.to_i
+          passed_seconds = Time.now.to_i - released_at.to_i
           passed_days = passed_seconds / DAY_IN_SECONDS
 
           if passed_days < days
