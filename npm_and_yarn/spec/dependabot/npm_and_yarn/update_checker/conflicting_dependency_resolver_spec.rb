@@ -100,6 +100,16 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       end
     end
 
+    context "with pnpm lockfiles" do
+      let(:dependency_files) { project_dependency_files("pnpm/multiple_sub_dependencies") }
+
+      it "returns an empty array without invoking a helper" do
+        expect(Dependabot::SharedHelpers).not_to receive(:run_helper_subprocess)
+
+        expect(conflicting_dependencies).to be_empty
+      end
+    end
+
     context "when preparing dependency files fails" do
       let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
       let(:dependency_files_builder) do

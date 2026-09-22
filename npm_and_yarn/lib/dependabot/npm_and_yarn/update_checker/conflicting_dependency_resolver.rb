@@ -64,9 +64,11 @@ module Dependabot
             function = if dependency_files_builder.package_locks.any? ||
                           dependency_files_builder.shrinkwraps.any?
                          "npm:findConflictingDependencies"
-                       else
+                       elsif dependency_files_builder.yarn_locks.any?
                          "yarn:findConflictingDependencies"
                        end
+            return [] unless function
+
             run_conflicting_dependency_helper(function:, dependency:, target_version:)
           end
         end
