@@ -23,6 +23,9 @@
     "patch-package": "^8.0.1",
     "semver": "^7.7.4"
   },
+  "overrides": {
+    "tmp": "0.2.7"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/ini": "^4.1.1",
