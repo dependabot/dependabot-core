@@ -223,6 +223,48 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
       end
     end
+
+    context "when Pkg cannot read the Project.toml" do
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(
+              message: "Failed to find workspace project files: Compat `Gone` not listed in `deps`, " \
+                       "`weakdeps` or `extras` section at \"/tmp/test/Project.toml\"."
+            )
+          )
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with("/tmp/test/Project.toml").and_return(true)
+      end
+
+      it "reports Pkg's reason against the project file" do
+        expect { fetched_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_path).to eq("/Project.toml")
+          expect(error.message).to include("Compat `Gone` not listed", "section at \"Project.toml\"")
+        end
+      end
+
+      context "when Pkg reports the realpath of the temporary directory" do
+        before do
+          allow(registry_client).to receive(:find_workspace_project_files)
+            .with("/tmp/test")
+            .and_return(
+              Dependabot::Julia::RegistryClient::Result::Failure.new(
+                message: "Compat `Gone` not listed at \"/private/tmp/test/Project.toml\"."
+              )
+            )
+          allow(File).to receive(:exist?).with("/tmp/test").and_return(true)
+          allow(File).to receive(:realpath).with("/tmp/test").and_return("/private/tmp/test")
+        end
+
+        it "strips it whole" do
+          expect { fetched_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.message).to eq("Compat `Gone` not listed at \"Project.toml\".")
+          end
+        end
+      end
+    end
   end
 
   describe ".required_files_in?" do
