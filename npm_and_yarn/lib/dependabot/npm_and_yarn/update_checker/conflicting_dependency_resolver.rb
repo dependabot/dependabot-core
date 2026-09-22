@@ -5,7 +5,6 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
-require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
@@ -91,12 +90,6 @@ module Dependabot
             ),
             T::Array[Dependabot::UpdateCheckers::Conflict]
           )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.warn(
-            "ConflictingDependencyResolver: failed to find conflicting dependencies for " \
-            "#{dependency.name}: #{e.message}"
-          )
-          []
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }

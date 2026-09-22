@@ -136,8 +136,8 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
       end
 
-      it "returns an empty array" do
-        expect(conflicting_dependencies).to be_empty
+      it "raises the helper error" do
+        expect { conflicting_dependencies }.to raise_error(helper_error)
       end
     end
   end
