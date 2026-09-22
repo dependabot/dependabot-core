@@ -86,6 +86,219 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
   it_behaves_like "an update checker"
 
+  describe "#requirements_update_strategy" do
+    subject(:strategy) { checker.requirements_update_strategy }
+
+    let(:dependency_files) { [pyproject] }
+    let(:dependency_requirements) do
+      [{ file: "pyproject.toml", requirement: "==2.0.0", groups: [], source: nil }]
+    end
+    let(:pyproject) { Dependabot::DependencyFile.new(name: "pyproject.toml", content: project_content) }
+    let(:project_content) do
+      <<~TOML
+        [project]
+        name = "example_project"
+        description = "Example library"
+      TOML
+    end
+    let(:project_url) { "https://pypi.org/pypi/example-project/json/" }
+    let(:project_response) { { info: { summary: "Example library" } }.to_json }
+    let(:project_status) { 200 }
+
+    before do
+      stub_request(:get, project_url).to_return(status: project_status, body: project_response)
+    end
+
+    it "widens matching library requirements and caches the result" do
+      2.times { expect(checker.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges) }
+      expect(a_request(:get, project_url)).to have_been_made.once
+    end
+
+    context "with a different summary" do
+      let(:project_response) { { info: { summary: "Another project" } }.to_json }
+
+      it "bumps application requirements and caches the result" do
+        2.times { expect(checker.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions) }
+        expect(a_request(:get, project_url)).to have_been_made.once
+      end
+    end
+
+    [{}, { info: nil }, { info: {} }, { info: { summary: nil } }, { info: { summary: "" } }].each do |response|
+      context "with PyPI metadata #{response.inspect}" do
+        let(:project_response) { response.to_json }
+
+        it "does not identify a matching library" do
+          expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+        end
+      end
+    end
+
+    context "with malformed JSON" do
+      let(:project_response) { "not JSON" }
+
+      it "propagates the parse error" do
+        expect { strategy }.to raise_error(JSON::ParserError)
+      end
+    end
+
+    context "with a non-object PyPI response" do
+      let(:project_response) { "[]" }
+
+      it "rejects the malformed response" do
+        expect { strategy }.to raise_error(TypeError, "PyPI metadata must be an object")
+      end
+    end
+
+    context "with a non-object info field" do
+      let(:project_response) { { info: false }.to_json }
+
+      it "rejects the malformed info field" do
+        expect { strategy }.to raise_error(TypeError, "PyPI info must be an object")
+      end
+    end
+
+    context "with a non-string summary" do
+      let(:project_response) { { info: { summary: 123 } }.to_json }
+
+      it "rejects the malformed summary" do
+        expect { strategy }.to raise_error(TypeError, "PyPI info.summary must be a string")
+      end
+    end
+
+    context "without a local description" do
+      let(:project_content) { "[project]\nname = \"example_project\"" }
+      let(:project_response) { "not JSON" }
+
+      it "accepts a published project without parsing unused metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+      end
+
+      context "when the project is not published" do
+        let(:project_status) { 404 }
+
+        it "does not classify it as a library" do
+          expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+        end
+      end
+    end
+
+    context "without a local name" do
+      let(:project_content) { "[project]\ndescription = \"Example library\"" }
+
+      it "does not request PyPI metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+
+    context "with a non-string local name" do
+      let(:project_content) { "[project]\nname = 123" }
+
+      it "rejects the malformed name before making a request" do
+        expect { strategy }.to raise_error(TypeError, "project.name must be a string")
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+
+    context "with a non-string local description" do
+      let(:project_content) { "[project]\nname = \"example_project\"\ndescription = false" }
+
+      it "rejects the malformed description" do
+        expect { strategy }.to raise_error(TypeError, "project.description must be a string")
+      end
+    end
+
+    context "with a non-200 PyPI response" do
+      let(:project_status) { 503 }
+      let(:project_response) { "not JSON" }
+
+      it "uses the presence of a local description" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+      end
+    end
+
+    context "when the request times out" do
+      before do
+        stub_request(:get, project_url).to_raise(Excon::Error::Timeout.new("connection timeout"))
+      end
+
+      it "uses the presence of a local description" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+      end
+    end
+
+    context "with Poetry and project metadata" do
+      let(:project_content) do
+        <<~TOML
+          [tool.poetry]
+          name = "example_project"
+          description = "Example library"
+
+          [project]
+          name = 123
+        TOML
+      end
+
+      it "prefers Poetry without reading the unselected metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+      end
+
+      context "when the Poetry table is empty" do
+        let(:project_content) { "[tool.poetry]\n[project]\nname = \"example_project\"" }
+
+        it "does not fall through to project metadata" do
+          expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+          expect(a_request(:get, project_url)).not_to have_been_made
+        end
+      end
+    end
+
+    context "with only build-system metadata" do
+      let(:project_content) do
+        <<~TOML
+          [build-system]
+          name = "example_project"
+          description = "Example library"
+        TOML
+      end
+
+      it "retains the build-system metadata fallback" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+      end
+
+      context "with an empty project table" do
+        let(:project_content) { "[project]\n#{super()}" }
+
+        it "does not fall through to build-system metadata" do
+          expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+          expect(a_request(:get, project_url)).not_to have_been_made
+        end
+      end
+    end
+
+    context "with an explicit update strategy" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+      let(:project_content) { "not TOML" }
+
+      it "skips library detection" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+
+    context "when updating a requirements file" do
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: "==2.0.0", groups: [], source: nil }]
+      end
+      let(:project_content) { "not TOML" }
+
+      it "does not inspect unrelated project metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
@@ -487,6 +700,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .and_return(Gem::Version.new("2.5.0"))
           expect(checker.latest_resolvable_version)
             .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "when Poetry has an empty project table and no lockfile" do
+        let(:dependency_files) { [pyproject] }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(name: "pyproject.toml", content: "[tool.poetry]\n[project]\n")
+        end
+
+        it "selects the requirements resolver based on table presence" do
+          resolver = instance_double(
+            described_class::PipVersionResolver,
+            latest_resolvable_version: Gem::Version.new("2.5.0")
+          )
+          allow(described_class::PipVersionResolver).to receive(:new).and_return(resolver)
+
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.5.0"))
         end
       end
 

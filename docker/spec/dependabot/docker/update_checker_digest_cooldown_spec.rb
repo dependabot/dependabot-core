@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -46,6 +46,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:mock_client) { instance_double(DockerRegistry2::Registry) }
   let(:last_modified) { (Time.now - (5 * 86_400)).httpdate }
   let(:blob_response) { instance_double(RestClient::Response, headers: { last_modified: last_modified }) }
+  let(:tag_last_pushed) { (Time.now - (5 * 86_400)).iso8601 }
 
   let(:checker) do
     described_class.new(
@@ -70,6 +71,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     allow(mock_client).to receive(:dohead).and_return(blob_response)
     allow(Dependabot.logger).to receive(:info)
     allow(Dependabot.logger).to receive(:warn)
+    stub_request(
+      :get,
+      "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+    ).to_return(
+      status: 200,
+      body: {
+        digest: "sha256:98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92",
+        tag_last_pushed: tag_last_pushed
+      }.to_json
+    )
   end
 
   it "parses the Dockerfile into a digest-pinned golang:alpine dependency" do
@@ -81,7 +92,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   end
 
   context "when the new digest is ~5 days old (inside the 14-day cooldown)" do
-    let(:last_modified) { (Time.now - (5 * 86_400)).httpdate }
+    let(:tag_last_pushed) { (Time.now - (5 * 86_400)).iso8601 }
 
     it "does not propose the digest-only update (cooldown respected)" do
       expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
@@ -89,7 +100,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   end
 
   context "when the new digest is 30 days old (older than the 14-day cooldown)" do
-    let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+    let(:tag_last_pushed) { (Time.now - (30 * 86_400)).iso8601 }
 
     it "proposes the digest-only update (cooldown elapsed)" do
       expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
@@ -99,8 +110,260 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   context "when the registry omits the Last-Modified header" do
     let(:blob_response) { instance_double(RestClient::Response, headers: {}) }
 
+    before do
+      stub_request(
+        :get,
+        "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+      ).to_return(status: 404)
+    end
+
     it "fails open and proposes the update" do
       expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    context "when the manifest digest lookup is rate limited" do
+      before do
+        attempts = 0
+        allow(mock_client).to receive(:manifest_digest) do
+          attempts += 1
+          raise DockerRegistry2::RegistryHTTPException, "Registry request failed with status 429" if attempts == 1
+
+          "sha256:98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92"
+        end
+      end
+
+      it "fails open when the subsequent digest resolution succeeds" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
+    context "when Docker Hub reports a recent tag push" do
+      before do
+        stub_request(
+          :get,
+          "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+        ).to_return(
+          status: 200,
+          body: {
+            digest: "sha256:98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92",
+            tag_last_pushed: (Time.now - (5 * 86_400)).iso8601
+          }.to_json
+        )
+      end
+
+      it "holds the digest-only update in cooldown" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(golang_dependency.metadata).not_to include(:cooldown_date_unavailable)
+      end
+    end
+
+    context "when Docker Hub reports an old tag push" do
+      before do
+        stub_request(
+          :get,
+          "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+        ).to_return(
+          status: 200,
+          body: {
+            digest: "sha256:98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92",
+            tag_last_pushed: (Time.now - (30 * 86_400)).iso8601
+          }.to_json
+        )
+      end
+
+      it "proposes the digest-only update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+
+      context "when the tag moves after its publication date is checked" do
+        let(:checked_digest) { "98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92" }
+
+        before do
+          allow(mock_client).to receive(:manifest_digest)
+            .and_return("sha256:#{checked_digest}", "sha256:#{'a' * 64}")
+        end
+
+        it "updates to the digest whose cooldown was checked" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          expect(checker.updated_requirements.first.source_string("digest")).to eq(checked_digest)
+          expect(mock_client).to have_received(:manifest_digest).once
+        end
+      end
+    end
+  end
+
+  context "when only verified registry publication dates are accepted" do
+    let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+    let(:registry_digest) { "98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92" }
+    let(:metadata_digest) { "sha256:#{registry_digest}" }
+    let(:tag_metadata) do
+      {
+        digest: metadata_digest,
+        tag_last_pushed: (Time.now - (5 * 86_400)).iso8601
+      }
+    end
+
+    before do
+      stub_request(
+        :get,
+        "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+      ).to_return(status: 200, body: tag_metadata.to_json)
+    end
+
+    it "holds a recent Hub push despite an older manifest header" do
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      expect(golang_dependency.metadata).not_to include(:cooldown_date_unavailable)
+      expect(mock_client).not_to have_received(:dohead)
+    end
+
+    context "when the Hub digest does not match" do
+      let(:metadata_digest) { "sha256:#{'b' * 64}" }
+
+      it "marks the date unavailable without falling back to the manifest header" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        expect(mock_client).not_to have_received(:dohead)
+      end
+    end
+
+    context "when the Hub timestamp is missing" do
+      let(:tag_metadata) { { digest: metadata_digest, created: "2000-01-01T00:00:00Z" } }
+
+      it "does not substitute a creation timestamp or manifest header" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        expect(mock_client).not_to have_received(:dohead)
+      end
+    end
+
+    context "when the tag points to a new multi-platform index" do
+      before do
+        allow(mock_client).to receive(:digest).and_return(
+          [{ "digest" => "sha256:#{'c' * 64}" }, { "digest" => "sha256:#{'d' * 64}" }]
+        )
+      end
+
+      it "uses the matching parent index push date instead of an old child header" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(golang_dependency.metadata).not_to include(:cooldown_date_unavailable)
+        expect(mock_client).not_to have_received(:dohead)
+      end
+    end
+
+    %w(ghcr.io registry.example.com).each do |registry|
+      context "when #{registry} has no verified publication-date source" do
+        let(:golang_dependency) do
+          Dependabot::Dependency.new(
+            name: "acme/golang",
+            version: "alpine",
+            package_manager: "docker",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { registry: registry, tag: "alpine", digest: "old_digest" }
+            }]
+          )
+        end
+
+        it "marks the date unavailable without trusting registry headers" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          expect(mock_client).not_to have_received(:dohead)
+          expect(WebMock).not_to have_requested(:get, %r{\Ahttps://api\.github\.com/})
+        end
+      end
+    end
+  end
+
+  context "when GHCR provides unverified package timestamps" do
+    let(:dependency_tags) { ["latest"] }
+    let(:dependency_digest) { "old_digest" }
+    let(:golang_dependency) do
+      Dependabot::Dependency.new(
+        name: "astral-sh/uv",
+        version: dependency_tags.first,
+        package_manager: "docker",
+        requirements: dependency_tags.map do |tag|
+          {
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { registry: "ghcr.io", tag: tag, digest: dependency_digest }.compact
+          }
+        end
+      )
+    end
+    let(:versions_url) { "https://api.github.com/orgs/astral-sh/packages/container/uv/versions" }
+    let(:registry_digest) { "98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92" }
+    let(:published_at) { (Time.now - (5 * 86_400)).iso8601 }
+    let(:package_version) do
+      {
+        name: "sha256:#{registry_digest}",
+        created_at: (Time.now - (30 * 86_400)).iso8601,
+        updated_at: published_at,
+        metadata: { container: { tags: dependency_tags } }
+      }
+    end
+
+    before do
+      stub_request(:get, versions_url)
+        .with(query: { "page" => "1", "per_page" => "100" })
+        .to_return(status: 200, body: [package_version].to_json)
+    end
+
+    it "marks the date unavailable while retaining normal digest updates" do
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      expect(checker.updated_requirements.first.source_string("digest")).to eq(registry_digest)
+      expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      expect(mock_client).not_to have_received(:dohead)
+      expect(WebMock).not_to have_requested(:get, versions_url)
+      expect(Dependabot.logger).to have_received(:info).with(
+        "No verified registry publication date source for ghcr.io; skipping cooldown for astral-sh/uv:latest"
+      )
+    end
+
+    context "when updating an unpinned version tag" do
+      let(:dependency_tags) { ["1.0.0"] }
+      let(:dependency_digest) { nil }
+
+      before do
+        allow(mock_client).to receive(:tags).and_return("tags" => %w(1.0.0 1.1.0))
+      end
+
+      it "proposes the update with a missing-date warning" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first.source_string("tag")).to eq("1.1.0")
+        expect(checker.updated_requirements.first.source_string("digest")).to be_nil
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        expect(WebMock).not_to have_requested(:get, versions_url)
+      end
+    end
+
+    context "when updated_at is older than cooldown" do
+      let(:published_at) { (Time.now - (30 * 86_400)).iso8601 }
+
+      it "still marks the date unavailable" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        expect(WebMock).not_to have_requested(:get, versions_url)
+      end
+    end
+
+    context "when credentials contain only metadata for the credential proxy" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new("type" => "git_source", "host" => "github.com"),
+          Dependabot::Credential.new("type" => "docker_registry", "registry" => "ghcr.io")
+        ]
+      end
+
+      it "does not treat authentication as proof of timestamp semantics" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(golang_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        expect(WebMock).not_to have_requested(:get, versions_url)
+      end
     end
   end
 end

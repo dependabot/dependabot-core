@@ -147,9 +147,11 @@ module Dependabot
 
           if dependency_change.nil?
             Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
+            report_security_update_failures(nil)
             return
           end
 
+          report_security_update_failures(dependency_change)
           upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
         end
 
@@ -161,23 +163,12 @@ module Dependabot
 
           job_group = T.must(dependency_snapshot.job_group)
 
-          if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(job_group)
-          else
-            dependency_changes = T.let(
-              T.must(job.source.directories).filter_map do |directory|
-                job.source.directory = directory
-                dependency_snapshot.current_directory = directory
-                compile_all_dependency_changes_for(job_group)
-              end,
-              T::Array[Dependabot::DependencyChange]
-            )
-
-            # merge the changes together into one
-            dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
-            dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
-            @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
-          end
+          computed_change = if job.source.directories.nil?
+                              compile_all_dependency_changes_for(job_group)
+                            else
+                              compile_all_dependency_changes_for_directories(job_group)
+                            end
+          @dependency_change = T.let(computed_change, T.nilable(Dependabot::DependencyChange))
 
           # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
           if @dependency_change

@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NUGET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+UPDATER_DIR="$NUGET_DIR/helpers/lib/NuGetUpdater"
+SOLUTION="$UPDATER_DIR/NuGetUpdater.slnx"
+CORE_TEST_PROJECT="$UPDATER_DIR/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj"
+LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/nuget-csharp-tests.XXXXXX")"
+
+trap 'rm -rf -- "$LOG_DIR"' EXIT
+
+declare -a phase_labels=()
+declare -a phase_logs=()
+declare -a phase_pids=()
+declare -a phase_statuses=()
+
+start_test() {
+  local label="$1"
+  local project="$2"
+  local filter="${3:-}"
+  local log_file="$LOG_DIR/$label.log"
+  local -a test_args=(
+    "$project"
+    --configuration Release
+    --no-restore
+    --no-build
+    --logger "console;verbosity=normal"
+    --blame-hang-timeout 5m
+  )
+
+  if [[ -n "$filter" ]]; then
+    test_args+=(--filter "$filter")
+  fi
+
+  (
+    export NUGET_ENHANCED_NETWORK_RETRY_DELAY_MILLISECONDS=0
+    export MSBUILDDISABLENODEREUSE=1
+    dotnet test "${test_args[@]}"
+  ) >"$log_file" 2>&1 &
+
+  phase_labels+=("$label")
+  phase_logs+=("$log_file")
+  phase_pids+=("$!")
+}
+
+core_remainder_filter=""
+
+start_core_shard() {
+  local label="$1"
+  shift
+
+  local filter=""
+  local pattern
+  for pattern in "$@"; do
+    filter+="${filter:+|}FullyQualifiedName~$pattern"
+    core_remainder_filter+="${core_remainder_filter:+&}FullyQualifiedName!~$pattern"
+  done
+
+  start_test "NuGetUpdater.Core.Test.$label" "$CORE_TEST_PROJECT" "$filter"
+}
+
+wait_for_phase() {
+  local phase_failed=0
+  local index
+  local status
+
+  for index in "${!phase_pids[@]}"; do
+    if wait "${phase_pids[$index]}"; then
+      status=0
+    else
+      status=$?
+      phase_failed=1
+    fi
+    phase_statuses[index]="$status"
+  done
+
+  for index in "${!phase_logs[@]}"; do
+    printf '\n===== %s (exit %s) =====\n' "${phase_labels[$index]}" "${phase_statuses[$index]}"
+    if ! cat "${phase_logs[$index]}"; then
+      phase_failed=1
+    fi
+  done
+
+  return "$phase_failed"
+}
+
+cd "$UPDATER_DIR" || exit 1
+
+dotnet restore "$SOLUTION"
+dotnet build "$SOLUTION" --configuration Release --no-restore
+
+overall_status=0
+
+start_test \
+  "DotNetPackageCorrelation.Test" \
+  "$UPDATER_DIR/DotNetPackageCorrelation.Test/DotNetPackageCorrelation.Test.csproj"
+start_test \
+  "NuGetUpdater.Cli.Test" \
+  "$UPDATER_DIR/NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj"
+
+if ! wait_for_phase; then
+  overall_status=1
+fi
+
+phase_labels=()
+phase_logs=()
+phase_pids=()
+phase_statuses=()
+
+start_core_shard \
+  "EndToEndTests" \
+  "NuGetUpdater.Core.Test.Run.EndToEndTests"
+start_core_shard \
+  "DiscoveryWorkerTests" \
+  "NuGetUpdater.Core.Test.Discover.DiscoveryWorkerTests"
+start_core_shard \
+  "FileWriterAndSdkProjectDiscoveryTests" \
+  "NuGetUpdater.Core.Test.Update.FileWriters.FileWriterWorkerTests" \
+  "NuGetUpdater.Core.Test.Discover.SdkProjectDiscoveryTests"
+
+# Any test that does not match a named shard runs here.
+start_test \
+  "NuGetUpdater.Core.Test.RemainingTests" \
+  "$CORE_TEST_PROJECT" \
+  "$core_remainder_filter"
+
+if ! wait_for_phase; then
+  overall_status=1
+fi
+
+exit "$overall_status"

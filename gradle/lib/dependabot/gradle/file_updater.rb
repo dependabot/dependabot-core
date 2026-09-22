@@ -114,9 +114,7 @@ module Dependabot
           updated_files = wrapper_updater.update_files(buildfile)
           replace_updated_files(files, updated_files)
         end
-        if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
-          update_lockfiles_for_buildfiles(files, buildfiles_processed)
-        end
+        update_lockfiles_for_buildfiles(files, buildfiles_processed)
 
         files
       end

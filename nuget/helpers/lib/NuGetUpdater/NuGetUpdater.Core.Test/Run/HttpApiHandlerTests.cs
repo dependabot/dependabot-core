@@ -62,21 +62,24 @@ public class HttpApiHandlerTests
         var requestCount = 0;
         using var http = TestHttpServer.CreateTestServer((method, url) =>
         {
-            if (requestCount < 2)
+            requestCount++;
+            if (requestCount <= 2)
             {
-                requestCount++;
                 return (500, Array.Empty<byte>());
             }
 
             return (200, Array.Empty<byte>());
         });
-        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID", static _ => Task.CompletedTask);
 
         // act
         await handler.IncrementMetric(new()
         {
             Metric = "test",
         });
+
+        // assert
+        Assert.Equal(3, requestCount);
     }
 
     [Fact]
@@ -93,7 +96,29 @@ public class HttpApiHandlerTests
 
         // act
         await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new() { Metric = "test" }));
-        Assert.True(requestCount == 1, $"Expected only 1 request, but received {requestCount}.");
+
+        // assert
+        Assert.Equal(1, requestCount);
+    }
+
+    [Fact]
+    public async Task ApiCallsStopRetryingAfterTheMaximumNumberOfAttempts()
+    {
+        // arrange
+        var requestCount = 0;
+        using var http = TestHttpServer.CreateTestStringServer((method, url) =>
+        {
+            requestCount++;
+            return (500, $"attempt-{requestCount}");
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID", static _ => Task.CompletedTask);
+
+        // act
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new() { Metric = "test" }));
+
+        // assert
+        Assert.Equal("500 (InternalServerError): attempt-4", exception.Message);
+        Assert.Equal(4, requestCount);
     }
 
     [Theory]

@@ -11,6 +11,7 @@ require "dependabot/errors"
 require "dependabot/pull_request_creator"
 require "dependabot/service"
 require "dependabot/experiments"
+require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::Service do
   subject(:service) { described_class.new(client: mock_client) }
@@ -390,6 +391,61 @@ RSpec.describe Dependabot::Service do
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::JOB_ID => job.id,
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager
+          )
+        )
+    end
+
+    it "groups EOF socket errors by package manager and Dependabot call site" do
+      job = instance_double(
+        Dependabot::Job,
+        id: 1234,
+        package_manager: "pip",
+        repo_private?: false,
+        repo_owner: "foo",
+        dependencies: nil,
+        dependency_groups: nil,
+        security_updates_only?: false
+      )
+      error = Excon::Error::Socket.new(EOFError.new).tap do |socket_error|
+        socket_error.set_backtrace(
+          [
+            "/home/dependabot/common/lib/dependabot/registry_client.rb:32:in 'get'",
+            "/home/dependabot/python/lib/dependabot/python/package/package_details_fetcher.rb:445:" \
+            "in 'registry_response_for_dependency'"
+          ]
+        )
+      end
+
+      service.capture_exception(error: error, job: job)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::FINGERPRINT => [
+              "excon-eof",
+              "pip",
+              "python/lib/dependabot/python/package/package_details_fetcher.rb:registry_response_for_dependency"
+            ]
+          )
+        )
+    end
+
+    it "preserves an existing fingerprint" do
+      error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+        message: "Something went wrong",
+        error_context: { fingerprint: "existing-fingerprint" }
+      )
+
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::FINGERPRINT => ["existing-fingerprint"]
           )
         )
     end

@@ -9,10 +9,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
     described_class.new(
       requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.create(requirement) },
       latest_version: latest_version,
-      source_url: "new_url",
+      source_url: source_url,
       properties_to_update: []
     )
   end
+
+  let(:source_url) { "new_url" }
 
   let(:requirements) { [pom_req] }
   let(:pom_req) do
@@ -228,6 +230,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         it "leaves the unrelated wrapper_version metadata untouched" do
           expect(updated.dig(:metadata, :wrapper_version)).to eq("3.3.4")
         end
+
+        it "records the resolved registry source_url onto the requirement metadata" do
+          expect(updated.dig(:metadata, :source_url)).to eq("new_url")
+        end
+
+        context "when no source_url was resolved" do
+          let(:source_url) { nil }
+
+          it "does not record a source_url on the requirement metadata" do
+            expect(updated[:metadata]).not_to have_key(:source_url)
+          end
+        end
       end
 
       context "when bumping a wrapperVersion requirement" do
@@ -248,6 +262,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
 
         it "updates metadata[:wrapper_version] to the new version" do
           expect(updated.dig(:metadata, :wrapper_version)).to eq("3.3.4")
+        end
+
+        it "records the resolved registry source_url onto the requirement metadata" do
+          expect(updated.dig(:metadata, :source_url)).to eq("new_url")
         end
 
         it "does not synthesise a source url" do

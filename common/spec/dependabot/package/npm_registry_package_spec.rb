@@ -133,6 +133,38 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       end
     end
 
+    context "with legacy repository array metadata" do
+      let(:payload) do
+        {
+          "versions" => {
+            "0.0.4" => {
+              "repository" => [
+                {
+                  "type" => "npm",
+                  "url" => "https://registry.npmjs.org/example"
+                },
+                {
+                  "type" => "git",
+                  "url" => "git://github.com/raszi/tmp.git"
+                }
+              ]
+            }
+          }
+        }
+      end
+
+      it "uses the first Git repository and preserves the original details" do
+        release = package.releases.fetch("0.0.4")
+
+        expect(release.package_type).to eq("git")
+        expect(release.repository).to have_attributes(
+          type: "git",
+          url: "git://github.com/raszi/tmp.git"
+        )
+        expect(release.details["repository"]).to eq(payload.dig("versions", "0.0.4", "repository"))
+      end
+    end
+
     context "with legacy engines metadata" do
       let(:payload) do
         {
@@ -200,8 +232,8 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
         "versions" => { "1.0.0" => { "engines" => { "node" => 18 } } }
       }, "version 1.0.0 engines.node must be a string"],
       [{
-        "versions" => { "1.0.0" => { "repository" => [] } }
-      }, "version 1.0.0 repository must be a string or object"],
+        "versions" => { "1.0.0" => { "repository" => 1 } }
+      }, "version 1.0.0 repository must be a string, object, or array"],
       [{
         "versions" => { "1.0.0" => { "repository" => { "type" => 1 } } }
       }, "version 1.0.0 repository.type must be a string"]
@@ -233,6 +265,87 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
 
       it "preserves the timestamp parse failure" do
         expect { package }.to raise_error(ArgumentError)
+      end
+    end
+  end
+
+  describe ".peer_dependencies" do
+    subject(:requirements) do
+      described_class.peer_dependencies(details: details, package_name: "@scope/example", version: "2.0.0")
+    end
+
+    let(:peers) { { "react" => "^18 || ^19", "@scope/peer" => "git+https://example.test/repo", "empty" => "" } }
+    let(:details) { { "peerDependencies" => peers, "peerDependenciesMeta" => ["unconsumed"] } }
+
+    it "preserves names, requirement strings, and their order" do
+      expect(requirements.to_a).to eq(peers.to_a)
+    end
+
+    it "does not mutate or return the original map" do
+      expect(requirements).not_to be(peers)
+      requirements["react"] = "*"
+      expect(details.fetch("peerDependencies").fetch("react")).to eq("^18 || ^19")
+    end
+
+    context "without peer metadata" do
+      let(:details) { {} }
+
+      it "returns no requirements" do
+        expect(requirements).to eq({})
+      end
+    end
+
+    [nil, false, {}].each do |value|
+      context "with peer metadata set to #{value.inspect}" do
+        let(:peers) { value }
+
+        it "returns no requirements" do
+          expect(requirements).to eq({})
+        end
+      end
+    end
+
+    [true, [], 1, "not-a-map"].each do |value|
+      context "with peer metadata set to #{value.inspect}" do
+        let(:peers) { value }
+
+        it "identifies the package, version, and field" do
+          expect { requirements }.to raise_error(TypeError, %r{@scope/example.*2\.0\.0.*peerDependencies.*object})
+        end
+
+        it "leaves ordinary registry parsing lazy" do
+          package = described_class.from_json(JSON.dump("versions" => { "2.0.0" => details })) { true }
+
+          expect(package.releases.fetch("2.0.0").details).to eq(details)
+        end
+      end
+    end
+
+    context "with a non-string key" do
+      let(:peers) { { 1 => "*" } }
+
+      it "rejects the key without coercing it" do
+        expect { requirements }.to raise_error(TypeError, /peerDependencies keys must be strings/)
+      end
+    end
+
+    [nil, false, 1, ["do-not-echo"]].each do |value|
+      context "with a peer requirement set to #{value.inspect}" do
+        let(:peers) { { "react" => value } }
+
+        it "reports malformed values without echoing the payload" do
+          expect { requirements }.to raise_error(TypeError, /peerDependencies values must be strings/) do |error|
+            expect(error.message).not_to include("do-not-echo")
+          end
+        end
+      end
+    end
+
+    context "with a valid entry followed by a malformed one" do
+      let(:peers) { { "react" => "<0", "another" => 1 } }
+
+      it "checks the complete consumed map" do
+        expect { requirements }.to raise_error(TypeError, /peerDependencies values must be strings/)
       end
     end
   end

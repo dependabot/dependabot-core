@@ -53,6 +53,11 @@ module Dependabot
 
           @update_possible ||= T.let(
             dependencies_using_property.all? do |dep|
+              # Skip the property update when a dependency sharing the property has no
+              # locatable inline version to rewrite (e.g. a version managed by an
+              # imported BOM), since the update cannot be applied to it.
+              next false if version_string(dep).nil?
+
               next false if includes_property_reference?(updated_version(dep))
 
               releases = VersionFinder.new(
@@ -134,9 +139,7 @@ module Dependabot
         sig { returns(String) }
         def property_name
           @property_name ||= T.let(
-            dependency.requirements
-                      .find { |r| r.metadata_string("property_name") }
-                      &.metadata_string("property_name"),
+            property_requirement.metadata_string("property_name"),
             T.nilable(String)
           )
 
@@ -148,11 +151,31 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def property_source
           @property_source ||= T.let(
-            dependency.requirements
-                      .find { |r| r.metadata_string("property_name") == property_name }
-                      &.metadata_string("property_source"),
+            property_requirement.metadata_string("property_source"),
             T.nilable(String)
           )
+        end
+
+        sig { returns(Dependabot::DependencyRequirement) }
+        def property_requirement
+          property_requirements = dependency.requirements.select { |r| r.metadata_string("property_name") }
+          matching_requirement = property_requirements.find do |requirement|
+            normalized_requirement_version(requirement) == dependency.version
+          end
+          requirement = matching_requirement || property_requirements.first
+
+          raise "No requirement with a property name!" unless requirement
+
+          requirement
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def normalized_requirement_version(requirement)
+          requirement_string = requirement.requirement_string
+          return unless requirement_string
+          return if requirement_string.include?(",")
+
+          requirement_string.gsub(/[\(\)\[\]]/, "").strip
         end
 
         sig { params(string: String).returns(T::Boolean) }

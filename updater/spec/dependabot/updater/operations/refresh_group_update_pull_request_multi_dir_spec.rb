@@ -239,5 +239,46 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       duplicates = name_dir_pairs.tally.select { |_pair, count| count > 1 }
       expect(duplicates).to be_empty, "Found duplicate (name, directory) pairs: #{duplicates.keys.inspect}"
     end
+
+    context "when no directory produces a change" do
+      before do
+        # Re-register an update checker whose updates are missing a previous version and
+        # leave requirements unchanged. compile_all_dependency_changes_for then fails its
+        # all_have_previous_version? check and returns nil for every directory, so the
+        # multi-directory filter_map collapses to an empty array (the crash condition).
+        Dependabot::UpdateCheckers.register(
+          "terraform",
+          Class.new(Dependabot::UpdateCheckers::Base) do
+            define_method(:latest_version) { Gem::Version.new("5.0.0") }
+            define_method(:latest_resolvable_version) { Gem::Version.new("5.0.0") }
+            define_method(:latest_resolvable_version_with_no_unlock) { Gem::Version.new("5.0.0") }
+            define_method(:lowest_security_fix_version) { nil }
+            define_method(:lowest_resolvable_security_fix_version) { nil }
+            define_method(:updated_requirements) { dependency.requirements }
+            define_method(:up_to_date?) { false }
+            define_method(:requirements_unlocked_or_can_be?) { true }
+            define_method(:can_update?) { |**_kwargs| true }
+            define_method(:updated_dependencies) do |**_kwargs|
+              [Dependabot::Dependency.new(
+                name: dependency.name,
+                version: "5.0.0",
+                requirements: dependency.requirements,
+                previous_version: nil,
+                previous_requirements: dependency.requirements,
+                package_manager: "terraform",
+                directory: dependency.directory
+              )]
+            end
+          end
+        )
+      end
+
+      it "completes without raising and does not open or update a PR" do
+        expect(mock_service).not_to receive(:create_pull_request)
+        expect(mock_service).not_to receive(:update_pull_request)
+
+        expect { refresh_operation.perform }.not_to raise_error
+      end
+    end
   end
 end
