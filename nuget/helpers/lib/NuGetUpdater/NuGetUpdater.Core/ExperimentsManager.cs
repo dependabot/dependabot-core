@@ -70,15 +70,9 @@ public record ExperimentsManager
         if (experiments.TryGetValue(experimentName, out experimentValue) ||
             experiments.TryGetValue(experimentNameAlternate, out experimentValue))
         {
-            var value = experimentValue?.ToString() ?? "";
-            if (value.Equals("true", StringComparison.OrdinalIgnoreCase))
+            if ((experimentValue?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
-            }
-
-            if (value.Equals("false", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
             }
         }
 

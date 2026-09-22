@@ -15,7 +15,7 @@ public sealed class NuGetFileWriter : IFileWriter
         _csharpFileBasedAppFileWriter = new CSharpFileBasedAppFileWriter(logger);
     }
 
-    public async Task<bool> UpdatePackageVersionsAsync(
+    public Task<bool> UpdatePackageVersionsAsync(
         DirectoryInfo repoContentsPath,
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
@@ -23,42 +23,15 @@ public sealed class NuGetFileWriter : IFileWriter
         PackageManagementKind packageManagementKind,
         string? packageManagementSpecialFileRelativePath)
     {
-        var csharpFilePaths = relativeFilePaths
-            .Where(CSharpFileBasedAppFileWriter.IsSupportedFilePath)
-            .ToImmutableArray();
-        var xmlFilePaths = relativeFilePaths
-            .Where(path =>
-            {
-                var extension = Path.GetExtension(path);
-                return !CSharpFileBasedAppFileWriter.IsSupportedFilePath(path) &&
-                    (XmlFileWriter.SupportedProjectFileExtensions.Contains(extension) ||
-                     XmlFileWriter.SupportedAdditionalFileExtensions.Contains(extension));
-            })
-            .ToImmutableArray();
-
-        var succeeded = true;
-        if (xmlFilePaths.Length > 0)
-        {
-            succeeded &= await _xmlFileWriter.UpdatePackageVersionsAsync(
-                repoContentsPath,
-                xmlFilePaths,
-                originalDependencies,
-                requiredPackageVersions,
-                packageManagementKind,
-                packageManagementSpecialFileRelativePath);
-        }
-
-        if (csharpFilePaths.Length > 0)
-        {
-            succeeded &= await _csharpFileBasedAppFileWriter.UpdatePackageVersionsAsync(
-                repoContentsPath,
-                csharpFilePaths,
-                originalDependencies,
-                requiredPackageVersions,
-                packageManagementKind,
-                packageManagementSpecialFileRelativePath);
-        }
-
-        return succeeded;
+        IFileWriter writer = relativeFilePaths.Any(CSharpFileBasedAppFileWriter.IsSupportedFilePath)
+            ? _csharpFileBasedAppFileWriter
+            : _xmlFileWriter;
+        return writer.UpdatePackageVersionsAsync(
+            repoContentsPath,
+            relativeFilePaths,
+            originalDependencies,
+            requiredPackageVersions,
+            packageManagementKind,
+            packageManagementSpecialFileRelativePath);
     }
 }

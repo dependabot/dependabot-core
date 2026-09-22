@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Xml.Linq;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -52,7 +53,6 @@ internal static class CSharpFileBasedAppDiscovery
         {
             if (IsInProjectCone(csharpFilePath, projectDirectories))
             {
-                logger.Info($"    Excluding C# file [{csharpFilePath}] because it is under a C# project directory.");
                 continue;
             }
 
@@ -66,9 +66,6 @@ internal static class CSharpFileBasedAppDiscovery
             var targetFramework = await GetTargetFrameworkAsync(csharpFilePath, logger);
             var relativeFilePath = Path.GetRelativePath(workspacePath, csharpFilePath).NormalizePathToUnix();
             var topLevelDependencies = syntax.PackageDirectives
-                // Versionless directives use Central Package Management. Leave them untouched until
-                // file-based app discovery can evaluate their inherited Directory.Packages.props.
-                .Where(d => d.Version is not null)
                 .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(d => new Dependency(
                     Name: d.Name,
@@ -97,8 +94,10 @@ internal static class CSharpFileBasedAppDiscovery
                 FilePath = relativeFilePath,
                 TargetFrameworks = resolvedProject?.TargetFrameworks ?? [targetFramework],
                 Dependencies = resolvedProject?.Dependencies ?? [],
-                ImportedFiles = [],
+                ImportedFiles = resolvedProject?.ImportedFiles ?? [],
                 AdditionalFiles = additionalFiles,
+                PackageManagementKind = resolvedProject?.PackageManagementKind ?? PackageManagementKind.Default,
+                PackageManagementSpecialFileRelativePath = resolvedProject?.PackageManagementSpecialFileRelativePath,
                 DependencyGraph = resolvedProject?.DependencyGraph ??
                     ImmutableDictionary<string, ImmutableArray<string>>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase),
             });
@@ -131,6 +130,12 @@ internal static class CSharpFileBasedAppDiscovery
         return new CSharpFileBasedAppSyntax(isFileBasedApp, packageDirectives);
     }
 
+    internal static XElement CreatePackageReferences(IEnumerable<Dependency> dependencies)
+        => new("ItemGroup", dependencies.Select(d => new XElement(
+            "PackageReference",
+            new XAttribute("Include", d.Name),
+            d.Version is null ? null : new XAttribute("Version", d.Version))));
+
     private static async Task<ProjectDiscoveryResult> ResolveDependenciesAsync(
         string repoRootPath,
         string csharpFilePath,
@@ -150,6 +155,29 @@ internal static class CSharpFileBasedAppDiscovery
                 topLevelDependencies,
                 logger,
                 importDependencyTargets: false);
+
+            // Keep versionless references and evaluate central versions in their original files so
+            // property expansions and relative imports retain their meaning.
+            var projectDocument = XDocument.Load(tempProjectPath);
+            projectDocument.Root!.Element("ItemGroup")!.ReplaceWith(CreatePackageReferences(topLevelDependencies));
+            await File.WriteAllTextAsync(tempProjectPath, projectDocument.ToString());
+
+            var centralPackagesPath = PathHelper.GetFileInDirectoryOrParent(
+                csharpFilePath, repoRootPath, "Directory.Packages.props", caseSensitive: true);
+            var directoryBuildPropsPath = PathHelper.GetFileInDirectoryOrParent(
+                csharpFilePath, repoRootPath, "Directory.Build.props", caseSensitive: true);
+            var directoryBuildTargetsPath = PathHelper.GetFileInDirectoryOrParent(
+                csharpFilePath, repoRootPath, "Directory.Build.targets", caseSensitive: true);
+            var props = new XElement("Project",
+                new XElement("PropertyGroup",
+                    new XElement("DirectoryPackagesPropsPath",
+                        centralPackagesPath ?? Path.Combine(tempDirectory.FullName, "Directory.Packages.props"))),
+                directoryBuildPropsPath is null ? null : new XElement("Import", new XAttribute("Project", directoryBuildPropsPath)));
+            var targets = new XElement("Project",
+                directoryBuildTargetsPath is null ? null : new XElement("Import", new XAttribute("Project", directoryBuildTargetsPath)));
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), props.ToString());
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.targets"), targets.ToString());
+
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
                 ["restore", tempProjectPath],
                 tempDirectory.FullName);
@@ -174,7 +202,16 @@ internal static class CSharpFileBasedAppDiscovery
                     $"Expected one temporary project result, but found [{string.Join(", ", projects.Select(p => p.FilePath))}].");
             }
 
-            return projects[0];
+            var projectDirectory = Path.GetDirectoryName(csharpFilePath)!;
+            string MapPath(string path) => Path.GetRelativePath(
+                projectDirectory, Path.GetFullPath(Path.Combine(tempDirectory.FullName, path))).NormalizePathToUnix();
+            return projects[0] with
+            {
+                ImportedFiles = projects[0].ImportedFiles.Select(MapPath).Order(StringComparer.Ordinal).ToImmutableArray(),
+                PackageManagementSpecialFileRelativePath = projects[0].PackageManagementSpecialFileRelativePath is { } centralPath
+                    ? MapPath(centralPath)
+                    : null,
+            };
         }
         finally
         {

@@ -178,7 +178,7 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task LeavesVersionlessPackageDirectiveUnchanged()
+    public async Task PinsVersionlessPackageDirectiveWithoutCentralPackageManagement()
     {
         await TestAsync(
             files:
@@ -194,11 +194,94 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
             expectedFiles:
             [
                 ("app.cs", """
-                    #:package Some.Dependency
+                    #:package Some.Dependency@2.0.0
 
                     Console.WriteLine("Hello");
                     """),
             ]);
+    }
+
+    [Fact]
+    public async Task UpdatesCentralPackageVersionWithoutChangingDirective()
+    {
+        const string source = "#:package Some.Dependency PrivateAssets=all\nConsole.WriteLine();";
+        const string centralFile = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <SomeVersion>1.0.0</SomeVersion>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Some.Dependency" Version="$(SomeVersion)" />
+              </ItemGroup>
+            </Project>
+            """;
+        await TestAsync(
+            files: [("tools/app.cs", source), ("Directory.Packages.props", centralFile)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [("tools/app.cs", source), ("Directory.Packages.props", centralFile.Replace("1.0.0", "2.0.0"))],
+            packageManagementKind: PackageManagementKind.CentralPackageManagement,
+            packageManagementSpecialFileRelativePath: "../Directory.Packages.props");
+    }
+
+    [Theory]
+    [InlineData(PackageManagementKind.CentralPackageManagement)]
+    [InlineData(PackageManagementKind.CentralPackageManagementWithTransitivePinning)]
+    public async Task AddsSolverRequiredCentralPackageVersion(PackageManagementKind packageManagementKind)
+    {
+        const string source = "#:package Some.Dependency\n\nConsole.WriteLine();";
+        await TestAsync(
+            files:
+            [
+                ("app.cs", source),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0", "Transitive.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.0.0", "Transitive.Dependency/2.0.0"],
+            expectedFiles:
+            [
+                ("app.cs", packageManagementKind == PackageManagementKind.CentralPackageManagement
+                    ? "#:package Some.Dependency\n#:package Transitive.Dependency\n\nConsole.WriteLine();"
+                    : source),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            packageManagementKind: packageManagementKind,
+            packageManagementSpecialFileRelativePath: "Directory.Packages.props");
+    }
+
+    [Fact]
+    public async Task MissingCentralVersionDoesNotReportSuccessOrPartiallyWriteFiles()
+    {
+        await TestNoChangeAsync(
+            files:
+            [
+                ("app.cs", "#:package Some.Dependency\n#:package Missing.Dependency\nConsole.WriteLine();"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0", "Missing.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0", "Missing.Dependency/2.0.0"],
+            packageManagementKind: PackageManagementKind.CentralPackageManagement,
+            packageManagementSpecialFileRelativePath: "Directory.Packages.props");
     }
 
     [Fact]

@@ -17,6 +17,143 @@ using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FileBasedAppWithCentralPackageManagement(bool propertyBasedVersion)
+    {
+        var centralFile = propertyBasedVersion
+            ? """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <FileAppVersion>1.0.0</FileAppVersion>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="FileApp.EndToEnd.Central" Version="$(FileAppVersion)" />
+                  </ItemGroup>
+                </Project>
+                """
+            : """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="FileApp.EndToEnd.Central" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """;
+        var experiments = new ExperimentsManager { UpdateFileBasedApps = true };
+        await RunAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("FileApp.EndToEnd.Central", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("FileApp.EndToEnd.Central", "2.0.0", "net8.0"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/tools",
+                },
+                Experiments = experiments.ToDictionary(),
+            },
+            files:
+            [
+                ("Directory.Packages.props", centralFile),
+                ("tools/app.cs", """
+                    #:property TargetFramework=net8.0
+                    #:property PublishAot=false
+                    #:package FileApp.EndToEnd.Central
+
+                    Console.WriteLine("Hello");
+                    """),
+            ],
+            discoveryWorker: null,
+            analyzeWorker: null,
+            updaterWorker: null,
+            experimentsManager: experiments,
+            expectedApiMessages:
+            [
+                new IncrementMetric
+                {
+                    Metric = "updater.started",
+                    Tags = new() { ["operation"] = "group_update_all_versions" },
+                },
+                new UpdatedDependencyList
+                {
+                    Dependencies =
+                    [
+                        new()
+                        {
+                            Name = "FileApp.EndToEnd.Central",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/tools/app.cs",
+                                    Groups = ["dependencies"],
+                                },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/Directory.Packages.props", "/tools/app.cs"],
+                },
+                new CreatePullRequest
+                {
+                    Dependencies =
+                    [
+                        new()
+                        {
+                            Name = "FileApp.EndToEnd.Central",
+                            Directory = "/tools",
+                            Version = "2.0.0",
+                            Requirements =
+                            [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/tools/app.cs",
+                                    Groups = ["dependencies"],
+                                    Source = new() { SourceUrl = null, Type = "nuget_repo" },
+                                },
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/tools/app.cs",
+                                    Groups = ["dependencies"],
+                                },
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "Directory.Packages.props",
+                            Content = centralFile.Replace("1.0.0", "2.0.0"),
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]);
+    }
+
     [Fact]
     public async Task WithPackageReference()
     {
