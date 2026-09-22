@@ -43,6 +43,11 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
+    before do
+      stub_request(:get, "https://pkg.go.dev/v1/module/#{dependency_name}")
+        .to_return(status: 200, body: { repoUrl: "https://github.com/satori/go.uuid" }.to_json)
+    end
+
     context "with no requirements (i.e., a subdependency)" do
       let(:requirements) { [] }
 
