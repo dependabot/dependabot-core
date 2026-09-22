@@ -137,7 +137,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
       let(:helper_error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-          message: "failed to find conflicting dependencies",
+          message: "unexpected helper failure",
           error_context: {}
         )
       end
@@ -146,8 +146,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
       end
 
-      it "raises the helper error" do
-        expect { conflicting_dependencies }.to raise_error(helper_error)
+      it "logs the helper failure and returns an empty array" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          "ConflictingDependencyResolver: helper subprocess failed while checking abind: unexpected helper failure"
+        )
+
+        expect(conflicting_dependencies).to be_empty
       end
     end
   end
