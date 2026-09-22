@@ -24,7 +24,7 @@
     "semver": "^7.7.4"
   },
   "overrides": {
-    "tmp": "0.2.7"
+    "tmp": "^0.2.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
