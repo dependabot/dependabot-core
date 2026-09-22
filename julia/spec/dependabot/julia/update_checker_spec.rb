@@ -162,6 +162,22 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
         expect(latest_version).to be_nil
       end
 
+      context "without a Manifest version to measure the bump from" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Example",
+            version: nil,
+            requirements: [{ file: "Project.toml", requirement: "0.4", groups: ["deps"], source: nil }],
+            package_manager: "julia",
+            metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+          )
+        end
+
+        it "applies the default cooldown" do
+          expect(latest_version).to be_nil
+        end
+      end
+
       context "when the dependency is excluded from the cooldown" do
         let(:exclude_patterns) { ["Example"] }
 

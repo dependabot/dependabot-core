@@ -227,7 +227,10 @@ module Dependabot
         return nil unless cooldown_config
 
         current_version = dependency.version ? Dependabot::Julia::Version.new(dependency.version) : nil
-        return nil unless current_version
+        # Without a Manifest there is no version to measure a bump from; like
+        # CooldownCalculation.cooldown_days_for, fall back to default_days
+        # rather than skipping the cooldown
+        return cooldown_days_for_bump_type(:default) unless current_version
 
         version_bump_type = determine_version_bump_type(version, current_version)
         cooldown_days_for_bump_type(version_bump_type)
