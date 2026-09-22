@@ -66,7 +66,9 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         # Target version exactly at the range boundary (still included)
         ["1", "1.0.0", "1"],
         # Caret spec covering the target
-        ["^2.0", "2.6.0", "^2.0"]
+        ["^2.0", "2.6.0", "^2.0"],
+        # Pkg unions a list of equality specs
+        ["=0.5.4, =0.5.5", "0.5.5", "=0.5.4, =0.5.5"]
       ]
     }.each do |description, test_cases|
       context "when #{description}" do

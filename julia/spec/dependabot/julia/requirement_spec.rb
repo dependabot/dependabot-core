@@ -228,6 +228,30 @@ RSpec.describe Dependabot::Julia::Requirement do
       end
     end
 
+    context "with a list of equality specs" do
+      let(:requirement_string) { "=0.5.4, =0.5.5" }
+
+      # Pkg reads this as 0.5.4 - 0.5.5
+      it "admits each listed version" do
+        requirements = described_class.requirements_array(requirement_string)
+        %w(0.5.4 0.5.5).each do |version|
+          expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new(version)) }).to be true
+        end
+        expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("0.5.6")) }).to be false
+      end
+    end
+
+    context "with an equality and a bound" do
+      let(:requirement_string) { "= 1.2.3, < 2" }
+
+      # As an ignore condition or advisory range this is an intersection
+      it "admits only the listed version" do
+        requirements = described_class.requirements_array(requirement_string)
+        expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("1.2.3")) }).to be true
+        expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("1.2.4")) }).to be false
+      end
+    end
+
     context "with compound comparison operators (AND conditions)" do
       let(:requirement_string) { ">= 1.0, < 2.0" }
 

@@ -41,8 +41,11 @@ module Dependabot
         # intersection semantics for operator-style lists anyway because this
         # method also parses Dependabot ignore conditions (e.g. ">= 2.a, < 3"),
         # which are always intersections; treating those as unions would make
-        # every ignore condition match all versions.
+        # every ignore condition match all versions. A list of equalities only
+        # ("=0.5.4, =0.5.5") would admit nothing as an intersection, so it is
+        # read as the union Pkg takes.
         return false if constraints.length <= 1
+        return false if constraints.all? { |c| c.start_with?("=") }
 
         constraints.all? { |c| c.match?(/^[<>=]/) }
       end
