@@ -25,6 +25,7 @@
 - Stdlib compat entries of a workspace environment (`test/`, `docs/`, ...) are now derived from the Julia range Pkg resolves the workspace under, the intersection of every workspace project's `julia` entry, and those of a package's `test/` environment outside a workspace from the package's entry; an environment without a `julia` entry was treated as supporting every Julia release, producing floors like `Statistics = "0.0.0, 1"` in `test/Project.toml`. Packages keep using their own entry since they are also installed on their own
 - Fixed update jobs failing with `NotImplementedError` once a `Manifest.toml` gave a dependency already at its latest release a version; it is now reported as up to date (#16370)
 - Cooldown `default-days` now applies to a dependency without a manifest version, as in the other ecosystems; it was skipped entirely
+- A spec added to a compat entry is placed in ascending order, and the old test sandbox pin is written as in the General registry PSA: `"<0.0.1, 1"` instead of `"1, < 0.0.1"` (#16355)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)

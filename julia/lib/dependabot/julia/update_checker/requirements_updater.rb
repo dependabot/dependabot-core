@@ -106,7 +106,7 @@ module Dependabot
         minor = (version.segments[1] || 0).to_i
         patch = (version.segments[2] || 0).to_i
 
-        return "< 0.0.1" if major.zero? && minor.zero? && patch.zero?
+        return "<0.0.1" if major.zero? && minor.zero? && patch.zero?
         return major.to_s if major.positive? && minor.zero?
 
         simplified_version_spec(version)
@@ -165,11 +165,26 @@ module Dependabot
 
       sig { params(requirement_string: String, new_spec: String).returns(String) }
       def append_spec_string(requirement_string, new_spec)
-        # Append the new spec to the existing requirement (CompatHelper KeepEntry behavior)
+        # Add the new spec to the existing requirement (CompatHelper KeepEntry behavior)
         # Detect whether the existing requirement uses spaces after commas and preserve that format
         # and default to ", " if no commas found
         separator = requirement_string.include?(",") && !requirement_string.include?(", ") ? "," : ", "
-        "#{requirement_string}#{separator}#{new_spec}"
+        # Keep the entry in ascending order ("<0.0.1, 1", not "1, <0.0.1"):
+        # the new spec goes before the first one that starts above it
+        specs = requirement_string.split(",").map(&:strip)
+        index = specs.index { |spec| spec_lower_bound(spec) > spec_lower_bound(new_spec) }
+        return "#{requirement_string}#{separator}#{new_spec}" unless index
+
+        specs.insert(index, new_spec).join(separator)
+      end
+
+      # The lowest version a single spec in an entry admits, for ordering; an
+      # upper bound alone ("<0.0.1") starts at zero
+      sig { params(spec: String).returns(Dependabot::Julia::Version) }
+      def spec_lower_bound(spec)
+        return Dependabot::Julia::Version.new("0") if spec.start_with?("<", "≤")
+
+        Dependabot::Julia::Version.new(spec[/\d+(?:\.\d+)*/] || "0")
       end
 
       sig { params(target_version: Dependabot::Julia::Version).returns(String) }

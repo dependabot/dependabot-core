@@ -205,7 +205,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         context "when the range reaches Julia 1.0 and the old test sandbox pin" do
           let(:stdlib_versions) { { "Project.toml" => ["0.0.0", "1.0.0"] } }
 
-          it { is_expected.to eq("< 0.0.1, 1") }
+          it { is_expected.to eq("<0.0.1, 1") }
         end
 
         context "when the stdlib changed major line (SHA)" do
@@ -221,17 +221,32 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         it { is_expected.to eq("1") }
       end
 
+      context "when the entry misses the old test sandbox pin" do
+        let(:requirement_string) { "1" }
+        let(:stdlib_versions) { { "Project.toml" => ["0.0.0", "1.0.0"] } }
+
+        it "adds it in ascending order" do
+          expect(result).to eq("<0.0.1, 1")
+        end
+
+        context "with no space after the comma" do
+          let(:requirement_string) { "1.6,1" }
+
+          it { is_expected.to eq("<0.0.1,1.6,1") }
+        end
+      end
+
       context "when the entry misses a bundled version" do
         let(:requirement_string) { "1.11" }
 
         it "widens rather than bumping to the registry release" do
-          expect(result).to eq("1.11, 1.10")
+          expect(result).to eq("1.10, 1.11")
         end
 
         context "with bump_versions" do
           let(:update_strategy) { :bump_versions }
 
-          it { is_expected.to eq("1.11, 1.10") }
+          it { is_expected.to eq("1.10, 1.11") }
         end
 
         context "with lockfile_only" do
@@ -264,7 +279,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         let(:stdlib_versions) { { "Project.toml" => ["1.10.0"], "test/Project.toml" => ["0.0.0", "1.0.0"] } }
 
         it "floors each file separately" do
-          expect(updater.updated_requirements.map { |r| r[:requirement] }).to eq(["1.10", "< 0.0.1, 1"])
+          expect(updater.updated_requirements.map { |r| r[:requirement] }).to eq(["1.10", "<0.0.1, 1"])
         end
       end
     end
