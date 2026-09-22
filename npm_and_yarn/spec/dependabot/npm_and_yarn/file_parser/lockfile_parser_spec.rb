@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -457,6 +457,66 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             version: "8.4.17",
             resolution: "postcss@npm:8.4.17"
           )
+        end
+      end
+
+      context "when a complete range descriptor shares a prefix with an older transitive requirement" do
+        let(:dependency_files) { project_dependency_files("yarn_berry/no_lockfile_change") }
+        let(:dependency_name) { "aproba" }
+        let(:requirement) { "^1.0.3 || ^2.0.0" }
+
+        it "finds the entry matching the complete descriptor" do
+          expect(lockfile_details).to have_attributes(
+            version: "2.0.0",
+            resolution: "aproba@npm:2.0.0"
+          )
+        end
+
+        context "when the complete descriptor doesn't match" do
+          let(:requirement) { "^1.0.3 || ^3.0.0" }
+
+          it { is_expected.to be_nil }
+        end
+      end
+
+      context "when a scoped dependency has multiple native npm descriptors" do
+        let(:dependency_files) { project_dependency_files("yarn_berry/lockfile_only_change") }
+        let(:dependency_name) { "@babel/code-frame" }
+        let(:requirement) { "^7.0.0-beta.35" }
+
+        it "finds the entry matching the complete descriptor" do
+          expect(lockfile_details).to have_attributes(
+            version: "7.0.0-beta.35",
+            resolution: "@babel/code-frame@npm:7.0.0-beta.35"
+          )
+        end
+      end
+
+      context "when a comparator range belongs to a composite descriptor" do
+        let(:dependency_files) { project_dependency_files("yarn/submodule_dependency") }
+        let(:dependency_name) { "statuses" }
+        let(:requirement) { ">= 1.5.0 < 2" }
+
+        it "matches the complete comparator range" do
+          expect(lockfile_details).to have_attributes(version: "1.5.0", resolution: "statuses@npm:1.5.0")
+        end
+
+        [",", " ,  "].each do |separator|
+          context "with #{separator.inspect} between descriptors" do
+            let(:requirement) { "^1.5.0" }
+
+            before do
+              lockfile = dependency_files.find { |file| file.name == "yarn.lock" }
+              lockfile.content = lockfile.content.sub(
+                "statuses@npm:>= 1.5.0 < 2, statuses@npm:^1.5.0",
+                "statuses@npm:>= 1.5.0 < 2#{separator}statuses@npm:^1.5.0"
+              )
+            end
+
+            it "matches a descriptor with Yarn's supported separator spacing" do
+              expect(lockfile_details).to have_attributes(version: "1.5.0", resolution: "statuses@npm:1.5.0")
+            end
+          end
         end
       end
     end
