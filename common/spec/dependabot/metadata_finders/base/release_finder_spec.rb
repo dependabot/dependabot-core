@@ -602,6 +602,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
           end
         end
+
+        context "when the update has no version" do
+          let(:dependency_version) { nil }
+          let(:dependency_previous_version) { nil }
+
+          it { is_expected.to be_nil }
+        end
       end
 
       context "when access to the repo is blocked" do
