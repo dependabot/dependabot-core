@@ -341,7 +341,9 @@ module Dependabot
         subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
         return subject unless subject.length > 72
 
-        subject = subject.gsub(/ from [^\s]*? to [^\s]*/, "")
+        # Requirements can contain spaces ("^0.20, ^0.21"), so match up to the
+        # suffixes solo_pr_name adds rather than to the next space
+        subject = subject.sub(%r{ from .+? to .+?(?= \(via audit fix\)| in /|\z)}, "")
         return subject unless subject.length > 72
 
         T.must(subject.split(" in ").first)

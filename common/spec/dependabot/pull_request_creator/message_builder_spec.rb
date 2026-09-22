@@ -2910,6 +2910,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
+      context "when the requirements contain spaces" do
+        before do
+          allow(builder).to receive(:pr_name)
+            .and_return(
+              "Update JSON requirement from ^0.20, ^0.21 to ^0.20, ^0.21, 1.5 " \
+              "in /BasicPackage.jl"
+            )
+        end
+
+        it "drops the whole of both requirements" do
+          expect(commit_message)
+            .to start_with("Update JSON requirement in /BasicPackage.jl\n")
+        end
+      end
+
       context "when the directory needs to be truncated" do
         before do
           allow(builder).to receive(:pr_name)
