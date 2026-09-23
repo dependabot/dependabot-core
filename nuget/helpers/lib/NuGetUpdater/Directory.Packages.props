@@ -19,6 +19,7 @@
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Abstractions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <!-- Keep StringTools separate: Microsoft.Build 18.10.1 is framework-only and triggers NU1701 on net10.0. -->
     <PackageVersion Include="Microsoft.NET.StringTools" Version="18.10.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.14.2075" />
