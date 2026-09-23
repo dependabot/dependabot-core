@@ -16,7 +16,7 @@ require "dependabot/package/cooldown_date_tracker"
 
 module Dependabot
   module Package
-    class PackageLatestVersionFinder
+    class PackageLatestVersionFinder # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 
@@ -219,10 +219,20 @@ module Dependabot
       end
       def filter_unsupported_versions(releases, language_version)
         filtered = releases.filter_map do |release|
-          language_requirement = release.language&.requirement
-          next release unless language_version
+          language = release.language
+          next release unless language_version && language
+
+          language_requirement = language.requirement
           next release unless language_requirement
-          next unless language_requirement.satisfied_by?(language_version)
+
+          unless language_requirement.satisfied_by?(language_version)
+            Dependabot.logger.info(
+              "Filtered out #{dependency.name} #{release.version} because " \
+              "#{language.name} requirement #{language_requirement} is not satisfied by " \
+              "#{language.name} #{language_version}"
+            )
+            next
+          end
 
           release
         end

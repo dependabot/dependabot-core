@@ -627,27 +627,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "with a dependency resolution that returns Invalid package.json response" do
-      let(:dependency_name) { "@radix-ui/react-context-menu" }
-      let(:version) { "2.2.3-rc.12" }
-      let(:previous_version) { "^2.2.3" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "2.2.3-rc.12",
-          groups: ["Dependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "^2.2.3",
-          groups: ["Dependencies"],
-          source: nil
-        }]
-      end
-
       let(:project_name) { "pnpm/invalid_json" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "ERR_PNPM_INVALID_PACKAGE_JSON  Invalid package.json in package " \
+                       "\"src-ahqstore-types/pkg\": Unexpected end of JSON input",
+              error_context: {}
+            )
+          )
+      end
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -762,6 +753,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         files.find { |f| f.name == "pnpm-workspace.yaml" }
       end
 
+      context "when the manifest on disk no longer matches the dependency files" do
+        # The update checker runs `pnpm update` in the same working tree
+        # before the FileUpdater. On a catalog dependency that rewrote the
+        # root package.json from `catalog:` to a pinned version.
+        let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+        let(:workspace_files) do
+          {
+            "pnpm-workspace.yaml" => "packages:\n  - packages/*\n\ncatalog:\n  prettier: 3.3.3\n"
+          }
+        end
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            manifest = JSON.parse(File.read("package.json"))
+            manifest["devDependencies"]["prettier"] = "3.3.3"
+            File.write("package.json", JSON.pretty_generate(manifest))
+            Dependabot::SharedHelpers.run_shell_command("git commit -am leftover")
+          end
+        end
+
+        it "keeps the catalog specifier in the lockfile" do
+          lockfile = YAML.safe_load(updated_pnpm_lock_content)
+
+          expect(lockfile.dig("importers", ".", "devDependencies", "prettier", "specifier")).to eq("catalog:")
+          expect(lockfile.dig("importers", ".", "devDependencies", "prettier", "version")).to eq("3.3.3")
+          expect(lockfile.dig("catalogs", "default", "prettier", "version")).to eq("3.3.3")
+        end
+      end
+
       context "when pnpm updates followed by install for non catalog dependencies" do
         let(:workspace_files) do
           {
@@ -804,7 +824,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("-v", { fingerprint: "-v" })
             .ordered
-            .and_return("11.17.0")
+            .and_return("11.25.0")
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("audit --fix=update", { fingerprint: "audit --fix=update" })
             .ordered
@@ -816,6 +836,114 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           updated_pnpm_lock_content
         end
       end
+    end
+  end
+
+  describe "when pnpm refuses to pin a transitive dependency" do
+    let(:project_name) { "pnpm/no_lockfile_change" }
+    let(:dependencies) { [dependency, transitive_dependency] }
+    let(:transitive_dependency) do
+      Dependabot::Dependency.new(
+        name: "acorn",
+        version: "6.7.3",
+        previous_version: "6.4.2",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:pinned_update) { "update fetch-factory@0.0.2 acorn@6.7.3  --lockfile-only --no-save -r" }
+    let(:unpinned_update) { "update fetch-factory@0.0.2 acorn  --lockfile-only --no-save -r" }
+    let(:fingerprint) { { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" } }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(pinned_update, fingerprint)
+        .and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"acorn\" (requested \"6.7.3\") is not a " \
+                     "direct dependency, so the requested version cannot be recorded.",
+            error_context: {}
+          )
+        )
+    end
+
+    it "retries the update without a version for the transitive dependency only" do
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(pinned_update, fingerprint)
+        .ordered
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with(unpinned_update, fingerprint)
+        .ordered
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+        .with("install --lockfile-only")
+        .ordered
+
+      updated_pnpm_lock_content
+    end
+
+    context "when the retry resolves the requested version" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(unpinned_update, fingerprint) { rewrite_lockfile_acorn("6.7.3") }
+      end
+
+      it "returns the updated lockfile" do
+        expect(updated_pnpm_lock_content).to include("/acorn@6.7.3:")
+      end
+    end
+
+    context "when the retry resolves a version other than the requested one" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(unpinned_update, fingerprint) { rewrite_lockfile_acorn("6.8.0") }
+      end
+
+      it "refuses the lockfile" do
+        expect { updated_pnpm_lock_content }.to raise_error(
+          Dependabot::DependencyFileNotResolvable, /resolved acorn to 6\.8\.0, above the requested 6\.7\.3/
+        )
+      end
+    end
+
+    context "when the retry also resolves another occurrence above the requested version" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(unpinned_update, fingerprint) { rewrite_lockfile_acorn("6.7.3", extra: "6.8.0") }
+      end
+
+      it "refuses the lockfile" do
+        expect { updated_pnpm_lock_content }.to raise_error(
+          Dependabot::DependencyFileNotResolvable, /resolved acorn to 6\.8\.0, above the requested 6\.7\.3/
+        )
+      end
+    end
+
+    context "when the retry also resolves another occurrence below the requested version" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(unpinned_update, fingerprint) { rewrite_lockfile_acorn("6.7.3", extra: "6.0.0") }
+      end
+
+      it "returns the updated lockfile" do
+        expect(updated_pnpm_lock_content).to include("/acorn@6.7.3:").and include("/acorn@6.0.0:")
+      end
+    end
+
+    # Stands in for pnpm in the temporary directory the update runs in: moves
+    # the fixture's first edge to acorn onto `version`, and every other edge
+    # onto `extra` when given.
+    def rewrite_lockfile_acorn(version, extra: nil)
+      content = File.read("pnpm-lock.yaml")
+      block = content[%r{^  /acorn@5\.2\.1:\n(?:    .*\n)+}]
+      content = content.sub("/acorn@5.2.1:", "/acorn@#{version}:")
+      content += block.gsub("5.2.1", extra) if extra
+      edges = [version, extra].compact
+      edge = -1
+      content = content.gsub("acorn: 5.2.1") { "acorn: #{edges[[edge += 1, edges.size - 1].min]}" }
+      File.write("pnpm-lock.yaml", content)
+      ""
     end
   end
 

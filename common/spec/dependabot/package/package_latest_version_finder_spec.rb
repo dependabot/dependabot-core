@@ -281,6 +281,22 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
 
     it { is_expected.to eq(TestVersion.new("7.0.0")) }
 
+    context "when a release requires an unsupported language version" do
+      subject(:latest_version) { finder.latest_version(language_version: TestVersion.new("2.6.0")) }
+
+      let(:available_releases) { [available_release_7_0_0, available_release_6_1_4] }
+      let(:cooldown_options) { nil }
+
+      it "logs why the release was filtered out" do
+        expect(Dependabot.logger).to receive(:info).with(
+          /Filtered out rails 7\.0\.0 because dummy requirement >= 2\.7\.0 is not satisfied by dummy 2\.6\.0/
+        )
+        expect(Dependabot.logger).to receive(:info).with(/Filtered out 1 unsupported Language 2\.6\.0 versions/)
+
+        expect(latest_version).to eq(TestVersion.new("6.1.4"))
+      end
+    end
+
     context "when all supported versions are ignored" do
       let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
 

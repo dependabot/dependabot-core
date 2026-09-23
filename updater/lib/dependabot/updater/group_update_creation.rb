@@ -72,12 +72,23 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/CyclomaticComplexity
-      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
-      def compile_all_dependency_changes_for(group)
+      sig do
+        params(
+          group: Dependabot::DependencyGroup,
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          workspace_files: T.nilable(T::Array[Dependabot::DependencyFile])
+        ).returns(T.nilable(Dependabot::DependencyChange))
+      end
+      def compile_all_dependency_changes_for(
+        group,
+        dependency_files: dependency_snapshot.dependency_files,
+        workspace_files: nil
+      )
         prepare_workspace
+        materialize_workspace_files(workspace_files) if workspace_files
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
-          initial_dependency_files: dependency_snapshot.dependency_files
+          initial_dependency_files: dependency_files
         )
 
         # deduplicate the dependencies.
@@ -171,7 +182,129 @@ module Dependabot
 
         dependency_change
       ensure
+        cleanup_created_workspace_files(workspace_files) if workspace_files
         cleanup_workspace
+      end
+
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
+      def compile_all_dependency_changes_for_directories(group)
+        working_files_by_path = T.let(
+          dependency_snapshot.all_dependency_files.to_h { |file| [file.path, file] },
+          T::Hash[String, Dependabot::DependencyFile]
+        )
+        changed_files_by_path = T.let({}, T::Hash[String, Dependabot::DependencyFile])
+        initial_paths = T.let(working_files_by_path.keys.to_set, T::Set[String])
+        created_paths = T.let(Set.new, T::Set[String])
+        dependency_changes = T.must(job.source.directories).filter_map do |directory|
+          job.source.directory = directory
+          dependency_snapshot.current_directory = directory
+
+          dependency_files = working_dependency_files_for(directory, working_files_by_path, created_paths)
+          change = compile_all_dependency_changes_for(
+            group,
+            dependency_files: dependency_files,
+            workspace_files: changed_files_by_path.values
+          )
+          change&.updated_dependencies&.each do |dependency|
+            dependency.directory = directory
+            dependency.metadata[:directory] = directory
+          end
+          change&.updated_dependency_files&.each do |file|
+            apply_file_change(file, working_files_by_path, changed_files_by_path, initial_paths, created_paths)
+          end
+          change
+        end
+
+        first_change = dependency_changes.first
+        if first_change
+          first_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
+          first_change.updated_dependency_files.replace(changed_files_by_path.values)
+        end
+        first_change
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          working_files_by_path: T::Hash[String, Dependabot::DependencyFile],
+          changed_files_by_path: T::Hash[String, Dependabot::DependencyFile],
+          initial_paths: T::Set[String],
+          created_paths: T::Set[String]
+        ).void
+      end
+      def apply_file_change(file, working_files_by_path, changed_files_by_path, initial_paths, created_paths)
+        if file.deleted?
+          working_files_by_path.delete(file.path)
+          created_paths.delete(file.path)
+          if initial_paths.include?(file.path)
+            changed_files_by_path[file.path] =
+              file
+          else
+            changed_files_by_path.delete(file.path)
+          end
+          return
+        end
+
+        working_file = file.dup
+        if initial_paths.include?(file.path)
+          working_file.operation = Dependabot::DependencyFile::Operation::UPDATE
+        else
+          working_file.operation = Dependabot::DependencyFile::Operation::CREATE
+          created_paths.add(file.path)
+        end
+        working_files_by_path[file.path] = working_file
+        changed_files_by_path[file.path] = working_file
+      end
+
+      sig do
+        params(
+          directory: String,
+          working_files_by_path: T::Hash[String, Dependabot::DependencyFile],
+          created_paths: T::Set[String]
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def working_dependency_files_for(directory, working_files_by_path, created_paths)
+        original_aliases = dependency_snapshot.dependency_files
+        original_paths = original_aliases.to_h { |file| [file.path, true] }
+        files = original_aliases.filter_map do |file_alias|
+          working_file = working_files_by_path[file_alias.path]
+          if working_file
+            rebase_dependency_file(
+              working_file,
+              file_alias.name,
+              directory,
+              support_file: file_alias.support_file?
+            )
+          end
+        end
+
+        created_paths.each do |path|
+          next if original_paths.key?(path)
+
+          working_file = working_files_by_path[path]
+          next unless working_file
+          next if working_file.vendored_file?
+
+          relative_name = Pathname.new(path).relative_path_from(Pathname.new(directory)).to_s
+          files << rebase_dependency_file(working_file, relative_name, directory)
+        end
+        files
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          name: String,
+          directory: String,
+          support_file: T::Boolean
+        ).returns(Dependabot::DependencyFile)
+      end
+      def rebase_dependency_file(file, name, directory, support_file: file.support_file?)
+        rebased_file = file.dup
+        rebased_file.name = name
+        rebased_file.directory = directory
+        rebased_file.support_file = support_file
+        rebased_file
       end
 
       sig do
@@ -567,6 +700,13 @@ module Dependabot
         else
           :update_not_possible
         end
+      rescue Dependabot::AllVersionsIgnored
+        # Security updates rely on this being surfaced to halt the run, so only
+        # non-security jobs treat every ignored version as "no update possible".
+        Kernel.raise if job.security_updates_only?
+
+        Dependabot.logger.info("All updates for #{checker.dependency.name} were ignored")
+        :update_not_possible
       end
 
       sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }
@@ -603,6 +743,57 @@ module Dependabot
           repo_contents_path: T.must(job.repo_contents_path),
           directory: Pathname.new(job.source.directory || "/").cleanpath
         )
+      end
+
+      sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+      def materialize_workspace_files(files)
+        return unless job.clone? && job.repo_contents_path
+
+        files.each do |file|
+          path = File.join(T.must(job.repo_contents_path), file.path.delete_prefix("/"))
+          if file.deleted?
+            FileUtils.rm_f(path)
+            next
+          end
+
+          FileUtils.mkdir_p(File.dirname(path))
+          if file.type == "submodule"
+            materialize_workspace_submodule(file)
+          elsif file.type == "symlink"
+            FileUtils.rm_f(path)
+            FileUtils.ln_s(T.must(file.symlink_target), path)
+          else
+            FileUtils.rm_f(path)
+            File.binwrite(path, file.decoded_content)
+            FileUtils.chmod(file.mode == Dependabot::DependencyFile::Mode::EXECUTABLE ? 0o755 : 0o644, path)
+          end
+        end
+      end
+
+      sig { params(file: Dependabot::DependencyFile).void }
+      def materialize_workspace_submodule(file)
+        repo_contents_path = T.must(job.repo_contents_path)
+        SharedHelpers.run_shell_command(
+          [
+            "git", "update-index", "--add", "--cacheinfo",
+            [
+              Dependabot::DependencyFile::Mode::SUBMODULE,
+              file.decoded_content,
+              file.path.delete_prefix("/")
+            ].join(",")
+          ],
+          cwd: repo_contents_path
+        )
+      end
+
+      sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+      def cleanup_created_workspace_files(files)
+        return unless job.clone? && job.repo_contents_path
+
+        files.select { |file| file.operation == Dependabot::DependencyFile::Operation::CREATE }.each do |file|
+          path = File.join(T.must(job.repo_contents_path), file.path.delete_prefix("/"))
+          FileUtils.rm_rf(path)
+        end
       end
 
       sig do
@@ -697,8 +888,9 @@ module Dependabot
         ).void
       end
       def note_security_update_not_possible(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
+        log_security_dependency_details(dependency)
         conflicting_dependencies = checker.conflicting_dependencies
         explanation = vulnerability_conflict_explanation(conflicting_dependencies)
         if explanation
@@ -718,6 +910,32 @@ module Dependabot
             error_details: security_update_not_possible_error_details(checker, conflicting_dependencies:),
             dependency: nil
           )
+        )
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base
+        ).returns(T::Boolean)
+      end
+      def security_update_required?(dependency, checker)
+        security_advisories = job.security_advisories_for(dependency)
+        return false if security_advisories.none?
+
+        checker.vulnerable?
+      end
+
+      sig { params(dependency: Dependabot::Dependency).void }
+      def log_security_dependency_details(dependency)
+        versions = dependency.all_versions.compact.uniq
+        requirements = dependency.requirements.map do |requirement|
+          "#{requirement.file || 'unknown file'}: #{requirement.requirement || 'none'}"
+        end.uniq
+
+        Dependabot.logger.info(
+          "Security advisory check for #{dependency.name}: versions=#{versions.inspect}, " \
+          "requirements=#{requirements.inspect}"
         )
       end
 
@@ -743,7 +961,7 @@ module Dependabot
         ).void
       end
       def note_security_update_not_found(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "Security update not found for #{dependency.name} in group #{group.name} - " \
@@ -770,7 +988,7 @@ module Dependabot
         ).void
       end
       def note_security_update_ignored(dependency, checker, group)
-        return unless job.security_advisories_for(dependency).any?
+        return unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"
