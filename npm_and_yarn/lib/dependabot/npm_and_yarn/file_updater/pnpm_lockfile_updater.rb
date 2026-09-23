@@ -204,8 +204,11 @@ module Dependabot
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
               else
                 run_pnpm_update_packages
-                write_final_package_json_files
               end
+              # The update checker ran pnpm in this same working tree, so the
+              # manifests on disk may not match the dependency files. Write
+              # them so `pnpm install` resolves from the intended manifests.
+              write_final_package_json_files
 
               run_pnpm_install
 
