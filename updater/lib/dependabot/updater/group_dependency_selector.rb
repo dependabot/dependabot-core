@@ -163,8 +163,8 @@ module Dependabot
         #
         # Every change shares one Job, and the caller reassigns job.source.directory as it
         # walks the directories, so by the time the changes are merged that field holds only
-        # the last one. Each dependency carries the directory it was resolved in, stamped by
-        # DependencyChange's constructor, so read it from there instead.
+        # the last one. Each dependency carries the directory it was resolved in, so read it
+        # from there instead.
         changes_by_dir.each do |change|
           Array(change.updated_dependencies).each do |dep|
             directory = dep.directory || change.job.source.directory || "."
