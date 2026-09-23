@@ -117,6 +117,8 @@ module Dependabot
         # pnpm-workspace.yaml settings that govern verification of loaded lockfile
         # entries, and so must not be overridden by `trustLockfile=true`.
         LOCKFILE_VERIFICATION_SETTINGS = %w(trustLockfile trustPolicy).freeze
+        # Kebab-case on purpose: pnpm 12 ignores `--config.minimumReleaseAgeStrict`.
+        STRICT_RELEASE_AGE_OFF = "--config.minimum-release-age-strict=false"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
@@ -322,7 +324,7 @@ module Dependabot
           gate = release_age_gate_config
           return execute_pnpm_command(cmd, fingerprint) unless gate
 
-          gate_fingerprint = security_updates_only? ? gate : fingerprint_minimum_release_age_config
+          gate_fingerprint = security_updates_only? ? gate : gate.sub(/age=\d+/, "age=<minutes>")
           gated_fingerprint = "#{fingerprint || cmd} #{gate_fingerprint}"
           begin
             execute_pnpm_command("#{cmd} #{gate}", gated_fingerprint)
@@ -360,12 +362,15 @@ module Dependabot
           end
         end
 
-        # Returns the pnpm `--config.minimumReleaseAge` arguments to apply, or nil.
+        # Returns the pnpm `--config.minimum-release-age` arguments to apply, or nil.
         # Security updates disable the gate (`=0`); regular updates apply the
         # dependabot.yml cooldown floor (in minutes). `minimumReleaseAge` was added
         # in pnpm 10.16, so older pnpm silently ignores it — rather than give a
         # false guarantee we skip the gate (and warn) when the running pnpm is too
         # old to enforce it.
+        #
+        # The keys are passed in kebab-case: pnpm 11 reads both spellings, but
+        # pnpm 12 silently ignores `--config.minimumReleaseAge` and friends.
         sig { returns(T.nilable(String)) }
         def release_age_gate_config
           if !security_updates_only? && @release_age_days&.positive? && !pnpm_supports_minimum_release_age?
@@ -378,7 +383,7 @@ module Dependabot
           end
 
           minutes = effective_release_age_minutes
-          return nil if minutes.nil?
+          return strict_release_age_override_for_user_gate if minutes.nil?
 
           # Security updates pass minimumReleaseAge=0 unconditionally: older pnpm
           # ignores it, and a transient version-probe failure must not leave a native
@@ -407,16 +412,33 @@ module Dependabot
           Helpers.higher_release_age_gate(cooldown_minutes, pnpm_configured_minimum_release_age)
         end
 
-        # Builds the pnpm `--config.minimumReleaseAge` args for `minutes`, adding
+        # Builds the pnpm `--config.minimum-release-age` args for `minutes`, adding
         # the strict toggle only when appropriate (see `disable_strict_release_age?`)
         # and trusting the existing lockfile where that is safe (see
         # `trust_existing_lockfile?`).
         sig { params(minutes: Integer).returns(String) }
         def minimum_release_age_gate_args(minutes)
-          args = "--config.minimumReleaseAge=#{minutes}"
-          args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
-          args += " --config.trustLockfile=true" if trust_existing_lockfile?
+          args = "--config.minimum-release-age=#{minutes}"
+          args += " #{STRICT_RELEASE_AGE_OFF}" if disable_strict_release_age?
+          args += " --config.trust-lockfile=true" if trust_existing_lockfile?
           args
+        end
+
+        # A repo that sets its own `minimumReleaseAge` gets no cooldown override
+        # when that gate is equal or longer, but since pnpm 12.3 an explicit
+        # `minimumReleaseAge` turns `minimumReleaseAgeStrict` on by default, and
+        # strict mode refuses `pnpm update --no-save` outright
+        # (ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE). Older pnpm only refuses
+        # when a resolved version is inside the window. Turning strict off keeps
+        # the user's window intact and lets the update run, which is what a
+        # non-strict gate did before pnpm 12.3.
+        sig { returns(T.nilable(String)) }
+        def strict_release_age_override_for_user_gate
+          return nil if security_updates_only?
+          return nil if pnpm_configured_minimum_release_age.nil?
+          return nil unless pnpm_supports_minimum_release_age_strict?
+
+          STRICT_RELEASE_AGE_OFF
         end
 
         # pnpm re-applies the gate to every entry already in the lockfile, so a
@@ -460,19 +482,11 @@ module Dependabot
         # is set via the CLI, which fails resolution when no version satisfies the
         # window and is incompatible with the `--no-save` update command. We
         # disable strict for Dependabot's CLI override on pnpm >= 11.0, where the
-        # toggle exists. Equal-or-longer native gates remain untouched because no
-        # CLI override is added for them.
+        # toggle exists. Equal-or-longer native gates get the same toggle without
+        # an age override (see `strict_release_age_override_for_user_gate`).
         sig { returns(T::Boolean) }
         def disable_strict_release_age?
           pnpm_supports_minimum_release_age_strict?
-        end
-
-        sig { returns(String) }
-        def fingerprint_minimum_release_age_config
-          args = "--config.minimumReleaseAge=<minutes>"
-          args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
-          args += " --config.trustLockfile=true" if trust_existing_lockfile?
-          args
         end
 
         # The concrete pnpm version that will run, memoized (including a nil result)
