@@ -3,9 +3,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Match the MSBuild assemblies supplied by the SDK selected in global.json. -->
+    <!-- Keep MSBuild aligned with global.json and NuGet.Client; Microsoft.Build 18.10.1 is framework-only, but StringTools can update independently. -->
     <MSBuildPackageVersion>18.9.6</MSBuildPackageVersion>
-    <!-- Microsoft.Build 18.10.1 is framework-only, unlike the compatible StringTools package. -->
     <StringToolsPackageVersion>18.10.1</StringToolsPackageVersion>
   </PropertyGroup>
   <ItemGroup>
