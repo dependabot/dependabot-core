@@ -15,7 +15,7 @@ require "uri"
 # SimpleCov _must_ be started before any dependabot code is loaded
 SimpleCov.start do
   command_name "test-process-#{ENV.fetch('TEST_ENV_NUMBER', 1)}"
-  add_filter "/spec/"
+  skip "/spec/"
   if ENV["CI"]
     formatter SimpleCov::Formatter::SimpleFormatter
   else
