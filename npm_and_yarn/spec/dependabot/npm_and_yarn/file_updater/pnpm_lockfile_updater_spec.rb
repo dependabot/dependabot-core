@@ -753,6 +753,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         files.find { |f| f.name == "pnpm-workspace.yaml" }
       end
 
+      context "when the manifest on disk no longer matches the dependency files" do
+        # The update checker runs `pnpm update` in the same working tree
+        # before the FileUpdater. On a catalog dependency that rewrote the
+        # root package.json from `catalog:` to a pinned version.
+        let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+        let(:workspace_files) do
+          {
+            "pnpm-workspace.yaml" => "packages:\n  - packages/*\n\ncatalog:\n  prettier: 3.3.3\n"
+          }
+        end
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            manifest = JSON.parse(File.read("package.json"))
+            manifest["devDependencies"]["prettier"] = "3.3.3"
+            File.write("package.json", JSON.pretty_generate(manifest))
+            Dependabot::SharedHelpers.run_shell_command("git commit -am leftover")
+          end
+        end
+
+        it "keeps the catalog specifier in the lockfile" do
+          lockfile = YAML.safe_load(updated_pnpm_lock_content)
+
+          expect(lockfile.dig("importers", ".", "devDependencies", "prettier", "specifier")).to eq("catalog:")
+          expect(lockfile.dig("importers", ".", "devDependencies", "prettier", "version")).to eq("3.3.3")
+          expect(lockfile.dig("catalogs", "default", "prettier", "version")).to eq("3.3.3")
+        end
+      end
+
       context "when pnpm updates followed by install for non catalog dependencies" do
         let(:workspace_files) do
           {
