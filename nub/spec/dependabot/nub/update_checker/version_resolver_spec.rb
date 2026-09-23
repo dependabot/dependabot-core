@@ -771,4 +771,38 @@ RSpec.describe Dependabot::Nub::UpdateChecker::VersionResolver do
       end
     end
   end
+
+  describe "#latest_resolvable_version working tree" do
+    # run_nub_checker pins the candidate into the manifests to re-resolve, and with a
+    # repo_contents_path it does that in the repo's own checkout. Whatever it wrote has to be put
+    # back, or the next dependency in a grouped update resolves against a pinned tree.
+    let(:project_name) { "nub/simple_v1" }
+    let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: "1.0.0",
+        package_manager: "nub",
+        requirements: [{
+          file: "package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: { type: "registry", url: "https://registry.npmjs.org" }
+        }]
+      )
+    end
+
+    before do
+      stub_request(:get, "https://registry.npmjs.org/etag")
+        .to_return(status: 200, body: fixture("npm_responses", "etag.json"))
+      allow(Dependabot::Nub::Helpers).to receive(:run_nub_command).and_return("")
+    end
+
+    it "leaves the manifest in the working tree untouched" do
+      resolver.latest_resolvable_version
+
+      manifest = JSON.parse(File.read(File.join(repo_contents_path, "package.json")))
+      expect(manifest.dig("devDependencies", "etag")).to eq("^1.0.0")
+    end
+  end
 end

@@ -428,8 +428,19 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
-            paths_requiring_update_check.flat_map do |path|
-              run_checker(path: path, version: version)
+            begin
+              paths_requiring_update_check.flat_map do |path|
+                run_checker(path: path, version: version)
+              end
+            ensure
+              # run_nub_checker pins the candidate into every manifest before re-resolving, and with
+              # repo_contents_path set that happens in the repo's own working tree. Nothing restores
+              # it on the way out: a grouped update holds an active Workspace, so
+              # in_a_temporary_repo_directory skips the reset it does on entry otherwise, and the
+              # pins are then read back by the next dependency's resolution. Upstream hit the same
+              # leak through pnpm's `catalog:` specifier; nub's pinning rewrites every pinnable group
+              # in every manifest, so it leaks more. Bun pins nothing and so carries no equivalent.
+              dependency_files_builder.write_temporary_dependency_files
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed
