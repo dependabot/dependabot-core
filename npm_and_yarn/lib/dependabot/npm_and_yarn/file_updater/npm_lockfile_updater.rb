@@ -1173,6 +1173,9 @@ module Dependabot
             new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
             old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
             updated_lockfile_content = updated_lockfile_content.gsub(new_r, old_r)
+
+            swapped_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
+            updated_lockfile_content = updated_lockfile_content.gsub(swapped_r, req)
           end
 
           updated_lockfile_content
