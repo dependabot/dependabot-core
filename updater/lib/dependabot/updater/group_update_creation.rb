@@ -503,6 +503,14 @@ module Dependabot
         # If there was an error we might not be able to determine if the dependency is in this
         # group due to semver grouping, so we consider it handled to avoid raising an individual PR.
         dependency_snapshot.add_handled_dependencies(dependency.name)
+
+        # updated_dependencies can raise AllVersionsIgnored after requirements_to_unlock
+        # succeeds; for a non-security job that means "no update possible", so skip it.
+        if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          return []
+        end
+
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end

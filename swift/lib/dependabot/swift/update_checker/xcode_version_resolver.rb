@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/git_commit_checker"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/swift/update_checker"
 require "dependabot/swift/requirement"
 require "dependabot/swift/version"
@@ -24,13 +25,15 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             git_commit_checker: Dependabot::GitCommitChecker,
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, git_commit_checker:, security_advisories:)
+        def initialize(dependency:, git_commit_checker:, security_advisories:, update_cooldown: nil)
           @dependency = dependency
           @git_commit_checker = git_commit_checker
           @security_advisories = security_advisories
+          @update_cooldown = update_cooldown
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -90,6 +93,9 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
+
         sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def compute_latest_resolvable_version_tag
           return nil unless version_pinned?
@@ -98,7 +104,7 @@ module Dependabot
           # not just check if the absolute latest satisfies it
           return compute_latest_version_in_range if requirement_kind == "versionRange"
 
-          tag = git_commit_checker.local_tag_for_latest_version
+          tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return nil unless tag
 
           version = tag_version(tag)
