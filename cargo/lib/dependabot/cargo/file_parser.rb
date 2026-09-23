@@ -111,7 +111,7 @@ module Dependabot
         return unless workspace_config
 
         msg = "This project is part of a Rust workspace but is not the " \
-              "workspace root." \
+              "workspace root."
 
         if cargo_toml&.directory != "/"
           msg += "Please update your settings so Dependabot points at the " \

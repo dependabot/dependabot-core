@@ -9,6 +9,7 @@ require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
+require "dependabot/sentry/error_fingerprint"
 require "dependabot/workflow_summary"
 require "github_api/dependency_submission"
 
@@ -24,11 +25,9 @@ module Dependabot
 
     ErrorDetails = T.type_alias { Dependabot::ErrorDetails::Detail }
     PullRequestResult = T.type_alias { [String, T.any(String, Symbol)] }
-    LegacyErrorResult = T.type_alias { [String, T.nilable(Dependabot::Dependency)] }
-    EnhancedErrorResult = T.type_alias do
+    ErrorResult = T.type_alias do
       [String, T.nilable(ErrorDetails), T.nilable(Dependabot::Dependency)]
     end
-    ErrorResult = T.type_alias { T.any(LegacyErrorResult, EnhancedErrorResult) }
 
     class ErrorRecord < T::ImmutableStruct
       extend T::Sig
@@ -37,13 +36,9 @@ module Dependabot
       const :error_details, T.nilable(ErrorDetails)
       const :dependency, T.nilable(Dependabot::Dependency)
 
-      sig { params(enhanced: T::Boolean).returns(ErrorResult) }
-      def to_result(enhanced:)
-        if enhanced
-          [error_type, error_details, dependency]
-        else
-          [error_type, dependency]
-        end
+      sig { returns(ErrorResult) }
+      def to_result
+        [error_type, error_details, dependency]
       end
     end
 
@@ -64,8 +59,7 @@ module Dependabot
 
     sig { returns(T::Array[ErrorResult]) }
     def errors
-      enhanced = Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-      @error_records.map { |record| record.to_result(enhanced: enhanced) }
+      @error_records.map(&:to_result)
     end
 
     sig { params(base_commit_sha: T.nilable(String)).void }
@@ -219,11 +213,17 @@ module Dependabot
       # some GHES versions do not support reporting errors to the service
       return unless Experiments.enabled?(:record_update_job_unknown_error)
 
+      fingerprint = if error.respond_to?(:sentry_context)
+                      T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint]
+                    else
+                      Dependabot::Sentry::ErrorFingerprint.for(error: error, package_manager: job&.package_manager)
+                    end
+
       error_details = {
         ErrorAttributes::CLASS => error.class.to_s,
         ErrorAttributes::MESSAGE => error.message,
         ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
+        ErrorAttributes::FINGERPRINT => fingerprint,
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
@@ -304,27 +304,15 @@ module Dependabot
     # +--------------------+---------+
     sig { returns(T.nilable(Terminal::Table)) }
     def job_errors_summary
-      if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-        job_errors = @error_records.filter_map do |record|
-          [record.error_type, JSON.pretty_generate(record.error_details)] if record.dependency.nil?
-        end
-        return if job_errors.none?
+      job_errors = @error_records.filter_map do |record|
+        [record.error_type, JSON.pretty_generate(record.error_details)] if record.dependency.nil?
+      end
+      return if job_errors.none?
 
-        Terminal::Table.new do |t|
-          t.title = "Errors"
-          t.headings = %w(Type Details)
-          t.rows = job_errors
-        end
-      else
-        job_error_types = @error_records.filter_map do |record|
-          [record.error_type] if record.dependency.nil?
-        end
-        return if job_error_types.none?
-
-        Terminal::Table.new do |t|
-          t.title = "Errors"
-          t.rows = job_error_types
-        end
+      Terminal::Table.new do |t|
+        t.title = "Errors"
+        t.headings = %w(Type Details)
+        t.rows = job_errors
       end
     end
 
@@ -339,29 +327,16 @@ module Dependabot
     # +---------------------+-------------------------------+
     sig { returns(T.nilable(Terminal::Table)) }
     def dependency_error_summary
-      if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-        dependency_errors = @error_records.filter_map do |record|
-          dependency = record.dependency
-          [dependency.name, record.error_type, JSON.pretty_generate(record.error_details)] if dependency
-        end
-        return if dependency_errors.none?
+      dependency_errors = @error_records.filter_map do |record|
+        dependency = record.dependency
+        [dependency.name, record.error_type, JSON.pretty_generate(record.error_details)] if dependency
+      end
+      return if dependency_errors.none?
 
-        Terminal::Table.new do |t|
-          t.title = "Dependencies failed to update"
-          t.headings = ["Dependency", "Error Type", "Error Details"]
-          t.rows = dependency_errors
-        end
-      else
-        dependency_errors = @error_records.filter_map do |record|
-          dependency = record.dependency
-          [dependency.name, record.error_type] if dependency
-        end
-        return if dependency_errors.none?
-
-        Terminal::Table.new do |t|
-          t.title = "Dependencies failed to update"
-          t.rows = dependency_errors
-        end
+      Terminal::Table.new do |t|
+        t.title = "Dependencies failed to update"
+        t.headings = ["Dependency", "Error Type", "Error Details"]
+        t.rows = dependency_errors
       end
     end
 

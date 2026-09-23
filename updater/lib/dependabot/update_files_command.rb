@@ -94,7 +94,7 @@ module Dependabot
 
     private
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
     sig { params(error: StandardError).void }
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
@@ -127,7 +127,14 @@ module Dependabot
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil,
+            ErrorAttributes::FINGERPRINT => (if error.respond_to?(:sentry_context)
+                                               T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint]
+                                             else
+                                               Dependabot::Sentry::ErrorFingerprint.for(
+                                                 error: error,
+                                                 package_manager: job.package_manager
+                                               )
+                                             end),
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -159,7 +166,7 @@ module Dependabot
         error_details: error_detail
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
     sig { params(error: Dependabot::DependencyFileNotParseable).void }
     def handle_dependency_file_not_parseable_error(error)

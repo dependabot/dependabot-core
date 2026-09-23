@@ -46,7 +46,6 @@ function Get-BaseCommitSha {
 function Initialize-UpdateEnvironment {
     # install relevant SDKs
     Install-Sdks `
-        -jobFilePath $env:DEPENDABOT_JOB_PATH `
         -repoContentsPath $env:DEPENDABOT_REPO_CONTENTS_PATH `
         -dotnetInstallScriptPath $env:DOTNET_INSTALL_SCRIPT_PATH `
         -dotnetInstallDir $env:DOTNET_INSTALL_DIR

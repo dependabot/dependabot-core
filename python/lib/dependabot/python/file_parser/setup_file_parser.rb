@@ -68,10 +68,19 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
-            requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "parse_setup",
-              args: [Dir.pwd]
+            requirements = T.cast(
+              SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "parse_setup",
+                args: [Dir.pwd]
+              ),
+              T.nilable(
+                T.any(
+                  T::Hash[String, T.untyped],
+                  String,
+                  T::Array[T::Hash[String, T.untyped]]
+                )
+              )
             )
 
             check_requirements(requirements)
@@ -90,10 +99,19 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_sanitized_setup_file
 
-            requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "parse_setup",
-              args: [Dir.pwd]
+            requirements = T.cast(
+              SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "parse_setup",
+                args: [Dir.pwd]
+              ),
+              T.nilable(
+                T.any(
+                  T::Hash[String, T.untyped],
+                  String,
+                  T::Array[T::Hash[String, T.untyped]]
+                )
+              )
             )
 
             check_requirements(requirements)

@@ -221,7 +221,7 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          commit_sha = T.cast(latest_tag&.fetch(:commit_sha), T.nilable(String))
+          commit_sha = latest_tag && tag_commit_sha(latest_tag)
           return commit_sha || dependency.version
         end
 
@@ -242,7 +242,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return T.cast(T.must(new_tag).fetch(:commit_sha), String)
+          return T.must(tag_commit_sha(T.must(new_tag)))
         end
 
         # If the dependency is pinned then there's nothing we can do.
@@ -271,7 +271,7 @@ module Dependabot
           dependency_files: dependency_files,
           dependency: dependency,
           unlock_requirement: true,
-          replacement_git_pin: T.cast(replacement_tag.fetch(:tag), String)
+          replacement_git_pin: tag_name(replacement_tag)
         ).prepared_dependency_files
 
         VersionResolver.new(
@@ -363,7 +363,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
-          return source_with_ref(T.must(dependency_source_details), T.cast(new_tag.fetch(:tag), String))
+          return source_with_ref(T.must(dependency_source_details), tag_name(new_tag))
         end
 
         # Otherwise return the original source
@@ -394,6 +394,20 @@ module Dependabot
               end
         updated_source[key] = ref
         updated_source
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(String) }
+      def tag_name(tag)
+        return tag.tag if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag.fetch(:tag), String)
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def tag_commit_sha(tag)
+        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       sig { returns(T::Boolean) }

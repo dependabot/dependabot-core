@@ -11,24 +11,13 @@ RSpec.describe Dependabot::Bundler::FileParser::GemspecDeclarationFinder do
     described_class.new(gemspec: gemspec)
   end
 
-  let(:dependency) do
-    dep = ::Bundler::Dependency.new(
-      dependency_name,
-      dependency_requirement_sting
-    )
-    {
-      "name" => dep.name,
-      "requirement" => dep.requirement.to_s
-    }
-  end
   let(:dependency_name) { "business" }
-  let(:dependency_requirement_sting) { "~> 1" }
 
   let(:gemspec) { bundler_project_dependency_file("gemspec_loads_another", filename: "example.gemspec") }
 
   describe "#gemspec_includes_dependency?" do
     subject(:gemspec_includes_dependency) do
-      checker.gemspec_includes_dependency?(dependency)
+      checker.gemspec_includes_dependency?(dependency_name)
     end
 
     context "when the file does not include the dependency" do

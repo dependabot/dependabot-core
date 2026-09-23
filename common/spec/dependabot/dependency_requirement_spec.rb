@@ -45,6 +45,11 @@ RSpec.describe Dependabot::DependencyRequirement do
 
       expect(requirement[:custom]).to eq(count: 1)
     end
+
+    it "rejects values that do not inherit Object" do
+      expect { described_class.create(requirement_hash.merge(custom: BasicObject.new)) }
+        .to raise_error(TypeError, "requirement values must inherit Object")
+    end
   end
 
   describe "typed readers" do
@@ -260,6 +265,31 @@ RSpec.describe Dependabot::DependencyRequirement do
 
       expect { req.metadata_symbol("type") }
         .to raise_error(TypeError, "metadata type must be a symbol or nil")
+    end
+
+    it "reads boolean metadata values with either key style" do
+      symbol_true = described_class.create(requirement_hash.merge(metadata: { enabled: true }))
+      symbol_false = described_class.create(requirement_hash.merge(metadata: { enabled: false }))
+      string_true = described_class.create(requirement_hash.merge(metadata: { "enabled" => true }))
+      string_false = described_class.create(requirement_hash.merge(metadata: { "enabled" => false }))
+
+      expect(symbol_true.metadata_boolean("enabled")).to be(true)
+      expect(symbol_false.metadata_boolean("enabled")).to be(false)
+      expect(string_true.metadata_boolean("enabled")).to be(true)
+      expect(string_false.metadata_boolean("enabled")).to be(false)
+    end
+
+    it "returns nil for an absent boolean metadata value" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_boolean("enabled")).to be_nil
+    end
+
+    it "rejects a non-boolean metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { enabled: "yes" }))
+
+      expect { req.metadata_boolean("enabled") }
+        .to raise_error(TypeError, "metadata enabled must be a boolean or nil")
     end
 
     it "reads a metadata hash of strings" do

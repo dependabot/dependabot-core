@@ -5,7 +5,7 @@ require "sorbet-runtime"
 require "dependabot/error_details"
 require "dependabot/utils"
 
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module Dependabot
   extend T::Sig
 
@@ -244,6 +244,11 @@ module Dependabot
     when Dependabot::DependencyFileNotResolvable
       {
         "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::BranchNameFormattingError
+      {
+        "error-type": "branch_name_formatting_error",
         "error-detail": { message: error.message }
       }
     when Dependabot::BlockedDependencyVersion
@@ -509,6 +514,8 @@ module Dependabot
 
   class RefNamespaceConflictError < DependabotError; end
 
+  class BranchNameFormattingError < DependabotError; end
+
   #####################
   # Repo level errors #
   #####################
@@ -573,7 +580,10 @@ module Dependabot
     end
     def initialize(tool_name, tool_message)
       @tool_name = tool_name
-      @tool_message = tool_message
+      # Sanitize here as well as via `super`: the raw `tool_message` attribute is read
+      # directly during error serialization (see `updater_error_details`), so it must not
+      # carry credentials (e.g. basic-auth URLs) that the base message sanitization strips.
+      @tool_message = T.let(filter_sensitive_data(tool_message), String)
 
       msg = "Dependabot detected that #{tool_name} is misconfigured in this repository. " \
             "Running `#{tool_name.downcase}` results in the following error: #{tool_message}"
@@ -1000,4 +1010,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ModuleLength

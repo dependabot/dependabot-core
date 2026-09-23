@@ -102,12 +102,14 @@ public class MessageReportTests
                     new()
                     {
                         Name = "Dependency1",
+                        Directory = "/",
                         Version = "1.2.3",
                         Requirements = [], // unused
                     },
                     new()
                     {
                         Name = "Dependency2",
+                        Directory = "/",
                         Version = "4.5.6",
                         Requirements = [], // unused
                     }

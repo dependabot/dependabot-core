@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Deno::MetadataFinder do
           requirement: "^5.3.0",
           file: "deno.json",
           groups: ["imports"],
-          source: { type: "npm" }
+          source: { "type" => "npm" }
         }],
         package_manager: "deno"
       )

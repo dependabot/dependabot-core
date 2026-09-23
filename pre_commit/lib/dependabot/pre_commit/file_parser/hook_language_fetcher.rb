@@ -99,15 +99,14 @@ module Dependabot
           ).returns(T.nilable(T::Array[T::Hash[String, Object]]))
         end
         def fetch_from_github(source, revision)
-          response = github_client.send(
-            :contents,
+          response = github_client.contents(
             source.repo,
             path: HOOKS_FILE,
             ref: revision
           )
-          return nil unless response
 
-          content = Base64.decode64(response.content)
+          resource = T.cast(response, Sawyer::Resource)
+          content = Base64.decode64(T.cast(resource[:content], String))
           parse_hooks_yaml(content)
         rescue Octokit::NotFound
           Dependabot.logger.debug("#{HOOKS_FILE} not found in #{source.repo}@#{revision}")

@@ -90,6 +90,24 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
   end
 
   describe "#update" do
+    context "when GitHub returns a malformed pull request head" do
+      before do
+        pull_request = JSON.parse(fixture("github", "pull_request.json"))
+        pull_request["head"] = "invalid"
+        stub_request(:get, pull_request_url)
+          .to_return(
+            status: 200,
+            body: JSON.dump(pull_request),
+            headers: json_header
+          )
+      end
+
+      it "raises a bad response error" do
+        expect { updater.update }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /pull request head must be an object/)
+      end
+    end
+
     context "when the branch doesn't exist" do
       before { stub_request(:get, branch_url).to_return(status: 404) }
 

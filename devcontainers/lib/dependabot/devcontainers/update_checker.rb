@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -33,8 +33,14 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        updated_reqs = dependency.requirements.map do |requirement|
-          required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
+        dependency.requirements.map do |requirement|
+          original_requirement = requirement.requirement_string
+          # Features referenced without a version tag (e.g. "ghcr.io/owner/feature"
+          # instead of ".../feature:1") carry no pinned requirement to bump, so leave
+          # them unchanged rather than dereferencing a nil pin.
+          next requirement if original_requirement.nil?
+
+          required_version = T.cast(version_class.new(original_requirement), Dependabot::Devcontainers::Version)
           versions = T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version])
           precision_matches = remove_precision_changes(versions, required_version)
           # When the published tags don't include a precision-matching tag (e.g. a feature
@@ -47,14 +53,10 @@ module Dependabot
             else
               versions.last&.truncate_to_precision_of(required_version)
             end
-          {
-            file: requirement[:file],
-            requirement: updated_requirement&.to_s || requirement[:requirement],
-            groups: requirement[:groups],
-            source: requirement[:source]
-          }
+          Dependabot::DependencyRequirement.create(
+            requirement.merge(requirement: updated_requirement&.to_s || original_requirement)
+          )
         end
-        wrap_requirements(updated_reqs)
       end
 
       private

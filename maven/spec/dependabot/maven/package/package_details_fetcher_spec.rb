@@ -87,6 +87,56 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
     end
   end
 
+  describe "#fetch_release_metadata" do
+    let(:release) do
+      Dependabot::Package::PackageRelease.new(
+        version: Dependabot::Maven::Version.new("23.3-jre"),
+        released_at: released_at,
+        url: "https://repo.maven.apache.org/maven2",
+        details: { "source" => "maven" }
+      )
+    end
+    let(:released_at) { nil }
+    let(:version_pom_url) do
+      "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.3-jre/guava-23.3-jre.pom"
+    end
+
+    it "uses the versioned pom Last-Modified header when the release date is missing" do
+      stub_request(:head, version_pom_url).to_return(
+        status: 200,
+        headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+      )
+
+      hydrated_release = fetcher.fetch_release_metadata(release: release)
+
+      expect(hydrated_release.released_at).to eq(Time.utc(2026, 8, 10, 10, 8, 43))
+      expect(hydrated_release.url).to eq(release.url)
+      expect(hydrated_release.details).to eq(release.details)
+    end
+
+    context "when a release date is already present" do
+      let(:released_at) { Time.utc(2026, 8, 1) }
+
+      it "returns the original release without requesting the pom" do
+        hydrated_release = fetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release).to equal(release)
+        expect(a_request(:head, version_pom_url)).not_to have_been_made
+      end
+    end
+
+    it "caches the fallback lookup by repository and version" do
+      stub_request(:head, version_pom_url).to_return(
+        status: 200,
+        headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+      )
+
+      2.times { fetcher.fetch_release_metadata(release: release) }
+
+      expect(a_request(:head, version_pom_url)).to have_been_made.once
+    end
+  end
+
   describe "#released?" do
     subject(:released_check) { fetcher.released?(version) }
 

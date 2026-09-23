@@ -334,6 +334,68 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         )
     end
 
+    # `Bundler::Source::Path` re-relativises a lockfile `remote:` against `Bundler.root`, and
+    # `..` segments escaping the filesystem root are dropped. Anything reaching further up than
+    # `Bundler.root` is deep therefore resolved to a shallower directory than the lockfile named.
+    # `Bundler.root` has to be stubbed for this to be exercised at all: in a checkout it sits far
+    # enough down that no realistic `remote:` reaches past it.
+    context "when the path escapes further up than Bundler.root is deep" do
+      let(:directory) { "/a/b/c/d" }
+      let(:url) { github_url + "repos/gocardless/bump/contents/a/b/c/d/" }
+
+      before do
+        allow(Bundler).to receive(:root)
+          .and_return(Pathname.new("/home/dependabot/dependabot-updater"))
+
+        stub_request(:get, github_url + "repos/gocardless/bump/contents/a/b/c/d?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "Gemfile?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemfile_with_escaping_path_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "Gemfile.lock?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemfile_lock_with_escaping_path_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # The only directory stubbed is the one the lockfile actually names. A request for the
+        # re-relativised path (`a/vendor/bump-core`) is left unstubbed on purpose, so the wrong
+        # target fails loudly rather than 404ing into `PathDependenciesNotReachable`.
+        stub_request(:get, github_url + "repos/gocardless/bump/contents/vendor/bump-core?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          github_url + "repos/gocardless/bump/contents/vendor/bump-core/bump-core.gemspec?ref=sha"
+        ).with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemspec_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the gemspec from the directory the lockfile names" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to include("../../../../vendor/bump-core/bump-core.gemspec")
+      end
+    end
+
     context "when there is a fetchable path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha")

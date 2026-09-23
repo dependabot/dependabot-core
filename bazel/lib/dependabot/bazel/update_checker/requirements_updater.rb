@@ -21,10 +21,10 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
-          @requirements.map do |requirement|
-            updated_requirement = requirement.dup
-            updated_requirement[:requirement] = @latest_version
-            updated_requirement
+          requirements.map do |requirement|
+            Dependabot::DependencyRequirement.create(
+              requirement.merge(requirement: latest_version)
+            )
           end
         end
 

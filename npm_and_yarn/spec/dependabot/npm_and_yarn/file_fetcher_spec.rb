@@ -2732,6 +2732,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to include(".npmrc")
       expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.content)
         .to eq("registry=https://private.registry.com")
+      expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.directory)
+        .to eq(directory)
+    end
+
+    context "when fetching from a subdirectory" do
+      let(:directory) { "/packages/package1" }
+      let(:repo_contents_path) { build_tmp_repo("npm8/nested_sub_dependency_update") }
+      let(:file_fetcher_instance) do
+        described_class.new(
+          source: source,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
+        )
+      end
+
+      it "sets the directory on the generated npmrc" do
+        npmrc = file_fetcher_instance.files.find { |file| file.name == ".npmrc" }
+
+        expect(npmrc.directory).to eq(directory)
+      end
     end
   end
 

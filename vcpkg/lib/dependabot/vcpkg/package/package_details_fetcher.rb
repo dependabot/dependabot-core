@@ -91,18 +91,36 @@ module Dependabot
           Dependabot::Package::PackageDetails.new(dependency: dependency, releases: releases)
         end
 
-        sig { params(tag_info: T::Hash[Symbol, T.untyped]).returns(Dependabot::Package::PackageRelease) }
+        sig { params(tag_info: T::Hash[Symbol, Object]).returns(Dependabot::Package::PackageRelease) }
         def create_registry_package_release(tag_info)
+          tag = tag_name(tag_info)
           Dependabot::Package::PackageRelease.new(
-            version: Dependabot::Vcpkg::Version.new(tag_info.fetch(:tag)),
-            tag: tag_info.fetch(:tag),
+            version: Dependabot::Vcpkg::Version.new(tag),
+            tag: tag,
             url: dependency.source_string("url"),
-            released_at: extract_release_date_from_tag(tag_info.fetch(:tag)),
+            released_at: extract_release_date_from_tag(tag),
             details: {
-              "commit_sha" => tag_info.fetch(:commit_sha),
-              "tag_sha" => tag_info.fetch(:tag_sha)
+              "commit_sha" => tag_string(tag_info, :commit_sha),
+              "tag_sha" => tag_string(tag_info, :tag_sha)
             }
           )
+        end
+
+        sig { params(tag_info: T::Hash[Symbol, Object]).returns(String) }
+        def tag_name(tag_info)
+          return tag_info.tag if tag_info.is_a?(Dependabot::GitTagDetails)
+
+          T.cast(tag_info.fetch(:tag), String)
+        end
+
+        sig { params(tag_info: T::Hash[Symbol, Object], key: Symbol).returns(T.nilable(String)) }
+        def tag_string(tag_info, key)
+          if tag_info.is_a?(Dependabot::GitTagDetails)
+            return tag_info.commit_sha if key == :commit_sha
+            return tag_info.tag_sha if key == :tag_sha
+          end
+
+          T.cast(tag_info[key], T.nilable(String))
         end
 
         sig do

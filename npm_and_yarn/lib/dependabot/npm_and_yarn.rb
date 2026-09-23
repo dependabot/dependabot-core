@@ -35,7 +35,7 @@ ErrorHandler = T.type_alias do
 end
 
 module Dependabot
-  # rubocop:disable Metrics/ModuleLength
+  # rubocop:disable-next Metrics/ModuleLength
   module NpmAndYarn
     NODE_VERSION_NOT_SATISFY_REGEX = /The current Node version (?<current_version>v?\d+\.\d+\.\d+) does not satisfy the required version (?<required_version>v?\d+\.\d+\.\d+)\./ # rubocop:disable Layout/LineLength
 
@@ -660,5 +660,4 @@ module Dependabot
       }]
     )
   end
-  # rubocop:enable Metrics/ModuleLength
 end

@@ -195,6 +195,31 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         expect(updated_requirements.first[:requirement]).to eq("2")
         expect(checker.latest_version.to_s).to eq("2.0.0")
       end
+
+      context "with additional requirement payload" do
+        before do
+          dependency.requirements.first[:source] = { "type" => "feature", "custom" => "source" }
+          dependency.requirements.first[:metadata] = { "custom" => "metadata" }
+          dependency.requirements.first[:custom] = "top-level"
+        end
+
+        it "preserves the full requirement payload and nested key style" do
+          requirement = updated_requirements.first
+
+          expect(requirement[:custom]).to eq("top-level")
+          expect(requirement.metadata).to eq({ "custom" => "metadata" })
+          expect(requirement.source_hash).to eq({ "type" => "feature", "custom" => "source" })
+        end
+      end
+
+      context "with a malformed requirement" do
+        before { dependency.requirements.first[:requirement] = 123 }
+
+        it "raises a type error" do
+          expect { updated_requirements }
+            .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+        end
+      end
     end
 
     context "when published tags only include full semver without precision-matching tags (minor update)" do
@@ -229,6 +254,27 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
       it "keeps the original requirement instead of emitting a nil requirement" do
         expect(updated_requirements.first[:requirement]).to eq("1")
+      end
+    end
+
+    context "when the feature is referenced without a version tag" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ghcr.io/devcontainers/features/docker-outside-of-docker",
+          version: nil,
+          requirements: [{
+            file: ".devcontainer/devcontainer.json",
+            requirement: nil,
+            groups: ["feature"],
+            source: nil
+          }],
+          package_manager: "devcontainers"
+        )
+      end
+
+      it "leaves the untagged requirement unchanged instead of raising" do
+        expect { updated_requirements }.not_to raise_error
+        expect(updated_requirements.first[:requirement]).to be_nil
       end
     end
   end

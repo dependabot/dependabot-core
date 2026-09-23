@@ -218,4 +218,32 @@ RSpec.describe Dependabot::DependabotError do
       end
     end
   end
+
+  describe Dependabot::MisconfiguredTooling do
+    let(:error) { described_class.new("Maven Wrapper", tool_message) }
+    let(:tool_message) do
+      "Failed to download from https://user:s3cr3t@repo.example.com/maven/artifact.jar"
+    end
+
+    it "redacts basic-auth credentials from #tool_message" do
+      expect(error.tool_message).to eq(
+        "Failed to download from https://repo.example.com/maven/artifact.jar"
+      )
+    end
+
+    it "redacts basic-auth credentials from #message" do
+      expect(error.message).to include("https://repo.example.com/maven/artifact.jar")
+      expect(error.message).not_to include("s3cr3t")
+    end
+
+    it "redacts basic-auth credentials from the serialized error details" do
+      details = Dependabot.updater_error_details(error)
+
+      expect(details.error_type).to eq("misconfigured_tooling")
+      expect(details.error_detail[:message]).to eq(
+        "Failed to download from https://repo.example.com/maven/artifact.jar"
+      )
+      expect(details.error_detail[:message]).not_to include("s3cr3t")
+    end
+  end
 end

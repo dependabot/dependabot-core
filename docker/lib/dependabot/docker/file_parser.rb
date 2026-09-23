@@ -54,6 +54,8 @@ module Dependabot
 
         manifest_files.each do |file|
           dependency_set += workfile_file_dependencies(file)
+        rescue Dependabot::DependencyFileNotParseable => e
+          Dependabot.logger.warn("Failed to parse YAML file #{file.path}: #{e.message}")
         end
 
         dependency_set.dependencies
@@ -107,7 +109,6 @@ module Dependabot
 
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
-        Dependabot.logger.error("Failed to parse file #{file.path}: #{e.message}")
         raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
       end
 
@@ -144,7 +145,11 @@ module Dependabot
         repo = img_hash.fetch("repository", nil)
         return [] unless repo.is_a?(String)
 
-        match = tag_value.to_s.match(TAG_WITH_DIGEST)
+        tag = tag_value.to_s
+        # Helm template expressions cannot be resolved without rendering the chart.
+        return [] if tag.include?("{{")
+
+        match = tag.match(TAG_WITH_DIGEST)
         return [] unless match
 
         tag_details = match.named_captures

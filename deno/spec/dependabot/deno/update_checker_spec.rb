@@ -80,6 +80,25 @@ RSpec.describe Dependabot::Deno::UpdateChecker do
       updated = checker.updated_requirements
       expect(updated.first[:requirement]).to eq("^1.1.4")
     end
+
+    context "with a malformed requirement" do
+      before { dependency.requirements.first[:requirement] = 123 }
+
+      it "raises a type error" do
+        expect { checker.updated_requirements }
+          .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      end
+    end
+
+    context "with string-keyed source details" do
+      before do
+        dependency.requirements.first[:source] = { "type" => "jsr" }
+      end
+
+      it "updates requirements" do
+        expect(checker.updated_requirements.first[:requirement]).to eq("^1.1.4")
+      end
+    end
   end
 
   context "with cooldown enabled" do

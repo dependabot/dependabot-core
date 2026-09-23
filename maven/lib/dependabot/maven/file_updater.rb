@@ -87,7 +87,7 @@ module Dependabot
       def version_from_metadata(dep, key)
         return nil unless dep
 
-        dep.requirements.find { |r| r.dig(:metadata, key) }&.dig(:metadata, key)
+        dep.requirements.filter_map { |requirement| requirement.metadata_string(key.to_s) }.first
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

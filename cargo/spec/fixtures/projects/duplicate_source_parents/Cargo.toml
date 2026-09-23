@@ -1,0 +1,3 @@
+[workspace]
+resolver = "2"
+members = ["reg_consumer", "git_consumer", "old_consumer"]

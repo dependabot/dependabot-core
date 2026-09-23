@@ -12,7 +12,9 @@ RSpec.describe Dependabot::Python::PipenvRunner do
     described_class.new(
       dependency: dependency,
       lockfile: lockfile,
-      language_version_manager: language_version_manager
+      language_version_manager: language_version_manager,
+      dependency_files: dependency_files,
+      repo_contents_path: repo_contents_path
     )
   end
 
@@ -59,6 +61,9 @@ RSpec.describe Dependabot::Python::PipenvRunner do
       }
     )
   end
+
+  let(:dependency_files) { nil }
+  let(:repo_contents_path) { nil }
 
   describe "#run_upgrade_and_fetch_version" do
     before do
@@ -190,6 +195,59 @@ RSpec.describe Dependabot::Python::PipenvRunner do
 
       it "returns nil" do
         expect(runner.run_upgrade_and_fetch_version(">=2.19.0")).to be_nil
+      end
+    end
+  end
+
+  describe "#run_pipenv_graph" do
+    context "when the repository contains a local path dependency" do
+      let(:repo_contents_path) { Dir.mktmpdir }
+      let(:commands) { [] }
+      let(:python_version) { "3.10" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: "[packages]\nlocal-package = {path = \"./local-package\"}\n",
+            directory: "/project"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Pipfile.lock",
+            content: "{}",
+            directory: "/project"
+          ),
+          Dependabot::DependencyFile.new(
+            name: ".python-version",
+            content: "3.9\n",
+            directory: "/project"
+          )
+        ]
+      end
+
+      before do
+        FileUtils.mkdir_p(File.join(repo_contents_path, "project", "local-package"))
+        File.write(File.join(repo_contents_path, "project", "local-package", "setup.py"), "")
+        File.write(File.join(repo_contents_path, "project", ".python-version"), "3.9\n")
+        allow(language_version_manager).to receive(:python_major_minor).and_return(python_version)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_options|
+          commands << [command, Dir.pwd]
+          next "" if command.start_with?("git ")
+
+          command.include?("pipenv graph") ? "[]" : ""
+        end
+      end
+
+      after do
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
+      it "runs Pipenv from the checked out repository" do
+        expect(runner.run_pipenv_graph).to eq("[]")
+        pipenv_commands = commands.reject { |command, _directory| command.start_with?("git ") }
+
+        expect(pipenv_commands.map(&:last)).to all(eq(File.join(repo_contents_path, "project")))
+        expect(File).to exist(File.join(repo_contents_path, "project", "local-package", "setup.py"))
+        expect(File.read(File.join(repo_contents_path, "project", ".python-version"))).to eq(python_version)
       end
     end
   end

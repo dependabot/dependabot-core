@@ -51,7 +51,7 @@ module Functions
 
     private
 
-    # rubocop:disable Metrics/PerceivedComplexity
+    # rubocop:disable-next Metrics/PerceivedComplexity
     def dependency_from_definition(unlock_subdependencies: true)
       dependencies_to_unlock = [dependency_name]
       dependencies_to_unlock += subdependencies if unlock_subdependencies
@@ -81,7 +81,6 @@ module Functions
       # try again but without unlocking any other sub-dependencies
       dependency_from_definition(unlock_subdependencies: false)
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def subdependencies
       # If there's no lockfile we don't need to worry about

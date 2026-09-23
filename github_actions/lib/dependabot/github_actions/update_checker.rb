@@ -59,30 +59,20 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def up_to_date?
-        super && !onboarded_requirements_changed?
+        super && !relevant_requirements_changed?
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         updated_reqs = dependency.requirements.map do |req|
-          source = T.cast(req.source, GitSource)
+          source = req.source_hash
           updated = updated_ref(source, onboarded: onboarded_requirement?(req))
           next req unless updated
 
-          current = source[:ref]
-
-          # Maintain a short git hash only if it matches the latest
-          if req[:type] == "git" &&
-             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             git_commit_checker.ref_looks_like_commit_sha?(T.must(current)) &&
-             updated.start_with?(T.must(current))
-            next req
-          end
-
-          new_source = source.merge(ref: updated)
-          req.merge(source: new_source)
+          new_source = source_with_ref(T.must(source), updated)
+          Dependabot::DependencyRequirement.create(req.merge(source: new_source))
         end
-        wrap_requirements(updated_reqs)
+        updated_reqs
       end
 
       private
@@ -92,14 +82,34 @@ module Dependabot
         return true if super
         return false unless requirements_to_unlock == :own
 
-        onboarded_requirements_changed?
+        relevant_requirements_changed?
       end
 
       sig { returns(T::Boolean) }
-      def onboarded_requirements_changed?
+      def relevant_requirements_changed?
         dependency.requirements.zip(updated_requirements).any? do |current, updated|
-          onboarded_requirement?(current) && current != updated
+          next false unless updated
+
+          current != updated && (onboarded_requirement?(current) || tag_to_sha_requirement?(current, updated))
         end
+      end
+
+      sig do
+        params(
+          current: Dependabot::DependencyRequirement,
+          updated: Dependabot::DependencyRequirement
+        ).returns(T::Boolean)
+      end
+      def tag_to_sha_requirement?(current, updated)
+        return false unless pin_to_sha?
+
+        current_ref = current.source_string("ref")
+        updated_ref = updated.source_string("ref")
+        return false unless current_ref && updated_ref
+        return false unless version_class.correct?(current_ref)
+        return false if Dependabot::GithubActions::Version.path_based?(current_ref)
+
+        git_commit_checker.ref_looks_like_commit_sha?(updated_ref)
       end
 
       # A requirement is "onboarded" when the repo carries an `actions.lock` that is
@@ -171,9 +181,7 @@ module Dependabot
         @git_metadata_fetcher ||= T.let(
           Dependabot::GitMetadataFetcher.new(
             url: T.must(
-              dependency.requirements.filter_map do |requirement|
-                T.cast(requirement.source, T.nilable(GitSource))&.fetch(:url, nil)
-              end.first
+              dependency.requirements.filter_map { |requirement| requirement.source_string("url") }.first
             ),
             credentials: credentials
           ),
@@ -248,25 +256,30 @@ module Dependabot
       end
 
       sig do
-        params(source: T.nilable(GitSource), onboarded: T::Boolean)
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::ObjectHash),
+          onboarded: T::Boolean
+        )
           .returns(T.nilable(String))
       end
       def updated_ref(source, onboarded: false)
         # TODO: Support Docker sources
         return unless git_commit_checker.git_dependency?
 
-        finder = onboarded ? latest_version_finder_for(source) : T.must(latest_version_finder)
+        git_source = git_source_for(source)
+        current_ref = git_source&.fetch(:ref, nil)
+        finder = onboarded ? latest_version_finder_for(git_source) : T.must(latest_version_finder)
 
         if vulnerable? && (new_tag = finder.lowest_security_fix_release)
-          return new_tag.fetch(:tag)
+          return ref_for_release(new_tag, current_ref: current_ref)
         end
 
-        source_git_commit_checker = git_helper.git_commit_checker_for(source)
+        source_git_commit_checker = git_helper.git_commit_checker_for(git_source)
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = finder.latest_version_tag_respecting_cooldown)
-          return new_tag.fetch(:tag)
+          return ref_for_release(new_tag, current_ref: current_ref)
         end
 
         # Return the pinned git commit if one is available
@@ -277,6 +290,63 @@ module Dependabot
 
         # Otherwise we can't update the ref
         nil
+      end
+
+      sig { returns(T::Boolean) }
+      def pin_to_sha?
+        T.cast(options.fetch(:github_actions_pin_to_sha, false), T::Boolean)
+      end
+
+      sig do
+        params(
+          release: T::Hash[Symbol, Object],
+          current_ref: T.nilable(String)
+        ).returns(String)
+      end
+      def ref_for_release(release, current_ref:)
+        return T.cast(release.fetch(:tag), String) unless pin_to_sha?
+        if current_ref && Dependabot::GithubActions::Version.path_based?(current_ref)
+          return T.cast(release.fetch(:tag), String)
+        end
+
+        T.cast(release.fetch(:commit_sha), String)
+      end
+
+      sig do
+        params(source: T.nilable(Dependabot::DependencyRequirement::ObjectHash))
+          .returns(T.nilable(GitSource))
+      end
+      def git_source_for(source)
+        source && symbolize_source(source)
+      end
+
+      sig do
+        params(source: Dependabot::DependencyRequirement::ObjectHash)
+          .returns(GitSource)
+      end
+      def symbolize_source(source)
+        T.cast(source.to_h { |key, value| [key.to_sym, value] }, GitSource)
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          ref: String
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_ref(source, ref)
+        updated = source.dup
+        key = if source.key?(:ref)
+                :ref
+              elsif source.key?("ref")
+                "ref"
+              elsif source.keys.any?(Symbol)
+                :ref
+              else
+                "ref"
+              end
+        updated[key] = ref
+        updated
       end
 
       sig do

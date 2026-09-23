@@ -180,6 +180,47 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
           expect(updated_files.first.content).not_to include("WARNING")
         end
       end
+
+      context "when every index returns nil hashes" do
+        let(:manifest_fixture_name) { "extra_hashes.in" }
+        let(:generated_fixture_name) { "uv_pip_compile_extra_hashes.txt" }
+        let(:dependency_name) { "pyasn1-modules" }
+        let(:dependency_version) { "0.1.5" }
+        let(:dependency_previous_version) { "0.1.4" }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return(nil)
+        end
+
+        it "raises DependencyFileNotResolvable instead of returning an empty hash list" do
+          expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+
+      context "when an index returns nil hashes but a later index succeeds" do
+        let(:manifest_fixture_name) { "extra_hashes.in" }
+        let(:generated_fixture_name) { "uv_pip_compile_extra_hashes.txt" }
+        let(:dependency_name) { "pyasn1-modules" }
+        let(:dependency_version) { "0.1.5" }
+        let(:dependency_previous_version) { "0.1.4" }
+        let(:updater) do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: [dependency],
+            credentials: credentials,
+            index_urls: [nil, "http://example.com"]
+          )
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .and_return(nil, [{ "hash" => "456def" }])
+        end
+
+        it "keeps the hashes returned by the working index in the generated file" do
+          expect(updated_files.first.content).to include("--hash=sha256:456def")
+        end
+      end
     end
 
     context "with another dependency with an unmet marker" do

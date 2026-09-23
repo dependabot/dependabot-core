@@ -131,15 +131,13 @@ module Dependabot
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
           # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
           dependency_snapshot.groups.each do |group|
-            if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
-              # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
-              # are not also in the PR of the group being checked, preventing erroneous PR closures
-              group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
-              group_pr_deps.each do |dep|
-                dep_dir = dep.directory || "/"
-                existing_pr_dependencies[dep_dir] ||= Set.new
-                existing_pr_dependencies[dep_dir].add(dep.name)
-              end
+            # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
+            # are not also in the PR of the group being checked, preventing erroneous PR closures
+            group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
+            group_pr_deps.each do |dep|
+              dep_dir = dep.directory || "/"
+              existing_pr_dependencies[dep_dir] ||= Set.new
+              existing_pr_dependencies[dep_dir].add(dep.name)
             end
 
             next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
@@ -149,9 +147,11 @@ module Dependabot
 
           if dependency_change.nil?
             Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
+            report_security_update_failures(nil)
             return
           end
 
+          report_security_update_failures(dependency_change)
           upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
         end
 
@@ -163,33 +163,21 @@ module Dependabot
 
           job_group = T.must(dependency_snapshot.job_group)
 
-          selector = Dependabot::Updater::GroupDependencySelector.new(
-            group: job_group,
-            dependency_snapshot: dependency_snapshot
-          )
-
-          if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(job_group)
-          else
-            dependency_changes = T.let(
-              T.must(job.source.directories).filter_map do |directory|
-                job.source.directory = directory
-                dependency_snapshot.current_directory = directory
-                compile_all_dependency_changes_for(job_group)
-              end,
-              T::Array[Dependabot::DependencyChange]
-            )
-
-            # Merge the per-directory changes into one, deduplicating the dependencies that
-            # appear in more than one directory.
-            @dependency_change = T.let(
-              selector.merge_per_directory!(dependency_changes),
-              T.nilable(Dependabot::DependencyChange)
-            )
-          end
+          computed_change = if job.source.directories.nil?
+                              compile_all_dependency_changes_for(job_group)
+                            else
+                              compile_all_dependency_changes_for_directories(job_group)
+                            end
+          @dependency_change = T.let(computed_change, T.nilable(Dependabot::DependencyChange))
 
           # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
-          selector.filter_to_group!(@dependency_change) if @dependency_change
+          if @dependency_change
+            selector = Dependabot::Updater::GroupDependencySelector.new(
+              group: job_group,
+              dependency_snapshot: dependency_snapshot
+            )
+            selector.filter_to_group!(@dependency_change)
+          end
 
           @dependency_change
         end

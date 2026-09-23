@@ -8,6 +8,17 @@ applyTo: "nuget/helpers/lib/NuGetUpdater/NuGetProjects/**"
 
 When the `NuGet.Client` submodule is updated, all `*.cs` files under `NuGetProjects/` must be re-checked against their original files in the submodule to ensure they remain largely in line with the upstream content.
 
+The NuGet version must also remain synchronized across:
+
+- The NuGet assemblies bundled with the SDK selected by `NuGetUpdater/global.json`.
+- The `release/*` branch and pinned revision for the `NuGet.Client` submodule.
+- The `<Version>` in `NuGetProjects/Directory.Build.props`.
+- The `Microsoft.Build` package version in `NuGetUpdater/Directory.Packages.props`.
+
+The locally compiled NuGet assemblies and the SDK's NuGet assemblies share an assembly load context. Their assembly versions and NuGet public-key identity must match, or SDK tasks can fail at runtime with an assembly load error. `NuGetProjects/Directory.Build.targets` enforces the version relationship during builds.
+
+Dependabot embeds `NuGet.CommandLine` in a .NET process and registers the selected SDK's MSBuild with `MSBuildLocator`. This differs from standalone NuGet.exe, which runs on .NET Framework and rejects SDK MSBuild paths. The maintained `UpdateCommand.cs` override intentionally accepts the registered SDK path so packages.config updates continue to work in the Linux updater image.
+
 ## Rules for modified files
 
 1. **No references to `NuGet.Core`.** Remove all `extern alias CoreV2` usages and any other references to the legacy `NuGet.Core` (v2) package.

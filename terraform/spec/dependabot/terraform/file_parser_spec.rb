@@ -998,6 +998,26 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when a module source address is interpolated" do
+      let(:files) { project_dependency_files("interpolated_module_source") }
+
+      it "does not raise" do
+        expect { dependencies }.not_to raise_error
+      end
+
+      it "skips the interpolated module" do
+        expect(dependencies.map(&:name).any? { |name| name.start_with?("interpolated") }).to be(false)
+      end
+
+      it "still parses the provider requirement in the same file" do
+        expect(dependencies.map(&:name)).to include("hashicorp/aws")
+      end
+
+      it "still parses a sibling module whose ref is a literal" do
+        expect(dependencies.map(&:name)).to include("literal::github::example/modules::v1.2.3")
+      end
+    end
+
     context "with a toplevel provider" do
       let(:files) { project_dependency_files("provider") }
 

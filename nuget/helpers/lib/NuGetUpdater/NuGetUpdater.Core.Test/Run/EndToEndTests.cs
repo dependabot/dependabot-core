@@ -97,6 +97,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -231,6 +232,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -378,6 +380,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -560,6 +563,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -753,6 +757,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Test.Tool",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -813,6 +818,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "TestSdk",
+                            Directory = "/",
                             Version = "3.10.3",
                             Requirements = [
                                 new()
@@ -1033,6 +1039,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1060,6 +1067,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1218,6 +1226,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/src/project",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1309,6 +1318,14 @@ public class EndToEndTests
             MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
             MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.1.0", "net9.0"),
         ], repoContentsPath);
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "src/client/client.csproj",
+                "src/client/packages.lock.json",
+                "src/library/library.csproj",
+                "src/library/packages.lock.json",
+            ]);
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
         var logger = new TestLogger();
@@ -1513,6 +1530,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1540,6 +1558,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1632,6 +1651,7 @@ public class EndToEndTests
             Directory.CreateDirectory(directory);
             await File.WriteAllBytesAsync(fullPath, content);
         }
+        await GitTestHelper.InitializeRepositoryAsync(repoContentsPath, rawFiles.Select(file => file.Path));
 
         // act
         experimentsManager ??= new ExperimentsManager();

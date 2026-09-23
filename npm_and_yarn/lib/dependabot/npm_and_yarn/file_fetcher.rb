@@ -104,8 +104,7 @@ module Dependabot
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
-          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+          !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
         end
 
         filtered_files
@@ -180,17 +179,9 @@ module Dependabot
         end
 
         known_registries = []
-        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
-          "dependencies",
-          {}
-        ).each do |dependency_name, details|
-          resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
-
-          begin
-            uri = URI.parse(resolved)
-          rescue URI::InvalidURIError
-            next
-          end
+        FileParser::JsonLock.new(T.must(package_lock)).legacy_dependencies.each do |dependency_name, details|
+          uri = details.registry_uri(DEFAULT_NPM_REGISTRY)
+          next unless uri
 
           next unless uri.scheme && uri.host
 
@@ -242,7 +233,8 @@ module Dependabot
 
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: content
+          content: content,
+          directory: directory
         )
       end
 
@@ -329,7 +321,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            parsed_package_json,
+            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
             lockfiles,
             registry_config_files,
             credentials
@@ -485,8 +477,7 @@ module Dependabot
           next if fetched_files.map(&:name).include?(cleaned_name)
 
           # Skip excluded path dependencies
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
             Dependabot.logger.warn(
               "Skipping excluded path dependency '#{cleaned_name}' for package '#{name}'. " \
               "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
@@ -726,8 +717,7 @@ module Dependabot
         file = File.join(workspace, MANIFEST_FILENAME)
 
         # Skip excluded workspace packages
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-           !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
+        if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
           Dependabot.logger.info(
             "Skipping excluded workspace package '#{file}' from workspace '#{workspace}'. " \
             "This file is excluded by exclude_paths configuration: #{@exclude_paths}"

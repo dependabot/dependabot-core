@@ -14,10 +14,10 @@ function Assert-ArraysEqual([string[]]$expected, [string[]]$actual) {
     }
 }
 
-function Test-GlobalJsonVersions([string] $testDirectory, [string[]] $directories, [string[]] $installedSdks, [string[]] $expectedSdksToInstall) {
+function Test-GlobalJsonVersions([string] $testDirectory, [string[]] $installedSdks, [string[]] $expectedSdksToInstall) {
     Write-Host "Test-GlobalJsonVersions in $testDirectory ... " -NoNewline
     $testDirectoryFull = "$PSScriptRoot/test-data/$testDirectory"
-    $actualSdksToInstall = Get-SdkVersionsToInstall -repoRoot $testDirectoryFull -updateDirectories $directories -installedSdks $installedSdks
+    $actualSdksToInstall = Get-SdkVersionsToInstall -repoRoot $testDirectoryFull -installedSdks $installedSdks
     Assert-ArraysEqual -expected $expectedSdksToInstall -actual $actualSdksToInstall
     Write-Host "OK"
 }
@@ -40,80 +40,42 @@ function Test-NuGetConfig([string]$scenarioName, [string]$jobString, [string[]]$
 
 try {
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-root-no-file" `
-        -directories @("/") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @()
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-root-with-file" `
-        -directories @("/") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @("1.2.3")
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-root-with-file" `
-        -directories @("/.") `
+        -testDirectory "global-json-discovery-root" `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-none" `
-        -directories @("src") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @()
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-2-values" `
-        -directories @("src") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @("1.2.3", "4.5.6")
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-empty-object" `
-        -directories @("/src") `
+        -testDirectory "global-json-discovery-skips-empty-object" `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-deep" `
-        -directories @("/src/client") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-recursive-wildcard" `
-        -directories @("/**") `
+        -testDirectory "global-json-discovery-hidden-directory" `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-recursive-wildcard-skip-root" `
-        -directories @("/src/**") `
+        -testDirectory "global-json-discovery-multiple-directories" `
         -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @("1.2.3", "4.5.6")
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-recursive-wildcard" `
-        -directories @("/src/**/*") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @()
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-none" `
-        -directories @("/dir-that-does-not-exist") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @()
+        -expectedSdksToInstall @("4.5.6", "7.8.9", "1.2.3")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-unsupported-version" `
-        -directories @("/") `
         -installedSdks @("8.0.404") `
         -expectedSdksToInstall @("9.0")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-whitespace" `
-        -directories @("/leading-comment", "/leading-newline", "/leading-whitespace") `
         -installedSdks @("8.0.404") `
         -expectedSdksToInstall @("1.2.3-leading-comment", "1.2.3-leading-newline", "1.2.3-leading-whitespace")
 

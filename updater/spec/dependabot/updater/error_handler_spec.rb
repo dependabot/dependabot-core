@@ -165,6 +165,46 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
+    context "with an EOF socket error (cloud)" do
+      let(:error) do
+        Excon::Error::Socket.new(EOFError.new).tap do |socket_error|
+          socket_error.set_backtrace(
+            [
+              "/home/dependabot/common/lib/dependabot/registry_client.rb:32:in 'get'",
+              "/home/dependabot/bundler/lib/dependabot/bundler/package/package_details_fetcher.rb:100:" \
+              "in 'package_json_response'"
+            ]
+          )
+        end
+      end
+
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+        allow(mock_service).to receive(:capture_exception)
+        allow(mock_service).to receive(:record_update_job_error)
+        allow(Dependabot.logger).to receive(:error)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "records a package manager and call-site fingerprint" do
+        expect(mock_service).to receive(:record_update_job_unknown_error).with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::FINGERPRINT => [
+              "excon-eof",
+              "bundler",
+              "bundler/lib/dependabot/bundler/package/package_details_fetcher.rb:package_json_response"
+            ]
+          )
+        )
+
+        handle_dependency_error
+      end
+    end
+
     context "with a handled unknown error (ghes)" do
       let(:error) do
         StandardError.new("There are bees everywhere").tap do |err|
@@ -245,7 +285,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::BACKTRACE => "****** ERROR 8335 -- 101",
             Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
-            Dependabot::ErrorAttributes::FINGERPRINT => anything,
+            Dependabot::ErrorAttributes::FINGERPRINT => ["123456789"],
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],

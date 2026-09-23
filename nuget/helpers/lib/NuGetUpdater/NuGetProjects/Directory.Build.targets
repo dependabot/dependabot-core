@@ -1,7 +1,63 @@
 <Project>
 
   <ItemGroup>
-    <Compile Include="$(SharedDirectory)\*.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+    <!-- NuGetFeatureFlags depends on NuGet.Common and is included only by projects that use it upstream. -->
+    <Compile Include="$(SharedDirectory)\*.cs"
+             Exclude="bin\**;obj\**;**\*.xproj;packages\**;$(SharedDirectory)\NuGetFeatureFlags.cs" />
   </ItemGroup>
+
+  <!--
+    MSBuild and the updater load NuGet assemblies into the same process. Fail the build before a
+    mismatched assembly identity can become a runtime FileNotFoundException.
+  -->
+  <Target Name="ValidateNuGetAssemblyVersion"
+          BeforeTargets="CoreCompile"
+          Condition="'$(MSBuildProjectName)' == 'NuGet.Frameworks'">
+    <XmlPeek XmlInputPath="$(NuGetSourceLocation)\build\config.props"
+             Query="/Project/PropertyGroup/MajorNuGetVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_VendoredNuGetMajorVersion" />
+    </XmlPeek>
+    <XmlPeek XmlInputPath="$(NuGetSourceLocation)\build\config.props"
+             Query="/Project/PropertyGroup/MinorNuGetVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_VendoredNuGetMinorVersion" />
+    </XmlPeek>
+    <XmlPeek XmlInputPath="$(NuGetSourceLocation)\build\config.props"
+             Query="/Project/PropertyGroup/PatchNuGetVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_VendoredNuGetPatchVersion" />
+    </XmlPeek>
+
+    <PropertyGroup>
+      <_VendoredNuGetVersion>$(_VendoredNuGetMajorVersion).$(_VendoredNuGetMinorVersion).$(_VendoredNuGetPatchVersion)</_VendoredNuGetVersion>
+      <_SdkNuGetFrameworksPath>$(MSBuildSDKsPath)\..\NuGet.Frameworks.dll</_SdkNuGetFrameworksPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(_VendoredNuGetVersion)' != '$(Version)'"
+           Text="The NuGetProjects version ($(Version)) must match the vendored NuGet.Client version ($(_VendoredNuGetVersion)). Update the submodule and Directory.Build.props together." />
+    <Error Condition="!Exists('$(_SdkNuGetFrameworksPath)')"
+           Text="NuGet.Frameworks.dll was not found beside the selected SDK at '$(_SdkNuGetFrameworksPath)'." />
+
+    <GetAssemblyIdentity AssemblyFiles="$(_SdkNuGetFrameworksPath)"
+                         Condition="Exists('$(_SdkNuGetFrameworksPath)')">
+      <Output TaskParameter="Assemblies" ItemName="_SdkNuGetFrameworksAssembly" />
+    </GetAssemblyIdentity>
+
+    <Error Condition="'%(_SdkNuGetFrameworksAssembly.Version)' != '$(Version).0'"
+           Text="The selected SDK contains NuGet.Frameworks version %(_SdkNuGetFrameworksAssembly.Version), but NuGetProjects builds version $(Version).0. Keep global.json, the NuGet.Client submodule, and Directory.Build.props aligned." />
+  </Target>
+
+  <Target Name="ValidateNuGetAssemblyIdentity"
+          AfterTargets="CopyFilesToOutputDirectory"
+          DependsOnTargets="ValidateNuGetAssemblyVersion"
+          Condition="'$(MSBuildProjectName)' == 'NuGet.Frameworks'">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="_BuiltNuGetFrameworksAssembly" />
+    </GetAssemblyIdentity>
+    <GetAssemblyIdentity AssemblyFiles="$(_SdkNuGetFrameworksPath)">
+      <Output TaskParameter="Assemblies" ItemName="_SdkNuGetFrameworksAssemblyForIdentity" />
+    </GetAssemblyIdentity>
+
+    <Error Condition="'@(_BuiltNuGetFrameworksAssembly)' != '@(_SdkNuGetFrameworksAssemblyForIdentity)'"
+           Text="The built NuGet.Frameworks identity '@(_BuiltNuGetFrameworksAssembly)' must match the selected SDK copy '@(_SdkNuGetFrameworksAssemblyForIdentity)'." />
+  </Target>
 
 </Project>

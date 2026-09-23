@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -27,7 +27,13 @@ module Dependabot
         super(repo_contents_path: @repo_contents_path, target_directory: @vendor_dir)
       end
 
-      T.unsafe(self).alias_method :updated_vendor_cache_files, :updated_files
+      sig do
+        params(base_directory: String, only_paths: T.nilable(T::Array[String]))
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def updated_vendor_cache_files(base_directory:, only_paths: nil)
+        updated_files(base_directory: base_directory, only_paths: only_paths)
+      end
 
       private
 

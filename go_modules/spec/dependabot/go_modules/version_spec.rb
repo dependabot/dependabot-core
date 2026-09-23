@@ -134,6 +134,14 @@ RSpec.describe Dependabot::GoModules::Version do
   end
 
   describe "<=>" do
+    it "uses the receiver class when coercing another value" do
+      version_class = Class.new(described_class)
+      version = version_class.new("v1.0.0-pre1")
+
+      expect(version_class).to receive(:new).with("v1.0.0-pre1").twice.and_call_original
+      expect(version).to eq("v1.0.0-pre1")
+    end
+
     # These identifiers come from the Go docs: https://go.dev/ref/mod#pseudo-versions
     it "sorts major versions correctly" do
       expect(described_class.new("v1.0.0-0.20231231120000-abcdefabcdef")).to be < described_class.new("v1.0.0")

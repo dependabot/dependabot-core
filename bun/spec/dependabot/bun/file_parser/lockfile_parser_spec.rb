@@ -37,6 +37,20 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
         end
       end
 
+      context "when the lockfile version is newer than the bundled bun supports" do
+        let(:dependency_files) { project_dependency_files("bun/unsupported_lockfile_version") }
+
+        it "raises a DependencyFileNotSupported error" do
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotSupported) do |error|
+              expect(error.message).to include("Unsupported bun.lock 'lockfileVersion' 2")
+              expect(error.message).to include(
+                "supports up to #{Dependabot::Bun::BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION}"
+              )
+            end
+        end
+      end
+
       context "when the configVersion is invalid" do
         let(:dependency_files) do
           [

@@ -237,7 +237,7 @@ namespace NuGet.Packaging
             // do nothing here
         }
 
-        public override Task<PrimarySignature> GetPrimarySignatureAsync(CancellationToken token)
+        public override Task<PrimarySignature?> GetPrimarySignatureAsync(CancellationToken token)
         {
             return TaskResult.Null<PrimarySignature>();
         }
@@ -262,7 +262,7 @@ namespace NuGet.Packaging
             return false;
         }
 
-        public override string GetContentHash(CancellationToken token, Func<string> GetUnsignedPackageHash = null)
+        public override string GetContentHash(CancellationToken token, Func<string>? GetUnsignedPackageHash = null)
         {
             throw new NotImplementedException();
         }

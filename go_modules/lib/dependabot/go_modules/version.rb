@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 # Go pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
@@ -72,8 +72,11 @@ module Dependabot
         return if result.nil?
         return result unless result.zero?
 
-        other = self.class.new(other.to_s) unless other.is_a?(Version)
-        compare_prerelease(@prerelease_suffix || "", T.unsafe(other).prerelease_suffix || "")
+        other_version = T.cast(
+          other.is_a?(Dependabot::GoModules::Version) ? other : self.class.new(other.to_s),
+          Dependabot::GoModules::Version
+        )
+        compare_prerelease(@prerelease_suffix || "", other_version.prerelease_suffix || "")
       end
 
       protected

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Method signatures for Gitlab::Client methods delegated via method_missing.
-# These allow callers to use GitlabWithRetries without T.unsafe wrappers.
+# These give callers concrete types for methods handled by the retry proxy.
 
 module Dependabot
   module Clients
@@ -12,27 +12,27 @@ module Dependabot
       def branch(project, branch); end
 
       # Commits
-      sig { params(project: String, options: T.untyped).returns(Gitlab::PaginatedResponse) }
+      sig { params(project: String, options: ClientOptions).returns(Gitlab::PaginatedResponse) }
       def commits(project, options = {}); end
 
       sig { params(project: String, sha: String).returns(Gitlab::ObjectifiedHash) }
       def commit(project, sha); end
 
       # Merge requests
-      sig { params(project: String, options: T.untyped).returns(Gitlab::PaginatedResponse) }
+      sig { params(project: String, options: ClientOptions).returns(Gitlab::PaginatedResponse) }
       def merge_requests(project, options = {}); end
 
-      sig { params(project: String, id: Integer, options: T.untyped).returns(Gitlab::ObjectifiedHash) }
+      sig { params(project: String, id: Integer, options: ClientOptions).returns(Gitlab::ObjectifiedHash) }
       def merge_request(project, id, options = {}); end
 
-      sig { params(project: String, title: String, options: T.untyped).returns(Gitlab::ObjectifiedHash) }
+      sig { params(project: String, title: String, options: ClientOptions).returns(Gitlab::ObjectifiedHash) }
       def create_merge_request(project, title, options = {}); end
 
       sig do
         params(
           project: String,
           merge_request: Integer,
-          options: T.untyped
+          options: ClientOptions
         ).returns(Gitlab::ObjectifiedHash)
       end
       def create_merge_request_level_rule(project, merge_request, options = {}); end
@@ -42,17 +42,17 @@ module Dependabot
       def create_branch(project, branch, ref); end
 
       # Projects
-      sig { params(id: String, options: T.untyped).returns(Gitlab::ObjectifiedHash) }
+      sig { params(id: String, options: ClientOptions).returns(Gitlab::ObjectifiedHash) }
       def project(id, options = {}); end
 
       # Repository files
       sig { params(project: String, file_path: String, ref: String).returns(Gitlab::ObjectifiedHash) }
       def get_file(project, file_path, ref); end
 
-      sig { params(project: String, options: T.untyped).returns(Gitlab::PaginatedResponse) }
+      sig { params(project: String, options: ClientOptions).returns(Gitlab::PaginatedResponse) }
       def repo_tree(project, options = {}); end
 
-      sig { params(project: String, submodule: String, options: T.untyped).returns(Gitlab::ObjectifiedHash) }
+      sig { params(project: String, submodule: String, options: ClientOptions).returns(Gitlab::ObjectifiedHash) }
       def edit_submodule(project, submodule, options = {}); end
 
       # Labels
@@ -61,16 +61,16 @@ module Dependabot
           project: String,
           name: String,
           color: String,
-          options: T.untyped
+          options: ClientOptions
         ).returns(Gitlab::ObjectifiedHash)
       end
       def create_label(project, name, color, options = {}); end
 
-      sig { params(project: String, options: T.untyped).returns(Gitlab::PaginatedResponse) }
+      sig { params(project: String, options: ClientOptions).returns(Gitlab::PaginatedResponse) }
       def labels(project, options = {}); end
 
       # Tags
-      sig { params(project: String, options: T.untyped).returns(Gitlab::PaginatedResponse) }
+      sig { params(project: String, options: ClientOptions).returns(Gitlab::PaginatedResponse) }
       def tags(project, options = {}); end
 
       # Comparison

@@ -12,11 +12,19 @@ require "dependabot/python/update_checker/latest_version_finder"
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   before do
     stub_request(:get, pypi_url)
-      .with(headers: { "Accept" => "text/html" })
+      .with(headers: { "Accept" => registry_accept })
       .to_return(status: 200, body: pypi_response)
   end
 
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:registry_accept) do
+    if pypi_url.start_with?("https://pypi.org/", "https://pypi.python.org/")
+      "text/html"
+    else
+      "application/vnd.pypi.simple.v1+json, " \
+        "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+    end
+  end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
     described_class.new(
@@ -25,7 +33,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      cooldown_options: cooldown_options
     )
   end
   let(:credentials) do
@@ -41,6 +50,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:cooldown_options) { nil }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
@@ -120,6 +130,32 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:pypi_response) { fixture("pypi", "pypi_simple_response_zip.html") }
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Python::Version.new("2.6.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details) do
+        Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+      end
+      let(:package_details_fetcher) do
+        instance_double(Dependabot::Python::Package::PackageDetailsFetcher, fetch: package_details)
+      end
+
+      before do
+        allow(Dependabot::Python::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version).to eq(Dependabot::Python::Version.new("2.6.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
     end
 
     context "when the pypi link responds with devpi-style" do
@@ -331,6 +367,44 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:dependency_files) { [requirements_file] }
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "when distributions have different Python requirements" do
+          subject(:latest_python_version) do
+            finder.latest_version(language_version: Dependabot::Python::Version.new("3.8"))
+          end
+
+          let(:pypi_response) do
+            JSON.dump(
+              "meta" => { "api-version" => "1.1" },
+              "files" => [
+                {
+                  "filename" => "luigi-3.0.0-py3-none-any.whl",
+                  "url" => "../files/a.whl",
+                  "requires-python" => ">=4.0",
+                  "yanked" => false
+                },
+                {
+                  "filename" => "luigi-3.0.0.tar.gz",
+                  "url" => "../files/z.tar.gz",
+                  "requires-python" => ">=3.8",
+                  "yanked" => false
+                }
+              ]
+            )
+          end
+
+          before do
+            stub_request(:get, pypi_url)
+              .with(headers: { "Accept" => registry_accept })
+              .to_return(
+                status: 200,
+                headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+                body: pypi_response
+              )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+        end
 
         context "when the url is invalid" do
           let(:requirements_fixture_name) { "custom_index_invalid.txt" }

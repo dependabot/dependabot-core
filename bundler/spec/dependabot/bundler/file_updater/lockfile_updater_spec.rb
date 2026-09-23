@@ -392,12 +392,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
     end
 
     it "upgrades dependency" do
-      expect(updated_lockfile_content).to  include("ice_nine (0.11.2)")
+      expect(updated_lockfile_content).to include("ice_nine (0.11.2)")
     end
 
     it "keeps correct versions of path dependencies" do
-      expect(updated_lockfile_content).to  include("couchrb (0.9.0)")
-      expect(updated_lockfile_content).to  include("net-imap (0.3.3)")
+      expect(updated_lockfile_content).to include("couchrb (0.9.0)")
+      expect(updated_lockfile_content).to include("net-imap (0.3.3)")
     end
   end
 

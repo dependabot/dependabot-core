@@ -1,4 +1,5 @@
-dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr unknown_error
 stdout -count=2 create_pull_request
 pr-created expected-group.json
 pr-created expected-individual.json

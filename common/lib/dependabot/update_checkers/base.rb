@@ -9,6 +9,7 @@ require "dependabot/security_advisory"
 require "dependabot/utils"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/file_filtering"
+require "dependabot/update_checkers/vulnerability_audit"
 
 module Dependabot
   module UpdateCheckers
@@ -168,16 +169,19 @@ module Dependabot
 
       # Finds any dependencies in the lockfile that have a subdependency on the
       # given dependency that do not satisfy the target_version.
-      # @return [Array<Hash{String => String}]
+      # @return [Array<Hash{String => Object}]
       #   name [String] the blocking dependencies name
       #   version [String] the version of the blocking dependency
       #   requirement [String] the requirement on the target_dependency
-      sig { overridable.returns(T::Array[T::Hash[String, String]]) }
+      sig { overridable.returns(T::Array[Dependabot::UpdateCheckers::Conflict]) }
       def conflicting_dependencies
         [] # return an empty array for ecosystems that don't support this yet
       end
 
-      sig { params(_updated_version: String).returns(T.nilable(String)) }
+      sig do
+        params(_updated_version: T.any(String, Gem::Version))
+          .returns(T.nilable(T.any(String, Gem::Version)))
+      end
       def latest_resolvable_previous_version(_updated_version)
         dependency.version
       end
@@ -253,7 +257,7 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_without_unlock
         version = latest_resolvable_version_with_no_unlock.to_s
-        previous_version = latest_resolvable_previous_version(version)
+        previous_version = latest_resolvable_previous_version(version)&.to_s
 
         Dependency.new(
           name: dependency.name,
@@ -270,7 +274,7 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_with_own_req_unlock
         version = preferred_resolvable_version.to_s
-        previous_version = latest_resolvable_previous_version(version)
+        previous_version = latest_resolvable_previous_version(version)&.to_s
 
         Dependency.new(
           name: dependency.name,

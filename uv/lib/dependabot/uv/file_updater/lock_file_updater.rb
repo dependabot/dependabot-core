@@ -18,7 +18,7 @@ require "dependabot/uv/requirement_suffix_helper"
 module Dependabot
   module Uv
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class LockFileUpdater
         extend T::Sig
 
@@ -44,21 +44,33 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :target_requirement
+
         sig do
           params(
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             index_urls: T.nilable(T::Array[T.nilable(String)]),
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            target_requirement: T.nilable(String)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil, repo_contents_path: nil)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          credentials:,
+          index_urls: nil,
+          repo_contents_path: nil,
+          target_requirement: nil
+        )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
           @index_urls = index_urls
           @repo_contents_path = repo_contents_path
+          @target_requirement = target_requirement
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -112,7 +124,9 @@ module Dependabot
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
 
-            raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
+            if T.must(lockfile).content == new_content
+              raise DependencyFileContentNotChanged, "Expected lockfile to change!"
+            end
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
           end
@@ -291,7 +305,14 @@ module Dependabot
           # Strip extras from the package name for the uv lock command
           # uv lock --upgrade-package expects the base package name without extras
           base_dep_name = normalise(dep_name)
-          package_spec = dep_version ? "#{base_dep_name}==#{dep_version}" : base_dep_name
+          package_spec =
+            if target_requirement
+              "#{base_dep_name}#{target_requirement}"
+            elsif dep_version
+              "#{base_dep_name}==#{dep_version}"
+            else
+              base_dep_name
+            end
 
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
@@ -777,7 +798,6 @@ module Dependabot
           )
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

@@ -869,6 +869,19 @@ RSpec.describe Dependabot::Opentofu::FileParser do
           )
         end
       end
+
+      context "with an early evaluation terragrunt source" do
+        let(:files) { project_dependency_files("terragrunt_early_evaluation") }
+
+        it "is warned and skipped without dropping other dependencies" do
+          expect(Dependabot.logger).to receive(:warn).with(
+            "Cannot parse terragrunt module source with early evaluation in terragrunt.hcl."
+          )
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("gruntwork-io/modules-example")
+          expect(dependencies.first.version).to eq("0.0.2")
+        end
+      end
     end
 
     context "when dealing with terraform.lock.hcl files" do
@@ -1314,6 +1327,14 @@ RSpec.describe Dependabot::Opentofu::FileParser do
 
       it "returns the correct source type" do
         expect(source_type).to eq(:oci)
+      end
+    end
+
+    context "when an oci source contains interpolation" do
+      let(:source_string) { "oci://${var.registry}/acme/module?tag=1.0.0" }
+
+      it "returns the interpolation source type" do
+        expect(source_type).to eq(:interpolation)
       end
     end
 

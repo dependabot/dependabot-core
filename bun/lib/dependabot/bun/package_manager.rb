@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -9,6 +9,7 @@ require "dependabot/bun/registry_helper"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/language"
 require "dependabot/bun/constraint_helper"
+require "dependabot/package/npm_package_manager_config"
 
 module Dependabot
   module Bun
@@ -59,22 +60,21 @@ module Dependabot
 
       sig do
         params(
-          package_json: T.nilable(T::Hash[String, T.untyped]),
+          config: Dependabot::Package::NpmPackageManagerConfig,
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
           credentials: T.nilable(T::Array[Dependabot::Credential])
         ).void
       end
-      def initialize(package_json, lockfiles, registry_config_files, credentials)
-        @package_json = package_json
+      def initialize(config, lockfiles, registry_config_files, credentials)
         @lockfiles = lockfiles
         @registry_helper = T.let(
           RegistryHelper.new(registry_config_files, credentials),
           Dependabot::Bun::RegistryHelper
         )
 
-        @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
-        @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
+        @manifest_package_manager = T.let(config.package_manager, T.nilable(String))
+        @engines = T.let(config.engines, T.nilable(T::Hash[String, String]))
 
         @installed_versions = T.let({}, T::Hash[String, String])
         @registries = T.let({}, T::Hash[String, String])
@@ -105,9 +105,9 @@ module Dependabot
       def find_engine_constraints_as_requirement(name)
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
-        return nil unless @engines.is_a?(Hash) && @engines[name]
+        return nil unless @engines
 
-        raw_constraint = @engines[name].to_s.strip
+        raw_constraint = @engines.fetch(name, "").strip
         return nil if raw_constraint.empty?
 
         constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
@@ -227,25 +227,25 @@ module Dependabot
         match["version"]
       end
 
-      sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
+      sig { params(name: String).returns(T.nilable(Integer)) }
       def guessed_version(name)
         lockfile = @lockfiles[name.to_sym]
         return unless lockfile
 
-        version = Helpers.send(:"#{name}_version_numeric", lockfile)
+        version = Helpers.bun_version_numeric(lockfile)
 
         Dependabot.logger.info("Guessed version info \"#{name}\" : \"#{version}\"")
 
         version
       end
 
-      sig { params(name: T.untyped).returns(T.nilable(String)) }
+      sig { params(name: String).returns(T.nilable(String)) }
       def check_engine_version(name)
-        return if @package_json.nil?
+        return unless @engines
 
         version_selector = VersionSelector.new
 
-        engine_versions = version_selector.setup(@package_json, name, BunPackageManager::SUPPORTED_VERSIONS)
+        engine_versions = version_selector.setup(@engines, name, BunPackageManager::SUPPORTED_VERSIONS)
 
         return if engine_versions.empty?
 

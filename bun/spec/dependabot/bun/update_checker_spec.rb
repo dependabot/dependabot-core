@@ -546,10 +546,14 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       before do
         allow(described_class::VulnerabilityAuditor).to receive(:new).and_return(vulnerability_auditor)
         allow(vulnerability_auditor).to receive(:audit).and_return(
-          {
-            "fix_available" => true,
-            "top_level_ancestors" => %w(applause lodash)
-          }
+          Dependabot::UpdateCheckers::VulnerabilityAudit.from_object(
+            {
+              "dependency_name" => dependency.name,
+              "fix_available" => true,
+              "fix_updates" => [],
+              "top_level_ancestors" => %w(applause lodash)
+            }
+          )
         )
       end
 

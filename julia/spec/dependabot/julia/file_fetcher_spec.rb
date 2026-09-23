@@ -68,11 +68,13 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => ["/tmp/test/Project.toml"],
-            "manifest_file" => "/tmp/test/Manifest.toml",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest.toml",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -94,11 +96,13 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => ["/tmp/test/Project.toml"],
-            "manifest_file" => "",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -128,15 +132,17 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => [
-              "/tmp/test/Project.toml",
-              "/tmp/test/docs/Project.toml",
-              "/tmp/test/test/Project.toml"
-            ],
-            "manifest_file" => "/tmp/test/Manifest.toml",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: [
+                "/tmp/test/Project.toml",
+                "/tmp/test/docs/Project.toml",
+                "/tmp/test/test/Project.toml"
+              ],
+              manifest_file: "/tmp/test/Manifest.toml",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -178,11 +184,13 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => ["/tmp/test/Project.toml"],
-            "manifest_file" => "/tmp/test/Manifest-v1.12.toml",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest-v1.12.toml",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -204,7 +212,9 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({ "error" => "No project file found", "project_files" => [] })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(message: "No project file found")
+          )
       end
 
       it "raises an error" do

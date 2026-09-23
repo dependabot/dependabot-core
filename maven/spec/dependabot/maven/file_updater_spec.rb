@@ -1500,6 +1500,28 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       expect(captured).to include(distribution_version: "3.9.11", wrapper_version: "3.3.5")
     end
 
+    context "with string-keyed source and metadata" do
+      before do
+        [distribution_dep, wrapper_dep].each do |dependency|
+          requirement = dependency.requirements.first
+          requirement[:source] = requirement.source_hash.transform_keys(&:to_s)
+          requirement[:metadata] = requirement.metadata.transform_keys(&:to_s)
+        end
+      end
+
+      it "passes both resolved target versions to the single generator" do
+        captured = nil
+        allow(wrapper_updater_class).to receive(:new) do |**kwargs|
+          captured = kwargs
+          wrapper_double
+        end
+
+        updater.updated_dependency_files
+
+        expect(captured).to include(distribution_version: "3.9.11", wrapper_version: "3.3.5")
+      end
+    end
+
     context "when the wrapper lives in a module (non-root)" do
       let(:properties_name) { "module/.mvn/wrapper/maven-wrapper.properties" }
       let(:module_pom) { Dependabot::DependencyFile.new(name: "module/pom.xml", content: "<project></project>") }

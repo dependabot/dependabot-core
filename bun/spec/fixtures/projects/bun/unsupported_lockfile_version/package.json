@@ -1,0 +1,6 @@
+{
+  "name": "unsupported_lockfile_version",
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}

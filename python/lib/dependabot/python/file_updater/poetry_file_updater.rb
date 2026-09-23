@@ -18,6 +18,16 @@ require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Python
+    PoetryPyprojectHashResult = T.type_alias do
+      T.nilable(
+        T.any(
+          T::Hash[String, T.untyped],
+          String,
+          T::Array[T::Hash[String, T.untyped]]
+        )
+      )
+    end
+
     class FileUpdater
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
@@ -367,17 +377,18 @@ module Dependabot
             .add_auth_env_vars(credentials)
         end
 
-        sig { params(pyproject_content: String).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]]))) }
+        sig { params(pyproject_content: String).returns(PoetryPyprojectHashResult) }
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(pyproject_content)
 
-              SharedHelpers.run_helper_subprocess(
+              result = SharedHelpers.run_helper_subprocess(
                 command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
                 function: "get_pyproject_hash",
                 args: [T.cast(dir, Pathname).to_s]
               )
+              T.cast(result, PoetryPyprojectHashResult)
             end
           end
         end

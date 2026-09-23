@@ -90,6 +90,20 @@ public class ProjectBuildFileTests
     }
 
     [Fact]
+    public void ProjectCsProj_ReferencedProjectPaths_ThrowsForMissingIncludeAttribute()
+    {
+        var buildFile = GetBuildFile(
+            "<Project><ItemGroup><ProjectReference /></ItemGroup></Project>",
+            "Project.csproj");
+
+        var exception = Assert.Throws<UnparseableFileException>(
+            () => buildFile.GetReferencedProjectPaths().ToArray());
+
+        Assert.Equal("`ProjectReference` element missing `Include` attribute", exception.Message);
+        Assert.Equal("/Project.csproj", exception.FilePath);
+    }
+
+    [Fact]
     public void DirectoryPackagesProps_GetDependencies_ReturnsDependencies()
     {
         var expectedDependencies = new List<Dependency>

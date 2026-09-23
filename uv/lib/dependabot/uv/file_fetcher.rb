@@ -276,7 +276,7 @@ module Dependabot
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
-          requirements_dir.path&.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
+          requirements_dir.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
         fetch_requirement_files_from_path(relative_reqs_dir)
       end
@@ -321,7 +321,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_requirement_files_from_dirs
         repo_contents
-          .select { |f| T.unsafe(f).type == "dir" }
+          .select { |f| f.type == "dir" }
           .flat_map { |dir| req_files_for_dir(dir) }
       end
 
@@ -333,10 +333,10 @@ module Dependabot
       end
       def filter_requirement_files(contents, base_path: nil)
         contents
-          .select { |f| T.unsafe(f).type == "file" }
-          .select { |f| file_matches_requirement_pattern?(T.unsafe(f).name) }
-          .reject { |f| T.unsafe(f).size > MAX_FILE_SIZE }
-          .map { |f| fetch_file_with_path(T.unsafe(f).name, base_path) }
+          .select { |f| f.type == "file" }
+          .select { |f| file_matches_requirement_pattern?(f.name) }
+          .reject { |f| f.size > MAX_FILE_SIZE }
+          .map { |f| fetch_file_with_path(f.name, base_path) }
           .select { |f| T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).include?(f.name) || requirements_file?(f) }
       end
 

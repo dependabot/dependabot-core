@@ -122,5 +122,16 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
     it "works for git dependencies" do
       expect(finder.source_url).to eq "https://github.com/google/dart-neats/tree/HEAD/retry"
     end
+
+    context "with a malformed source description" do
+      before do
+        dependency.requirements.first[:source]["description"] = "invalid"
+      end
+
+      it "raises a type error" do
+        expect { finder.source_url }
+          .to raise_error(TypeError, "source description must be a hash with string or symbol keys")
+      end
+    end
   end
 end

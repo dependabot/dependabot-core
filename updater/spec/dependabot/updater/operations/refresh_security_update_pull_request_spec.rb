@@ -158,14 +158,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       .and_return(stub_dependency_change)
 
     allow(mock_service).to receive(:close_pull_request)
-
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_exclude_paths_subdirectory_manifest_files)
-      .and_return(true)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
   end
 
   describe "#perform" do
@@ -195,6 +187,38 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       it "does not handle any error" do
         expect(mock_error_handler).not_to receive(:handle_dependency_error)
         perform
+      end
+    end
+
+    context "when a `directories`-only refresh job also declares dependency groups" do
+      # DependencySnapshot only backfills job.source.directory for a security job
+      # when the config declares no dependency groups, so a grouped config leaves
+      # this individual refresh with a nil directory.
+      let(:job_definition) do
+        definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
+        definition["job"]["dependencies"] = ["dummy-pkg-a"]
+        definition["job"]["security-updates-only"] = true
+        definition["job"]["updating-a-pull-request"] = true
+        definition["job"]["dependency-groups"] = [
+          {
+            "name" => "all-security-updates",
+            "applies-to" => "security-updates",
+            "rules" => { "patterns" => ["*"] }
+          }
+        ]
+        definition["job"]["source"].delete("directory")
+        definition["job"]["source"]["directories"] = ["/."]
+        definition
+      end
+
+      before do
+        allow(refresh_security_update_pull_request).to receive(:check_and_update_pull_request)
+      end
+
+      it "normalizes the lone directory onto the job source" do
+        perform
+
+        expect(job.source.directory).to eq("/")
       end
     end
   end

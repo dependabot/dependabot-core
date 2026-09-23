@@ -114,10 +114,18 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     it "resolves the advisory even when a constraint is declared below the new floor" do
-      allow(dependency).to receive(:requirements)
-        .and_return([{ requirement: ">=1.2.11", groups: [], source: nil, file: "vcpkg.json" }])
+      dependency.requirements.first[:requirement] = ">=1.2.11"
 
       expect(fix.kind).to eq(:baseline)
+    end
+
+    context "with a malformed declared constraint" do
+      let(:constraint) { 1 }
+
+      it "raises a type error" do
+        expect { fix }
+          .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      end
     end
 
     context "when the release floors are all still vulnerable" do

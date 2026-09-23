@@ -57,6 +57,32 @@ RSpec.describe Dependabot::PreCommit::MetadataFinder do
       end
 
       it { is_expected.to eq("https://github.com/pre-commit/pre-commit-hooks") }
+
+      context "when an earlier requirement has no source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "v4.4.0",
+            requirements: [
+              {
+                requirement: nil,
+                groups: [],
+                file: ".pre-commit-config.yaml",
+                source: nil
+              },
+              {
+                requirement: nil,
+                groups: [],
+                file: ".pre-commit-config.yaml",
+                source: dependency_source
+              }
+            ],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it { is_expected.to eq("https://github.com/pre-commit/pre-commit-hooks") }
+      end
     end
 
     context "when dealing with a subdependency (no requirements)" do

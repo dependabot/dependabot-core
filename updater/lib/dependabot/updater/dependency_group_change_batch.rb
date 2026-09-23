@@ -3,6 +3,7 @@
 
 require "pathname"
 require "sorbet-runtime"
+require "dependabot/notices"
 
 # This class is responsible for aggregating individual DependencyChange objects
 # by tracking changes to individual files and the overall dependency list.
@@ -22,9 +23,13 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Dependency]) }
       attr_reader :updated_dependencies
 
+      sig { returns(T::Array[Dependabot::Notice]) }
+      attr_reader :notices
+
       sig { params(initial_dependency_files: T::Array[Dependabot::DependencyFile]).void }
       def initialize(initial_dependency_files:)
         @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
+        @notices = T.let([], T::Array[Dependabot::Notice])
 
         @dependency_file_batch = T.let(
           initial_dependency_files.to_h do |file|
@@ -66,6 +71,7 @@ module Dependabot
       def merge(dependency_change)
         merge_dependency_changes(dependency_change.updated_dependencies)
         merge_file_changes(dependency_change.updated_dependency_files)
+        merge_notices(dependency_change.notices)
 
         Dependabot.logger.debug("Dependencies updated:")
         debug_updated_dependencies
@@ -92,6 +98,13 @@ module Dependabot
       sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).void }
       def merge_dependency_changes(updated_dependencies)
         @updated_dependencies.concat(updated_dependencies)
+      end
+
+      sig { params(new_notices: T::Array[Dependabot::Notice]).void }
+      def merge_notices(new_notices)
+        new_notices.each do |notice|
+          @notices << notice unless @notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
+        end
       end
 
       sig { params(updated_dependency_files: T::Array[Dependabot::DependencyFile]).void }

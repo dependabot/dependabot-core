@@ -120,6 +120,27 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       it { is_expected.to be(false) }
     end
 
+    context "when a dependency sharing the property has no locatable inline version" do
+      let(:pom_body) { fixture("poms", "property_pom_unlocatable_declaration.xml") }
+      let(:dependency_name) { "io.grpc:protoc-gen-grpc-java" }
+      let(:dependency_version) { "1.81.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.81.0",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "grpc.version",
+            property_source: "pom.xml",
+            packaging_type: "jar"
+          }
+        }]
+      end
+
+      it { is_expected.to be(false) }
+    end
+
     context "when one dependency isn't listed" do
       before do
         stub_request(:get, maven_central_metadata_url_context)
@@ -287,6 +308,73 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
         it "uses the property value from the matching property source" do
           expect(updated_dependencies.map(&:previous_version)).to eq(
             ["4.3.12.RELEASE", "4.3.12.RELEASE"]
+          )
+        end
+      end
+    end
+
+    context "when the same dependency uses different properties in a parent and child POM" do
+      let(:group_id) { "com.flutter.product.catalogue.market.domain.contract" }
+      let(:dependency_name) { "#{group_id}:product-catalogue-market-domain-contract-proto" }
+      let(:ignored_versions) { [">= 2.a0", ">= 1.1.a0, < 2.a0"] }
+      let(:dependency_files) { [pom, docker_pom] }
+      let(:pom_body) { fixture("poms", "prefix_overlapping_property_names.xml") }
+      let(:docker_pom) do
+        Dependabot::DependencyFile.new(
+          name: "docker/pom.xml",
+          content: fixture("poms", "prefix_overlapping_property_names_docker.xml")
+                   .gsub(">1.0.7<", ">#{property_version}<")
+        )
+      end
+      let(:property_version) { "1.0.7" }
+      let(:parsed_dependencies) do
+        Dependabot::Maven::FileParser.new(dependency_files: dependency_files, source: nil).parse
+      end
+      let(:dependency) do
+        T.must(parsed_dependencies.find { |parsed_dependency| parsed_dependency.name == dependency_name })
+      end
+      let(:target_version_details) do
+        {
+          version: version_class.new("1.0.11"),
+          source_url: "https://repo.maven.apache.org/maven2"
+        }
+      end
+      let(:version_finder) do
+        instance_double(Dependabot::Maven::UpdateChecker::VersionFinder, releases: [])
+      end
+
+      before do
+        allow(Dependabot::Maven::UpdateChecker::VersionFinder).to receive(:new).and_return(version_finder)
+      end
+
+      it "updates the matching property in the patch-production group" do
+        expect(updated_dependencies).to contain_exactly(
+          have_attributes(
+            name: dependency_name,
+            version: "1.0.11",
+            previous_version: "1.0.7"
+          )
+        )
+
+        updated_requirements = updated_dependencies.first.requirements.to_h do |requirement|
+          [requirement.metadata_string("property_name"), requirement.requirement_string]
+        end
+        expect(updated_requirements).to include(
+          "product-catalogue-market-domain-contract.version" => "2.9.9",
+          "product-catalogue-market-domain-contract-proto-prod.version" => "1.0.11"
+        )
+      end
+
+      context "when the matching property uses an exact version range" do
+        let(:property_version) { "[1.0.7]" }
+
+        it "updates the matching property" do
+          expect(updated_dependencies).to contain_exactly(
+            have_attributes(
+              name: dependency_name,
+              version: "1.0.11",
+              previous_version: "[1.0.7]"
+            )
           )
         end
       end

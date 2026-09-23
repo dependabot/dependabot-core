@@ -7,7 +7,7 @@ go test ./...
 popd
 bundle install
 if [ -z "$1" ]; then
-  bundle exec turbo_tests --verbose
+  bundle exec turbo_tests2 --verbose
 else
-  bundle exec turbo_tests --verbose "$1"
+  bundle exec turbo_tests2 --verbose "$1"
 fi

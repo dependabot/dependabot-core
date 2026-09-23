@@ -36,9 +36,8 @@ module Dependabot
         return [] unless repo_contents_path && target_directory
 
         Dir.chdir(T.must(repo_contents_path)) do
-          # rubocop:disable Performance/DeletePrefix
+          # rubocop:disable-next Performance/DeletePrefix
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(T.must(target_directory))
-          # rubocop:enable Performance/DeletePrefix
 
           status = T.let(
             SharedHelpers.run_shell_command(

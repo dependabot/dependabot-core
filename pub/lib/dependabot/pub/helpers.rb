@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/pub/requirement"
+require "dependabot/pub/requirement_source"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
 
@@ -62,8 +63,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def repository_url(dependency)
-        source = dependency.requirements.first&.dig(:source)
-        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+        RequirementSource.new(dependency.requirements.first).description_string("url") || options[:pub_hosted_url] ||
+          "https://pub.dev"
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, T.untyped]) }
@@ -343,17 +344,12 @@ module Dependabot
           .returns(Dependabot::Dependency)
       end
       def parse_updated_dependency(json, requirements_update_strategy)
-        params = {
-          name: json["name"],
-          version: json["version"],
-          package_manager: "pub",
-          requirements: []
-        }
+        requirements = []
         constraint_field = constraint_field_from_update_strategy(requirements_update_strategy)
 
         if json["kind"] != "transitive" && !json[constraint_field].nil?
           constraint = json[constraint_field]
-          params[:requirements] << {
+          requirements << {
             requirement: constraint,
             groups: [json["kind"]],
             source: nil, # TODO: Expose some information about the source
@@ -361,23 +357,25 @@ module Dependabot
           }
         end
 
-        if json["previousVersion"]
-          params = {
-            **params,
-            previous_version: json["previousVersion"],
-            previous_requirements: []
+        previous_requirements = []
+        if json["previousVersion"] && json["kind"] != "transitive" && !json["previousConstraint"].nil?
+          constraint = json["previousConstraint"]
+          previous_requirements << {
+            requirement: constraint,
+            groups: [json["kind"]],
+            source: nil, # TODO: Expose some information about the source
+            file: "pubspec.yaml"
           }
-          if json["kind"] != "transitive" && !json["previousConstraint"].nil?
-            constraint = json["previousConstraint"]
-            params[:previous_requirements] << {
-              requirement: constraint,
-              groups: [json["kind"]],
-              source: nil, # TODO: Expose some information about the source
-              file: "pubspec.yaml"
-            }
-          end
         end
-        Dependency.new(**T.unsafe(params))
+
+        Dependency.new(
+          name: json["name"],
+          version: json["version"],
+          package_manager: "pub",
+          requirements: requirements,
+          previous_version: json["previousVersion"],
+          previous_requirements: json["previousVersion"] ? previous_requirements : nil
+        )
       end
 
       # expects "auto" to already have been resolved to one of the other

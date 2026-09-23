@@ -62,14 +62,6 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
       end
     end
 
-    before do
-      Dependabot::Experiments.register(:enable_exclude_paths_subdirectory_manifest_files, true)
-    end
-
-    after do
-      Dependabot::Experiments.reset!
-    end
-
     # The .tf files are dropped by the repo-contents filter, but the lockfile is fetched
     # by path rather than from the listing, so it has to be caught by the final filter.
     # If it survives, the directory reaches the parser holding a lockfile and no manifest,

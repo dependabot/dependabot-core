@@ -191,7 +191,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            git_commit_checker.local_tag_for_latest_version(update_cooldown)
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return latest_tag&.fetch(:commit_sha)
+          return latest_tag&.commit_sha
         end
 
         # If the dependency is pinned to a tag that doesn't look like a

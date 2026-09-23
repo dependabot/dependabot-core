@@ -73,6 +73,7 @@ public partial class DiscoveryWorkerTests
                 [
                     MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
                     MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                    MockNuGetPackage.WellKnownHostPackage("Microsoft.NETCore.App", "net8.0"),
                 ],
                 workspacePath: "",
                 files: [

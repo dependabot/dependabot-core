@@ -96,7 +96,7 @@ module Dependabot
         def relax_version(content, filename:)
           old_requirement =
             dependency.requirements.find { |r| r.file == filename }
-                                   &.requirement_string
+                      &.requirement_string
           updated_requirement = updated_version_requirement_string(filename)
 
           Hex::FileUpdater::MixfileRequirementUpdater.new(
@@ -157,7 +157,7 @@ module Dependabot
         def replace_git_pin(content, filename:)
           old_pin =
             dependency.requirements.find { |r| r.file == filename }
-                                   &.source_string("ref")
+                      &.source_string("ref")
 
           return content unless old_pin
           return content if old_pin == replacement_git_pin

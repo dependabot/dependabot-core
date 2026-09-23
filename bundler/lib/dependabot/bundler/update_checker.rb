@@ -131,7 +131,7 @@ module Dependabot
         cooldown_options_builder.release_cooldown_options(@update_cooldown)
       end
 
-      sig { override.returns(T::Array[T::Hash[String, String]]) }
+      sig { override.returns(T::Array[Dependabot::UpdateCheckers::Conflict]) }
       def conflicting_dependencies
         ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
@@ -216,10 +216,10 @@ module Dependabot
         git_commit_checker.git_dependency?
       end
 
-      sig { params(version: Dependabot::Bundler::Version).returns(T.untyped) }
+      sig { params(version: Dependabot::Bundler::Version).returns(T::Boolean) }
       def resolvable?(version)
-        @resolvable ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
-        return @resolvable[version] if @resolvable.key?(version)
+        @resolvable ||= T.let({}, T.nilable(T::Hash[Dependabot::Bundler::Version, T::Boolean]))
+        return @resolvable.fetch(version) if @resolvable.key?(version)
 
         @resolvable[version] =
           begin
@@ -239,10 +239,10 @@ module Dependabot
           end
       end
 
-      sig { params(tag: T.nilable(String)).returns(T.untyped) }
+      sig { params(tag: T.nilable(String)).returns(T::Boolean) }
       def git_tag_resolvable?(tag)
-        @git_tag_resolvable ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
-        return @git_tag_resolvable[tag] if @git_tag_resolvable.key?(tag)
+        @git_tag_resolvable ||= T.let({}, T.nilable(T::Hash[T.nilable(String), T::Boolean]))
+        return @git_tag_resolvable.fetch(tag) if @git_tag_resolvable.key?(tag)
 
         @git_tag_resolvable[tag] =
           begin
@@ -297,7 +297,7 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
-        return latest_tag.fetch(:tag_sha) || dependency.version if latest_tag
+        return latest_tag.tag_sha || dependency.version if latest_tag
 
         # If the dependency is pinned to a tag that doesn't look like a
         # version then there's nothing we can do.
@@ -321,7 +321,7 @@ module Dependabot
         # of the latest tag that looks like a version.
         if latest_git_tag_is_resolvable?
           new_tag = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
-          return new_tag&.fetch(:tag_sha)
+          return new_tag&.tag_sha
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -358,7 +358,7 @@ module Dependabot
         latest_tag_details = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
         return false unless latest_tag_details
 
-        git_tag_resolvable?(latest_tag_details.fetch(:tag))
+        git_tag_resolvable?(latest_tag_details.tag)
       end
 
       sig { params(release: T.untyped).returns(T::Boolean) }
@@ -376,7 +376,7 @@ module Dependabot
         # Update the git tag if updating a pinned version
         if latest_git_tag_is_resolvable?
           new_tag = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
-          return T.must(dependency_source_details).merge(ref: T.must(new_tag).fetch(:tag))
+          return T.must(dependency_source_details).merge(ref: T.must(new_tag).tag)
         end
 
         # Otherwise return the original source

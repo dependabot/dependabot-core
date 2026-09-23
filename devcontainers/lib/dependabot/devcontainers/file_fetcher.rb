@@ -63,7 +63,7 @@ module Dependabot
         return [] unless devcontainer_directory
 
         custom_directories.flat_map do |directory|
-          fetch_config_and_lockfile_from(T.must(directory.path))
+          fetch_config_and_lockfile_from(directory.path)
         end
       end
 
