@@ -105,27 +105,9 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        # Only update properties that resolve to local files. Remote parent POM
-        # properties (e.g. from remote_pom.xml) are not in dependency_files and
-        # cannot be updated by PropertyValueUpdater — including them causes a crash.
         property_names =
           declarations_using_a_property
-          .filter_map do |req|
-            prop_name = req.metadata_string("property_name")
-            next unless prop_name
-
-            pom = dependency_files.find { |f| f.name == req.file }
-            next unless pom
-
-            declaration_pom_name =
-              property_value_finder
-              .property_details(property_name: prop_name, callsite_pom: pom)
-              &.fetch(:file)
-
-            next unless declaration_pom_name.is_a?(String) && declaration_pom_name != "remote_pom.xml"
-
-            prop_name
-          end
+          .filter_map { |req| req.metadata_string("property_name") }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,

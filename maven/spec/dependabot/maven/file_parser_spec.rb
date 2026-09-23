@@ -396,8 +396,8 @@ RSpec.describe Dependabot::Maven::FileParser do
     context "when a plugin is declared in pluginManagement with a property version " \
             "that is also declared (with a different version) in a remote parent POM" do
       # Regression test: when maven-apache-parent declares maven-clean-plugin@3.5.0
-      # and the root POM redeclares it in pluginManagement with lifecycle.version.*@3.4.0,
-      # Dependabot should still detect it and be able to update the local declaration.
+      # via version.maven-clean-plugin, and the root POM shadows that same property
+      # locally at 3.4.0, Dependabot should detect the local declaration and update it.
       let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
 
       let(:maven_apache_parent_url) do

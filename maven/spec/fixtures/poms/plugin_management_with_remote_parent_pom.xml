@@ -14,24 +14,24 @@
   </parent>
 
   <properties>
-    <!-- Unique names to avoid shadowing by parent -->
-    <lifecycle.version.maven-clean-plugin>3.4.0</lifecycle.version.maven-clean-plugin>
-    <lifecycle.version.maven-compiler-plugin>3.13.0</lifecycle.version.maven-compiler-plugin>
+    <!-- Same property names as the parent — local values shadow the remote ones -->
+    <version.maven-clean-plugin>3.4.0</version.maven-clean-plugin>
+    <version.maven-compiler-plugin>3.13.0</version.maven-compiler-plugin>
   </properties>
 
   <build>
     <pluginManagement>
       <plugins>
-        <!-- Redeclared locally to give Dependabot a local file to update -->
+        <!-- Redeclared locally; local property shadows the parent's remote declaration -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>${lifecycle.version.maven-clean-plugin}</version>
+          <version>${version.maven-clean-plugin}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>${lifecycle.version.maven-compiler-plugin}</version>
+          <version>${version.maven-compiler-plugin}</version>
         </plugin>
       </plugins>
     </pluginManagement>
