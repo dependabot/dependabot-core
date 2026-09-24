@@ -147,7 +147,30 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       it "resolves the shorthand against the provided default host" do
         expect(spec.host).to eq("git.internal.example")
         expect(spec.git_url).to eq("https://git.internal.example/team/skills")
-        expect(spec.name).to eq("git.internal.example/team/skills")
+      end
+
+      it "strips the configured default host from the dependency name" do
+        # The manifest-selected default host is APM's implicit host, so the
+        # canonical identity omits it -- keeping dependency-name ignore rules
+        # and deduplication aligned with the identity APM itself uses.
+        expect(spec.name).to eq("team/skills")
+      end
+
+      context "when the entry explicitly repeats that default host" do
+        let(:raw) { "git.internal.example/team/skills#v1.0.0" }
+
+        it "still strips it, so both spellings share one identity" do
+          expect(spec.name).to eq("team/skills")
+        end
+      end
+
+      context "when the entry explicitly names a different host" do
+        let(:raw) { "github.com/team/skills#v1.0.0" }
+
+        it "qualifies the non-default host in the name" do
+          expect(spec.host).to eq("github.com")
+          expect(spec.name).to eq("github.com/team/skills")
+        end
       end
     end
 

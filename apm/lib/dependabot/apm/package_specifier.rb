@@ -68,7 +68,7 @@ module Dependabot
         host, path = split_host_and_path(spec, default_host)
         return nil unless path
 
-        build(host: host, path: path, ref: ref)
+        build(host: host, path: path, ref: ref, default_host: default_host)
       end
 
       # True when `raw` is the string shorthand form (`[host/]owner/repo…`)
@@ -88,10 +88,10 @@ module Dependabot
       end
 
       sig do
-        params(host: String, path: String, ref: String)
+        params(host: String, path: String, ref: String, default_host: String)
           .returns(T.nilable(Dependabot::Apm::PackageSpecifier))
       end
-      def self.build(host:, path:, ref:)
+      def self.build(host:, path:, ref:, default_host: DEFAULT_HOST)
         # DNS hostnames are case-insensitive, so canonicalise to lowercase once
         # here; repository splitting, naming and credential-host matching all key
         # off `host` and must agree on e.g. `GitHub.com` == `github.com`.
@@ -116,7 +116,8 @@ module Dependabot
           owner: owner,
           repo: repo,
           sub_path: sub_path.empty? ? nil : sub_path,
-          ref: ref.empty? ? nil : ref
+          ref: ref.empty? ? nil : ref,
+          default_host: default_host.downcase
         )
       end
 
@@ -169,15 +170,17 @@ module Dependabot
           owner: String,
           repo: String,
           sub_path: T.nilable(String),
-          ref: T.nilable(String)
+          ref: T.nilable(String),
+          default_host: String
         ).void
       end
-      def initialize(host:, owner:, repo:, sub_path: nil, ref: nil)
+      def initialize(host:, owner:, repo:, sub_path: nil, ref: nil, default_host: DEFAULT_HOST)
         @host = host
         @owner = owner
         @repo = repo
         @sub_path = sub_path
         @ref = ref
+        @default_host = default_host
       end
 
       sig { returns(String) }
@@ -185,15 +188,21 @@ module Dependabot
         "https://#{host}/#{owner}/#{repo}"
       end
 
-      # The dependency name shown to users. GitHub-hosted repos keep the familiar
-      # `owner/repo` shorthand; other hosts are namespaced by host to stay unique.
-      # A virtual package (sub path) is namespaced by that path too: APM keys
-      # virtual packages by repository plus path, so `org/mono/skills/review` and
-      # `org/mono/skills/security` must remain distinct dependencies rather than
-      # collapse into one `org/mono` entry that DependencySet would deduplicate.
+      # The dependency name shown to users. Repositories on the manifest's
+      # default host -- the configured `default_host`, or github.com when unset
+      # -- keep the familiar `owner/repo` shorthand, matching how APM keys the
+      # dependency; repositories on any other host are namespaced by host to
+      # stay unique. Comparing against the effective default (rather than a
+      # hard-coded github.com) means a manifest-selected `default_host` is
+      # stripped too, so dependency-name ignore rules and deduplication use the
+      # same identity APM does. A virtual package (sub path) is namespaced by
+      # that path too: APM keys virtual packages by repository plus path, so
+      # `org/mono/skills/review` and `org/mono/skills/security` must remain
+      # distinct dependencies rather than collapse into one `org/mono` entry
+      # that DependencySet would deduplicate.
       sig { returns(String) }
       def name
-        repo_name = host == DEFAULT_HOST ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
+        repo_name = host == @default_host ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
         virtual_path = sub_path
         virtual_path ? "#{repo_name}/#{virtual_path}" : repo_name
       end
