@@ -547,6 +547,24 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
+      context "when the Gemfile loads a custom ruby version file via `ruby file:` option" do
+        let(:project_name) { "ruby_file_option" }
+        let(:updater) do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: [dependency],
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com"
+            }]
+          )
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include "business (1.5.0)"
+        end
+      end
+
       context "when the Gemfile.lock didn't have a BUNDLED WITH line" do
         let(:project_name) { "no_bundled_with" }
 
