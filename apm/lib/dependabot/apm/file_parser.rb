@@ -45,7 +45,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependency_set = DependencySet.new
+        # Non-GitHub git hosts (e.g. GitLab) are case-sensitive, so use a
+        # case-sensitive dependency set to keep repositories that differ only by
+        # case distinct. PackageSpecifier canonicalises GitHub owner/repo casing
+        # itself, so case-insensitive GitHub paths still deduplicate correctly.
+        dependency_set = DependencySet.new(case_sensitive: true)
         # Reading the host first also validates the manifest and raises
         # DependencyFileNotParseable before we walk it for source positions.
         host = default_host
