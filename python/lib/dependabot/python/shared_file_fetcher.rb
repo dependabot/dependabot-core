@@ -69,7 +69,7 @@ module Dependabot
 
         uniques = uniq_files(fetched_files)
         uniques.reject do |file|
-          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+          Dependabot::FileFiltering.should_exclude_path?(file.path, "file from final collection", @exclude_paths)
         end
       end
 
