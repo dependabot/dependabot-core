@@ -123,12 +123,31 @@ module Dependabot
           # Set dependency files and credentials for automatic env variable injection
           Helpers.dependency_files = dependency_files
           Helpers.credentials = credentials
+          setup_npm
 
           # Use --package-lock-only to generate lockfile without installing node_modules
           # Use --ignore-scripts to prevent running any scripts
           # Use --force to ignore platform checks
           command = "install --package-lock-only --ignore-scripts --force"
           Helpers.run_npm_command(command, fingerprint: command)
+        end
+
+        sig { void }
+        def setup_npm
+          package_json = dependency_files.find { |file| file.name.end_with?("package.json") }
+          return unless package_json&.content
+
+          config = Dependabot::Package::NpmPackageManagerConfig.from_package_json(
+            T.cast(JSON.parse(T.must(package_json.content)), Object)
+          )
+          registry_config_files = {
+            npmrc: dependency_files.find { |file| file.name.end_with?(".npmrc") },
+            yarnrc: dependency_files.find { |file| file.name.end_with?(".yarnrc") },
+            yarnrc_yml: dependency_files.find { |file| file.name.end_with?(".yarnrc.yml") }
+          }
+          PackageManagerHelper.new(config, {}, registry_config_files, credentials, package_json.directory).setup(
+            NpmPackageManager::NAME
+          )
         end
 
         sig { void }

@@ -293,6 +293,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       )
     end
 
+    context "when packageManager explicitly selects npm" do
+      let(:package_manager_helper) { instance_double(Dependabot::NpmAndYarn::PackageManagerHelper) }
+
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              "content" => Base64.encode64(JSON.dump("packageManager" => "npm@10"))
+            ),
+            headers: json_header
+          )
+        allow(Dependabot::NpmAndYarn::PackageManagerHelper).to receive(:new).and_return(package_manager_helper)
+        allow(package_manager_helper).to receive(:setup).with("npm").and_return("10")
+        allow(package_manager_helper).to receive(:setup).with("yarn").and_return(nil)
+        allow(package_manager_helper).to receive(:setup).with("pnpm").and_return(nil)
+      end
+
+      it "reports the manifest-selected npm version" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          { package_managers: { "npm" => "10" } }
+        )
+      end
+    end
+
     context "with a .yarnrc file" do
       before do
         stub_request(:get, url + "?ref=sha")
@@ -2513,8 +2539,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   end
 
   context "with no .npmrc but package-lock.json contains a custom registry" do
+    let(:corepack_env) do
+      {
+        "COREPACK_NPM_REGISTRY" => "https://npm.fury.io/dependabot",
+        "npm_config_registry" => "https://npm.fury.io/dependabot",
+        "registry" => "https://npm.fury.io/dependabot"
+      }
+    end
+
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:local_package_manager_version)
+        .with("npm").and_return("11.0.0")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+        .with("npm", directory: "/", env: corepack_env).and_return("11.0.0")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:activate_image_package_manager_version)
+        .with("npm", directory: "/", env: corepack_env).and_return("11.0.0")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
@@ -2539,6 +2579,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to eq(%w(package.json package-lock.json .npmrc))
       expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.content)
         .to eq("registry=https://npm.fury.io/dependabot")
+    end
+
+    context "when engines selects npm" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              "content" => Base64.encode64(JSON.dump("engines" => { "npm" => "^10" }))
+            ),
+            headers: json_header
+          )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm", directory: "/", env: corepack_env).and_return("11.0.0", "10.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: corepack_env
+        ).and_return("Preparing npm@10.0.0 for immediate activation...")
+      end
+
+      it "uses the inferred registry when activating npm" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to eq(%w(package.json package-lock.json .npmrc))
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: corepack_env
+        )
+      end
     end
   end
 
@@ -2636,6 +2707,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "does not include the committed .npmrc as a separate file" do
       npmrc_files = file_fetcher_instance.files.select { |f| f.name == ".npmrc" }
       expect(npmrc_files.count).to eq(1)
+    end
+
+    it "uses the generated .npmrc for package manager setup" do
+      registry_config_files = nil
+      allow(Dependabot::NpmAndYarn::PackageManagerHelper).to receive(:new).and_wrap_original do |method, *args|
+        registry_config_files = args.fetch(2)
+        method.call(*args)
+      end
+
+      generated_npmrc = file_fetcher_instance.files.find { |file| file.name == ".npmrc" }
+
+      expect(registry_config_files.fetch(:npmrc)).to eq(generated_npmrc)
     end
   end
 

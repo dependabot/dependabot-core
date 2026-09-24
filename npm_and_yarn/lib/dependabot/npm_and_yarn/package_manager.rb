@@ -146,11 +146,13 @@ module Dependabot
           config: Dependabot::Package::NpmPackageManagerConfig,
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          credentials: T.nilable(T::Array[Dependabot::Credential])
+          credentials: T.nilable(T::Array[Dependabot::Credential]),
+          directory: String
         ).void
       end
-      def initialize(config, lockfiles, registry_config_files, credentials)
+      def initialize(config, lockfiles, registry_config_files, credentials, directory)
         @lockfiles = lockfiles
+        @directory = directory
         @registry_helper = T.let(
           RegistryHelper.new(registry_config_files, credentials),
           Dependabot::NpmAndYarn::RegistryHelper
@@ -286,7 +288,6 @@ module Dependabot
               :requirement_for_group,
               :current_engine_version
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
@@ -294,13 +295,9 @@ module Dependabot
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
 
-        unless @manifest_package_manager&.start_with?("#{name}@") ||
-               (@manifest_package_manager&.==name.to_s) ||
-               @manifest_package_manager.nil?
-          return
-        end
+        return unless package_manager_selected?(name)
 
-        return package_manager.version.to_s if package_manager.deprecated? || package_manager.unsupported?
+        return setup_deprecated_package_manager(name) if package_manager.deprecated? || package_manager.unsupported?
 
         if @engines && @manifest_package_manager.nil?
           # if "packageManager" doesn't exists in manifest file,
@@ -327,6 +324,7 @@ module Dependabot
           raise_if_unsupported!(name, version.to_s)
           install(name, version)
         else
+          restore_image_package_manager_version(name)
           version = guessed_version(name)
 
           if version
@@ -336,15 +334,12 @@ module Dependabot
         end
         version
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
         # Prioritize version mentioned in "packageManager" instead of "engines"
-        if @manifest_package_manager&.start_with?("#{name}@")
-          detected_version = @manifest_package_manager.split("@").last.to_s
-        end
+        detected_version = requested_version(name)
 
         # If "packageManager" has no version specified, check if we can extract "engines" information
         detected_version ||= check_engine_version(name) if detected_version.to_s.empty?
@@ -412,12 +407,12 @@ module Dependabot
         return T.must(@installed_versions[name]) if @installed_versions.key?(name)
 
         # Attempt to get the installed version through the package manager version command
-        @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
+        @installed_versions[name] = Helpers.package_manager_version(name, directory: @directory, env: corepack_env)
 
         # If we can't get the installed version, we need to install the package manager and get the version
         unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
           setup(name)
-          @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
+          @installed_versions[name] = Helpers.package_manager_version(name, directory: @directory, env: corepack_env)
         end
 
         # If we can't get the installed version or the version is invalid, we need to get inferred version
@@ -430,6 +425,33 @@ module Dependabot
 
       private
 
+      sig { params(name: String).returns(T::Boolean) }
+      def package_manager_selected?(name)
+        @manifest_package_manager&.start_with?("#{name}@") ||
+          @manifest_package_manager == name ||
+          @manifest_package_manager.nil?
+      end
+
+      sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
+      def setup_deprecated_package_manager(name)
+        version = explicit_legacy_npm_version(name)
+        return package_manager.version.to_s unless version
+
+        install(name, version)
+        version
+      end
+
+      sig { params(name: String).returns(T.nilable(String)) }
+      def explicit_legacy_npm_version(name)
+        return unless name == NpmPackageManager::NAME
+
+        version = requested_version(name)
+        version ||= check_engine_version(name) if @manifest_package_manager.nil? || @manifest_package_manager == name
+        return unless version && Version.new(version).major == NpmPackageManager::NPM_V6.to_i
+
+        version
+      end
+
       sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
         return unless name == PNPMPackageManager::NAME
@@ -439,9 +461,26 @@ module Dependabot
         raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, supported_versions)
       end
 
+      sig { params(name: String).void }
+      def restore_image_package_manager_version(name)
+        return unless name == NpmPackageManager::NAME
+
+        @installed_versions[name] = Helpers.image_package_manager_version(name)
+        return unless @lockfiles[name.to_sym] ||
+                      @manifest_package_manager&.match?(/\A#{Regexp.escape(name)}(?:@|\z)/) ||
+                      @engines&.key?(name)
+
+        Helpers.activate_image_package_manager_version(name, directory: @directory, env: corepack_env)
+      end
+
       sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+
+        if name == NpmPackageManager::NAME
+          @installed_versions[name] = Helpers.install(name, version.to_s, directory: @directory, env: corepack_env)
+          return
+        end
 
         begin
           Helpers.package_manager_install(name, version.to_s, env: corepack_env)
@@ -472,7 +511,9 @@ module Dependabot
       def requested_version(name)
         return unless @manifest_package_manager
 
-        match = @manifest_package_manager.match(/^#{name}@(?<version>\d+.\d+.\d+)/)
+        match = @manifest_package_manager.match(
+          /^#{Regexp.escape(name)}@(?<version>#{ConstraintHelper::VERSION})$/
+        )
         return unless match
 
         Dependabot.logger.info("Requested version #{match['version']}")

@@ -356,6 +356,70 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
       end
 
+      context "with a directory-specific npm version and private registry" do
+        let(:dependency_files) do
+          project_dependency_files("npm8/subdependency_update").map do |file|
+            file.dup.tap { |dependency_file| dependency_file.directory = "/frontend" }
+          end
+        end
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://artifactory.example.com/artifactory/api/npm/npm/",
+              "replaces-base" => true,
+              "token" => "auth-token"
+            }
+          )]
+        end
+        let(:corepack_env) do
+          {
+            "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/artifactory/api/npm/npm",
+            "npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm",
+            "COREPACK_NPM_TOKEN" => "auth-token",
+            "registry" => "https://artifactory.example.com/artifactory/api/npm/npm"
+          }
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_audit_fix_fallback).and_return(false)
+          Dependabot::NpmAndYarn::Helpers.set_effective_package_manager_version(
+            "npm",
+            "10.9.2",
+            directory: "/frontend"
+          )
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack prepare npm@10.9.2 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: corepack_env
+          ).and_return("Preparing npm@10.9.2 for immediate activation...")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack npm@10.9.2 update acorn --force --ignore-scripts --package-lock-only",
+            fingerprint: "corepack npm update <dependency_names> --force --ignore-scripts --package-lock-only",
+            output_observer: kind_of(Proc),
+            env: corepack_env
+          ).and_return("")
+        end
+
+        it "reactivates the selected npm version and uses the private registry" do
+          latest_resolvable_version
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack prepare npm@10.9.2 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: corepack_env
+          )
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack npm@10.9.2 update acorn --force --ignore-scripts --package-lock-only",
+            fingerprint: "corepack npm update <dependency_names> --force --ignore-scripts --package-lock-only",
+            output_observer: kind_of(Proc),
+            env: corepack_env
+          )
+        end
+      end
+
       context "when resolving a security update" do
         let(:resolver) do
           described_class.new(
@@ -543,6 +607,29 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       # NOTE: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+
+      context "when the manifest explicitly selects modern npm" do
+        before do
+          directory = dependency_files.find { |file| file.name == "package.json" }&.directory
+          Dependabot::NpmAndYarn::Helpers.set_effective_package_manager_version(
+            "npm",
+            "10.9.2",
+            directory: directory,
+            explicit: true
+          )
+        end
+
+        after do
+          Thread.current[:dependabot_corepack_effective_versions] = nil
+        end
+
+        it "rejects the incompatible lockfile without invoking the npm6 helper" do
+          expect(Dependabot::SharedHelpers).not_to receive(:run_helper_subprocess)
+
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /npm 10\.9\.2.*v1 lockfile/i)
+        end
+      end
     end
 
     context "when sub-dependency is bundled" do

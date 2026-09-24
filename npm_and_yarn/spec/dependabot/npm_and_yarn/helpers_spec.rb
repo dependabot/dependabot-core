@@ -7,13 +7,44 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  before do
+    Thread.current[:dependabot_corepack_effective_versions] = nil
+    described_class.dependency_files = []
+    described_class.credentials = []
+    described_class.package_manager_directory = nil
+  end
+
+  after do
+    Thread.current[:dependabot_corepack_effective_versions] = nil
+    described_class.dependency_files = []
+    described_class.credentials = []
+    described_class.package_manager_directory = nil
+  end
+
   describe "::run_npm_command" do
-    it "runs npm directly and passes through the environment" do
+    it "runs the recorded npm version explicitly" do
+      described_class.set_effective_package_manager_version("npm", "7.0.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+      described_class.run_npm_command("install")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "corepack npm@7.0.0 install",
+        fingerprint: "corepack npm install",
+        output_observer: kind_of(Proc),
+        env: nil
+      )
+    end
+
+    it "runs npm through Corepack and passes through the environment" do
       env = { "CUSTOM_VAR" => "custom-value" }
+      described_class.set_effective_package_manager_version("npm", "11.0.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
 
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "npm install",
-        fingerprint: "npm install dependencies",
+        "corepack npm@11.0.0 install",
+        fingerprint: "corepack npm install dependencies",
         output_observer: kind_of(Proc),
         env: env
       ).and_return("")
@@ -21,11 +52,88 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
 
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-        "npm install",
-        fingerprint: "npm install dependencies",
+        "corepack npm@11.0.0 install",
+        fingerprint: "corepack npm install dependencies",
         output_observer: kind_of(Proc),
         env: env
       )
+    end
+
+    it "reactivates the manifest directory's npm version from a temporary directory" do
+      dependency_file = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: "{}",
+        directory: "/frontend"
+      )
+      described_class.set_effective_package_manager_version("npm", "10.9.2", directory: "/frontend")
+      described_class.dependency_files = [dependency_file]
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@10.9.2 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@10.9.2 for immediate activation...")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm@10.9.2 install",
+        fingerprint: "corepack npm install",
+        output_observer: kind_of(Proc),
+        env: nil
+      ).and_return("")
+
+      Dir.mktmpdir { |dir| Dir.chdir(dir) { described_class.run_npm_command("install") } }
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "corepack prepare npm@10.9.2 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      )
+    end
+
+    it "activates the image npm version when the directory has no effective version" do
+      dependency_file = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: "{}",
+        directory: "/frontend"
+      )
+      described_class.dependency_files = [dependency_file]
+
+      allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.0.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@11.0.0 for immediate activation...")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm@11.0.0 install",
+        fingerprint: "corepack npm install",
+        output_observer: kind_of(Proc),
+        env: nil
+      ).and_return("")
+
+      described_class.run_npm_command("install")
+
+      expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("11.0.0")
+    end
+  end
+
+  describe "::activate_image_package_manager_version" do
+    it "uses the supplied environment without merging stale thread-local registry context" do
+      described_class.dependency_files = [Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "registry=https://registry.example.com",
+        directory: "/previous"
+      )]
+      described_class.credentials = []
+      allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.0.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@11.0.0 for immediate activation...")
+
+      described_class.activate_image_package_manager_version("npm", directory: "/current", env: nil)
+
+      expect(described_class.effective_package_manager_version("npm", directory: "/current")).to eq("11.0.0")
     end
   end
 
@@ -71,14 +179,82 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::npm_version" do
-    it "returns the local npm version" do
+    it "probes the recorded npm version explicitly" do
+      described_class.set_effective_package_manager_version("npm", "7.0.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("npm -v", fingerprint: "npm -v")
+        .with("corepack npm@7.0.0 -v", fingerprint: "corepack npm -v", env: nil)
+        .and_return("7.0.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("7.0.0"))
+    end
+
+    it "returns the npm version selected by Corepack" do
+      described_class.set_effective_package_manager_version("npm", "11.10.0")
+      allow(described_class).to receive(:activate_effective_package_manager_version)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("corepack npm@11.10.0 -v", fingerprint: "corepack npm -v", env: nil)
         .and_return("11.10.0\n")
 
       expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-        .with("npm -v", fingerprint: "npm -v")
+        .with("corepack npm@11.10.0 -v", fingerprint: "corepack npm -v", env: nil)
+    end
+
+    it "re-activates the effective npm version for the current directory before checking it" do
+      other_dir = Dir.mktmpdir
+      Dir.chdir(other_dir) do
+        described_class.set_effective_package_manager_version("npm", "10.9.2")
+      end
+
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          described_class.set_effective_package_manager_version("npm", "9.0.0")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack prepare npm@9.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: nil
+          ).and_return("Preparing npm@9.0.0 for immediate activation...")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack npm@9.0.0 -v",
+            fingerprint: "corepack npm -v",
+            env: nil
+          ).and_return("9.0.0\n")
+
+          expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("9.0.0"))
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack prepare npm@9.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: nil
+          )
+        end
+      end
+    end
+
+    it "activates the image npm version before probing an uninitialized directory" do
+      dependency_file = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: "{}",
+        directory: "/frontend"
+      )
+      described_class.dependency_files = [dependency_file]
+
+      allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.10.0")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.10.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: nil
+      ).and_return("Preparing npm@11.10.0 for immediate activation...")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm@11.10.0 -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).and_return("11.10.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
+      expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("11.10.0")
     end
 
     it "returns nil when the local npm version cannot be determined" do
@@ -347,6 +523,38 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect(described_class.package_manager_version("npm", env: env)).to eq("11.9.0")
     end
+
+    it "reactivates the effective npm version for the current directory before checking it" do
+      other_dir = Dir.mktmpdir
+      Dir.chdir(other_dir) do
+        described_class.set_effective_package_manager_version("npm", "10.9.2")
+      end
+
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          described_class.set_effective_package_manager_version("npm", "9.0.0")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack prepare npm@9.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: nil
+          ).and_return("Preparing npm@9.0.0 for immediate activation...")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack npm@9.0.0 -v",
+            fingerprint: "corepack npm -v",
+            env: nil
+          ).and_return("9.0.0\n")
+
+          expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("9.0.0"))
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack prepare npm@9.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: nil
+          )
+        end
+      end
+    end
   end
 
   describe "::package_manager_run_command" do
@@ -460,7 +668,49 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     context "when corepack succeeds" do
+      it "verifies npm using the installation directory's effective version" do
+        described_class.package_manager_directory = "/previous"
+        described_class.set_effective_package_manager_version("npm", "9.0.0", directory: "/previous")
+        allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@10.0.0 for immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10.0.0 -v",
+          fingerprint: "corepack npm -v",
+          env: {}
+        ).and_return("10.0.0")
+
+        expect(described_class.install("npm", "10.0.0", directory: "/frontend")).to eq("10.0.0")
+        expect(described_class.effective_package_manager_version("npm", directory: "/frontend")).to eq("10.0.0")
+      end
+
+      it "preserves an integrity-qualified npm selector after activation" do
+        selector = "10.9.2+sha512.test"
+        allow(described_class).to receive(:local_package_manager_version).with("npm").and_return("11.0.0")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@#{selector} --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@#{selector} for immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@#{selector} -v",
+          fingerprint: "corepack npm -v",
+          env: {}
+        ).and_return("10.9.2")
+
+        expect(described_class.install("npm", selector)).to eq("10.9.2")
+        expect(described_class.effective_package_manager_version("npm")).to eq(selector)
+      end
+
       it "installs, activates, and retrieves the version of the package manager" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).and_return("11.0.0")
+
         # Mock for `package_manager_activate("npm", "8.0.0")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@8.0.0 --activate",
@@ -470,7 +720,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@8.0.0 -v",
           fingerprint: "corepack npm -v",
           env: {}
         ).and_return("8.0.0")
@@ -512,7 +762,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@10.8.2 -v",
           fingerprint: "corepack npm -v",
           env: {}
         ).and_return("10.8.2")
@@ -533,6 +783,55 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Test the result
         result = described_class.install("npm", "8.0.0")
         expect(result).to eq("10.8.2")
+        expect(described_class.explicitly_selected_package_manager_version("npm")).to eq("8.0.0")
+      end
+
+      it "preserves the fallback version for the current directory when activation fails" do
+        current_dir = Dir.mktmpdir
+        Dir.chdir(current_dir) do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack prepare npm@10.0.0 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: {}
+          ).and_raise(StandardError, "Corepack failed")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "npm -v",
+            fingerprint: "npm -v"
+          ).and_return("10.8.2")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack prepare npm@10.8.2 --activate",
+            fingerprint: "corepack prepare <name>@<version> --activate",
+            env: {}
+          ).and_return("Preparing npm@10.8.2 for immediate activation...")
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+            "corepack npm@10.8.2 -v",
+            fingerprint: "corepack npm -v",
+            env: {}
+          ).and_return("10.8.2")
+
+          expect(described_class.install("npm", "10.0.0")).to eq("10.8.2")
+          expect(described_class.effective_package_manager_version("npm")).to eq("10.8.2")
+        end
+      end
+
+      it "activates the requested npm when probing the image version fails" do
+        allow(described_class).to receive(:local_package_manager_version).with("npm")
+                                                                         .and_raise(StandardError, "missing npm")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@10.0.0 for immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10.0.0 -v",
+          fingerprint: "corepack npm -v",
+          env: {}
+        ).and_return("10.0.0")
+
+        expect(described_class.install("npm", "10.0.0")).to eq("10.0.0")
       end
     end
 
@@ -560,7 +859,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@10.8.2 -v",
           fingerprint: "corepack npm -v",
           env: {}
         ).and_return("10.8.2")
@@ -594,6 +893,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "retries activation with COREPACK_INTEGRITY_KEYS disabled instead of falling back" do
         retry_env = private_registry_env.merge("COREPACK_INTEGRITY_KEYS" => "")
 
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).once.ordered.and_return("11.9.0")
+
         # First call: corepack prepare npm@10.0.0 --activate WITH private registry env
         # Fails with signature error (Artifactory strips signatures from its version endpoint)
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
@@ -615,16 +919,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # package_manager_version after successful activation
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@10.0.0 -v",
           fingerprint: "corepack npm -v",
           env: private_registry_env
         ).and_return("10.0.0")
-
-        # It must not fall back to the locally installed npm version
-        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(
-          "npm -v",
-          fingerprint: "npm -v"
-        )
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
         expect(result).to eq("10.0.0")
@@ -653,7 +951,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@11.9.0 -v",
           fingerprint: "corepack npm -v",
           env: private_registry_env
         ).and_return("11.9.0")
@@ -683,7 +981,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         )
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack npm -v",
+          "corepack npm@11.9.0 -v",
           fingerprint: "corepack npm -v",
           env: private_registry_env
         )

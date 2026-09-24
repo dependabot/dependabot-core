@@ -22,6 +22,7 @@ module Dependabot
         sig { params(files: T::Array[Dependabot::DependencyFile]).void }
         def dependency_files=(files)
           Thread.current[:npm_and_yarn_dependency_files] = files
+          self.package_manager_directory = files.first&.directory
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
@@ -37,6 +38,16 @@ module Dependabot
         sig { returns(T.nilable(T::Array[Dependabot::Credential])) }
         def credentials
           T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
+        end
+
+        sig { params(directory: T.nilable(String)).void }
+        def package_manager_directory=(directory)
+          Thread.current[:npm_and_yarn_package_manager_directory] = directory
+        end
+
+        sig { returns(T.nilable(String)) }
+        def package_manager_directory
+          T.cast(Thread.current[:npm_and_yarn_package_manager_directory], T.nilable(String))
         end
       end
 
@@ -257,11 +268,17 @@ module Dependabot
         nil
       end
 
-      # The concrete npm version that will run. Returns nil when it can't be determined.
+      # The concrete npm version that will run through Corepack. Returns nil when it can't be determined.
       # Used to gate `--min-release-age`, added in npm 11.10.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
-        raw = local_package_manager_version(NpmPackageManager::NAME)
+        env = merge_corepack_env(nil)
+        if effective_package_manager_version(NpmPackageManager::NAME)
+          activate_effective_package_manager_version(NpmPackageManager::NAME, env: env)
+        else
+          activate_image_package_manager_version(NpmPackageManager::NAME, env: env)
+        end
+        raw = package_manager_version(NpmPackageManager::NAME, env: env)
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
@@ -284,6 +301,87 @@ module Dependabot
           )
         end
         supported
+      end
+
+      sig { params(name: String, directory: T.nilable(String)).returns(T.nilable(String)) }
+      def self.effective_package_manager_version(name, directory: package_manager_directory)
+        versions_by_directory = Thread.current[:dependabot_corepack_effective_versions]
+        return nil unless versions_by_directory.is_a?(Hash)
+
+        versions_by_directory.dig(directory || Dir.pwd, name)
+      end
+
+      sig do
+        params(
+          name: String,
+          version: String,
+          directory: T.nilable(String),
+          explicit: T.nilable(T::Boolean)
+        ).void
+      end
+      def self.set_effective_package_manager_version(
+        name,
+        version,
+        directory: package_manager_directory,
+        explicit: nil
+      )
+        directory ||= Dir.pwd
+        versions = Thread.current[:dependabot_corepack_effective_versions] ||= {}
+        versions[directory] ||= {}
+        versions[directory][name] = version
+        versions[:explicit_versions] ||= {}
+        versions[:explicit_versions][directory] ||= {}
+
+        if explicit == true
+          versions[:explicit_versions][directory][name] = version
+        elsif explicit == false
+          versions[:explicit_versions][directory].delete(name)
+        end
+      end
+
+      sig { params(name: String, directory: T.nilable(String)).returns(T.nilable(String)) }
+      def self.explicitly_selected_package_manager_version(name, directory: package_manager_directory)
+        versions = Thread.current[:dependabot_corepack_effective_versions]
+        return nil unless versions.is_a?(Hash)
+
+        versions.dig(:explicit_versions, directory || Dir.pwd, name)
+      end
+
+      sig { params(name: String).returns(String) }
+      def self.image_package_manager_version(name)
+        versions = Thread.current[:dependabot_corepack_effective_versions] ||= {}
+        versions[:image_defaults] ||= {}
+        versions[:image_defaults][name] ||= local_package_manager_version(name)
+      end
+
+      sig do
+        params(
+          name: String,
+          directory: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).void
+      end
+      def self.activate_image_package_manager_version(name, directory: package_manager_directory, env: nil)
+        version = image_package_manager_version(name)
+        set_effective_package_manager_version(name, version, directory: directory, explicit: false)
+        package_manager_activate(name, version, env: env)
+      end
+
+      sig { void }
+      def self.ensure_legacy_npm_lockfile_compatible!
+        version = explicitly_selected_package_manager_version(NpmPackageManager::NAME)
+        return unless version && Version.new(version).major >= 7
+
+        raise Dependabot::DependencyFileNotResolvable,
+              "npm #{version} cannot be used with a v1 lockfile because Dependabot's legacy lockfile helper uses npm 6."
+      end
+
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).void }
+      def self.activate_effective_package_manager_version(name, env: nil)
+        version = effective_package_manager_version(name)
+        return unless version
+
+        package_manager_activate(name, version, env: merge_corepack_env(env))
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -461,11 +559,19 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "npm #{command}",
-          fingerprint: "npm #{fingerprint}",
+        merged_env = merge_corepack_env(env)
+        if effective_package_manager_version(NpmPackageManager::NAME)
+          activate_effective_package_manager_version(NpmPackageManager::NAME, env: merged_env)
+        else
+          activate_image_package_manager_version(NpmPackageManager::NAME, env: merged_env)
+        end
+
+        package_manager_run_command(
+          NpmPackageManager::NAME,
+          command,
+          fingerprint: fingerprint,
           output_observer: ->(output) { command_observer(output) },
-          env: env
+          env: merged_env
         )
       end
 
@@ -566,12 +672,22 @@ module Dependabot
         params(
           name: String,
           version: String,
+          directory: T.nilable(String),
           env: T.nilable(T::Hash[String, String])
         )
           .returns(String)
       end
-      def self.install(name, version, env: {})
+      def self.install(name, version, directory: package_manager_directory, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+        if name == NpmPackageManager::NAME
+          begin
+            image_package_manager_version(name)
+          rescue StandardError => e
+            Dependabot.logger.warn("Could not determine the image npm version before activation: #{e.message}")
+          end
+        end
+        set_effective_package_manager_version(name, version, directory: directory, explicit: true)
+        activated_requested_version = false
 
         begin
           # Try to activate the specified version
@@ -582,30 +698,41 @@ module Dependabot
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
 
             Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
+            activated_requested_version = true
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name, env: env)
+            fallback_to_local_version(name, directory: directory, env: env)
           end
         rescue StandardError => e
           Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
-          fallback_to_local_version(name, env: env)
+          fallback_to_local_version(name, directory: directory, env: env)
         end
 
         # Verify the installed version
-        installed_version = package_manager_version(name, env: env)
+        installed_version = package_manager_version(name, directory: directory, env: env)
+        unless activated_requested_version
+          set_effective_package_manager_version(name, installed_version, directory: directory)
+        end
 
         installed_version
       end
 
       # Attempt to activate the local version of the package manager
-      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
-      def self.fallback_to_local_version(name, env: {})
+      sig do
+        params(
+          name: String,
+          directory: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.fallback_to_local_version(name, directory: package_manager_directory, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
 
         # Fetch the currently installed version directly from the environment
         current_version = local_package_manager_version(name)
+        set_effective_package_manager_version(name, current_version, directory: directory)
         Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
 
         # Prepare the existing version
@@ -654,11 +781,17 @@ module Dependabot
       end
 
       # Get the version of the package manager by using corepack
-      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
-      def self.package_manager_version(name, env: nil)
+      sig do
+        params(
+          name: String,
+          directory: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.package_manager_version(name, directory: package_manager_directory, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        version = package_manager_run_command(name, "-v", env: env).strip
+        version = package_manager_run_command(name, "-v", directory: directory, env: env).strip
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 
@@ -673,6 +806,7 @@ module Dependabot
         params(
           name: String,
           command: String,
+          directory: T.nilable(String),
           fingerprint: T.nilable(String),
           output_observer: CommandHelpers::OutputObserver,
           env: T.nilable(T::Hash[String, String])
@@ -681,12 +815,18 @@ module Dependabot
       def self.package_manager_run_command(
         name,
         command,
+        directory: package_manager_directory,
         fingerprint: nil,
         output_observer: nil,
         env: nil
       )
+        if name == NpmPackageManager::NAME
+          effective_version = effective_package_manager_version(name, directory: directory)
+        end
+        executable = effective_version ? "#{name}@#{effective_version}" : name
+
         run_corepack_command(
-          "corepack #{name} #{command}",
+          "corepack #{executable} #{command}",
           fingerprint: "corepack #{name} #{fingerprint || command}",
           output_observer: output_observer,
           env: env

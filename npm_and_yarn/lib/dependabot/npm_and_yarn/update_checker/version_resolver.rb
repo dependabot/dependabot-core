@@ -908,14 +908,21 @@ module Dependabot
           ).returns(T::Array[PeerDependencyConflict])
         end
         def run_npm_checker(path:, version:)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              package_lock = dependency_files_builder.package_locks.find do |f|
+              npm_lockfiles = [*dependency_files_builder.package_locks, *dependency_files_builder.shrinkwraps]
+              package_lock = npm_lockfiles.find do |f|
                 # Find the lockfile that's in the current directory
-                f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
+                lockfile_name = File.basename(f.name)
+                f.name == [path, lockfile_name].join("/").sub(%r{\A.?\/}, "")
               end
 
               return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.parse_npm8?(package_lock)
+
+              Helpers.ensure_legacy_npm_lockfile_compatible!
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
@@ -939,6 +946,9 @@ module Dependabot
           ).returns(T::Array[PeerDependencyConflict])
         end
         def run_npm8_checker(version:)
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           cmd =
             "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
           output = Helpers.run_npm_command(cmd)
