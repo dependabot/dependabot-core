@@ -8,6 +8,8 @@ require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 
+require "dependabot/apm/package_specifier"
+
 module Dependabot
   module Apm
     class FileUpdater < Dependabot::FileUpdaters::Base
@@ -143,13 +145,15 @@ module Dependabot
       end
 
       # Rebuilds the lockfile when a bumped dependency is recorded in it. APM's
-      # `ref-consistency` check fails until each manifest ref matches the ref
-      # pinned in the lockfile, so we rewrite the matching package's `ref:` value
-      # in place. The companion `resolved:` commit SHA and `integrity:` content
-      # hash are intentionally left untouched: `integrity` cannot be recomputed
-      # offline, and moving `resolved` without it would only swap a ref/resolved
-      # mismatch for a resolved/integrity one. Both are regenerated together the
-      # next time `apm install --update` runs, which re-pins them from `ref`.
+      # `ref-consistency` check fails until each manifest ref matches the
+      # `resolved_ref:` pinned in the lockfile, so we rewrite the matching
+      # dependency's `resolved_ref:` value in place. The companion
+      # `resolved_commit:` SHA and `content_hash:` package hash are intentionally
+      # left untouched: `content_hash` (the hash of the materialised package
+      # tree) cannot be recomputed offline, and moving `resolved_commit` without
+      # it would only swap a resolved_ref/resolved_commit mismatch for a
+      # resolved_commit/content_hash one. Both are regenerated together the next
+      # time `apm install --update` runs, which re-pins them from `resolved_ref`.
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def updated_lockfile
         file = lockfile
@@ -162,51 +166,74 @@ module Dependabot
         updated_file(file: file, content: content)
       end
 
-      # Collects a `ref:` substitution for every bumped dependency that appears in
-      # the lockfile, each located by the absolute range of its value scalar in
-      # the ORIGINAL content (see `substitutions_for` for why offsets resolve
-      # against the original).
+      # Collects a `resolved_ref:` substitution for every bumped dependency that
+      # appears in the lockfile, each located by the absolute range of its value
+      # scalar in the ORIGINAL content (see `substitutions_for` for why offsets
+      # resolve against the original).
       sig { params(content: String).returns(T::Array[Substitution]) }
       def lockfile_substitutions(content)
-        packages = lockfile_packages(content)
-        return [] unless packages
+        entries = lockfile_dependencies(content)
+        return [] unless entries
 
         lines = content.each_line.to_a
         dependencies.filter_map do |dependency|
-          entry = lockfile_entry(packages, dependency.name)
+          entry = lockfile_entry(entries, dependency)
           next unless entry
 
           new_ref = lockfile_new_ref(dependency)
           next unless new_ref
 
-          value_substitution(lines, ast_mapping_value(entry, "ref"), new_ref)
+          value_substitution(lines, ast_mapping_value(entry, "resolved_ref"), new_ref)
         end
       end
 
-      # The `packages:` sequence of the lockfile AST, or nil when the lockfile is
-      # empty, unparseable, or has no packages block.
+      # The top-level `dependencies:` sequence of the lockfile AST, or nil when
+      # the lockfile is empty, unparseable, or has no dependencies block.
       sig { params(content: String).returns(T.nilable(Psych::Nodes::Sequence)) }
-      def lockfile_packages(content)
+      def lockfile_dependencies(content)
         document = YAML.parse(content)
         root = document.is_a?(Psych::Nodes::Document) ? document.root : nil
-        node = ast_mapping_value(root, "packages")
+        node = ast_mapping_value(root, "dependencies")
         node.is_a?(Psych::Nodes::Sequence) ? node : nil
       rescue Psych::SyntaxError
         nil
       end
 
-      # The package mapping whose `name:` scalar equals `name`, or nil.
+      # The dependency mapping whose `repo_url` resolves to the same package
+      # identity as `dependency`, or nil. APM keys lockfile entries by their
+      # normalised `repo_url` (plus `virtual_path` for monorepo sub-packages),
+      # never by the self-asserted `name:` field, so we canonicalise each entry's
+      # `repo_url` through `PackageSpecifier` — the same parser that produced
+      # `dependency.name` from the manifest — and compare the results.
       sig do
-        params(packages: Psych::Nodes::Sequence, name: String).returns(T.nilable(Psych::Nodes::Mapping))
+        params(entries: Psych::Nodes::Sequence, dependency: Dependabot::Dependency)
+          .returns(T.nilable(Psych::Nodes::Mapping))
       end
-      def lockfile_entry(packages, name)
-        packages.children.each do |child|
+      def lockfile_entry(entries, dependency)
+        entries.children.each do |child|
           next unless child.is_a?(Psych::Nodes::Mapping)
 
-          value = ast_mapping_value(child, "name")
-          return child if value.is_a?(Psych::Nodes::Scalar) && value.value == name
+          identity = lockfile_identity(child)
+          return child if identity && identity == dependency.name
         end
         nil
+      end
+
+      # The package identity of a lockfile entry: its `repo_url` canonicalised via
+      # `PackageSpecifier`, with any `virtual_path` appended so distinct virtual
+      # packages carved from one repo stay distinct dependencies.
+      sig { params(entry: Psych::Nodes::Mapping).returns(T.nilable(String)) }
+      def lockfile_identity(entry)
+        repo_url = ast_mapping_value(entry, "repo_url")
+        return unless repo_url.is_a?(Psych::Nodes::Scalar)
+
+        spec = Dependabot::Apm::PackageSpecifier.parse(repo_url.value)
+        return unless spec
+
+        virtual_path = ast_mapping_value(entry, "virtual_path")
+        return spec.name unless virtual_path.is_a?(Psych::Nodes::Scalar) && !virtual_path.value.empty?
+
+        "#{spec.name}/#{virtual_path.value}"
       end
 
       # The bumped ref for `dependency`, taken from its updated git requirement.

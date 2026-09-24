@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Apm::FileParser do
         let(:lockfile) do
           Dependabot::DependencyFile.new(
             name: "apm.lock.yaml",
-            content: "apm_version: \"0.32.0rc1\"\npackages: []\n"
+            content: "apm_version: \"0.32.0rc1\"\ndependencies: []\n"
           )
         end
 
