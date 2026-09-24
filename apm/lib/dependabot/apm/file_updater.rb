@@ -104,16 +104,36 @@ module Dependabot
         return content unless declaration.end_with?("##{old_ref}")
 
         new_declaration = declaration.sub(/#{Regexp.escape("##{old_ref}")}\z/, "##{new_ref}")
-        replace_declaration(content, declaration, new_declaration)
+        declaration_line = new_req.metadata_string("declaration_line")&.to_i
+        replace_declaration(content, declaration, new_declaration, declaration_line)
       end
 
-      # Replaces a manifest entry with the bumped one, matching the declaration
-      # only as a whole token so it never clips a longer entry that merely shares
-      # the same prefix (e.g. `owner/repo` vs `owner/repo-two`).
-      sig { params(content: String, old_declaration: String, new_declaration: String).returns(String) }
-      def replace_declaration(content, old_declaration, new_declaration)
-        boundary = %r{[\w./#-]}
-        content.gsub(/(?<!#{boundary})#{Regexp.escape(old_declaration)}(?!#{boundary})/, new_declaration)
+      # Rewrites the entry on its own manifest line (the 0-based
+      # `declaration_line` recorded at parse time), anchored to the `- <entry>`
+      # sequence item. Scoping to the source line means an identical string
+      # elsewhere in the file (a trailing comment, a `notes:` value, or a
+      # different dependency block) is never rewritten.
+      sig do
+        params(
+          content: String,
+          old_declaration: String,
+          new_declaration: String,
+          declaration_line: T.nilable(Integer)
+        ).returns(String)
+      end
+      def replace_declaration(content, old_declaration, new_declaration, declaration_line)
+        return content unless declaration_line
+
+        lines = content.lines
+        line = lines[declaration_line]
+        return content unless line
+
+        item = /\A(?<indent>\s*-\s*["']?)#{Regexp.escape(old_declaration)}(?<trailer>["']?[ \t]*(?:#.*)?\R?)\z/
+        match = line.match(item)
+        return content unless match
+
+        lines[declaration_line] = "#{match[:indent]}#{new_declaration}#{match[:trailer]}"
+        lines.join
       end
     end
   end
