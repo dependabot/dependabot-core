@@ -56,14 +56,26 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        new_tag = updated_git_tag&.tag
+        git_tag = updated_git_tag
+        new_tag = git_tag&.tag
         return dependency.requirements unless new_tag
+
+        new_version = git_tag.version
 
         dependency.requirements.map do |req|
           current_ref = req.source_string("ref")
           # Only rewrite requirements pinned to a semver tag; branch- and
           # SHA-pinned entries are left as-is.
           next req unless current_ref && version_class.correct?(current_ref)
+
+          # DependencySet merges repeated declarations into a single dependency
+          # with several requirements, whose refs need not match; the tag is
+          # selected from the dependency's combined (lowest) version. Never
+          # rewrite a requirement whose own ref already sits at or above that
+          # tag -- a lower selected tag (a security fix, or a latest capped by
+          # an ignore rule) would otherwise downgrade a higher declaration, e.g.
+          # a v1.5.0 fix must leave a v2.0.0 entry untouched.
+          next req if new_version && version_class.new(current_ref) >= new_version
 
           new_source = T.must(req.source_hash).merge(ref: new_tag)
           Dependabot::DependencyRequirement.create(req.merge(source: new_source))
