@@ -19,6 +19,16 @@ RSpec.describe Dependabot::Config::File do
     end
   end
 
+  describe "#parse_aliases" do
+    it "parses the config file with yaml aliases" do
+      cfg = described_class.parse(fixture("configfile", "aliases.yml"))
+      expect(cfg.updates[1][:ignore]).to eq(cfg.updates[0][:ignore])
+      expect(cfg.updates[2][:ignore]).to eq(cfg.updates[0][:ignore])
+      expect(cfg.updates[1][:schedule]).to eq(cfg.updates[0][:schedule])
+      expect(cfg.updates[2][:schedule]).to eq(cfg.updates[0][:schedule])
+    end
+  end
+
   describe "File" do
     let(:config) { described_class.parse(fixture("configfile", "npm-weekly.yml")) }
 
