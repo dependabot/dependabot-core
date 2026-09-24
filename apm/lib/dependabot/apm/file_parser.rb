@@ -82,9 +82,10 @@ module Dependabot
             # and unpinned entries are resolved by APM's own lockfile, so we
             # leave them out of the dependency set entirely rather than have the
             # update checker reach out to the git remote for something we will
-            # never bump.
+            # never bump. The tag may be plain (`v1.2.0`) or package-scoped
+            # (`review--v1.2.0`), so resolve it through the shared APM extractor.
             ref = spec.ref
-            next unless ref && Version.correct?(ref)
+            next unless ref && Version.semver_from_ref(ref, dependency_name: spec.name)
 
             dependency_set << build_dependency(spec, entry, declaration_span, groups)
           end
@@ -116,7 +117,11 @@ module Dependabot
       end
       def build_dependency(spec, raw_entry, declaration_span, groups)
         ref = spec.ref
-        version = Version.new(ref).to_s if ref && Version.correct?(ref)
+        # The dependency version is the SemVer core of the pinned tag, even when
+        # the tag is package-scoped (`review--v1.2.0` -> `1.2.0`); the manifest
+        # requirement below keeps the original ref so the updater rewrites it.
+        core = Version.semver_from_ref(ref, dependency_name: spec.name) if ref
+        version = Version.new(core).to_s if core
 
         Dependency.new(
           name: spec.name,

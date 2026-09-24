@@ -30,17 +30,11 @@ module Dependabot
     # package's own name (the repository name, or the final component of a
     # virtual package path). A repository that only publishes `review--v1.5.0`
     # would otherwise offer no update, so those forms are parsed too, with the
-    # accepted prefix scoped to this dependency's package name.
+    # accepted prefix scoped to this dependency's package name. That grammar
+    # lives in `Apm::Version.semver_from_ref`, shared with the file parser and
+    # update checker so every consumer reads refs identically.
     class GitCommitChecker < Dependabot::GitCommitChecker
       extend T::Sig
-
-      # The separators APM places between a package name and the SemVer core in
-      # package-scoped tags (`{name}_v1.2.3`, `{name}--v1.2.3`, `{name}-v1.2.3`).
-      # Each already ends in the `v` that precedes the version, so the remaining
-      # suffix is a bare SemVer string. None is a prefix of another for a given
-      # name (`foo--v1.2.3` does not start with `foo-v`), so match order is
-      # irrelevant.
-      SCOPED_TAG_SEPARATORS = %w(_v --v -v).freeze
 
       # Build metadata is not part of SemVer precedence, so tags such as
       # `v1.3.0+build.5` and `v1.3.0+build.9` compare equal and the inherited
@@ -64,7 +58,7 @@ module Dependabot
       # `review--v1.5.0`) are kept.
       sig { override.params(tag: String).returns(T::Boolean) }
       def version_tag?(tag)
-        !version_from_tag_string(tag).nil?
+        !Dependabot::Apm::Version.semver_from_ref(tag, dependency_name: dependency.name).nil?
       end
 
       # Extract the SemVer core of a tag, keeping any build metadata so
@@ -73,47 +67,7 @@ module Dependabot
       # form and the extraction never returns nil.
       sig { override.params(name: String).returns(String) }
       def scan_version(name)
-        T.must(version_from_tag_string(name))
-      end
-
-      # Returns the SemVer core of *tag* for the supported layouts, or nil when
-      # the tag is not a version tag for this dependency. Plain `v?<semver>`
-      # tags keep any build metadata; package-scoped tags are only accepted when
-      # their `{name}` matches this dependency's package name, so a monorepo's
-      # `security--v2.0.0` never resolves against a `review` dependency.
-      sig { params(tag: String).returns(T.nilable(String)) }
-      def version_from_tag_string(tag)
-        return Dependabot::Apm::Version.remove_leading_v(tag).to_s if Dependabot::Apm::Version.correct?(tag)
-
-        scoped_version(tag)
-      end
-
-      # Strips a `{name}{separator}` prefix (for this dependency's package name)
-      # and returns the bare SemVer suffix when what remains is a valid SemVer,
-      # or nil otherwise.
-      sig { params(tag: String).returns(T.nilable(String)) }
-      def scoped_version(tag)
-        name = package_name
-        return nil if name.empty?
-
-        SCOPED_TAG_SEPARATORS.each do |separator|
-          prefix = "#{name}#{separator}"
-          next unless tag.start_with?(prefix)
-
-          candidate = tag[prefix.length..].to_s
-          return candidate if candidate.match?(Dependabot::Apm::Version::SEMVER_REGEX)
-        end
-
-        nil
-      end
-
-      # APM scopes package-scoped tags to the package's own name: the repository
-      # name for a whole-repo dependency, or the final path component for a
-      # virtual package (`org/mono/skills/review` -> `review`). The dependency
-      # name already encodes both, so its last `/`-separated segment is the name.
-      sig { returns(String) }
-      def package_name
-        dependency.name.split("/").last.to_s
+        T.must(Dependabot::Apm::Version.semver_from_ref(name, dependency_name: dependency.name))
       end
 
       # An APM tag's prefix is whatever precedes its SemVer core: the optional
