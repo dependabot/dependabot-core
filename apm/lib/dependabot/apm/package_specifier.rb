@@ -32,7 +32,12 @@ module Dependabot
 
       DEFAULT_HOST = "github.com"
 
-      SCP_STYLE = /\Agit@(?<host>[^:]+):(?<path>.+)\z/
+      # SCP-style SSH shorthand `user@host:path`. APM accepts any valid SSH
+      # username here (not only `git@`), so match any user that has no `:` or
+      # `/` (either would signal a URL scheme or path rather than an SCP user).
+      # The user is discarded — only the host and path determine the git
+      # coordinates, just as URL_STYLE drops its `user@` info.
+      SCP_STYLE = %r{\A(?<user>[^@:/\s]+)@(?<host>[^:/\s]+):(?<path>.+)\z}
       # Matches https/git/ssh URIs, discarding any `user@` info (e.g. the
       # `git@` in an `ssh://git@host/owner/repo` URL) so only the host remains.
       URL_STYLE = %r{\A(?<scheme>https?|git|ssh)://(?:[^@/]+@)?(?<host>[^/]+)/(?<path>.+)\z}
@@ -64,6 +69,22 @@ module Dependabot
         return nil unless path
 
         build(host: host, path: path, ref: ref)
+      end
+
+      # True when `raw` is the string shorthand form (`[host/]owner/repo…`)
+      # rather than an explicit clone URL (`https://`, `http://`, `ssh://git@`
+      # or SCP `git@host:path`). When an apm manifest configures a default
+      # registry, APM routes shorthand entries through it instead of Git, so the
+      # parser skips them (registry dependencies are out of scope for v1);
+      # explicit URL forms are always Git and are never registry-routed.
+      sig { params(raw: Object).returns(T::Boolean) }
+      def self.shorthand?(raw)
+        return false unless raw.is_a?(String)
+
+        spec = raw.strip.partition("#").first.to_s
+        return false if spec.empty? || local_path?(spec)
+
+        !spec.match?(SCP_STYLE) && !spec.match?(URL_STYLE)
       end
 
       sig do
