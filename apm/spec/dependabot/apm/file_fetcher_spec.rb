@@ -76,9 +76,9 @@ RSpec.describe Dependabot::Apm::FileFetcher do
         expect(fetched_files.map(&:name)).to contain_exactly("apm.yml", "apm.lock.yaml")
       end
 
-      it "fetches the lockfile as a regular (non-support) file so ref bumps update it" do
+      it "marks the lockfile as a support file" do
         lockfile = fetched_files.find { |f| f.name == "apm.lock.yaml" }
-        expect(lockfile.support_file?).to be(false)
+        expect(lockfile.support_file?).to be(true)
       end
     end
 
