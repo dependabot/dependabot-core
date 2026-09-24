@@ -90,6 +90,32 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(latest_version).to eq(Dependabot::Apm::Version.new("1.1.0"))
       end
     end
+
+    context "when the repository has non-SemVer and build-metadata tags" do
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-edge-tags"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # The shared GitCommitChecker regex would accept `v1.2.3.4` (raising when
+      # Apm::Version is built) and reject the build-metadata tag; the APM
+      # subclass filters both through strict SemVer instead.
+      it "ignores non-SemVer tags and selects the build-metadata release" do
+        expect(latest_version).to eq(Dependabot::Apm::Version.new("1.3.0+build.5"))
+      end
+
+      context "when the current ref is itself a non-SemVer tag" do
+        let(:reference) { "v1.2.3.4" }
+
+        it "does not treat it as a version and offers no update" do
+          expect(latest_version).to be_nil
+        end
+      end
+    end
   end
 
   describe "#can_update?" do
