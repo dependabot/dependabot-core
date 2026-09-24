@@ -55,6 +55,19 @@ module Dependabot
         lowest_security_fix_version
       end
 
+      # Base `vulnerable?` only inspects the merged dependency's single version,
+      # which DependencySet collapses to the LOWEST pinned ref. A merged APM
+      # dependency can pin several refs, and an advisory may affect only a higher
+      # one (e.g. declarations `v1.0.0` and `v2.0.0` with an advisory on
+      # `>= 2.0.0, < 2.1.0`): base would see `v1.0.0`, report not-vulnerable, and
+      # the security update would be skipped upstream, leaving the vulnerable
+      # `v2.0.0` declaration unfixed. So also treat the dependency as vulnerable
+      # when ANY requirement's own ref version is affected.
+      sig { returns(T::Boolean) }
+      def vulnerable?
+        super || requirement_versions.any? { |version| ref_vulnerable?(version) }
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless git_commit_checker.git_dependency?
@@ -122,11 +135,16 @@ module Dependabot
         return unless git_commit_checker.git_dependency?
         return unless git_commit_checker.pinned_ref_looks_like_version?
 
-        # Lowest security fix across all requirement families, each filtered
-        # above its OWN pinned version so a higher declaration's fix (e.g. the
-        # `v2.1.0` for a `v2.0.0` pin) isn't masked by a lower family's `v1.1.0`.
+        # Lowest security fix across the requirement families that are ACTUALLY
+        # vulnerable, each filtered above its OWN pinned version so a higher
+        # declaration's fix (e.g. the `v2.1.0` for a `v2.0.0` pin) isn't masked
+        # by a lower family's `v1.1.0`, and a declaration that isn't itself
+        # affected never contributes a spurious fix.
         semver_requirement_checkers.filter_map do |ref_version, checker|
-          lowest_security_fix_tag(checker, Version.new(ref_version))&.version
+          parsed = Version.new(ref_version)
+          next unless ref_vulnerable?(parsed)
+
+          lowest_security_fix_tag(checker, parsed)&.version
         end.min
       end
 
@@ -146,7 +164,19 @@ module Dependabot
         return unless checker.pinned_ref_looks_like_version?
 
         parsed = Version.new(ref_version)
-        tag = vulnerable? ? lowest_security_fix_tag(checker, parsed) : latest_version_tag(checker)
+        tag =
+          if ref_vulnerable?(parsed)
+            # This declaration is itself vulnerable: move it to the lowest fix
+            # strictly above its OWN pinned version.
+            lowest_security_fix_tag(checker, parsed)
+          elsif security_advisories.any?
+            # A security update is in progress but this declaration isn't
+            # affected -- leave it untouched even when a sibling declaration is
+            # being fixed, so security updates stay minimal.
+            return
+          else
+            latest_version_tag(checker)
+          end
         tag_version = tag&.version
         return unless tag_version
         return if parsed >= tag_version
@@ -168,6 +198,24 @@ module Dependabot
 
           [ref_version, git_commit_checker_for(source)]
         end
+      end
+
+      # The parsed SemVer core of every requirement pinned to a version tag
+      # (plain or package-scoped, e.g. `review--v1.0.0`). Branch- and SHA-pinned
+      # requirements carry no comparable version and are skipped. Used to test
+      # each declaration's own ref against the advisories.
+      sig { returns(T::Array[Dependabot::Version]) }
+      def requirement_versions
+        dependency.requirements.filter_map do |req|
+          current_ref = req.source_string("ref")
+          ref_version = current_ref && Version.semver_from_ref(current_ref, dependency_name: dependency.name)
+          ref_version && Version.new(ref_version)
+        end
+      end
+
+      sig { params(version: Gem::Version).returns(T::Boolean) }
+      def ref_vulnerable?(version)
+        security_advisories.any? { |advisory| advisory.vulnerable?(version) }
       end
 
       sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
