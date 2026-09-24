@@ -18,11 +18,15 @@ module Dependabot
     #   git@gitlab.com:acme/repo.git           SSH SCP-style URL
     #   ssh://git@gitlab.com/acme/repo.git     SSH URI-style URL
     #
-    # All explicit URL and SSH forms resolve to an `https://host/owner/repo`
-    # clone URL, since Dependabot enumerates tags over HTTPS with a token. A
-    # custom port is preserved only for an `https://` source (its port names the
-    # same HTTPS endpoint); `http://`, `ssh://` and `git://` ports are dropped,
-    # as they do not apply to that HTTPS endpoint.
+    # HTTPS and SSH clone URLs both resolve to an `https://host[:port]/owner/repo`
+    # remote, since Dependabot enumerates tags over HTTPS with a token. An
+    # `https://` source keeps its authority verbatim, including a custom port
+    # (`github.com:8443` is a distinct endpoint). An `ssh://` (or `git@host:`
+    # SCP) source reaches the same repositories over HTTPS, so it resolves there
+    # and its SSH port (e.g. `:2222`) is dropped, as it is not an HTTPS port.
+    # Host classification (GitHub-family, Azure DevOps) always ignores the port.
+    # `http://` and `git://` URLs name a different endpoint than HTTPS and are
+    # not silently rewritten; they are out of scope for v1 and resolve to `nil`.
     #
     # Virtual package paths (`owner/repo/skills/review`) are a GitHub-family
     # shorthand, since GitHub repositories are always `owner/repo`. That covers
@@ -93,17 +97,24 @@ module Dependabot
       end
 
       # True when `raw` is the string shorthand form (`[host/]owner/repo…`)
-      # rather than an explicit clone URL (`https://`, `http://`, `ssh://git@`
-      # or SCP `git@host:path`). When an apm manifest configures a default
-      # registry, APM routes shorthand entries through it instead of Git, so the
-      # parser skips them (registry dependencies are out of scope for v1);
-      # explicit URL forms are always Git and are never registry-routed.
+      # rather than an explicit git reference (`https://`, `http://`, `ssh://git@`,
+      # an SCP `git@host:path`, or any `.git`-suffixed ref). When an apm manifest
+      # configures a default registry, APM routes shorthand entries through it
+      # instead of Git, so the parser skips them (registry dependencies are out
+      # of scope for v1). This mirrors APM's `_is_explicit_git_form`, which
+      # routes URL, SCP and `.git` forms to Git even when a default registry is
+      # configured -- they are the escape hatch and are never registry-routed.
       sig { params(raw: Object).returns(T::Boolean) }
       def self.shorthand?(raw)
         return false unless raw.is_a?(String)
 
         spec = raw.strip.partition("#").first.to_s
         return false if spec.empty? || local_path?(spec)
+
+        # A `.git` suffix marks an explicit git reference (as APM's
+        # `_is_explicit_git_form` treats it), so it is a Git escape hatch rather
+        # than a registry-routed shorthand even without a transport scheme.
+        return false if spec.downcase.end_with?(".git")
 
         !spec.match?(SCP_STYLE) && !spec.match?(URL_STYLE)
       end
@@ -175,7 +186,8 @@ module Dependabot
       # configuration is threaded through the parser.
       sig { params(host: String).returns(T::Boolean) }
       def self.github_family?(host)
-        host == DEFAULT_HOST || host.end_with?(".ghe.com")
+        hostname = hostname_without_port(host)
+        hostname == DEFAULT_HOST || hostname.end_with?(".ghe.com")
       end
 
       # True for Azure DevOps Services hosts: dev.azure.com, its SSH alias, and
@@ -185,7 +197,19 @@ module Dependabot
       # remote.
       sig { params(host: String).returns(T::Boolean) }
       def self.azure_devops_host?(host)
-        AZURE_DEVOPS_HOSTS.include?(host) || host.end_with?(".visualstudio.com")
+        hostname = hostname_without_port(host)
+        AZURE_DEVOPS_HOSTS.include?(hostname) || hostname.end_with?(".visualstudio.com")
+      end
+
+      # The hostname with any `:port` suffix removed. Host-family classification
+      # keys off the hostname alone: the port is part of the authority that
+      # `git_url` and `name` keep, but it must not change which family a URL
+      # belongs to (`github.com:8443` is still GitHub, `foo.ghe.com:8443` still
+      # GHE Cloud). Only a trailing `:<digits>` is stripped, so bracketed IPv6
+      # authorities are left intact.
+      sig { params(host: String).returns(String) }
+      def self.hostname_without_port(host)
+        host.sub(/:\d+\z/, "")
       end
 
       sig { params(entry: String).returns(T::Boolean) }
@@ -202,14 +226,26 @@ module Dependabot
 
         if (m = spec.match(URL_STYLE))
           host = T.must(m[:host])
-          # The clone URL we build always resolves over https (Dependabot
-          # enumerates tags over https with a token), so a port is only reusable
-          # when the source itself is https. An ssh://, git:// or http:// port
-          # (e.g. the `:2222` on `ssh://git@host:2222/...`) is not an https port,
-          # so drop it rather than query https on a foreign port that cannot
-          # resolve. An https port names the same endpoint and is preserved.
-          host = host.sub(/:\d+\z/, "") unless m[:scheme] == "https"
-          return [host, m[:path]]
+          case m[:scheme]
+          when "https"
+            # HTTPS is the transport we query, so keep the authority verbatim,
+            # including any explicit port: `github.com:8443` is a distinct
+            # endpoint from `github.com` and must stay that way.
+            return [host, m[:path]]
+          when "ssh"
+            # SSH reaches the same repositories as HTTPS on that host, and
+            # Dependabot enumerates tags over HTTPS with a token, so resolve
+            # ssh:// URIs over HTTPS. The SSH port (e.g. the `:2222` on
+            # `ssh://git@host:2222/...`) is not an HTTPS port, so drop it.
+            return [host.sub(/:\d+\z/, ""), m[:path]]
+          else
+            # http:// and git:// name a different endpoint than HTTPS (a
+            # distinct port, and for http an unencrypted service). We only query
+            # over HTTPS, so rather than silently rewrite them to a possibly
+            # wrong remote we treat them as out of scope for v1 (see README);
+            # returning a nil path makes `parse` yield nil.
+            return [host, nil]
+          end
         end
 
         first_segment = spec.split("/").first.to_s

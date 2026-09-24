@@ -204,12 +204,32 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
-    context "with an HTTP URL that carries a custom port" do
+    context "with a virtual sub-path on a custom-port GitHub host" do
+      let(:raw) { "https://github.com:8443/org/repo/skills/review#v1.0.0" }
+
+      it "classifies GitHub by hostname, splitting the virtual path and keeping the port" do
+        expect(spec.host).to eq("github.com:8443")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.sub_path).to eq("skills/review")
+        expect(spec.git_url).to eq("https://github.com:8443/org/repo")
+        expect(spec.name).to eq("github.com:8443/org/repo/skills/review")
+      end
+    end
+
+    context "with an HTTP URL" do
       let(:raw) { "http://git.example.com:8080/org/repo#v1.0.0" }
 
-      it "drops the non-https port and resolves over https" do
-        expect(spec.host).to eq("git.example.com")
-        expect(spec.git_url).to eq("https://git.example.com/org/repo")
+      it "is skipped because http names a different endpoint than https" do
+        expect(spec).to be_nil
+      end
+    end
+
+    context "with a git protocol URL" do
+      let(:raw) { "git://git.example.com/org/repo#v1.0.0" }
+
+      it "is skipped because git:// names a different endpoint than https" do
+        expect(spec).to be_nil
       end
     end
 
@@ -342,6 +362,11 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       expect(described_class.shorthand?("ssh://git@gitlab.com/acme/repo.git#v1.0.0")).to be(false)
       expect(described_class.shorthand?("git@gitlab.com:acme/repo.git#v1.0.0")).to be(false)
       expect(described_class.shorthand?("myuser@gitlab.com:acme/repo.git")).to be(false)
+    end
+
+    it "is false for a .git-suffixed ref even without a transport scheme" do
+      expect(described_class.shorthand?("owner/repo.git")).to be(false)
+      expect(described_class.shorthand?("owner/repo.GIT#v1.0.0")).to be(false)
     end
 
     it "is false for local paths and non-strings" do
