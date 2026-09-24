@@ -133,7 +133,8 @@ module Dependabot
                 source: dep.source&.dup,
                 file: file.name
               }],
-              package_manager: "bundler"
+              package_manager: "bundler",
+              origin_files: [file.name]
             )
           end
         end
@@ -170,7 +171,8 @@ module Dependabot
                   source: dependency.source&.dup,
                   file: gemspec.name
                 }],
-                package_manager: "bundler"
+                package_manager: "bundler",
+                origin_files: [gemspec.name]
               )
             end
           end
@@ -200,7 +202,8 @@ module Dependabot
             package_manager: "bundler",
             subdependency_metadata: [{
               production: production_dep_names.include?(dependency.name)
-            }]
+            }],
+            origin_files: [T.must(lockfile).name]
           )
         end
 
