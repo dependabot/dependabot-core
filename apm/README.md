@@ -48,6 +48,13 @@ To keep the first iteration small and reviewable, the following are intentionall
   which Dependabot does not regenerate, so their manifest ref is left untouched.
 - **Local path entries** (`./pkg`, `../pkg`, `/pkg`) — not backed by a remote git
   host, so there is nothing to bump.
+- **Block-scalar and escaped string entries** — a shorthand written as a YAML
+  block scalar (folded `>` / literal `|`) or as a quoted scalar that relies on
+  escape sequences (e.g. `"owner/repo\x23v1.0.0"`) decodes to text that is not a
+  contiguous slice of the manifest source, so its ref cannot be rewritten in
+  place. These uncommon spellings are skipped rather than producing a failing
+  update; write the shorthand as a plain or simply-quoted scalar
+  (`owner/repo#v1.0.0`) to have it updated.
 - **Lockfile regeneration** — `apm.lock.yaml` is intentionally **left
   unchanged**. Rewriting only its `resolved_ref:` to the new tag would be
   actively harmful: APM's install path compares the manifest ref to
