@@ -1035,7 +1035,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it "keeps the current version when the update requires an incompatible React peer" do
-          is_expected.to eq(Gem::Version.new("15.2.0"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("15.2.0"))
         end
       end
     end
