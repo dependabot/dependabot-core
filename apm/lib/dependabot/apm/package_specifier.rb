@@ -129,9 +129,15 @@ module Dependabot
 
       # The dependency name shown to users. GitHub-hosted repos keep the familiar
       # `owner/repo` shorthand; other hosts are namespaced by host to stay unique.
+      # A virtual package (sub path) is namespaced by that path too: APM keys
+      # virtual packages by repository plus path, so `org/mono/skills/review` and
+      # `org/mono/skills/security` must remain distinct dependencies rather than
+      # collapse into one `org/mono` entry that DependencySet would deduplicate.
       sig { returns(String) }
       def name
-        host == DEFAULT_HOST ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
+        repo_name = host == DEFAULT_HOST ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
+        virtual_path = sub_path
+        virtual_path ? "#{repo_name}/#{virtual_path}" : repo_name
       end
     end
   end

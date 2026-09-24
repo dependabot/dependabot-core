@@ -41,7 +41,7 @@ module Dependabot
         host = default_host
 
         DEPENDENCY_BLOCKS.each do |block_key, groups|
-          apm_entries_in(block_key).each do |entry, declaration_line|
+          apm_entries_in(block_key).each do |entry, declaration_span|
             # v1 supports the string shorthand form (e.g. "owner/repo#v1.0.0").
             # Object entries (git:/registry:/id:/path:) and `mcp` entries are
             # not yet supported and are skipped by only reading scalar entries.
@@ -56,7 +56,7 @@ module Dependabot
             ref = spec.ref
             next unless ref && Version.correct?(ref)
 
-            dependency_set << build_dependency(spec, entry, declaration_line, groups)
+            dependency_set << build_dependency(spec, entry, declaration_span, groups)
           end
         end
 
@@ -80,11 +80,11 @@ module Dependabot
         params(
           spec: Dependabot::Apm::PackageSpecifier,
           raw_entry: String,
-          declaration_line: Integer,
+          declaration_span: String,
           groups: T::Array[String]
         ).returns(Dependabot::Dependency)
       end
-      def build_dependency(spec, raw_entry, declaration_line, groups)
+      def build_dependency(spec, raw_entry, declaration_span, groups)
         ref = spec.ref
         version = Version.new(ref).to_s if ref && Version.correct?(ref)
 
@@ -102,21 +102,21 @@ module Dependabot
               ref: ref,
               branch: nil
             },
-            # `declaration_line` (0-based) pins the exact manifest line the
-            # entry came from, so the file updater rewrites only that
-            # occurrence and never an identical string elsewhere.
+            # `declaration_span` locates the exact manifest scalar (see
+            # `encode_span`) so the file updater rewrites only that occurrence,
+            # never an identical string elsewhere in the file.
             metadata: {
               declaration_string: raw_entry,
-              declaration_line: declaration_line.to_s
+              declaration_span: declaration_span
             }
           }]
         )
       end
 
-      # Returns each `<block>.apm` entry as a [value, 0-based source line] pair.
+      # Returns each `<block>.apm` entry as a [value, encoded source span] pair.
       # Only scalar entries are returned, so object-form entries (git:/registry:
       # /id:/path: maps) are naturally skipped.
-      sig { params(block_key: String).returns(T::Array[[String, Integer]]) }
+      sig { params(block_key: String).returns(T::Array[[String, String]]) }
       def apm_entries_in(block_key)
         block = ast_mapping_value(manifest_ast, block_key)
         return [] unless block.is_a?(Psych::Nodes::Mapping)
@@ -127,8 +127,17 @@ module Dependabot
         sequence.children.filter_map do |node|
           next unless node.is_a?(Psych::Nodes::Scalar)
 
-          [node.value, node.start_line]
+          [node.value, encode_span(node)]
         end
+      end
+
+      # Encodes a scalar node's exact source span as
+      # "start_line:start_column:end_line:end_column" (all 0-based). The span
+      # brackets the whole token, including any surrounding quotes, which lets
+      # the updater rewrite block and flow sequences alike.
+      sig { params(node: Psych::Nodes::Scalar).returns(String) }
+      def encode_span(node)
+        [node.start_line, node.start_column, node.end_line, node.end_column].join(":")
       end
 
       # Looks up the value node for `key` in a YAML mapping AST node, whose
