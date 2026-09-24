@@ -153,6 +153,39 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(updated_requirements).to eq(dependency.requirements)
       end
     end
+
+    context "when merged requirements carry different refs" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+
+      # The tag is chosen from the combined (lowest) version, so the lower ref is
+      # bumped while the already-higher ref must not be rewritten downward.
+      it "bumps the lower ref and leaves the already-higher ref untouched" do
+        refs = updated_requirements.map { |req| req[:source][:ref] }
+        expect(refs).to eq(%w(v1.2.0 v2.0.0))
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do
