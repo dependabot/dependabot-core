@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Apm::FileParser do
           [{
             requirement: nil,
             file: "apm.yml",
-            groups: [],
+            groups: ["dependencies"],
             source: {
               type: "git",
               url: "https://github.com/microsoft/edge-ai",
@@ -291,6 +291,35 @@ RSpec.describe Dependabot::Apm::FileParser do
         expect(dependency.version).to eq("3.1.4")
         expect(dependency.requirements.first[:groups]).to eq(["development"])
         expect(dependency.production?).to be(false)
+      end
+    end
+
+    context "when a package is declared in both dependencies and devDependencies" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - microsoft/edge-ai#v1.0.0
+            devDependencies:
+              apm:
+                - microsoft/edge-ai#v1.0.0
+          YAML
+        )
+      end
+
+      # DependencySet merges the two declarations into one dependency, and
+      # Dependency#production? flattens every requirement's groups. The explicit
+      # production marker must survive that flatten so the dependency stays
+      # production rather than being dragged non-production by the dev-only
+      # declaration.
+      it "keeps the merged dependency in the production group" do
+        dependency = dependencies.find { |d| d.name == "microsoft/edge-ai" }
+        flattened_groups = dependency.requirements.flat_map { |r| r[:groups] }
+
+        expect(flattened_groups).to include("dependencies", "development")
+        expect(dependency.production?).to be(true)
       end
     end
 

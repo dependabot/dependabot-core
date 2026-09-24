@@ -38,6 +38,15 @@ For each such entry Dependabot:
 3. Rewrites only the ref in `apm.yml` (e.g. `#v1.0.0` → `#v1.4.0`), preserving
    the rest of the declaration byte-for-byte.
 
+Both plain `v1.4.0` / `1.4.0` tags and APM's package-scoped tags —
+`review-v1.4.0`, `review--v1.4.0` and `review_v1.4.0`, where the prefix is the
+package's own name (the repository name, or the final virtual-path component) —
+are recognised, so a monorepo that tags each package independently is updated
+correctly. Build metadata (`+build.5`) is preserved and, per SemVer, ignored for
+precedence; equal-precedence tags break ties on the full tag string, so tag
+resolution stays deterministic regardless of the order the remote advertises
+them.
+
 `apm.lock.yaml` is fetched as a read-only support file (used only to report the
 APM CLI version) and is **never modified** — see the lockfile note below.
 

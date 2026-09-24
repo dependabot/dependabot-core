@@ -197,23 +197,26 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
     context "with an HTTPS URL that carries a custom port" do
       let(:raw) { "https://ghe.example.com:8443/org/repo.git#v1.0.0" }
 
-      it "keeps the https port because it names the same endpoint" do
+      it "keeps the https port in the clone URL but strips it from the identity name" do
         expect(spec.host).to eq("ghe.example.com:8443")
         expect(spec.git_url).to eq("https://ghe.example.com:8443/org/repo")
-        expect(spec.name).to eq("ghe.example.com:8443/org/repo")
+        expect(spec.name).to eq("ghe.example.com/org/repo")
       end
     end
 
     context "with a virtual sub-path on a custom-port GitHub host" do
       let(:raw) { "https://github.com:8443/org/repo/skills/review#v1.0.0" }
 
-      it "classifies GitHub by hostname, splitting the virtual path and keeping the port" do
+      it "classifies GitHub by hostname, splitting the virtual path and keeping the port in the clone URL" do
         expect(spec.host).to eq("github.com:8443")
         expect(spec.owner).to eq("org")
         expect(spec.repo).to eq("repo")
         expect(spec.sub_path).to eq("skills/review")
         expect(spec.git_url).to eq("https://github.com:8443/org/repo")
-        expect(spec.name).to eq("github.com:8443/org/repo/skills/review")
+        # The identity name strips the port, so the host is the default
+        # github.com and the name collapses to the bare `owner/repo` shorthand
+        # (plus virtual path), matching APM's port-blind dedup key.
+        expect(spec.name).to eq("org/repo/skills/review")
       end
     end
 
