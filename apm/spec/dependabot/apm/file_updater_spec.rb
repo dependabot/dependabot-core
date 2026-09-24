@@ -222,18 +222,17 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
       let(:lockfile_body) do
         <<~YAML
+          lockfile_version: "1"
           apm_version: "0.4.2"
-          packages:
-            - name: microsoft/edge-ai
-              source: github.com/microsoft/edge-ai
-              ref: v1.0.0
-              resolved: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
-              integrity: sha256-0000000000000000000000000000000000000000000=
-            - name: microsoft/edge-ai-extras
-              source: github.com/microsoft/edge-ai-extras
-              ref: v1.0.0
-              resolved: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
-              integrity: sha256-1111111111111111111111111111111111111111111=
+          dependencies:
+            - repo_url: github.com/microsoft/edge-ai
+              resolved_ref: v1.0.0
+              resolved_commit: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
+              content_hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
+            - repo_url: github.com/microsoft/edge-ai-extras
+              resolved_ref: v1.0.0
+              resolved_commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+              content_hash: sha256:1111111111111111111111111111111111111111111111111111111111111111
         YAML
       end
       let(:lockfile) do
@@ -245,31 +244,32 @@ RSpec.describe Dependabot::Apm::FileUpdater do
         expect(updated_files.map(&:name)).to contain_exactly("apm.yml", "apm.lock.yaml")
       end
 
-      it "bumps the matching package's ref to the manifest ref" do
+      it "bumps the matching dependency's resolved_ref to the manifest ref" do
         expect(updated_lockfile.content)
-          .to match(%r{- name: microsoft/edge-ai\n\s+source:[^\n]+\n\s+ref: v1\.2\.0\n})
+          .to match(%r{- repo_url: github\.com/microsoft/edge-ai\n\s+resolved_ref: v1\.2\.0\n})
       end
 
-      it "leaves resolved and integrity for `apm install --update` to regenerate" do
-        expect(updated_lockfile.content).to include("resolved: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e")
-        expect(updated_lockfile.content).to include("integrity: sha256-0000000000000000000000000000000000000000000=")
+      it "leaves resolved_commit and content_hash for `apm install --update` to regenerate" do
+        expect(updated_lockfile.content).to include("resolved_commit: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e")
+        expect(updated_lockfile.content)
+          .to include("content_hash: sha256:0000000000000000000000000000000000000000000000000000000000000000")
       end
 
-      it "does not touch an unrelated package that shares a name prefix" do
+      it "does not touch an unrelated dependency that shares a name prefix" do
         expect(updated_lockfile.content)
-          .to match(%r{- name: microsoft/edge-ai-extras\n\s+source:[^\n]+\n\s+ref: v1\.0\.0\n})
+          .to match(%r{- repo_url: github\.com/microsoft/edge-ai-extras\n\s+resolved_ref: v1\.0\.0\n})
       end
 
       context "when the bumped dependency is absent from the lockfile" do
         let(:lockfile_body) do
           <<~YAML
+            lockfile_version: "1"
             apm_version: "0.4.2"
-            packages:
-              - name: octo-org/octo-skills
-                source: github.com/octo-org/octo-skills
-                ref: v2.3.1
-                resolved: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
-                integrity: sha256-1111111111111111111111111111111111111111111=
+            dependencies:
+              - repo_url: github.com/octo-org/octo-skills
+                resolved_ref: v2.3.1
+                resolved_commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+                content_hash: sha256:1111111111111111111111111111111111111111111111111111111111111111
           YAML
         end
 
