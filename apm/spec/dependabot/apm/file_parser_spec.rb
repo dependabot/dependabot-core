@@ -218,6 +218,7 @@ RSpec.describe Dependabot::Apm::FileParser do
               apm:
                 - microsoft/edge-ai#v1.0.0
                 - gitlab.com/acme/prompts#v0.5.0
+                - microsoft/edge-ai-tools.git#v1.0.0
                 - git@gitlab.com:acme/ssh-pkg.git#v2.0.0
                 - https://gitlab.com/acme/url-pkg.git#v3.0.0
           YAML
@@ -225,9 +226,12 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
 
       # Bare and FQDN string shorthand route through the registry (out of scope
-      # for v1), so only the explicit clone URLs remain as git dependencies.
+      # for v1), so only the explicit clone URLs -- including a `.git`-suffixed
+      # bare ref, which APM also treats as an explicit git form -- remain as git
+      # dependencies.
       it "skips string-shorthand entries and keeps explicit clone URLs" do
         expect(dependencies.map(&:name)).to contain_exactly(
+          "microsoft/edge-ai-tools",
           "gitlab.com/acme/ssh-pkg",
           "gitlab.com/acme/url-pkg"
         )
