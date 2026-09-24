@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/git_commit_checker"
+require "dependabot/git_metadata_fetcher"
 require "dependabot/git_tag_details"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
@@ -56,31 +57,37 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        git_tag = updated_git_tag
-        new_tag = git_tag&.tag
-        return dependency.requirements unless new_tag
-
-        new_version = git_tag.version
+        return dependency.requirements unless git_commit_checker.git_dependency?
 
         dependency.requirements.map do |req|
+          source = req.source_hash
           current_ref = req.source_string("ref")
           # Only rewrite requirements pinned to a semver tag (plain or
           # package-scoped, e.g. `review--v1.0.0`); branch- and SHA-pinned
           # entries are left as-is. Normalise the ref to its SemVer core through
           # the shared APM extractor so scoped tags are recognised and compared.
           ref_version = current_ref && Version.semver_from_ref(current_ref, dependency_name: dependency.name)
-          next req unless ref_version
+          next req unless source && ref_version
 
-          # DependencySet merges repeated declarations into a single dependency
-          # with several requirements, whose refs need not match; the tag is
-          # selected from the dependency's combined (lowest) version. Never
-          # rewrite a requirement whose own ref already sits at or above that
-          # tag -- a lower selected tag (a security fix, or a latest capped by
-          # an ignore rule) would otherwise downgrade a higher declaration, e.g.
-          # a v1.5.0 fix must leave a v2.0.0 entry untouched.
+          # DependencySet merges repeated declarations of the same package into a
+          # single dependency with several requirements whose refs need not share
+          # a tag family (e.g. `review--v1.0.0` and `review-v1.0.0`). Resolve the
+          # update per requirement source -- each through a checker scoped to that
+          # ref, sharing one remote fetch -- so a declaration is only ever bumped
+          # within its own tag family instead of being rewritten into the first
+          # requirement's family or missing its own newer tag.
+          git_tag = updated_git_tag_for(git_commit_checker_for(source))
+          new_tag = git_tag&.tag
+          next req unless new_tag
+
+          new_version = git_tag.version
+          # Never rewrite a requirement whose own ref already sits at or above the
+          # resolved tag -- a lower selected tag (a security fix, or a latest
+          # capped by an ignore rule) would otherwise downgrade a higher
+          # declaration, e.g. a v1.5.0 fix must leave a v2.0.0 entry untouched.
           next req if new_version && Version.new(ref_version) >= new_version
 
-          new_source = T.must(req.source_hash).merge(ref: new_tag)
+          new_source = source.merge(ref: new_tag)
           Dependabot::DependencyRequirement.create(req.merge(source: new_source))
         end
       end
@@ -118,30 +125,27 @@ module Dependabot
         lowest_security_fix_tag&.version
       end
 
-      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
-      def updated_git_tag
-        return @updated_git_tag if defined?(@updated_git_tag)
+      sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
+      def updated_git_tag_for(checker)
+        return unless checker.pinned_ref_looks_like_version?
 
-        @updated_git_tag = T.let(
-          vulnerable? ? lowest_security_fix_tag : latest_version_tag,
-          T.nilable(Dependabot::GitTagDetails)
-        )
+        vulnerable? ? lowest_security_fix_tag(checker) : latest_version_tag(checker)
       end
 
-      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
-      def latest_version_tag
-        return unless git_commit_checker.git_dependency?
-        return unless git_commit_checker.pinned_ref_looks_like_version?
+      sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
+      def latest_version_tag(checker = git_commit_checker)
+        return unless checker.git_dependency?
+        return unless checker.pinned_ref_looks_like_version?
 
-        git_commit_checker.local_tag_for_latest_version(update_cooldown)
+        checker.local_tag_for_latest_version(update_cooldown)
       end
 
-      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
-      def lowest_security_fix_tag
-        return unless git_commit_checker.git_dependency?
-        return unless git_commit_checker.pinned_ref_looks_like_version?
+      sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
+      def lowest_security_fix_tag(checker = git_commit_checker)
+        return unless checker.git_dependency?
+        return unless checker.pinned_ref_looks_like_version?
 
-        allowed_tags = git_commit_checker.local_tags_for_allowed_versions
+        allowed_tags = checker.local_tags_for_allowed_versions
         fixed_tags = Dependabot::UpdateCheckers::VersionFilters
                      .filter_vulnerable_versions(allowed_tags, security_advisories)
         # Never downgrade: an advisory that only affects the current line (e.g.
@@ -173,10 +177,62 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
-            consider_version_branches_pinned: false
+            consider_version_branches_pinned: false,
+            git_metadata_fetcher: shared_git_metadata_fetcher
           ),
           T.nilable(Dependabot::GitCommitChecker)
         )
+      end
+
+      # A checker scoped to a single requirement's source (its own ref), sharing
+      # one remote metadata fetch across every requirement so per-requirement
+      # resolution does not re-fetch the upload pack for each declaration. The
+      # scoped ref makes the parent's family filtering (`same_prefix?`) select
+      # tags in that declaration's own family.
+      sig { params(source: Dependabot::DependencyRequirement::ObjectHash).returns(Dependabot::GitCommitChecker) }
+      def git_commit_checker_for(source)
+        Dependabot::Apm::GitCommitChecker.new(
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          consider_version_branches_pinned: false,
+          dependency_source_details: symbolized_source_details(source),
+          git_metadata_fetcher: shared_git_metadata_fetcher
+        )
+      end
+
+      # One metadata fetcher for the dependency's git remote, shared by the main
+      # and per-requirement checkers so the upload pack is fetched once. All
+      # requirements of a merged dependency share the same clone URL (differing
+      # ports/paths keep them as separate dependencies), so a single fetcher is
+      # correct. Nil for non-git dependencies, where no fetch is needed.
+      sig { returns(T.nilable(Dependabot::GitMetadataFetcher)) }
+      def shared_git_metadata_fetcher
+        return @shared_git_metadata_fetcher if defined?(@shared_git_metadata_fetcher)
+
+        url = dependency.source_string("url", allowed_types: ["git"])
+        @shared_git_metadata_fetcher = T.let(
+          url && Dependabot::GitMetadataFetcher.new(url: url, credentials: credentials),
+          T.nilable(Dependabot::GitMetadataFetcher)
+        )
+      end
+
+      # A symbol-keyed source-details hash for GitCommitChecker, holding the git
+      # coordinate fields it reads (type/url/ref/branch). Rebuilt explicitly so a
+      # requirement's mixed-key source hash conforms to the checker's expected
+      # `{Symbol => Object}` shape.
+      sig do
+        params(source: Dependabot::DependencyRequirement::ObjectHash)
+          .returns(T::Hash[Symbol, Object])
+      end
+      def symbolized_source_details(source)
+        details = T.let({}, T::Hash[Symbol, Object])
+        %i(type url ref branch).each do |key|
+          value = source[key] || source[key.to_s]
+          details[key] = value if value.is_a?(String)
+        end
+        details
       end
     end
   end

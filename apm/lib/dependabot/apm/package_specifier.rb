@@ -20,8 +20,10 @@ module Dependabot
     #
     # HTTPS and SSH clone URLs both resolve to an `https://host[:port]/owner/repo`
     # remote, since Dependabot enumerates tags over HTTPS with a token. An
-    # `https://` source keeps its authority verbatim, including a custom port
-    # (`github.com:8443` is a distinct endpoint). An `ssh://` (or `git@host:`
+    # `https://` source keeps its authority, including a non-default port
+    # (`github.com:8443` is a distinct endpoint); the implicit `:443` is
+    # normalised away so it collapses to the same endpoint as a portless
+    # declaration. An `ssh://` (or `git@host:`
     # SCP) source reaches the same repositories over HTTPS, so it resolves there
     # and its SSH port (e.g. `:2222`) is dropped, as it is not an HTTPS port.
     # Host classification (GitHub-family, Azure DevOps) always ignores the port.
@@ -216,6 +218,21 @@ module Dependabot
         host.sub(/:\d+\z/, "")
       end
 
+      # The authority with a default HTTPS port removed. APM treats a
+      # non-default port as part of a dependency's identity but normalises the
+      # implicit `:443` away (its `_split_shorthand_host_port` maps port 443 to
+      # "no port"), so `github.com:443` and `github.com` are the same endpoint
+      # while `github.com:8443` stays distinct. Applied when parsing an HTTPS
+      # URL so `git_url` and `name` share one canonical authority; only a
+      # trailing `:<digits>` is considered, leaving bracketed IPv6 hosts intact.
+      sig { params(host: String).returns(String) }
+      def self.normalize_https_port(host)
+        match = host.match(/\A(?<hostname>.+):(?<port>\d+)\z/)
+        return host unless match
+
+        T.must(match[:port]).to_i == 443 ? T.must(match[:hostname]) : host
+      end
+
       sig { params(entry: String).returns(T::Boolean) }
       def self.local_path?(entry)
         entry.start_with?("./", "../", "/", "~/", ".\\", "..\\", "~\\") ||
@@ -232,10 +249,13 @@ module Dependabot
           host = T.must(m[:host])
           case T.must(m[:scheme]).downcase
           when "https"
-            # HTTPS is the transport we query, so keep the authority verbatim,
-            # including any explicit port: `github.com:8443` is a distinct
-            # endpoint from `github.com` and must stay that way.
-            return [host, m[:path]]
+            # HTTPS is the transport we query, so keep the authority, including
+            # a non-default port: `github.com:8443` is a distinct endpoint from
+            # `github.com` and must stay that way. The implicit `:443` is
+            # normalised off so a `github.com:443` declaration collapses to the
+            # same endpoint and identity as a portless one, matching APM's
+            # default-port handling.
+            return [normalize_https_port(host), m[:path]]
           when "ssh"
             # SSH reaches the same repositories as HTTPS on that host, and
             # Dependabot enumerates tags over HTTPS with a token, so resolve
@@ -294,19 +314,27 @@ module Dependabot
       # Comparing against the effective default (rather than a hard-coded
       # github.com) means a manifest-selected `default_host` is stripped too, so
       # dependency-name ignore rules and deduplication use the same identity APM
-      # does. A custom port is transport, not identity: APM keeps it only in the
-      # clone URL and excludes it from the dedup/lock key, so `git_url` retains
-      # it while `name` strips it (`git.example.com:8443/org/repo` collapses to
-      # `git.example.com/org/repo`), keeping duplicate declarations and
-      # dependency-name ignore rules aligned with APM. A virtual package (sub
-      # path) is namespaced by that path too: APM keys virtual packages by
-      # repository plus path, so `org/mono/skills/review` and
-      # `org/mono/skills/security` must remain distinct dependencies rather than
-      # collapse into one `org/mono` entry that DependencySet would deduplicate.
+      # does. A non-default port is part of the identity, matching APM's
+      # get_identity (`git.example.com:8443/org/repo` and
+      # `git.example.com:9443/org/repo` stay distinct dependencies rather than
+      # collapse into one entry that DependencySet would merge -- which, holding
+      # two different clone URLs, then raises `Multiple sources!`). The default
+      # `:443` is normalised off at parse time, so `git_url` and `name` share
+      # one authority and a `:443` declaration dedups with a portless one. A
+      # virtual package (sub path) is namespaced by that path too: APM keys
+      # virtual packages by repository plus path, so `org/mono/skills/review`
+      # and `org/mono/skills/security` must remain distinct dependencies rather
+      # than collapse into one `org/mono` entry that DependencySet would
+      # deduplicate.
       sig { returns(String) }
       def name
         identity_host = self.class.hostname_without_port(host)
-        repo_name = identity_host == @default_host ? "#{owner}/#{repo}" : "#{identity_host}/#{owner}/#{repo}"
+        # `host` carries only a non-default port here (the default :443 is
+        # normalised off when parsing the URL), so it is the identity authority:
+        # on the default host with no port the bare `owner/repo` shorthand is
+        # used, otherwise the port-bearing authority is prefixed.
+        on_default_host = identity_host == @default_host && host == identity_host
+        repo_name = on_default_host ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
         virtual_path = sub_path
         virtual_path ? "#{repo_name}/#{virtual_path}" : repo_name
       end

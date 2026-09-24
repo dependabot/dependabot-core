@@ -16,6 +16,14 @@ module Dependabot
       MANIFEST_FILENAME = "apm.yml"
       LOCKFILE_FILENAME = "apm.lock.yaml"
 
+      # Shown when file fetching runs with beta ecosystems disabled. apm is a
+      # beta ecosystem, so it only operates when a repo opts in; surfacing the
+      # remediation here avoids the misleading "apm.yml not found" message when
+      # the manifest actually exists and the real blocker is the disabled flag.
+      BETA_DISABLED_MESSAGE =
+        "apm is a beta ecosystem. Set `enable-beta-ecosystems: true` in your " \
+        "dependabot.yml so Dependabot fetches and updates #{MANIFEST_FILENAME}.".freeze
+
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?(MANIFEST_FILENAME)
@@ -29,11 +37,13 @@ module Dependabot
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         # apm is a beta ecosystem, so file fetching is hidden behind the
-        # beta-ecosystems feature flag (see NEW_ECOSYSTEMS.md).
+        # beta-ecosystems feature flag (see NEW_ECOSYSTEMS.md). When the flag is
+        # off, tell the user to enable it rather than claim the manifest is
+        # missing, which would hide the real remediation when apm.yml exists.
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             File.join(directory, MANIFEST_FILENAME),
-            self.class.required_files_message
+            BETA_DISABLED_MESSAGE
           )
         end
 
