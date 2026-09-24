@@ -20,7 +20,14 @@ dependencies:
     - microsoft/edge-ai#v1.0.0            # GitHub shorthand pinned to a tag
     - gitlab.com/acme/prompts#v2.1.0      # FQDN shorthand for any git host
     - octo-org/octo-skills/skills/review#v1.4.0  # virtual sub-path within a repo
+    - acme.ghe.com/org/repo/skills/review#v1.0.0 # virtual sub-path on a GHE Cloud host
 ```
+
+Virtual sub-paths (`repo/skills/review`) are resolved on GitHub-family hosts —
+`github.com` and GitHub Enterprise Cloud data-residency hosts (`*.ghe.com`),
+which APM also treats as GitHub. On other hosts the whole path is treated as the
+repository; virtual packages on self-hosted GHES (reachable only via an
+arbitrary configured `GITHUB_HOST`) are a follow-up.
 
 For each such entry Dependabot:
 

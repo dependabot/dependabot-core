@@ -94,6 +94,48 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with a virtual sub-path on a GitHub Enterprise Cloud host" do
+      let(:raw) { "acme.ghe.com/org/repo/skills/review#v1.0.0" }
+
+      it "treats *.ghe.com as GitHub and splits owner/repo from the virtual path" do
+        expect(spec.host).to eq("acme.ghe.com")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.sub_path).to eq("skills/review")
+        expect(spec.ref).to eq("v1.0.0")
+        expect(spec.git_url).to eq("https://acme.ghe.com/org/repo")
+      end
+
+      it "namespaces the dependency name by the qualified host and virtual path" do
+        expect(spec.name).to eq("acme.ghe.com/org/repo/skills/review")
+      end
+    end
+
+    context "with a mixed-case owner and repo on a GitHub Enterprise Cloud host" do
+      let(:raw) { "acme.ghe.com/Org/Repo#v1.0.0" }
+
+      it "canonicalises owner and repo to lowercase like github.com" do
+        expect(spec.host).to eq("acme.ghe.com")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.sub_path).to be_nil
+        expect(spec.git_url).to eq("https://acme.ghe.com/org/repo")
+        expect(spec.name).to eq("acme.ghe.com/org/repo")
+      end
+    end
+
+    context "with a host that merely ends in ghe.com but is not a subdomain" do
+      let(:raw) { "notghe.com/group/subgroup/project#v1.2.0" }
+
+      it "does not treat it as GitHub and keeps the full nested path as the repo" do
+        expect(spec.host).to eq("notghe.com")
+        expect(spec.owner).to eq("group")
+        expect(spec.repo).to eq("subgroup/project")
+        expect(spec.sub_path).to be_nil
+        expect(spec.git_url).to eq("https://notghe.com/group/subgroup/project")
+      end
+    end
+
     context "with an explicit HTTPS git URL" do
       let(:raw) { "https://gitlab.com/acme/prompts.git#v0.5.0" }
 
