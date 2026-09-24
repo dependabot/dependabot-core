@@ -80,6 +80,32 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with a host-qualified shorthand carrying the default :443 port" do
+      let(:raw) { "github.com:443/org/repo#v1.0.0" }
+
+      it "normalises the port away so it matches the portless and explicit-URL forms" do
+        expect(spec.host).to eq("github.com")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.git_url).to eq("https://github.com/org/repo")
+        # `github.com:443/...` collapses to the same identity as `org/repo`, so a
+        # duplicate declaration is not split into a separate dependency.
+        expect(spec.name).to eq("org/repo")
+      end
+    end
+
+    context "with a host-qualified shorthand carrying a non-default port" do
+      let(:raw) { "ghe.example.com:8443/org/repo#v1.0.0" }
+
+      it "keeps the non-default port as part of the endpoint and identity" do
+        expect(spec.host).to eq("ghe.example.com:8443")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.git_url).to eq("https://ghe.example.com:8443/org/repo")
+        expect(spec.name).to eq("ghe.example.com:8443/org/repo")
+      end
+    end
+
     context "with an explicit URL whose host is mixed case" do
       let(:raw) { "https://GitHub.com/org/repo/skills/review#v1.0.0" }
 

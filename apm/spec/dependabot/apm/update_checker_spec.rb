@@ -116,6 +116,53 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         end
       end
     end
+
+    context "when only a non-first requirement family has a newer tag" do
+      let(:dependency_name) { "org/mono/skills/review" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.4.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              # `-v` family, already at its latest tag (review-v1.4.0).
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "review-v1.4.0",
+                        branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#review-v1.4.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              # `--v` family, behind its latest tag (review--v1.5.0).
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "review--v1.0.0",
+                        branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#review--v1.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-scoped-tags"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # The first family is already at its latest tag; resolving only through it
+      # would report no update and stop the base can_update? from ever consulting
+      # updated_requirements for the second family.
+      it "reports the newer tag from the non-first family as the latest version" do
+        expect(latest_version).to eq(Dependabot::Apm::Version.new("1.5.0"))
+      end
+    end
   end
 
   describe "#can_update?" do
@@ -248,6 +295,58 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       it "bumps each requirement within its own tag family" do
         refs = updated_requirements.map { |req| req[:source][:ref] }
         expect(refs).to eq(%w(review--v1.5.0 review-v1.4.0))
+      end
+    end
+
+    context "when a merged dependency needs per-line security fixes" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "apm",
+            vulnerable_versions: ["< 1.1.0", ">= 2.0.0, < 2.1.0"]
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-two-lines"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # Filtering security fixes against each requirement's own version keeps the
+      # v2.0.0 pin from being handed the v1.x fix (and then skipped by the
+      # downgrade guard, leaving it vulnerable); it reaches its own v2.1.0 fix.
+      it "moves each vulnerable declaration to the fix in its own version line" do
+        refs = updated_requirements.map { |req| req[:source][:ref] }
+        expect(refs).to eq(%w(v1.1.0 v2.1.0))
       end
     end
   end

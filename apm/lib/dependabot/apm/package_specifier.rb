@@ -274,9 +274,13 @@ module Dependabot
 
         first_segment = spec.split("/").first.to_s
         # A dot in the first path segment marks an FQDN host (GitHub owners never
-        # contain a dot), e.g. `gitlab.com/acme/repo`.
+        # contain a dot), e.g. `gitlab.com/acme/repo`. Normalise the HTTPS port
+        # the same way as the explicit-URL branch so `github.com:443/org/repo`
+        # shorthand collapses to the same authority and identity as the portless
+        # and explicit-URL forms (a non-default port is kept as a distinct
+        # endpoint).
         if first_segment.include?(".")
-          [first_segment, spec.split("/")[1..].to_a.join("/")]
+          [normalize_https_port(first_segment), spec.split("/")[1..].to_a.join("/")]
         else
           [default_host, spec]
         end
