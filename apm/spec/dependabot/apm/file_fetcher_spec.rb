@@ -136,9 +136,9 @@ RSpec.describe Dependabot::Apm::FileFetcher do
       allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
     end
 
-    it "raises a DependencyFileNotFound error" do
+    it "raises a DependencyFileNotFound error pointing at enable-beta-ecosystems" do
       expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound)
+        .to raise_error(Dependabot::DependencyFileNotFound, /enable-beta-ecosystems: true/)
     end
   end
 end

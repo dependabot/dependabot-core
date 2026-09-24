@@ -204,6 +204,52 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(refs).to eq(%w(v1.2.0 v2.0.0))
       end
     end
+
+    context "when merged requirements carry different scoped-tag families" do
+      let(:dependency_name) { "org/mono/skills/review" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "review--v1.0.0",
+                        branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#review--v1.0.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "review-v1.0.0",
+                        branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#review-v1.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-scoped-tags"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # Each declaration is resolved within its own tag family, so the `--v` pin
+      # bumps to the latest `--v` tag and the `-v` pin to the latest `-v` tag,
+      # rather than both collapsing into the first requirement's family.
+      it "bumps each requirement within its own tag family" do
+        refs = updated_requirements.map { |req| req[:source][:ref] }
+        expect(refs).to eq(%w(review--v1.5.0 review-v1.4.0))
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do
