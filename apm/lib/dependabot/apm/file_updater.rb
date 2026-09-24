@@ -1,14 +1,11 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "yaml"
 
 require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-
-require "dependabot/apm/package_specifier"
 
 module Dependabot
   module Apm
@@ -28,10 +25,7 @@ module Dependabot
 
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [
-          /^apm\.yml$/,
-          /^apm\.lock\.yaml$/
-        ]
+        [/^apm\.yml$/]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -43,9 +37,6 @@ module Dependabot
         end
 
         raise "No files changed!" if updated_files.none?
-
-        updated_lock = updated_lockfile
-        updated_files << updated_lock if updated_lock
 
         updated_files
       end
@@ -62,16 +53,6 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         dependency_files.select { |f| f.name.end_with?(MANIFEST_FILENAME) && !f.name.end_with?(LOCKFILE_FILENAME) }
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def lockfile
-        return @lockfile if defined?(@lockfile)
-
-        @lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(LOCKFILE_FILENAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -142,158 +123,6 @@ module Dependabot
           end_offset: end_offset,
           text: original.sub(declaration, new_declaration)
         )
-      end
-
-      # Rebuilds the lockfile when a bumped dependency is recorded in it. APM's
-      # `ref-consistency` check fails until each manifest ref matches the
-      # `resolved_ref:` pinned in the lockfile, so we rewrite the matching
-      # dependency's `resolved_ref:` value in place. The companion
-      # `resolved_commit:` SHA and `content_hash:` package hash are intentionally
-      # left untouched: `content_hash` (the hash of the materialised package
-      # tree) cannot be recomputed offline, and moving `resolved_commit` without
-      # it would only swap a resolved_ref/resolved_commit mismatch for a
-      # resolved_commit/content_hash one. Both are regenerated together the next
-      # time `apm install --update` runs, which re-pins them from `resolved_ref`.
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def updated_lockfile
-        file = lockfile
-        return unless file
-
-        original_content = T.must(file.content)
-        content = apply_substitutions(original_content, lockfile_substitutions(original_content))
-        return if content == original_content
-
-        updated_file(file: file, content: content)
-      end
-
-      # Collects a `resolved_ref:` substitution for every bumped dependency that
-      # appears in the lockfile, each located by the absolute range of its value
-      # scalar in the ORIGINAL content (see `substitutions_for` for why offsets
-      # resolve against the original).
-      sig { params(content: String).returns(T::Array[Substitution]) }
-      def lockfile_substitutions(content)
-        entries = lockfile_dependencies(content)
-        return [] unless entries
-
-        lines = content.each_line.to_a
-        dependencies.filter_map do |dependency|
-          entry = lockfile_entry(entries, dependency)
-          next unless entry
-
-          new_ref = lockfile_new_ref(dependency)
-          next unless new_ref
-
-          value_substitution(lines, ast_mapping_value(entry, "resolved_ref"), new_ref)
-        end
-      end
-
-      # The top-level `dependencies:` sequence of the lockfile AST, or nil when
-      # the lockfile is empty, unparseable, or has no dependencies block.
-      sig { params(content: String).returns(T.nilable(Psych::Nodes::Sequence)) }
-      def lockfile_dependencies(content)
-        document = YAML.parse(content)
-        root = document.is_a?(Psych::Nodes::Document) ? document.root : nil
-        node = ast_mapping_value(root, "dependencies")
-        node.is_a?(Psych::Nodes::Sequence) ? node : nil
-      rescue Psych::SyntaxError
-        nil
-      end
-
-      # The dependency mapping whose `repo_url` resolves to the same package
-      # identity as `dependency`, or nil. APM keys lockfile entries by their
-      # normalised `repo_url` *combined with* the separate `host:` field (plus
-      # `virtual_path` for monorepo sub-packages), never by the self-asserted
-      # `name:` field. `repo_url` is stored host-blind (e.g. `acme/repo` with
-      # `host: gitlab.com` alongside), mirroring APM's `build_dependency_unique_key`,
-      # so we feed `host` as the default host to `PackageSpecifier` — the same
-      # parser that produced `dependency.name` from the manifest — and compare.
-      sig do
-        params(entries: Psych::Nodes::Sequence, dependency: Dependabot::Dependency)
-          .returns(T.nilable(Psych::Nodes::Mapping))
-      end
-      def lockfile_entry(entries, dependency)
-        entries.children.each do |child|
-          next unless child.is_a?(Psych::Nodes::Mapping)
-
-          identity = lockfile_identity(child)
-          return child if identity && identity == dependency.name
-        end
-        nil
-      end
-
-      # The package identity of a lockfile entry, matching APM's dedup key:
-      # `repo_url` canonicalised via `PackageSpecifier` under the entry's own
-      # `host:` (defaulting to github.com, which APM leaves host-blind), with any
-      # `virtual_path` appended so distinct virtual packages carved from one repo
-      # stay distinct dependencies.
-      sig { params(entry: Psych::Nodes::Mapping).returns(T.nilable(String)) }
-      def lockfile_identity(entry)
-        repo_url = ast_mapping_value(entry, "repo_url")
-        return unless repo_url.is_a?(Psych::Nodes::Scalar)
-
-        spec = Dependabot::Apm::PackageSpecifier.parse(repo_url.value, default_host: lockfile_host(entry))
-        return unless spec
-
-        virtual_path = ast_mapping_value(entry, "virtual_path")
-        return spec.name unless virtual_path.is_a?(Psych::Nodes::Scalar) && !virtual_path.value.empty?
-
-        "#{spec.name}/#{virtual_path.value}"
-      end
-
-      # The host an entry is served from, taken from its optional `host:` field
-      # and defaulting to github.com (which APM records host-blind). Lets
-      # `PackageSpecifier` reconstruct the same host-qualified name the manifest
-      # produced for non-GitHub entries whose `repo_url` is stored host-blind.
-      sig { params(entry: Psych::Nodes::Mapping).returns(String) }
-      def lockfile_host(entry)
-        host = ast_mapping_value(entry, "host")
-        return Dependabot::Apm::PackageSpecifier::DEFAULT_HOST unless host.is_a?(Psych::Nodes::Scalar)
-
-        value = host.value.strip
-        value.empty? ? Dependabot::Apm::PackageSpecifier::DEFAULT_HOST : value
-      end
-
-      # The bumped ref for `dependency`, taken from its updated git requirement.
-      sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
-      def lockfile_new_ref(dependency)
-        requirement = dependency.requirements.find { |req| req.source_string("ref") }
-        requirement&.source_string("ref")
-      end
-
-      # Builds a substitution that rewrites a scalar VALUE node with `text`, or
-      # nil when the node is absent or its span is empty.
-      sig do
-        params(lines: T::Array[String], node: T.nilable(Psych::Nodes::Node), text: String)
-          .returns(T.nilable(Substitution))
-      end
-      def value_substitution(lines, node, text)
-        return unless node.is_a?(Psych::Nodes::Scalar)
-
-        start_offset = line_offset(lines, node.start_line) + node.start_column
-        end_offset = line_offset(lines, node.end_line) + node.end_column
-        return if start_offset >= end_offset
-
-        Substitution.new(start_offset: start_offset, end_offset: end_offset, text: text)
-      end
-
-      # Looks up the value node for `key` in a YAML mapping AST node, whose
-      # children alternate [key, value, key, value, ...].
-      sig do
-        params(mapping: T.nilable(Psych::Nodes::Node), key: String)
-          .returns(T.nilable(Psych::Nodes::Node))
-      end
-      def ast_mapping_value(mapping, key)
-        return unless mapping.is_a?(Psych::Nodes::Mapping)
-
-        children = mapping.children
-        index = 0
-        while index < children.length
-          node_key = children[index]
-          return children[index + 1] if node_key.is_a?(Psych::Nodes::Scalar) && node_key.value == key
-
-          index += 2
-        end
-        nil
       end
 
       # Applies the substitutions from the end of the file backwards. Rewriting in
