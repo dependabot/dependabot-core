@@ -105,8 +105,14 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
+        # Only collect property names from local declarations (not remote parent POMs).
+        # Using the full set would include remote property names and allow
+        # RequirementsUpdater to see them as eligible — the remote_pom.xml guard in
+        # RequirementsUpdater is a second line of defence, but filtering here preserves
+        # provenance at the source and avoids any same-name collision across POMs.
         property_names =
           declarations_using_a_property
+          .reject { |req| req.metadata_string("property_source") == "remote_pom.xml" }
           .filter_map { |req| req.metadata_string("property_name") }
 
         RequirementsUpdater.new(

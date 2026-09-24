@@ -787,6 +787,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           .to_return(status: 200, body: fixture("poms", "maven_apache_parent_pom.xml"))
         allow(checker).to receive(:preferred_resolvable_version)
           .and_return(Dependabot::Maven::Version.new("3.6.0"))
+        allow(checker).to receive(:preferred_version_details)
+          .and_return({ version: Dependabot::Maven::Version.new("3.6.0"),
+                        source_url: "https://repo.maven.apache.org/maven2" })
       end
 
       it "does not update the remote requirement even when it shares the same property name" do
