@@ -1,28 +1,29 @@
 lockfile_version: "1"
 apm_version: "0.4.2"
 dependencies:
-  - repo_url: github.com/microsoft/edge-ai
+  - repo_url: microsoft/edge-ai
     resolved_ref: v1.0.0
     resolved_commit: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
     version: 1.0.0
     depth: 1
     package_type: apm_package
     content_hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
-  - repo_url: github.com/octo-org/octo-skills
+  - repo_url: octo-org/octo-skills
     resolved_ref: v2.3.1
     resolved_commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
     version: 2.3.1
     depth: 1
     package_type: apm_package
     content_hash: sha256:1111111111111111111111111111111111111111111111111111111111111111
-  - repo_url: gitlab.com/acme/prompts
+  - repo_url: acme/prompts
+    host: gitlab.com
     resolved_ref: v0.5.0
     resolved_commit: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c
     version: 0.5.0
     depth: 1
     package_type: apm_package
     content_hash: sha256:2222222222222222222222222222222222222222222222222222222222222222
-  - repo_url: github.com/qa-org/qa-helpers
+  - repo_url: qa-org/qa-helpers
     resolved_ref: v3.1.4
     resolved_commit: 3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
     version: 3.1.4
