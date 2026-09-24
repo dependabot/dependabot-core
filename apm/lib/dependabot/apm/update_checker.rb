@@ -65,7 +65,7 @@ module Dependabot
       # when ANY requirement's own ref version is affected.
       sig { returns(T::Boolean) }
       def vulnerable?
-        super || requirement_versions.any? { |version| ref_vulnerable?(version) }
+        super || pinned_versions(dependency.requirements).any? { |version| ref_vulnerable?(version) }
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -108,6 +108,34 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
+      end
+
+      # `latest_version` deliberately reports the MAX tag reachable by ANY family
+      # so the base `can_update?` gate still fires when only a higher family can
+      # move. But `DependencySet` defines a merged dependency's version as its
+      # LOWEST pin, and `updated_requirements` can leave families on different
+      # tags (e.g. `review-v1.4.0` alongside `review--v1.5.0`). Deriving the
+      # resulting version from `preferred_resolvable_version` (the max) would
+      # report a `1.5.0` update while the merged dependency is really `1.4.0`,
+      # desyncing the reported version (and its update type / PR metadata) from
+      # the rewritten requirements. Derive it from the post-update refs with the
+      # same lowest-pin rule instead, keeping the update gate and the reported
+      # version separate.
+      sig { returns(Dependabot::Dependency) }
+      def updated_dependency_with_own_req_unlock
+        new_requirements = updated_requirements
+        new_version = pinned_versions(new_requirements).min
+
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: new_version || dependency.version,
+          requirements: new_requirements,
+          previous_version: dependency.version,
+          previous_requirements: dependency.requirements,
+          package_manager: dependency.package_manager,
+          metadata: dependency.metadata,
+          subdependency_metadata: dependency.subdependency_metadata
+        )
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -202,11 +230,12 @@ module Dependabot
 
       # The parsed SemVer core of every requirement pinned to a version tag
       # (plain or package-scoped, e.g. `review--v1.0.0`). Branch- and SHA-pinned
-      # requirements carry no comparable version and are skipped. Used to test
-      # each declaration's own ref against the advisories.
-      sig { returns(T::Array[Dependabot::Version]) }
-      def requirement_versions
-        dependency.requirements.filter_map do |req|
+      # requirements carry no comparable version and are skipped. Used both to
+      # test each pre-update declaration against the advisories and to derive the
+      # merged post-update version (its lowest pin).
+      sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T::Array[Dependabot::Version]) }
+      def pinned_versions(requirements)
+        requirements.filter_map do |req|
           current_ref = req.source_string("ref")
           ref_version = current_ref && Version.semver_from_ref(current_ref, dependency_name: dependency.name)
           ref_version && Version.new(ref_version)

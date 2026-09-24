@@ -467,6 +467,64 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
     end
   end
 
+  describe "#updated_dependencies" do
+    subject(:updated_dependency) do
+      checker.updated_dependencies(requirements_to_unlock: :own).first
+    end
+
+    context "when merged families resolve to different post-update tags" do
+      let(:dependency_name) { "org/mono/skills/review" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "review-v1.4.0",
+                        branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#review-v1.4.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "review--v1.0.0",
+                        branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#review--v1.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-scoped-tags"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # latest_version reports 1.5.0 so the base can_update? gate fires for the
+      # `--v` family, but DependencySet defines the merged version as the LOWEST
+      # pin. After the update the pins are review-v1.4.0 and review--v1.5.0, so
+      # the reported version must be 1.4.0 (consistent with the rewritten
+      # requirements), not the 1.5.0 used only to gate the update.
+      it "reports the lowest post-update pin as the merged version" do
+        expect(updated_dependency.version).to eq("1.4.0")
+      end
+
+      it "still rewrites each family to its own latest tag" do
+        refs = updated_dependency.requirements.map { |req| req[:source][:ref] }
+        expect(refs).to eq(%w(review-v1.4.0 review--v1.5.0))
+      end
+    end
+  end
+
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
