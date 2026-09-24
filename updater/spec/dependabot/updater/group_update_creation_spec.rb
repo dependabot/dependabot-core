@@ -1005,6 +1005,117 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#compile_updates_for when all versions are ignored only on the resolvable path" do
+    # Regression: the cooldown fallback can let the `all_versions_ignored?` guard pass
+    # (latest_version returns the current version) while `can_update?` still raises
+    # AllVersionsIgnored via a different finder. For a non-security job that raise must
+    # be treated as "no update possible" and skip the dependency, not escape the run.
+    let(:dependency) { dependencies.first }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: [dependency],
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        semver_rules_allow_grouping?: true,
+        log_requirements_for_update: nil,
+        note_security_update_not_possible: nil
+      )
+      allow(checker).to receive(:requirements_unlocked_or_can_be?).and_return(true)
+      allow(checker).to receive(:can_update?).and_raise(Dependabot::AllVersionsIgnored)
+    end
+
+    context "when the job is not a security update" do
+      before { allow(job).to receive(:security_updates_only?).and_return(false) }
+
+      it "skips the dependency without raising or reporting a dependency error" do
+        expect(error_handler).not_to receive(:handle_dependency_error)
+
+        result = nil
+        expect { result = test_instance.compile_updates_for(dependency, dependency_files, group) }
+          .not_to raise_error
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the job is a security update" do
+      before { allow(job).to receive(:security_updates_only?).and_return(true) }
+
+      it "still surfaces AllVersionsIgnored via the error handler" do
+        allow(error_handler).to receive(:handle_dependency_error)
+
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+
+        expect(error_handler).to have_received(:handle_dependency_error)
+          .with(hash_including(error: an_instance_of(Dependabot::AllVersionsIgnored)))
+      end
+    end
+  end
+
+  describe "#compile_updates_for when all versions are ignored only on updated_dependencies" do
+    # Regression: even after `can_update?` succeeds, `updated_dependencies` can still raise
+    # AllVersionsIgnored when the resolvable-version finder ignores every candidate. For a
+    # non-security job that raise must skip the dependency, not escape to the run.
+    let(:dependency) { dependencies.first }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: [dependency],
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        semver_rules_allow_grouping?: true,
+        log_requirements_for_update: nil,
+        note_security_update_not_possible: nil
+      )
+      allow(checker).to receive_messages(requirements_unlocked_or_can_be?: true, can_update?: true)
+      allow(checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+    end
+
+    context "when the job is not a security update" do
+      before { allow(job).to receive(:security_updates_only?).and_return(false) }
+
+      it "skips the dependency without raising or reporting a dependency error" do
+        expect(error_handler).not_to receive(:handle_dependency_error)
+
+        result = nil
+        expect { result = test_instance.compile_updates_for(dependency, dependency_files, group) }
+          .not_to raise_error
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the job is a security update" do
+      before { allow(job).to receive(:security_updates_only?).and_return(true) }
+
+      it "still surfaces AllVersionsIgnored via the error handler" do
+        allow(error_handler).to receive(:handle_dependency_error)
+
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+
+        expect(error_handler).to have_received(:handle_dependency_error)
+          .with(hash_including(error: an_instance_of(Dependabot::AllVersionsIgnored)))
+      end
+    end
+  end
+
   describe "#compile_updates_for with multiple locked Cargo versions" do
     let(:dependency) do
       Dependabot::Dependency.new(
