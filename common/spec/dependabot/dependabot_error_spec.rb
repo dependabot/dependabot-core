@@ -245,5 +245,19 @@ RSpec.describe Dependabot::DependabotError do
       )
       expect(details.error_detail[:message]).not_to include("s3cr3t")
     end
+
+    it "is recognised as a known error by the fetcher classifier" do
+      details = Dependabot.fetcher_error_details(error)
+
+      expect(details.error_type).to eq("misconfigured_tooling")
+      expect(details.error_detail[:"tool-name"]).to eq("Maven Wrapper")
+    end
+
+    it "is recognised as a known error by the parser classifier" do
+      details = Dependabot.parser_error_details(error)
+
+      expect(details.error_type).to eq("misconfigured_tooling")
+      expect(details.error_detail[:"tool-name"]).to eq("Maven Wrapper")
+    end
   end
 end

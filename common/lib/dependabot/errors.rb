@@ -118,6 +118,11 @@ module Dependabot
         "error-type": "dependency_not_found",
         "error-detail": { source: error.source }
       }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
@@ -209,6 +214,11 @@ module Dependabot
       {
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
       }
     when Dependabot::NotImplemented
       {
