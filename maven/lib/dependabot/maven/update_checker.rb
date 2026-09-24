@@ -3,7 +3,6 @@
 
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/maven/file_parser/property_value_finder"
 
 module Dependabot
   module Maven
@@ -52,7 +51,6 @@ module Dependabot
 
         @version_finder = T.let(nil, T.nilable(VersionFinder))
         @property_updater = T.let(nil, T.nilable(PropertyUpdater))
-        @property_value_finder = T.let(nil, T.nilable(Maven::FileParser::PropertyValueFinder))
         @declarations_using_a_property = T.let(nil, T.nilable(T::Array[Dependabot::DependencyRequirement]))
         @all_property_based_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
       end
@@ -126,24 +124,18 @@ module Dependabot
       sig { override.returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
         # A dependency can be updated if it has no property-based declarations,
-        # or if at least one property declaration resolves to a local file (not a
+        # or if at least one property declaration comes from a local file (not a
         # remote parent POM). This handles the case where a plugin is declared in
         # both a remote parent POM (e.g., maven-apache-parent) and overridden
         # locally in the project's own POM — we should update the local one.
+        #
+        # We use the property_source metadata set by the file parser rather than
+        # re-running a property lookup, which avoids redundant lookups and
+        # makes the provenance check consistent with updated_requirements.
         return true if declarations_using_a_property.none?
 
         declarations_using_a_property.any? do |requirement|
-          prop_name = requirement.metadata_string("property_name")
-          pom = dependency_files.find { |f| f.name == requirement.file }
-
-          next false unless prop_name && pom
-
-          declaration_pom_name =
-            property_value_finder
-            .property_details(property_name: prop_name, callsite_pom: pom)
-            &.fetch(:file)
-
-          declaration_pom_name.is_a?(String) && declaration_pom_name != "remote_pom.xml"
+          requirement.metadata_string("property_source") != "remote_pom.xml"
         end
       end
 
@@ -218,13 +210,6 @@ module Dependabot
             ignored_versions: ignored_versions,
             update_cooldown: update_cooldown
           )
-      end
-
-      sig { returns(Maven::FileParser::PropertyValueFinder) }
-      def property_value_finder
-        @property_value_finder ||=
-          Maven::FileParser::PropertyValueFinder
-          .new(dependency_files: dependency_files, credentials: credentials)
       end
 
       sig { returns(T::Boolean) }

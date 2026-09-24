@@ -1233,16 +1233,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       context "when a plugin has requirements from both a local file and a remote parent POM" do
         # Regression: maven-apache-parent declares maven-clean-plugin@3.5.0 via
         # version.maven-clean-plugin. Our root POM overrides that same property locally
-        # at 3.4.0 (shadowing the parent). requirements_unlocked_or_can_be? must return
-        # true because the local declaration is updatable, even though the same property
-        # name also resolves to a remote_pom.xml requirement.
+        # at 3.4.0. requirements_unlocked_or_can_be? must return true because the local
+        # declaration (property_source: "pom.xml") is updatable, even though the same
+        # property name also appears in a remote_pom.xml requirement.
+        #
+        # The check is driven by the property_source metadata on each requirement (set by
+        # the file parser). The old implementation used `.none? { remote_pom.xml }` which
+        # returned false when any requirement was remote — blocking all mixed-source deps.
         let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
         let(:dependency_name) { "org.apache.maven.plugins:maven-clean-plugin" }
         let(:dependency_version) { "3.4.0" }
         let(:dependency_requirements) do
           [
             {
-              # Requirement from local pom.xml (shadows remote with same property name)
+              # Local pom.xml: property_source set to "pom.xml" by the file parser
               file: "pom.xml",
               requirement: "3.4.0",
               groups: ["plugin"],
@@ -1254,7 +1258,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               }
             },
             {
-              # Requirement inherited from remote parent (maven-apache-parent)
+              # Remote parent: property_source set to "remote_pom.xml" by the file parser
               file: "pom.xml",
               requirement: "3.5.0",
               groups: ["plugin"],
@@ -1266,16 +1270,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               }
             }
           ]
-        end
-
-        let(:maven_apache_parent_url) do
-          "https://repo.maven.apache.org/maven2/" \
-            "org/apache/maven/maven-apache-parent/43/maven-apache-parent-43.pom"
-        end
-
-        before do
-          stub_request(:get, maven_apache_parent_url)
-            .to_return(status: 200, body: fixture("poms", "maven_apache_parent_pom.xml"))
         end
 
         it { is_expected.to be(true) }
