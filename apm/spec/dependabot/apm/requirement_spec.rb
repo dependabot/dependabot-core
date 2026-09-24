@@ -48,5 +48,70 @@ RSpec.describe Dependabot::Apm::Requirement do
 
       it { is_expected.to be(false) }
     end
+
+    context "with a prerelease upper bound" do
+      let(:requirement_string) { "< 1.0.0-alpha.beta" }
+
+      # SemVer orders numeric prerelease identifiers below alphanumeric ones,
+      # so 1.0.0-alpha.1 < 1.0.0-alpha.beta. RubyGems orders them the other way,
+      # which this ecosystem must not inherit.
+      context "with a lower prerelease under SemVer precedence" do
+        let(:version) { Dependabot::Apm::Version.new("1.0.0-alpha.1") }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "with a higher prerelease under SemVer precedence" do
+        let(:version) { Dependabot::Apm::Version.new("1.0.0-alpha.gamma") }
+
+        it { is_expected.to be(false) }
+      end
+    end
+
+    context "with a prerelease range" do
+      let(:requirement_string) { ">= 1.0.0-alpha, < 1.0.0" }
+
+      context "when the version is within the prerelease range" do
+        let(:version) { Dependabot::Apm::Version.new("1.0.0-alpha.5") }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when the version is the final release" do
+        let(:version) { Dependabot::Apm::Version.new("1.0.0") }
+
+        it { is_expected.to be(false) }
+      end
+    end
+
+    context "with a partial (non-SemVer) bound" do
+      let(:requirement_string) { ">= 1.0" }
+
+      let(:version) { Dependabot::Apm::Version.new("1.5.0") }
+
+      it { is_expected.to be(true) }
+    end
+  end
+
+  describe ".parse" do
+    context "with a strict SemVer prerelease bound" do
+      it "builds an Apm::Version operand so ordering stays SemVer-aware" do
+        op, version = described_class.parse("< 1.0.0-alpha.beta")
+
+        expect(op).to eq("<")
+        expect(version).to be_a(Dependabot::Apm::Version)
+        expect(version.to_s).to eq("1.0.0-alpha.beta")
+      end
+    end
+
+    context "with a partial bound" do
+      it "falls back to a plain Gem::Version operand" do
+        op, version = described_class.parse(">= 1.0")
+
+        expect(op).to eq(">=")
+        expect(version).to be_a(Gem::Version)
+        expect(version).not_to be_a(Dependabot::Apm::Version)
+      end
+    end
   end
 end
