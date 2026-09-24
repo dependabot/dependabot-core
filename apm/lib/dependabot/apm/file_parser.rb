@@ -23,11 +23,17 @@ module Dependabot
       LOCKFILE_FILENAME = "apm.lock.yaml"
 
       # The manifest dependency blocks we parse, mapped to the dependency groups
-      # each block confers. `devDependencies` entries are marked non-production
-      # via the "development" group.
+      # each block confers. Production entries carry an explicit "dependencies"
+      # marker group rather than an empty list: when DependencySet merges a
+      # package declared in both blocks, Dependency#production? flattens every
+      # requirement's groups, so an empty production marker would vanish and
+      # leave only "development", wrongly classifying the whole dependency as
+      # non-production. The explicit marker survives the merge and the registered
+      # production check treats its presence as production, while `devDependencies`
+      # entries (marked only by "development") stay non-production.
       DEPENDENCY_BLOCKS = T.let(
         {
-          "dependencies" => [].freeze,
+          "dependencies" => ["dependencies"].freeze,
           "devDependencies" => ["development"].freeze
         }.freeze,
         T::Hash[String, T::Array[String]]
