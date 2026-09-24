@@ -99,6 +99,16 @@ RSpec.describe Dependabot::Apm::Version do
     end
   end
 
+  describe "#bump" do
+    # `~>` requirement matching calls this; the inherited Gem::Version#bump would
+    # build the partial `1.3`, which strict SemVer rejects.
+    it "returns the next-minor SemVer triple without raising" do
+      bumped = described_class.new("1.2.3").bump
+      expect(bumped).to be_a(described_class)
+      expect(bumped.to_s).to eq("1.3.0")
+    end
+  end
+
   describe "SemVer precedence" do
     it "treats build metadata as equal precedence" do
       expect(described_class.new("1.2.0+build.1")).to eq(described_class.new("1.2.0+build.2"))

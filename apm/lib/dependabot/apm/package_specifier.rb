@@ -65,7 +65,11 @@ module Dependabot
       SCP_STYLE = %r{\A(?<user>[^@:/\s]+)@(?<host>[^:/\s]+):(?<path>.+)\z}
       # Matches https/git/ssh URIs, discarding any `user@` info (e.g. the
       # `git@` in an `ssh://git@host/owner/repo` URL) so only the host remains.
-      URL_STYLE = %r{\A(?<scheme>https?|git|ssh)://(?:[^@/]+@)?(?<host>[^/]+)/(?<path>.+)\z}
+      # URI schemes are case-insensitive (RFC 3986), so the scheme alternation
+      # is matched case-insensitively and normalised (downcased) before dispatch;
+      # e.g. `HTTPS://host/owner/repo` is recognised rather than mis-parsed as a
+      # default-host shorthand.
+      URL_STYLE = %r{\A(?<scheme>(?i:https?|git|ssh))://(?:[^@/]+@)?(?<host>[^/]+)/(?<path>.+)\z}
 
       sig { returns(String) }
       attr_reader :host
@@ -226,7 +230,7 @@ module Dependabot
 
         if (m = spec.match(URL_STYLE))
           host = T.must(m[:host])
-          case m[:scheme]
+          case T.must(m[:scheme]).downcase
           when "https"
             # HTTPS is the transport we query, so keep the authority verbatim,
             # including any explicit port: `github.com:8443` is a distinct

@@ -233,6 +233,34 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with an uppercase URI scheme" do
+      let(:raw) { "HTTPS://gitlab.com/acme/prompts.git#v0.5.0" }
+
+      it "matches the scheme case-insensitively and resolves the https URL" do
+        expect(spec.host).to eq("gitlab.com")
+        expect(spec.owner).to eq("acme")
+        expect(spec.repo).to eq("prompts")
+        expect(spec.git_url).to eq("https://gitlab.com/acme/prompts")
+      end
+    end
+
+    context "with a mixed-case SSH URI scheme and a custom port" do
+      let(:raw) { "SSH://git@git.example.com:2222/org/repo.git#v1.0.0" }
+
+      it "normalizes the scheme, drops the ssh port and resolves over https" do
+        expect(spec.host).to eq("git.example.com")
+        expect(spec.git_url).to eq("https://git.example.com/org/repo")
+      end
+    end
+
+    context "with an uppercase HTTP scheme" do
+      let(:raw) { "HTTP://git.example.com/org/repo#v1.0.0" }
+
+      it "is skipped just like its lowercase form" do
+        expect(spec).to be_nil
+      end
+    end
+
     context "when the default host is overridden" do
       let(:default_host) { "git.internal.example" }
       let(:raw) { "team/skills#v1.0.0" }
@@ -358,6 +386,7 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
 
     it "is false for explicit clone URLs (never registry-routed)" do
       expect(described_class.shorthand?("https://gitlab.com/acme/repo.git#v1.0.0")).to be(false)
+      expect(described_class.shorthand?("HTTPS://gitlab.com/acme/repo.git#v1.0.0")).to be(false)
       expect(described_class.shorthand?("http://gitlab.com/acme/repo.git")).to be(false)
       expect(described_class.shorthand?("ssh://git@gitlab.com/acme/repo.git#v1.0.0")).to be(false)
       expect(described_class.shorthand?("git@gitlab.com:acme/repo.git#v1.0.0")).to be(false)
