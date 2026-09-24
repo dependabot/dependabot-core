@@ -198,6 +198,9 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git check-ref-format/, hash_including(fingerprint: anything))
+          .and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return(recent_date)
       end
