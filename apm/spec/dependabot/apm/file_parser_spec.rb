@@ -157,6 +157,30 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
+    context "with an escaped quoted flow-scalar entry" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          # Single-quoted heredoc so the backslash escapes reach YAML verbatim
+          # rather than being processed by Ruby first.
+          content: <<~'YAML'
+            dependencies:
+              apm:
+                - "octo-org/plain-double#v1.0.0"
+                - "octo-org\/escaped\x23v2.0.0"
+          YAML
+        )
+      end
+
+      # The escaped scalar decodes to "octo-org/escaped#v2.0.0", which is not a
+      # contiguous substring of its raw span ("octo-org\/escaped\x23v2.0.0"), so
+      # the updater could not rewrite it. It is skipped, while the plain double-
+      # quoted scalar (which round-trips) is still parsed.
+      it "skips it and only parses the round-tripping scalar" do
+        expect(dependencies.map(&:name)).to contain_exactly("octo-org/plain-double")
+      end
+    end
+
     context "when a default registry is configured" do
       let(:manifest) do
         Dependabot::DependencyFile.new(
