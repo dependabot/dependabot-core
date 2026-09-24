@@ -182,6 +182,37 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with an SSH URL that carries a custom port" do
+      let(:raw) { "ssh://git@git.example.com:2222/org/repo.git#v1.0.0" }
+
+      it "drops the SSH port and resolves the https clone URL on the host" do
+        expect(spec.host).to eq("git.example.com")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.git_url).to eq("https://git.example.com/org/repo")
+        expect(spec.name).to eq("git.example.com/org/repo")
+      end
+    end
+
+    context "with an HTTPS URL that carries a custom port" do
+      let(:raw) { "https://ghe.example.com:8443/org/repo.git#v1.0.0" }
+
+      it "keeps the https port because it names the same endpoint" do
+        expect(spec.host).to eq("ghe.example.com:8443")
+        expect(spec.git_url).to eq("https://ghe.example.com:8443/org/repo")
+        expect(spec.name).to eq("ghe.example.com:8443/org/repo")
+      end
+    end
+
+    context "with an HTTP URL that carries a custom port" do
+      let(:raw) { "http://git.example.com:8080/org/repo#v1.0.0" }
+
+      it "drops the non-https port and resolves over https" do
+        expect(spec.host).to eq("git.example.com")
+        expect(spec.git_url).to eq("https://git.example.com/org/repo")
+      end
+    end
+
     context "when the default host is overridden" do
       let(:default_host) { "git.internal.example" }
       let(:raw) { "team/skills#v1.0.0" }
