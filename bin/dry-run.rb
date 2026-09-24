@@ -372,6 +372,7 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  apm
   bazel
   bun
   bundler
