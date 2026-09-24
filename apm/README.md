@@ -55,6 +55,11 @@ To keep the first iteration small and reviewable, the following are intentionall
   which Dependabot does not regenerate, so their manifest ref is left untouched.
 - **Local path entries** (`./pkg`, `../pkg`, `/pkg`) — not backed by a remote git
   host, so there is nothing to bump.
+- **Azure DevOps hosts** (`dev.azure.com`, `ssh.dev.azure.com` and legacy
+  `*.visualstudio.com`) — APM resolves these to `org/project/_git/repo` clone
+  URLs, a structure this version's generic `host/owner/repo` builder cannot
+  construct, so ADO entries are skipped rather than resolved to a wrong remote.
+  Native `_git` clone-URL support is a follow-up.
 - **Block-scalar and escaped string entries** — a shorthand written as a YAML
   block scalar (folded `>` / literal `|`) or as a quoted scalar that relies on
   escape sequences (e.g. `"owner/repo\x23v1.0.0"`) decodes to text that is not a
