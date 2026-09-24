@@ -18,11 +18,14 @@ module Dependabot
     #   git@gitlab.com:acme/repo.git           SSH SCP-style URL
     #   ssh://git@gitlab.com/acme/repo.git     SSH URI-style URL
     #
-    # Virtual package paths (`owner/repo/skills/review`) are a GitHub-only
-    # shorthand, since GitHub repositories are always `owner/repo`. On other
-    # hosts the whole path is treated as the repository so nested subgroups
-    # resolve to the correct remote; virtual packages there are out of scope for
-    # v1.
+    # Virtual package paths (`owner/repo/skills/review`) are a GitHub-family
+    # shorthand, since GitHub repositories are always `owner/repo`. That covers
+    # github.com and GitHub Enterprise Cloud data-residency hosts (`*.ghe.com`),
+    # which APM also resolves as GitHub. On other hosts (e.g. GitLab) the whole
+    # path is treated as the repository so nested subgroups resolve to the
+    # correct remote; virtual packages there are out of scope for v1, as is
+    # self-hosted GHES on an arbitrary hostname that cannot be recognised from
+    # the host alone.
     #
     # Local path entries (`./pkg`, `../pkg`, `/pkg`, `~/pkg`, and their Windows
     # `.\`/`..\`/`~\` forms) are not versioned by a remote git host and resolve
@@ -102,11 +105,11 @@ module Dependabot
 
         repo, sub_path = repository_and_sub_path(host, segments)
 
-        # GitHub owner/repo paths are case-insensitive, so canonicalise them to
-        # lowercase to give each repository a single stable identity. Other
-        # hosts (e.g. GitLab) are case-sensitive and MUST preserve casing, as
-        # must virtual sub paths (they address entries inside the repo tree).
-        if host == DEFAULT_HOST
+        # GitHub-family owner/repo paths are case-insensitive, so canonicalise
+        # them to lowercase to give each repository a single stable identity.
+        # Other hosts (e.g. GitLab) are case-sensitive and MUST preserve casing,
+        # as must virtual sub paths (they address entries inside the repo tree).
+        if github_family?(host)
           owner = owner.downcase
           repo = repo.downcase
         end
@@ -122,20 +125,33 @@ module Dependabot
       end
 
       # Splits the path segments (after `owner`) into a repository path and an
-      # optional virtual sub path. GitHub repositories are always exactly
+      # optional virtual sub path. GitHub-family hosts (github.com and GitHub
+      # Enterprise Cloud `*.ghe.com`) always expose repositories as exactly
       # `owner/repo`, so any deeper segments are an APM virtual package path.
       # Other hosts (e.g. GitLab) allow repositories nested at arbitrary subgroup
       # depth, and APM resolves the repository/virtual boundary host-specifically
       # rather than from the path alone; to avoid querying a shallower, wrong
       # remote we keep the whole path as the repository there. Virtual packages
-      # outside GitHub are therefore out of scope for v1.
+      # outside the GitHub family are therefore out of scope for v1.
       sig { params(host: String, segments: T::Array[String]).returns([String, String]) }
       def self.repository_and_sub_path(host, segments)
-        if host == DEFAULT_HOST
+        if github_family?(host)
           [T.must(segments[1]), (segments[2..] || []).join("/")]
         else
           [(segments[1..] || []).join("/"), ""]
         end
+      end
+
+      # GitHub-family hosts share the strict `owner/repo` boundary (any deeper
+      # segments are an APM virtual package path) and case-insensitive owner and
+      # repo names. That is github.com plus GitHub Enterprise Cloud
+      # data-residency hosts (`*.ghe.com`), which APM resolves as GitHub too.
+      # Self-hosted GHES uses arbitrary hostnames that cannot be recognised from
+      # the host alone, so it is not detected here -- a follow-up for once host
+      # configuration is threaded through the parser.
+      sig { params(host: String).returns(T::Boolean) }
+      def self.github_family?(host)
+        host == DEFAULT_HOST || host.end_with?(".ghe.com")
       end
 
       sig { params(entry: String).returns(T::Boolean) }
