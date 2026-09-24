@@ -30,6 +30,9 @@ For each such entry Dependabot:
    GitHub Actions ecosystem).
 3. Rewrites only the ref in `apm.yml` (e.g. `#v1.0.0` → `#v1.4.0`), preserving
    the rest of the declaration byte-for-byte.
+4. Keeps `apm.lock.yaml` in sync when the bumped dependency is pinned there,
+   rewriting its `resolved_ref:` to the new tag so APM's `ref-consistency` check
+   still passes (see the lockfile note below).
 
 `devDependencies.apm` entries are updated too and are flagged as non-production
 via the `development` dependency group.
@@ -45,8 +48,15 @@ To keep the first iteration small and reviewable, the following are intentionall
   which Dependabot does not regenerate, so their manifest ref is left untouched.
 - **Local path entries** (`./pkg`, `../pkg`, `/pkg`) — not backed by a remote git
   host, so there is nothing to bump.
-- **Lockfile writing** — `apm.lock.yaml` is read (to report the package-manager
-  version) but not rewritten; APM regenerates it itself after a manifest change.
+- **Full lockfile regeneration** — when a bumped dependency is pinned in
+  `apm.lock.yaml`, only its `resolved_ref:` is rewritten (to the new tag) so
+  APM's `ref-consistency` check passes. The companion `resolved_commit:` SHA and
+  `content_hash:` are left untouched — `content_hash` (the hash of the
+  materialised package tree) cannot be recomputed offline, and moving
+  `resolved_commit` without it would only trade one internal mismatch for
+  another. Both are re-pinned from `resolved_ref` the next time
+  `apm install --update` runs. Dependencies absent from the lockfile leave it
+  unchanged.
 
 These are natural follow-ups and can be layered on without changing the manifest
 parsing model established here.
