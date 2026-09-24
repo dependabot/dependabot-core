@@ -225,11 +225,11 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           lockfile_version: "1"
           apm_version: "0.4.2"
           dependencies:
-            - repo_url: github.com/microsoft/edge-ai
+            - repo_url: microsoft/edge-ai
               resolved_ref: v1.0.0
               resolved_commit: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
               content_hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
-            - repo_url: github.com/microsoft/edge-ai-extras
+            - repo_url: microsoft/edge-ai-extras
               resolved_ref: v1.0.0
               resolved_commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
               content_hash: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
       it "bumps the matching dependency's resolved_ref to the manifest ref" do
         expect(updated_lockfile.content)
-          .to match(%r{- repo_url: github\.com/microsoft/edge-ai\n\s+resolved_ref: v1\.2\.0\n})
+          .to match(%r{- repo_url: microsoft/edge-ai\n\s+resolved_ref: v1\.2\.0\n})
       end
 
       it "leaves resolved_commit and content_hash for `apm install --update` to regenerate" do
@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
       it "does not touch an unrelated dependency that shares a name prefix" do
         expect(updated_lockfile.content)
-          .to match(%r{- repo_url: github\.com/microsoft/edge-ai-extras\n\s+resolved_ref: v1\.0\.0\n})
+          .to match(%r{- repo_url: microsoft/edge-ai-extras\n\s+resolved_ref: v1\.0\.0\n})
       end
 
       context "when the bumped dependency is absent from the lockfile" do
@@ -266,7 +266,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
             lockfile_version: "1"
             apm_version: "0.4.2"
             dependencies:
-              - repo_url: github.com/octo-org/octo-skills
+              - repo_url: octo-org/octo-skills
                 resolved_ref: v2.3.1
                 resolved_commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
                 content_hash: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -275,6 +275,60 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
         it "returns only the updated manifest" do
           expect(updated_files.map(&:name)).to contain_exactly("apm.yml")
+        end
+      end
+
+      context "when a non-GitHub entry stores its host separately from repo_url" do
+        let(:manifest_body) do
+          <<~YAML
+            dependencies:
+              apm:
+                - gitlab.com/acme/prompts#v0.5.0
+          YAML
+        end
+        let(:declaration_span) { "2:6:2:36" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gitlab.com/acme/prompts",
+            version: "0.6.0",
+            previous_version: "0.5.0",
+            requirements: [{
+              file: "apm.yml",
+              requirement: nil,
+              groups: [],
+              source: { type: "git", url: "https://gitlab.com/acme/prompts", ref: "v0.6.0", branch: nil },
+              metadata: { declaration_string: "gitlab.com/acme/prompts#v0.5.0", declaration_span: declaration_span }
+            }],
+            previous_requirements: [{
+              file: "apm.yml",
+              requirement: nil,
+              groups: [],
+              source: { type: "git", url: "https://gitlab.com/acme/prompts", ref: "v0.5.0", branch: nil },
+              metadata: { declaration_string: "gitlab.com/acme/prompts#v0.5.0", declaration_span: declaration_span }
+            }],
+            package_manager: "apm"
+          )
+        end
+        let(:lockfile_body) do
+          <<~YAML
+            lockfile_version: "1"
+            apm_version: "0.4.2"
+            dependencies:
+              - repo_url: acme/prompts
+                host: gitlab.com
+                resolved_ref: v0.5.0
+                resolved_commit: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c
+                content_hash: sha256:2222222222222222222222222222222222222222222222222222222222222222
+          YAML
+        end
+
+        it "matches on the host-qualified identity and bumps resolved_ref" do
+          expect(updated_lockfile.content)
+            .to match(%r{- repo_url: acme/prompts\n\s+host: gitlab\.com\n\s+resolved_ref: v0\.6\.0\n})
+        end
+
+        it "leaves the pinned commit for `apm install --update`" do
+          expect(updated_lockfile.content).to include("resolved_commit: 2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c")
         end
       end
     end
