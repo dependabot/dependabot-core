@@ -120,6 +120,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/apm"
 require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
