@@ -80,6 +80,20 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with an explicit URL whose host is mixed case" do
+      let(:raw) { "https://GitHub.com/org/repo/skills/review#v1.0.0" }
+
+      it "canonicalises the host to lowercase and treats it as a GitHub virtual package" do
+        expect(spec.host).to eq("github.com")
+        expect(spec.owner).to eq("org")
+        expect(spec.repo).to eq("repo")
+        expect(spec.sub_path).to eq("skills/review")
+        expect(spec.ref).to eq("v1.0.0")
+        expect(spec.git_url).to eq("https://github.com/org/repo")
+        expect(spec.name).to eq("org/repo/skills/review")
+      end
+    end
+
     context "with an explicit HTTPS git URL" do
       let(:raw) { "https://gitlab.com/acme/prompts.git#v0.5.0" }
 

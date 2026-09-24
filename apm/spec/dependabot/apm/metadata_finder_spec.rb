@@ -62,6 +62,14 @@ RSpec.describe Dependabot::Apm::MetadataFinder do
       it { is_expected.to eq("https://gitlab.com/acme/prompts") }
     end
 
+    context "when the URL is a deeply nested gitlab namespace" do
+      let(:url) { "https://gitlab.com/group/subgroup/team/project" }
+
+      it "preserves the full repository path instead of truncating it" do
+        expect(source_url).to eq("https://gitlab.com/group/subgroup/team/project")
+      end
+    end
+
     context "when the URL is from an unknown host" do
       let(:url) { "https://internal.example/team/skills" }
 
