@@ -71,21 +71,13 @@ module Dependabot
 
           # DependencySet merges repeated declarations of the same package into a
           # single dependency with several requirements whose refs need not share
-          # a tag family (e.g. `review--v1.0.0` and `review-v1.0.0`). Resolve the
-          # update per requirement source -- each through a checker scoped to that
-          # ref, sharing one remote fetch -- so a declaration is only ever bumped
-          # within its own tag family instead of being rewritten into the first
-          # requirement's family or missing its own newer tag.
-          git_tag = updated_git_tag_for(git_commit_checker_for(source))
-          new_tag = git_tag&.tag
+          # a tag family (e.g. `review--v1.0.0` and `review-v1.0.0`). Resolve each
+          # requirement independently -- within its own family and above its own
+          # pinned version -- so a declaration is only ever bumped within its own
+          # family, and a higher declaration is never rewritten down to a lower
+          # family's tag or a lower requirement's security fix.
+          new_tag = resolved_tag_for_requirement(source, ref_version)&.tag
           next req unless new_tag
-
-          new_version = git_tag.version
-          # Never rewrite a requirement whose own ref already sits at or above the
-          # resolved tag -- a lower selected tag (a security fix, or a latest
-          # capped by an ignore rule) would otherwise downgrade a higher
-          # declaration, e.g. a v1.5.0 fix must leave a v2.0.0 entry untouched.
-          next req if new_version && Version.new(ref_version) >= new_version
 
           new_source = source.merge(ref: new_tag)
           Dependabot::DependencyRequirement.create(req.merge(source: new_source))
@@ -114,7 +106,15 @@ module Dependabot
         # APM regenerates itself, so Dependabot leaves them untouched.
         return dependency.version unless git_commit_checker.pinned_ref_looks_like_version?
 
-        latest_version_tag&.version || dependency.version
+        # A merged dependency can hold several ref families (e.g. `review--v*`
+        # and `review-v*`). Report the highest tag reachable by ANY requirement,
+        # each resolved within its own family and above its own pinned version,
+        # so the base `can_update?` isn't short-circuited when only a non-first
+        # family has a newer tag.
+        semver_requirement_checkers.filter_map do |ref_version, checker|
+          tag_version = latest_version_tag(checker)&.version
+          tag_version if tag_version && Version.new(ref_version) < tag_version
+        end.max || dependency.version
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -122,14 +122,52 @@ module Dependabot
         return unless git_commit_checker.git_dependency?
         return unless git_commit_checker.pinned_ref_looks_like_version?
 
-        lowest_security_fix_tag&.version
+        # Lowest security fix across all requirement families, each filtered
+        # above its OWN pinned version so a higher declaration's fix (e.g. the
+        # `v2.1.0` for a `v2.0.0` pin) isn't masked by a lower family's `v1.1.0`.
+        semver_requirement_checkers.filter_map do |ref_version, checker|
+          lowest_security_fix_tag(checker, Version.new(ref_version))&.version
+        end.min
       end
 
-      sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
-      def updated_git_tag_for(checker)
+      # The tag a single requirement should move to: resolved within that
+      # requirement's own ref family (via a checker scoped to its ref) and, for
+      # security fixes, filtered strictly above that requirement's own pinned
+      # version. Returns nil when there is no strictly-higher tag, so a
+      # requirement is never downgraded -- a lower selected tag (a security fix,
+      # or a latest capped by an ignore rule) must leave an already-higher
+      # declaration untouched.
+      sig do
+        params(source: Dependabot::DependencyRequirement::ObjectHash, ref_version: String)
+          .returns(T.nilable(Dependabot::GitTagDetails))
+      end
+      def resolved_tag_for_requirement(source, ref_version)
+        checker = git_commit_checker_for(source)
         return unless checker.pinned_ref_looks_like_version?
 
-        vulnerable? ? lowest_security_fix_tag(checker) : latest_version_tag(checker)
+        parsed = Version.new(ref_version)
+        tag = vulnerable? ? lowest_security_fix_tag(checker, parsed) : latest_version_tag(checker)
+        tag_version = tag&.version
+        return unless tag_version
+        return if parsed >= tag_version
+
+        tag
+      end
+
+      # Each git-semver-pinned requirement paired with a checker scoped to its
+      # own ref (all sharing one remote fetch via shared_git_metadata_fetcher).
+      # Drives both the per-requirement rewriting in updated_requirements and the
+      # cross-family latest/security-fix version reporting that gates can_update?.
+      sig { returns(T::Array[[String, Dependabot::GitCommitChecker]]) }
+      def semver_requirement_checkers
+        dependency.requirements.filter_map do |req|
+          source = req.source_hash
+          current_ref = req.source_string("ref")
+          ref_version = current_ref && Version.semver_from_ref(current_ref, dependency_name: dependency.name)
+          next unless source && ref_version
+
+          [ref_version, git_commit_checker_for(source)]
+        end
       end
 
       sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
@@ -140,8 +178,11 @@ module Dependabot
         checker.local_tag_for_latest_version(update_cooldown)
       end
 
-      sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
-      def lowest_security_fix_tag(checker = git_commit_checker)
+      sig do
+        params(checker: Dependabot::GitCommitChecker, min_version: T.nilable(Gem::Version))
+          .returns(T.nilable(Dependabot::GitTagDetails))
+      end
+      def lowest_security_fix_tag(checker = git_commit_checker, min_version = current_version)
         return unless checker.git_dependency?
         return unless checker.pinned_ref_looks_like_version?
 
@@ -150,23 +191,25 @@ module Dependabot
                      .filter_vulnerable_versions(allowed_tags, security_advisories)
         # Never downgrade: an advisory that only affects the current line (e.g.
         # ">= 2.0.0, < 2.0.1" while on 2.0.0) must not resolve to an older,
-        # unaffected tag. Match the GitHub Actions finder and drop anything at or
-        # below the current version before taking the lowest remaining fix.
-        higher_than_current(fixed_tags).min_by { |t| T.must(t.version) }
+        # unaffected tag. For a merged dependency, filter relative to the
+        # requirement's own pinned version (min_version) so each declaration gets
+        # the lowest fix above ITS OWN version -- a `v2.0.0` pin must reach its
+        # `v2.1.0` fix rather than the dependency-wide lowest `v1.1.0`.
+        higher_than(fixed_tags, min_version).min_by { |t| T.must(t.version) }
       end
 
-      # Keeps only tags that carry a version and sit strictly above the version
-      # currently pinned in the manifest.
+      # Keeps only tags that carry a version and sit strictly above the given
+      # version (a requirement's own pinned version, or the dependency's current
+      # version when resolving a single declaration).
       sig do
-        params(tags: T::Array[Dependabot::GitTagDetails])
+        params(tags: T::Array[Dependabot::GitTagDetails], version: T.nilable(Gem::Version))
           .returns(T::Array[Dependabot::GitTagDetails])
       end
-      def higher_than_current(tags)
+      def higher_than(tags, version)
         versioned = tags.select(&:version)
-        current = current_version
-        return versioned unless current
+        return versioned unless version
 
-        versioned.select { |t| T.must(t.version) > current }
+        versioned.select { |t| T.must(t.version) > version }
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
