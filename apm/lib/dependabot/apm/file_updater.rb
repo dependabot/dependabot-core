@@ -104,36 +104,58 @@ module Dependabot
         return content unless declaration.end_with?("##{old_ref}")
 
         new_declaration = declaration.sub(/#{Regexp.escape("##{old_ref}")}\z/, "##{new_ref}")
-        declaration_line = new_req.metadata_string("declaration_line")&.to_i
-        replace_declaration(content, declaration, new_declaration, declaration_line)
+        declaration_span = new_req.metadata_string("declaration_span")
+        replace_declaration(content, declaration, new_declaration, declaration_span)
       end
 
-      # Rewrites the entry on its own manifest line (the 0-based
-      # `declaration_line` recorded at parse time), anchored to the `- <entry>`
-      # sequence item. Scoping to the source line means an identical string
-      # elsewhere in the file (a trailing comment, a `notes:` value, or a
-      # different dependency block) is never rewritten.
+      # Rewrites the entry at its exact source span (recorded from the YAML AST
+      # at parse time as "start_line:start_column:end_line:end_column", 0-based).
+      # Operating on the precise scalar range supports both block and flow
+      # sequences, preserves any surrounding quotes, and never rewrites an
+      # identical string elsewhere in the file (a comment, a `notes:` value, or
+      # a different dependency block).
       sig do
         params(
           content: String,
           old_declaration: String,
           new_declaration: String,
-          declaration_line: T.nilable(Integer)
+          declaration_span: T.nilable(String)
         ).returns(String)
       end
-      def replace_declaration(content, old_declaration, new_declaration, declaration_line)
-        return content unless declaration_line
+      def replace_declaration(content, old_declaration, new_declaration, declaration_span)
+        offsets = span_offsets(content, declaration_span)
+        return content unless offsets
 
-        lines = content.lines
-        line = lines[declaration_line]
-        return content unless line
+        start_offset, end_offset = offsets
+        original = T.must(content[start_offset...end_offset])
+        return content unless original.include?(old_declaration)
 
-        item = /\A(?<indent>\s*-\s*["']?)#{Regexp.escape(old_declaration)}(?<trailer>["']?[ \t]*(?:#.*)?\R?)\z/
-        match = line.match(item)
-        return content unless match
+        updated = original.sub(old_declaration, new_declaration)
+        "#{T.must(content[0...start_offset])}#{updated}#{content[end_offset..]}"
+      end
 
-        lines[declaration_line] = "#{match[:indent]}#{new_declaration}#{match[:trailer]}"
-        lines.join
+      # Resolves the encoded span to an absolute [start, end) character range in
+      # `content`, or nil when the span is missing, malformed, or points past the
+      # end of the current content.
+      sig { params(content: String, declaration_span: T.nilable(String)).returns(T.nilable([Integer, Integer])) }
+      def span_offsets(content, declaration_span)
+        return unless declaration_span
+
+        parts = declaration_span.split(":")
+        return unless parts.length == 4
+
+        lines = content.each_line.to_a
+        start_offset = line_offset(lines, T.must(parts[0]).to_i) + T.must(parts[1]).to_i
+        end_offset = line_offset(lines, T.must(parts[2]).to_i) + T.must(parts[3]).to_i
+        return if start_offset >= end_offset || end_offset > content.length
+
+        [start_offset, end_offset]
+      end
+
+      # Character offset of the start of the given 0-based line.
+      sig { params(lines: T::Array[String], line: Integer).returns(Integer) }
+      def line_offset(lines, line)
+        lines.first(line).sum(&:length)
       end
     end
   end

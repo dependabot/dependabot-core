@@ -128,7 +128,25 @@ module Dependabot
         allowed_tags = git_commit_checker.local_tags_for_allowed_versions
         fixed_tags = Dependabot::UpdateCheckers::VersionFilters
                      .filter_vulnerable_versions(allowed_tags, security_advisories)
-        fixed_tags.select(&:version).min_by { |t| T.must(t.version) }
+        # Never downgrade: an advisory that only affects the current line (e.g.
+        # ">= 2.0.0, < 2.0.1" while on 2.0.0) must not resolve to an older,
+        # unaffected tag. Match the GitHub Actions finder and drop anything at or
+        # below the current version before taking the lowest remaining fix.
+        higher_than_current(fixed_tags).min_by { |t| T.must(t.version) }
+      end
+
+      # Keeps only tags that carry a version and sit strictly above the version
+      # currently pinned in the manifest.
+      sig do
+        params(tags: T::Array[Dependabot::GitTagDetails])
+          .returns(T::Array[Dependabot::GitTagDetails])
+      end
+      def higher_than_current(tags)
+        versioned = tags.select(&:version)
+        current = current_version
+        return versioned unless current
+
+        versioned.select { |t| T.must(t.version) > current }
       end
 
       sig { returns(Dependabot::GitCommitChecker) }

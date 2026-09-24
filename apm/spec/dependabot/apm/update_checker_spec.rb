@@ -145,5 +145,22 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
     it "returns the lowest non-vulnerable tag" do
       expect(lowest_security_fix_version).to eq(Dependabot::Apm::Version.new("1.1.0"))
     end
+
+    context "when only the current version line is vulnerable" do
+      let(:reference) { "v1.1.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "apm",
+            vulnerable_versions: [">= 1.1.0, < 1.2.0"]
+          )
+        ]
+      end
+
+      it "upgrades to the fix rather than downgrading to an older unaffected tag" do
+        expect(lowest_security_fix_version).to eq(Dependabot::Apm::Version.new("1.2.0"))
+      end
+    end
   end
 end

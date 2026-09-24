@@ -44,6 +44,10 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
         expect(spec.ref).to eq("v2.3.1")
         expect(spec.git_url).to eq("https://github.com/octo-org/octo-skills")
       end
+
+      it "namespaces the dependency name by the virtual path so it stays unique" do
+        expect(spec.name).to eq("octo-org/octo-skills/skills/review")
+      end
     end
 
     context "with an FQDN shorthand for a non-default host" do
