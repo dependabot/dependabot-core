@@ -130,6 +130,14 @@ module Dependabot
             dependencies_map,
             workspace_package_uuids
           )
+
+          merge_dependencies_from_list(
+            result.extra_dependencies,
+            ["extras"],
+            proj_file.name,
+            dependencies_map,
+            workspace_package_uuids
+          )
         end
 
         apply_manifest_versions(dependencies_map)
