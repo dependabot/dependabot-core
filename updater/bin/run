@@ -2,9 +2,18 @@
 set -e
 
 command="$1"
+
+# When no command is provided, attempt to read it from job.json
 if [ -z "$command" ]; then
-  echo "usage: run [update_files|update_graph]"
-  exit 1
+  if [ -f "job.json" ]; then
+    # Use Ruby to parse the command field; default to update_files unless explicitly graph
+    command=$(ruby -rjson -e 'j=JSON.parse(File.read("job.json")); c=j.dig("job","command") || ""; puts(c == "graph" ? "update_graph" : "update_files")')
+    echo "No command argument supplied, found command '$command' from job definition."
+  else
+    echo "usage: run [update_files|update_graph]"
+    echo "Or run without arguments if a job.json file is present."
+    exit 1
+  fi
 fi
 
 # ignore fetch_files command for backward compatibility
