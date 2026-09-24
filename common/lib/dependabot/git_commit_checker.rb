@@ -315,7 +315,7 @@ module Dependabot
       local_tags_matching_sha(commit_sha).map(&:name)
     end
 
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
+    sig { overridable.params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
     def max_local_tag(tags)
       max_version_tag = tags.max_by { |t| version_from_tag(t) }
 

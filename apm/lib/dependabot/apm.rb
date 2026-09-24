@@ -19,5 +19,10 @@ require "dependabot/dependency"
 Dependabot::Dependency
   .register_production_check(
     "apm",
-    ->(groups) { !groups.include?("development") }
+    # Production when the explicit "dependencies" marker is present (or when a
+    # dependency carries no group information at all). Presence-based rather than
+    # "not development", so a package merged from both `dependencies.apm` and
+    # `devDependencies.apm` -- whose flattened groups include both markers --
+    # stays production, while a `devDependencies`-only entry does not.
+    ->(groups) { groups.empty? || groups.include?("dependencies") }
   )

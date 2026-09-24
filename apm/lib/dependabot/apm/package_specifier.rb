@@ -286,21 +286,27 @@ module Dependabot
         "https://#{host}/#{owner}/#{repo}"
       end
 
-      # The dependency name shown to users. Repositories on the manifest's
-      # default host -- the configured `default_host`, or github.com when unset
-      # -- keep the familiar `owner/repo` shorthand, matching how APM keys the
-      # dependency; repositories on any other host are namespaced by host to
-      # stay unique. Comparing against the effective default (rather than a
-      # hard-coded github.com) means a manifest-selected `default_host` is
-      # stripped too, so dependency-name ignore rules and deduplication use the
-      # same identity APM does. A virtual package (sub path) is namespaced by
-      # that path too: APM keys virtual packages by repository plus path, so
-      # `org/mono/skills/review` and `org/mono/skills/security` must remain
-      # distinct dependencies rather than collapse into one `org/mono` entry
-      # that DependencySet would deduplicate.
+      # The dependency name shown to users, which is also APM's dedup/lock
+      # identity. Repositories on the manifest's default host -- the configured
+      # `default_host`, or github.com when unset -- keep the familiar
+      # `owner/repo` shorthand, matching how APM keys the dependency;
+      # repositories on any other host are namespaced by host to stay unique.
+      # Comparing against the effective default (rather than a hard-coded
+      # github.com) means a manifest-selected `default_host` is stripped too, so
+      # dependency-name ignore rules and deduplication use the same identity APM
+      # does. A custom port is transport, not identity: APM keeps it only in the
+      # clone URL and excludes it from the dedup/lock key, so `git_url` retains
+      # it while `name` strips it (`git.example.com:8443/org/repo` collapses to
+      # `git.example.com/org/repo`), keeping duplicate declarations and
+      # dependency-name ignore rules aligned with APM. A virtual package (sub
+      # path) is namespaced by that path too: APM keys virtual packages by
+      # repository plus path, so `org/mono/skills/review` and
+      # `org/mono/skills/security` must remain distinct dependencies rather than
+      # collapse into one `org/mono` entry that DependencySet would deduplicate.
       sig { returns(String) }
       def name
-        repo_name = host == @default_host ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
+        identity_host = self.class.hostname_without_port(host)
+        repo_name = identity_host == @default_host ? "#{owner}/#{repo}" : "#{identity_host}/#{owner}/#{repo}"
         virtual_path = sub_path
         virtual_path ? "#{repo_name}/#{virtual_path}" : repo_name
       end
