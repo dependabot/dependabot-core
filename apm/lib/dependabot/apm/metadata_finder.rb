@@ -28,6 +28,22 @@ module Dependabot
         T::Hash[String, String]
       )
 
+      # The API path each provider serves under its own authority. A dependency
+      # may pin a custom port (`github.com:8443`), which is a distinct endpoint
+      # from the public SaaS host: it is a self-hosted-style install whose API is
+      # served from the same authority (mirroring Dependabot::Source's GitHub
+      # Enterprise `…/api/v3` handling), not from the public `api.github.com`.
+      # Used only when a port is present; portless canonical hosts keep the
+      # provider's public defaults.
+      API_PATH_BY_PROVIDER = T.let(
+        {
+          "github" => "api/v3",
+          "gitlab" => "api/v4",
+          "bitbucket" => "2.0"
+        }.freeze,
+        T::Hash[String, String]
+      )
+
       private
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
@@ -46,10 +62,26 @@ module Dependabot
         spec = Dependabot::Apm::PackageSpecifier.parse(url)
         return unless spec
 
-        provider = PROVIDER_BY_HOST[spec.host]
+        # Classify by the hostname alone: a custom port is transport, not a
+        # different provider, so `github.com:8443` is still GitHub.
+        hostname = Dependabot::Apm::PackageSpecifier.hostname_without_port(spec.host)
+        provider = PROVIDER_BY_HOST[hostname]
         return if provider.nil? || spec.repo.empty?
 
-        Dependabot::Source.new(provider: provider, repo: "#{spec.owner}/#{spec.repo}")
+        repo = "#{spec.owner}/#{spec.repo}"
+        # A portless canonical host uses the provider's public defaults.
+        return Dependabot::Source.new(provider: provider, repo: repo) if spec.host == hostname
+
+        # A custom port is a distinct, self-hosted-style endpoint: preserve the
+        # full authority and its matching API so source and changelog links
+        # target it. Passing the URL to Source.from_url instead would misread the
+        # port as part of the repo path (`github.com:8443/org/repo` -> `8443/org`).
+        Dependabot::Source.new(
+          provider: provider,
+          repo: repo,
+          hostname: spec.host,
+          api_endpoint: "https://#{spec.host}/#{API_PATH_BY_PROVIDER.fetch(provider)}"
+        )
       end
     end
   end

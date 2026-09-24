@@ -70,6 +70,22 @@ RSpec.describe Dependabot::Apm::MetadataFinder do
       end
     end
 
+    context "when a github URL carries a custom port" do
+      let(:url) { "https://github.com:8443/microsoft/edge-ai" }
+
+      it "preserves the port instead of misreading it as the repository" do
+        expect(source_url).to eq("https://github.com:8443/microsoft/edge-ai")
+      end
+    end
+
+    context "when a nested gitlab URL carries a custom port" do
+      let(:url) { "https://gitlab.com:8443/group/subgroup/project" }
+
+      it "preserves both the port and the full repository path" do
+        expect(source_url).to eq("https://gitlab.com:8443/group/subgroup/project")
+      end
+    end
+
     context "when the URL is from an unknown host" do
       let(:url) { "https://internal.example/team/skills" }
 
