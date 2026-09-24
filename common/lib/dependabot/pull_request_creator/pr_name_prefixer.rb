@@ -339,9 +339,15 @@ module Dependabot
         end
       end
 
-      sig { returns(String) }
-      def dependabot_email
-        "support@dependabot.com"
+      # Identify Dependabot's own commits by the bot author name rather than a
+      # hardcoded email. The previously used `support@dependabot.com` address is
+      # a pre-acquisition leftover that is no longer used for commits, and the
+      # author email is configurable for self-hosted setups, so matching on it
+      # is unreliable. This mirrors the author-name check already used for
+      # GitHub commits.
+      sig { params(author_name: T.nilable(String)).returns(T::Boolean) }
+      def dependabot_author?(author_name)
+        !!author_name&.include?("dependabot")
       end
 
       sig { returns(T::Array[String]) }
@@ -356,7 +362,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_gitlab_commit_messages
         recent_gitlab_commits
-          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| dependabot_author?(commit.author_name) }
           .reject { |commit| commit.message&.start_with?("merge !") }
           .filter_map(&:message)
           .map(&:strip)
@@ -365,7 +371,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_azure_commit_messages
         recent_azure_commits
-          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| dependabot_author?(commit.author_name) }
           .reject { |commit| commit.message&.start_with?("Merge") }
           .filter_map(&:message)
           .map(&:strip)
@@ -374,7 +380,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_bitbucket_commit_messages
         recent_bitbucket_commits
-          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| dependabot_author?(commit.author_name) }
           .filter_map(&:message)
           .reject { |m| m.start_with?("Merge") }
           .map(&:strip)
@@ -383,7 +389,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_codecommit_commit_messages
         recent_codecommit_commits
-          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| dependabot_author?(commit.author_name) }
           .reject { |commit| commit.message&.start_with?("Merge") }
           .filter_map(&:message)
           .map(&:strip)
@@ -419,7 +425,7 @@ module Dependabot
       def last_github_dependabot_commit_message
         recent_github_commits
           .reject { |commit| commit.message&.start_with?("Merge") }
-          .find { |commit| commit.author_name&.include?("dependabot") }
+          .find { |commit| dependabot_author?(commit.author_name) }
           &.message
           &.strip
       end
@@ -437,7 +443,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def last_gitlab_dependabot_commit_message
         recent_gitlab_commits
-          .find { |commit| commit.author_email == dependabot_email }
+          .find { |commit| dependabot_author?(commit.author_name) }
           &.message
           &.strip
       end
@@ -445,7 +451,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def last_azure_dependabot_commit_message
         recent_azure_commits
-          .find { |commit| commit.author_email == dependabot_email }
+          .find { |commit| dependabot_author?(commit.author_name) }
           &.message
           &.strip
       end
@@ -453,7 +459,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def last_bitbucket_dependabot_commit_message
         recent_bitbucket_commits
-          .find { |commit| commit.author_email == dependabot_email }
+          .find { |commit| dependabot_author?(commit.author_name) }
           &.message
           &.strip
       end
@@ -461,7 +467,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def last_codecommit_dependabot_commit_message
         recent_codecommit_commits
-          .find { |commit| commit.author_email == dependabot_email }
+          .find { |commit| dependabot_author?(commit.author_name) }
           &.message
           &.strip
       end
@@ -494,7 +500,8 @@ module Dependabot
         @recent_codecommit_commits = (output.commits || []).map do |commit|
           RecentCommit.new(
             message: commit.message,
-            author_email: commit.author&.email
+            author_email: commit.author&.email,
+            author_name: commit.author&.name
           )
         end
       end
@@ -516,7 +523,8 @@ module Dependabot
       def parse_gitlab_commit(commit)
         RecentCommit.new(
           message: gitlab_optional_string(commit, "message", "commit message"),
-          author_email: gitlab_optional_string(commit, "author_email", "author email")
+          author_email: gitlab_optional_string(commit, "author_email", "author email"),
+          author_name: gitlab_optional_string(commit, "author_name", "author name")
         )
       end
 
@@ -525,7 +533,8 @@ module Dependabot
         author = object_hash(commit, "author", "Azure author")
         RecentCommit.new(
           message: object_optional_string(commit, "comment", "Azure commit message"),
-          author_email: object_optional_string(author, "email", "Azure author email")
+          author_email: object_optional_string(author, "email", "Azure author email"),
+          author_name: object_optional_string(author, "name", "Azure author name")
         )
       end
 
@@ -536,7 +545,9 @@ module Dependabot
         matches = raw_author&.match(/<(.*)>/)
         RecentCommit.new(
           message: object_optional_string(commit, "message", "Bitbucket commit message"),
-          author_email: matches ? T.must(matches[1]) : nil
+          author_email: matches ? T.must(matches[1]) : nil,
+          # The raw author is a "Name <email>" string; keep the part before "<email>".
+          author_name: raw_author&.split("<", 2)&.first&.strip
         )
       end
 
