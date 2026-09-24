@@ -60,6 +60,11 @@ To keep the first iteration small and reviewable, the following are intentionall
   URLs, a structure this version's generic `host/owner/repo` builder cannot
   construct, so ADO entries are skipped rather than resolved to a wrong remote.
   Native `_git` clone-URL support is a follow-up.
+- **`http://` and `git://` clone URLs** — Dependabot enumerates tags over HTTPS,
+  so an `https://` or `ssh://`/SCP explicit URL is resolved (SSH over HTTPS on the
+  same host, keeping any `https://` port). A plain `http://` or `git://` URL names
+  a different endpoint (a distinct port, and for `http` an unencrypted service),
+  so it is skipped rather than silently rewritten to `https://`.
 - **Block-scalar and escaped string entries** — a shorthand written as a YAML
   block scalar (folded `>` / literal `|`) or as a quoted scalar that relies on
   escape sequences (e.g. `"owner/repo\x23v1.0.0"`) decodes to text that is not a
