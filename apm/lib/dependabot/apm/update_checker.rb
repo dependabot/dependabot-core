@@ -8,6 +8,7 @@ require "dependabot/git_tag_details"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
+require "dependabot/apm/git_commit_checker"
 require "dependabot/apm/requirement"
 require "dependabot/apm/version"
 
@@ -152,7 +153,7 @@ module Dependabot
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
         @git_commit_checker ||= T.let(
-          Dependabot::GitCommitChecker.new(
+          Dependabot::Apm::GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials,
             ignored_versions: ignored_versions,
