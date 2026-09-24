@@ -135,7 +135,10 @@ module Dependabot
         return true if declarations_using_a_property.none?
 
         declarations_using_a_property.any? do |requirement|
-          requirement.metadata_string("property_source") != "remote_pom.xml"
+          property_source = requirement.metadata_string("property_source")
+          # Treat absent property_source as non-local (unknown provenance = remote).
+          # Only an explicit local file path (not "remote_pom.xml") unlocks the dep.
+          property_source.is_a?(String) && property_source != "remote_pom.xml"
         end
       end
 
