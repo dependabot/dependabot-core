@@ -27,6 +27,11 @@ module Dependabot
     # self-hosted GHES on an arbitrary hostname that cannot be recognised from
     # the host alone.
     #
+    # Azure DevOps hosts (`dev.azure.com`, `ssh.dev.azure.com` and legacy
+    # `*.visualstudio.com`) expose repositories at `org/project/_git/repo`, a
+    # structure this generic `owner/repo` builder cannot construct, so their
+    # entries are out of scope for v1 and resolve to `nil`.
+    #
     # Local path entries (`./pkg`, `../pkg`, `/pkg`, `~/pkg`, and their Windows
     # `.\`/`..\`/`~\` forms) are not versioned by a remote git host and resolve
     # to `nil`, as do entries we cannot confidently parse.
@@ -34,6 +39,13 @@ module Dependabot
       extend T::Sig
 
       DEFAULT_HOST = "github.com"
+
+      # Azure DevOps Services hosts. Their repositories live at
+      # `org/project/_git/repo`, a structure this generic owner/repo builder
+      # cannot express, so ADO entries are out of scope for v1 (see README) and
+      # are skipped rather than resolved to a wrong remote. Legacy
+      # per-organisation hosts match the `.visualstudio.com` suffix separately.
+      AZURE_DEVOPS_HOSTS = %w(dev.azure.com ssh.dev.azure.com).freeze
 
       # SCP-style SSH shorthand `user@host:path`. APM accepts any valid SSH
       # username here (not only `git@`), so match any user that has no `:` or
@@ -99,6 +111,12 @@ module Dependabot
         # here; repository splitting, naming and credential-host matching all key
         # off `host` and must agree on e.g. `GitHub.com` == `github.com`.
         host = host.downcase
+        # Azure DevOps clone URLs are `org/project/_git/repo`, which this generic
+        # owner/repo builder cannot construct, so ADO shorthands and URLs are not
+        # versioned in v1 (see README). Skip them rather than emit a wrong remote
+        # that GitCommitChecker would query as a non-repository endpoint.
+        return nil if azure_devops_host?(host)
+
         segments = path.delete_suffix(".git").split("/").reject(&:empty?)
         owner = segments[0]
         return nil if owner.nil? || segments[1].nil?
@@ -152,6 +170,16 @@ module Dependabot
       sig { params(host: String).returns(T::Boolean) }
       def self.github_family?(host)
         host == DEFAULT_HOST || host.end_with?(".ghe.com")
+      end
+
+      # True for Azure DevOps Services hosts: dev.azure.com, its SSH alias, and
+      # legacy per-organisation `*.visualstudio.com` hosts. APM special-cases
+      # these with `org/project/_git/repo` clone URLs; v1 does not build those,
+      # so such entries are skipped (see README) rather than resolved to a wrong
+      # remote.
+      sig { params(host: String).returns(T::Boolean) }
+      def self.azure_devops_host?(host)
+        AZURE_DEVOPS_HOSTS.include?(host) || host.end_with?(".visualstudio.com")
       end
 
       sig { params(entry: String).returns(T::Boolean) }

@@ -108,7 +108,15 @@ module Dependabot
         end
         old_ref = old_req&.source_string("ref")
         return unless old_ref && old_ref != new_ref
-        return unless declaration.end_with?("##{old_ref}")
+
+        # A quoted scalar may carry trailing whitespace after the ref (e.g.
+        # `"owner/repo#v1.0.0 "`). PackageSpecifier strips it before parsing the
+        # ref, but the stored declaration keeps it, so anchor the match before any
+        # trailing whitespace and preserve that whitespace in the rewrite. An
+        # end-anchored `##{old_ref}` check would otherwise miss and fail the whole
+        # update with "Expected content to change!".
+        ref_at_end = /##{Regexp.escape(old_ref)}(\s*)\z/
+        return unless declaration.match?(ref_at_end)
 
         offsets = span_offsets(content, new_req.metadata_string("declaration_span"))
         return unless offsets
@@ -117,7 +125,7 @@ module Dependabot
         original = T.must(content[start_offset...end_offset])
         return unless original.include?(declaration)
 
-        new_declaration = declaration.sub(/#{Regexp.escape("##{old_ref}")}\z/, "##{new_ref}")
+        new_declaration = declaration.sub(ref_at_end, "##{new_ref}\\1")
         Substitution.new(
           start_offset: start_offset,
           end_offset: end_offset,

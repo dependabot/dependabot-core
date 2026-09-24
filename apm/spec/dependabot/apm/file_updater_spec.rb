@@ -105,6 +105,42 @@ RSpec.describe Dependabot::Apm::FileUpdater do
       end
     end
 
+    context "when the quoted entry carries trailing whitespace after the ref" do
+      let(:manifest_body) do
+        <<~YAML
+          dependencies:
+            apm:
+              - "microsoft/edge-ai#v1.0.0 "
+        YAML
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "microsoft/edge-ai",
+          version: "1.2.0",
+          previous_version: "1.0.0",
+          requirements: [{
+            file: "apm.yml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/microsoft/edge-ai", ref: "v1.2.0", branch: nil },
+            metadata: { declaration_string: "microsoft/edge-ai#v1.0.0 ", declaration_span: "2:6:2:33" }
+          }],
+          previous_requirements: [{
+            file: "apm.yml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/microsoft/edge-ai", ref: "v1.0.0", branch: nil },
+            metadata: { declaration_string: "microsoft/edge-ai#v1.0.0 ", declaration_span: "2:6:2:33" }
+          }],
+          package_manager: "apm"
+        )
+      end
+
+      it "bumps the pinned ref while preserving the trailing whitespace" do
+        expect(updated_files.first.content).to include("\"microsoft/edge-ai#v1.2.0 \"")
+      end
+    end
+
     context "when the manifest uses a flow sequence" do
       let(:manifest_body) do
         <<~YAML
