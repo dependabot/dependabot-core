@@ -1,0 +1,149 @@
+# typed: false
+# frozen_string_literal: true
+
+require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/security_advisory"
+require "dependabot/apm/update_checker"
+require "dependabot/apm/version"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
+
+RSpec.describe Dependabot::Apm::UpdateChecker do
+  let(:dependency_name) { "microsoft/edge-ai" }
+  let(:reference) { "v1.0.0" }
+  let(:dependency_version) do
+    return unless Dependabot::Apm::Version.correct?(reference)
+
+    Dependabot::Apm::Version.new(reference).to_s
+  end
+  let(:dependency_source) do
+    {
+      type: "git",
+      url: "https://github.com/#{dependency_name}",
+      ref: reference,
+      branch: nil
+    }
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "apm.yml",
+        source: dependency_source,
+        metadata: { declaration_string: "#{dependency_name}##{reference}" }
+      }],
+      package_manager: "apm"
+    )
+  end
+  let(:service_pack_url) do
+    "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"
+  end
+  let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
+  let(:security_advisories) { [] }
+  let(:update_cooldown) { nil }
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      credentials: github_credentials,
+      security_advisories: security_advisories,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
+    )
+  end
+
+  before do
+    stub_request(:get, service_pack_url)
+      .to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", "apm-package"),
+        headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+      )
+  end
+
+  it_behaves_like "an update checker"
+
+  describe "#latest_version" do
+    subject(:latest_version) { checker.latest_version }
+
+    it "returns the highest semver tag" do
+      expect(latest_version).to eq(Dependabot::Apm::Version.new("1.2.0"))
+    end
+
+    context "when the ref is a branch rather than a version" do
+      let(:reference) { "main" }
+
+      it "does not offer a version bump" do
+        expect(latest_version).to be_nil
+      end
+    end
+
+    context "when the latest allowed version is capped by ignored_versions" do
+      let(:ignored_versions) { ["> 1.1.0"] }
+
+      it "returns the highest non-ignored tag" do
+        expect(latest_version).to eq(Dependabot::Apm::Version.new("1.1.0"))
+      end
+    end
+  end
+
+  describe "#can_update?" do
+    subject { checker.can_update?(requirements_to_unlock: :own) }
+
+    context "when the pinned tag is behind the latest" do
+      let(:reference) { "v1.0.0" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when the pinned tag is already the latest" do
+      let(:reference) { "v1.2.0" }
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#updated_requirements" do
+    subject(:updated_requirements) { checker.updated_requirements }
+
+    it "rewrites the source ref to the latest tag" do
+      expect(updated_requirements.first[:source][:ref]).to eq("v1.2.0")
+    end
+
+    it "preserves the declaration_string metadata" do
+      expect(updated_requirements.first[:metadata])
+        .to eq(declaration_string: "microsoft/edge-ai#v1.0.0")
+    end
+
+    context "when the ref is a branch rather than a version" do
+      let(:reference) { "main" }
+
+      it "leaves the requirements unchanged" do
+        expect(updated_requirements).to eq(dependency.requirements)
+      end
+    end
+  end
+
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "apm",
+          vulnerable_versions: ["< 1.1.0"]
+        )
+      ]
+    end
+
+    it "returns the lowest non-vulnerable tag" do
+      expect(lowest_security_fix_version).to eq(Dependabot::Apm::Version.new("1.1.0"))
+    end
+  end
+end
