@@ -15,6 +15,14 @@ module Dependabot
       MANIFEST_FILENAME = "apm.yml"
       LOCKFILE_FILENAME = "apm.lock.yaml"
 
+      # A single ref-bump edit, located by an absolute [start_offset, end_offset)
+      # character range in the original manifest content.
+      class Substitution < T::Struct
+        const :start_offset, Integer
+        const :end_offset, Integer
+        const :text, String
+      end
+
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/^apm\.yml$/]
@@ -54,84 +62,78 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_manifest_content(file)
-        content = T.must(file.content)
+        original_content = T.must(file.content)
+        content = apply_substitutions(original_content, substitutions_for(file, original_content))
 
-        dependencies.each do |dep|
-          content = update_declarations_for(content, dep, file)
-        end
-
-        raise "Expected content to change!" if content == file.content
+        raise "Expected content to change!" if content == original_content
 
         content
       end
 
-      sig do
-        params(
-          content: String,
-          dependency: Dependabot::Dependency,
-          file: Dependabot::DependencyFile
-        ).returns(String)
-      end
-      def update_declarations_for(content, dependency, file)
-        previous_requirements = dependency.previous_requirements || []
+      # Collects every ref-bump substitution for `file`, each located by an
+      # absolute range in the ORIGINAL content. Resolving all offsets against the
+      # original (rather than mutating between edits) is what lets
+      # `apply_substitutions` reorder them safely.
+      sig { params(file: Dependabot::DependencyFile, content: String).returns(T::Array[Substitution]) }
+      def substitutions_for(file, content)
+        dependencies.flat_map do |dependency|
+          previous_requirements = dependency.previous_requirements || []
 
-        dependency.requirements.each do |new_req|
-          next unless new_req.file == file.name
+          dependency.requirements.filter_map do |new_req|
+            next unless new_req.file == file.name
 
-          content = apply_ref_bump(content, new_req, previous_requirements)
+            substitution_for(content, new_req, previous_requirements)
+          end
         end
-
-        content
       end
 
+      # Builds the substitution for a single requirement. The replacement rewrites
+      # only the declaration substring inside the scalar's span slice, so any
+      # surrounding quotes are preserved and an identical string elsewhere in the
+      # file is never touched.
       sig do
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
           previous_requirements: T::Array[Dependabot::DependencyRequirement]
-        ).returns(String)
+        ).returns(T.nilable(Substitution))
       end
-      def apply_ref_bump(content, new_req, previous_requirements)
+      def substitution_for(content, new_req, previous_requirements)
         declaration = new_req.metadata_string("declaration_string")
         new_ref = new_req.source_string("ref")
-        return content unless declaration && new_ref
+        return unless declaration && new_ref
 
         old_req = previous_requirements.find do |req|
           req.metadata_string("declaration_string") == declaration
         end
         old_ref = old_req&.source_string("ref")
-        return content unless old_ref && old_ref != new_ref
-        return content unless declaration.end_with?("##{old_ref}")
+        return unless old_ref && old_ref != new_ref
+        return unless declaration.end_with?("##{old_ref}")
 
-        new_declaration = declaration.sub(/#{Regexp.escape("##{old_ref}")}\z/, "##{new_ref}")
-        declaration_span = new_req.metadata_string("declaration_span")
-        replace_declaration(content, declaration, new_declaration, declaration_span)
-      end
-
-      # Rewrites the entry at its exact source span (recorded from the YAML AST
-      # at parse time as "start_line:start_column:end_line:end_column", 0-based).
-      # Operating on the precise scalar range supports both block and flow
-      # sequences, preserves any surrounding quotes, and never rewrites an
-      # identical string elsewhere in the file (a comment, a `notes:` value, or
-      # a different dependency block).
-      sig do
-        params(
-          content: String,
-          old_declaration: String,
-          new_declaration: String,
-          declaration_span: T.nilable(String)
-        ).returns(String)
-      end
-      def replace_declaration(content, old_declaration, new_declaration, declaration_span)
-        offsets = span_offsets(content, declaration_span)
-        return content unless offsets
+        offsets = span_offsets(content, new_req.metadata_string("declaration_span"))
+        return unless offsets
 
         start_offset, end_offset = offsets
         original = T.must(content[start_offset...end_offset])
-        return content unless original.include?(old_declaration)
+        return unless original.include?(declaration)
 
-        updated = original.sub(old_declaration, new_declaration)
-        "#{T.must(content[0...start_offset])}#{updated}#{content[end_offset..]}"
+        new_declaration = declaration.sub(/#{Regexp.escape("##{old_ref}")}\z/, "##{new_ref}")
+        Substitution.new(
+          start_offset: start_offset,
+          end_offset: end_offset,
+          text: original.sub(declaration, new_declaration)
+        )
+      end
+
+      # Applies the substitutions from the end of the file backwards. Rewriting in
+      # descending start offset means a length change in one edit can never shift
+      # the offsets of the edits still to be applied, so duplicate entries sharing
+      # a line (e.g. a flow sequence) are all updated correctly.
+      sig { params(content: String, substitutions: T::Array[Substitution]).returns(String) }
+      def apply_substitutions(content, substitutions)
+        substitutions.sort_by(&:start_offset).reverse.reduce(content) do |result, sub|
+          "#{T.must(result[0...sub.start_offset])}#{sub.text}#{result[sub.end_offset..]}"
+        end
       end
 
       # Resolves the encoded span to an absolute [start, end) character range in

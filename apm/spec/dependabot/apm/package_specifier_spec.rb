@@ -66,6 +66,20 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with a nested subgroup repository on a non-default host" do
+      let(:raw) { "gitlab.com/group/subgroup/project#v1.2.0" }
+
+      it "keeps the full nested path as the repository rather than a virtual path" do
+        expect(spec.host).to eq("gitlab.com")
+        expect(spec.owner).to eq("group")
+        expect(spec.repo).to eq("subgroup/project")
+        expect(spec.sub_path).to be_nil
+        expect(spec.ref).to eq("v1.2.0")
+        expect(spec.git_url).to eq("https://gitlab.com/group/subgroup/project")
+        expect(spec.name).to eq("gitlab.com/group/subgroup/project")
+      end
+    end
+
     context "with an explicit HTTPS git URL" do
       let(:raw) { "https://gitlab.com/acme/prompts.git#v0.5.0" }
 
