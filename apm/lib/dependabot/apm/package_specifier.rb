@@ -18,6 +18,12 @@ module Dependabot
     #   git@gitlab.com:acme/repo.git           SSH SCP-style URL
     #   ssh://git@gitlab.com/acme/repo.git     SSH URI-style URL
     #
+    # All explicit URL and SSH forms resolve to an `https://host/owner/repo`
+    # clone URL, since Dependabot enumerates tags over HTTPS with a token. A
+    # custom port is preserved only for an `https://` source (its port names the
+    # same HTTPS endpoint); `http://`, `ssh://` and `git://` ports are dropped,
+    # as they do not apply to that HTTPS endpoint.
+    #
     # Virtual package paths (`owner/repo/skills/review`) are a GitHub-family
     # shorthand, since GitHub repositories are always `owner/repo`. That covers
     # github.com and GitHub Enterprise Cloud data-residency hosts (`*.ghe.com`),
@@ -195,7 +201,15 @@ module Dependabot
         end
 
         if (m = spec.match(URL_STYLE))
-          return [T.must(m[:host]), m[:path]]
+          host = T.must(m[:host])
+          # The clone URL we build always resolves over https (Dependabot
+          # enumerates tags over https with a token), so a port is only reusable
+          # when the source itself is https. An ssh://, git:// or http:// port
+          # (e.g. the `:2222` on `ssh://git@host:2222/...`) is not an https port,
+          # so drop it rather than query https on a foreign port that cannot
+          # resolve. An https port names the same endpoint and is preserved.
+          host = host.sub(/:\d+\z/, "") unless m[:scheme] == "https"
+          return [host, m[:path]]
         end
 
         first_segment = spec.split("/").first.to_s
