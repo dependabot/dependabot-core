@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
   let(:manifest) do
     Dependabot::DependencyFile.new(name: "apm.yml", content: manifest_body)
   end
+  let(:declaration_line) { "2" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "microsoft/edge-ai",
@@ -34,7 +35,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           ref: "v1.2.0",
           branch: nil
         },
-        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0" }
+        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0", declaration_line: declaration_line }
       }],
       previous_requirements: [{
         file: "apm.yml",
@@ -46,7 +47,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           ref: "v1.0.0",
           branch: nil
         },
-        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0" }
+        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0", declaration_line: declaration_line }
       }],
       package_manager: "apm"
     )
@@ -100,6 +101,27 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
       it "still bumps the pinned ref" do
         expect(updated_files.first.content).to include("\"microsoft/edge-ai#v1.2.0\"")
+      end
+    end
+
+    context "when the same text appears elsewhere in the manifest" do
+      let(:manifest_body) do
+        <<~YAML
+          # keep microsoft/edge-ai#v1.0.0 until the audit clears
+          dependencies:
+            apm:
+              - microsoft/edge-ai#v1.0.0
+          notes:
+            reference: microsoft/edge-ai#v1.0.0
+        YAML
+      end
+      let(:declaration_line) { "3" }
+
+      it "rewrites only the real dependency entry" do
+        content = updated_files.first.content
+        expect(content).to include("    - microsoft/edge-ai#v1.2.0")
+        expect(content).to include("# keep microsoft/edge-ai#v1.0.0 until the audit clears")
+        expect(content).to include("reference: microsoft/edge-ai#v1.0.0")
       end
     end
 

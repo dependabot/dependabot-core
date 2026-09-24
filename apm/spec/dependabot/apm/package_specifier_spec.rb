@@ -84,6 +84,18 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with an SSH URI-style URL" do
+      let(:raw) { "ssh://git@gitlab.com/acme/prompts.git#v0.5.0" }
+
+      it "strips the user info and parses host, owner and repo" do
+        expect(spec.host).to eq("gitlab.com")
+        expect(spec.owner).to eq("acme")
+        expect(spec.repo).to eq("prompts")
+        expect(spec.ref).to eq("v0.5.0")
+        expect(spec.git_url).to eq("https://gitlab.com/acme/prompts")
+      end
+    end
+
     context "when the default host is overridden" do
       let(:default_host) { "git.internal.example" }
       let(:raw) { "team/skills#v1.0.0" }
@@ -96,7 +108,10 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
     end
 
     context "with local path entries" do
-      ["./local-pkg", "../local-pkg", "/abs/local-pkg", "."].each do |path|
+      [
+        "./local-pkg", "../local-pkg", "/abs/local-pkg", ".",
+        "~/local-pkg", "~", ".\\local-pkg", "..\\local-pkg", "~\\local-pkg"
+      ].each do |path|
         context "with #{path}" do
           let(:raw) { path }
 
