@@ -85,7 +85,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when requirement has a local version" do
             let(:requirement_txt_req_string) { "==1.4.0+gc.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0") }
+            its([:requirement]) { is_expected.to eq("==1.5.0+gc.1") }
+          end
+
+          context "when requirement has a local version (torch+cpu case)" do
+            let(:requirement_txt_req_string) { "==1.9.1+cpu" }
+            let(:latest_resolvable_version) { "1.13.1" }
+
+            its([:requirement]) { is_expected.to eq("==1.13.1+cpu") }
           end
 
           context "when using the arbitrary equality matcher" do
@@ -173,6 +180,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           let(:requirement_txt_req_string) { "~=1.3.0" }
 
           its([:requirement]) { is_expected.to eq("~=1.5.0") }
+
+          context "with a local version suffix" do
+            let(:requirement_txt_req_string) { "~=1.3.0+cpu" }
+
+            its([:requirement]) { is_expected.to eq("~=1.5.0+cpu") }
+          end
 
           context "when requirement supports the new version" do
             let(:requirement_txt_req_string) { "~=1.3" }
@@ -526,7 +539,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "when the requirement had a local version" do
                 let(:pyproject_req_string) { "1.4.0+gc.1" }
 
-                its([:requirement]) { is_expected.to eq("1.5.0") }
+                its([:requirement]) { is_expected.to eq("1.5.0+gc.1") }
               end
 
               context "when using an equality matcher" do
@@ -769,7 +782,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when the requirement had a local version" do
               let(:pyproject_req_string) { "1.4.0+gc.1" }
 
-              its([:requirement]) { is_expected.to eq("1.5.0") }
+              its([:requirement]) { is_expected.to eq("1.5.0+gc.1") }
             end
 
             context "when using an equality matcher" do
