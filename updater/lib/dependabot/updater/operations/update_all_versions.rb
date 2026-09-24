@@ -261,6 +261,12 @@ module Dependabot
 
         sig { params(error: StandardError, dependency: Dependabot::Dependency).void }
         def process_dependency_error(error, dependency)
+          # updated_dependencies can raise AllVersionsIgnored after requirements_to_unlock
+          # succeeds; for a non-security job that means "no update possible", so skip it.
+          if error.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
+            return Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          end
+
           if error.class.to_s.include?("RegistryError")
             ex = Dependabot::DependencyFileNotResolvable.new(error.message)
             error_handler.handle_dependency_error(error: ex, dependency: dependency)

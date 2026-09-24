@@ -200,6 +200,33 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       end
     end
 
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still
+      # raise AllVersionsIgnored. This operation only runs for non-security refreshes
+      # (see .applies_to?), so it must close the PR as no-longer-possible without the
+      # error reaching the run-level handler.
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          can_update?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          dependencies: ["dummy-pkg-a"],
+          blocked_versions_for?: false,
+          security_updates_only?: false
+        )
+      end
+
+      it "closes the pull request as no-longer-possible without raising or reporting a job error" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-a"], :update_no_longer_possible)
+
+        expect { perform }.not_to raise_error
+      end
+    end
+
     context "when the refresh job carries more than one directory" do
       let(:job_definition) do
         definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
