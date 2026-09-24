@@ -37,6 +37,7 @@ module Dependabot
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
       BUN_LOCKFILE_NAME = "bun.lock"
+      NUB_LOCKFILE_NAME = "nub.lock"
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -84,6 +85,7 @@ module Dependabot
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         raise_if_bun_lock_misconfigured_as_npm!
+        raise_if_nub_lock_misconfigured_as_npm!
 
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
@@ -321,6 +323,29 @@ module Dependabot
         return @bun_lock if defined?(@bun_lock)
 
         @bun_lock ||= T.let(fetch_file_if_present(BUN_LOCKFILE_NAME), T.nilable(DependencyFile))
+      end
+
+      # The same guard for Nub: a nub.lock is a pnpm v9 document under another name, so no
+      # package manager is detected, and the PR would bump package.json without updating nub.lock.
+      sig { void }
+      def raise_if_nub_lock_misconfigured_as_npm!
+        return unless no_package_manager_detected?
+        return unless nub_lock
+
+        raise Dependabot::MisconfiguredTooling.new(
+          "Nub",
+          "This project has a `#{NUB_LOCKFILE_NAME}` file but no `package-lock.json`, `yarn.lock` or " \
+          "`pnpm-lock.yaml`, which means it is managed by Nub. Dependabot's `npm_and_yarn` ecosystem " \
+          "cannot update `#{NUB_LOCKFILE_NAME}`. Set `package-ecosystem: \"nub\"` in your dependabot.yml " \
+          "for this directory so Dependabot can update this project's dependencies correctly."
+        )
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def nub_lock
+        return @nub_lock if defined?(@nub_lock)
+
+        @nub_lock ||= T.let(fetch_file_if_present(NUB_LOCKFILE_NAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T.nilable(T.any(Integer, String))) }
