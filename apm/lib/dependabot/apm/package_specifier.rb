@@ -101,6 +101,16 @@ module Dependabot
         return nil if owner.nil? || segments[1].nil?
 
         repo, sub_path = repository_and_sub_path(host, segments)
+
+        # GitHub owner/repo paths are case-insensitive, so canonicalise them to
+        # lowercase to give each repository a single stable identity. Other
+        # hosts (e.g. GitLab) are case-sensitive and MUST preserve casing, as
+        # must virtual sub paths (they address entries inside the repo tree).
+        if host == DEFAULT_HOST
+          owner = owner.downcase
+          repo = repo.downcase
+        end
+
         new(
           host: host,
           owner: owner,

@@ -206,6 +206,32 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
+    context "with case variations across hosts" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - Microsoft/Edge-AI#v1.0.0
+                - gitlab.com/Group/Repo#v1.0.0
+                - gitlab.com/group/repo#v2.0.0
+          YAML
+        )
+      end
+
+      # GitHub owner/repo casing is canonicalised to lowercase (case-insensitive
+      # host); the two GitLab repos differ only by case and MUST stay distinct
+      # because GitLab paths are case-sensitive.
+      it "case-folds GitHub names but keeps case-sensitive hosts distinct" do
+        expect(dependencies.map(&:name)).to contain_exactly(
+          "microsoft/edge-ai",
+          "gitlab.com/Group/Repo",
+          "gitlab.com/group/repo"
+        )
+      end
+    end
+
     describe "a devDependencies entry" do
       subject(:dependency) { dependencies.find { |d| d.name == "qa-org/qa-helpers" } }
 
