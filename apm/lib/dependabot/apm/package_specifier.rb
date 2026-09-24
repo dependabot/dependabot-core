@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -15,16 +15,20 @@ module Dependabot
     #   owner/repo/prompts/x.prompt.md#v1.0.0  Virtual file within a repo
     #   https://gitlab.com/acme/repo.git       Explicit HTTPS git URL
     #   git@gitlab.com:acme/repo.git           SSH SCP-style URL
+    #   ssh://git@gitlab.com/acme/repo.git     SSH URI-style URL
     #
-    # Local path entries (`./pkg`, `../pkg`, `/pkg`) are not versioned by a remote
-    # git host and resolve to `nil`, as do entries we cannot confidently parse.
+    # Local path entries (`./pkg`, `../pkg`, `/pkg`, `~/pkg`, and their Windows
+    # `.\`/`..\`/`~\` forms) are not versioned by a remote git host and resolve
+    # to `nil`, as do entries we cannot confidently parse.
     class PackageSpecifier
       extend T::Sig
 
       DEFAULT_HOST = "github.com"
 
       SCP_STYLE = /\Agit@(?<host>[^:]+):(?<path>.+)\z/
-      URL_STYLE = %r{\A(?<scheme>https?|git)://(?<host>[^/]+)/(?<path>.+)\z}
+      # Matches https/git/ssh URIs, discarding any `user@` info (e.g. the
+      # `git@` in an `ssh://git@host/owner/repo` URL) so only the host remains.
+      URL_STYLE = %r{\A(?<scheme>https?|git|ssh)://(?:[^@/]+@)?(?<host>[^/]+)/(?<path>.+)\z}
 
       sig { returns(String) }
       attr_reader :host
@@ -41,7 +45,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :ref
 
-      sig { params(raw: T.untyped, default_host: String).returns(T.nilable(Dependabot::Apm::PackageSpecifier)) }
+      sig { params(raw: Object, default_host: String).returns(T.nilable(Dependabot::Apm::PackageSpecifier)) }
       def self.parse(raw, default_host: DEFAULT_HOST)
         return nil unless raw.is_a?(String)
 
@@ -77,7 +81,8 @@ module Dependabot
 
       sig { params(entry: String).returns(T::Boolean) }
       def self.local_path?(entry)
-        entry.start_with?("./", "../", "/") || entry == "."
+        entry.start_with?("./", "../", "/", "~/", ".\\", "..\\", "~\\") ||
+          entry == "." || entry == "~"
       end
 
       sig { params(spec: String, default_host: String).returns([String, T.nilable(String)]) }

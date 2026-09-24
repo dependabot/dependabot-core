@@ -38,12 +38,11 @@ RSpec.describe Dependabot::Apm::FileParser do
   describe "#parse" do
     subject(:dependencies) { parser.parse }
 
-    it "only parses the supported string-shorthand git entries" do
+    it "only parses the supported string-shorthand git entries pinned to a semver tag" do
       expect(dependencies.map(&:name)).to contain_exactly(
         "microsoft/edge-ai",
         "octo-org/octo-skills",
         "gitlab.com/acme/prompts",
-        "big-corp/pinned-branch",
         "qa-org/qa-helpers"
       )
     end
@@ -66,7 +65,10 @@ RSpec.describe Dependabot::Apm::FileParser do
               ref: "v1.0.0",
               branch: nil
             },
-            metadata: { declaration_string: "microsoft/edge-ai#v1.0.0" }
+            metadata: {
+              declaration_string: "microsoft/edge-ai#v1.0.0",
+              declaration_line: "4"
+            }
           }]
         )
       end
@@ -83,12 +85,9 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
-    describe "a dependency pinned to a branch" do
-      subject(:dependency) { dependencies.find { |d| d.name == "big-corp/pinned-branch" } }
-
-      it "has no version but keeps the ref" do
-        expect(dependency.version).to be_nil
-        expect(dependency.requirements.first[:source][:ref]).to eq("main")
+    describe "a dependency pinned to a branch rather than a semver tag" do
+      it "is excluded because it cannot be version-bumped" do
+        expect(dependencies.map(&:name)).not_to include("big-corp/pinned-branch")
       end
     end
 

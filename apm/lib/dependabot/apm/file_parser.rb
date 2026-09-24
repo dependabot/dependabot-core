@@ -36,18 +36,27 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
+        # Reading the host first also validates the manifest and raises
+        # DependencyFileNotParseable before we walk it for source positions.
+        host = default_host
 
         DEPENDENCY_BLOCKS.each do |block_key, groups|
-          apm_entries_in(block_key).each do |entry|
+          apm_entries_in(block_key).each do |entry, declaration_line|
             # v1 supports the string shorthand form (e.g. "owner/repo#v1.0.0").
-            # Object entries (git:/registry:/id:/path:) and `mcp` entries are not
-            # yet supported and are ignored.
-            next unless entry.is_a?(String)
-
-            spec = PackageSpecifier.parse(entry, default_host: default_host)
+            # Object entries (git:/registry:/id:/path:) and `mcp` entries are
+            # not yet supported and are skipped by only reading scalar entries.
+            spec = PackageSpecifier.parse(entry, default_host: host)
             next unless spec # local paths and unparseable specs are skipped
 
-            dependency_set << build_dependency(spec, entry, groups)
+            # Only entries pinned to a semver tag are updatable. Branch-, SHA-
+            # and unpinned entries are resolved by APM's own lockfile, so we
+            # leave them out of the dependency set entirely rather than have the
+            # update checker reach out to the git remote for something we will
+            # never bump.
+            ref = spec.ref
+            next unless ref && Version.correct?(ref)
+
+            dependency_set << build_dependency(spec, entry, declaration_line, groups)
           end
         end
 
@@ -71,10 +80,11 @@ module Dependabot
         params(
           spec: Dependabot::Apm::PackageSpecifier,
           raw_entry: String,
+          declaration_line: Integer,
           groups: T::Array[String]
         ).returns(Dependabot::Dependency)
       end
-      def build_dependency(spec, raw_entry, groups)
+      def build_dependency(spec, raw_entry, declaration_line, groups)
         ref = spec.ref
         version = Version.new(ref).to_s if ref && Version.correct?(ref)
 
@@ -92,18 +102,65 @@ module Dependabot
               ref: ref,
               branch: nil
             },
-            metadata: { declaration_string: raw_entry }
+            # `declaration_line` (0-based) pins the exact manifest line the
+            # entry came from, so the file updater rewrites only that
+            # occurrence and never an identical string elsewhere.
+            metadata: {
+              declaration_string: raw_entry,
+              declaration_line: declaration_line.to_s
+            }
           }]
         )
       end
 
-      sig { params(block_key: String).returns(T::Array[T.untyped]) }
+      # Returns each `<block>.apm` entry as a [value, 0-based source line] pair.
+      # Only scalar entries are returned, so object-form entries (git:/registry:
+      # /id:/path: maps) are naturally skipped.
+      sig { params(block_key: String).returns(T::Array[[String, Integer]]) }
       def apm_entries_in(block_key)
-        block = parsed_manifest[block_key]
-        return [] unless block.is_a?(Hash)
+        block = ast_mapping_value(manifest_ast, block_key)
+        return [] unless block.is_a?(Psych::Nodes::Mapping)
 
-        entries = block["apm"]
-        entries.is_a?(Array) ? entries : []
+        sequence = ast_mapping_value(block, "apm")
+        return [] unless sequence.is_a?(Psych::Nodes::Sequence)
+
+        sequence.children.filter_map do |node|
+          next unless node.is_a?(Psych::Nodes::Scalar)
+
+          [node.value, node.start_line]
+        end
+      end
+
+      # Looks up the value node for `key` in a YAML mapping AST node, whose
+      # children alternate [key, value, key, value, ...].
+      sig do
+        params(mapping: T.nilable(Psych::Nodes::Node), key: String)
+          .returns(T.nilable(Psych::Nodes::Node))
+      end
+      def ast_mapping_value(mapping, key)
+        return unless mapping.is_a?(Psych::Nodes::Mapping)
+
+        children = mapping.children
+        index = 0
+        while index < children.length
+          node_key = children[index]
+          return children[index + 1] if node_key.is_a?(Psych::Nodes::Scalar) && node_key.value == key
+
+          index += 2
+        end
+        nil
+      end
+
+      sig { returns(T.nilable(Psych::Nodes::Mapping)) }
+      def manifest_ast
+        return @manifest_ast if defined?(@manifest_ast)
+
+        document = YAML.parse(T.must(manifest_file.content))
+        root = document.is_a?(Psych::Nodes::Document) ? document.root : nil
+        @manifest_ast = T.let(
+          root.is_a?(Psych::Nodes::Mapping) ? root : nil,
+          T.nilable(Psych::Nodes::Mapping)
+        )
       end
 
       sig { returns(String) }
@@ -112,7 +169,7 @@ module Dependabot
         host.is_a?(String) && !host.empty? ? host : PackageSpecifier::DEFAULT_HOST
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, Object]) }
       def parsed_manifest
         @parsed_manifest ||= T.let(
           begin
@@ -124,7 +181,7 @@ module Dependabot
           rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
             raise Dependabot::DependencyFileNotParseable, manifest_file.path
           end,
-          T.nilable(T::Hash[String, T.anything])
+          T.nilable(T::Hash[String, Object])
         )
       end
 
