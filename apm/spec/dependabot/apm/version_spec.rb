@@ -73,6 +73,50 @@ RSpec.describe Dependabot::Apm::Version do
     end
   end
 
+  describe ".semver_from_ref" do
+    subject { described_class.semver_from_ref(ref, dependency_name: dependency_name) }
+
+    let(:dependency_name) { "org/mono/skills/review" }
+
+    context "with a plain semver ref" do
+      let(:ref) { "v1.2.0" }
+
+      it { is_expected.to eq("1.2.0") }
+    end
+
+    context "with a plain ref carrying build metadata" do
+      let(:ref) { "v1.2.0+build.5" }
+
+      it { is_expected.to eq("1.2.0+build.5") }
+    end
+
+    context "with a package-scoped ref matching the package name" do
+      let(:ref) { "review--v1.5.0" }
+
+      it { is_expected.to eq("1.5.0") }
+    end
+
+    context "with each supported scoped separator" do
+      it "accepts _v, --v and -v" do
+        expect(described_class.semver_from_ref("review_v1.3.0", dependency_name: dependency_name)).to eq("1.3.0")
+        expect(described_class.semver_from_ref("review--v1.4.0", dependency_name: dependency_name)).to eq("1.4.0")
+        expect(described_class.semver_from_ref("review-v1.5.0", dependency_name: dependency_name)).to eq("1.5.0")
+      end
+    end
+
+    context "with a scoped ref for a different package" do
+      let(:ref) { "security--v9.0.0" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with a branch name" do
+      let(:ref) { "main" }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#initialize" do
     context "with a leading v" do
       let(:version_string) { "v1.2.0" }

@@ -36,6 +36,14 @@ module Dependabot
         \z
       /x
 
+      # The separators APM places between a package name and the SemVer core in
+      # package-scoped tags (`{name}_v1.2.3`, `{name}--v1.2.3`, `{name}-v1.2.3`).
+      # Each already ends in the `v` that precedes the version, so the remaining
+      # suffix is a bare SemVer string. None is a prefix of another for a given
+      # name (`foo--v1.2.3` does not start with `foo-v`), so match order is
+      # irrelevant.
+      SCOPED_TAG_SEPARATORS = %w(_v --v -v).freeze
+
       sig { returns(Integer) }
       attr_reader :major
 
@@ -87,6 +95,34 @@ module Dependabot
         return false if version.to_s.strip.empty?
 
         Version.remove_leading_v(version).to_s.match?(SEMVER_REGEX)
+      end
+
+      # Extracts the SemVer core from a git ref for the package `dependency_name`,
+      # or nil when the ref is not a version tag for that package. A plain
+      # `v?<semver>` ref keeps any build metadata; a package-scoped ref
+      # (`{name}_v…`, `{name}--v…`, `{name}-v…`) is accepted only when `{name}`
+      # matches the package's own name -- the final `/`-separated segment of
+      # `dependency_name`, since a virtual package `org/mono/skills/review` is
+      # released as `review--v1.2.3`. Scoping to that name keeps a monorepo's
+      # `security--v2.0.0` from resolving against a `review` dependency. This is
+      # the single reader of APM's tag grammar, shared by the git commit checker,
+      # the file parser and the update checker so ref handling never diverges.
+      sig { params(ref: String, dependency_name: String).returns(T.nilable(String)) }
+      def self.semver_from_ref(ref, dependency_name:)
+        return remove_leading_v(ref).to_s if correct?(ref)
+
+        name = dependency_name.split("/").last.to_s
+        return nil if name.empty?
+
+        SCOPED_TAG_SEPARATORS.each do |separator|
+          prefix = "#{name}#{separator}"
+          next unless ref.start_with?(prefix)
+
+          candidate = ref[prefix.length..].to_s
+          return candidate if candidate.match?(SEMVER_REGEX)
+        end
+
+        nil
       end
 
       sig { override.returns(String) }

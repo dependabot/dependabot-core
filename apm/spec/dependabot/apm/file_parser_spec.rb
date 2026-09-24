@@ -112,6 +112,25 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
+    context "with a package-scoped semver tag" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - org/mono/skills/review#review--v1.0.0
+          YAML
+        )
+      end
+
+      it "parses the scoped ref, using its semver core as the version" do
+        dependency = dependencies.find { |d| d.name == "org/mono/skills/review" }
+        expect(dependency.version).to eq("1.0.0")
+        expect(dependency.requirements.first[:source][:ref]).to eq("review--v1.0.0")
+      end
+    end
+
     context "with block scalar entries (folded or literal)" do
       let(:manifest) do
         Dependabot::DependencyFile.new(
