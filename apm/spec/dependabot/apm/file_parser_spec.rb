@@ -112,6 +112,100 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
+    context "with block scalar entries (folded or literal)" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - microsoft/edge-ai#v1.0.0
+                - >-
+                  octo-org/folded#v1.0.0
+                - |-
+                  octo-org/literal#v1.0.0
+          YAML
+        )
+      end
+
+      # Block scalars decode to a value that is not a contiguous substring of
+      # their raw span, so the updater could not rewrite them. They are skipped
+      # at parse time rather than producing a failing update job.
+      it "skips them and only parses the flow-scalar entry" do
+        expect(dependencies.map(&:name)).to contain_exactly("microsoft/edge-ai")
+      end
+    end
+
+    context "with a quoted flow-scalar entry" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - "octo-org/double-quoted#v1.0.0"
+                - 'octo-org/single-quoted#v2.0.0'
+          YAML
+        )
+      end
+
+      it "parses quoted scalars like plain ones" do
+        expect(dependencies.map(&:name)).to contain_exactly(
+          "octo-org/double-quoted",
+          "octo-org/single-quoted"
+        )
+      end
+    end
+
+    context "when a default registry is configured" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            registries:
+              jf-skills:
+                url: https://artifactory.example.com/artifactory/api/skills/jf
+              default: jf-skills
+            dependencies:
+              apm:
+                - microsoft/edge-ai#v1.0.0
+                - gitlab.com/acme/prompts#v0.5.0
+                - git@gitlab.com:acme/ssh-pkg.git#v2.0.0
+                - https://gitlab.com/acme/url-pkg.git#v3.0.0
+          YAML
+        )
+      end
+
+      # Bare and FQDN string shorthand route through the registry (out of scope
+      # for v1), so only the explicit clone URLs remain as git dependencies.
+      it "skips string-shorthand entries and keeps explicit clone URLs" do
+        expect(dependencies.map(&:name)).to contain_exactly(
+          "gitlab.com/acme/ssh-pkg",
+          "gitlab.com/acme/url-pkg"
+        )
+      end
+    end
+
+    context "when registries are declared without a default" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            registries:
+              jf-skills:
+                url: https://artifactory.example.com/artifactory/api/skills/jf
+            dependencies:
+              apm:
+                - microsoft/edge-ai#v1.0.0
+          YAML
+        )
+      end
+
+      it "still parses string shorthand as git (no routing without a default)" do
+        expect(dependencies.map(&:name)).to contain_exactly("microsoft/edge-ai")
+      end
+    end
+
     describe "a devDependencies entry" do
       subject(:dependency) { dependencies.find { |d| d.name == "qa-org/qa-helpers" } }
 

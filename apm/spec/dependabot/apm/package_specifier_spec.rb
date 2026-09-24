@@ -116,6 +116,18 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
+    context "with an SSH SCP-style URL using a non-default user" do
+      let(:raw) { "myuser@gitlab.com:acme/prompts.git#v0.5.0" }
+
+      it "accepts any SSH user and parses host, owner and repo" do
+        expect(spec.host).to eq("gitlab.com")
+        expect(spec.owner).to eq("acme")
+        expect(spec.repo).to eq("prompts")
+        expect(spec.ref).to eq("v0.5.0")
+        expect(spec.git_url).to eq("https://gitlab.com/acme/prompts")
+      end
+    end
+
     context "with an SSH URI-style URL" do
       let(:raw) { "ssh://git@gitlab.com/acme/prompts.git#v0.5.0" }
 
@@ -168,6 +180,28 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       let(:raw) { { "git" => "https://github.com/example/object-form" } }
 
       it { is_expected.to be_nil }
+    end
+  end
+
+  describe ".shorthand?" do
+    it "is true for bare and host-qualified string shorthand" do
+      expect(described_class.shorthand?("owner/repo")).to be(true)
+      expect(described_class.shorthand?("owner/repo#v1.2.3")).to be(true)
+      expect(described_class.shorthand?("gitlab.com/acme/repo#v2.0.0")).to be(true)
+    end
+
+    it "is false for explicit clone URLs (never registry-routed)" do
+      expect(described_class.shorthand?("https://gitlab.com/acme/repo.git#v1.0.0")).to be(false)
+      expect(described_class.shorthand?("http://gitlab.com/acme/repo.git")).to be(false)
+      expect(described_class.shorthand?("ssh://git@gitlab.com/acme/repo.git#v1.0.0")).to be(false)
+      expect(described_class.shorthand?("git@gitlab.com:acme/repo.git#v1.0.0")).to be(false)
+      expect(described_class.shorthand?("myuser@gitlab.com:acme/repo.git")).to be(false)
+    end
+
+    it "is false for local paths and non-strings" do
+      expect(described_class.shorthand?("./local")).to be(false)
+      expect(described_class.shorthand?("   ")).to be(false)
+      expect(described_class.shorthand?({ "git" => "x" })).to be(false)
     end
   end
 end
