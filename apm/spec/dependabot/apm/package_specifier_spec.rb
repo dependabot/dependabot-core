@@ -197,26 +197,36 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
     context "with an HTTPS URL that carries a custom port" do
       let(:raw) { "https://ghe.example.com:8443/org/repo.git#v1.0.0" }
 
-      it "keeps the https port in the clone URL but strips it from the identity name" do
+      it "keeps the non-default port in both the clone URL and the identity name" do
         expect(spec.host).to eq("ghe.example.com:8443")
         expect(spec.git_url).to eq("https://ghe.example.com:8443/org/repo")
-        expect(spec.name).to eq("ghe.example.com/org/repo")
+        expect(spec.name).to eq("ghe.example.com:8443/org/repo")
+      end
+    end
+
+    context "with an HTTPS URL that carries the default :443 port" do
+      let(:raw) { "https://github.com:443/org/repo.git#v1.0.0" }
+
+      it "normalizes the default port away so it dedups with a portless declaration" do
+        expect(spec.host).to eq("github.com")
+        expect(spec.git_url).to eq("https://github.com/org/repo")
+        expect(spec.name).to eq("org/repo")
       end
     end
 
     context "with a virtual sub-path on a custom-port GitHub host" do
       let(:raw) { "https://github.com:8443/org/repo/skills/review#v1.0.0" }
 
-      it "classifies GitHub by hostname, splitting the virtual path and keeping the port in the clone URL" do
+      it "classifies GitHub by hostname, splitting the virtual path and keeping the port" do
         expect(spec.host).to eq("github.com:8443")
         expect(spec.owner).to eq("org")
         expect(spec.repo).to eq("repo")
         expect(spec.sub_path).to eq("skills/review")
         expect(spec.git_url).to eq("https://github.com:8443/org/repo")
-        # The identity name strips the port, so the host is the default
-        # github.com and the name collapses to the bare `owner/repo` shorthand
-        # (plus virtual path), matching APM's port-blind dedup key.
-        expect(spec.name).to eq("org/repo/skills/review")
+        # A non-default port is part of APM's identity, so even on the default
+        # host the authority is prefixed (with the virtual path appended),
+        # keeping `:8443` and `:9443` declarations as distinct dependencies.
+        expect(spec.name).to eq("github.com:8443/org/repo/skills/review")
       end
     end
 
