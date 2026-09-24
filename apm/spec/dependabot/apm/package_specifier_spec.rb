@@ -176,6 +176,39 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       it { is_expected.to be_nil }
     end
 
+    context "with a mixed-case GitHub shorthand" do
+      let(:raw) { "Microsoft/Edge-AI#v1.0.0" }
+
+      it "canonicalises owner and repo to lowercase" do
+        expect(spec.owner).to eq("microsoft")
+        expect(spec.repo).to eq("edge-ai")
+        expect(spec.name).to eq("microsoft/edge-ai")
+        expect(spec.git_url).to eq("https://github.com/microsoft/edge-ai")
+      end
+    end
+
+    context "with a mixed-case shorthand on a case-sensitive host" do
+      let(:raw) { "gitlab.com/Group/Repo#v1.0.0" }
+
+      it "preserves repository-path casing" do
+        expect(spec.host).to eq("gitlab.com")
+        expect(spec.owner).to eq("Group")
+        expect(spec.repo).to eq("Repo")
+        expect(spec.name).to eq("gitlab.com/Group/Repo")
+      end
+    end
+
+    context "with a mixed-case GitHub virtual package" do
+      let(:raw) { "Octo-Org/Octo-Skills/Skills/Review#v1.0.0" }
+
+      it "case-folds owner and repo but preserves the virtual sub path" do
+        expect(spec.owner).to eq("octo-org")
+        expect(spec.repo).to eq("octo-skills")
+        expect(spec.sub_path).to eq("Skills/Review")
+        expect(spec.name).to eq("octo-org/octo-skills/Skills/Review")
+      end
+    end
+
     context "with a non-string entry" do
       let(:raw) { { "git" => "https://github.com/example/object-form" } }
 
