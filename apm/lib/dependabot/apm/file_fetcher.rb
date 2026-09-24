@@ -22,7 +22,7 @@ module Dependabot
       # the manifest actually exists and the real blocker is the disabled flag.
       BETA_DISABLED_MESSAGE =
         "apm is a beta ecosystem. Set `enable-beta-ecosystems: true` in your " \
-        "dependabot.yml so Dependabot fetches and updates #{MANIFEST_FILENAME}.".freeze
+        "dependabot.yml so Dependabot fetches and updates apm.yml."
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
