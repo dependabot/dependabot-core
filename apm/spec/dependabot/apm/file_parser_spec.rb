@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Apm::FileParser do
             },
             metadata: {
               declaration_string: "microsoft/edge-ai#v1.0.0",
-              declaration_line: "4"
+              declaration_span: "4:6:4:30"
             }
           }]
         )
@@ -88,6 +88,27 @@ RSpec.describe Dependabot::Apm::FileParser do
     describe "a dependency pinned to a branch rather than a semver tag" do
       it "is excluded because it cannot be version-bumped" do
         expect(dependencies.map(&:name)).not_to include("big-corp/pinned-branch")
+      end
+    end
+
+    context "with two virtual packages in the same repository" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - org/mono/skills/review#v1.0.0
+                - org/mono/skills/security#v1.0.0
+          YAML
+        )
+      end
+
+      it "keeps them as distinct dependencies namespaced by their virtual path" do
+        expect(dependencies.map(&:name)).to contain_exactly(
+          "org/mono/skills/review",
+          "org/mono/skills/security"
+        )
       end
     end
 

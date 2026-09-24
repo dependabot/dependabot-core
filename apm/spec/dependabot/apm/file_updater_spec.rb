@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
   let(:manifest) do
     Dependabot::DependencyFile.new(name: "apm.yml", content: manifest_body)
   end
-  let(:declaration_line) { "2" }
+  let(:declaration_span) { "2:6:2:30" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "microsoft/edge-ai",
@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           ref: "v1.2.0",
           branch: nil
         },
-        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0", declaration_line: declaration_line }
+        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0", declaration_span: declaration_span }
       }],
       previous_requirements: [{
         file: "apm.yml",
@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           ref: "v1.0.0",
           branch: nil
         },
-        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0", declaration_line: declaration_line }
+        metadata: { declaration_string: "microsoft/edge-ai#v1.0.0", declaration_span: declaration_span }
       }],
       package_manager: "apm"
     )
@@ -98,9 +98,24 @@ RSpec.describe Dependabot::Apm::FileUpdater do
               - "microsoft/edge-ai#v1.0.0"
         YAML
       end
+      let(:declaration_span) { "2:6:2:32" }
 
-      it "still bumps the pinned ref" do
+      it "still bumps the pinned ref and keeps the quotes" do
         expect(updated_files.first.content).to include("\"microsoft/edge-ai#v1.2.0\"")
+      end
+    end
+
+    context "when the manifest uses a flow sequence" do
+      let(:manifest_body) do
+        <<~YAML
+          dependencies: { apm: ["microsoft/edge-ai#v1.0.0"] }
+        YAML
+      end
+      let(:declaration_span) { "0:22:0:48" }
+
+      it "bumps the pinned ref inside the flow sequence" do
+        expect(updated_files.first.content)
+          .to include("dependencies: { apm: [\"microsoft/edge-ai#v1.2.0\"] }")
       end
     end
 
@@ -115,7 +130,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
             reference: microsoft/edge-ai#v1.0.0
         YAML
       end
-      let(:declaration_line) { "3" }
+      let(:declaration_span) { "3:6:3:30" }
 
       it "rewrites only the real dependency entry" do
         content = updated_files.first.content
