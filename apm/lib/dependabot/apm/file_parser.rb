@@ -33,11 +33,12 @@ module Dependabot
         T::Hash[String, T::Array[String]]
       )
 
-      # Block scalars (folded `>` / literal `|`) decode to a value that is not a
-      # contiguous substring of their raw source span, so the updater could not
-      # rewrite them and the job would fail with "Expected content to change!".
-      # Only flow scalars (plain or quoted) round-trip cleanly, so block-style
-      # entries are skipped just like the object-form entries.
+      # Block scalars (folded `>` / literal `|`) are skipped outright: multi-line
+      # folding and chomping mean their decoded value need not be a contiguous
+      # substring of the raw source span, so the updater could not rewrite them
+      # and the job would fail with "Expected content to change!". Flow scalars
+      # are additionally verified with `scalar_round_trips?`, which also excludes
+      # escaped quoted scalars whose decoding differs from their source bytes.
       BLOCK_SCALAR_STYLES = T.let(
         [Psych::Nodes::Scalar::LITERAL, Psych::Nodes::Scalar::FOLDED].freeze,
         T::Array[Integer]
@@ -137,8 +138,11 @@ module Dependabot
       end
 
       # Returns each `<block>.apm` entry as a [value, encoded source span] pair.
-      # Only flow scalar entries are returned, so object-form entries (git:/
-      # registry:/id:/path: maps) and block scalars (folded/literal) are skipped.
+      # Only round-tripping flow scalar entries are returned: object-form entries
+      # (git:/registry:/id:/path: maps), block scalars (folded/literal) and
+      # escaped scalars whose decoding differs from their source bytes are all
+      # skipped, since the updater can only rewrite a value it finds verbatim in
+      # the source span.
       sig { params(block_key: String).returns(T::Array[[String, String]]) }
       def apm_entries_in(block_key)
         block = ast_mapping_value(manifest_ast, block_key)
@@ -150,6 +154,7 @@ module Dependabot
         sequence.children.filter_map do |node|
           next unless node.is_a?(Psych::Nodes::Scalar)
           next if BLOCK_SCALAR_STYLES.include?(node.style)
+          next unless scalar_round_trips?(node)
 
           [node.value, encode_span(node)]
         end
@@ -162,6 +167,26 @@ module Dependabot
       sig { params(node: Psych::Nodes::Scalar).returns(String) }
       def encode_span(node)
         [node.start_line, node.start_column, node.end_line, node.end_column].join(":")
+      end
+
+      # True when the scalar's decoded value appears verbatim inside its raw
+      # source span. The updater rewrites a ref by locating the declaration
+      # string (the decoded `node.value`) inside that span slice, so a scalar
+      # whose decoding differs from its source bytes -- e.g. a double-quoted
+      # scalar using escapes such as `\/` or `\x23` -- can never be rewritten and
+      # would fail the job with "Expected content to change!". Skipping those
+      # entries here mirrors the updater's own `original.include?(declaration)`
+      # guard, and the offset maths matches `FileUpdater#span_offsets` so an
+      # entry that survives parsing is always rewritable.
+      sig { params(node: Psych::Nodes::Scalar).returns(T::Boolean) }
+      def scalar_round_trips?(node)
+        content = T.must(manifest_file.content)
+        lines = content.each_line.to_a
+        start_offset = lines.first(node.start_line).sum(&:length) + node.start_column
+        end_offset = lines.first(node.end_line).sum(&:length) + node.end_column
+        return false if start_offset >= end_offset || end_offset > content.length
+
+        T.must(content[start_offset...end_offset]).include?(node.value)
       end
 
       # Looks up the value node for `key` in a YAML mapping AST node, whose
