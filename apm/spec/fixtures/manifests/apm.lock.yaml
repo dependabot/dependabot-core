@@ -1,0 +1,12 @@
+apm_version: "0.4.2"
+packages:
+  - name: microsoft/edge-ai
+    source: github.com/microsoft/edge-ai
+    ref: v1.0.0
+    resolved: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
+    integrity: sha256-0000000000000000000000000000000000000000000=
+  - name: octo-org/octo-skills
+    source: github.com/octo-org/octo-skills
+    ref: v2.3.1
+    resolved: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+    integrity: sha256-1111111111111111111111111111111111111111111=
