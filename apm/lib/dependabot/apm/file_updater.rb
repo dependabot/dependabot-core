@@ -201,10 +201,12 @@ module Dependabot
 
       # The dependency mapping whose `repo_url` resolves to the same package
       # identity as `dependency`, or nil. APM keys lockfile entries by their
-      # normalised `repo_url` (plus `virtual_path` for monorepo sub-packages),
-      # never by the self-asserted `name:` field, so we canonicalise each entry's
-      # `repo_url` through `PackageSpecifier` — the same parser that produced
-      # `dependency.name` from the manifest — and compare the results.
+      # normalised `repo_url` *combined with* the separate `host:` field (plus
+      # `virtual_path` for monorepo sub-packages), never by the self-asserted
+      # `name:` field. `repo_url` is stored host-blind (e.g. `acme/repo` with
+      # `host: gitlab.com` alongside), mirroring APM's `build_dependency_unique_key`,
+      # so we feed `host` as the default host to `PackageSpecifier` — the same
+      # parser that produced `dependency.name` from the manifest — and compare.
       sig do
         params(entries: Psych::Nodes::Sequence, dependency: Dependabot::Dependency)
           .returns(T.nilable(Psych::Nodes::Mapping))
@@ -219,21 +221,36 @@ module Dependabot
         nil
       end
 
-      # The package identity of a lockfile entry: its `repo_url` canonicalised via
-      # `PackageSpecifier`, with any `virtual_path` appended so distinct virtual
-      # packages carved from one repo stay distinct dependencies.
+      # The package identity of a lockfile entry, matching APM's dedup key:
+      # `repo_url` canonicalised via `PackageSpecifier` under the entry's own
+      # `host:` (defaulting to github.com, which APM leaves host-blind), with any
+      # `virtual_path` appended so distinct virtual packages carved from one repo
+      # stay distinct dependencies.
       sig { params(entry: Psych::Nodes::Mapping).returns(T.nilable(String)) }
       def lockfile_identity(entry)
         repo_url = ast_mapping_value(entry, "repo_url")
         return unless repo_url.is_a?(Psych::Nodes::Scalar)
 
-        spec = Dependabot::Apm::PackageSpecifier.parse(repo_url.value)
+        spec = Dependabot::Apm::PackageSpecifier.parse(repo_url.value, default_host: lockfile_host(entry))
         return unless spec
 
         virtual_path = ast_mapping_value(entry, "virtual_path")
         return spec.name unless virtual_path.is_a?(Psych::Nodes::Scalar) && !virtual_path.value.empty?
 
         "#{spec.name}/#{virtual_path.value}"
+      end
+
+      # The host an entry is served from, taken from its optional `host:` field
+      # and defaulting to github.com (which APM records host-blind). Lets
+      # `PackageSpecifier` reconstruct the same host-qualified name the manifest
+      # produced for non-GitHub entries whose `repo_url` is stored host-blind.
+      sig { params(entry: Psych::Nodes::Mapping).returns(String) }
+      def lockfile_host(entry)
+        host = ast_mapping_value(entry, "host")
+        return Dependabot::Apm::PackageSpecifier::DEFAULT_HOST unless host.is_a?(Psych::Nodes::Scalar)
+
+        value = host.value.strip
+        value.empty? ? Dependabot::Apm::PackageSpecifier::DEFAULT_HOST : value
       end
 
       # The bumped ref for `dependency`, taken from its updated git requirement.
