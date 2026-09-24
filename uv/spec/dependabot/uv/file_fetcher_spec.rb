@@ -1467,4 +1467,26 @@ RSpec.describe Dependabot::Uv::FileFetcher do
       end
     end
   end
+
+  describe "#files with exclude_paths covering the directory" do
+    let(:repo_contents_path) { build_tmp_repo("excluded_subdirectory") }
+    let(:file_fetcher_instance) do
+      described_class.new(
+        source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/frozen_project"),
+        credentials: [],
+        repo_contents_path: repo_contents_path
+      ).tap { |ff| ff.exclude_paths = ["frozen_project/**"] }
+    end
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
+
+    # requirements.txt is dropped by the listing filter, but pyproject.toml is loaded
+    # from the clone by path, so only the final filter can exclude it.
+    it "excludes pyproject.toml as well as the listed files" do
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
 end
