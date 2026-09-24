@@ -64,9 +64,12 @@ module Dependabot
 
         dependency.requirements.map do |req|
           current_ref = req.source_string("ref")
-          # Only rewrite requirements pinned to a semver tag; branch- and
-          # SHA-pinned entries are left as-is.
-          next req unless current_ref && version_class.correct?(current_ref)
+          # Only rewrite requirements pinned to a semver tag (plain or
+          # package-scoped, e.g. `review--v1.0.0`); branch- and SHA-pinned
+          # entries are left as-is. Normalise the ref to its SemVer core through
+          # the shared APM extractor so scoped tags are recognised and compared.
+          ref_version = current_ref && Version.semver_from_ref(current_ref, dependency_name: dependency.name)
+          next req unless ref_version
 
           # DependencySet merges repeated declarations into a single dependency
           # with several requirements, whose refs need not match; the tag is
@@ -75,7 +78,7 @@ module Dependabot
           # tag -- a lower selected tag (a security fix, or a latest capped by
           # an ignore rule) would otherwise downgrade a higher declaration, e.g.
           # a v1.5.0 fix must leave a v2.0.0 entry untouched.
-          next req if new_version && version_class.new(current_ref) >= new_version
+          next req if new_version && Version.new(ref_version) >= new_version
 
           new_source = T.must(req.source_hash).merge(ref: new_tag)
           Dependabot::DependencyRequirement.create(req.merge(source: new_source))

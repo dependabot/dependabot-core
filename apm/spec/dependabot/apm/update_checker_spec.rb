@@ -154,6 +154,24 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       end
     end
 
+    context "when the current ref is a package-scoped tag" do
+      let(:dependency_name) { "org/mono/skills/review" }
+      let(:reference) { "review--v1.0.0" }
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-scoped-tags"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      it "rewrites the requirement to the latest same-scope tag" do
+        expect(updated_requirements.first[:source][:ref]).to eq("review--v1.5.0")
+      end
+    end
+
     context "when merged requirements carry different refs" do
       let(:dependency) do
         Dependabot::Dependency.new(
