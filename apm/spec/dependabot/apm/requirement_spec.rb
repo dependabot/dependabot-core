@@ -91,6 +91,31 @@ RSpec.describe Dependabot::Apm::Requirement do
 
       it { is_expected.to be(true) }
     end
+
+    context "with a pessimistic (~>) constraint on a strict SemVer operand" do
+      let(:requirement_string) { "~> 1.2.3" }
+
+      # Gem::Requirement evaluates `~>` via the operand's `bump`; the inherited
+      # Gem::Version#bump would build the partial `1.3` that Apm::Version rejects,
+      # so this must not raise and must bound the range at the next minor.
+      context "when the version is within the bound" do
+        let(:version) { Dependabot::Apm::Version.new("1.2.9") }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when the version is below the lower bound" do
+        let(:version) { Dependabot::Apm::Version.new("1.2.2") }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the version reaches the next minor" do
+        let(:version) { Dependabot::Apm::Version.new("1.3.0") }
+
+        it { is_expected.to be(false) }
+      end
+    end
   end
 
   describe ".parse" do

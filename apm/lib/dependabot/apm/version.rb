@@ -99,6 +99,18 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
+      # `Gem::Requirement` evaluates a `~> x.y.z` bound by comparing candidates
+      # against this operand's `bump`. The inherited `Gem::Version#bump` drops
+      # the last segment (`1.2.3` -> `1.3`) and rebuilds `self.class` from it,
+      # but `Apm::Version` rejects that partial value and raises while filtering
+      # tags. Return the SemVer upper bound (`x.(y+1).0`) instead, so a
+      # pessimistic ignore rule such as `~> 1.2.3` evaluates as
+      # `>= 1.2.3, < 1.3.0` rather than crashing.
+      sig { returns(Dependabot::Apm::Version) }
+      def bump
+        Version.new("#{major}.#{minor + 1}.0")
+      end
+
       sig { params(other: Object).returns(T.nilable(Integer)) }
       def <=>(other)
         other_version = Version.coerce(other)
