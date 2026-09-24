@@ -71,6 +71,10 @@ module Dependabot
           .returns(T.nilable(Dependabot::Apm::PackageSpecifier))
       end
       def self.build(host:, path:, ref:)
+        # DNS hostnames are case-insensitive, so canonicalise to lowercase once
+        # here; repository splitting, naming and credential-host matching all key
+        # off `host` and must agree on e.g. `GitHub.com` == `github.com`.
+        host = host.downcase
         segments = path.delete_suffix(".git").split("/").reject(&:empty?)
         owner = segments[0]
         return nil if owner.nil? || segments[1].nil?
