@@ -181,6 +181,30 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
+    context "with a quoted entry that has trailing whitespace after the ref" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - "octo-org/trailing-space#v1.0.0 "
+          YAML
+        )
+      end
+
+      # The space sits inside the quotes, so the decoded value still round-trips
+      # (it is a contiguous slice of the raw span) and the entry is parsed.
+      # PackageSpecifier strips the space when reading the ref, while the stored
+      # declaration keeps it so the updater can preserve it on rewrite.
+      it "parses it, normalises the ref and keeps the raw declaration" do
+        expect(dependencies.map(&:name)).to contain_exactly("octo-org/trailing-space")
+        expect(dependencies.first.version).to eq("1.0.0")
+        expect(dependencies.first.requirements.first[:metadata][:declaration_string])
+          .to eq("octo-org/trailing-space#v1.0.0 ")
+      end
+    end
+
     context "when a default registry is configured" do
       let(:manifest) do
         Dependabot::DependencyFile.new(

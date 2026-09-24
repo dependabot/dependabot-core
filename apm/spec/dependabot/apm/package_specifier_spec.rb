@@ -241,6 +241,23 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       it { is_expected.to be_nil }
     end
 
+    context "with an Azure DevOps host" do
+      [
+        "dev.azure.com/org/project/repo#v1.0.0",
+        "dev.azure.com/org/project/_git/repo#v1.0.0",
+        "ssh.dev.azure.com/org/project/_git/repo#v1.0.0",
+        "myorg.visualstudio.com/project/_git/repo#v1.0.0",
+        "https://dev.azure.com/org/project/_git/repo.git#v1.0.0",
+        "git@ssh.dev.azure.com:v3/org/project/repo#v1.0.0"
+      ].each do |entry|
+        context "with #{entry}" do
+          let(:raw) { entry }
+
+          it { is_expected.to be_nil }
+        end
+      end
+    end
+
     context "with a mixed-case GitHub shorthand" do
       let(:raw) { "Microsoft/Edge-AI#v1.0.0" }
 
