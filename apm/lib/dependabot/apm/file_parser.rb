@@ -33,12 +33,30 @@ module Dependabot
         T::Hash[String, T::Array[String]]
       )
 
+      # Block scalars (folded `>` / literal `|`) decode to a value that is not a
+      # contiguous substring of their raw source span, so the updater could not
+      # rewrite them and the job would fail with "Expected content to change!".
+      # Only flow scalars (plain or quoted) round-trip cleanly, so block-style
+      # entries are skipped just like the object-form entries.
+      BLOCK_SCALAR_STYLES = T.let(
+        [Psych::Nodes::Scalar::LITERAL, Psych::Nodes::Scalar::FOLDED].freeze,
+        T::Array[Integer]
+      )
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
         # Reading the host first also validates the manifest and raises
         # DependencyFileNotParseable before we walk it for source positions.
         host = default_host
+
+        # When the manifest configures a default registry, APM routes plain
+        # string-shorthand entries through that registry rather than Git. We
+        # cannot resolve registry versions (registry dependencies are out of
+        # scope for v1), so those entries are skipped rather than bumped against
+        # a git remote they may not even belong to. Explicit clone URLs are
+        # never registry-routed and are still updated.
+        skip_shorthand = default_registry_configured?
 
         DEPENDENCY_BLOCKS.each do |block_key, groups|
           apm_entries_in(block_key).each do |entry, declaration_span|
@@ -47,6 +65,7 @@ module Dependabot
             # not yet supported and are skipped by only reading scalar entries.
             spec = PackageSpecifier.parse(entry, default_host: host)
             next unless spec # local paths and unparseable specs are skipped
+            next if skip_shorthand && PackageSpecifier.shorthand?(entry)
 
             # Only entries pinned to a semver tag are updatable. Branch-, SHA-
             # and unpinned entries are resolved by APM's own lockfile, so we
@@ -114,8 +133,8 @@ module Dependabot
       end
 
       # Returns each `<block>.apm` entry as a [value, encoded source span] pair.
-      # Only scalar entries are returned, so object-form entries (git:/registry:
-      # /id:/path: maps) are naturally skipped.
+      # Only flow scalar entries are returned, so object-form entries (git:/
+      # registry:/id:/path: maps) and block scalars (folded/literal) are skipped.
       sig { params(block_key: String).returns(T::Array[[String, String]]) }
       def apm_entries_in(block_key)
         block = ast_mapping_value(manifest_ast, block_key)
@@ -126,6 +145,7 @@ module Dependabot
 
         sequence.children.filter_map do |node|
           next unless node.is_a?(Psych::Nodes::Scalar)
+          next if BLOCK_SCALAR_STYLES.include?(node.style)
 
           [node.value, encode_span(node)]
         end
@@ -176,6 +196,22 @@ module Dependabot
       def default_host
         host = parsed_manifest["default_host"]
         host.is_a?(String) && !host.empty? ? host : PackageSpecifier::DEFAULT_HOST
+      end
+
+      # APM routes string-shorthand dependencies through a configured default
+      # registry instead of Git. Only the project-level `registries.default`
+      # selector (a string naming a configured entry) is visible here; a user's
+      # `~/.apm/config.json` default is not part of the repository, so this
+      # guards the case that is reproducible from the manifest alone.
+      sig { returns(T::Boolean) }
+      def default_registry_configured?
+        registries = parsed_manifest["registries"]
+        return false unless registries.is_a?(Hash)
+
+        default = registries["default"]
+        return false unless default.is_a?(String)
+
+        !default.empty?
       end
 
       sig { returns(T::Hash[String, Object]) }
