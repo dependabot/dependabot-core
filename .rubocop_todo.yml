@@ -242,6 +242,8 @@ Style/SafeNavigationChainLength:
 # Offense count: 569
 Sorbet/ForbidTUntyped:
   Exclude:
+    - "apm/lib/dependabot/apm/file_parser.rb"
+    - "apm/lib/dependabot/apm/package_specifier.rb"
     - "bun/lib/dependabot/bun.rb"
     - "bun/lib/dependabot/bun/file_fetcher.rb"
     - "bun/lib/dependabot/bun/file_fetcher/path_dependency_builder.rb"

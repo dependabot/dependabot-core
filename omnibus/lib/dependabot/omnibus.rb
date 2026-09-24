@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/apm"
 require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"

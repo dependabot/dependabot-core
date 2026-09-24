@@ -19,6 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: apm, name: apm, ecosystem: apm }
           - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }
