@@ -140,6 +140,39 @@ RSpec.describe Dependabot::Apm::FileUpdater do
       end
     end
 
+    context "when a duplicated entry shares a line and the bumped ref is longer" do
+      let(:manifest_body) do
+        <<~YAML
+          dependencies: { apm: ["acme/widgets#v1.9.0", "acme/widgets#v1.9.0"] }
+        YAML
+      end
+      let(:dependency) do
+        requirement = lambda do |ref, span|
+          {
+            file: "apm.yml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/acme/widgets", ref: ref, branch: nil },
+            metadata: { declaration_string: "acme/widgets#v1.9.0", declaration_span: span }
+          }
+        end
+
+        Dependabot::Dependency.new(
+          name: "acme/widgets",
+          version: "1.10.0",
+          previous_version: "1.9.0",
+          requirements: [requirement.call("v1.10.0", "0:22:0:43"), requirement.call("v1.10.0", "0:45:0:66")],
+          previous_requirements: [requirement.call("v1.9.0", "0:22:0:43"), requirement.call("v1.9.0", "0:45:0:66")],
+          package_manager: "apm"
+        )
+      end
+
+      it "updates both occurrences even though the earlier edit shifts later offsets" do
+        expect(updated_files.first.content)
+          .to eq(%(dependencies: { apm: ["acme/widgets#v1.10.0", "acme/widgets#v1.10.0"] }\n))
+      end
+    end
+
     context "when nothing changed" do
       let(:dependency) do
         Dependabot::Dependency.new(
