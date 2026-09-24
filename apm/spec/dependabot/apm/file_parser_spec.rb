@@ -164,6 +164,20 @@ RSpec.describe Dependabot::Apm::FileParser do
           expect(package_manager.version.to_s).to eq("0.0.0")
         end
       end
+
+      context "when the lockfile records a PEP 440 apm version" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "apm.lock.yaml",
+            content: "apm_version: \"0.32.0rc1\"\npackages: []\n"
+          )
+        end
+
+        it "parses the pre-release CLI version without raising" do
+          expect { package_manager.version }.not_to raise_error
+          expect(package_manager.version).to be_a(Dependabot::Version)
+        end
+      end
     end
   end
 end

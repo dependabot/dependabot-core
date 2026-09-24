@@ -1,7 +1,8 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "yaml"
 
 require "dependabot/errors"
 require "dependabot/file_updaters"
@@ -25,7 +26,10 @@ module Dependabot
 
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [/^apm\.yml$/]
+        [
+          /^apm\.yml$/,
+          /^apm\.lock\.yaml$/
+        ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -37,6 +41,9 @@ module Dependabot
         end
 
         raise "No files changed!" if updated_files.none?
+
+        updated_lock = updated_lockfile
+        updated_files << updated_lock if updated_lock
 
         updated_files
       end
@@ -53,6 +60,16 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         dependency_files.select { |f| f.name.end_with?(MANIFEST_FILENAME) && !f.name.end_with?(LOCKFILE_FILENAME) }
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def lockfile
+        return @lockfile if defined?(@lockfile)
+
+        @lockfile = T.let(
+          dependency_files.find { |f| f.name.end_with?(LOCKFILE_FILENAME) },
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -123,6 +140,116 @@ module Dependabot
           end_offset: end_offset,
           text: original.sub(declaration, new_declaration)
         )
+      end
+
+      # Rebuilds the lockfile when a bumped dependency is recorded in it. APM's
+      # `ref-consistency` check fails until each manifest ref matches the ref
+      # pinned in the lockfile, so we rewrite the matching package's `ref:` value
+      # in place. The companion `resolved:` commit SHA and `integrity:` content
+      # hash are intentionally left untouched: `integrity` cannot be recomputed
+      # offline, and moving `resolved` without it would only swap a ref/resolved
+      # mismatch for a resolved/integrity one. Both are regenerated together the
+      # next time `apm install --update` runs, which re-pins them from `ref`.
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def updated_lockfile
+        file = lockfile
+        return unless file
+
+        original_content = T.must(file.content)
+        content = apply_substitutions(original_content, lockfile_substitutions(original_content))
+        return if content == original_content
+
+        updated_file(file: file, content: content)
+      end
+
+      # Collects a `ref:` substitution for every bumped dependency that appears in
+      # the lockfile, each located by the absolute range of its value scalar in
+      # the ORIGINAL content (see `substitutions_for` for why offsets resolve
+      # against the original).
+      sig { params(content: String).returns(T::Array[Substitution]) }
+      def lockfile_substitutions(content)
+        packages = lockfile_packages(content)
+        return [] unless packages
+
+        lines = content.each_line.to_a
+        dependencies.filter_map do |dependency|
+          entry = lockfile_entry(packages, dependency.name)
+          next unless entry
+
+          new_ref = lockfile_new_ref(dependency)
+          next unless new_ref
+
+          value_substitution(lines, ast_mapping_value(entry, "ref"), new_ref)
+        end
+      end
+
+      # The `packages:` sequence of the lockfile AST, or nil when the lockfile is
+      # empty, unparseable, or has no packages block.
+      sig { params(content: String).returns(T.nilable(Psych::Nodes::Sequence)) }
+      def lockfile_packages(content)
+        document = YAML.parse(content)
+        root = document.is_a?(Psych::Nodes::Document) ? document.root : nil
+        node = ast_mapping_value(root, "packages")
+        node.is_a?(Psych::Nodes::Sequence) ? node : nil
+      rescue Psych::SyntaxError
+        nil
+      end
+
+      # The package mapping whose `name:` scalar equals `name`, or nil.
+      sig do
+        params(packages: Psych::Nodes::Sequence, name: String).returns(T.nilable(Psych::Nodes::Mapping))
+      end
+      def lockfile_entry(packages, name)
+        packages.children.each do |child|
+          next unless child.is_a?(Psych::Nodes::Mapping)
+
+          value = ast_mapping_value(child, "name")
+          return child if value.is_a?(Psych::Nodes::Scalar) && value.value == name
+        end
+        nil
+      end
+
+      # The bumped ref for `dependency`, taken from its updated git requirement.
+      sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+      def lockfile_new_ref(dependency)
+        requirement = dependency.requirements.find { |req| req.source_string("ref") }
+        requirement&.source_string("ref")
+      end
+
+      # Builds a substitution that rewrites a scalar VALUE node with `text`, or
+      # nil when the node is absent or its span is empty.
+      sig do
+        params(lines: T::Array[String], node: T.nilable(Psych::Nodes::Node), text: String)
+          .returns(T.nilable(Substitution))
+      end
+      def value_substitution(lines, node, text)
+        return unless node.is_a?(Psych::Nodes::Scalar)
+
+        start_offset = line_offset(lines, node.start_line) + node.start_column
+        end_offset = line_offset(lines, node.end_line) + node.end_column
+        return if start_offset >= end_offset
+
+        Substitution.new(start_offset: start_offset, end_offset: end_offset, text: text)
+      end
+
+      # Looks up the value node for `key` in a YAML mapping AST node, whose
+      # children alternate [key, value, key, value, ...].
+      sig do
+        params(mapping: T.nilable(Psych::Nodes::Node), key: String)
+          .returns(T.nilable(Psych::Nodes::Node))
+      end
+      def ast_mapping_value(mapping, key)
+        return unless mapping.is_a?(Psych::Nodes::Mapping)
+
+        children = mapping.children
+        index = 0
+        while index < children.length
+          node_key = children[index]
+          return children[index + 1] if node_key.is_a?(Psych::Nodes::Scalar) && node_key.value == key
+
+          index += 2
+        end
+        nil
       end
 
       # Applies the substitutions from the end of the file backwards. Rewriting in

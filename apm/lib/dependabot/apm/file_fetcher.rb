@@ -66,8 +66,11 @@ module Dependabot
       def lockfile
         return @lockfile if defined?(@lockfile)
 
+        # Fetched as a regular (non-support) file: when a ref bump changes it the
+        # file updater rewrites it, and support files are dropped from a PR when
+        # any non-support file also changes, which would leave it stale.
         @lockfile = T.let(
-          fetch_file_if_present(LOCKFILE_FILENAME)&.tap { |f| f.support_file = true },
+          fetch_file_if_present(LOCKFILE_FILENAME),
           T.nilable(Dependabot::DependencyFile)
         )
       end

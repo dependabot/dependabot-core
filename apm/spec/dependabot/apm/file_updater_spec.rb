@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
   end
   let(:updater) do
     described_class.new(
-      dependency_files: [manifest],
+      dependency_files: dependency_files,
       dependencies: [dependency],
       credentials: [{
         "type" => "git_source",
@@ -64,6 +64,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
       }]
     )
   end
+  let(:dependency_files) { [manifest] }
 
   it_behaves_like "a dependency file updater"
 
@@ -71,6 +72,10 @@ RSpec.describe Dependabot::Apm::FileUpdater do
     it "matches apm.yml" do
       expect(described_class.updated_files_regex).to all(be_a(Regexp))
       expect(described_class.updated_files_regex.any? { |re| "apm.yml".match?(re) }).to be(true)
+    end
+
+    it "matches apm.lock.yaml" do
+      expect(described_class.updated_files_regex.any? { |re| "apm.lock.yaml".match?(re) }).to be(true)
     end
   end
 
@@ -209,6 +214,68 @@ RSpec.describe Dependabot::Apm::FileUpdater do
 
       it "raises because no files were changed" do
         expect { updated_files }.to raise_error("No files changed!")
+      end
+    end
+
+    context "when a lockfile is present" do
+      subject(:updated_lockfile) { updated_files.find { |f| f.name == "apm.lock.yaml" } }
+
+      let(:lockfile_body) do
+        <<~YAML
+          apm_version: "0.4.2"
+          packages:
+            - name: microsoft/edge-ai
+              source: github.com/microsoft/edge-ai
+              ref: v1.0.0
+              resolved: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
+              integrity: sha256-0000000000000000000000000000000000000000000=
+            - name: microsoft/edge-ai-extras
+              source: github.com/microsoft/edge-ai-extras
+              ref: v1.0.0
+              resolved: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+              integrity: sha256-1111111111111111111111111111111111111111111=
+        YAML
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(name: "apm.lock.yaml", content: lockfile_body)
+      end
+      let(:dependency_files) { [manifest, lockfile] }
+
+      it "returns both the updated manifest and lockfile" do
+        expect(updated_files.map(&:name)).to contain_exactly("apm.yml", "apm.lock.yaml")
+      end
+
+      it "bumps the matching package's ref to the manifest ref" do
+        expect(updated_lockfile.content)
+          .to match(%r{- name: microsoft/edge-ai\n\s+source:[^\n]+\n\s+ref: v1\.2\.0\n})
+      end
+
+      it "leaves resolved and integrity for `apm install --update` to regenerate" do
+        expect(updated_lockfile.content).to include("resolved: 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e")
+        expect(updated_lockfile.content).to include("integrity: sha256-0000000000000000000000000000000000000000000=")
+      end
+
+      it "does not touch an unrelated package that shares a name prefix" do
+        expect(updated_lockfile.content)
+          .to match(%r{- name: microsoft/edge-ai-extras\n\s+source:[^\n]+\n\s+ref: v1\.0\.0\n})
+      end
+
+      context "when the bumped dependency is absent from the lockfile" do
+        let(:lockfile_body) do
+          <<~YAML
+            apm_version: "0.4.2"
+            packages:
+              - name: octo-org/octo-skills
+                source: github.com/octo-org/octo-skills
+                ref: v2.3.1
+                resolved: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+                integrity: sha256-1111111111111111111111111111111111111111111=
+          YAML
+        end
+
+        it "returns only the updated manifest" do
+          expect(updated_files.map(&:name)).to contain_exactly("apm.yml")
+        end
       end
     end
   end
