@@ -349,6 +349,122 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(refs).to eq(%w(v1.1.0 v2.1.0))
       end
     end
+
+    context "when only the higher merged declaration is vulnerable" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "apm",
+            vulnerable_versions: [">= 2.0.0, < 2.1.0"]
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-two-lines"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # The merged (lowest) version v1.0.0 is not affected, so base vulnerable?
+      # would skip the whole dependency. Only the affected v2.0.0 line is moved
+      # to its own fix; the unaffected v1.0.0 line is left untouched.
+      it "fixes only the affected declaration and leaves the safe one untouched" do
+        refs = updated_requirements.map { |req| req[:source][:ref] }
+        expect(refs).to eq(%w(v1.0.0 v2.1.0))
+      end
+    end
+  end
+
+  describe "#vulnerable?" do
+    subject(:vulnerable) { checker.vulnerable? }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "1.0.0",
+        requirements: [
+          {
+            requirement: nil,
+            groups: [],
+            file: "apm.yml",
+            source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
+            metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
+          },
+          {
+            requirement: nil,
+            groups: [],
+            file: "apm.yml",
+            source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
+            metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
+          }
+        ],
+        package_manager: "apm"
+      )
+    end
+
+    context "when an advisory affects only the higher merged declaration" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "apm",
+            vulnerable_versions: [">= 2.0.0, < 2.1.0"]
+          )
+        ]
+      end
+
+      # The merged dependency's single version is the lowest ref (v1.0.0), which
+      # base vulnerable? reports as safe -- the higher, genuinely vulnerable
+      # v2.0.0 declaration must still mark the dependency vulnerable so the
+      # security update is not skipped upstream.
+      it "reports the dependency as vulnerable" do
+        expect(vulnerable).to be(true)
+      end
+    end
+
+    context "when no declared version is affected" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "apm",
+            vulnerable_versions: [">= 3.0.0"]
+          )
+        ]
+      end
+
+      it "reports the dependency as not vulnerable" do
+        expect(vulnerable).to be(false)
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do
