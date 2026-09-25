@@ -32,6 +32,9 @@ result=$(
 assert_equal '2' "$(jq -r '.build_count' <<< "$result")" "filtered build count"
 assert_equal '1' "$(jq -r '.promote_count' <<< "$result")" "filtered promotion count"
 assert_equal '["nuget","pre-commit"]' "$(jq -c '[.build[].target] | sort' <<< "$result")" "filtered targets"
+assert_equal 'true' "$(jq -r '.build_precommit' <<< "$result")" "pre-commit build flag"
+assert_equal '1' "$(jq -r '.generic_build_count' <<< "$result")" "generic build count"
+assert_equal '["nuget"]' "$(jq -c '[.generic_build[].target]' <<< "$result")" "generic targets"
 
 result=$(
   BAKE_MATRIX="$matrix" \
@@ -40,6 +43,7 @@ result=$(
 )
 assert_equal '0' "$(jq -r '.build_count' <<< "$result")" "empty build count"
 assert_equal '3' "$(jq -r '.promote_count' <<< "$result")" "empty promotion count"
+assert_equal 'false' "$(jq -r '.build_precommit' <<< "$result")" "empty pre-commit build flag"
 
 result=$(
   BAKE_MATRIX="$matrix" \
@@ -49,6 +53,7 @@ result=$(
 )
 assert_equal '3' "$(jq -r '.build_count' <<< "$result")" "forced build count"
 assert_equal '0' "$(jq -r '.promote_count' <<< "$result")" "forced promotion count"
+assert_equal '2' "$(jq -r '.generic_build_count' <<< "$result")" "forced generic build count"
 
 result=$(
   BAKE_MATRIX="$matrix" \

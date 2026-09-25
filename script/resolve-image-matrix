@@ -50,35 +50,42 @@ jq -c \
       .[]
       | select(.target != "updater-core" and (.target | endswith("-raw") | not))
     ] as $matrix
-    | if $force_all == "true" then
-        {
-          reason: "force-all",
-          build: $matrix,
-          promote: [],
-          build_count: ($matrix | length),
-          promote_count: 0
-        }
-      else
-        {
-          reason: "changed-targets",
-          build: [
-            $matrix[] as $item
-            | select($changed | index($item.target))
-            | $item
-          ],
-          promote: [
-            $matrix[] as $item
-            | select(($changed | index($item.target)) | not)
-            | $item
-          ],
-          build_count: ([
-            $matrix[] as $item
-            | select($changed | index($item.target))
-          ] | length),
-          promote_count: ([
-            $matrix[] as $item
-            | select(($changed | index($item.target)) | not)
-          ] | length)
-        }
-      end
+    | (
+        if $force_all == "true" then
+          {
+            reason: "force-all",
+            build: $matrix,
+            promote: [],
+            build_count: ($matrix | length),
+            promote_count: 0
+          }
+        else
+          {
+            reason: "changed-targets",
+            build: [
+              $matrix[] as $item
+              | select($changed | index($item.target))
+              | $item
+            ],
+            promote: [
+              $matrix[] as $item
+              | select(($changed | index($item.target)) | not)
+              | $item
+            ],
+            build_count: ([
+              $matrix[] as $item
+              | select($changed | index($item.target))
+            ] | length),
+            promote_count: ([
+              $matrix[] as $item
+              | select(($changed | index($item.target)) | not)
+            ] | length)
+          }
+        end
+      )
+    | . + {
+        build_precommit: any(.build[]; .target == "pre-commit"),
+        generic_build: [.build[] | select(.target != "pre-commit")],
+        generic_build_count: ([.build[] | select(.target != "pre-commit")] | length)
+      }
   ' <<< "$BAKE_MATRIX"
