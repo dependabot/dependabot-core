@@ -465,6 +465,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "returns the latest resolvable version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.0.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
   end

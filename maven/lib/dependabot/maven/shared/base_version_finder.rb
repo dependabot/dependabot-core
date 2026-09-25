@@ -88,7 +88,9 @@ module Dependabot
                 next false
               end
 
-              released?(release.version)
+              published = released?(release.version)
+              cooldown_tracker.discard(release) unless published
+              published
             end
             latest_release ? [latest_release] : []
           end

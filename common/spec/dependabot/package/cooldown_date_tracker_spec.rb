@@ -31,4 +31,39 @@ RSpec.describe Dependabot::Package::CooldownDateTracker do
       end
     end
   end
+
+  describe "#discard" do
+    let(:rejected_release) do
+      Dependabot::Package::PackageRelease.new(version: TestVersion.new("3.0.0"), released_at: nil)
+    end
+
+    it "does not mark a discarded undated release" do
+      filtered = tracker.filter_prefiltered do
+        tracker.record(release: rejected_release, current_version: dependency.numeric_version, days: 7)
+        tracker.discard(rejected_release)
+        releases
+      end
+
+      expect(filtered).to equal(releases)
+      expect(dependency.metadata[:cooldown_date_unavailable]).to be_nil
+    end
+
+    context "when the selected release is also undated" do
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(version: TestVersion.new("2.0.0"), released_at: nil)
+      end
+
+      it "still marks the selected release" do
+        filtered = tracker.filter_prefiltered do
+          tracker.record(release: rejected_release, current_version: dependency.numeric_version, days: 7)
+          tracker.record(release: release, current_version: dependency.numeric_version, days: 7)
+          tracker.discard(rejected_release)
+          releases
+        end
+
+        expect(filtered).to equal(releases)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+  end
 end

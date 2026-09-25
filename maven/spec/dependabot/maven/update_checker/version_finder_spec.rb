@@ -873,6 +873,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
       end
 
+      context "when an undated release is not actually published" do
+        before do
+          stub_request(:head, version_1_2_pom_url).to_return(status: 404)
+          stub_request(:head, version_1_2_jar_url).to_return(status: 404)
+        end
+
+        it "selects the dated release without marking the dependency" do
+          expect(latest_version_details[:version]).to eq(version_class.new("1.1.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).not_to be(true)
+        end
+      end
+
       context "when the newest eligible release is not actually published" do
         before do
           stub_request(:head, version_1_1_pom_url).to_return(status: 404)
