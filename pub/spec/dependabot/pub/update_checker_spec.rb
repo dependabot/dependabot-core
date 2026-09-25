@@ -675,6 +675,50 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect(lowest_security_fix_version).to eq(Gem::Version.new("4.0.0"))
       end
 
+      context "with a path-prefixed registry URL ending in a slash" do
+        before do
+          stub_request(
+            :get,
+            "http://localhost:#{server[:Port]}/repository/pub/api/packages/#{dependency.name}"
+          ).to_return(
+            status: 200,
+            body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
+            headers: {}
+          )
+          allow(checker).to receive(:run_dependency_services).and_return(
+            JSON.generate(
+              "dependencies" => [{
+                "name" => dependency_name,
+                "smallestUpdate" => [{ "name" => dependency_name, "version" => "4.0.0" }]
+              }]
+            )
+          )
+        end
+
+        let(:requirements) do
+          [{
+            file: "pubspec.yaml",
+            requirement: "any",
+            groups: [],
+            source: {
+              "description" => {
+                "name" => dependency_name,
+                "url" => "http://localhost:#{server[:Port]}/repository/pub/"
+              },
+              "type" => "hosted"
+            }
+          }]
+        end
+
+        it "fetches available versions using a single path separator" do
+          expect(lowest_security_fix_version).to eq(Gem::Version.new("4.0.0"))
+          expect(WebMock).to have_requested(
+            :get,
+            "http://localhost:#{server[:Port]}/repository/pub/api/packages/#{dependency.name}"
+          ).once
+        end
+      end
+
       # it "returns nil for git versions" # tested elsewhere under `context "With a git dependency"`
     end
 
