@@ -48,49 +48,76 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
 
     it "uses '2' for a manifest that specifies a platform dependency without lockfile" do
-      composer_json = JSON.parse(composer_v2_content)
+      composer_json = manifest_document(JSON.parse(composer_v2_content))
 
       expect(described_class.composer_version(composer_json)).to eq("2")
     end
 
     it "uses '2' when one of the packages has an invalid name" do
-      composer_json = JSON.parse(composer_v1_content)
+      composer_json = manifest_document(JSON.parse(composer_v1_content))
 
       expect(described_class.composer_version(composer_json)).to eq("2")
     end
 
+    it "does not inspect requirements after an invalid project name" do
+      expect(described_class.composer_version(manifest_document({ "name" => "invalid", "require" => nil }))).to eq("2")
+    end
+
+    it "rejects a non-string project name when consumed" do
+      expect { described_class.composer_version(manifest_document({ "name" => 123 })) }.to raise_error(TypeError)
+    end
+
+    it "rejects a present null require section when it reaches that section" do
+      expect { described_class.composer_version(manifest_document({ "require" => nil })) }.to raise_error(TypeError)
+    end
+
     context "with a lockfile" do
       it "uses '2' when lockfile has a V2 plugin-api-version" do
-        composer_json = JSON.parse(composer_v2_content)
-        parsed_lockfile = { "plugin-api-version" => "2.6.0" }
+        composer_json = manifest_document(JSON.parse(composer_v2_content))
+        parsed_lockfile = lockfile_document({ "plugin-api-version" => "2.6.0" })
 
         expect(Dependabot.logger).not_to receive(:warn)
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
 
       it "uses '2' when lockfile has a V1 plugin-api-version since V1 is no longer supported" do
-        composer_json = JSON.parse(composer_v2_content)
-        parsed_lockfile = { "plugin-api-version" => "1.1.0" }
+        composer_json = manifest_document(JSON.parse(composer_v2_content))
+        parsed_lockfile = lockfile_document({ "plugin-api-version" => "1.1.0" })
 
         expect(Dependabot.logger).to receive(:warn).with(/Composer V1 lockfile detected/)
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
 
       it "uses '2' and does not log a warning when lockfile is missing plugin-api-version" do
-        composer_json = JSON.parse(composer_v2_content)
-        parsed_lockfile = {}
+        composer_json = manifest_document(JSON.parse(composer_v2_content))
+        parsed_lockfile = lockfile_document({})
 
         expect(Dependabot.logger).not_to receive(:warn)
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
 
       it "logs the V1 warning on each call" do
-        composer_json = JSON.parse(composer_v2_content)
-        parsed_lockfile = { "plugin-api-version" => "1.1.0" }
+        composer_json = manifest_document(JSON.parse(composer_v2_content))
+        parsed_lockfile = lockfile_document({ "plugin-api-version" => "1.1.0" })
 
         expect(Dependabot.logger).to receive(:warn).with(/Composer V1 lockfile detected/).twice
         described_class.composer_version(composer_json, parsed_lockfile)
         described_class.composer_version(composer_json, parsed_lockfile)
+      end
+
+      it "accepts an integer plugin version before inspecting malformed manifest fields" do
+        expect(Dependabot.logger).to receive(:warn).with(/plugin-api-version: 1/)
+        expect(
+          described_class.composer_version(
+            manifest_document({ "require" => nil }), lockfile_document({ "plugin-api-version" => 1 })
+          )
+        ).to eq("2")
+      end
+
+      it "treats a false plugin version as absent" do
+        expect(
+          described_class.composer_version(manifest_document({}), lockfile_document({ "plugin-api-version" => false }))
+        ).to eq("2")
       end
     end
   end
@@ -177,11 +204,11 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
 
     it "captures the PHP version from the composer.json config" do
-      expect(described_class.capture_platform_php(parsed_composer_json)).to eq("7.4.33")
+      expect(described_class.capture_platform_php(manifest_document(parsed_composer_json))).to eq("7.4.33")
     end
 
     it "returns nil if the platform key is not present" do
-      expect(described_class.capture_platform_php({})).to be_nil
+      expect(described_class.capture_platform_php(manifest_document({}))).to be_nil
     end
   end
 
@@ -197,11 +224,22 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
 
     it "captures the platform extension version from composer.json" do
-      expect(described_class.capture_platform(parsed_composer_json, "ext-json")).to eq("1.5.0")
+      expect(described_class.capture_platform(manifest_document(parsed_composer_json), "ext-json")).to eq("1.5.0")
     end
 
     it "returns nil if the platform or extension name is not present" do
-      expect(described_class.capture_platform({}, "ext-json")).to be_nil
+      expect(described_class.capture_platform(manifest_document({}), "ext-json")).to be_nil
+    end
+
+    [false, 123, []].each do |value|
+      context "when the platform version is #{value.inspect}" do
+        let(:parsed_composer_json) { { "config" => { "platform" => { "ext-json" => value } } } }
+
+        it "rejects the non-string helper result" do
+          expect { described_class.capture_platform(manifest_document(parsed_composer_json), "ext-json") }
+            .to raise_error(TypeError)
+        end
+      end
     end
   end
 
@@ -215,11 +253,11 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
 
     it "captures the PHP version constraint from composer.json" do
-      expect(described_class.php_constraint(parsed_composer_json)).to eq(">=7.4 <8.0")
+      expect(described_class.php_constraint(manifest_document(parsed_composer_json))).to eq(">=7.4 <8.0")
     end
 
     it "returns nil if the PHP constraint is not specified" do
-      expect(described_class.php_constraint({})).to be_nil
+      expect(described_class.php_constraint(manifest_document({}))).to be_nil
     end
   end
 
@@ -234,11 +272,24 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
 
     it "captures the version constraint for the given dependency" do
-      expect(described_class.dependency_constraint(parsed_composer_json, "ext-json")).to eq(">=1.5.0")
+      expect(
+        described_class.dependency_constraint(
+          manifest_document(parsed_composer_json),
+          "ext-json"
+        )
+      ).to eq(">=1.5.0")
     end
 
     it "returns nil if the dependency is not specified" do
-      expect(described_class.dependency_constraint(parsed_composer_json, "ext-mbstring")).to be_nil
+      expect(described_class.dependency_constraint(manifest_document(parsed_composer_json), "ext-mbstring")).to be_nil
     end
+  end
+
+  def manifest_document(data)
+    Dependabot::Composer::ManifestDocument.new(data: data, context: "composer.json")
+  end
+
+  def lockfile_document(data)
+    Dependabot::Composer::LockfileDocument.new(data: data, context: "composer.lock")
   end
 end
