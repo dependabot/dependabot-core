@@ -1,3 +1,4 @@
+const assert = require("node:assert/strict");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -71,48 +72,41 @@ describe("updater", () => {
   it("doesn't show an interactive prompt when resolution fails", async () => {
     copyDependencies("original", tempDir);
 
-    expect.assertions(1);
-    try {
-      // Change this test if left-pad ever reaches v99.99.99
-      await updateDependencyFiles(tempDir, [
+    // Change this test if left-pad ever reaches v99.99.99
+    await assert.rejects(
+      updateDependencyFiles(tempDir, [
         {
           name: "left-pad",
           version: "99.99.99",
           requirements: [{ file: "package.json", groups: ["dependencies"] }],
         },
-      ]);
-    } catch (error) {
-      expect(error).not.toBeNull();
-    }
+      ]),
+    );
   });
 
   it("with a package.json which contains illegal character '@' in the name", async () => {
     copyDependencies("illegal_character", tempDir);
 
-    try {
-      await updateDependencyFiles(tempDir, [
-          {
-            name: "@commitlint/cli",
-            version: "19.3.0",
-            requirements: [
-              {
-                requirement: "^19.3.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source:
-                  {
-                    type: "registry",
-                    url: "https://registry.yarnpkg.com"
-                  }
-              }
-            ]
-          }
-        ]
-      );
-    } catch (error) {
-      expect(error).not.toBeNull();
-      expect(error.message).toEqual("package.json: Name contains illegal characters")
-    }
+    await assert.rejects(
+      updateDependencyFiles(tempDir, [
+        {
+          name: "@commitlint/cli",
+          version: "19.3.0",
+          requirements: [
+            {
+              requirement: "^19.3.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "registry",
+                url: "https://registry.yarnpkg.com",
+              },
+            },
+          ],
+        },
+      ]),
+      { message: "package.json: Name contains illegal characters" },
+    );
   });
 
   it("correctly updates packages with multiple lockfile entries", async () => {

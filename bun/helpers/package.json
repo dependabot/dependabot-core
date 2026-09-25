@@ -6,12 +6,12 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "test": "jest",
+    "test": "node --test --require ./test/node-test-setup.js test/npm6/*.test.js test/pnpm/*.test.js test/yarn/*.test.js",
     "postinstall": "patch-package"
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.22.22",
-    "@npmcli/arborist": "^8.0.0",
+    "@npmcli/arborist": "^10.0.3",
     "detect-indent": "^6.1.0",
     "nock": "^13.5.6",
     "npm": "6.14.18",
@@ -25,7 +25,6 @@
     "eslint": "^9.16.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^13.24.0",
-    "jest": "^29.7.0",
     "prettier": "^3.4.2"
   }
 }
