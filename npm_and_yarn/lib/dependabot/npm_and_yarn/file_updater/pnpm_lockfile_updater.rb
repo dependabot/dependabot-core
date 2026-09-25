@@ -543,7 +543,7 @@ module Dependabot
           dependency_files.any? do |file|
             case File.basename(file.name)
             when "pnpm-workspace.yaml"
-              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", ":") == false
+              yaml_boolean_setting(file.content.to_s, "sharedWorkspaceLockfile", ":") == false
             when ".npmrc"
               yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", "=") == false
             else
