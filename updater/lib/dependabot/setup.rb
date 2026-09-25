@@ -26,6 +26,7 @@ Sentry.init do |config|
     dependabot-updater/bin|
     dependabot-updater/config|
     dependabot-updater/lib|
+    apm|
     bazel|
     common|
     bundler|
@@ -70,6 +71,7 @@ Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
+require "dependabot/apm"
 require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"

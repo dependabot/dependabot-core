@@ -1,5 +1,10 @@
 [
   {
+    "core": "apm",
+    "test": "apm",
+    "ecosystem": "apm"
+  },
+  {
     "core": "bazel",
     "test": "bazel",
     "ecosystem": "bazel"
