@@ -285,7 +285,12 @@ public partial class DiscoveryWorker : IDiscoveryWorker
     {
         HashSet<string> expandedProjects = new(PathComparer.Instance);
         HashSet<string> seenProjects = new(PathComparer.Instance);
-        Stack<string> filesToExpand = new(entryPoints);
+        Stack<string> filesToExpand = new();
+        foreach (string entryPoint in entryPoints)
+        {
+            PushExistingPaths(filesToExpand, entryPoint, repoRootPath);
+        }
+
         while (filesToExpand.Count > 0)
         {
             string candidateEntryPoint = filesToExpand.Pop();
@@ -299,7 +304,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     foreach (ProjectInSolution project in solution.ProjectsInOrder)
                     {
                         logger.Info($"      Expanded project: {project.AbsolutePath}");
-                        filesToExpand.Push(project.AbsolutePath);
+                        PushExistingPaths(filesToExpand, project.AbsolutePath, repoRootPath);
                     }
                 }
                 else if (extension == ".slnx")
@@ -321,7 +326,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     {
                         string projectPath = Path.Combine(solutionPath, project.FilePath);
                         logger.Info($"      Expanded project: {projectPath}");
-                        filesToExpand.Push(projectPath);
+                        PushExistingPaths(filesToExpand, projectPath, repoRootPath);
                     }
                 }
                 else if (extension == ".proj")
@@ -331,7 +336,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     foreach (var foundProject in foundProjects)
                     {
                         logger.Info($"      Expanded project: {foundProject}");
-                        filesToExpand.Push(foundProject);
+                        PushExistingPaths(filesToExpand, foundProject, repoRootPath);
                     }
                 }
 
@@ -370,6 +375,18 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         return result;
+    }
+
+    private static void PushExistingPaths(Stack<string> filesToExpand, string candidatePath, string repoRootPath)
+    {
+        var resolvedPaths = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(candidatePath, repoRootPath);
+        foreach (string resolvedPath in resolvedPaths ?? [])
+        {
+            if (File.Exists(resolvedPath))
+            {
+                filesToExpand.Push(resolvedPath);
+            }
+        }
     }
 
     private static IEnumerable<string> ExpandItemGroupFilesFromProject(string projectPath, params string[] itemTypes)
