@@ -141,6 +141,7 @@ module Dependabot
         fetched_pnpm_files << pnpm_lock if pnpm_lock && !skip_pnpm_lock?
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
+        fetched_pnpm_files += pnpm_workspace_locks unless skip_pnpm_lock?
         fetched_pnpm_files
       end
 
@@ -481,6 +482,11 @@ module Dependabot
         @pnpm_workspace_package_jsons ||= T.let(fetch_pnpm_workspace_package_jsons, T.nilable(T::Array[DependencyFile]))
       end
 
+      sig { returns(T::Array[DependencyFile]) }
+      def pnpm_workspace_locks
+        @pnpm_workspace_locks ||= T.let(fetch_pnpm_workspace_locks, T.nilable(T::Array[DependencyFile]))
+      end
+
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/MethodLength
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
@@ -662,6 +668,49 @@ module Dependabot
         workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
           fetch_package_json_if_present(workspace)
         end
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def fetch_pnpm_workspace_locks
+        shared = shared_pnpm_lock_workspaces
+
+        pnpm_workspace_package_jsons.filter_map do |package_json|
+          workspace = File.dirname(package_json.name)
+          next if workspace == "."
+          next if shared.include?(workspace)
+
+          fetch_pnpm_lock_if_present(workspace)
+        end
+      end
+
+      sig { returns(T::Array[String]) }
+      def shared_pnpm_lock_workspaces
+        lock = pnpm_lock
+        return [] unless lock
+        return [] unless lock.name == PNPMPackageManager::LOCKFILE_NAME
+
+        importers = parsed_pnpm_lock(lock)["importers"]
+        return [] unless importers.is_a?(Hash)
+
+        importers.keys.filter_map do |key|
+          path = Pathname.new(key.to_s).cleanpath.to_path
+          path unless path == "."
+        end
+      end
+
+      sig { params(lock: DependencyFile).returns(T::Hash[String, T.untyped]) }
+      def parsed_pnpm_lock(lock)
+        documents = YAML.safe_load_stream(lock.content.to_s, aliases: true)
+        documents.reverse.find { |document| document.is_a?(Hash) } || {}
+      rescue Psych::Exception
+        {}
+      end
+
+      sig { params(workspace: String).returns(T.nilable(DependencyFile)) }
+      def fetch_pnpm_lock_if_present(workspace)
+        fetch_file_from_host(File.join(workspace, PNPMPackageManager::LOCKFILE_NAME))
+      rescue Dependabot::DependencyFileNotFound
+        nil
       end
 
       sig { params(path: String).returns(T::Array[T.nilable(DependencyFile)]) }
