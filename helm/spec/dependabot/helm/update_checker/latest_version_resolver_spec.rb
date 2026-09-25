@@ -95,6 +95,19 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
       end
     end
 
+    context "when a release date is unavailable" do
+      let(:tags_with_release_date) do
+        [Dependabot::GitTagWithDetail.new(tag: "2.0.0", release_date: nil)]
+      end
+
+      it "keeps the tag and marks the dependency" do
+        result = resolver.filter_versions_in_cooldown_period_using_oci(tags.dup, tags_with_release_date)
+
+        expect(result).to eq(tags)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when select_tags_which_in_cooldown_using_oci returns nil" do
       before do
         allow(resolver).to receive(:select_tags_which_in_cooldown_using_oci)
@@ -183,10 +196,17 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
       expect(resolver.release_date_to_seconds(release_date)).to eq(Time.parse(release_date).to_i)
     end
 
-    it "returns 0 for an invalid release date" do
+    it "returns nil for an invalid release date" do
       invalid_release_date = "invalid-date"
       expect(Dependabot.logger).to receive(:error).with(/Invalid release date format/)
-      expect(resolver.release_date_to_seconds(invalid_release_date)).to eq(0)
+      expect(resolver.release_date_to_seconds(invalid_release_date)).to be_nil
+    end
+
+    it "marks the dependency when the release date cannot be parsed" do
+      allow(Dependabot.logger).to receive(:error)
+
+      expect(resolver.check_if_version_in_cooldown_period?("invalid-date")).to be false
+      expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
     end
   end
 end
