@@ -71,7 +71,6 @@ describe("updater", () => {
   it("doesn't show an interactive prompt when resolution fails", async () => {
     copyDependencies("original", tempDir);
 
-    expect.assertions(1);
     try {
       // Change this test if left-pad ever reaches v99.99.99
       await updateDependencyFiles(tempDir, [

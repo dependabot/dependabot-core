@@ -8,7 +8,13 @@ module.exports = [
     languageOptions: {
       globals: {
         ...globals.node,
-        ...globals.jest,
+        afterEach: "readonly",
+        beforeEach: "readonly",
+        describe: "readonly",
+        expect: "readonly",
+        fdescribe: "readonly",
+        it: "readonly",
+        test: "readonly",
       },
       ecmaVersion: "latest",
     },
