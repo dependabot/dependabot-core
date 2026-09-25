@@ -835,13 +835,18 @@ module Dependabot
     end
     def tag_in_cooldown_period?(tag, cooldown)
       released_at = release_date_for_tag_name(tag.name)
-      return false unless released_at
-
       cooldown_days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
         cooldown,
         T.cast(current_version, T.nilable(Dependabot::Version)),
         T.cast(version_from_tag(tag), Dependabot::Version)
       )
+      unless released_at
+        Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+          dependency,
+          cooldown_days: cooldown_days
+        )
+        return false
+      end
 
       in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
                     .within_cooldown_window?(released_at, cooldown_days)

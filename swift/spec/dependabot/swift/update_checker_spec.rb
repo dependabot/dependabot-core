@@ -746,6 +746,33 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       end
     end
 
+    context "when the tag publication date is unavailable" do
+      let(:stubbed_git_commit_checker) do
+        Dependabot::GitCommitChecker.new(
+          dependency: cooldown_dependency,
+          credentials: github_credentials,
+          ignored_versions: [],
+          raise_on_ignored: false
+        )
+      end
+      let(:candidate_tag) do
+        Dependabot::GitRef.new(name: "2.1.0", commit_sha: "abc123")
+      end
+
+      before do
+        allow(stubbed_git_commit_checker).to receive_messages(
+          allowed_version_tags: [candidate_tag],
+          refs_for_tag_with_detail: [Dependabot::GitTagWithDetail.new(tag: "2.1.0", release_date: nil)],
+          cached_github_releases: []
+        )
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(cooldown_checker.latest_version).to eq(Dependabot::Swift::Version.new("2.1.0"))
+        expect(cooldown_dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when cooldown is not configured" do
       let(:cooldown_options) { nil }
 
