@@ -20,7 +20,8 @@ public class MSBuildDependencySolver : IDependencySolver
     public async Task<ImmutableArray<Dependency>?> SolveAsync(ImmutableArray<Dependency> existingTopLevelDependencies, ImmutableArray<Dependency> desiredDependencies, string targetFramework)
     {
         var projectExtension = _projectPath.Extension.ToLowerInvariant();
-        if (!XmlFileWriter.SupportedProjectFileExtensions.Contains(projectExtension))
+        if (projectExtension != CSharpFileBasedAppFileWriter.SupportedFileExtension &&
+            !XmlFileWriter.SupportedProjectFileExtensions.Contains(projectExtension))
         {
             // not a real project, nothing to solve.
             return null;

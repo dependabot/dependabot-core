@@ -2,7 +2,7 @@ namespace NuGetUpdater.Core;
 
 internal static class LockFileUpdater
 {
-    public static async Task UpdateLockFileAsync(
+    public static async Task<bool> UpdateLockFileAsync(
         string repoRootPath,
         string projectPath,
         ILogger logger)
@@ -12,6 +12,9 @@ internal static class LockFileUpdater
         if (exitCode != 0)
         {
             logger.Error($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+            return false;
         }
+
+        return true;
     }
 }

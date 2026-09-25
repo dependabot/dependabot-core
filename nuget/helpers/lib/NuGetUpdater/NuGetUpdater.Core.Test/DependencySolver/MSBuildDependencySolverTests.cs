@@ -589,18 +589,51 @@ public class MSBuildDependencySolverTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task FileBasedAppsResolveDependencyConflicts()
+    {
+        await TestAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage(
+                    "FileApp.Solver.TopLevel.Package",
+                    "1.0.0",
+                    "net8.0",
+                    [(null, [("FileApp.Solver.Transitive.Package", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Solver.Transitive.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("FileApp.Solver.Transitive.Package", "2.0.0", "net8.0"),
+            ],
+            existingTopLevelDependencies:
+            [
+                "FileApp.Solver.TopLevel.Package/1.0.0",
+            ],
+            desiredDependencies:
+            [
+                "FileApp.Solver.TopLevel.Package/1.0.0",
+                "FileApp.Solver.Transitive.Package/2.0.0",
+            ],
+            targetFramework: "net8.0",
+            expectedResolvedDependencies:
+            [
+                "FileApp.Solver.TopLevel.Package/1.0.0",
+                "FileApp.Solver.Transitive.Package/2.0.0",
+            ],
+            projectName: "app.cs");
+    }
+
     private static async Task TestAsync(
         ImmutableArray<string> existingTopLevelDependencies,
         ImmutableArray<string> desiredDependencies,
         string targetFramework,
         ImmutableArray<string> expectedResolvedDependencies,
-        MockNuGetPackage[]? packages = null
+        MockNuGetPackage[]? packages = null,
+        string projectName = "project.csproj"
     )
     {
         // arrange
-        var projectName = "project.csproj";
-        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
-            (projectName, $"""
+        var projectContents = projectName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
+            ? string.Join("\n", existingTopLevelDependencies.Select(d => $"#:package {d.Replace('/', '@')}")) + "\n\nConsole.WriteLine();"
+            : $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
@@ -609,7 +642,9 @@ public class MSBuildDependencySolverTests : TestBase
                     {string.Join("\n    ", existingTopLevelDependencies.Select(d => $@"<PackageReference Include=""{d.Split('/')[0]}"" Version=""{d.Split('/')[1]}"" />"))}
                   </ItemGroup>
                 </Project>
-                """)
+                """;
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            (projectName, projectContents)
         );
         await Update.UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDir.DirectoryPath);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);

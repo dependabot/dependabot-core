@@ -58,26 +58,53 @@ public class XmlFileWriter : IFileWriter
         string? packageManagementSpecialFileRelativePath
     )
     {
+        var filesAndContents = await UpdatePackageVersionsInMemoryAsync(
+            repoContentsPath, relativeFilePaths, originalDependencies, requiredPackageVersions,
+            packageManagementKind, packageManagementSpecialFileRelativePath);
+        if (filesAndContents is null)
+        {
+            return false;
+        }
+
+        foreach (var (path, contents) in filesAndContents)
+        {
+            await WriteFileContentsAsync(repoContentsPath, path, contents);
+        }
+
+        return true;
+    }
+
+    internal async Task<Dictionary<string, XmlDocumentSyntax>?> UpdatePackageVersionsInMemoryAsync(
+        DirectoryInfo repoContentsPath,
+        ImmutableArray<string> relativeFilePaths,
+        ImmutableArray<Dependency> originalDependencies,
+        ImmutableArray<Dependency> requiredPackageVersions,
+        PackageManagementKind packageManagementKind,
+        string? packageManagementSpecialFileRelativePath,
+        string? projectContents = null)
+    {
         if (relativeFilePaths.IsDefaultOrEmpty)
         {
             _logger.Warn("No files to update; skipping XML update.");
-            return false;
+            return null;
         }
 
         var updatesPerformed = requiredPackageVersions.ToDictionary(d => d.Name, _ => false, StringComparer.OrdinalIgnoreCase);
         var projectRelativePath = relativeFilePaths[0];
         var projectExtension = Path.GetExtension(projectRelativePath);
-        if (!SupportedProjectFileExtensions.Contains(projectExtension))
+        if (projectContents is null && !SupportedProjectFileExtensions.Contains(projectExtension))
         {
             _logger.Warn($"Project extension '{projectExtension}' not supported; skipping XML update.");
-            return false;
+            return null;
         }
 
         var filesAndContentsTasks = relativeFilePaths
-            .Where(path => SupportedProjectFileExtensions.Contains(Path.GetExtension(path)) || SupportedAdditionalFileExtensions.Contains(Path.GetExtension(path)))
+            .Where(path => path == projectRelativePath || SupportedProjectFileExtensions.Contains(Path.GetExtension(path)) || SupportedAdditionalFileExtensions.Contains(Path.GetExtension(path)))
             .Select(async path =>
             {
-                var document = await ReadFileContentsAsync(repoContentsPath, path);
+                var document = path == projectRelativePath && projectContents is not null
+                    ? ParseFileContents(projectContents)
+                    : await ReadFileContentsAsync(repoContentsPath, path);
                 return KeyValuePair.Create(path, document);
             })
             .ToArray();
@@ -827,16 +854,7 @@ public class XmlFileWriter : IFileWriter
             }
         }
 
-        var performedAllUpdates = updatesPerformed.Values.All(v => v);
-        if (performedAllUpdates)
-        {
-            foreach (var (path, contents) in filesAndContents)
-            {
-                await WriteFileContentsAsync(repoContentsPath, path, contents);
-            }
-        }
-
-        return performedAllUpdates;
+        return updatesPerformed.Values.All(v => v) ? filesAndContents : null;
     }
 
     private static ImmutableArray<SyntaxNode> GetOrderedElementsBeforeSpecified(IXmlElementSyntax parentElement, string elementName, IEnumerable<string> attributeNamesToCheck, string attributeValue)
@@ -856,6 +874,11 @@ public class XmlFileWriter : IFileWriter
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         var contents = await File.ReadAllTextAsync(fullPath);
+        return ParseFileContents(contents);
+    }
+
+    private static XmlDocumentSyntax ParseFileContents(string contents)
+    {
         var document = Parser.ParseText(contents);
 
         // ensure relevant nodes have a unique annotation so we can do precise edits later
@@ -871,7 +894,7 @@ public class XmlFileWriter : IFileWriter
         return documentWithAllAnnotations;
     }
 
-    private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, XmlDocumentSyntax document)
+    internal static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, XmlDocumentSyntax document)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         var content = document.ToFullString();
