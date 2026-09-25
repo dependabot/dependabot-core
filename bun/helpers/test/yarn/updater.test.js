@@ -71,6 +71,7 @@ describe("updater", () => {
   it("doesn't show an interactive prompt when resolution fails", async () => {
     copyDependencies("original", tempDir);
 
+    let error = null;
     try {
       // Change this test if left-pad ever reaches v99.99.99
       await updateDependencyFiles(tempDir, [
@@ -80,14 +81,17 @@ describe("updater", () => {
           requirements: [{ file: "package.json", groups: ["dependencies"] }],
         },
       ]);
-    } catch (error) {
-      expect(error).not.toBeNull();
+    } catch (caughtError) {
+      error = caughtError;
     }
+
+    expect(error).not.toBeNull();
   });
 
   it("with a package.json which contains illegal character '@' in the name", async () => {
     copyDependencies("illegal_character", tempDir);
 
+    let error = null;
     try {
       await updateDependencyFiles(tempDir, [
           {
@@ -108,10 +112,12 @@ describe("updater", () => {
           }
         ]
       );
-    } catch (error) {
-      expect(error).not.toBeNull();
-      expect(error.message).toEqual("package.json: Name contains illegal characters")
+    } catch (caughtError) {
+      error = caughtError;
     }
+
+    expect(error).not.toBeNull();
+    expect(error.message).toEqual("package.json: Name contains illegal characters")
   });
 
   it("correctly updates packages with multiple lockfile entries", async () => {
