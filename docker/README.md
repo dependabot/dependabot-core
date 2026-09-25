@@ -19,6 +19,17 @@ Docker support for [`dependabot-core`][core-repo].
 
 [core-repo]: https://github.com/dependabot/dependabot-core
 
+### Docker Hub registry timeouts
+
+If Docker Hub tag listing still returns HTTP 504 after the paginated retry,
+Dependabot logs a warning identifying the image and explaining that this is a
+registry-side timeout, not a dependency file parsing error. This applies to both
+Docker and Docker Compose updates.
+
+The update check remains failed because Dependabot could not determine which
+updates are available. Retry the update later; if the timeout persists, contact
+Docker Hub support.
+
 ### Supported tag schemas
 
 Dependabot supports updates for Docker tags that use semver versioning, dates, and build numbers.
