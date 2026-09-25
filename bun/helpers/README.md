@@ -13,6 +13,9 @@ arguments via stdin and return JSON data to stdout.
 When working on these helpers, it's convenient to write some high level tests in
 JavaScript to make it easier to debug the code.
 
+The `@npmcli/agent` overrides in `package.json` keep its proxy dependencies
+CommonJS-compatible because Jest cannot load their ESM-only releases.
+
 You can now run the tests from this directory by running:
 
 ```
