@@ -1,0 +1,18 @@
+0 verbose cli /usr/bin/node /usr/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@11.19.0
+2 info using node@v24.21.0
+3 silly config load:file:/usr/lib/node_modules/npm/npmrc
+4 silly config load:file:/work/.npmrc
+5 silly config load:file:/.npmrc
+6 silly config load:file:/usr/etc/npmrc
+7 verbose title npm exec jest --runInBand test/npm6/conflicting-dependency-parser.test.js
+8 verbose argv "exec" "--" "jest" "--runInBand" "test/npm6/conflicting-dependency-parser.test.js"
+9 verbose logfile logs-max:10 dir:/work/.npm-cache/_logs/2026-09-25T19_45_22_987Z-
+10 verbose logfile /work/.npm-cache/_logs/2026-09-25T19_45_22_987Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /work
+13 verbose os Linux 6.17.0-1022-azure
+14 verbose node v24.21.0
+15 verbose npm  v11.19.0
+16 verbose exit 0
+17 info ok
