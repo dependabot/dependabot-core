@@ -69,4 +69,33 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
       expect { document.platform("php") }.to raise_error(TypeError, /config.platform.php.*string/)
     end
   end
+
+  describe "#repositories" do
+    let(:data) do
+      {
+        "repositories" => {
+          "first" => { "type" => "path", "url" => "packages/*" },
+          "ignored" => { "type" => "composer", "url" => false },
+          "disabled" => false,
+          "second" => { "type" => "artifact", "url" => "artifacts" },
+          "invalid" => { "type" => "path", "url" => false }
+        }
+      }
+    end
+
+    it "retains repository order and decodes URLs only when consumed" do
+      repositories = document.repositories
+      expect(repositories.map(&:type)).to eq(%w(path artifact path))
+      expect(repositories.take(2).map(&:url)).to eq(["packages/*", "artifacts"])
+      expect { repositories.last.url }.to raise_error(TypeError, /repositories.*url.*string/)
+    end
+
+    context "with an array" do
+      let(:data) { { "repositories" => super().fetch("repositories").values } }
+
+      it "uses the same selection for arrays" do
+        expect(document.repositories.map(&:type)).to eq(%w(path artifact path))
+      end
+    end
+  end
 end
