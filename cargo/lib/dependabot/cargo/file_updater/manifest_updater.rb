@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/errors"
 require "dependabot/cargo/file_updater"
 
 module Dependabot
@@ -46,7 +47,8 @@ module Dependabot
                 dependency: dep
               )
 
-              raise "Expected content to change!" if current_content == updated_content
+              raise Dependabot::DependencyFileContentNotChanged, "Content did not change!" if
+                current_content == updated_content
 
               updated_content
             end
