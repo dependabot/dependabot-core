@@ -5,7 +5,6 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
-require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
@@ -62,32 +61,38 @@ module Dependabot
             # Prefer the npm conflicting dependency parser if there's both a npm lockfile and a yarn.lock file as the
             # npm parser handles edge cases where the package.json is out of sync with the lockfile, something the yarn
             # parser doesn't deal with at the moment.
-            if dependency_files_builder.package_locks.any? ||
-               dependency_files_builder.shrinkwraps.any?
-              T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: NativeHelpers.helper_path,
-                  function: "npm:findConflictingDependencies",
-                  args: [Dir.pwd, dependency.name, target_version.to_s]
-                ),
-                T::Array[Dependabot::UpdateCheckers::Conflict]
-              )
-            else
-              T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: NativeHelpers.helper_path,
-                  function: "yarn:findConflictingDependencies",
-                  args: [Dir.pwd, dependency.name, target_version.to_s]
-                ),
-                T::Array[Dependabot::UpdateCheckers::Conflict]
-              )
-            end
+            function = if dependency_files_builder.package_locks.any? ||
+                          dependency_files_builder.shrinkwraps.any?
+                         "npm:findConflictingDependencies"
+                       elsif dependency_files_builder.yarn_locks.any?
+                         "yarn:findConflictingDependencies"
+                       end
+            return [] unless function
+
+            run_conflicting_dependency_helper(function:, dependency:, target_version:)
           end
-        rescue SharedHelpers::HelperSubprocessFailed
-          []
         end
 
         private
+
+        sig do
+          params(
+            function: String,
+            dependency: Dependabot::Dependency,
+            target_version: T.nilable(T.any(String, Dependabot::Version))
+          )
+            .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
+        end
+        def run_conflicting_dependency_helper(function:, dependency:, target_version:)
+          T.cast(
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: function,
+              args: [Dir.pwd, dependency.name, target_version.to_s]
+            ),
+            T::Array[Dependabot::UpdateCheckers::Conflict]
+          )
+        end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files

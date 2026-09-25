@@ -78,4 +78,163 @@ describe("findConflictingDependencies", () => {
       },
     ]);
   });
+
+  it("finds conflicting dependencies in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-simple",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("finds the top-level conflicting dependency in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-nested",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "askconfig@4.0.4 requires abind@^1.0.4 via objnest@5.0.10",
+        name: "objnest",
+        version: "5.0.10",
+        requirement: "^1.0.4",
+      },
+    ]);
+  });
+
+  it("resolves aliases and ignores non-npm protocols in a yarn berry lockfile", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-protocols",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it.each([
+    ["workspace", "local-pkg"],
+    ["patch", "extend"],
+  ])(
+    "does not treat a %s requirement as a conflict",
+    async (_protocol, dependency) => {
+      helpers.copyDependencies(
+        "conflicting-dependency-parser/berry-protocols",
+        tempDir
+      );
+
+      const result = await findConflictingDependencies(
+        tempDir,
+        dependency,
+        "2.0.0"
+      );
+      expect(result).toEqual([]);
+    }
+  );
+
+  it("returns no conflicts when the yarn berry lockfile allows the target version", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-simple",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "1.0.5");
+    expect(result).toEqual([]);
+  });
+
+  it("finds conflicting dependencies behind a yarn v1 npm alias", async () => {
+    helpers.copyDependencies("conflicting-dependency-parser/aliased", tempDir);
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("evaluates every edge when aliases resolve to the same package", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-duplicate",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "askconfig@4.0.4 requires abind@^1.0.0",
+        name: "askconfig",
+        version: "4.0.4",
+        requirement: "^1.0.0",
+      },
+      {
+        explanation: "askconfig@4.0.4 requires abind@^0.1.0",
+        name: "askconfig",
+        version: "4.0.4",
+        requirement: "^0.1.0",
+      },
+    ]);
+  });
+
+  it("traverses workspace packages not referenced by the root manifest", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-workspace",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation:
+          "local-pkg@0.0.0-use.local requires abind@^1.0.0 via objnest@4.1.4",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("traverses every resolution when a package and its alias share a requirement", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-distinct",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+      {
+        explanation: "objnest@4.1.2 requires abind@^1.0.4",
+        name: "objnest",
+        version: "4.1.2",
+        requirement: "^1.0.4",
+      },
+    ]);
+  });
 });

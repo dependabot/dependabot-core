@@ -76,5 +76,79 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         )
       end
     end
+
+    context "with yarn berry lockfiles" do
+      let(:dependency_files) { project_dependency_files("yarn_berry/subdependency_out_of_range_gt") }
+
+      it "returns the right array of blocking dependencies" do
+        expect(conflicting_dependencies).to contain_exactly(
+          {
+            "explanation" => "objnest@4.1.4 requires abind@^1.0.0",
+            "name" => "objnest",
+            "requirement" => "^1.0.0",
+            "version" => "4.1.4"
+          }
+        )
+      end
+
+      context "with no blocking dependencies" do
+        let(:target_version) { "1.0.0" }
+
+        it "returns an empty array" do
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
+    end
+
+    context "with pnpm lockfiles" do
+      let(:dependency_files) { project_dependency_files("pnpm/multiple_sub_dependencies") }
+
+      it "returns an empty array without invoking a helper" do
+        expect(Dependabot::SharedHelpers).not_to receive(:run_helper_subprocess)
+
+        expect(conflicting_dependencies).to be_empty
+      end
+    end
+
+    context "when preparing dependency files fails" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
+      let(:dependency_files_builder) do
+        instance_double(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
+      end
+      let(:helper_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "failed to prepare dependency files",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
+          .to receive(:new).and_return(dependency_files_builder)
+        allow(dependency_files_builder).to receive(:write_temporary_dependency_files).and_raise(helper_error)
+      end
+
+      it "raises the helper error" do
+        expect { conflicting_dependencies }.to raise_error(helper_error)
+      end
+    end
+
+    context "when the conflicting dependency helper fails" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
+      let(:helper_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "unexpected helper failure",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
+      end
+
+      it "raises the helper error" do
+        expect { conflicting_dependencies }.to raise_error(helper_error)
+      end
+    end
   end
 end
