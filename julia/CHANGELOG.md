@@ -28,6 +28,7 @@
 - A spec added to a compat entry is placed in ascending order, and the old test sandbox pin is written as in the General registry PSA: `"<0.0.1, 1"` instead of `"1, < 0.0.1"` (#16355)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
+- A checked-in manifest is now resolved by the Julia version recorded in its `julia_version`, launched through juliaup, instead of the updater's Julia, which rewrote `julia_version` and the stdlib entries to the updater's release
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)
 
 ### Initial Release

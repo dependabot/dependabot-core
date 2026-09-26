@@ -867,6 +867,13 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
             json_dep = findfirst(d -> d["name"] == "JSON", updated_manifest["dependencies"])
             @test json_dep !== nothing
             @test updated_manifest["dependencies"][json_dep]["version"] == "0.21.1"
+
+            # The manifest is resolved by the Julia that wrote it, keeping its stdlib versions
+            if Sys.which("juliaup") !== nothing
+                @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
+                dates = findfirst(d -> d["name"] == "Dates", updated_manifest["dependencies"])
+                @test updated_manifest["dependencies"][dates]["version"] == "1.11.0"
+            end
         end
     end
 

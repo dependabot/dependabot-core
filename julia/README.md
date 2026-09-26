@@ -39,6 +39,10 @@ For more information about Julia package management, see:
 - [Project.toml and Manifest.toml format](https://pkgdocs.julialang.org/v1/toml-files/)
 - [Julia semantic versioning](https://pkgdocs.julialang.org/v1/compatibility/)
 
+## Manifest Julia Version
+
+A manifest is resolved by the Julia version that wrote it, its `julia_version`, which juliaup installs and launches. Resolving under the updater's own Julia would rewrite `julia_version` and the stdlib entries, leaving a manifest the project's Julia may not load. A manifest without a `julia_version`, or one written by a prerelease build, is resolved with the updater's Julia.
+
 ## Error Handling and User Notifications
 
 When manifest updates fail (common in workspace configurations with conflicting sibling dependencies), Dependabot will:
