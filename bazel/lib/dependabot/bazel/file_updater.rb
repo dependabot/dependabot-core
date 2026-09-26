@@ -102,7 +102,8 @@ module Dependabot
         bzlmod_updater = BzlmodFileUpdater.new(
           dependency_files: dependency_files,
           dependencies: [dependency],
-          credentials: credentials
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
         )
         bzlmod_updater.updated_module_files
       end
