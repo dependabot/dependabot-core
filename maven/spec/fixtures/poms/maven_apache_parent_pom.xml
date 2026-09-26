@@ -1,0 +1,29 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.apache.maven</groupId>
+  <artifactId>maven-apache-parent</artifactId>
+  <version>43</version>
+  <packaging>pom</packaging>
+
+  <properties>
+    <version.maven-clean-plugin>3.5.0</version.maven-clean-plugin>
+    <version.maven-compiler-plugin>3.16.0</version.maven-compiler-plugin>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${version.maven-clean-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.maven-compiler-plugin}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

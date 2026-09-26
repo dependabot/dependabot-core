@@ -74,6 +74,10 @@ module Dependabot
             property_name = req.metadata_string("property_name")
             next req if property_name && !properties_to_update.include?(property_name)
 
+            # Never update requirements whose property is declared in a remote parent POM
+            # (remote_pom.xml is not in dependency_files; PropertyValueUpdater would crash).
+            next req if req.metadata_string("property_source") == "remote_pom.xml"
+
             new_req = update_requirement(requirement)
             next req if new_req == requirement
 

@@ -1,0 +1,39 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.apache.maven</groupId>
+  <artifactId>maven</artifactId>
+  <version>4.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>org.apache.maven</groupId>
+    <artifactId>maven-apache-parent</artifactId>
+    <version>43</version>
+  </parent>
+
+  <properties>
+    <!-- Same property names as the parent — local values shadow the remote ones -->
+    <version.maven-clean-plugin>3.4.0</version.maven-clean-plugin>
+    <version.maven-compiler-plugin>3.13.0</version.maven-compiler-plugin>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Redeclared locally; local property shadows the parent's remote declaration -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${version.maven-clean-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.maven-compiler-plugin}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

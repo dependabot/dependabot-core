@@ -739,6 +739,67 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           )
       end
     end
+
+    context "when a plugin has requirements from both a local file and a remote parent POM" do
+      # Regression: when the local POM uses the same property name as the remote parent
+      # (same-name shadowing, the real Apache Maven case), updated_requirements must not
+      # update the remote requirement. RequirementsUpdater must skip requirements whose
+      # property_source is remote_pom.xml, regardless of whether the property name matches.
+      let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
+      let(:dependency_name) { "org.apache.maven.plugins:maven-clean-plugin" }
+      let(:dependency_version) { "3.4.0" }
+      let(:dependency_requirements) do
+        [
+          {
+            # Local pom.xml: shadows the remote parent with the same property name
+            file: "pom.xml",
+            requirement: "3.4.0",
+            groups: ["plugin"],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              property_name: "version.maven-clean-plugin",
+              property_source: "pom.xml"
+            }
+          },
+          {
+            # Remote parent (maven-apache-parent): same property name, different value
+            file: "pom.xml",
+            requirement: "3.5.0",
+            groups: ["plugin"],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              property_name: "version.maven-clean-plugin",
+              property_source: "remote_pom.xml"
+            }
+          }
+        ]
+      end
+
+      let(:maven_apache_parent_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/maven/maven-apache-parent/43/maven-apache-parent-43.pom"
+      end
+
+      before do
+        stub_request(:get, maven_apache_parent_url)
+          .to_return(status: 200, body: fixture("poms", "maven_apache_parent_pom.xml"))
+        allow(checker).to receive_messages(
+          preferred_resolvable_version: Dependabot::Maven::Version.new("3.6.0"),
+          preferred_version_details: { version: Dependabot::Maven::Version.new("3.6.0"),
+                                       source_url: "https://repo.maven.apache.org/maven2" }
+        )
+      end
+
+      it "does not update the remote requirement even when it shares the same property name" do
+        results = checker.updated_requirements
+        local_req = results.find { |r| r.metadata_string("property_source") == "pom.xml" }
+        remote_req = results.find { |r| r.metadata_string("property_source") == "remote_pom.xml" }
+        expect(local_req&.requirement_string).to eq("3.6.0")
+        expect(remote_req&.requirement_string).to eq("3.5.0")
+      end
+    end
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
@@ -1167,6 +1228,51 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         end
 
         it { is_expected.to be(false) }
+      end
+
+      context "when a plugin has requirements from both a local file and a remote parent POM" do
+        # Regression: maven-apache-parent declares maven-clean-plugin@3.5.0 via
+        # version.maven-clean-plugin. Our root POM overrides that same property locally
+        # at 3.4.0. requirements_unlocked_or_can_be? must return true because the local
+        # declaration (property_source: "pom.xml") is updatable, even though the same
+        # property name also appears in a remote_pom.xml requirement.
+        #
+        # The check is driven by the property_source metadata on each requirement (set by
+        # the file parser). The old implementation used `.none? { remote_pom.xml }` which
+        # returned false when any requirement was remote — blocking all mixed-source deps.
+        let(:pom_body) { fixture("poms", "plugin_management_with_remote_parent_pom.xml") }
+        let(:dependency_name) { "org.apache.maven.plugins:maven-clean-plugin" }
+        let(:dependency_version) { "3.4.0" }
+        let(:dependency_requirements) do
+          [
+            {
+              # Local pom.xml: property_source set to "pom.xml" by the file parser
+              file: "pom.xml",
+              requirement: "3.4.0",
+              groups: ["plugin"],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                property_name: "version.maven-clean-plugin",
+                property_source: "pom.xml"
+              }
+            },
+            {
+              # Remote parent: property_source set to "remote_pom.xml" by the file parser
+              file: "pom.xml",
+              requirement: "3.5.0",
+              groups: ["plugin"],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                property_name: "version.maven-clean-plugin",
+                property_source: "remote_pom.xml"
+              }
+            }
+          ]
+        end
+
+        it { is_expected.to be(true) }
       end
     end
   end
