@@ -44,19 +44,34 @@ module Dependabot
           Helpers.dependencies_with_all_versions_metadata(parse_set)
         end
 
-        sig do
-          params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
-            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
+        # The lockfile copy a manifest dependency resolves to. It is found once, so the
+        # version, source and dependency type all describe the same copy.
+        class ManifestCopy < T::Struct
+          const :details, Dependabot::Package::NpmLockfileDetails
+          # False unless dependency types are enabled.
+          const :reachable_from_production, T::Boolean
         end
-        def lockfile_details(dependency_name:, requirement:, manifest_name:)
-          details = T.let(nil, T.nilable(Dependabot::Package::NpmLockfileDetails))
-          potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
-            details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
 
-            break if details
+        # The closest lockfile to the manifest that has the dependency wins. In it, the
+        # workspace's own nested copy (such as "app/ms") comes before the hoisted copy, so
+        # a lockfile with only the nested copy is still used rather than a farther one.
+        sig do
+          params(dependency_name: String, workspace_name: T.nilable(String), manifest_name: String)
+            .returns(T.nilable(ManifestCopy))
+        end
+        def manifest_copy(dependency_name:, workspace_name:, manifest_name:)
+          potential_lockfiles_for_manifest(manifest_name).each do |file|
+            lockfile = lockfile_for(file)
+            key = lockfile.manifest_key(dependency_name, workspace_name)
+            next unless key
+
+            details = lockfile.details(key, nil, manifest_name)
+            next unless details
+
+            return ManifestCopy.new(details: details, reachable_from_production: lockfile.production_key?(key))
           end
 
-          details
+          nil
         end
 
         private

@@ -202,6 +202,41 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           end
         end
       end
+
+      context "when identical but declared in another file with different metadata" do
+        let(:added_metadata) { { reachable_from_production: true } }
+        let(:existing_dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.3",
+            requirements: [{ requirement: "1", file: "a", groups: ["development"], source: nil }],
+            package_manager: "dummy",
+            metadata: { source: "existing" }
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.3",
+            requirements: [{ requirement: "1", file: "b", groups: ["development"], source: nil }],
+            package_manager: "dummy",
+            metadata: added_metadata
+          )
+        end
+
+        it "keeps the existing metadata and adds reachable_from_production" do
+          expect(set_of_dependencies.dependencies.first.metadata)
+            .to eq(source: "existing", reachable_from_production: true)
+        end
+
+        context "when the added declaration is not reachable from production" do
+          let(:added_metadata) { { source: "added" } }
+
+          it "keeps only the existing metadata" do
+            expect(set_of_dependencies.dependencies.first.metadata).to eq(source: "existing")
+          end
+        end
+      end
     end
 
     context "with a non-dependency object" do
