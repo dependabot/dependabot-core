@@ -68,6 +68,31 @@ function get_manifest_file_name(dir::String)
 end
 
 """
+    environment_manifest_files(dir::String) -> Vector{String}
+
+The manifests in `dir` that some Julia release uses: each version-specific
+`Manifest-vX.Y.toml`, and the unversioned manifest the other releases fall back to.
+For each name, `JuliaManifest` wins over `Manifest`, as in Julia's own lookup.
+"""
+function environment_manifest_files(dir::String)
+    names = readdir(dir)
+    versions = unique(m[2] for m in (match(r"^(Julia)?Manifest-v(\d+\.\d+)\.toml$", name) for name in names) if m !== nothing)
+    # Julia reads version-specific manifests from 1.10 on, and only by the canonical name
+    filter!(versions) do v
+        version = VersionNumber(v)
+        v == "$(version.major).$(version.minor)" && version >= v"1.10"
+    end
+    candidates = [("JuliaManifest-v$v.toml", "Manifest-v$v.toml") for v in versions]
+    push!(candidates, ("JuliaManifest.toml", "Manifest.toml"))
+    manifests = String[]
+    for pair in candidates
+        i = findfirst(in(names), pair)
+        i === nothing || push!(manifests, joinpath(dir, pair[i]))
+    end
+    return manifests
+end
+
+"""
     find_workspace_project_files(dir::String)
 
 Find all Project.toml files in a workspace that share the same manifest file.
@@ -109,6 +134,7 @@ function find_workspace_project_files(dir::String)
         return Dict(
             "project_files" => project_files,
             "manifest_file" => isfile(manifest_file) ? manifest_file : "",
+            "manifest_files" => environment_manifest_files(workspace_root),
             "workspace_root" => workspace_root
         )
     catch ex

@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
       dependency: dependency,
       dependency_files: [],
       credentials: [],
-      ignored_versions: [],
+      ignored_versions: ignored_versions,
       security_advisories: [],
       raise_on_ignored: false,
       cooldown_config: cooldown_config
@@ -20,6 +20,7 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
   end
   let(:release_dates) { Hash.new(Time.now - (365 * 24 * 60 * 60)) }
 
+  let(:ignored_versions) { [] }
   let(:cooldown_config) { nil }
   let(:current_version) { "1.0.0" }
   let(:dependency_name) { "Example" }
@@ -50,6 +51,25 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
           )
         end
       )
+  end
+
+  describe "#latest_version ignore conditions" do
+    let(:current_version) { "1.6.10+0" }
+    let(:available_versions) { %w(1.6.10+0 1.6.10+1 1.6.11+0) }
+
+    it "offers a JLL rebuild as an update" do
+      expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.6.11+0"))
+    end
+
+    context "when everything above the current release is ignored" do
+      let(:ignored_versions) { ["> 1.6.10"] }
+
+      # Ignore conditions keep the ordering between builds, unlike compat
+      # entries, so the rebuild is ignored too
+      it "does not offer the rebuild" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.6.10+0"))
+      end
+    end
   end
 
   describe "#latest_version prerelease handling" do

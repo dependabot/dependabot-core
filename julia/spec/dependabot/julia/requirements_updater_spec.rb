@@ -66,7 +66,9 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         # Target version exactly at the range boundary (still included)
         ["1", "1.0.0", "1"],
         # Caret spec covering the target
-        ["^2.0", "2.6.0", "^2.0"]
+        ["^2.0", "2.6.0", "^2.0"],
+        # Pkg unions a list of equality specs
+        ["=0.5.4, =0.5.5", "0.5.5", "=0.5.4, =0.5.5"]
       ]
     }.each do |description, test_cases|
       context "when #{description}" do
@@ -99,6 +101,77 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         let(:target_version) { "0.35.0" }
 
         it { is_expected.to eq("0.35.0") }
+      end
+
+      # JLL packages register build metadata as part of their version
+      # ("Zlib_jll" 1.6.10+0). Pkg rejects a compat entry carrying it, and
+      # admits every build of a version its bounds cover anyway.
+      context "with a JLL target version carrying build metadata" do
+        context "when there is no compat entry" do
+          let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
+          let(:target_version) { "1.6.10+0" }
+
+          it "drops the build number" do
+            expect(result).to eq("1.6.10")
+          end
+        end
+
+        context "when the existing compat entry already admits the new build" do
+          let(:requirement_string) { "1.6.10" }
+          let(:target_version) { "1.6.10+1" }
+
+          it "leaves the compat entry untouched" do
+            expect(result).to eq("1.6.10")
+          end
+        end
+
+        context "when the existing compat entry is an exact pin on the rebuilt version" do
+          let(:requirement_string) { "=0.0.43" }
+          let(:target_version) { "0.0.43+1" }
+
+          it "leaves the compat entry untouched" do
+            expect(result).to eq("=0.0.43")
+          end
+        end
+
+        context "when the existing compat entry needs widening" do
+          let(:requirement_string) { "1.5.0" }
+          let(:target_version) { "2.0.1+2" }
+
+          it "appends a spec without the build number" do
+            expect(result).to eq("1.5.0, 2.0")
+          end
+        end
+
+        context "when the JLL is a 0.0.x version" do
+          let(:requirement_string) { "0.0.5" }
+          let(:target_version) { "0.0.8+3" }
+
+          it "appends a patch-level spec without the build number" do
+            expect(result).to eq("0.0.5, 0.0.8")
+          end
+        end
+
+        context "with bump_versions" do
+          let(:update_strategy) { :bump_versions }
+          let(:requirement_string) { "1.5" }
+          let(:target_version) { "1.6.10+0" }
+
+          it "bumps to a spec without the build number" do
+            expect(result).to eq("1.6")
+          end
+        end
+
+        context "with a prerelease target version and no compat entry" do
+          let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
+          let(:target_version) { "1.6.10-rc1" }
+
+          # Pkg rejects the tag in a compat entry too, and "1.6.10" admits the
+          # prerelease since bounds compare major.minor.patch only
+          it "drops the prerelease tag" do
+            expect(result).to eq("1.6.10")
+          end
+        end
       end
 
       context "with range requirement" do
@@ -134,7 +207,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         context "when the range reaches Julia 1.0 and the old test sandbox pin" do
           let(:stdlib_versions) { { "Project.toml" => ["0.0.0", "1.0.0"] } }
 
-          it { is_expected.to eq("< 0.0.1, 1") }
+          it { is_expected.to eq("<0.0.1, 1") }
         end
 
         context "when the stdlib changed major line (SHA)" do
@@ -150,17 +223,32 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         it { is_expected.to eq("1") }
       end
 
+      context "when the entry misses the old test sandbox pin" do
+        let(:requirement_string) { "1" }
+        let(:stdlib_versions) { { "Project.toml" => ["0.0.0", "1.0.0"] } }
+
+        it "adds it in ascending order" do
+          expect(result).to eq("<0.0.1, 1")
+        end
+
+        context "with no space after the comma" do
+          let(:requirement_string) { "1.6,1" }
+
+          it { is_expected.to eq("<0.0.1,1.6,1") }
+        end
+      end
+
       context "when the entry misses a bundled version" do
         let(:requirement_string) { "1.11" }
 
         it "widens rather than bumping to the registry release" do
-          expect(result).to eq("1.11, 1.10")
+          expect(result).to eq("1.10, 1.11")
         end
 
         context "with bump_versions" do
           let(:update_strategy) { :bump_versions }
 
-          it { is_expected.to eq("1.11, 1.10") }
+          it { is_expected.to eq("1.10, 1.11") }
         end
 
         context "with lockfile_only" do
@@ -193,7 +281,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         let(:stdlib_versions) { { "Project.toml" => ["1.10.0"], "test/Project.toml" => ["0.0.0", "1.0.0"] } }
 
         it "floors each file separately" do
-          expect(updater.updated_requirements.map { |r| r[:requirement] }).to eq(["1.10", "< 0.0.1, 1"])
+          expect(updater.updated_requirements.map { |r| r[:requirement] }).to eq(["1.10", "<0.0.1, 1"])
         end
       end
     end

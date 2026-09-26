@@ -56,6 +56,22 @@ RSpec.describe Dependabot::Julia::Version do
     end
   end
 
+  describe "#compat_version_string" do
+    it "drops JLL build metadata, which a compat entry cannot carry" do
+      expect(described_class.new("1.6.10+0").compat_version_string).to eq("1.6.10")
+      expect(described_class.new("2.28.6+4").compat_version_string).to eq("2.28.6")
+    end
+
+    it "drops prerelease tags" do
+      expect(described_class.new("1.0.0-rc.1+3").compat_version_string).to eq("1.0.0")
+    end
+
+    it "keeps plain versions" do
+      expect(described_class.new("1.2.3").compat_version_string).to eq("1.2.3")
+      expect(described_class.new("0.5").compat_version_string).to eq("0.5")
+    end
+  end
+
   describe "ordering" do
     it "orders numeric builds of the same version" do
       expect(described_class.new("1.6.10+1")).to be > described_class.new("1.6.10+0")
