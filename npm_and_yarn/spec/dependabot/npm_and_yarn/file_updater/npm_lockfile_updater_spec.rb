@@ -328,6 +328,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "when a git+ssh dependency is present in a lockfileVersion 3 lockfile" do
+      let(:files) { project_dependency_files("npm9/git_dependency_ssh") }
+      let(:dependency_name) { "chalk" }
+      let(:version) { "2.3.2" }
+      let(:previous_version) { "0.4.0" }
+      let(:requirements) do
+        [{ file: "package.json", requirement: "2.3.2", groups: ["dependencies"], source: nil }]
+      end
+      let(:previous_requirements) do
+        [{ file: "package.json", requirement: "0.4.0", groups: ["dependencies"], source: nil }]
+      end
+
+      it "restores the ssh requirement in the root package entry" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expect(parsed_lockfile.dig("packages", "", "devDependencies", "is-number"))
+          .to eq("git+ssh://git@github.com:jonschlinkert/is-number.git")
+      end
+    end
+
     context "when updating both top level and sub dependencies" do
       let(:files) do
         project_dependency_files("npm8/transitive_dependency_locked_by_intermediate_top_and_sub")
