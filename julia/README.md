@@ -41,7 +41,7 @@ For more information about Julia package management, see:
 
 ## Manifest Julia Version
 
-A manifest is resolved by the Julia version that wrote it, its `julia_version`, which juliaup installs and launches. Resolving under the updater's own Julia would rewrite `julia_version` and the stdlib entries, leaving a manifest the project's Julia may not load. A manifest without a `julia_version`, or one written by a prerelease build, is resolved with the updater's Julia.
+A manifest is resolved by the Julia version that wrote it, its `julia_version`, which juliaup installs and launches. Every manifest of an environment is updated this way, so `Manifest.toml` and a version-specific `Manifest-v1.12.toml` are each resolved by their own Julia; a dependency's current version is the oldest across them, so a manifest that lags behind still gets updated. Resolving under the updater's own Julia would rewrite `julia_version` and the stdlib entries, leaving a manifest the project's Julia may not load. A manifest without a `julia_version`, or one written by a prerelease build, is resolved with the updater's Julia.
 
 ## Error Handling and User Notifications
 

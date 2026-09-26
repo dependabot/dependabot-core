@@ -58,23 +58,25 @@ module Dependabot
         SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
           # Update all project files (main + workspace members)
           updated_project_files = update_all_project_files
-          actual_manifest = find_manifest_file
+          manifests = find_manifest_files
 
-          return all_projects_only_update(updated_project_files) if actual_manifest.nil?
+          return all_projects_only_update(updated_project_files) if manifests.empty?
 
           # Requirement-only updates (no target versions) have nothing to tell
           # Pkg; ship the Project.toml changes on their own.
           return all_projects_only_update(updated_project_files) if build_updates_hash.empty?
 
           # Write all updated project files to disk for Julia's Pkg
-          write_all_temporary_files(updated_project_files, actual_manifest)
-          result = call_julia_helper
+          write_all_temporary_files(updated_project_files, manifests)
+          updated_files.concat(all_projects_only_update(updated_project_files))
 
-          if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
-            return handle_julia_helper_error_multi(result, actual_manifest, updated_project_files)
+          # Each manifest is resolved separately, by the Julia release that uses it
+          manifests.each do |manifest|
+            updated_manifest = updated_manifest_file(manifest)
+            updated_files << updated_manifest if updated_manifest
           end
-
-          build_updated_files_multi(updated_files, updated_project_files, actual_manifest, result)
+          # A manifest that could not be resolved is reported in a notice instead
+          return updated_files if updated_files.empty? && notices.any?
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -129,10 +131,10 @@ module Dependabot
       sig do
         params(
           updated_project_files: T::Array[T::Hash[Symbol, T.untyped]],
-          actual_manifest: Dependabot::DependencyFile
+          manifests: T::Array[Dependabot::DependencyFile]
         ).void
       end
-      def write_all_temporary_files(updated_project_files, actual_manifest)
+      def write_all_temporary_files(updated_project_files, manifests)
         # Write all updated project files
         updated_project_files.each do |update_info|
           file = T.cast(update_info[:file], Dependabot::DependencyFile)
@@ -143,45 +145,41 @@ module Dependabot
           File.write(file_path, content)
         end
 
-        # Write manifest file
-        manifest_path = actual_manifest.name
-        FileUtils.mkdir_p(File.dirname(manifest_path)) if manifest_path.include?("/")
-        File.write(manifest_path, actual_manifest.content)
+        manifests.each do |manifest|
+          FileUtils.mkdir_p(File.dirname(manifest.name)) if manifest.name.include?("/")
+          File.write(manifest.name, manifest.content)
+        end
       end
 
-      sig do
-        returns(
-          T.any(
-            Dependabot::Julia::RegistryClient::Result::ManifestUpdate,
-            Dependabot::Julia::RegistryClient::Result::Failure
-          )
-        )
-      end
-      def call_julia_helper
-        registry_client.update_manifest(
+      sig { params(manifest: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def updated_manifest_file(manifest)
+        result = registry_client.update_manifest(
           project_path: Dir.pwd,
+          manifest_path: File.expand_path(manifest.name),
           updates: build_updates_hash
         )
+
+        if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+          handle_julia_helper_error(result, manifest)
+          return nil
+        end
+        return nil if result.manifest_content == manifest.content
+
+        updated_file(file: manifest_file_for_path(result.manifest_path), content: result.manifest_content)
       end
 
       sig do
         params(
           result: Dependabot::Julia::RegistryClient::Result::Failure,
-          actual_manifest: Dependabot::DependencyFile,
-          updated_project_files: T::Array[T::Hash[Symbol, T.untyped]]
-        ).returns(T::Array[Dependabot::DependencyFile])
+          manifest: Dependabot::DependencyFile
+        ).void
       end
-      def handle_julia_helper_error_multi(result, actual_manifest, updated_project_files)
+      def handle_julia_helper_error(result, manifest)
         error_message = result.message
-        manifest_path = actual_manifest.name
+        raise error_message unless resolver_error?(error_message)
 
-        is_resolver_error = resolver_error?(error_message)
-        raise error_message unless is_resolver_error
-
-        add_manifest_update_notice(manifest_path, error_message)
-
-        # Return all updated Project.toml files
-        all_projects_only_update(updated_project_files)
+        # The Project.toml changes still go out without this manifest
+        add_manifest_update_notice(manifest.name, error_message)
       end
 
       sig { params(error_message: String).returns(T::Boolean) }
@@ -214,31 +212,6 @@ module Dependabot
           show_in_pr: true,
           show_alert: true
         )
-      end
-
-      sig do
-        params(
-          updated_files: T::Array[Dependabot::DependencyFile],
-          updated_project_files: T::Array[T::Hash[Symbol, T.untyped]],
-          actual_manifest: Dependabot::DependencyFile,
-          result: Dependabot::Julia::RegistryClient::Result::ManifestUpdate
-        ).void
-      end
-      def build_updated_files_multi(updated_files, updated_project_files, actual_manifest, result)
-        # Add all updated project files
-        updated_project_files.each do |update_info|
-          file = T.cast(update_info[:file], Dependabot::DependencyFile)
-          content = T.cast(update_info[:content], String)
-          next if content == file.content
-
-          updated_files << updated_file(file: file, content: content)
-        end
-
-        updated_manifest_content = result.manifest_content
-        return unless updated_manifest_content != actual_manifest.content
-
-        manifest_for_update = manifest_file_for_path(result.manifest_path)
-        updated_files << updated_file(file: manifest_for_update, content: updated_manifest_content)
       end
 
       private
@@ -298,15 +271,15 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def find_manifest_file
-        # The file fetcher has already identified the correct manifest file
-        # For regular packages: manifest in same directory
-        # For workspace packages: manifest in parent directory
-        # We just need to find it in dependency_files
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def find_manifest_files
+        # The file fetcher has already identified the environment's manifests
+        # For regular packages: manifests in same directory
+        # For workspace packages: manifests in parent directory
+        # We just need to find them in dependency_files
         project_dir = T.must(project_file).directory
 
-        dependency_files.find do |f|
+        dependency_files.select do |f|
           # Use basename to get just the filename, not the full path with ../
           is_manifest = File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
           is_manifest && (f.directory == project_dir || parent_directory_of?(f.directory, project_dir))

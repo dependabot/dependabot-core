@@ -208,6 +208,46 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       end
     end
 
+    context "when Julia helper finds a manifest per Julia release" do
+      let(:versioned_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.12.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+        )
+      end
+
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest.toml",
+              manifest_files: ["/tmp/test/Manifest-v1.12.toml", "/tmp/test/Manifest.toml"],
+              workspace_root: "/tmp/test"
+            )
+          )
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest-v1.12.toml")
+          .and_return(versioned_manifest_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest.toml")
+          .and_return(manifest_file)
+
+        allow(File).to receive(:exist?).and_return(true)
+      end
+
+      it "fetches every manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest-v1.12.toml", "Manifest.toml")
+      end
+    end
+
     context "when no Project.toml found" do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)

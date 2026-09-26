@@ -338,6 +338,8 @@ module Dependabot
 
           const :project_files, T::Array[String]
           const :manifest_file, String
+          # Every manifest of the environment, including version-specific ones
+          const :manifest_files, T::Array[String], default: []
           const :workspace_root, String
 
           sig { params(value: Object).returns(T.any(WorkspaceFiles, Failure)) }
@@ -353,6 +355,7 @@ module Dependabot
                 "#{context} project_files"
               ),
               manifest_file: ValueParser.string(hash, "manifest_file", context),
+              manifest_files: ValueParser.optional_string_array(hash, "manifest_files", context),
               workspace_root: ValueParser.string(hash, "workspace_root", context)
             )
           end

@@ -38,12 +38,15 @@ module Dependabot
         end
 
         project_files = workspace_info.project_files
-        manifest_path = workspace_info.manifest_file
+        manifest_paths = workspace_info.manifest_files
+        manifest_paths = [workspace_info.manifest_file] if manifest_paths.empty?
 
         fetched_files = fetch_all_project_files(project_files, temp_dir.to_s)
         raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found." if fetched_files.empty?
 
-        fetch_manifest_file(fetched_files, manifest_path, project_files, temp_dir.to_s)
+        manifest_paths.each do |manifest_path|
+          fetch_manifest_file(fetched_files, manifest_path, project_files, temp_dir.to_s)
+        end
         fetched_files
       end
 

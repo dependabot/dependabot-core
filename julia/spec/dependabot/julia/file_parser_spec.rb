@@ -57,6 +57,22 @@ RSpec.describe Dependabot::Julia::FileParser do
       expect(requirement[:groups]).to eq(["deps"])
     end
 
+    context "when there is a manifest per Julia release" do
+      let(:older_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.10.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+                   .sub('julia_version = "1.12.1"', 'julia_version = "1.10.0"')
+                   .sub('version = "0.4.1"', 'version = "0.4.0"')
+        )
+      end
+      let(:dependency_files) { [project_file, manifest_file, older_manifest_file] }
+
+      it "takes the oldest version across the manifests" do
+        expect(dependencies.find { |d| d.name == "Example" }.version).to eq("0.4.0")
+      end
+    end
+
     context "when only Project.toml exists (no Manifest.toml)" do
       let(:dependency_files) { [project_file] }
 

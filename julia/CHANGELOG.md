@@ -29,6 +29,7 @@
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
 - A checked-in manifest is now resolved by the Julia version recorded in its `julia_version`, launched through juliaup, instead of the updater's Julia, which rewrote `julia_version` and the stdlib entries to the updater's release
+- Every manifest of an environment is now updated, each by its own Julia: a version-specific `Manifest-v1.12.toml` was invisible to the updater's Julia 1.13, so it was never fetched or updated, and only one manifest was considered when an environment had several
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)
 
 ### Initial Release

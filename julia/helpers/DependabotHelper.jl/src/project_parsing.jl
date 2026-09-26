@@ -239,12 +239,13 @@ function get_version_from_manifest(manifest_path::String, name::String, uuid::St
 end
 
 """
-    update_manifest(project_path::String, updates::Dict)
+    update_manifest(project_path::String, updates::Dict, manifest_file=nothing)
 
 Update the manifest with new package versions.
-Enhanced version with better error handling and validation.
+`manifest_file` picks one of the environment's manifests, such as a
+version-specific `Manifest-v1.12.toml`; by default it is the one the running Julia uses.
 """
-function update_manifest(project_path::String, updates::Dict)
+function update_manifest(project_path::String, updates::Dict, manifest_file::Union{String,Nothing}=nothing)
     try
         # Validate inputs
         if !isdir(project_path)
@@ -252,7 +253,8 @@ function update_manifest(project_path::String, updates::Dict)
         end
 
         # Find the actual environment files (handles JuliaProject.toml, etc.)
-        project_file, manifest_file = find_environment_files(project_path)
+        project_file, default_manifest_file = find_environment_files(project_path)
+        manifest_file = something(manifest_file, default_manifest_file)
 
         if !isfile(project_file)
             return Dict("error" => "Project file not found in directory")
@@ -289,25 +291,23 @@ function update_manifest(project_path::String, updates::Dict)
 
         isempty(pkg_specs) || add_packages(project_path, manifest_file, pkg_specs)
 
-        # After Pkg.add, find where the manifest actually is
-        # For workspace packages, Pkg might have updated a different manifest location
-        actual_project_file, actual_manifest_file = find_environment_files(project_path)
-
-        # Read the updated manifest from the actual location
-        if !isfile(actual_manifest_file)
-            return Dict("error" => "Updated manifest file not found")
+        updated_manifest_content = read(manifest_file, String)
+        # Pkg only reads a manifest by the name it expects, which a version-specific
+        # manifest may not have in the running Julia, so parse a copy.
+        updated_manifest = mktempdir() do dir
+            path = joinpath(dir, "Manifest.toml")
+            write(path, updated_manifest_content)
+            parse_manifest(path)
         end
-
-        updated_manifest = parse_manifest(actual_manifest_file)
         if haskey(updated_manifest, "error")
             return updated_manifest
         end
 
-        updated_manifest_content = read(actual_manifest_file, String)
-
         # Calculate the relative path from project to manifest for Ruby
         # This handles workspace cases where manifest might be ../Manifest.toml
-        manifest_relative_path = relpath(actual_manifest_file, dirname(actual_project_file))
+        # Real paths, since the caller's manifest path and Pkg's project path may
+        # reach the same directory through different symlinks
+        manifest_relative_path = relpath(realpath(manifest_file), dirname(realpath(project_file)))
 
         return Dict(
             "result" => "success",
@@ -343,13 +343,17 @@ function add_packages(project_path::String, manifest_file::String, pkg_specs::Ve
     julia_version = manifest_julia_version(manifest_file)
     launcher = julia_version === nothing ? nothing : juliaup_launcher(julia_version)
     if launcher === nothing
+        _, used_manifest_file = find_environment_files(project_path)
+        if !(isfile(used_manifest_file) && samefile(used_manifest_file, manifest_file))
+            error("Julia $VERSION does not use $(basename(manifest_file)), and no Julia that does could be launched")
+        end
         Pkg.activate(project_path) do
             with_autoprecompilation_disabled() do
                 Pkg.add(pkg_specs)
             end
         end
     else
-        add_packages_with(launcher, julia_version, project_path, pkg_specs)
+        add_packages_with(launcher, julia_version, project_path, manifest_file, pkg_specs)
     end
 end
 
@@ -400,9 +404,14 @@ end
 # only uses Pkg APIs that have been stable since Julia 1.0.
 const ADD_PACKAGES_SCRIPT = """
 import Pkg
-specs = [Pkg.PackageSpec(name=ARGS[i], uuid=Base.UUID(ARGS[i + 1]), version=ARGS[i + 2]) for i in 2:3:length(ARGS)]
+specs = [Pkg.PackageSpec(name=ARGS[i], uuid=Base.UUID(ARGS[i + 1]), version=ARGS[i + 2]) for i in 3:3:length(ARGS)]
 try
     Pkg.activate(ARGS[1])
+    used = Pkg.Types.Context().env.manifest_file
+    if !(isfile(used) && samefile(used, ARGS[2]))
+        print("Julia \$VERSION uses \$(basename(used)), not \$(basename(ARGS[2]))")
+        exit(1)
+    end
     Pkg.add(specs)
 catch ex
     print(sprint(showerror, ex))
@@ -410,12 +419,12 @@ catch ex
 end
 """
 
-function add_packages_with(launcher::String, julia_version::VersionNumber, project_path::String, pkg_specs::Vector{Pkg.PackageSpec})
+function add_packages_with(launcher::String, julia_version::VersionNumber, project_path::String, manifest_file::String, pkg_specs::Vector{Pkg.PackageSpec})
     spec_args = String[]
     for spec in pkg_specs
         push!(spec_args, spec.name, string(spec.uuid), string(spec.version))
     end
-    cmd = `$launcher +$julia_version --startup-file=no --history-file=no -e $ADD_PACKAGES_SCRIPT $project_path $spec_args`
+    cmd = `$launcher +$julia_version --startup-file=no --history-file=no -e $ADD_PACKAGES_SCRIPT $project_path $manifest_file $spec_args`
     cmd = addenv(cmd, "JULIA_PKG_PRECOMPILE_AUTO" => "0")
 
     @info "update_manifest: resolving with Julia $julia_version, the version that wrote the manifest"
@@ -456,5 +465,7 @@ function update_manifest(args::AbstractDict)
         return Dict("error" => "Both project_path and updates are required")
     end
 
-    return update_manifest(project_path, updates)
+    manifest_path = get(args, "manifest_path", nothing)
+    manifest_file = manifest_path === nothing ? nothing : abspath(project_path, string(manifest_path))
+    return update_manifest(project_path, updates, manifest_file)
 end

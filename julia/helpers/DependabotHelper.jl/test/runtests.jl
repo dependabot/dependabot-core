@@ -875,6 +875,36 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                 @test updated_manifest["dependencies"][dates]["version"] == "1.11.0"
             end
         end
+
+        # Only names some Julia release reads count as manifests
+        mktempdir() do dir
+            for name in ("Manifest.toml", "Manifest-v1.9.toml", "Manifest-v01.12.toml", "Manifest-v1.11.toml",
+                         "Manifest-v1.12.toml", "JuliaManifest-v1.12.toml")
+                touch(joinpath(dir, name))
+            end
+            @test sort(basename.(DependabotHelper.environment_manifest_files(dir))) ==
+                  ["JuliaManifest-v1.12.toml", "Manifest-v1.11.toml", "Manifest.toml"]
+        end
+
+        # A version-specific manifest is only read by its own Julia release
+        if Sys.which("juliaup") !== nothing
+            mktempdir() do tmpdir
+                cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
+                project_dir = joinpath(tmpdir, "TestPackage.jl")
+                mv(joinpath(project_dir, "Manifest.toml"), joinpath(project_dir, "Manifest-v1.12.toml"))
+
+                @test basename.(DependabotHelper.environment_manifest_files(project_dir)) == ["Manifest-v1.12.toml"]
+                result = DependabotHelper.update_manifest(Dict(
+                    "project_path" => project_dir,
+                    "manifest_path" => "Manifest-v1.12.toml",
+                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
+                ))
+                @test !haskey(result, "error")
+                @test result["manifest_path"] == "Manifest-v1.12.toml"
+                @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
+                @test !isfile(joinpath(project_dir, "Manifest.toml"))
+            end
+        end
     end
 
     @testset "URL and Metadata Extraction Tests" begin

@@ -183,22 +183,29 @@ module Dependabot
         dep.requirements.any? { |req| req.groups&.include?("deps") }
       end
 
+      # An environment can have a manifest per Julia release (Manifest-v1.12.toml
+      # beside Manifest.toml). The oldest version across them is the current one,
+      # so a manifest that lags behind the others still gets updated.
       sig { returns(T::Hash[String, String]) }
       def manifest_versions_by_uuid
-        manifest = manifest_file
-        return {} unless manifest
+        manifest_files.each_with_object({}) do |manifest, map|
+          result = parse_manifest_content(T.must(manifest.content))
 
-        result = parse_manifest_content(T.must(manifest.content))
+          if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+            Dependabot.logger.warn("Failed to parse Julia manifest #{manifest.name}: #{result.message}")
+            next
+          end
 
-        if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
-          Dependabot.logger.warn("Failed to parse Julia manifest: #{result.message}")
-          return {}
-        end
+          result.dependencies.each do |dependency|
+            next if dependency.version.empty?
 
-        result.dependencies.each_with_object({}) do |dependency, map|
-          next if dependency.version.empty?
+            current = map[dependency.uuid]
+            if current && Dependabot::Julia::Version.new(current) <= Dependabot::Julia::Version.new(dependency.version)
+              next
+            end
 
-          map[dependency.uuid] = dependency.version
+            map[dependency.uuid] = dependency.version
+          end
         end
       end
 
@@ -220,9 +227,9 @@ module Dependabot
         end
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def manifest_file
-        dependency_files.find do |f|
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def manifest_files
+        dependency_files.select do |f|
           File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
         end
       end
