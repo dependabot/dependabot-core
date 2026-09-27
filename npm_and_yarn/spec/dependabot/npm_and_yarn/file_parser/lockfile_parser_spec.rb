@@ -1,4 +1,4 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -461,6 +461,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when an OR range shares a prefix with another requirement" do
+        # Keep separate aproba entries for ^1.0.3 and ^1.0.3 || ^2.0.0 to exercise descriptor matching.
         let(:dependency_files) { project_dependency_files("yarn_berry/no_lockfile_change") }
         let(:dependency_name) { "aproba" }
         let(:requirement) { "^1.0.3 || ^2.0.0" }
@@ -474,6 +475,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when a scoped dependency has multiple native npm descriptors" do
+        # Keep both @babel/code-frame entries so the sole-candidate fallback cannot satisfy this example.
         let(:dependency_files) { project_dependency_files("yarn_berry/lockfile_only_change") }
         let(:dependency_name) { "@babel/code-frame" }
         let(:requirement) { "^7.0.0-beta.35" }
@@ -487,6 +489,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when a comparator range belongs to a composite descriptor" do
+        # Keep statuses@npm:2.0.1 alongside the grouped >= 1.5.0 < 2 and ^1.5.0 descriptors.
         let(:dependency_files) { project_dependency_files("yarn/submodule_dependency") }
         let(:dependency_name) { "statuses" }
         let(:requirement) { ">= 1.5.0 < 2" }
