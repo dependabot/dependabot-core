@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -12,6 +12,17 @@ RSpec.describe Dependabot::Bun::Requirement do
   end
 
   describe ".requirements_array" do
+    it "keeps whitespace-padded comma constraints in one requirement" do
+      requirements = described_class.requirements_array(">= 1.0.0 , < 2.0.0")
+
+      expect(requirements.fetch(0).requirements).to eq(
+        [
+          [">=", Dependabot::Bun::Version.new("1.0.0")],
+          ["<", Dependabot::Bun::Version.new("2.0.0")]
+        ]
+      )
+    end
+
     it "handles repeated whitespace before a hyphen range" do
       requirement_string = "1.0.0#{' ' * 10_000}- 1.5.0"
 

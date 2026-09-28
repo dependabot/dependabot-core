@@ -318,6 +318,19 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       end
     end
 
+    context "with a whitespace-padded comma" do
+      let(:requirement_string) { ">= 1.0.0 , < 2.0.0" }
+
+      it "keeps both constraints in one requirement" do
+        expect(reqs.fetch(0).requirements).to eq(
+          [
+            [">=", Dependabot::NpmAndYarn::Version.new("1.0.0")],
+            ["<", Dependabot::NpmAndYarn::Version.new("2.0.0")]
+          ]
+        )
+      end
+    end
+
     context "with a hyphen range preceded by repeated whitespace" do
       let(:requirement_string) { "1.0.0#{' ' * 10_000}- 1.5.0" }
 

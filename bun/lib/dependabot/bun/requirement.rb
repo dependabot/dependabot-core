@@ -12,7 +12,7 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s++(?:&++\s++)?(?!\s*+[|-])/
+      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s++(?:&++\s++)?(?!\s*+[,|-])/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
       # Override the version pattern to allow a 'v' prefix
