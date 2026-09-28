@@ -260,6 +260,13 @@ module Dependabot
             major_low > version
           when "<=", "<"
             major_high <= version
+          when "~>"
+            # A pessimistic ("~>") requirement is satisfied by [version, version.bump).
+            # A bare major (e.g. engines.npm: "10") or "~10"/"~>10" normalize to a
+            # two-segment "~> 10.0", whose bump lands exactly on the next major, so
+            # the whole major range is contained. A more specific "~> 10.2" only
+            # bumps the minor, so it can't contain the entire major.
+            version <= major_low && major_high <= version.bump
           else
             # "=" (an exact version) and any other operator can never bound an
             # entire major range, so treat the major as unsafe to select.

@@ -253,6 +253,29 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       expect(result).to be_nil
     end
 
+    it "selects a bare major alias for a bare engines.npm major requirement" do
+      # `Requirement` normalizes a bare major (and "~10") to a pessimistic "~> 10.0"
+      # requirement, whose bump lands exactly on the next major, so it fully
+      # contains the major's range and can be safely selected.
+      constraints = "10"
+      supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+      expect(result).to eq("10")
+    end
+
+    it "does not select a major alias for a pessimistic requirement narrower than the whole major" do
+      # "~10.2" normalizes to "~> 10.2.0", which only covers 10.2.x-10.3, not the
+      # entire major 10 range, so the bare "10" alias must not be selected.
+      constraints = "~10.2"
+      supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+      expect(result).to eq("10.2")
+    end
+
     it "handles constraints separated by a whitespace-padded comma" do
       constraints = ">= 1.0.0 , < 2.0.0"
 
