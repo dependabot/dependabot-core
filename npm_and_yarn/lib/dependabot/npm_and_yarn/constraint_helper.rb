@@ -188,7 +188,7 @@ module Dependabot
 
         return candidates.max&.to_s if unconstrained_expression?(constraint_expression)
 
-        matching_versions = matching_versions_for(constraint_expression, candidates)
+        matching_versions = matching_versions_for(constraint_expression, candidates, dependabot_versions)
 
         preferred_version = supported_major_version(constraint_expression, dependabot_versions, matching_versions)
         return preferred_version if preferred_version
@@ -199,13 +199,54 @@ module Dependabot
       sig do
         params(
           constraint_expression: T.nilable(String),
-          candidates: T::Array[Dependabot::Version]
+          candidates: T::Array[Dependabot::Version],
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
         ).returns(T::Array[Dependabot::Version])
       end
-      def self.matching_versions_for(constraint_expression, candidates)
+      def self.matching_versions_for(constraint_expression, candidates, dependabot_versions = nil)
         requirements = Requirement.requirements_array(constraint_expression)
+        # Only bare major aliases (e.g. "10", with no minor/patch component) stand
+        # in for an as-yet-unknown cached release; other dependabot_versions are
+        # already concrete versions and should be tested as-is.
+        major_aliases = (dependabot_versions || []).select { |version| version.to_s.match?(/\A\d+\z/) }
+
         candidates.select do |version|
-          requirements.any? { |requirement| requirement.satisfied_by?(version) }
+          if major_aliases.include?(version)
+            # `version` is a bare major alias (e.g. "10") standing in for whichever
+            # release of that major Dependabot has cached. Rather than testing the
+            # alias itself (which looks like "10.0.0" and can fail a sub-major lower
+            # bound such as ">=10.1"), check whether the major's version range
+            # (e.g. [10.0.0, 11.0.0)) overlaps the requirement at all.
+            requirements.any? { |requirement| major_satisfies_requirement?(version, requirement) }
+          else
+            requirements.any? { |requirement| requirement.satisfied_by?(version) }
+          end
+        end
+      end
+
+      # Checks whether some (unknown, cached) release within `major_version`'s major
+      # line could satisfy `requirement`, without assuming the lowest (major.0.0) or
+      # highest possible patch is the one that is actually installed.
+      sig { params(major_version: Dependabot::Version, requirement: Requirement).returns(T::Boolean) }
+      def self.major_satisfies_requirement?(major_version, requirement)
+        major_low = major_version
+        major_high = Version.new("#{major_version.to_s.to_i + 1}.0.0")
+
+        requirement_pairs = T.cast(requirement.requirements, T::Array[[String, Gem::Version]])
+
+        requirement_pairs.all? do |operator, req_version|
+          version = Version.new(req_version.to_s)
+
+          case operator
+          when ">=", ">"
+            version < major_high
+          when "<=", "<"
+            version > major_low || (operator == "<=" && version == major_low)
+          when "="
+            version >= major_low && version < major_high
+          else
+            true
+          end
         end
       end
 

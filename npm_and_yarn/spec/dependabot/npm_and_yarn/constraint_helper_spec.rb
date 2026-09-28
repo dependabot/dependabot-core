@@ -220,6 +220,24 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       expect(result).to eq("10")
     end
 
+    it "selects a major whose cached release satisfies a sub-major lower bound" do
+      constraints = ">=10.1 <11"
+      supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+      expect(result).to eq("10")
+    end
+
+    it "excludes a major whose entire range falls outside the requirement" do
+      constraints = ">=10.1 <11"
+      supported_majors = %w(9 11).map { |version| Dependabot::Version.new(version) }
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+      expect(result).to be_nil
+    end
+
     it "handles constraints separated by a whitespace-padded comma" do
       constraints = ">= 1.0.0 , < 2.0.0"
 
