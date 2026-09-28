@@ -88,8 +88,10 @@ module Dependabot
         @ecosystem ||= T.let(
           begin
             package_manager = package_manager_helper.package_manager
-            package_manager_helper.setup(package_manager.name)
-            npm_selector = Helpers.npm_version_selector if package_manager.name == NpmPackageManager::NAME
+            npm_selector = if package_manager.name == NpmPackageManager::NAME
+                             package_manager_helper.setup(package_manager.name)
+                             Helpers.npm_version_selector
+                           end
             Helpers.register_npm_version_selector(package_json.directory, npm_selector)
 
             Ecosystem.new(

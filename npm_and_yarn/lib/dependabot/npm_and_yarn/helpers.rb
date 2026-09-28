@@ -493,6 +493,15 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
+        unless npm_version_selector
+          return Dependabot::SharedHelpers.run_shell_command(
+            "#{NpmPackageManager::NAME} #{command}",
+            fingerprint: "#{NpmPackageManager::NAME} #{fingerprint || command}",
+            output_observer: ->(output) { command_observer(output) },
+            env: env
+          )
+        end
+
         package_manager_run_command(
           npm_package_manager_name,
           command,

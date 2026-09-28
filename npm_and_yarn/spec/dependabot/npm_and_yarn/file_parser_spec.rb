@@ -234,6 +234,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           source: source,
           credentials: credentials
         )
+        yarn_package_manager_helper = yarn_parser.send(:package_manager_helper)
+        allow(yarn_parser).to receive(:package_manager_helper).and_return(yarn_package_manager_helper)
+        expect(yarn_package_manager_helper).not_to receive(:setup)
 
         expect(yarn_parser.ecosystem.package_manager.name).to eq("yarn")
 

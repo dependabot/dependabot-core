@@ -31,27 +31,45 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::run_npm_command" do
-    before { described_class.npm_version_selector = "10" }
     after { described_class.npm_version_selector = nil }
 
-    it "runs the Corepack-managed npm and passes through the environment" do
-      env = { "CUSTOM_VAR" => "custom-value" }
+    context "when an npm selector is configured" do
+      before { described_class.npm_version_selector = "10" }
 
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm@10 install",
-        fingerprint: "corepack npm@10 install dependencies",
-        output_observer: kind_of(Proc),
-        env: env
-      ).and_return("")
+      it "runs the Corepack-managed npm and passes through the environment" do
+        env = { "CUSTOM_VAR" => "custom-value" }
 
-      described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10 install",
+          fingerprint: "corepack npm@10 install dependencies",
+          output_observer: kind_of(Proc),
+          env: env
+        ).and_return("")
 
-      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-        "corepack npm@10 install",
-        fingerprint: "corepack npm@10 install dependencies",
-        output_observer: kind_of(Proc),
-        env: env
-      )
+        described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm@10 install",
+          fingerprint: "corepack npm@10 install dependencies",
+          output_observer: kind_of(Proc),
+          env: env
+        )
+      end
+    end
+
+    context "when no npm selector is configured" do
+      it "runs the direct npm binary" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+        described_class.run_npm_command("install", fingerprint: "install dependencies")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "npm install",
+          fingerprint: "npm install dependencies",
+          output_observer: kind_of(Proc),
+          env: nil
+        )
+      end
     end
   end
 
