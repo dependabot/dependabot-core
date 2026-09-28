@@ -697,6 +697,8 @@ module Dependabot
       # disabled when a configured private registry strips `dist.signatures`
       # from its version endpoint (a known Artifactory behaviour that otherwise
       # aborts the run with COREPACK_SIGNATURE_METADATA_ERROR).
+      # Corepack >=0.36 first checks package-root metadata; this retry still
+      # applies when that endpoint also omits signatures.
       sig do
         params(
           full_command: String,

@@ -24,7 +24,7 @@ module Dependabot
           result.commit = source.description_string("resolved-ref")
           return result
         end
-        repository_url = source.description_string("url") || "https://pub.dev"
+        repository_url = (source.description_string("url") || "https://pub.dev").delete_suffix("/")
 
         listing = repository_listing(repository_url)
         repo = listing.dig("latest", "pubspec", "repository")
