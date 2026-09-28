@@ -68,6 +68,7 @@ module Dependabot
         @package_json = T.let(nil, T.nilable(Dependabot::DependencyFile))
         @git_commit_checker = T.let(nil, T.nilable(Dependabot::GitCommitChecker))
         super
+        Helpers.activate_npm_version_selector(dependency_files)
         apply_npmrc_min_release_age
       end
 

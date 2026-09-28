@@ -8,6 +8,28 @@ require "dependabot/shared_helpers"
 require_relative "../../support/corepack_registry"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  describe "::activate_npm_version_selector" do
+    let(:legacy_files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/legacy")]
+    end
+    let(:modern_files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/modern")]
+    end
+
+    after { described_class.npm_version_selector = nil }
+
+    it "restores the selector registered for each manifest directory" do
+      described_class.register_npm_version_selector("/legacy", "9")
+      described_class.register_npm_version_selector("/modern", "10")
+
+      described_class.activate_npm_version_selector(legacy_files)
+      expect(described_class.npm_version_selector).to eq("9")
+
+      described_class.activate_npm_version_selector(modern_files)
+      expect(described_class.npm_version_selector).to eq("10")
+    end
+  end
+
   describe "::run_npm_command" do
     before { described_class.npm_version_selector = "10" }
     after { described_class.npm_version_selector = nil }

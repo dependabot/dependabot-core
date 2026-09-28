@@ -86,6 +86,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   it_behaves_like "an update checker"
 
+  describe "#initialize" do
+    it "activates the npm selector for the dependency files" do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:activate_npm_version_selector)
+
+      checker
+
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:activate_npm_version_selector)
+        .with(dependency_files)
+    end
+  end
+
   describe "#vulnerable?" do
     context "when the dependency has multiple versions" do
       let(:dependency) do

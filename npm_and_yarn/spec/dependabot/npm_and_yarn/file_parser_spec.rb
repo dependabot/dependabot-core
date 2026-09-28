@@ -212,6 +212,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return("11.17.0")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:register_npm_version_selector).and_call_original
       end
 
       after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
@@ -222,6 +223,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
           .with("npm", "10", env: nil)
         expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("10")
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:register_npm_version_selector).with("/", "10")
       end
     end
   end

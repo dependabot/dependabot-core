@@ -196,7 +196,7 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
     it "finds the highest version from valid constraints" do
       constraints = ">=1.2.3 <2.0.0 || ~2.3.4 || ^3.0.0"
       result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
-      expect(result).to eq("4.0.0")
+      expect(result).to eq("3.5.1")
     end
 
     it "handles exact versions correctly" do
@@ -211,6 +211,15 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       expect(result).to eq("4.0.0")
     end
 
+    it "honors every constraint in an AND group" do
+      constraints = ">=10 <11"
+      supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+      expect(result).to eq("10")
+    end
+
     it "handles less than constraints" do
       constraints = "<3.5.1"
       result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
@@ -220,7 +229,7 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
     it "handles caret (^) constraints correctly" do
       constraints = "^3.4.5"
       result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
-      expect(result).to eq("3.4.5") # Matches highest within 3.x.x range
+      expect(result).to eq("3.5.1") # Matches highest within 3.x.x range
     end
 
     it "handles tilde (~) constraints correctly" do

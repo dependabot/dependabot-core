@@ -84,6 +84,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       updated_files.find { |f| f.name == "yarn.lock" }
     end
 
+    context "when starting an update" do
+      let(:files) { project_dependency_files("npm6/simple_manifest") }
+
+      it "activates the npm selector before updating files" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:activate_npm_version_selector)
+        allow(updater).to receive(:updated_manifest_files).and_raise("stop after activation")
+
+        expect { updated_files }.to raise_error("stop after activation")
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:activate_npm_version_selector).with(files)
+      end
+    end
+
     context "with both npm and yarn lockfiles" do
       let(:files) { project_dependency_files("npm6_and_yarn/simple") }
 

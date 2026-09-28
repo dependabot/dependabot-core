@@ -48,6 +48,28 @@ module Dependabot
         def npm_version_selector
           T.cast(Thread.current[:npm_and_yarn_npm_version_selector], T.nilable(String))
         end
+
+        sig { params(directory: String, version: T.nilable(String)).void }
+        def register_npm_version_selector(directory, version)
+          npm_version_selectors[directory] = version
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def activate_npm_version_selector(files)
+          manifest = files.find { |file| file.name == "package.json" && !file.support_file }
+          self.npm_version_selector = manifest && npm_version_selectors[manifest.directory]
+        end
+
+        private
+
+        sig { returns(T::Hash[String, T.nilable(String)]) }
+        def npm_version_selectors
+          Thread.current[:npm_and_yarn_npm_version_selectors] ||= {}
+          T.cast(
+            Thread.current[:npm_and_yarn_npm_version_selectors],
+            T::Hash[String, T.nilable(String)]
+          )
+        end
       end
 
       YARN_PATH_NOT_FOUND =

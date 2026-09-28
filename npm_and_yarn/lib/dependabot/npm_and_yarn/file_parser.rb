@@ -89,6 +89,7 @@ module Dependabot
           begin
             package_manager = package_manager_helper.package_manager
             package_manager_helper.setup(package_manager.name)
+            Helpers.register_npm_version_selector(package_json.directory, Helpers.npm_version_selector)
 
             Ecosystem.new(
               name: ECOSYSTEM,
