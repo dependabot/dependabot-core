@@ -225,6 +225,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("10")
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:register_npm_version_selector).with("/", "10")
       end
+
+      it "does not register the npm selector for a subsequently parsed Yarn directory" do
+        parser.ecosystem
+        yarn_files = project_dependency_files("yarn/simple")
+        yarn_parser = described_class.new(
+          dependency_files: yarn_files,
+          source: source,
+          credentials: credentials
+        )
+
+        expect(yarn_parser.ecosystem.package_manager.name).to eq("yarn")
+
+        Dependabot::NpmAndYarn::Helpers.activate_npm_version_selector(yarn_files)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil
+      end
     end
   end
 
