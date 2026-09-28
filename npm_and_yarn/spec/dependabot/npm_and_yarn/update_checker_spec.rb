@@ -95,6 +95,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(Dependabot::NpmAndYarn::Helpers).to have_received(:activate_npm_version_selector)
         .with(dependency_files)
     end
+
+    it "sets the registry context before activating the npm selector" do
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:dependency_files=).with(dependency_files).ordered
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:credentials=).with(credentials).ordered
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:activate_npm_version_selector)
+        .with(dependency_files).ordered
+
+      checker
+    end
   end
 
   describe "#vulnerable?" do
