@@ -30,7 +30,10 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            PackageManager::NAME => Helpers.composer_version(parsed_composer_json, parsed_lockfile)
+            PackageManager::NAME => Helpers.composer_version(
+              ManifestDocument.new(data: parsed_composer_json, context: composer_json.path),
+              LockfileDocument.new(data: parsed_lockfile, context: PackageManager::LOCKFILE_FILENAME)
+            )
           }
         }
       end
