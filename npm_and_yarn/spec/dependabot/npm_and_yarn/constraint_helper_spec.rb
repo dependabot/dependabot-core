@@ -265,6 +265,22 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       expect(result).to eq("10")
     end
 
+    it "selects the major alias for whole-major caret spellings with explicit zero components" do
+      # "^10.0" and "^10.0.0" cover exactly the same [10.0.0, 11.0.0) range as
+      # "^10", so they should also prefer the major alias "10" over the equal
+      # (but more specific) literal candidate "10.0.0"/"10.0" that
+      # `to_ruby_constraint_with_version` also parses out of the expression --
+      # otherwise `corepack install npm@10.0.0 --cache-only` would be requested
+      # for a patch version that was never actually cached.
+      supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
+
+      %w(^10.0 ^10.0.0).each do |constraints|
+        result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+        expect(result).to eq("10")
+      end
+    end
+
     it "does not select a major alias for a pessimistic requirement narrower than the whole major" do
       # "~10.2" normalizes to "~> 10.2.0", which only covers 10.2.x-10.3, not the
       # entire major 10 range, so the bare "10" alias must not be selected.

@@ -290,7 +290,13 @@ module Dependabot
         ).returns(T.nilable(String))
       end
       def self.supported_major_version(constraint_expression, dependabot_versions, matching_versions)
-        return unless constraint_expression.to_s.strip.match?(/\A\^\d+\z/) && dependabot_versions
+        # Matches "^10", "^10.0", and "^10.0.0" alike: any caret spelling whose
+        # minor/patch components (if present) are all zero still covers the
+        # *entire* major range [major.0.0, (major+1).0.0), so it should prefer
+        # the major alias over an equal-but-more-specific literal candidate
+        # (e.g. "10.0.0"), which `Array#max` would otherwise keep since it sorts
+        # earlier in `candidates` and compares equal to the alias.
+        return unless constraint_expression.to_s.strip.match?(/\A\^\d+(?:\.0)*\z/) && dependabot_versions
 
         dependabot_versions.select { |version| matching_versions.include?(version) }.max&.to_s
       end
