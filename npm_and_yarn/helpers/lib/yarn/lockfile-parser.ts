@@ -27,7 +27,7 @@ const WORKSPACE_PROTOCOL = "workspace:";
 
 // Yarn berry entries can list several descriptors for the same resolution,
 // e.g. `"abind@npm:^1.0.0, abind@npm:^1.0.4"`.
-const DESCRIPTOR_SEPARATOR = /\s*,\s*/;
+const DESCRIPTOR_SEPARATOR = ", ";
 
 const METADATA_KEY = "__metadata";
 

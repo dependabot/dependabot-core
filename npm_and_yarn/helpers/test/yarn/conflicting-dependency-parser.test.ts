@@ -130,6 +130,23 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("traverses non-registry descriptors containing commas", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-file-comma",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "local-pkg@1.0.0 requires abind@^1.0.0",
+        name: "local-pkg",
+        version: "1.0.0",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it.each([
     ["workspace", "local-pkg"],
     ["patch", "extend"],
