@@ -1,0 +1,42 @@
+[
+    {
+        "url": "https://api.github.com/repos/opentdf/platform/releases/1",
+        "html_url": "https://github.com/opentdf/platform/releases/tag/otdfctl/v0.31.0",
+        "id": 1,
+        "tag_name": "otdfctl/v0.31.0",
+        "name": "otdfctl: v0.31.0",
+        "draft": false,
+        "prerelease": false,
+        "body": "### Features\n- cli: migrate otdfctl into platform monorepo"
+    },
+    {
+        "url": "https://api.github.com/repos/opentdf/platform/releases/2",
+        "html_url": "https://github.com/opentdf/platform/releases/tag/protocol/go/v0.31.0",
+        "id": 2,
+        "tag_name": "protocol/go/v0.31.0",
+        "name": "protocol/go: v0.31.0",
+        "draft": false,
+        "prerelease": false,
+        "body": "### Bug Fixes\n- core: remove deprecated grpc-gateway"
+    },
+    {
+        "url": "https://api.github.com/repos/opentdf/platform/releases/3",
+        "html_url": "https://github.com/opentdf/platform/releases/tag/protocol/go/v0.30.0",
+        "id": 3,
+        "tag_name": "protocol/go/v0.30.0",
+        "name": "protocol/go: v0.30.0",
+        "draft": false,
+        "prerelease": false,
+        "body": "### Bug Fixes\n- core: previous release notes"
+    },
+    {
+        "url": "https://api.github.com/repos/opentdf/platform/releases/4",
+        "html_url": "https://github.com/opentdf/platform/releases/tag/otdfctl/v0.30.0",
+        "id": 4,
+        "tag_name": "otdfctl/v0.30.0",
+        "name": "otdfctl: v0.30.0",
+        "draft": false,
+        "prerelease": false,
+        "body": "### Features\n- cli: old release"
+    }
+]
