@@ -22,6 +22,11 @@ module Dependabot
         const :dev_dependencies, T::Array[String]
       end
 
+      class LockedPackage < T::ImmutableStruct
+        const :name, String
+        const :version, String
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(LockfileDocument) }
       def self.from_file(file)
         new(data: T.cast(TomlRB.parse(T.must(file.content)), Object), context: file.path)
@@ -62,6 +67,43 @@ module Dependabot
         end
       end
 
+      sig { params(block: T.proc.params(package: LockedPackage).void).void }
+      def each_dependency(&block)
+        # The file parser historically skips the pairs yielded by an object-shaped package section.
+        return if @data["package"].is_a?(Hash)
+
+        package_entries.each_with_index do |entry, index|
+          next unless entry.is_a?(Hash)
+
+          package = object_hash(entry)
+          name = package["name"]
+          version = package["version"]
+          next unless name && version
+
+          yield(LockedPackage.new(
+            name: string(name, "package[#{index}].name"),
+            version: string(version, "package[#{index}].version")
+          ))
+        end
+      end
+
+      sig { returns(T::Array[LockedPackage]) }
+      def resolution_packages
+        return [] if @data["package"].nil?
+
+        package_entries.each_with_index.filter_map do |entry, index|
+          # String#[] cannot produce a valid version from the "version" lookup.
+          next if entry.is_a?(String)
+
+          package = object_hash(entry)
+          name = optional_string(package["name"], "package[#{index}].name")
+          version = optional_string(package["version"], "package[#{index}].version")
+          next unless name && version
+
+          LockedPackage.new(name: name, version: version)
+        end
+      end
+
       private
 
       sig { returns(T::Array[Object]) }
@@ -87,6 +129,20 @@ module Dependabot
       sig { params(value: Object).returns(T.nilable(String)) }
       def string_or_nil(value)
         value if value.is_a?(String)
+      end
+
+      sig { params(value: Object, field: String).returns(T.nilable(String)) }
+      def optional_string(value, field)
+        return if value.nil?
+
+        string(value, field)
+      end
+
+      sig { params(value: Object, field: String).returns(String) }
+      def string(value, field)
+        return value if value.is_a?(String)
+
+        raise TypeError, "#{@context} #{field} must be a string"
       end
 
       sig { params(entries: Object).returns(T::Array[String]) }
