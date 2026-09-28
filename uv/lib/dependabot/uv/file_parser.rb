@@ -3,6 +3,7 @@
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
@@ -21,6 +22,7 @@ require "toml-rb"
 
 module Dependabot
   module Uv
+    # rubocop:disable Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
@@ -56,7 +58,8 @@ module Dependabot
 
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += uv_lock_file_dependencies
-        dependency_set += requirement_dependencies if requirement_files.any?
+        dependency_set += requirement_dependencies if requirement_files.any? &&
+                                                      !Dependabot::Experiments.enabled?(:uv_excludes_pip)
 
         dependency_set.dependencies
       end
@@ -456,6 +459,7 @@ module Dependabot
         )
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
