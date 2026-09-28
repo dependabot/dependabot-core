@@ -290,6 +290,33 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       end
     end
 
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still
+      # raise AllVersionsIgnored. A security refresh must surface it to halt the run
+      # rather than silently closing the pull request.
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          latest_version: Dependabot::Version.new("4.0.1"),
+          requirements_unlocked_or_can_be?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+      end
+
+      it "surfaces AllVersionsIgnored to halt the run" do
+        expect do
+          refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+        end.to raise_error(Dependabot::AllVersionsIgnored)
+      end
+    end
+
     context "when the update is allowed" do
       before do
         allow(stub_update_checker).to receive_messages(
