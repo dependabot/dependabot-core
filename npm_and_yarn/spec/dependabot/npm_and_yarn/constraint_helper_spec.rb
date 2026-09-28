@@ -220,13 +220,28 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       expect(result).to eq("10")
     end
 
-    it "selects a major whose cached release satisfies a sub-major lower bound" do
+    it "does not select a major alias unless its entire range satisfies the requirement" do
+      # Corepack installs whichever release it has cached for a major (e.g. 10.9.4
+      # for "npm@10"), so a partial sub-major bound like ">=10.1" cannot safely be
+      # satisfied by picking the bare "10" alias: some hypothetical 10.0.x release
+      # would violate it, and we can't know which patch will actually be cached.
       constraints = ">=10.1 <11"
       supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
 
       result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
 
-      expect(result).to eq("10")
+      expect(result).to be_nil
+    end
+
+    it "does not select a major alias whose cached release could exceed a sub-major upper bound" do
+      # The cached release for major 10 (e.g. 10.9.4) can exceed "<10.1", so the
+      # alias must not be selected even though the ranges overlap.
+      constraints = "<10.1"
+      supported_majors = %w(9 10 11).map { |version| Dependabot::Version.new(version) }
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, supported_majors)
+
+      expect(result).to eq("9")
     end
 
     it "excludes a major whose entire range falls outside the requirement" do

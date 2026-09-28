@@ -205,47 +205,65 @@ module Dependabot
       end
       def self.matching_versions_for(constraint_expression, candidates, dependabot_versions = nil)
         requirements = Requirement.requirements_array(constraint_expression)
-        # Only bare major aliases (e.g. "10", with no minor/patch component) stand
-        # in for an as-yet-unknown cached release; other dependabot_versions are
-        # already concrete versions and should be tested as-is.
-        major_aliases = (dependabot_versions || []).select { |version| version.to_s.match?(/\A\d+\z/) }
 
         candidates.select do |version|
-          if major_aliases.include?(version)
-            # `version` is a bare major alias (e.g. "10") standing in for whichever
-            # release of that major Dependabot has cached. Rather than testing the
-            # alias itself (which looks like "10.0.0" and can fail a sub-major lower
-            # bound such as ">=10.1"), check whether the major's version range
-            # (e.g. [10.0.0, 11.0.0)) overlaps the requirement at all.
-            requirements.any? { |requirement| major_satisfies_requirement?(version, requirement) }
+          # A bare major alias (e.g. "10", with no minor/patch component) stands in
+          # for an as-yet-unknown cached release; this is only meaningful when the
+          # caller supplied `dependabot_versions` (i.e. we're resolving an engine
+          # constraint against the set of majors Dependabot can select from), so we
+          # key off the candidate's own string form rather than value-equality
+          # against `dependabot_versions`, since a concrete literal version (e.g.
+          # "8.0.0") is `==` to its bare-major counterpart ("8") in Gem::Version.
+          if dependabot_versions && bare_major_alias?(version)
+            # `version` is a bare major alias (e.g. "10"): Corepack will actually
+            # install whichever release of that major it has cached (typically the
+            # latest patch), and we have no way to know that concrete version here.
+            # Only accept the alias when the *entire* major range is contained by
+            # the requirement, so that no matter which release Corepack resolves,
+            # it is guaranteed to satisfy the constraint. Merely overlapping is not
+            # enough: e.g. "<10.1" overlaps major 10's range, but the actual cached
+            # release (e.g. 10.9.4) could still violate it.
+            requirements.any? { |requirement| major_fully_satisfies_requirement?(version, requirement) }
           else
             requirements.any? { |requirement| requirement.satisfied_by?(version) }
           end
         end
       end
 
-      # Checks whether some (unknown, cached) release within `major_version`'s major
-      # line could satisfy `requirement`, without assuming the lowest (major.0.0) or
-      # highest possible patch is the one that is actually installed.
+      sig { params(version: Dependabot::Version).returns(T::Boolean) }
+      def self.bare_major_alias?(version)
+        !!version.to_s.match?(/\A\d+\z/)
+      end
+
+      # Checks whether *every* possible release within `major_version`'s major line
+      # (i.e. the whole [major.0.0, (major + 1).0.0) range) would satisfy
+      # `requirement`, so that selecting the major is safe regardless of which
+      # concrete release Corepack ends up resolving and caching for it.
       sig { params(major_version: Dependabot::Version, requirement: Requirement).returns(T::Boolean) }
-      def self.major_satisfies_requirement?(major_version, requirement)
+      def self.major_fully_satisfies_requirement?(major_version, requirement)
         major_low = major_version
         major_high = Version.new("#{major_version.to_s.to_i + 1}.0.0")
 
         requirement_pairs = T.cast(requirement.requirements, T::Array[[String, Gem::Version]])
 
         requirement_pairs.all? do |operator, req_version|
-          version = Version.new(req_version.to_s)
+          # Converted "^"/"~" requirements express an exclusive upper bound using
+          # Gem's prerelease-bump idiom (e.g. "< 11.0.0.a" for "< 11.0.0"), which
+          # would otherwise sort below the intended release boundary. Normalize by
+          # stripping any such prerelease sentinel before comparing.
+          version = Version.new(req_version.release.to_s)
 
           case operator
-          when ">=", ">"
-            version < major_high
+          when ">="
+            major_low >= version
+          when ">"
+            major_low > version
           when "<=", "<"
-            version > major_low || (operator == "<=" && version == major_low)
-          when "="
-            version >= major_low && version < major_high
+            major_high <= version
           else
-            true
+            # "=" (an exact version) and any other operator can never bound an
+            # entire major range, so treat the major as unsafe to select.
+            false
           end
         end
       end
