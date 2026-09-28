@@ -12,7 +12,14 @@
 import fs from "fs";
 import path from "path";
 import semver from "semver";
-import { parse, type LockfileEntry } from "./lockfile-parser.js";
+import {
+  parseNormalized,
+  normalizeDescriptor,
+  findEntries,
+  edgeKey,
+  type DependencyEdge,
+  type NormalizedLockfileEntry,
+} from "./lockfile-parser.js";
 import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
 interface ConflictingDependency {
@@ -26,6 +33,7 @@ interface ParentSpec {
   name: string;
   version: string;
   requirement: string;
+  realName?: string;
   transitiveSpec: TransitiveSpec;
   topLevelSpec: TopLevelSpec;
 }
@@ -33,6 +41,7 @@ interface ParentSpec {
 interface TopLevelSpec {
   name: string;
   requirement: string;
+  realName?: string;
   version?: string;
 }
 
@@ -40,6 +49,7 @@ interface TransitiveSpec {
   name: string;
   version: string;
   requirement?: string;
+  realName?: string;
 }
 
 export async function findConflictingDependencies(
@@ -47,7 +57,7 @@ export async function findConflictingDependencies(
   depName: string,
   targetVersion: string
 ): Promise<ConflictingDependency[]> {
-  const lockfileJson = await parse(directory);
+  const lockfileJson = await parseNormalized(directory);
   const packageJson = fs
     .readFileSync(path.join(directory, "package.json"))
     .toString();
@@ -65,149 +75,190 @@ export async function findConflictingDependencies(
     }
   );
 
-  const conflictingParents = topLevelDependencies.flatMap(
-    ([topLevelDepName, topLevelRequirement]) => {
-      const topLevelSpec: TopLevelSpec = {
-        name: topLevelDepName,
-        requirement: topLevelRequirement,
-      };
+  // Normalize manifest requirements to match lockfile descriptors, and include
+  // every workspace entry because workspaces are independent dependency roots.
+  const topLevelEdges = [
+    ...topLevelDependencies.map(([name, requirement]) =>
+      normalizeDescriptor(name, requirement)
+    ),
+    ...lockfileJson.filter((entry) =>
+      entry.requirement.startsWith("workspace:")
+    ),
+  ];
 
-      return Array.from(
-        findConflictingParentDependencies(
-          topLevelDepName,
-          topLevelRequirement,
-          depName,
-          targetVersion,
-          topLevelSpec,
-          lockfileJson
-        ).values()
-      );
-    }
-  );
+  const conflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
+    const topLevelSpec: TopLevelSpec = {
+      name: topLevelEdge.name,
+      requirement: topLevelEdge.requirement,
+      realName: topLevelEdge.realName ?? topLevelEdge.name,
+    };
 
-  return conflictingParents.map((parentSpec) => {
-    const explanation = buildExplanation(parentSpec, depName);
-    return {
-      explanation: explanation,
-      name: parentSpec.name,
+    return Array.from(
+      findConflictingParentDependencies(
+        topLevelEdge,
+        depName,
+        targetVersion,
+        topLevelSpec,
+        lockfileJson
+      ).values()
+    );
+  });
+
+  // The same blocking dependency can be reached through several top-level
+  // dependencies (e.g. a package and an npm alias of it), so it is only
+  // reported once.
+  const conflicts = new Map<string, ConflictingDependency>();
+  for (const parentSpec of conflictingParents) {
+    const key = [
+      realNameOf(parentSpec),
+      parentSpec.version,
+      parentSpec.requirement,
+    ].join("\u0000");
+    if (conflicts.has(key)) continue;
+
+    conflicts.set(key, {
+      explanation: buildExplanation(parentSpec, depName),
+      name: realNameOf(parentSpec),
       version: parentSpec.version,
       requirement: parentSpec.requirement,
-    };
-  });
+    });
+  }
+
+  return Array.from(conflicts.values());
+}
+
+function realNameOf(edge: { name: string; realName?: string }): string {
+  return edge.realName ?? edge.name;
 }
 
 function buildExplanation(
   parentSpec: ParentSpec,
   targetDepName: string
 ): string {
+  const parentName = realNameOf(parentSpec);
+  const topLevelName = realNameOf(parentSpec.topLevelSpec);
+
   if (
-    parentSpec.name === parentSpec.topLevelSpec.name &&
+    parentName === topLevelName &&
     parentSpec.version === parentSpec.topLevelSpec.version
   ) {
-    // The nodes parent is top-level
+    // The node's parent is top-level.
     return (
-      `${parentSpec.name}@${parentSpec.version} requires ${targetDepName}` +
+      `${parentName}@${parentSpec.version} requires ${targetDepName}` +
       `@${parentSpec.requirement}`
     );
   } else if (
-    parentSpec.transitiveSpec.name === parentSpec.topLevelSpec.name &&
+    realNameOf(parentSpec.transitiveSpec) === topLevelName &&
     parentSpec.transitiveSpec.version === parentSpec.topLevelSpec.version
   ) {
-    // The nodes parent is a direct dependency of the top-level dependency
+    // The node's parent is a direct dependency of the top-level dependency.
     return (
-      `${parentSpec.topLevelSpec.name}@${parentSpec.topLevelSpec.version} requires ` +
+      `${topLevelName}@${parentSpec.topLevelSpec.version} requires ` +
       `${targetDepName}@${parentSpec.requirement} ` +
-      `via ${parentSpec.name}@${parentSpec.version}`
+      `via ${parentName}@${parentSpec.version}`
     );
   } else {
-    // The nodes parent is a transitive dependency of the top-level dependency
+    // The node's parent is a transitive dependency of the top-level dependency.
     return (
-      `${parentSpec.topLevelSpec.name}@${parentSpec.topLevelSpec.version} requires ` +
+      `${topLevelName}@${parentSpec.topLevelSpec.version} requires ` +
       `${targetDepName}@${parentSpec.requirement} ` +
-      `via a transitive dependency on ${parentSpec.name}@${parentSpec.version}`
+      `via a transitive dependency on ${parentName}@${parentSpec.version}`
     );
   }
 }
 
+// A dependency only conflicts if it declares a semver range that excludes the
+// target version. Specs we can't parse as a semver range (e.g. yarn berry
+// `patch:` or `workspace:` protocols) are not treated as conflicts.
+function realRequirementOf(requirement: string): string {
+  if (!requirement.startsWith("npm:")) return requirement;
+
+  const rest = requirement.slice("npm:".length);
+  const aliasMatch = rest.match(LOCKFILE_ENTRY_REGEX);
+  if (aliasMatch && aliasMatch[2]) {
+    return aliasMatch[2];
+  }
+
+  return rest;
+}
+
+function conflictsWith(targetVersion: string, spec: string): boolean {
+  const requirement = realRequirementOf(spec);
+  if (!semver.validRange(requirement)) return false;
+
+  return !semver.satisfies(targetVersion, requirement);
+}
+
 function findConflictingParentDependencies(
-  dependency: string,
-  requirement: string,
+  edge: DependencyEdge,
   targetDep: string,
   targetversion: string,
   topLevelSpec: TopLevelSpec,
-  lockfileJson: Record<string, LockfileEntry>,
+  lockfile: NormalizedLockfileEntry[],
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
   checkedEntries: Set<string> = new Set(),
   conflictingParents: Map<string, ParentSpec> = new Map()
 ): Map<string, ParentSpec> {
   // Prevent infinite loops for circular dependencies by only checking each
   // lockfile entry once
-  const checkedEntry = [dependency, requirement].join("@");
+  const checkedEntry = edgeKey(edge);
   if (checkedEntries.has(checkedEntry)) {
     return conflictingParents;
   }
 
   checkedEntries.add(checkedEntry);
 
-  for (const [entry, pkg] of Object.entries(lockfileJson)) {
-    const match = entry.match(LOCKFILE_ENTRY_REGEX);
-    if (!match) continue;
-    const [, parentDepName, parentDepRequirement] = match;
+  // A descriptor can resolve to more than one entry, e.g. when a manifest
+  // depends on both a package and an npm alias of it, so every resolution is
+  // traversed.
+  const isTopLevelEdge = checkedEntry === edgeKey(topLevelSpec);
+
+  for (const pkg of findEntries(lockfile, edge)) {
     // Decorate the top-level dependency spec with an installed version as we
     // only have the requirement from the package.json manifest
-    if (
-      topLevelSpec.name == parentDepName &&
-      topLevelSpec.requirement == parentDepRequirement
-    ) {
-      topLevelSpec.version = pkg.version;
-    }
+    if (isTopLevelEdge) topLevelSpec.version = pkg.version;
 
-    if (
-      pkg.dependencies &&
-      dependency == parentDepName &&
-      requirement == parentDepRequirement
-    ) {
-      // Recursive check for sub-dependencies finding dependencies that don't
-      // allow the target version of the vulnerable dependency to be installed
-      for (const [subDepName, spec] of Object.entries(pkg.dependencies) as [
-        string,
-        string,
-      ][]) {
-        if (
-          subDepName === targetDep &&
-          !semver.satisfies(targetversion, spec)
-        ) {
-          // Only add the conflicting parent once per version preventing
-          // duplicate dependencies from circular graphs
-          const key = [parentDepName, pkg.version].join("@");
-          conflictingParents.set(key, {
-            name: parentDepName,
-            version: pkg.version,
-            requirement: spec,
-            transitiveSpec,
-            topLevelSpec,
-          });
-        } else {
-          // Keep track of the parent dependency as a way to check if the
-          // conflicting dependency ends up being a direct dependency of a
-          // top-level dependency
-          transitiveSpec = {
-            name: parentDepName,
-            version: pkg.version,
-            requirement: parentDepRequirement,
-          };
-          findConflictingParentDependencies(
-            subDepName,
-            spec,
-            targetDep,
-            targetversion,
-            topLevelSpec,
-            lockfileJson,
-            transitiveSpec,
-            checkedEntries,
-            conflictingParents
-          );
-        }
+    // Recursive check for sub-dependencies finding dependencies that don't
+    // allow the target version of the vulnerable dependency to be installed
+    for (const subDep of pkg.dependencies) {
+      if (
+        realNameOf(subDep) === targetDep &&
+        conflictsWith(targetversion, subDep.requirement)
+      ) {
+        // Only add the conflicting parent once per version preventing
+        // duplicate dependencies from circular graphs.
+        const requirement = realRequirementOf(subDep.requirement);
+        const key = [realNameOf(pkg), pkg.version, requirement].join("\u0000");
+        // Snapshot the specs as they are mutated while traversing the other
+        // resolutions of this descriptor.
+        conflictingParents.set(key, {
+          name: realNameOf(pkg),
+          version: pkg.version,
+          requirement,
+          realName: pkg.realName ?? pkg.name,
+          transitiveSpec: { ...transitiveSpec },
+          topLevelSpec: { ...topLevelSpec },
+        });
+      } else {
+        // Keep track of the parent dependency as a way to check if the
+        // conflicting dependency ends up being a direct dependency of a
+        // top-level dependency
+        transitiveSpec = {
+          name: pkg.name,
+          version: pkg.version,
+          requirement: pkg.requirement,
+          realName: pkg.realName ?? pkg.name,
+        };
+        findConflictingParentDependencies(
+          subDep,
+          targetDep,
+          targetversion,
+          topLevelSpec,
+          lockfile,
+          transitiveSpec,
+          checkedEntries,
+          conflictingParents
+        );
       }
     }
   }
