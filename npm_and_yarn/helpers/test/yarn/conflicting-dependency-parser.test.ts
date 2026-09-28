@@ -191,6 +191,23 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("finds conflicting dependencies behind a yarn alias declared in the dependency name", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-in-key",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "lodash", "4.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "fetch-factory@0.0.2 requires lodash@^3.10.1",
+        name: "fetch-factory",
+        version: "0.0.2",
+        requirement: "^3.10.1",
+      },
+    ]);
+  });
+
   it("evaluates every edge when aliases resolve to the same package", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/aliased-duplicate",

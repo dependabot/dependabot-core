@@ -23,6 +23,7 @@ export interface LockfileEntry {
 // e.g. `abind@npm:^1.0.0` or `my-app@workspace:.`. Only the `npm:` protocol
 // resolves to a semver range we can reason about.
 const NPM_PROTOCOL = "npm:";
+const NPM_ALIAS_KEY_SEPARATOR = `@${NPM_PROTOCOL}`;
 const WORKSPACE_PROTOCOL = "workspace:";
 
 // Yarn berry entries can list several descriptors for the same resolution,
@@ -84,6 +85,19 @@ export function normalizeDescriptor(
   name: string,
   requirement: string
 ): DependencyEdge {
+  const aliasKeySeparatorIndex = name.indexOf(NPM_ALIAS_KEY_SEPARATOR);
+  if (aliasKeySeparatorIndex > 0) {
+    const aliasName = name.slice(0, aliasKeySeparatorIndex);
+    const realName = name.slice(
+      aliasKeySeparatorIndex + NPM_ALIAS_KEY_SEPARATOR.length
+    );
+    return {
+      name: aliasName,
+      requirement: `${NPM_PROTOCOL}${realName}@${requirement}`,
+      realName,
+    };
+  }
+
   if (requirement.startsWith(NPM_PROTOCOL)) {
     const rest = requirement.slice(NPM_PROTOCOL.length);
     const aliasMatch = rest.match(LOCKFILE_ENTRY_REGEX);

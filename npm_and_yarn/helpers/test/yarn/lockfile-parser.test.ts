@@ -36,6 +36,16 @@ describe("normalizeDescriptor", () => {
     });
   });
 
+  it("normalizes yarn aliases declared in the dependency name", () => {
+    expect(
+      normalizeDescriptor("my-fetch-factory@npm:fetch-factory", "0.0.2")
+    ).toEqual({
+      name: "my-fetch-factory",
+      requirement: "npm:fetch-factory@0.0.2",
+      realName: "fetch-factory",
+    });
+  });
+
   it("keeps plain yarn v1 requirements", () => {
     expect(normalizeDescriptor("abind", "^1.0.0")).toEqual({
       name: "abind",
