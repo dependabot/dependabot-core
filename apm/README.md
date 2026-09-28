@@ -1,0 +1,114 @@
+## `dependabot-apm`
+
+[APM (Agent Package Manager)][apm-repo] support for [`dependabot-core`][core-repo].
+
+APM is a git-based package manager for AI agent context — skills, prompts,
+chat modes, instructions and other agent primitives — declared in an `apm.yml`
+manifest. Because every dependency resolves to a git ref, Dependabot bumps APM
+dependencies the same way it bumps other git-sourced ecosystems (GitHub Actions,
+git submodules): by resolving the newest semver tag on the remote and rewriting
+the manifest ref.
+
+### What Dependabot updates
+
+Dependabot reads `apm.yml` and proposes updates for **string-shorthand git
+dependencies that are pinned to a semver tag**, for example:
+
+```yaml
+dependencies:
+  apm:
+    - microsoft/edge-ai#v1.0.0            # GitHub shorthand pinned to a tag
+    - gitlab.com/acme/prompts#v2.1.0      # FQDN shorthand for any git host
+    - octo-org/octo-skills/skills/review#v1.4.0  # virtual sub-path within a repo
+    - acme.ghe.com/org/repo/skills/review#v1.0.0 # virtual sub-path on a GHE Cloud host
+```
+
+Virtual sub-paths (`repo/skills/review`) are resolved on GitHub-family hosts —
+`github.com` and GitHub Enterprise Cloud data-residency hosts (`*.ghe.com`),
+which APM also treats as GitHub. On other hosts the whole path is treated as the
+repository; virtual packages on self-hosted GHES (reachable only via an
+arbitrary configured `GITHUB_HOST`) are a follow-up.
+
+For each such entry Dependabot:
+
+1. Resolves the git remote (`https://<host>/<owner>/<repo>`).
+2. Finds the highest semver tag that satisfies the update/cooldown/ignore rules,
+   reusing `Dependabot::GitCommitChecker` (the same tag resolution used by the
+   GitHub Actions ecosystem).
+3. Rewrites only the ref in `apm.yml` (e.g. `#v1.0.0` → `#v1.4.0`), preserving
+   the rest of the declaration byte-for-byte.
+
+Both plain `v1.4.0` / `1.4.0` tags and APM's package-scoped tags —
+`review-v1.4.0`, `review--v1.4.0` and `review_v1.4.0`, where the prefix is the
+package's own name (the repository name, or the final virtual-path component) —
+are recognised, so a monorepo that tags each package independently is updated
+correctly. Build metadata (`+build.5`) is preserved and, per SemVer, ignored for
+precedence; equal-precedence tags break ties on the full tag string, so tag
+resolution stays deterministic regardless of the order the remote advertises
+them.
+
+`apm.lock.yaml` is fetched as a read-only support file (used only to report the
+APM CLI version) and is **never modified** — see the lockfile note below.
+
+`devDependencies.apm` entries are updated too and are flagged as non-production
+via the `development` dependency group.
+
+### Scope of this version
+
+To keep the first iteration small and reviewable, the following are intentionally
+**out of scope** and are ignored (never modified, never erroring):
+
+- **Object-form entries** (`git:`, `registry:`, `id:`, `path:` maps) and `mcp:`
+  entries — only the string shorthand is parsed.
+- **Branch- and SHA-pinned entries** — these are resolved by APM's own lockfile,
+  which Dependabot does not regenerate, so their manifest ref is left untouched.
+- **Local path entries** (`./pkg`, `../pkg`, `/pkg`) — not backed by a remote git
+  host, so there is nothing to bump.
+- **Azure DevOps hosts** (`dev.azure.com`, `ssh.dev.azure.com` and legacy
+  `*.visualstudio.com`) — APM resolves these to `org/project/_git/repo` clone
+  URLs, a structure this version's generic `host/owner/repo` builder cannot
+  construct, so ADO entries are skipped rather than resolved to a wrong remote.
+  Native `_git` clone-URL support is a follow-up.
+- **`http://` and `git://` clone URLs** — Dependabot enumerates tags over HTTPS,
+  so an `https://` or `ssh://`/SCP explicit URL is resolved (SSH over HTTPS on the
+  same host, keeping any `https://` port). A plain `http://` or `git://` URL names
+  a different endpoint (a distinct port, and for `http` an unencrypted service),
+  so it is skipped rather than silently rewritten to `https://`.
+- **Block-scalar and escaped string entries** — a shorthand written as a YAML
+  block scalar (folded `>` / literal `|`) or as a quoted scalar that relies on
+  escape sequences (e.g. `"owner/repo\x23v1.0.0"`) decodes to text that is not a
+  contiguous slice of the manifest source, so its ref cannot be rewritten in
+  place. These uncommon spellings are skipped rather than producing a failing
+  update; write the shorthand as a plain or simply-quoted scalar
+  (`owner/repo#v1.0.0`) to have it updated.
+- **Lockfile regeneration** — `apm.lock.yaml` is intentionally **left
+  unchanged**. Rewriting only its `resolved_ref:` to the new tag would be
+  actively harmful: APM's install path compares the manifest ref to
+  `resolved_ref` via `detect_ref_change`, and once they match it stops
+  detecting drift and replays the *stale* `resolved_commit` — so `apm install`
+  would keep installing the old commit. A full regeneration is also not
+  possible offline because `content_hash:` (the hash of the materialised
+  package tree) cannot be recomputed without downloading and building the
+  package. Leaving the entry untouched means the bumped manifest ref no longer
+  matches `resolved_ref`, so APM detects the drift and re-resolves the tag —
+  regenerating `resolved_commit` and `content_hash` correctly — on the next
+  `apm install`.
+
+These are natural follow-ups and can be layered on without changing the manifest
+parsing model established here.
+
+### Running locally
+
+1. Start a development shell
+
+  ```
+  $ bin/docker-dev-shell apm
+  ```
+
+2. Run tests
+   ```
+   [dependabot-core-dev] ~ $ cd apm && rspec
+   ```
+
+[core-repo]: https://github.com/dependabot/dependabot-core
+[apm-repo]: https://github.com/microsoft/apm
