@@ -290,6 +290,8 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
+        Helpers.npm_version_selector = nil if name == NpmPackageManager::NAME
+
         # we prioritize version mentioned in "packageManager" instead of "engines"
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
@@ -445,6 +447,7 @@ module Dependabot
 
         begin
           Helpers.package_manager_install(name, version.to_s, env: corepack_env)
+          Helpers.npm_version_selector = version.to_s if name == NpmPackageManager::NAME
         rescue SharedHelpers::HelperSubprocessFailed, RegistryError => e
           Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
           Helpers.fallback_to_local_version(name, env: corepack_env)

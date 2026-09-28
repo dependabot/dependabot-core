@@ -38,6 +38,16 @@ module Dependabot
         def credentials
           T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
         end
+
+        sig { params(version: T.nilable(String)).void }
+        def npm_version_selector=(version)
+          Thread.current[:npm_and_yarn_npm_version_selector] = version
+        end
+
+        sig { returns(T.nilable(String)) }
+        def npm_version_selector
+          T.cast(Thread.current[:npm_and_yarn_npm_version_selector], T.nilable(String))
+        end
       end
 
       YARN_PATH_NOT_FOUND =
@@ -261,7 +271,7 @@ module Dependabot
       # Used to gate `--min-release-age`, added in npm 11.10.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
-        raw = local_package_manager_version(NpmPackageManager::NAME)
+        raw = package_manager_version(npm_package_manager_name, env: merge_corepack_env(nil))
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
@@ -461,13 +471,21 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "npm #{command}",
-          fingerprint: "npm #{fingerprint}",
+        package_manager_run_command(
+          npm_package_manager_name,
+          command,
+          fingerprint: fingerprint,
           output_observer: ->(output) { command_observer(output) },
-          env: env
+          env: merge_corepack_env(env)
         )
       end
+
+      sig { returns(String) }
+      def self.npm_package_manager_name
+        selector = npm_version_selector
+        selector ? "#{NpmPackageManager::NAME}@#{selector}" : NpmPackageManager::NAME
+      end
+      private_class_method :npm_package_manager_name
 
       sig do
         params(output: String)

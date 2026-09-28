@@ -275,7 +275,15 @@ module Dependabot
             else
               ">=#{full_version} <#{major.to_i + 1}.0.0"
             end
-          { constraint: ruby_constraint, version: full_version }
+          selected_version = if version_parts.length == 1
+                               highest_matching_version(
+                                 dependabot_versions,
+                                 T.must(full_version)
+                               ) do |version, lower_bound|
+                                 version >= lower_bound && version < Version.new("#{major.to_i + 1}.0.0")
+                               end&.to_s
+                             end
+          { constraint: ruby_constraint, version: selected_version || full_version }
         when TILDE_CONSTRAINT_REGEX # Tilde constraint, e.g., "~1.2.3"
           return unless Regexp.last_match
 
