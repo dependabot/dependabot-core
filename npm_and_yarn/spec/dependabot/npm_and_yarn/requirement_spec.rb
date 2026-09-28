@@ -318,6 +318,12 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       end
     end
 
+    context "with a hyphen range preceded by repeated whitespace" do
+      let(:requirement_string) { "1.0.0#{' ' * 10_000}- 1.5.0" }
+
+      it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
+    end
+
     context "with multiple optional requirements" do
       let(:requirement_string) { "^1.0.0 || ^2.0.0" }
 

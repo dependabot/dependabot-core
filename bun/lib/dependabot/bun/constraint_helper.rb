@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/bun/requirement"
 
 module Dependabot
   module Bun
@@ -181,9 +182,33 @@ module Dependabot
 
         return nil unless parsed_constraints
 
-        parsed_constraints
-          .filter_map { |parsed| parsed[:version] } # Extract all versions
-          .max_by { |version| Version.new(version) }
+        parsed_versions = parsed_constraints.filter_map { |parsed| parsed[:version] }
+        parsed_versions = parsed_versions.map { |version| Version.new(version) }
+        candidates = T.let(parsed_versions + (dependabot_versions || []), T::Array[Dependabot::Version])
+
+        return candidates.max&.to_s if unconstrained_expression?(constraint_expression)
+
+        matching_versions_for(constraint_expression, candidates).max&.to_s
+      end
+
+      sig do
+        params(
+          constraint_expression: T.nilable(String),
+          candidates: T::Array[Dependabot::Version]
+        ).returns(T::Array[Dependabot::Version])
+      end
+      def self.matching_versions_for(constraint_expression, candidates)
+        requirements = Requirement.requirements_array(constraint_expression)
+        candidates.select do |version|
+          requirements.any? { |requirement| requirement.satisfied_by?(version) }
+        end
+      end
+
+      sig { params(constraint_expression: T.nilable(String)).returns(T::Boolean) }
+      def self.unconstrained_expression?(constraint_expression)
+        constraint_expression.to_s.split("||").map(&:strip).any? do |group|
+          SEMVER_CONSTANTS.include?(group)
+        end
       end
 
       # Parse all constraints (split by logical OR `||`) and convert to Ruby-compatible constraints.
