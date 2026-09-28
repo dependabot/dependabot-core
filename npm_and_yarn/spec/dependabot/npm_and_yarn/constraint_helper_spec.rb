@@ -220,6 +220,14 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       expect(result).to eq("10")
     end
 
+    it "handles constraints separated by a whitespace-padded comma" do
+      constraints = ">= 1.0.0 , < 2.0.0"
+
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+
+      expect(result).to eq("1.2.3")
+    end
+
     it "handles less than constraints" do
       constraints = "<3.5.1"
       result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
@@ -260,6 +268,12 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
       constraints = "invalid || >=x.y.z"
       result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
       expect(result).to be_nil
+    end
+
+    it "returns nil for empty constraints" do
+      [nil, "", "   "].each do |constraint|
+        expect(helper.find_highest_version_from_constraint_expression(constraint, dependabot_versions)).to be_nil
+      end
     end
   end
 

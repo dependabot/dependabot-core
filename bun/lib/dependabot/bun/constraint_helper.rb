@@ -180,7 +180,7 @@ module Dependabot
       def self.find_highest_version_from_constraint_expression(constraint_expression, dependabot_versions = nil)
         parsed_constraints = parse_constraints(constraint_expression, dependabot_versions)
 
-        return nil unless parsed_constraints
+        return nil if parsed_constraints.nil? || parsed_constraints.empty?
 
         parsed_versions = parsed_constraints.filter_map { |parsed| parsed[:version] }
         parsed_versions = parsed_versions.map { |version| Version.new(version) }
