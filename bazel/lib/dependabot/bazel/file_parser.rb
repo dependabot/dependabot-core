@@ -151,7 +151,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def bazel_version
         bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
-        bazelversion_file&.content&.strip
+        Dependabot::Bazel::Version.version_from_file(bazelversion_file)
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
