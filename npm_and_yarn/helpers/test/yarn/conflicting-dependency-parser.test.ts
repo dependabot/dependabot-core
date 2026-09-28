@@ -200,10 +200,10 @@ describe("findConflictingDependencies", () => {
     const result = await findConflictingDependencies(tempDir, "lodash", "5.0.0");
     expect(result).toEqual([
       {
-        explanation: "fetch-factory@0.0.2 requires lodash@^4.17.22",
+        explanation: "fetch-factory@0.0.2 requires lodash@^4.18.1",
         name: "fetch-factory",
         version: "0.0.2",
-        requirement: "^4.17.22",
+        requirement: "^4.18.1",
       },
     ]);
   });
