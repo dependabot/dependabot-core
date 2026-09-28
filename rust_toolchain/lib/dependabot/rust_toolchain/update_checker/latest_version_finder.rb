@@ -19,7 +19,8 @@ module Dependabot
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
           @package_details ||= Dependabot::RustToolchain::Package::PackageDetailsFetcher.new(
-            dependency: dependency
+            dependency: dependency,
+            credentials: credentials
           ).fetch
         end
 
