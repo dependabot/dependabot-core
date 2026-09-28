@@ -290,7 +290,7 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
-        Helpers.npm_version_selector = nil if name == NpmPackageManager::NAME
+        reset_npm_version_selector(name)
 
         # we prioritize version mentioned in "packageManager" instead of "engines"
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
@@ -431,6 +431,11 @@ module Dependabot
       end
 
       private
+
+      sig { params(name: String).void }
+      def reset_npm_version_selector(name)
+        Helpers.npm_version_selector = nil if name == NpmPackageManager::NAME
+      end
 
       sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
