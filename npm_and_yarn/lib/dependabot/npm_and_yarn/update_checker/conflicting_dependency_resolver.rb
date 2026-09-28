@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
@@ -65,6 +66,9 @@ module Dependabot
                           dependency_files_builder.shrinkwraps.any?
                          "npm:findConflictingDependencies"
                        elsif dependency_files_builder.yarn_locks.any?
+                         return [] if Helpers.yarn_berry?(dependency_files_builder.yarn_locks.first) &&
+                                      !Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
                          "yarn:findConflictingDependencies"
                        end
             return [] unless function

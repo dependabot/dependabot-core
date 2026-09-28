@@ -30,6 +30,13 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
   let(:dependency_name) { "abind" }
   let(:current_version) { "1.0.5" }
   let(:target_version) { "2.0.0" }
+  let(:enable_yarn_berry_conflicting_dependencies) { true }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies)
+      .and_return(enable_yarn_berry_conflicting_dependencies)
+  end
 
   describe "#conflicting_dependencies" do
     subject(:conflicting_dependencies) do
@@ -75,6 +82,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           }
         )
       end
+
+      context "when the yarn berry conflicting dependencies experiment is disabled" do
+        let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+        it "still returns yarn v1 blocking dependencies" do
+          expect(conflicting_dependencies).not_to be_empty
+        end
+      end
     end
 
     context "with yarn berry lockfiles" do
@@ -95,6 +110,16 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         let(:target_version) { "1.0.0" }
 
         it "returns an empty array" do
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
+
+      context "when the yarn berry conflicting dependencies experiment is disabled" do
+        let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+        it "returns an empty array without invoking the helper" do
+          expect(Dependabot::SharedHelpers).not_to receive(:run_helper_subprocess)
+
           expect(conflicting_dependencies).to be_empty
         end
       end
