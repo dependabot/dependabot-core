@@ -135,6 +135,18 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::npm_version without an active selector" do
+    it "checks the local npm binary directly instead of Corepack's unqualified default" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+        .and_return("11.9.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+    end
+  end
+
   describe "::pnpm_version" do
     it "returns the local pnpm version" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
