@@ -393,6 +393,21 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+    context "when the pom includes org.eclipse.m2e:lifecycle-mapping" do
+      let(:pom_body) { fixture("poms", "lifecycle_mapping_pom.xml") }
+
+      it "skips org.eclipse.m2e:lifecycle-mapping" do
+        expect(dependencies.map(&:name)).not_to include("org.eclipse.m2e:lifecycle-mapping")
+      end
+
+      it "still includes other plugins" do
+        expect(dependencies.map(&:name))
+          .to include("org.apache.maven.plugins:maven-compiler-plugin")
+      end
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "when dealing with versions defined by a property" do
       let(:pom_body) { fixture("poms", "property_pom.xml") }
 
