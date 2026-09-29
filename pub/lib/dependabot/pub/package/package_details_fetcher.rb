@@ -72,32 +72,29 @@ module Dependabot
 
         sig { returns(T.any(T::Array[Dependabot::Package::PackageRelease], T.untyped)) }
         def package_details_metadata
-          package_releases = []
-          T.let({}, T::Hash[String, T.untyped])
-
-          Dependabot.logger.error("Initializing package metadata for \"#{@dependency.name}\"")
+          Dependabot.logger.info("Initializing package metadata for \"#{@dependency.name}\"")
 
           response = fetch_package_metadata(dependency)
-          return package_releases if response.status >= 500
+          return [] if response.status >= 500
 
-          begin
-            package_details_metadata = JSON.parse(response.body)
+          versions = JSON.parse(response.body).fetch("versions", [])
 
-            package_details_metadata["versions"].select do |v|
-              package_releases << package_release(
-                version: v["version"],
-                publish_date: Time.parse(v["published"])
-              )
-            end
-
-            package_releases
-          rescue JSON::ParserError
-            Dependabot.logger.error("Failed to parse package metadata")
-            package_releases
+          # Build the full list up front. If any release can't be parsed (e.g. a
+          # missing or invalid publish date) the partial result is discarded, so
+          # callers can treat a non-empty list as a complete, trustworthy snapshot
+          # and an empty list as "no usable metadata".
+          versions.map do |v|
+            package_release(
+              version: v["version"],
+              publish_date: Time.parse(v["published"])
+            )
           end
+        rescue JSON::ParserError
+          Dependabot.logger.error("Failed to parse package metadata")
+          []
         rescue StandardError => e
           Dependabot.logger.error("Failed to fetch package metadata #{e.message}")
-          package_releases
+          []
         end
 
         private

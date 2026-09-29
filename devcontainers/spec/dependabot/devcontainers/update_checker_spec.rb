@@ -256,5 +256,26 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         expect(updated_requirements.first[:requirement]).to eq("1")
       end
     end
+
+    context "when the feature is referenced without a version tag" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ghcr.io/devcontainers/features/docker-outside-of-docker",
+          version: nil,
+          requirements: [{
+            file: ".devcontainer/devcontainer.json",
+            requirement: nil,
+            groups: ["feature"],
+            source: nil
+          }],
+          package_manager: "devcontainers"
+        )
+      end
+
+      it "leaves the untagged requirement unchanged instead of raising" do
+        expect { updated_requirements }.not_to raise_error
+        expect(updated_requirements.first[:requirement]).to be_nil
+      end
+    end
   end
 end

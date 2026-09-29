@@ -216,10 +216,10 @@ module Dependabot
         git_commit_checker.git_dependency?
       end
 
-      sig { params(version: Dependabot::Bundler::Version).returns(T.untyped) }
+      sig { params(version: Dependabot::Bundler::Version).returns(T::Boolean) }
       def resolvable?(version)
-        @resolvable ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
-        return @resolvable[version] if @resolvable.key?(version)
+        @resolvable ||= T.let({}, T.nilable(T::Hash[Dependabot::Bundler::Version, T::Boolean]))
+        return @resolvable.fetch(version) if @resolvable.key?(version)
 
         @resolvable[version] =
           begin
@@ -239,10 +239,10 @@ module Dependabot
           end
       end
 
-      sig { params(tag: T.nilable(String)).returns(T.untyped) }
+      sig { params(tag: T.nilable(String)).returns(T::Boolean) }
       def git_tag_resolvable?(tag)
-        @git_tag_resolvable ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
-        return @git_tag_resolvable[tag] if @git_tag_resolvable.key?(tag)
+        @git_tag_resolvable ||= T.let({}, T.nilable(T::Hash[T.nilable(String), T::Boolean]))
+        return @git_tag_resolvable.fetch(tag) if @git_tag_resolvable.key?(tag)
 
         @git_tag_resolvable[tag] =
           begin

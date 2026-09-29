@@ -163,28 +163,12 @@ module Dependabot
 
           job_group = T.must(dependency_snapshot.job_group)
 
-          if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(job_group)
-          else
-            dependency_changes = T.let(
-              T.must(job.source.directories).filter_map do |directory|
-                job.source.directory = directory
-                dependency_snapshot.current_directory = directory
-                compile_all_dependency_changes_for(job_group)
-              end,
-              T::Array[Dependabot::DependencyChange]
-            )
-
-            # `filter_map` drops directories that produced no change, so the array is empty
-            # when nothing could update across every directory. Return nil like the
-            # single-directory branch above (the caller logs and closes out) instead of
-            # `T.must`-ing `first` on an empty array, which raised `TypeError: Passed nil`.
-            first_change = dependency_changes.first
-            if first_change && dependency_changes.count > 1
-              first_change.merge_changes!(T.must(dependency_changes[1..-1]))
-            end
-            @dependency_change = T.let(first_change, T.nilable(Dependabot::DependencyChange))
-          end
+          computed_change = if job.source.directories.nil?
+                              compile_all_dependency_changes_for(job_group)
+                            else
+                              compile_all_dependency_changes_for_directories(job_group)
+                            end
+          @dependency_change = T.let(computed_change, T.nilable(Dependabot::DependencyChange))
 
           # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
           if @dependency_change

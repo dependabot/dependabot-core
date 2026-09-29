@@ -1,0 +1,4 @@
+created_at: 2025-04-01T00:00:00Z
+---
+1.0.0 |checksum:b1147fd2991884dfbac9b101b0c88a0f0fc71abbd1bd24fb29cde3fdfc8ebd77,created_at:2025-01-01T12:34:56Z
+1.1.0 rack:>= 2.0&< 4.0|checksum:b1147fd2991884dfbac9b101b0c88a0f0fc71abbd1bd24fb29cde3fdfc8ebd77,ruby:>= 3.1.0&< 4.0,rubygems:>= 3.3.7,created_at:2025-03-20T14:48:33Z

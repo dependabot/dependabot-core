@@ -194,6 +194,56 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     it "builds package-manager metadata from the typed manifest config" do
       expect(parser.ecosystem.package_manager.name).to eq("npm")
     end
+
+    context "when the manifest specifies an npm engine range" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { "engines" => { "npm" => "^10" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: { "lockfileVersion" => 3, "packages" => {} }.to_json
+          )
+        ]
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return("11.17.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:register_npm_version_selector).and_call_original
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "activates the selected npm major for the update process" do
+        parser.ecosystem
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+          .with("npm", "10", env: nil)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("10")
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:register_npm_version_selector).with("/", "10")
+      end
+
+      it "does not register the npm selector for a subsequently parsed Yarn directory" do
+        parser.ecosystem
+        yarn_files = project_dependency_files("yarn/simple")
+        yarn_parser = described_class.new(
+          dependency_files: yarn_files,
+          source: source,
+          credentials: credentials
+        )
+        yarn_package_manager_helper = yarn_parser.send(:package_manager_helper)
+        allow(yarn_parser).to receive(:package_manager_helper).and_return(yarn_package_manager_helper)
+        expect(yarn_package_manager_helper).not_to receive(:setup)
+
+        expect(yarn_parser.ecosystem.package_manager.name).to eq("yarn")
+
+        Dependabot::NpmAndYarn::Helpers.activate_npm_version_selector(yarn_files)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil
+      end
+    end
   end
 
   describe "parse" do
@@ -1858,6 +1908,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependencies[index].version).to eq(expected[:version])
             expect(dependencies[index].requirements).to eq(expected[:requirements])
           end
+        end
+      end
+
+      context "when a catalogued dependency also resolves to an older transitive version" do
+        subject(:globals) { top_level_dependencies.find { |dep| dep.name == "globals" } }
+
+        let(:files) { project_dependency_files("pnpm/catalog_duplicate_versions") }
+
+        # globals is catalogued at ^17.11.0 and resolves to 17.11.0, but @eslint/eslintrc
+        # pins a second copy at 14.0.0. Reporting the transitive version here makes the
+        # updater try to bump a dependency that is already current, which yields no file
+        # change at all.
+        it "reports the catalogued version, not the transitive one" do
+          expect(globals.version).to eq("17.11.0")
+        end
+
+        it "keeps the catalog requirement" do
+          expect(globals.requirements).to eq(
+            [{ requirement: "^17.11.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }]
+          )
+        end
+
+        it "still sees both resolutions" do
+          expect(globals.metadata[:all_versions].map(&:version)).to contain_exactly("14.0.0", "17.11.0")
         end
       end
     end
