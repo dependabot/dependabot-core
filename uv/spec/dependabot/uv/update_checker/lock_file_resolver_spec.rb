@@ -326,6 +326,45 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
         .to have_received(:new).with(hash_including(target_requirement: "==2.34.0"))
     end
 
+    context "with mixed lockfile records" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(name: "uv.lock", content: lockfile_content)]
+      end
+      let(:lockfile_content) do
+        <<~TOML
+          package = [
+            "ignored",
+            { name = "Requests", version = "2.32.3", dependencies = false },
+            { name = "requests", version = "invalid" },
+            { name = "requests" },
+            { version = "2.32.3" },
+          ]
+        TOML
+      end
+
+      it "retains normalized target matching and version validation" do
+        expect(resolver.resolvable?(version: Dependabot::Uv::Version.new("2.33.0"))).to be(true)
+      end
+
+      context "with a malformed version on another package" do
+        let(:lockfile_content) { 'package = [{ name = "unrelated", version = false }]' }
+
+        it "does not hide a field failure behind target-name filtering" do
+          expect { resolver.resolvable?(version: Dependabot::Uv::Version.new("2.33.0")) }
+            .to raise_error(TypeError)
+        end
+      end
+
+      context "with a non-object, non-string record" do
+        let(:lockfile_content) { "package = [false]" }
+
+        it "propagates the malformed record failure" do
+          expect { resolver.resolvable?(version: Dependabot::Uv::Version.new("2.33.0")) }
+            .to raise_error(StandardError)
+        end
+      end
+    end
+
     context "when another locked occurrence already has the target version" do
       let(:dependency) do
         Dependabot::Dependency.new(

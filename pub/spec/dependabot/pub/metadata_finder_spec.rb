@@ -95,6 +95,40 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
     it "works for alternative hosts" do
       expect(finder.source_url).to eq "https://github.com/another_org/dart-neats"
     end
+
+    context "with a path-prefixed registry URL ending in a slash" do
+      before do
+        stub_request(:get, "https://another.org/repository/pub/api/packages/#{dependency.name}").to_return(
+          status: 200,
+          body: fixture("another_org_responses/simple/#{dependency.name}.json"),
+          headers: {}
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "retry",
+          version: "1.3.0",
+          requirements: [{
+            file: "pubspec.yaml",
+            requirement: "~3.0.0",
+            groups: [],
+            source: {
+              "description" => {
+                "name" => "retry",
+                "url" => "https://another.org/repository/pub/"
+              },
+              "type" => "hosted"
+            }
+          }],
+          package_manager: "pub"
+        )
+      end
+
+      it "uses a single path separator" do
+        expect(finder.source_url).to eq "https://github.com/another_org/dart-neats"
+      end
+    end
   end
 
   describe "#source_url" do
