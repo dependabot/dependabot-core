@@ -75,18 +75,12 @@ export async function findConflictingDependencies(
     }
   );
 
-  // Normalize manifest requirements to match lockfile descriptors, and include
-  // every workspace entry because workspaces are independent dependency roots.
-  const topLevelEdges = [
-    ...topLevelDependencies.map(([name, requirement]) =>
-      normalizeDependencyEdge(name, requirement, lockfileJson)
-    ),
-    ...lockfileJson.filter((entry) =>
-      entry.requirement.startsWith("workspace:")
-    ),
-  ];
+  // Normalize manifest requirements to match lockfile descriptors.
+  const topLevelEdges = topLevelDependencies.map(([name, requirement]) =>
+    normalizeDependencyEdge(name, requirement, lockfileJson)
+  );
 
-  const conflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
+  const manifestConflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
     const topLevelSpec: TopLevelSpec = {
       name: topLevelEdge.name,
       requirement: topLevelEdge.requirement,
@@ -103,6 +97,44 @@ export async function findConflictingDependencies(
       ).values()
     );
   });
+
+  // Workspaces are independent dependency roots, but their manifest
+  // constraints are not dependency blockers. Traverse from each workspace's
+  // dependencies while retaining the workspace as the top-level context.
+  const workspaceConflictingParents = lockfileJson
+    .filter((entry) => entry.requirement.startsWith("workspace:"))
+    .flatMap((workspace) => {
+      const topLevelSpec: TopLevelSpec = {
+        name: workspace.name,
+        requirement: workspace.requirement,
+        realName: workspace.realName ?? workspace.name,
+        version: workspace.version,
+      };
+      const transitiveSpec: TransitiveSpec = {
+        name: workspace.name,
+        requirement: workspace.requirement,
+        realName: workspace.realName ?? workspace.name,
+        version: workspace.version,
+      };
+
+      return workspace.dependencies.flatMap((dependency) =>
+        Array.from(
+          findConflictingParentDependencies(
+            dependency,
+            depName,
+            targetVersion,
+            { ...topLevelSpec },
+            lockfileJson,
+            { ...transitiveSpec }
+          ).values()
+        )
+      );
+    });
+
+  const conflictingParents = [
+    ...manifestConflictingParents,
+    ...workspaceConflictingParents,
+  ];
 
   // The same blocking dependency can be reached through several top-level
   // dependencies (e.g. a package and an npm alias of it), so it is only

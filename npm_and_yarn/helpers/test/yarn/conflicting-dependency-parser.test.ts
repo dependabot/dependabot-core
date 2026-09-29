@@ -177,6 +177,20 @@ describe("findConflictingDependencies", () => {
     expect(result).toEqual([]);
   });
 
+  it("does not report a workspace manifest constraint as a conflict", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-simple",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(
+      tempDir,
+      "objnest",
+      "5.0.0"
+    );
+    expect(result).toEqual([]);
+  });
+
   it("finds conflicting dependencies behind a yarn v1 npm alias", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/aliased", tempDir);
 
