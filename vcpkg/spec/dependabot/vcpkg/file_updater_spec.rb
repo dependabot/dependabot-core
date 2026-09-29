@@ -108,6 +108,28 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
       end
     end
 
+    [nil, [], false, "invalid"].each do |value|
+      context "when the manifest root is #{value.inspect}" do
+        let(:vcpkg_json_content) { JSON.dump(value) }
+
+        it "reports a parse error instead of returning an update" do
+          expect { updated_dependency_files }.to raise_error(
+            Dependabot::DependencyFileNotParseable, "/vcpkg.json: root must be an object"
+          )
+        end
+      end
+    end
+
+    context "when unrelated dependencies have a malformed shape" do
+      let(:vcpkg_json_content) { JSON.dump("builtin-baseline" => "old-commit-sha", "dependencies" => false) }
+
+      it "updates only the baseline" do
+        expect(JSON.parse(updated_dependency_files.first.content)).to eq(
+          "builtin-baseline" => "new-commit-sha", "dependencies" => false
+        )
+      end
+    end
+
     context "when vcpkg.json is missing" do
       let(:dependency_files) { [] }
 
@@ -936,6 +958,16 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
       it "moves the baseline as well" do
         expect(updated_content["builtin-baseline"]).to eq(baseline_sha)
       end
+
+      context "with malformed dependencies" do
+        let(:vcpkg_json_content) { JSON.dump("builtin-baseline" => "old-commit-sha", "dependencies" => {}) }
+
+        it "does not silently return a baseline-only update" do
+          expect { updated_dependency_files }
+            .to raise_error(Dependabot::DependencyFileNotParseable, /dependencies must be an array/)
+          expect(vcpkg_json.content).to eq(vcpkg_json_content)
+        end
+      end
     end
 
     context "when the port is declared as a bare string" do
@@ -1005,6 +1037,15 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
 
         it "replaces the existing pin rather than adding a second" do
           expect(updated_content["overrides"]).to eq([{ "name" => "zlib", "version" => "1.3.1" }])
+        end
+      end
+
+      context "with a malformed overrides container" do
+        let(:vcpkg_json_content) { JSON.dump("dependencies" => ["zlib"], "overrides" => false) }
+
+        it "rejects the container instead of replacing it" do
+          expect { updated_dependency_files }
+            .to raise_error(Dependabot::DependencyFileNotParseable, /overrides must be an array/)
         end
       end
     end
