@@ -205,6 +205,21 @@ describe("parseNormalized", () => {
     ]);
   });
 
+  it("resolves a plain dependency edge to a built-in patch entry", async () => {
+    const lockfile = await parseFixture("berry-builtin-patch");
+
+    const entries = findEntries(lockfile, {
+      name: "fsevents",
+      requirement: "^1.1.1",
+    });
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      name: "fsevents",
+      requirement: "patch:fsevents@^1.1.1#~builtin<compat/fsevents>",
+      version: "1.1.3",
+    });
+  });
+
   it("keeps other protocols verbatim", async () => {
     const lockfile = await parseFixture("berry-protocols");
 

@@ -25,6 +25,7 @@ export interface LockfileEntry {
 // resolves to a semver range we can reason about.
 const NPM_PROTOCOL = "npm:";
 const NPM_ALIAS_KEY_SEPARATOR = `@${NPM_PROTOCOL}`;
+const PATCH_PROTOCOL = "patch:";
 const WORKSPACE_PROTOCOL = "workspace:";
 
 // Yarn berry entries can list several descriptors for the same resolution,
@@ -140,10 +141,9 @@ export function edgeKey(edge: DependencyEdge): string {
 
 // Finds every lockfile entry a dependency edge resolves to.
 //
-// Workspace ranges are matched by name alone: a `workspace:` range such as
-// `workspace:*` or `workspace:^` is resolved by yarn to the workspace package
-// of that name, whose lockfile descriptor carries the workspace's path
-// (`local-pkg@workspace:packages/local-pkg`), so the two are never equal.
+// Workspace ranges are matched by name alone because their manifest range and
+// lockfile path differ. Patch entries are also indexed under their underlying
+// source descriptor so generated plain dependency edges can resolve them.
 export function findEntries(
   lockfile: NormalizedLockfileEntry[],
   edge: DependencyEdge
@@ -195,6 +195,10 @@ function getLockfileIndex(lockfile: NormalizedLockfileEntry[]): LockfileIndex {
 
   for (const entry of lockfile) {
     addIndexedEntry(index.entriesByEdge, edgeKey(entry), entry);
+    const patchSource = patchSourceEdge(entry);
+    if (patchSource) {
+      addIndexedEntry(index.entriesByEdge, edgeKey(patchSource), entry);
+    }
     if (isWorkspaceRequirement(entry.requirement)) {
       addIndexedEntry(index.workspaceEntriesByName, entry.name, entry);
     }
@@ -202,6 +206,21 @@ function getLockfileIndex(lockfile: NormalizedLockfileEntry[]): LockfileIndex {
 
   lockfileIndexes.set(lockfile, index);
   return index;
+}
+
+function patchSourceEdge(
+  entry: NormalizedLockfileEntry
+): DependencyEdge | undefined {
+  if (!entry.requirement.startsWith(PATCH_PROTOCOL)) return undefined;
+
+  const source = entry.requirement
+    .slice(PATCH_PROTOCOL.length)
+    .split("#", 1)[0];
+  const packagePrefix = `${entry.name}@`;
+  if (!source.startsWith(packagePrefix)) return undefined;
+
+  const requirement = decodeURIComponent(source.slice(packagePrefix.length));
+  return normalizeDescriptor(entry.name, requirement);
 }
 
 function addIndexedEntry(

@@ -211,6 +211,27 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("traverses a built-in patch entry from a plain dependency edge", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-builtin-patch",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation: "sane@2.0.0 requires abind@^1.0.0 via fsevents@1.1.3",
+        name: "fsevents",
+        version: "1.1.3",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("reports an opaque locator as a conflict", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/berry-protocols",
