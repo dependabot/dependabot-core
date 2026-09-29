@@ -67,6 +67,25 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           expect(conflicting_dependencies).to be_empty
         end
       end
+
+      context "when the conflicting dependency helper fails" do
+        let(:helper_error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "unexpected helper failure",
+            error_context: {}
+          )
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
+        end
+
+        it "uses the legacy fallback without consulting the Yarn experiment" do
+          expect(Dependabot::Experiments).not_to receive(:enabled?)
+
+          expect(conflicting_dependencies).to be_empty
+        end
+      end
     end
 
     context "with yarn lockfiles" do

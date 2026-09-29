@@ -116,6 +116,10 @@ module Dependabot
             ),
             T::Array[Dependabot::UpdateCheckers::Conflict]
           )
+        rescue SharedHelpers::HelperSubprocessFailed
+          raise if enable_normalized_yarn_traversal
+
+          []
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
