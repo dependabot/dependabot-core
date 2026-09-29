@@ -403,6 +403,35 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("reports the same blocker through each top-level dependency", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/multiple-top-level-ancestors",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation:
+          "top-level-a@1.0.0 requires abind@^1.0.0 via shared-parent@1.0.0",
+        name: "shared-parent",
+        version: "1.0.0",
+        requirement: "^1.0.0",
+      },
+      {
+        explanation:
+          "top-level-b@1.0.0 requires abind@^1.0.0 via shared-parent@1.0.0",
+        name: "shared-parent",
+        version: "1.0.0",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("traverses workspace packages not referenced by the root manifest", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/berry-workspace",

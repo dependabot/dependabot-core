@@ -121,9 +121,14 @@ async function findNormalizedConflictingDependencies(
 
   // Workspaces are independent dependency roots, but their manifest
   // constraints are not dependency blockers. Traverse from each workspace's
-  // dependencies while retaining the workspace as the top-level context.
+  // dependencies while retaining the workspace as the top-level context. The
+  // root workspace is already covered by the package.json traversal above.
   const workspaceConflictingParents = lockfileJson
-    .filter((entry) => entry.requirement.startsWith("workspace:"))
+    .filter(
+      (entry) =>
+        entry.requirement.startsWith(WORKSPACE_PROTOCOL) &&
+        entry.requirement !== `${WORKSPACE_PROTOCOL}.`
+    )
     .flatMap((workspace) => {
       const topLevelSpec: TopLevelSpec = {
         name: workspace.name,
@@ -157,15 +162,15 @@ async function findNormalizedConflictingDependencies(
     ...workspaceConflictingParents,
   ];
 
-  // The same blocking dependency can be reached through several top-level
-  // dependencies (e.g. a package and an npm alias of it), so it is only
-  // reported once.
+  // Collapse repeated paths within one top-level dependency while preserving
+  // each independent ancestor that must be updated.
   const conflicts = new Map<string, ConflictingDependency>();
   for (const parentSpec of conflictingParents) {
     const key = [
       realNameOf(parentSpec),
       parentSpec.version,
       parentSpec.requirement,
+      edgeKey(parentSpec.topLevelSpec),
     ].join("\u0000");
     if (conflicts.has(key)) continue;
 
