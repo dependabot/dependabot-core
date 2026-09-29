@@ -127,8 +127,8 @@ module Dependabot
       # Overrides replace the whole pin so deprecated scheme/port-version fields cannot conflict.
       sig { params(name: String, version: T.nilable(String)).void }
       def set_override(name:, version:)
-        overrides = array(@data[VCPKG_OVERRIDES_KEY], VCPKG_OVERRIDES_KEY)
-        index = overrides.index { |entry| entry.is_a?(Hash) && port_name(entry) == name }
+        overrides = object_array(@data[VCPKG_OVERRIDES_KEY], VCPKG_OVERRIDES_KEY)
+        index = overrides.index { |entry| entry["name"] == name }
         entry = { "name" => name, "version" => version }
         index ? overrides[index] = entry : overrides << entry
         @data[VCPKG_OVERRIDES_KEY] = overrides
@@ -150,17 +150,11 @@ module Dependabot
 
       sig { params(baseline: String, repository: T.nilable(String), builtin: T::Boolean).void }
       def set_registry_baseline(baseline:, repository:, builtin:)
-        entries = array(@data["registries"], "registries")
-        entries.each_with_index do |entry, index|
-          next unless entry.is_a?(Hash)
-
-          fields = object(entry, "registries[#{index}]")
-          matches = builtin ? fields["kind"] == "builtin" : fields["repository"] == repository
-          next unless matches
-
-          fields["baseline"] = baseline
-          break
+        entries = object_array(@data["registries"], "registries")
+        registry = entries.find do |entry|
+          builtin ? entry["kind"] == "builtin" : entry["repository"] == repository
         end
+        registry["baseline"] = baseline if registry
       end
 
       sig { params(path: T::Array[String], baseline: String).void }
@@ -231,6 +225,13 @@ module Dependabot
         end
         # Keep the parsed node's identity so nested edits reach the serialized document.
         value
+      end
+
+      sig { params(value: Object, field: String).returns(T::Array[ObjectHash]) }
+      def object_array(value, field)
+        array(value, field).each_with_index.map do |entry, index|
+          object(entry, "#{field}[#{index}]")
+        end
       end
 
       sig { params(value: Object, field: String).returns(T::Array[Object]) }

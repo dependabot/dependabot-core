@@ -274,4 +274,80 @@ RSpec.describe Dependabot::Vcpkg::ManifestDocument do
         .to raise_error(Dependabot::DependencyFileNotParseable, /default-registry.reference must be a string/)
     end
   end
+
+  shared_examples "an edit requiring object entries" do |field|
+    let(:data) { { field => entries, "unknown" => { "keep" => [false, nil] } } }
+    let(:entries) { [matching_entry] }
+
+    positions = [
+      ["before a match", 0, true],
+      ["after a match", 1, true],
+      ["without a match", 1, false]
+    ]
+    [nil, "invalid", 7, true, false, []].each do |value|
+      positions.each do |position, index, matching|
+        context "with #{value.inspect} #{position}" do
+          let(:entries) { [matching ? matching_entry : unmatched_entry].insert(index, value) }
+
+          it "rejects the malformed entry before changing the document" do
+            original_content = document.content
+
+            expect { edit }.to raise_error(
+              Dependabot::DependencyFileNotParseable, "#{file.path}: #{field}[#{index}] must be an object"
+            )
+            expect(document.content).to eq(original_content)
+          end
+        end
+      end
+    end
+
+    context "with duplicate matching entries" do
+      let(:entries) { [matching_entry, matching_entry.dup] }
+
+      it "updates only the first match" do
+        edit
+
+        expect(JSON.parse(document.content)).to eq(data.merge(field => [updated_entry, matching_entry]))
+      end
+    end
+
+    context "with incomplete and unknown object fields" do
+      let(:entries) { [{}, unmatched_entry.merge("unknown" => [nil, false]), matching_entry] }
+
+      it "preserves unrelated objects without adding field validation" do
+        edit
+
+        expect(JSON.parse(document.content)).to eq(data.merge(field => [*entries.first(2), updated_entry]))
+      end
+    end
+  end
+
+  describe "#set_override entry validation" do
+    subject(:edit) { document.set_override(name: "zlib", version: "1.3.1") }
+
+    let(:matching_entry) { { "name" => "zlib", "version-string" => "legacy", "port-version" => 1 } }
+    let(:unmatched_entry) { { "name" => "fmt", "version" => "10" } }
+    let(:updated_entry) { { "name" => "zlib", "version" => "1.3.1" } }
+
+    it_behaves_like "an edit requiring object entries", "overrides"
+  end
+
+  describe "#set_registry_baseline entry validation" do
+    subject(:edit) do
+      document.set_registry_baseline(baseline: "new", repository: repository, builtin: kind == "builtin")
+    end
+
+    let(:repository) { "https://example.test/registry" }
+    let(:matching_entry) { { "kind" => kind, "repository" => repository, "baseline" => "old", "packages" => ["x-*"] } }
+    let(:unmatched_entry) { { "kind" => "filesystem", "path" => "/registry", "baseline" => "default" } }
+    let(:updated_entry) { matching_entry.merge("baseline" => "new") }
+
+    %w(git builtin).each do |registry_kind|
+      context "with a #{registry_kind} registry" do
+        let(:kind) { registry_kind }
+
+        it_behaves_like "an edit requiring object entries", "registries"
+      end
+    end
+  end
 end

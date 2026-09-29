@@ -649,6 +649,23 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
         expect(updated_content["registries"][1]["baseline"]).to eq("old-commit-sha-2") # Should remain unchanged
         expect(updated_content["registries"][0]["repository"]).to eq("https://github.com/custom/registry1")
       end
+
+      context "with a malformed entry after the matching registry" do
+        let(:vcpkg_configuration_json_content) do
+          data = JSON.parse(super())
+          data.fetch("registries") << nil
+          JSON.dump(data)
+        end
+
+        it "rejects the update without changing the input file" do
+          original_content = vcpkg_configuration_json.content
+
+          expect { updated_dependency_files }.to raise_error(
+            Dependabot::DependencyFileNotParseable, "/vcpkg-configuration.json: registries[2] must be an object"
+          )
+          expect(vcpkg_configuration_json.content).to eq(original_content)
+        end
+      end
     end
 
     context "when updating second registry in registries array" do
@@ -1046,6 +1063,25 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
         it "rejects the container instead of replacing it" do
           expect { updated_dependency_files }
             .to raise_error(Dependabot::DependencyFileNotParseable, /overrides must be an array/)
+        end
+      end
+
+      context "with a malformed entry after the matching override" do
+        let(:vcpkg_json_content) do
+          JSON.dump(
+            "builtin-baseline" => "old-commit-sha",
+            "dependencies" => ["zlib"],
+            "overrides" => [{ "name" => "zlib", "version" => "1.2.11" }, nil]
+          )
+        end
+
+        it "rejects the update without changing the input file" do
+          original_content = vcpkg_json.content
+
+          expect { updated_dependency_files }.to raise_error(
+            Dependabot::DependencyFileNotParseable, "/vcpkg.json: overrides[1] must be an object"
+          )
+          expect(vcpkg_json.content).to eq(original_content)
         end
       end
     end
