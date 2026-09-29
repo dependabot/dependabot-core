@@ -176,25 +176,61 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
-  it.each([
-    ["workspace", "local-pkg"],
-    ["patch", "extend"],
-  ])(
-    "does not treat a %s requirement as a conflict",
-    async (_protocol, dependency) => {
-      helpers.copyDependencies(
-        "conflicting-dependency-parser/berry-protocols",
-        tempDir
-      );
+  it("does not treat a workspace requirement as a conflict", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-protocols",
+      tempDir
+    );
 
-      const result = await findNormalizedConflictingDependencies(
-        tempDir,
-        dependency,
-        "2.0.0"
-      );
-      expect(result).toEqual([]);
-    }
-  );
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "local-pkg",
+      "2.0.0"
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("evaluates the nested npm requirement in a patch locator", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-protocols",
+      tempDir
+    );
+
+    await expect(
+      findNormalizedConflictingDependencies(tempDir, "extend", "3.0.2")
+    ).resolves.toEqual([]);
+    await expect(
+      findNormalizedConflictingDependencies(tempDir, "extend", "4.0.0")
+    ).resolves.toEqual([
+      {
+        explanation: "objnest@4.1.4 requires extend@3.0.2",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "3.0.2",
+      },
+    ]);
+  });
+
+  it("reports an opaque locator as a conflict", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-protocols",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "opaque",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires opaque@file:../opaque",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "file:../opaque",
+      },
+    ]);
+  });
 
   it("returns no conflicts when the yarn berry lockfile allows the target version", async () => {
     helpers.copyDependencies(

@@ -53,6 +53,9 @@ interface TransitiveSpec {
   realName?: string;
 }
 
+const PATCH_PROTOCOL = "patch:";
+const WORKSPACE_PROTOCOL = "workspace:";
+
 export async function findConflictingDependencies(
   directory: string,
   depName: string,
@@ -217,10 +220,15 @@ function buildExplanation(
   }
 }
 
-// A dependency only conflicts if it declares a semver range that excludes the
-// target version. Specs we can't parse as a semver range (e.g. yarn berry
-// `patch:` or `workspace:` protocols) are not treated as conflicts.
 function realRequirementOf(requirement: string): string {
+  if (requirement.startsWith(PATCH_PROTOCOL)) {
+    const source = requirement.slice(PATCH_PROTOCOL.length).split("#", 1)[0];
+    const nestedNpmDescriptor = source.match(/@npm%3A(.+)$/i);
+    if (nestedNpmDescriptor) {
+      return decodeURIComponent(nestedNpmDescriptor[1]);
+    }
+  }
+
   if (!requirement.startsWith("npm:")) return requirement;
 
   const rest = requirement.slice("npm:".length);
@@ -233,8 +241,10 @@ function realRequirementOf(requirement: string): string {
 }
 
 function conflictsWith(targetVersion: string, spec: string): boolean {
+  if (spec.startsWith(WORKSPACE_PROTOCOL)) return false;
+
   const requirement = realRequirementOf(spec);
-  if (!semver.validRange(requirement)) return false;
+  if (!semver.validRange(requirement)) return true;
 
   return !semver.satisfies(targetVersion, requirement);
 }

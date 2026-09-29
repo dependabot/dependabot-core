@@ -25,6 +25,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"opaque@file:../opaque":
+  version: 1.0.0
+  resolution: "opaque@file:../opaque"
+  languageName: unknown
+  linkType: soft
+
 "my-objnest@npm:objnest@^4.1.2":
   version: 4.1.4
   resolution: "objnest@npm:4.1.4"
@@ -32,6 +38,7 @@ __metadata:
     abind: "npm:^1.0.0"
     extend: "patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch"
     local-pkg: "workspace:*"
+    opaque: "file:../opaque"
   checksum: 10c0/3333
   languageName: node
   linkType: hard

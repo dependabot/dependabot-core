@@ -102,7 +102,10 @@ module Dependabot
           target_version:,
           enable_normalized_yarn_traversal:
         )
-          args = [Dir.pwd, dependency.name, target_version.to_s]
+          args = T.let(
+            [Dir.pwd, dependency.name, target_version.to_s],
+            T::Array[T.any(String, T::Boolean)]
+          )
           args << enable_normalized_yarn_traversal if function == "yarn:findConflictingDependencies"
 
           T.cast(

@@ -213,6 +213,7 @@ describe("parseNormalized", () => {
       "extend@patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch",
       "local-pkg@workspace:packages/local-pkg",
       "my-objnest@npm:objnest@^4.1.2",
+      "opaque@file:../opaque",
       "test@workspace:.",
     ]);
     expect(
@@ -227,6 +228,7 @@ describe("parseNormalized", () => {
         requirement: "patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch",
       },
       { name: "local-pkg", requirement: "workspace:*" },
+      { name: "opaque", requirement: "file:../opaque" },
     ]);
   });
 });
