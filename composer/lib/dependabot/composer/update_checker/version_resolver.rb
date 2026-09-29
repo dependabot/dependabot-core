@@ -519,16 +519,17 @@ module Dependabot
 
         sig { returns(String) }
         def composer_version
-          parsed_lockfile_or_nil = lockfile ? parsed_lockfile : nil
+          lockfile_document =
+            (LockfileDocument.new(data: parsed_lockfile, context: T.must(lockfile).path) if lockfile)
           @composer_version ||= T.let(
-            Helpers.composer_version(parsed_composer_file, parsed_lockfile_or_nil),
+            Helpers.composer_version(manifest_document, lockfile_document),
             T.nilable(String)
           )
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def initial_platform
-          platform_php = Helpers.capture_platform_php(parsed_composer_file)
+          platform_php = Helpers.capture_platform_php(manifest_document)
 
           platform = {}
           if platform_php.is_a?(String) && requirement_valid?(platform_php)
@@ -538,13 +539,21 @@ module Dependabot
           # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
-          requirement_php = Helpers.php_constraint(parsed_composer_file)
+          requirement_php = Helpers.php_constraint(manifest_document)
           return platform unless requirement_php.is_a?(String)
           return platform unless requirement_valid?(requirement_php)
 
           platform[Dependabot::Composer::Language::NAME] ||= []
           platform[Dependabot::Composer::Language::NAME] << requirement_php
           platform
+        end
+
+        sig { returns(ManifestDocument) }
+        def manifest_document
+          @manifest_document ||= T.let(
+            ManifestDocument.new(data: parsed_composer_file, context: T.must(composer_file).path),
+            T.nilable(ManifestDocument)
+          )
         end
 
         sig { returns(T::Hash[String, T.untyped]) }

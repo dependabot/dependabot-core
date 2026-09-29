@@ -459,6 +459,83 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       end
     end
 
+    context "with input-form distinctions" do
+      let(:files) { [pipfile] }
+      let(:pipfile_body) do
+        <<~TOML
+          [packages]
+          String_Pin = "  ==1.0  "
+          Table_Pin = { version = "  ==2.0  " }
+          empty = ""
+          git_dep = { version = true, git = false }
+          path_dep = { version = "==3", path = false }
+          disabled = { version = false }
+        TOML
+      end
+
+      it "preserves string/table whitespace and source key presence" do
+        expect(dependencies.map(&:name)).to eq(%w(string-pin table-pin empty))
+        expect(dependencies.map(&:version)).to eq(["1.0", nil, nil])
+        expect(dependencies.map { |dep| dep.requirements.first.requirement })
+          .to eq(["  ==1.0  ", "  ==2.0  ", "*"])
+        expect(dependencies.first.metadata).to include(original_name: "String_Pin")
+      end
+
+      context "with an empty inline-table version" do
+        let(:pipfile_body) { "[packages]\nempty = { version = \"\" }\n" }
+
+        it "does not coerce the inline requirement to a wildcard" do
+          expect { dependencies }.to raise_error(StandardError)
+        end
+      end
+
+      context "with a numeric version on a path dependency" do
+        let(:pipfile_body) { "[packages]\nlocal = { version = 123, path = false }\n" }
+
+        it "retains the version-shape failure before path exclusion" do
+          expect { dependencies }.to raise_error(TypeError)
+        end
+      end
+    end
+
+    context "with lockfile entry distinctions" do
+      let(:pipfile_body) { "[packages]\nRequests = \"*\"\n" }
+      let(:lockfile_body) do
+        {
+          "default" => {
+            "requests" => "==1.0",
+            "spaced" => "  ==2.0  ",
+            "table" => { "version" => "  ==3.0  " },
+            "git" => { "version" => 123, "git" => nil },
+            "path" => { "version" => true, "path" => false },
+            "ignored" => ["garbage"]
+          }
+        }.to_json
+      end
+
+      it "retains lock-only whitespace and skips excluded source records" do
+        expect(dependencies.map(&:name)).to eq(%w(requests spaced table))
+        expect(dependencies.map(&:version)).to eq(["1.0", "  ==2.0  ", "  ==3.0  "])
+        expect(dependencies.first.top_level?).to be(true)
+      end
+
+      context "with a differently spelled stored key" do
+        let(:lockfile_body) { { "default" => { "Requests" => "==1.0" } }.to_json }
+
+        it "does not normalize stored keys during manifest lookup" do
+          expect(dependencies.map(&:top_level?)).to eq([false])
+        end
+      end
+
+      context "with a matched unsupported scalar" do
+        let(:lockfile_body) { { "default" => { "requests" => false } }.to_json }
+
+        it "retains the matched-entry lookup failure" do
+          expect { dependencies }.to raise_error(TypeError)
+        end
+      end
+    end
+
     context "with an empty requirement string" do
       subject { dependencies.find { |d| d.name == "tensorflow-gpu" } }
 
