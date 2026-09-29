@@ -57,6 +57,13 @@ export interface NormalizedLockfileEntry extends DependencyEdge {
   dependencies: DependencyEdge[];
 }
 
+interface LockfileIndex {
+  entriesByEdge: Map<string, NormalizedLockfileEntry[]>;
+  workspaceEntriesByName: Map<string, NormalizedLockfileEntry[]>;
+}
+
+const lockfileIndexes = new WeakMap<NormalizedLockfileEntry[], LockfileIndex>();
+
 // Parses a yarn.lock into a flat list of entries, one per descriptor, where the
 // descriptors and the dependency edges are normalized in the same way so they
 // can be compared against the requirements declared in a package.json manifest
@@ -141,17 +148,13 @@ export function findEntries(
   lockfile: NormalizedLockfileEntry[],
   edge: DependencyEdge
 ): NormalizedLockfileEntry[] {
+  const index = getLockfileIndex(lockfile);
+
   if (isWorkspaceRequirement(edge.requirement)) {
-    return lockfile.filter(
-      (entry) =>
-        entry.name === edge.name && isWorkspaceRequirement(entry.requirement)
-    );
+    return index.workspaceEntriesByName.get(edge.name) ?? [];
   }
 
-  return lockfile.filter(
-    (entry) =>
-      entry.name === edge.name && entry.requirement === edge.requirement
-  );
+  return index.entriesByEdge.get(edgeKey(edge)) ?? [];
 }
 
 export function normalizeDependencyEdge(
@@ -179,6 +182,39 @@ export function normalizeDependencyEdge(
 
 function isWorkspaceRequirement(requirement: string): boolean {
   return requirement.startsWith(WORKSPACE_PROTOCOL);
+}
+
+function getLockfileIndex(lockfile: NormalizedLockfileEntry[]): LockfileIndex {
+  const existingIndex = lockfileIndexes.get(lockfile);
+  if (existingIndex) return existingIndex;
+
+  const index: LockfileIndex = {
+    entriesByEdge: new Map(),
+    workspaceEntriesByName: new Map(),
+  };
+
+  for (const entry of lockfile) {
+    addIndexedEntry(index.entriesByEdge, edgeKey(entry), entry);
+    if (isWorkspaceRequirement(entry.requirement)) {
+      addIndexedEntry(index.workspaceEntriesByName, entry.name, entry);
+    }
+  }
+
+  lockfileIndexes.set(lockfile, index);
+  return index;
+}
+
+function addIndexedEntry(
+  index: Map<string, NormalizedLockfileEntry[]>,
+  key: string,
+  entry: NormalizedLockfileEntry
+): void {
+  const entries = index.get(key);
+  if (entries) {
+    entries.push(entry);
+  } else {
+    index.set(key, [entry]);
+  }
 }
 
 function normalizeLockfile(
@@ -217,6 +253,8 @@ function normalizeLockfile(
       });
     }
   }
+
+  getLockfileIndex(normalized);
 
   for (const pending of pendingDependencies) {
     pending.entry.dependencies = normalizeDependencies(
