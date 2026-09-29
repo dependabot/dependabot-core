@@ -216,6 +216,25 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   end
 
   describe "#setup" do
+    context "when engines specifies a major-only npm range" do
+      let(:package_json) { { "engines" => { "npm" => "^10" } } }
+
+      before do
+        allow(helper).to receive(:package_manager).and_return(
+          Dependabot::NpmAndYarn::NpmPackageManager.new(detected_version: "10")
+        )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "activates the cached latest version for that major" do
+        expect(helper.setup("npm")).to eq("10")
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+          .with("npm", "10", env: nil)
+      end
+    end
+
     context "when lockfile specifies a deprecated version" do
       subject(:package_manager) { helper.package_manager }
 
