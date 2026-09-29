@@ -454,6 +454,28 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("does not traverse a root workspace dependency twice", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-referenced-workspace",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation:
+          "local-pkg@0.0.0-use.local requires abind@^1.0.0 via objnest@4.1.4",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("traverses every resolution when a package and its alias share a requirement", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/aliased-distinct",

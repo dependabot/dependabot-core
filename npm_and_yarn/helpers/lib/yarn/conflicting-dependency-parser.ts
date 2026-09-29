@@ -100,6 +100,11 @@ async function findNormalizedConflictingDependencies(
   const topLevelEdges = topLevelDependencies.map(([name, requirement]) =>
     normalizeDependencyEdge(name, requirement, lockfileJson)
   );
+  const topLevelWorkspaceNames = new Set(
+    topLevelEdges
+      .filter((edge) => edge.requirement.startsWith(WORKSPACE_PROTOCOL))
+      .map((edge) => edge.name)
+  );
 
   const manifestConflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
     const topLevelSpec: TopLevelSpec = {
@@ -122,12 +127,13 @@ async function findNormalizedConflictingDependencies(
   // Workspaces are independent dependency roots, but their manifest
   // constraints are not dependency blockers. Traverse from each workspace's
   // dependencies while retaining the workspace as the top-level context. The
-  // root workspace is already covered by the package.json traversal above.
+  // root workspace and manifest dependencies are already covered above.
   const workspaceConflictingParents = lockfileJson
     .filter(
       (entry) =>
         entry.requirement.startsWith(WORKSPACE_PROTOCOL) &&
-        entry.requirement !== `${WORKSPACE_PROTOCOL}.`
+        entry.requirement !== `${WORKSPACE_PROTOCOL}.` &&
+        !topLevelWorkspaceNames.has(entry.name)
     )
     .flatMap((workspace) => {
       const topLevelSpec: TopLevelSpec = {
