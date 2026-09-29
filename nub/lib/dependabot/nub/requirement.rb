@@ -12,10 +12,7 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      # Possessive quantifiers (++) keep this linear on pathological input rather
-      # than backtracking polynomially, and match identically to the greedy form
-      # for real requirement strings.
-      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s++(?:&++\s++)?(?!\s*[|-])/
+      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s++(?:&++\s++)?(?!\s*+[,|-])/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
       # Override the version pattern to allow a 'v' prefix
