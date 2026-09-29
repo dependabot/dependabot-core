@@ -67,6 +67,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updatedDependencies = new List<ReportedDependency>();
             var updatedDependenciesWithDirectories = new List<ReportedDependencyWithDirectory>();
             var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
+            var handledInThisGroup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
                 var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -131,7 +132,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
 
                     logger.Info($"Adding dependencies as handled: ({dependency.Name}).");
-                    handledDependencies.Add(dependency.Name);
+                    handledInThisGroup.Add(dependency.Name);
 
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
                     var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
@@ -164,6 +165,8 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
             }
+
+            handledDependencies.UnionWith(handledInThisGroup);
 
             if (updateOperationsPerformed.Count > 0)
             {
