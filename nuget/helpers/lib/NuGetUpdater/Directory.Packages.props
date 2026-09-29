@@ -3,8 +3,10 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Match the MSBuild assemblies supplied by the SDK selected in global.json. -->
+    <!-- Match the MSBuild assemblies supplied by the SDK selected in global.json and NuGet.Client. -->
     <MSBuildPackageVersion>18.9.6</MSBuildPackageVersion>
+    <!-- StringTools has no assembly-load-context coupling with SDK MSBuild and supports 18.10.1; Microsoft.Build 18.10.1 is framework-only. -->
+    <StringToolsPackageVersion>18.10.1</StringToolsPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
@@ -19,7 +21,7 @@
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.NET.StringTools" Version="$(MSBuildPackageVersion)" />
+    <PackageVersion Include="Microsoft.NET.StringTools" Version="$(StringToolsPackageVersion)" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.14.2075" />
     <PackageVersion Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
