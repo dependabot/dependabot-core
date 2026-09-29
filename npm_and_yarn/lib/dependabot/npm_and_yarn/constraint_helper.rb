@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/npm_and_yarn/requirement"
 
 module Dependabot
   module NpmAndYarn
@@ -179,11 +180,125 @@ module Dependabot
       def self.find_highest_version_from_constraint_expression(constraint_expression, dependabot_versions = nil)
         parsed_constraints = parse_constraints(constraint_expression, dependabot_versions)
 
-        return nil unless parsed_constraints
+        return nil if parsed_constraints.nil? || parsed_constraints.empty?
 
-        parsed_constraints
-          .filter_map { |parsed| parsed[:version] } # Extract all versions
-          .max_by { |version| Version.new(version) }
+        parsed_versions = parsed_constraints.filter_map { |parsed| parsed[:version] }
+        parsed_versions = parsed_versions.map { |version| Version.new(version) }
+        candidates = T.let(parsed_versions + (dependabot_versions || []), T::Array[Dependabot::Version])
+
+        return candidates.max&.to_s if unconstrained_expression?(constraint_expression)
+
+        matching_versions = matching_versions_for(constraint_expression, candidates, dependabot_versions)
+
+        preferred_version = supported_major_version(constraint_expression, dependabot_versions, matching_versions)
+        return preferred_version if preferred_version
+
+        matching_versions.max&.to_s
+      end
+
+      sig do
+        params(
+          constraint_expression: T.nilable(String),
+          candidates: T::Array[Dependabot::Version],
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
+        ).returns(T::Array[Dependabot::Version])
+      end
+      def self.matching_versions_for(constraint_expression, candidates, dependabot_versions = nil)
+        requirements = Requirement.requirements_array(constraint_expression)
+
+        candidates.select do |version|
+          # A bare major alias (e.g. "10", with no minor/patch component) stands in
+          # for an as-yet-unknown cached release; this is only meaningful when the
+          # caller supplied `dependabot_versions` (i.e. we're resolving an engine
+          # constraint against the set of majors Dependabot can select from), so we
+          # key off the candidate's own string form rather than value-equality
+          # against `dependabot_versions`, since a concrete literal version (e.g.
+          # "8.0.0") is `==` to its bare-major counterpart ("8") in Gem::Version.
+          if dependabot_versions && bare_major_alias?(version)
+            # `version` is a bare major alias (e.g. "10"): Corepack will actually
+            # install whichever release of that major it has cached (typically the
+            # latest patch), and we have no way to know that concrete version here.
+            # Only accept the alias when the *entire* major range is contained by
+            # the requirement, so that no matter which release Corepack resolves,
+            # it is guaranteed to satisfy the constraint. Merely overlapping is not
+            # enough: e.g. "<10.1" overlaps major 10's range, but the actual cached
+            # release (e.g. 10.9.4) could still violate it.
+            requirements.any? { |requirement| major_fully_satisfies_requirement?(version, requirement) }
+          else
+            requirements.any? { |requirement| requirement.satisfied_by?(version) }
+          end
+        end
+      end
+
+      sig { params(version: Dependabot::Version).returns(T::Boolean) }
+      def self.bare_major_alias?(version)
+        !!version.to_s.match?(/\A\d+\z/)
+      end
+
+      # Checks whether *every* possible release within `major_version`'s major line
+      # (i.e. the whole [major.0.0, (major + 1).0.0) range) would satisfy
+      # `requirement`, so that selecting the major is safe regardless of which
+      # concrete release Corepack ends up resolving and caching for it.
+      sig { params(major_version: Dependabot::Version, requirement: Requirement).returns(T::Boolean) }
+      def self.major_fully_satisfies_requirement?(major_version, requirement)
+        major_low = major_version
+        major_high = Version.new("#{major_version.to_s.to_i + 1}.0.0")
+
+        requirement_pairs = T.cast(requirement.requirements, T::Array[[String, Gem::Version]])
+
+        requirement_pairs.all? do |operator, req_version|
+          # Converted "^"/"~" requirements express an exclusive upper bound using
+          # Gem's prerelease-bump idiom (e.g. "< 11.0.0.a" for "< 11.0.0"), which
+          # would otherwise sort below the intended release boundary. Normalize by
+          # stripping any such prerelease sentinel before comparing.
+          version = Version.new(req_version.release.to_s)
+
+          case operator
+          when ">="
+            major_low >= version
+          when ">"
+            major_low > version
+          when "<=", "<"
+            major_high <= version
+          when "~>"
+            # A pessimistic ("~>") requirement is satisfied by [version, version.bump).
+            # A bare major (e.g. engines.npm: "10") or "~10"/"~>10" normalize to a
+            # two-segment "~> 10.0", whose bump lands exactly on the next major, so
+            # the whole major range is contained. A more specific "~> 10.2" only
+            # bumps the minor, so it can't contain the entire major.
+            version <= major_low && major_high <= version.bump
+          else
+            # "=" (an exact version) and any other operator can never bound an
+            # entire major range, so treat the major as unsafe to select.
+            false
+          end
+        end
+      end
+
+      sig { params(constraint_expression: T.nilable(String)).returns(T::Boolean) }
+      def self.unconstrained_expression?(constraint_expression)
+        constraint_expression.to_s.split("||").map(&:strip).any? do |group|
+          SEMVER_CONSTANTS.include?(group)
+        end
+      end
+
+      sig do
+        params(
+          constraint_expression: T.nilable(String),
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version]),
+          matching_versions: T::Array[Dependabot::Version]
+        ).returns(T.nilable(String))
+      end
+      def self.supported_major_version(constraint_expression, dependabot_versions, matching_versions)
+        # Matches "^10", "^10.0", and "^10.0.0" alike: any caret spelling whose
+        # minor/patch components (if present) are all zero still covers the
+        # *entire* major range [major.0.0, (major+1).0.0), so it should prefer
+        # the major alias over an equal-but-more-specific literal candidate
+        # (e.g. "10.0.0"), which `Array#max` would otherwise keep since it sorts
+        # earlier in `candidates` and compares equal to the alias.
+        return unless constraint_expression.to_s.strip.match?(/\A\^\d+(?:\.0)*\z/) && dependabot_versions
+
+        dependabot_versions.select { |version| matching_versions.include?(version) }.max&.to_s
       end
 
       # Parse all constraints (split by logical OR `||`) and convert to Ruby-compatible constraints.
@@ -275,7 +390,15 @@ module Dependabot
             else
               ">=#{full_version} <#{major.to_i + 1}.0.0"
             end
-          { constraint: ruby_constraint, version: full_version }
+          selected_version = if version_parts.length == 1
+                               highest_matching_version(
+                                 dependabot_versions,
+                                 T.must(full_version)
+                               ) do |version, lower_bound|
+                                 version >= lower_bound && version < Version.new("#{major.to_i + 1}.0.0")
+                               end&.to_s
+                             end
+          { constraint: ruby_constraint, version: selected_version || full_version }
         when TILDE_CONSTRAINT_REGEX # Tilde constraint, e.g., "~1.2.3"
           return unless Regexp.last_match
 
