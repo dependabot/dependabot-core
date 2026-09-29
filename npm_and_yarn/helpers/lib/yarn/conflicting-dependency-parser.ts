@@ -21,6 +21,7 @@ import {
   type NormalizedLockfileEntry,
 } from "./lockfile-parser.js";
 import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
+import { findLegacyConflictingDependencies } from "./legacy-conflicting-dependency-parser.js";
 
 interface ConflictingDependency {
   explanation: string;
@@ -53,6 +54,23 @@ interface TransitiveSpec {
 }
 
 export async function findConflictingDependencies(
+  directory: string,
+  depName: string,
+  targetVersion: string,
+  enableNormalizedTraversal = false
+): Promise<ConflictingDependency[]> {
+  if (!enableNormalizedTraversal) {
+    return findLegacyConflictingDependencies(directory, depName, targetVersion);
+  }
+
+  return findNormalizedConflictingDependencies(
+    directory,
+    depName,
+    targetVersion
+  );
+}
+
+async function findNormalizedConflictingDependencies(
   directory: string,
   depName: string,
   targetVersion: string

@@ -4,6 +4,19 @@ import fs from "fs";
 import { findConflictingDependencies } from "../../lib/yarn/conflicting-dependency-parser.js";
 import * as helpers from "./helpers.js";
 
+function findNormalizedConflictingDependencies(
+  directory: string,
+  dependencyName: string,
+  targetVersion: string
+) {
+  return findConflictingDependencies(
+    directory,
+    dependencyName,
+    targetVersion,
+    true
+  );
+}
+
 describe("findConflictingDependencies", () => {
   let tempDir: string;
   beforeEach(() => {
@@ -85,7 +98,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "objnest@4.1.4 requires abind@^1.0.0",
@@ -102,7 +119,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "askconfig@4.0.4 requires abind@^1.0.4 via objnest@5.0.10",
@@ -119,7 +140,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "objnest@4.1.4 requires abind@^1.0.0",
@@ -136,7 +161,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "local-pkg@1.0.0 requires abind@^1.0.0",
@@ -158,7 +187,7 @@ describe("findConflictingDependencies", () => {
         tempDir
       );
 
-      const result = await findConflictingDependencies(
+      const result = await findNormalizedConflictingDependencies(
         tempDir,
         dependency,
         "2.0.0"
@@ -173,7 +202,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "1.0.5");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "1.0.5"
+    );
     expect(result).toEqual([]);
   });
 
@@ -183,7 +216,7 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(
+    const result = await findNormalizedConflictingDependencies(
       tempDir,
       "objnest",
       "5.0.0"
@@ -194,7 +227,11 @@ describe("findConflictingDependencies", () => {
   it("finds conflicting dependencies behind a yarn v1 npm alias", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/aliased", tempDir);
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "objnest@4.1.4 requires abind@^1.0.0",
@@ -211,7 +248,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "objnest@4.1.4 requires abind@^1.0.0",
@@ -222,13 +263,27 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
-  it("finds conflicting dependencies behind a yarn alias declared in the dependency name", async () => {
+  it("uses legacy yarn v1 traversal by default", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/aliased-in-key",
       tempDir
     );
 
     const result = await findConflictingDependencies(
+      tempDir,
+      "lodash",
+      "5.0.0"
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("finds conflicting dependencies behind a yarn alias declared in the dependency name", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-in-key",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
       tempDir,
       "lodash",
       "5.0.0"
@@ -249,7 +304,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "askconfig@4.0.4 requires abind@^1.0.0",
@@ -272,7 +331,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation:
@@ -290,7 +353,11 @@ describe("findConflictingDependencies", () => {
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "objnest@4.1.4 requires abind@^1.0.0",

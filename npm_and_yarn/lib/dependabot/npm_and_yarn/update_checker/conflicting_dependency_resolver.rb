@@ -62,18 +62,26 @@ module Dependabot
             # Prefer the npm conflicting dependency parser if there's both a npm lockfile and a yarn.lock file as the
             # npm parser handles edge cases where the package.json is out of sync with the lockfile, something the yarn
             # parser doesn't deal with at the moment.
+            enable_normalized_yarn_traversal = false
             function = if dependency_files_builder.package_locks.any? ||
                           dependency_files_builder.shrinkwraps.any?
                          "npm:findConflictingDependencies"
                        elsif dependency_files_builder.yarn_locks.any?
+                         enable_normalized_yarn_traversal =
+                           Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
                          return [] if Helpers.yarn_berry?(dependency_files_builder.yarn_locks.first) &&
-                                      !Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+                                      !enable_normalized_yarn_traversal
 
                          "yarn:findConflictingDependencies"
                        end
             return [] unless function
 
-            run_conflicting_dependency_helper(function:, dependency:, target_version:)
+            run_conflicting_dependency_helper(
+              function:,
+              dependency:,
+              target_version:,
+              enable_normalized_yarn_traversal:
+            )
           end
         end
 
@@ -83,16 +91,25 @@ module Dependabot
           params(
             function: String,
             dependency: Dependabot::Dependency,
-            target_version: T.nilable(T.any(String, Dependabot::Version))
+            target_version: T.nilable(T.any(String, Dependabot::Version)),
+            enable_normalized_yarn_traversal: T::Boolean
           )
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
-        def run_conflicting_dependency_helper(function:, dependency:, target_version:)
+        def run_conflicting_dependency_helper(
+          function:,
+          dependency:,
+          target_version:,
+          enable_normalized_yarn_traversal:
+        )
+          args = [Dir.pwd, dependency.name, target_version.to_s]
+          args << enable_normalized_yarn_traversal if function == "yarn:findConflictingDependencies"
+
           T.cast(
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: function,
-              args: [Dir.pwd, dependency.name, target_version.to_s]
+              args:
             ),
             T::Array[Dependabot::UpdateCheckers::Conflict]
           )

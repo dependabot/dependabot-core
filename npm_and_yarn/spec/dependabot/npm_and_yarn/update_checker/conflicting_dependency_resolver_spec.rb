@@ -87,6 +87,15 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         let(:enable_yarn_berry_conflicting_dependencies) { false }
 
         it "still returns yarn v1 blocking dependencies" do
+          expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(
+              hash_including(
+                function: "yarn:findConflictingDependencies",
+                args: [a_kind_of(String), dependency_name, target_version, false]
+              )
+            )
+            .and_call_original
+
           expect(conflicting_dependencies).not_to be_empty
         end
       end
