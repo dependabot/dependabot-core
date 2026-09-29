@@ -238,7 +238,7 @@ function normalizeLockfile(
       // callers mutating one entry don't affect the other descriptors sharing
       // this resolution. The edges themselves are treated as immutable values
       // and are intentionally shared.
-      const normalizedEntry = {
+      const normalizedEntry: NormalizedLockfileEntry = {
         name: edge.name,
         requirement: edge.requirement,
         ...(edge.realName && { realName: edge.realName }),
