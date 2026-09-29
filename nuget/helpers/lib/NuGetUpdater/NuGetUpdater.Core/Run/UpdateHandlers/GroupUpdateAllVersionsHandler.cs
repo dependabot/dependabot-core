@@ -58,7 +58,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
-        var handledDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var handledDependencies = new HashSet<(string Directory, string DependencyName)>();
         foreach (var group in job.DependencyGroups)
         {
             logger.Info($"Starting update for group {group.Name}");
@@ -67,7 +67,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updatedDependencies = new List<ReportedDependency>();
             var updatedDependenciesWithDirectories = new List<ReportedDependencyWithDirectory>();
             var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
-            var handledInThisGroup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var handledInThisGroup = new HashSet<(string Directory, string DependencyName)>();
             foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
                 var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -97,7 +97,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    if (handledDependencies.Contains(dependency.Name))
+                    if (handledDependencies.Contains((directory, dependency.Name.ToLowerInvariant())))
                     {
                         logger.Info($"Skipping {dependency.Name} in group {group.Name} as it has already been handled by a previous group");
                         continue;
@@ -132,7 +132,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
 
                     logger.Info($"Adding dependencies as handled: ({dependency.Name}).");
-                    handledInThisGroup.Add(dependency.Name);
+                    handledInThisGroup.Add((directory, dependency.Name.ToLowerInvariant()));
 
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
                     var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
