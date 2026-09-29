@@ -191,13 +191,34 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("finds conflicting dependencies behind a versionless yarn berry alias", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-versionless-alias",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("finds conflicting dependencies behind a yarn alias declared in the dependency name", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/aliased-in-key",
       tempDir
     );
 
-    const result = await findConflictingDependencies(tempDir, "lodash", "5.0.0");
+    const result = await findConflictingDependencies(
+      tempDir,
+      "lodash",
+      "5.0.0"
+    );
     expect(result).toEqual([
       {
         explanation: "fetch-factory@0.0.2 requires lodash@^4.18.1",

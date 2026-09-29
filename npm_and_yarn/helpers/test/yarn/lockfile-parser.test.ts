@@ -36,6 +36,25 @@ describe("normalizeDescriptor", () => {
     });
   });
 
+  it("uses the resolution to identify a versionless npm alias", () => {
+    expect(
+      normalizeDescriptor("objnest-alias", "npm:objnest", "objnest@npm:4.1.4")
+    ).toEqual({
+      name: "objnest-alias",
+      requirement: "npm:objnest",
+      realName: "objnest",
+    });
+  });
+
+  it("does not treat an explicit npm tag as an alias", () => {
+    expect(
+      normalizeDescriptor("objnest", "npm:latest", "objnest@npm:4.1.4")
+    ).toEqual({
+      name: "objnest",
+      requirement: "latest",
+    });
+  });
+
   it("normalizes yarn aliases declared in the dependency name", () => {
     expect(
       normalizeDescriptor("my-fetch-factory@npm:fetch-factory", "0.0.2")

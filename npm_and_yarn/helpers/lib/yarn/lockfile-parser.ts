@@ -16,6 +16,7 @@ const parseLockfile =
 export interface LockfileEntry {
   version: string;
   resolved?: string;
+  resolution?: string;
   dependencies?: Record<string, string>;
 }
 
@@ -83,7 +84,8 @@ export async function parseNormalized(
 // real-package comparisons (e.g. vulnerable dependency checks).
 export function normalizeDescriptor(
   name: string,
-  requirement: string
+  requirement: string,
+  resolution?: string
 ): DependencyEdge {
   const aliasKeySeparatorIndex = name.indexOf(NPM_ALIAS_KEY_SEPARATOR);
   if (aliasKeySeparatorIndex > 0) {
@@ -108,6 +110,17 @@ export function normalizeDescriptor(
         realName: aliasMatch[1],
       };
     }
+
+    const resolutionMatch = resolution?.match(LOCKFILE_ENTRY_REGEX);
+    const resolvedName = resolutionMatch?.[1];
+    if (resolvedName && resolvedName !== name) {
+      return {
+        name,
+        requirement,
+        realName: resolvedName,
+      };
+    }
+
     return { name, requirement: rest };
   }
 
@@ -141,6 +154,29 @@ export function findEntries(
   );
 }
 
+export function normalizeDependencyEdge(
+  name: string,
+  requirement: string,
+  lockfile: NormalizedLockfileEntry[]
+): DependencyEdge {
+  const matchingEntries = findEntries(lockfile, { name, requirement });
+  const realNames = new Set(
+    matchingEntries
+      .map((entry) => entry.realName)
+      .filter((realName): realName is string => Boolean(realName))
+  );
+
+  if (realNames.size === 1) {
+    return {
+      name,
+      requirement,
+      realName: realNames.values().next().value,
+    };
+  }
+
+  return normalizeDescriptor(name, requirement);
+}
+
 function isWorkspaceRequirement(requirement: string): boolean {
   return requirement.startsWith(WORKSPACE_PROTOCOL);
 }
@@ -149,30 +185,44 @@ function normalizeLockfile(
   lockfileJson: Record<string, LockfileEntry>
 ): NormalizedLockfileEntry[] {
   const normalized: NormalizedLockfileEntry[] = [];
+  const pendingDependencies: {
+    entry: NormalizedLockfileEntry;
+    dependencies?: Record<string, string>;
+  }[] = [];
 
   for (const [entry, pkg] of Object.entries(lockfileJson)) {
     if (entry === METADATA_KEY) continue;
-
-    const dependencies = normalizeDependencies(pkg.dependencies);
 
     for (const descriptor of entry.split(DESCRIPTOR_SEPARATOR)) {
       const match = descriptor.match(LOCKFILE_ENTRY_REGEX);
       if (!match) continue;
 
-      const edge = normalizeDescriptor(match[1], match[2]);
+      const edge = normalizeDescriptor(match[1], match[2], pkg.resolution);
       // Give each descriptor its own entry object and dependency list so that
       // callers mutating one entry don't affect the other descriptors sharing
       // this resolution. The edges themselves are treated as immutable values
       // and are intentionally shared.
-      normalized.push({
+      const normalizedEntry = {
         name: edge.name,
         requirement: edge.requirement,
         ...(edge.realName && { realName: edge.realName }),
         version: pkg.version,
         resolved: pkg.resolved,
-        dependencies: [...dependencies],
+        dependencies: [],
+      };
+      normalized.push(normalizedEntry);
+      pendingDependencies.push({
+        entry: normalizedEntry,
+        dependencies: pkg.dependencies,
       });
     }
+  }
+
+  for (const pending of pendingDependencies) {
+    pending.entry.dependencies = normalizeDependencies(
+      pending.dependencies,
+      normalized
+    );
   }
 
   return normalized;
@@ -182,11 +232,12 @@ function normalizeLockfile(
 // that aliased edges resolving to the same package (e.g. `foo: npm:^1.0.0` and
 // `foo-v2: npm:foo@^2.0.0`) are all preserved instead of overwriting each other.
 function normalizeDependencies(
-  dependencies: Record<string, string> | undefined
+  dependencies: Record<string, string> | undefined,
+  lockfile: NormalizedLockfileEntry[]
 ): DependencyEdge[] {
   if (!dependencies) return [];
 
   return Object.entries(dependencies).map(([name, spec]) =>
-    normalizeDescriptor(name, spec)
+    normalizeDependencyEdge(name, spec, lockfile)
   );
 }

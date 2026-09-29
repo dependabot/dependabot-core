@@ -14,7 +14,7 @@ import path from "path";
 import semver from "semver";
 import {
   parseNormalized,
-  normalizeDescriptor,
+  normalizeDependencyEdge,
   findEntries,
   edgeKey,
   type DependencyEdge,
@@ -79,7 +79,7 @@ export async function findConflictingDependencies(
   // every workspace entry because workspaces are independent dependency roots.
   const topLevelEdges = [
     ...topLevelDependencies.map(([name, requirement]) =>
-      normalizeDescriptor(name, requirement)
+      normalizeDependencyEdge(name, requirement, lockfileJson)
     ),
     ...lockfileJson.filter((entry) =>
       entry.requirement.startsWith("workspace:")
