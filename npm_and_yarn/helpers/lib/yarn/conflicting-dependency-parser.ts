@@ -279,8 +279,8 @@ function findConflictingParentDependencies(
         // duplicate dependencies from circular graphs.
         const requirement = realRequirementOf(subDep.requirement);
         const key = [realNameOf(pkg), pkg.version, requirement].join("\u0000");
-        // Snapshot the specs as they are mutated while traversing the other
-        // resolutions of this descriptor.
+        // Snapshot the top-level spec because its installed version is
+        // decorated while traversing lockfile entries.
         conflictingParents.set(key, {
           name: realNameOf(pkg),
           version: pkg.version,
@@ -293,7 +293,7 @@ function findConflictingParentDependencies(
         // Keep track of the parent dependency as a way to check if the
         // conflicting dependency ends up being a direct dependency of a
         // top-level dependency
-        transitiveSpec = {
+        const nextTransitiveSpec = {
           name: pkg.name,
           version: pkg.version,
           requirement: pkg.requirement,
@@ -305,7 +305,7 @@ function findConflictingParentDependencies(
           targetversion,
           topLevelSpec,
           lockfile,
-          transitiveSpec,
+          nextTransitiveSpec,
           checkedEntries,
           conflictingParents
         );

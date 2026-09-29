@@ -158,13 +158,17 @@ describe("parseNormalized", () => {
       "abind@^1.0.4",
       "abind@^1.0.5",
       "askconfig@^4.0.4",
+      "extend@^3.0.0",
       "objnest@^5.0.6",
       "test@workspace:.",
     ]);
     expect(
       findEntries(lockfile, { name: "objnest", requirement: "^5.0.6" })[0]
         .dependencies
-    ).toEqual([{ name: "abind", requirement: "^1.0.4" }]);
+    ).toEqual([
+      { name: "extend", requirement: "^3.0.0" },
+      { name: "abind", requirement: "^1.0.4" },
+    ]);
   });
 
   it("preserves every edge when aliases resolve to the same package", async () => {
