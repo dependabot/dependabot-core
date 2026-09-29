@@ -320,6 +320,27 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("treats versionless aliases as wildcards while preserving explicit tags", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-versionless-alias-requirement",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "objnest",
+      "5.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation: "alias-parent@1.0.0 requires objnest@latest",
+        name: "alias-parent",
+        version: "1.0.0",
+        requirement: "latest",
+      },
+    ]);
+  });
+
   it("uses legacy yarn v1 traversal by default", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/aliased-in-key",

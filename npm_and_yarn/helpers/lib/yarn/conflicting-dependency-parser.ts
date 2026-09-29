@@ -220,7 +220,8 @@ function buildExplanation(
   }
 }
 
-function realRequirementOf(requirement: string): string {
+function realRequirementOf(edge: DependencyEdge): string {
+  const { requirement, realName } = edge;
   if (requirement.startsWith(PATCH_PROTOCOL)) {
     const source = requirement.slice(PATCH_PROTOCOL.length).split("#", 1)[0];
     const nestedNpmDescriptor = source.match(/@npm%3A(.+)$/i);
@@ -236,14 +237,15 @@ function realRequirementOf(requirement: string): string {
   if (aliasMatch && aliasMatch[2]) {
     return aliasMatch[2];
   }
+  if (realName === rest) return "*";
 
   return rest;
 }
 
-function conflictsWith(targetVersion: string, spec: string): boolean {
-  if (spec.startsWith(WORKSPACE_PROTOCOL)) return false;
+function conflictsWith(targetVersion: string, edge: DependencyEdge): boolean {
+  if (edge.requirement.startsWith(WORKSPACE_PROTOCOL)) return false;
 
-  const requirement = realRequirementOf(spec);
+  const requirement = realRequirementOf(edge);
   if (!semver.validRange(requirement)) return true;
 
   return !semver.satisfies(targetVersion, requirement);
@@ -283,11 +285,11 @@ function findConflictingParentDependencies(
     for (const subDep of pkg.dependencies) {
       if (
         realNameOf(subDep) === targetDep &&
-        conflictsWith(targetversion, subDep.requirement)
+        conflictsWith(targetversion, subDep)
       ) {
         // Only add the conflicting parent once per version preventing
         // duplicate dependencies from circular graphs.
-        const requirement = realRequirementOf(subDep.requirement);
+        const requirement = realRequirementOf(subDep);
         const key = [realNameOf(pkg), pkg.version, requirement].join("\u0000");
         // Snapshot the top-level spec because its installed version is
         // decorated while traversing lockfile entries.
