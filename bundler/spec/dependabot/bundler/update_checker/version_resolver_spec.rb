@@ -454,11 +454,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
       context "when unlocking a git dependency would cause errors" do
         let(:current_version) { "1.4.0" }
+        let(:latest_allowable_version) { "2.0.0" }
 
         let(:dependency_files) { bundler_project_dependency_files("git_source_circular") }
 
         it "unlocks the version" do
-          expect(resolver.latest_resolvable_version_details.version.canonical_segments.first).to eq(2)
+          expect(resolver.latest_resolvable_version_details.version).to eq(Dependabot::Bundler::Version.new("2.0.0"))
         end
       end
 
@@ -533,6 +534,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_small_example_no_lockfile") }
       let(:unlock_requirement) { true }
       let(:current_version) { nil }
+      let(:latest_allowable_version) { "2.0.0" }
       let(:requirements) do
         [{
           file: "Gemfile",
@@ -547,8 +549,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         }]
       end
 
-      it "unlocks the latest version" do
-        expect(resolver.latest_resolvable_version_details.version.canonical_segments.first).to eq(2)
+      it "unlocks the latest allowed version" do
+        expect(resolver.latest_resolvable_version_details.version).to eq(Dependabot::Bundler::Version.new("2.0.0"))
       end
 
       context "with an upper bound that is lower than the current req" do

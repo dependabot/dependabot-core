@@ -173,6 +173,8 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
               File.write("example/example.gemspec", gemspec)
               if git_source
                 Dependabot::SharedHelpers.run_shell_command("git -C example init --quiet")
+                Dependabot::SharedHelpers.run_shell_command("git -C example config user.name dependabot-ci")
+                Dependabot::SharedHelpers.run_shell_command("git -C example config user.email no-reply@github.com")
                 Dependabot::SharedHelpers.run_shell_command("git -C example add example.gemspec")
                 Dependabot::SharedHelpers.run_shell_command('git -C example commit --quiet -m "Fixture"')
               end
@@ -222,6 +224,10 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
 
           context "with a local Git source" do
             let(:git_source) { true }
+
+            around do |example|
+              ::Bundler.with_original_env { example.run }
+            end
 
             it "decodes the commit SHA without a remote registry" do
               expect(result.fetch("commit_sha")).to match(/\A[0-9a-f]{40}\z/)
