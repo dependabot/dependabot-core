@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - directory: "/app1"
+    package-ecosystem: "docker"
+    schedule: &schedule
+      interval: "daily"
+    ignore: &ignore
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - directory: "/app2"
+    package-ecosystem: "docker"
+    schedule: *schedule
+    ignore: *ignore
+  - directory: "/app3"
+    package-ecosystem: "docker"
+    schedule: *schedule
+    ignore: *ignore
