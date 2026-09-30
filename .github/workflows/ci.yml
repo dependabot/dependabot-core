@@ -1,12 +1,15 @@
 name: Specs
 on:  # yamllint disable-line rule:truthy
   pull_request:
+  merge_group:
+    types:
+      - checks_requested
   schedule:
     - cron: "0 0 * * *"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'merge_group' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'merge_group' && github.ref != 'refs/heads/main' }}
 permissions: {}
 
 jobs:
