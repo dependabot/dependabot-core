@@ -1,0 +1,4 @@
+--index-url https://private.example.com/simple
+--extra-index-url https://pypi.org/simple
+psycopg2==2.6.1
+luigi==2.2.0

@@ -397,5 +397,33 @@ RSpec.describe Dependabot::Uv::Package::PackageRegistryFinder do
         end
       end
     end
+
+    context "when the Pipfile declares the public index as its first source" do
+      let(:pipfile_fixture_name) { "public_and_private_source" }
+      let(:dependency_files) { [pipfile] }
+
+      it "searches the private index before the public index" do
+        expect(registry_urls).to eq(
+          [
+            "https://some.internal.registry.com/pypi/",
+            "https://pypi.org/simple/"
+          ]
+        )
+      end
+    end
+
+    context "when a private main index has a public extra index" do
+      let(:requirements_fixture_name) { "private_index_public_extra.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "keeps the private main index first" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://pypi.org/simple/"
+          ]
+        )
+      end
+    end
   end
 end

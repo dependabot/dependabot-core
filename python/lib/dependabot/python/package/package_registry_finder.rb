@@ -13,6 +13,12 @@ module Dependabot
         extend T::Sig
 
         PYPI_BASE_URL = "https://pypi.org/simple/"
+        PUBLIC_PYPI_URLS = %w(
+          https://pypi.org/simple/
+          http://pypi.org/simple/
+          https://pypi.python.org/simple/
+          http://pypi.python.org/simple/
+        ).freeze
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
         UrlsHash = T.type_alias { { main: T.nilable(String), extra: T::Array[String] } }
@@ -44,14 +50,27 @@ module Dependabot
           end
 
           # The base index (a `replaces-base` registry, or public PyPI when none
-          # is configured) is searched last so that private registries take
+          # is configured) is searched last so that fully private registries take
           # precedence, avoiding dependency confusion attacks where a private
           # package name is claimed by a public package of the same name.
           #
+          # The base index is removed from the extras first, so that declaring it
+          # as both a main and an extra index (as a Pipfile `[[source]]` does)
+          # doesn't keep it at the front of the list.
+          main_url = main_index_url
+          ordered_urls = extra_index_urls.reject { |url| url == main_url } + [main_url]
+
+          # A configured main index may itself be fully private, while an extra
+          # index may be public PyPI, so the public indexes are always moved to
+          # the back rather than assuming the main index is the public one.
+          private_urls, public_urls = ordered_urls.uniq.partition do |url|
+            !PUBLIC_PYPI_URLS.include?(url)
+          end
+
           # URL encode any `@` characters within registry URL creds.
           # TODO: The test that fails if the `map` here is removed is likely a
           # bug in Ruby's URI parser, and should be fixed there.
-          [*extra_index_urls, main_index_url].map do |url|
+          (private_urls + public_urls).map do |url|
             url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
           end.uniq
         end
