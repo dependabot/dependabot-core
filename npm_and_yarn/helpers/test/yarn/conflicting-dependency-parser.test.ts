@@ -432,6 +432,28 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("prefers a direct path discovered after a transitive path", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/diamond-direct-after-transitive",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation:
+          "top-level@1.0.0 requires abind@^1.0.0 via blocker@1.0.0",
+        name: "blocker",
+        version: "1.0.0",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("deduplicates identical conflicts from a package and its alias", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/aliased-output-duplicate",

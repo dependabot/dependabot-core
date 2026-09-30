@@ -277,17 +277,17 @@ function findConflictingParentDependencies(
   topLevelSpec: TopLevelSpec,
   lockfile: NormalizedLockfileEntry[],
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
-  checkedEntries: Set<string> = new Set(),
-  conflictingParents: Map<string, ParentSpec> = new Map()
+  shortestDepthByEntry: Map<string, number> = new Map(),
+  conflictingParents: Map<string, ParentSpec> = new Map(),
+  depth = 0
 ): Map<string, ParentSpec> {
-  // Prevent infinite loops for circular dependencies by only checking each
-  // lockfile entry once
   const checkedEntry = edgeKey(edge);
-  if (checkedEntries.has(checkedEntry)) {
+  const shortestDepth = shortestDepthByEntry.get(checkedEntry);
+  if (shortestDepth !== undefined && shortestDepth <= depth) {
     return conflictingParents;
   }
 
-  checkedEntries.add(checkedEntry);
+  shortestDepthByEntry.set(checkedEntry, depth);
 
   // A descriptor can resolve to more than one entry, e.g. when a manifest
   // depends on both a package and an npm alias of it, so every resolution is
@@ -337,8 +337,9 @@ function findConflictingParentDependencies(
           topLevelSpec,
           lockfile,
           nextTransitiveSpec,
-          checkedEntries,
-          conflictingParents
+          shortestDepthByEntry,
+          conflictingParents,
+          depth + 1
         );
       }
     }
