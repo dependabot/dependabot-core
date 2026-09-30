@@ -45,8 +45,13 @@ module Dependabot
             pip_conf_index_urls[:extra] +
             pyproject_index_urls[:extra]
 
+          # URL encode any `@` characters within registry URL creds. This is done
+          # before the URLs are classified and ordered below, so that a URL with
+          # unescaped credentials is still parseable.
+          # TODO: The test that fails if the `map` here is removed is likely a
+          # bug in Ruby's URI parser, and should be fixed there.
           extra_index_urls = extra_index_urls.map do |url|
-            clean_check_and_remove_environment_variables(url)
+            escape_userinfo(clean_check_and_remove_environment_variables(url))
           end
 
           # The base index (a `replaces-base` registry, or public PyPI when none
@@ -57,7 +62,7 @@ module Dependabot
           # The base index is removed from the extras first, so that declaring it
           # as both a main and an extra index (as a Pipfile `[[source]]` does)
           # doesn't keep it at the front of the list.
-          main_url = main_index_url
+          main_url = escape_userinfo(main_index_url)
           ordered_urls = extra_index_urls.reject { |url| url == main_url } + [main_url]
 
           # A configured main index may itself be fully private, while an extra
@@ -67,15 +72,15 @@ module Dependabot
             !public_pypi_url?(url)
           end
 
-          # URL encode any `@` characters within registry URL creds.
-          # TODO: The test that fails if the `map` here is removed is likely a
-          # bug in Ruby's URI parser, and should be fixed there.
-          (private_urls + public_urls).map do |url|
-            url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
-          end.uniq
+          private_urls + public_urls
         end
 
         private
+
+        sig { params(url: String).returns(String) }
+        def escape_userinfo(url)
+          url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
+        end
 
         # Identifies the public PyPI index by its parsed host, scheme, port and
         # path, so that equivalent spellings (case differences, an explicit

@@ -439,5 +439,19 @@ RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
         )
       end
     end
+
+    context "when the public extra index has unescaped credentials" do
+      let(:requirements_fixture_name) { "private_index_public_extra_creds.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "still treats it as public and keeps the private main index first" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://user%40company:pass@pypi.org/simple/"
+          ]
+        )
+      end
+    end
   end
 end
