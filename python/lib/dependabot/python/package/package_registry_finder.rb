@@ -43,10 +43,15 @@ module Dependabot
             clean_check_and_remove_environment_variables(url)
           end
 
+          # The base index (a `replaces-base` registry, or public PyPI when none
+          # is configured) is searched last so that private registries take
+          # precedence, avoiding dependency confusion attacks where a package is
+          # pre-empted by a public package of the same name.
+          #
           # URL encode any `@` characters within registry URL creds.
           # TODO: The test that fails if the `map` here is removed is likely a
           # bug in Ruby's URI parser, and should be fixed there.
-          [main_index_url, *extra_index_urls].map do |url|
+          [*extra_index_urls, main_index_url].map do |url|
             url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
           end.uniq
         end

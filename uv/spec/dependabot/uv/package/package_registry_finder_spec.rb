@@ -346,5 +346,56 @@ RSpec.describe Dependabot::Uv::Package::PackageRegistryFinder do
         end
       end
     end
+
+    context "with both a base index and a private extra index" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://public-proxy.example.com/simple",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private.example.com/simple",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "searches the private index before the base index" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://public-proxy.example.com/simple/"
+          ]
+        )
+      end
+
+      context "when no index replaces the base" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private.example.com/simple",
+              "replaces-base" => false
+            }
+          )]
+        end
+
+        it "searches the default index last" do
+          expect(registry_urls).to eq(
+            [
+              "https://private.example.com/simple/",
+              "https://pypi.org/simple/"
+            ]
+          )
+        end
+      end
+    end
   end
 end
