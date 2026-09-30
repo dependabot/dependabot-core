@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       )
     end
 
-    it "drops a new vendored file that is deleted before the group is complete" do
+    it "keeps a new vendored path absent after repeated deletes and recreates it as create" do
       created_file = Dependabot::DependencyFile.new(
         name: "vendor/cache/transient.gem",
         content: "created",
@@ -163,11 +163,63 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
         vendored_file: true,
         deleted: true
       )
+      recreated_file = Dependabot::DependencyFile.new(
+        name: "vendor/cache/transient.gem",
+        content: "recreated",
+        directory: "/",
+        vendored_file: true,
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
 
       batch.merge(dependency_change_for(created_file))
       batch.merge(dependency_change_for(deleted_file))
+      expect(batch.updated_dependency_files).to be_empty
+
+      batch.merge(dependency_change_for(deleted_file))
+      expect(batch.updated_dependency_files).to be_empty
+
+      batch.merge(dependency_change_for(recreated_file))
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(content: "recreated", operation: Dependabot::DependencyFile::Operation::CREATE)
+      )
+    end
+
+    it "keeps a new non-vendored path out of the current files after repeated deletes" do
+      created_file = Dependabot::DependencyFile.new(
+        name: "new.lock",
+        content: "created",
+        directory: "/",
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+      deleted_file = Dependabot::DependencyFile.new(
+        name: "new.lock",
+        content: nil,
+        directory: "/",
+        deleted: true
+      )
+      recreated_file = Dependabot::DependencyFile.new(
+        name: "new.lock",
+        content: "recreated",
+        directory: "/",
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+      job = instance_double(
+        Dependabot::Job,
+        source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/")
+      )
+
+      batch.merge(dependency_change_for(created_file))
+      batch.merge(dependency_change_for(deleted_file))
+      batch.merge(dependency_change_for(deleted_file))
 
       expect(batch.updated_dependency_files).to be_empty
+      expect(batch.current_dependency_files(job)).to eq([initial_file])
+
+      batch.merge(dependency_change_for(recreated_file))
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(content: "recreated", operation: Dependabot::DependencyFile::Operation::CREATE)
+      )
+      expect(batch.current_dependency_files(job)).to contain_exactly(initial_file, recreated_file)
     end
 
     it "deduplicates notices from dependency changes" do

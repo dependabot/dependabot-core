@@ -51,7 +51,8 @@ module Dependabot
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
         files = @dependency_file_batch.filter_map do |_path, data|
-          data.file if Pathname.new(data.file.directory).cleanpath.to_s == directory
+          data.file if (data.initially_exists || data.changed) &&
+                       Pathname.new(data.file.directory).cleanpath.to_s == directory
         end
         # This should be prevented in the FileFetcher, but possible due to directory cleaning
         # that all files are filtered out.
@@ -65,7 +66,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         @dependency_file_batch.filter_map { |_path, data| data.file if data.changed } +
-          @vendored_dependency_batch.map { |_path, data| data.file }
+          @vendored_dependency_batch.filter_map { |_path, data| data.file if data.changed }
       end
 
       sig { params(dependency_change: Dependabot::DependencyChange).void }
@@ -129,8 +130,14 @@ module Dependabot
                            else
                              file.operation != Dependabot::DependencyFile::Operation::CREATE
                            end
+        changes = existing_state ? existing_state.changes + 1 : 1
         if file.deleted? && !initially_exists
-          batch.delete(file.path)
+          batch[file.path] = FileState.new(
+            file: file.dup,
+            changed: false,
+            changes: changes,
+            initially_exists: false
+          )
           return
         end
 
@@ -146,7 +153,7 @@ module Dependabot
         batch[file.path] = FileState.new(
           file: merged_file,
           changed: true,
-          changes: existing_state ? existing_state.changes + 1 : 1,
+          changes: changes,
           initially_exists: initially_exists
         )
       end
