@@ -24,8 +24,8 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 ### Merge queue checks
 
 The Specs, ARM64 Build, and Sorbet workflows support `merge_group` events. When a pull request enters a merge queue,
-these workflows check the combined changes on the queue's temporary commit. Queue runs do not cancel an earlier run
-for the same ref.
+these workflows check the combined changes on the queue's temporary commit. Specs and ARM64 Build use per-run
+concurrency groups for merge groups, so repeated requests for the same ref do not replace pending runs.
 
 The Branch images workflow publishes every ecosystem image with the merge-group SHA as its tag. The `Merge group images`
 check passes only after matrix preparation and all image publications succeed. This check is skipped on ordinary pull
