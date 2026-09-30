@@ -188,7 +188,7 @@ module Dependabot
       # so a manifest that lags behind the others still gets updated.
       sig { returns(T::Hash[String, String]) }
       def manifest_versions_by_uuid
-        manifest_files.each_with_object({}) do |manifest, map|
+        manifest_files.each_with_object(T.let({}, T::Hash[String, String])) do |manifest, map|
           result = parse_manifest_content(T.must(manifest.content))
 
           if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
