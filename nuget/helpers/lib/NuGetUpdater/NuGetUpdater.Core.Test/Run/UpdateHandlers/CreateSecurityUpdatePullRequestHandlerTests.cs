@@ -503,15 +503,23 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
         );
     }
 
-    [Fact]
-    public async Task GeneratesSecurityUpdateIgnored()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(">= 0")]
+    public async Task GeneratesSecurityUpdateIgnored(string? versionRequirement)
     {
         // vulnerable dependency exists, but it is explicitly ignored
         await TestAsync(
             job: new Job()
             {
                 Dependencies = ["Some.Dependency"],
-                IgnoreConditions = [new() { DependencyName = "Some.Dependency" }],
+                IgnoreConditions = [
+                    new()
+                    {
+                        DependencyName = "Some.Dependency",
+                        VersionRequirement = versionRequirement is null ? null : Requirement.Parse(versionRequirement),
+                    }
+                ],
                 SecurityAdvisories = [new() { DependencyName = "Some.Dependency", AffectedVersions = [Requirement.Parse("= 1.0.0")] }],
                 SecurityUpdatesOnly = true,
                 Source = CreateJobSource("/src"),
