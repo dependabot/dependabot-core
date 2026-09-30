@@ -21,6 +21,17 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 6. Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
 7. If you are helping bump a version or add new ecosystem support to Dependabot, please file a corresponding PR for the change in the [GitHub docs repo](https://docs.github.com/en/contributing/collaborating-on-github-docs/about-contributing-to-github-docs). The list of supported package manager versions lives [here](https://github.com/github/docs/blob/main/data/reusables/dependabot/supported-package-managers.md). The rest of the Dependabot docs are primarily in [this directory](https://github.com/github/docs/tree/main/content/code-security/dependabot) and [this directory](https://github.com/github/docs/tree/main/data/reusables/dependabot).
 
+### Merge queue checks
+
+The Specs, ARM64 Build, and Sorbet workflows support `merge_group` events. When a pull request enters a merge queue,
+these workflows check the combined changes on the queue's temporary commit. Queue runs do not cancel an earlier run
+for the same ref.
+
+The Branch images workflow publishes every ecosystem image with the merge-group SHA as its tag. The `Merge group images`
+check passes only after matrix preparation and all image publications succeed. This check is skipped on ordinary pull
+requests, where image publication still requires approval. Images for pull requests from forks must be built using the
+workflow's manual dispatch.
+
 ## Project layout
 
 There's a good description of the project's layout in our [README's Architecture section](README.md#architecture-and-code-layout), but if you're

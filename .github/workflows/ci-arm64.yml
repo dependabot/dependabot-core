@@ -1,6 +1,9 @@
 name: ARM64 Build
 on:  # yamllint disable-line rule:truthy
   pull_request:
+  merge_group:
+    types:
+      - checks_requested
   schedule:
     - cron: "0 0 * * *"
 
@@ -9,7 +12,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.event_name != 'merge_group' && github.ref != 'refs/heads/main' }}
 
 jobs:
   arm64-build:
