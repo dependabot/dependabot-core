@@ -208,6 +208,12 @@ module Dependabot
             # The existing PR is for a previous version. Supersede it.
             create_pull_request(dependency_change)
           end
+        rescue Dependabot::AllVersionsIgnored
+          # updated_dependencies can raise this even after requirements_to_unlock
+          # succeeds, when the resolvable-version finder ignores every candidate.
+          # Security refreshes are handled by RefreshSecurityUpdatePullRequest (see
+          # .applies_to?), so here the PR is always closed as no-longer-possible.
+          close_pull_request(reason: :update_no_longer_possible)
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
@@ -302,6 +308,13 @@ module Dependabot
           else
             :update_not_possible
           end
+        rescue Dependabot::AllVersionsIgnored
+          # Security updates rely on this being surfaced to halt the run, so only
+          # non-security jobs treat every ignored version as "no update possible".
+          raise if job.security_updates_only?
+
+          Dependabot.logger.info("All updates for #{checker.dependency.name} were ignored")
+          :update_not_possible
         end
 
         sig do

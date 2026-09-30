@@ -105,10 +105,7 @@ module Dependabot
       def project_file_dependencies
         dependencies_map = T.let({}, T::Hash[String, Dependabot::Dependency])
 
-        parsed_projects = all_project_files.filter_map do |proj_file|
-          result = parse_project_file(proj_file)
-          [proj_file, result] if result
-        end
+        parsed_projects = parse_project_files
 
         # Packages that are themselves workspace projects (the root package or
         # a sibling member) resolve by path within the workspace, never from a
@@ -211,30 +208,28 @@ module Dependabot
         end
       end
 
-      sig do
-        params(proj_file: Dependabot::DependencyFile)
-          .returns(T.nilable(Dependabot::Julia::RegistryClient::Result::Project))
-      end
-      def parse_project_file(proj_file)
-        temp_dir = Dir.mktmpdir("julia_project")
-        # File names like "../Project.toml" (a workspace root fetched from a
-        # member directory) must not escape the temp dir; fall back to the
-        # basename since each project file gets its own directory anyway.
-        project_path = File.expand_path(File.join(temp_dir, proj_file.name))
-        unless project_path.start_with?("#{File.expand_path(temp_dir)}#{File::SEPARATOR}")
-          project_path = File.join(temp_dir, File.basename(proj_file.name))
-        end
-        FileUtils.mkdir_p(File.dirname(project_path))
-        File.write(project_path, proj_file.content)
+      # The project files are laid out together as in the repository so that
+      # the helper can find a member's workspace root (or a test
+      # environment's package) and bound it by that parent's julia compat.
+      sig { returns(T::Array[[Dependabot::DependencyFile, Dependabot::Julia::RegistryClient::Result::Project]]) }
+      def parse_project_files
+        Dir.mktmpdir("julia_project") do |temp_dir|
+          project_paths = all_project_files.map do |proj_file|
+            # DependencyFile#path resolves a name like "../Project.toml" (a
+            # workspace root fetched from a member directory) against the
+            # file's directory, so it cannot escape the temp dir
+            project_path = File.join(temp_dir, proj_file.path)
+            FileUtils.mkdir_p(File.dirname(project_path))
+            File.write(project_path, proj_file.content)
+            [proj_file, project_path]
+          end
 
-        begin
-          result = registry_client.parse_project(project_path: project_path)
+          project_paths.filter_map do |proj_file, project_path|
+            result = registry_client.parse_project(project_path: project_path)
+            next if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
 
-          return nil if result.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
-
-          result
-        ensure
-          FileUtils.rm_rf(temp_dir)
+            [proj_file, result]
+          end
         end
       end
 
@@ -291,7 +286,7 @@ module Dependabot
       end
 
       # A stdlib carries the versions its compat entry has to admit, keyed by
-      # project file since every file has its own julia compat entry
+      # project file since every file has its own effective julia range
       sig do
         params(
           dependency: Dependabot::Julia::RegistryClient::Result::ProjectDependency,

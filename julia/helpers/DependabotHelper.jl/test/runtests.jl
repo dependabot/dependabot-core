@@ -1118,6 +1118,84 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                 @test result["dependencies"][1]["stdlib"] == false
             end
         end
+
+        @testset "parse_project bounds an environment by the projects it resolves with" begin
+            statistics_dep = """
+            [deps]
+            Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+            """
+            package_header(name) = """
+            name = "$name"
+            uuid = "1234e567-e89b-12d3-a456-$(lpad(hash(name) % 10^12, 12, '0'))"
+            version = "0.1.0"
+            """
+            floor_of(dir) = only(DependabotHelper.parse_project(joinpath(dir, "Project.toml"))["dependencies"])["stdlib_versions"]
+
+            # A workspace environment is bounded by every project in the
+            # workspace, root, siblings and nested members alike; a package
+            # in the workspace keeps its own range since it also installs on
+            # its own
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), package_header("Root") * statistics_dep * """
+                [workspace]
+                projects = ["test", "docs", "sub", "lib/SubPackage"]
+
+                [compat]
+                julia = "1.6"
+                """)
+                mkpath(joinpath(tmpdir, "test"))
+                write(joinpath(tmpdir, "test", "Project.toml"), statistics_dep)
+                mkpath(joinpath(tmpdir, "docs"))
+                write(joinpath(tmpdir, "docs", "Project.toml"), statistics_dep * "\n[compat]\njulia = \"1\"\n")
+                mkpath(joinpath(tmpdir, "sub", "leaf"))
+                write(joinpath(tmpdir, "sub", "Project.toml"), """
+                [workspace]
+                projects = ["leaf"]
+
+                [compat]
+                julia = "1.10"
+                """)
+                write(joinpath(tmpdir, "sub", "leaf", "Project.toml"), statistics_dep)
+                mkpath(joinpath(tmpdir, "lib", "SubPackage"))
+                write(joinpath(tmpdir, "lib", "SubPackage", "Project.toml"), package_header("SubPackage") * statistics_dep * """
+                [compat]
+                julia = "1.11"
+                """)
+
+                @test floor_of(tmpdir) == ["0.0.0", "1.6.0"]
+                @test floor_of(joinpath(tmpdir, "lib", "SubPackage")) == ["1.11.5"]
+                # 1.6 ∩ 1 ∩ 1.10 ∩ 1.11 = 1.11
+                @test floor_of(joinpath(tmpdir, "test")) == ["1.11.5"]
+                @test floor_of(joinpath(tmpdir, "docs")) == ["1.11.5"]
+                @test floor_of(joinpath(tmpdir, "sub", "leaf")) == ["1.11.5"]
+                # What a project reports as its own entry is unchanged
+                @test DependabotHelper.parse_project(joinpath(tmpdir, "docs", "Project.toml"))["julia_version"] == "1"
+                @test DependabotHelper.parse_project(joinpath(tmpdir, "test", "Project.toml"))["julia_version"] == ""
+            end
+
+            # Outside a workspace, a package's test/ environment is bounded by
+            # the package it is tested with; a plain environment's test/
+            # directory is not, and a test/ project that is itself a package
+            # keeps its own range
+            mktempdir() do tmpdir
+                mkpath(joinpath(tmpdir, "test"))
+                write(joinpath(tmpdir, "test", "Project.toml"), statistics_dep)
+                write(joinpath(tmpdir, "Project.toml"), """
+                [compat]
+                julia = "1.10"
+                """)
+                @test floor_of(joinpath(tmpdir, "test")) == ["0.0.0", "1.0.0"]
+
+                write(joinpath(tmpdir, "Project.toml"), package_header("Package") * """
+                [compat]
+                julia = "1.10"
+                """)
+                @test floor_of(joinpath(tmpdir, "test")) == ["1.10.0"]
+
+                write(joinpath(tmpdir, "test", "Project.toml"), package_header("PackageTests") * statistics_dep)
+                @test floor_of(joinpath(tmpdir, "test")) == ["0.0.0", "1.0.0"]
+            end
+        end
     end
 
     @testset "Batch Operations Tests" begin

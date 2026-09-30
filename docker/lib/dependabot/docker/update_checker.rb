@@ -2,7 +2,10 @@
 # frozen_string_literal: true
 
 require "docker_registry2"
+require "excon"
+require "json"
 require "sorbet-runtime"
+require "uri"
 
 begin
   require "rest-client"
@@ -36,6 +39,7 @@ end
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/cooldown_calculation"
+require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/docker/tag"
 require "dependabot/docker/file_parser"
@@ -471,25 +475,8 @@ module Dependabot
 
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Dependabot::Package::PackageRelease)) }
       def get_tag_publication_details(tag)
-        digest_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          client = docker_registry_client
-          client.digest(docker_repo_name, tag.name)
-        end
-
-        first_digest = extract_digest_from_response(digest_info, tag)
-        return nil unless first_digest
-
-        # When digest_info is an Array the registry returned a manifest list
-        # (OCI image index) and the extracted digest points at a platform-
-        # specific *manifest*, not a blob.  Use the correct endpoint so the
-        # HEAD request succeeds on registries like ghcr.io.
-        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
-        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          client = docker_registry_client
-          client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
-        end
-
-        published_date = published_date_from_response_headers(head_response.headers, tag.name)
+        published_date = registry_tag_release_date(tag)
+        return nil unless published_date
 
         Dependabot::Package::PackageRelease.new(
           version: release_version_for(tag),
@@ -499,58 +486,75 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
-      rescue *transient_docker_errors,
+      end
+
+      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
+      def registry_tag_release_date(tag)
+        return docker_hub_tag_release_date(tag) if using_dockerhub?
+
+        Dependabot.logger.info(
+          "No verified registry publication date source for #{registry_hostname}; " \
+          "skipping cooldown for #{docker_repo_name}:#{tag.name}"
+        )
+        nil
+      rescue JSON::ParserError, ArgumentError, TypeError, Excon::Error::Socket, Excon::Error::Timeout,
+             RegistryError, PrivateSourceBadResponse, PrivateSourceAuthenticationFailure,
+             *transient_docker_errors,
              DockerRegistry2::RegistryAuthenticationException,
              DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden,
              RestClient::TooManyRequests => e
-        Dependabot.logger.warn(
-          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
-          "skipping cooldown: #{e.class} - #{e.message}"
-        )
-        nil
-      end
-
-      sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
-      def published_date_from_response_headers(headers, tag_name)
-        last_modified = headers[:last_modified]
-        return nil unless last_modified
-
-        Time.parse(last_modified)
-      rescue ArgumentError, TypeError => e
         Dependabot.logger.info(
-          "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
+          "Failed to fetch registry tag metadata for #{docker_repo_name}:#{tag.name}: #{e.message}"
         )
         nil
       end
 
-      sig do
-        params(
-          digest_info: Object,
-          tag: Dependabot::Docker::Tag
-        ).returns(T.nilable(String))
+      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
+      def docker_hub_tag_release_date(tag)
+        namespace, repository = docker_repo_name.split("/", 2)
+        return unless namespace && repository
+
+        digest = digest_of(tag.name)
+        return unless digest
+
+        response = Dependabot::RegistryClient.get(
+          url: docker_hub_tag_url(namespace, repository, tag.name),
+          headers: { "Accept" => "application/json" },
+          options: {
+            connect_timeout: docker_open_timeout_in_seconds,
+            read_timeout: docker_read_timeout_in_seconds,
+            write_timeout: docker_read_timeout_in_seconds
+          }
+        )
+        return unless response.status == 200
+
+        metadata = JSON.parse(response.body)
+        return unless metadata.is_a?(Hash)
+        return unless docker_hub_digest_matches_update?(metadata["digest"], digest)
+
+        timestamp = metadata["tag_last_pushed"]
+        Time.iso8601(timestamp) if timestamp.is_a?(String)
       end
-      def extract_digest_from_response(digest_info, tag)
-        # digest_info can be either a String or an Array depending on the registry response
-        case digest_info
-        when Array
-          if digest_info.empty?
-            Dependabot.logger.warn(
-              "Empty digest_info array for #{docker_repo_name}:#{tag.name}"
-            )
-            return nil
-          end
-          digest = digest_info.first&.fetch("digest")
-          digest if digest.is_a?(String)
-        when String
-          digest_info
-        else
-          Dependabot.logger.warn(
-            "Unexpected digest_info type for #{docker_repo_name}:#{tag.name}: " \
-            "#{digest_info.class} (expected String or Array)"
-          )
-          nil
-        end
+
+      sig { params(metadata_digest: Object, digest: String).returns(T::Boolean) }
+      def docker_hub_digest_matches_update?(metadata_digest, digest)
+        return digest_requirements.empty? && !pin_digests? if metadata_digest.nil?
+
+        matching_digest?(metadata_digest, digest)
+      end
+
+      sig { params(namespace: String, repository: String, tag: String).returns(String) }
+      def docker_hub_tag_url(namespace, repository, tag)
+        escaped = [namespace, repository, tag].map { |value| URI.encode_www_form_component(value) }
+        "https://hub.docker.com/v2/namespaces/#{escaped[0]}/repositories/#{escaped[1]}/tags/#{escaped[2]}"
+      end
+
+      sig { params(first: Object, second: Object).returns(T::Boolean) }
+      def matching_digest?(first, second)
+        return false unless first.is_a?(String) && second.is_a?(String)
+
+        first.delete_prefix("sha256:").casecmp?(second.delete_prefix("sha256:")) || false
       end
 
       sig do
@@ -1088,8 +1092,7 @@ module Dependabot
       # don't change the version string, so the default cooldown window applies
       # (semver-specific windows require a version delta, and the tag may be
       # non-comparable like "alpine"). Fails open (returns false) when the
-      # publication date can't be determined, so a missing Last-Modified header
-      # never permanently blocks an update.
+      # publication date can't be determined and records an unavailable-date warning.
       sig { params(tag_name: String).returns(T::Boolean) }
       def digest_within_cooldown?(tag_name)
         return false if should_skip_cooldown?

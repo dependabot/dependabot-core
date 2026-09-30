@@ -464,11 +464,64 @@ RSpec.describe Dependabot::Julia::FileParser do
         end
       end
 
-      context "when workspace files have different julia compat entries" do
-        let(:dependency_files) { [stdlib_project_file, member_project_file] }
-        let(:member_project_file) do
+      context "when the package has a test environment" do
+        let(:dependency_files) { [stdlib_project_file, test_project_file] }
+        let(:test_julia_compat) { nil }
+        let(:test_project_file) do
           Dependabot::DependencyFile.new(
             name: "test/Project.toml",
+            content: <<~TOML
+              [deps]
+              Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+              [compat]
+              Statistics = "1"
+              #{"julia = \"#{test_julia_compat}\"" if test_julia_compat}
+            TOML
+          )
+        end
+
+        it "bounds the test environment by the package's julia compat" do
+          # Pkg.test loads the package into the test sandbox, so the tests
+          # never run on a Julia the package itself rejects
+          expect(stdlib_versions_of("Statistics"))
+            .to eq("Project.toml" => ["1.10.0"], "test/Project.toml" => ["1.10.0"])
+        end
+
+        context "when the test environment has its own wider julia compat entry" do
+          let(:test_julia_compat) { "1" }
+
+          it "keeps the package's narrower range" do
+            expect(stdlib_versions_of("Statistics"))
+              .to eq("Project.toml" => ["1.10.0"], "test/Project.toml" => ["1.10.0"])
+          end
+        end
+      end
+
+      context "when a workspace member has no julia compat entry" do
+        let(:dependency_files) { [workspace_root_file, member_project_file] }
+        let(:workspace_root_file) do
+          Dependabot::DependencyFile.new(
+            name: "Project.toml",
+            content: <<~TOML
+              name = "WorkspaceRoot"
+              uuid = "11111111-1111-1111-1111-111111111111"
+              version = "1.0.0"
+
+              [workspace]
+              projects = ["docs"]
+
+              [deps]
+              Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+              [compat]
+              julia = "1.10"
+            TOML
+          )
+        end
+        let(:member_project_file) do
+          Dependabot::DependencyFile.new(
+            name: "docs/Project.toml",
             content: <<~TOML
               [deps]
               Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
@@ -479,9 +532,93 @@ RSpec.describe Dependabot::Julia::FileParser do
           )
         end
 
-        it "keeps a floor per file" do
+        it "bounds the member by the workspace root's julia compat" do
           expect(stdlib_versions_of("Statistics"))
-            .to eq("Project.toml" => ["1.10.0"], "test/Project.toml" => ["0.0.0", "1.0.0"])
+            .to eq("Project.toml" => ["1.10.0"], "docs/Project.toml" => ["1.10.0"])
+        end
+
+        context "when a sibling member has the narrowest julia compat entry" do
+          let(:dependency_files) { [workspace_root_file, member_project_file, sibling_project_file] }
+          let(:workspace_root_file) do
+            Dependabot::DependencyFile.new(
+              name: "Project.toml",
+              content: <<~TOML
+                name = "WorkspaceRoot"
+                uuid = "11111111-1111-1111-1111-111111111111"
+                version = "1.0.0"
+
+                [workspace]
+                projects = ["docs", "test"]
+
+                [deps]
+                Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+                [compat]
+                julia = "1.10"
+              TOML
+            )
+          end
+          let(:sibling_project_file) do
+            Dependabot::DependencyFile.new(
+              name: "test/Project.toml",
+              content: <<~TOML
+                [deps]
+                Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+                [compat]
+                Statistics = "1"
+                julia = "1.11"
+              TOML
+            )
+          end
+
+          it "resolves the environments under every workspace project's entry but leaves the package alone" do
+            # Pkg resolves the shared manifest under the intersection of all
+            # workspace projects' julia entries; the root package is also
+            # installed on its own, so its entries keep covering its own range
+            expect(stdlib_versions_of("Statistics")).to eq(
+              "Project.toml" => ["1.10.0"],
+              "docs/Project.toml" => ["1.11.5"],
+              "test/Project.toml" => ["1.11.5"]
+            )
+          end
+        end
+
+        context "when Dependabot targets the member directory" do
+          let(:workspace_root_file) do
+            Dependabot::DependencyFile.new(
+              name: "../Project.toml",
+              directory: "/docs",
+              content: <<~TOML
+                name = "WorkspaceRoot"
+                uuid = "11111111-1111-1111-1111-111111111111"
+                version = "1.0.0"
+
+                [workspace]
+                projects = ["docs"]
+
+                [compat]
+                julia = "1.10"
+              TOML
+            )
+          end
+          let(:member_project_file) do
+            Dependabot::DependencyFile.new(
+              name: "Project.toml",
+              directory: "/docs",
+              content: <<~TOML
+                [deps]
+                Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+                [compat]
+                Statistics = "1"
+              TOML
+            )
+          end
+
+          it "still finds the root through ../Project.toml" do
+            expect(stdlib_versions_of("Statistics")).to eq("Project.toml" => ["1.10.0"])
+          end
         end
       end
     end

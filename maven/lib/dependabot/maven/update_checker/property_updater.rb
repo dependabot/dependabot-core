@@ -53,6 +53,11 @@ module Dependabot
 
           @update_possible ||= T.let(
             dependencies_using_property.all? do |dep|
+              # Skip the property update when a dependency sharing the property has no
+              # locatable inline version to rewrite (e.g. a version managed by an
+              # imported BOM), since the update cannot be applied to it.
+              next false if version_string(dep).nil?
+
               next false if includes_property_reference?(updated_version(dep))
 
               releases = VersionFinder.new(

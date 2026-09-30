@@ -63,8 +63,9 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def repository_url(dependency)
-        RequirementSource.new(dependency.requirements.first).description_string("url") || options[:pub_hosted_url] ||
-          "https://pub.dev"
+        repository_url = RequirementSource.new(dependency.requirements.first).description_string("url") ||
+                         options[:pub_hosted_url] || "https://pub.dev"
+        repository_url.delete_suffix("/")
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, T.untyped]) }
