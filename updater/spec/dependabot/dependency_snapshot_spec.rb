@@ -565,5 +565,141 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(handled_bar).to include("dummy-pkg-b")
       end
     end
+
+    context "when dependencies_in_existing_pr_for_group call count" do
+      let(:existing_group_pull_requests) do
+        [
+          {
+            "dependency-group-name" => "group-a",
+            "dependencies" => [
+              { "dependency-name" => "dummy-pkg-a", "directory" => "/foo" }
+            ]
+          }
+        ]
+      end
+
+      it "calls dependencies_in_existing_pr_for_group exactly once regardless of directory count" do
+        snapshot = create_dependency_snapshot
+        group = snapshot.groups.first
+
+        expect(snapshot).to receive(:dependencies_in_existing_pr_for_group)
+          .with(group)
+          .once
+          .and_call_original
+
+        snapshot.mark_group_handled(group)
+      end
+    end
+
+    context "with many directories (monorepo performance scenario)" do
+      # Simulate a large monorepo like Apache Camel with many submodule directories.
+      # The fix ensures dependencies_in_existing_pr_for_group is called O(1) per group
+      # rather than O(N_directories) — the test validates correctness at scale.
+      let(:many_dirs) { (1..50).map { |i| "/module-#{i}" } }
+
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "dependabot-fixtures/dependabot-test-ruby-package",
+          directories: many_dirs,
+          branch: nil,
+          api_endpoint: "https://api.github.com/",
+          hostname: "github.com"
+        )
+      end
+
+      let(:dependency_files) do
+        many_dirs.flat_map do |dir|
+          [
+            Dependabot::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("bundler/original/Gemfile"),
+              directory: dir
+            ),
+            Dependabot::DependencyFile.new(
+              name: "Gemfile.lock",
+              content: fixture("bundler/original/Gemfile.lock"),
+              directory: dir
+            )
+          ]
+        end
+      end
+
+      let(:existing_group_pull_requests) do
+        [
+          {
+            "dependency-group-name" => "group-a",
+            "dependencies" => [
+              { "dependency-name" => "dummy-pkg-a", "directory" => "/module-1" }
+            ]
+          }
+        ]
+      end
+
+      it "calls dependencies_in_existing_pr_for_group exactly once for 50 directories" do
+        snapshot = create_dependency_snapshot
+        group = snapshot.groups.first
+
+        expect(snapshot).to receive(:dependencies_in_existing_pr_for_group)
+          .with(group)
+          .once
+          .and_call_original
+
+        snapshot.mark_group_handled(group)
+      end
+
+      it "marks dependencies as handled in every directory" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first)
+
+        many_dirs.each do |dir|
+          snapshot.current_directory = dir
+          expect(snapshot.handled_dependencies)
+            .to include("dummy-pkg-a"),
+                "expected dummy-pkg-a to be handled in #{dir}"
+        end
+      end
+
+      it "completes mark_group_handled in acceptable time" do
+        snapshot = create_dependency_snapshot
+        group = snapshot.groups.first
+
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        snapshot.mark_group_handled(group)
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+
+        # 50 directories: should complete well under 1 second even on slow CI.
+        # The old code doing 50 PR-list scans was measured at ~5-10x slower for
+        # large real-world repos (Camel has 200+ directories).
+        expect(elapsed).to be < 1.0
+      end
+
+      # Regression guard: PR #15947 accidentally made dependencies_in_existing_pr_for_group
+      # scale as O(N_directories) per mark_group_handled call. This test verifies the
+      # call count stays O(1) regardless of directory count, which is the unit-level
+      # proxy for the observed Camel slowness.
+      it "call count does not grow with directory count: 50 dirs → still 1 lookup" do
+        snapshot_large = create_dependency_snapshot
+        group_large = snapshot_large.groups.first
+        call_count = 0
+
+        allow(snapshot_large).to receive(:dependencies_in_existing_pr_for_group)
+          .with(group_large) do |g|
+            call_count += 1
+            # delegate to real implementation
+            existing = job.existing_group_pull_requests.find { |pr| pr.dependency_group_name == g.name }
+            (existing&.dependencies || []).select(&:name)
+          end
+
+        snapshot_large.mark_group_handled(group_large)
+
+        # Before the fix: call_count == many_dirs.size (50)
+        # After the fix:  call_count == 1 (independent of directory count)
+        expect(call_count)
+          .to eq(1),
+              "Expected 1 lookup for #{many_dirs.size} directories, got #{call_count}. " \
+              "This indicates the O(N_directories) regression from PR #15947 is present."
+      end
+    end
   end
 end

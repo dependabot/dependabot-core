@@ -126,14 +126,18 @@ module Dependabot
       # across ALL directories to prevent duplicate individual PRs
       group_by_name = group.group_by_dependency_name?
 
+      # Fetch the existing PR dependencies once for the group rather than once
+      # per directory — this avoids O(directories) repeated scans of
+      # job.existing_group_pull_requests for every call to mark_group_handled.
+      all_existing_pr_deps = dependencies_in_existing_pr_for_group(group)
+
       directories.each do |directory|
         @current_directory = directory
 
-        # add the existing dependencies in the group so individual updates don't try to update them
-        dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
-
-        dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
-          # When grouping by name, include deps from all directories; otherwise filter by current directory
+        # Filter the already-fetched list to those relevant to this directory.
+        # When grouping by name, include deps from all directories; otherwise
+        # filter to the current directory only.
+        deps_for_directory = all_existing_pr_deps.filter do |dep|
           group_by_name || !dep.directory || dep.directory == directory
         end
 
@@ -145,7 +149,7 @@ module Dependabot
 
         add_handled_dependencies(
           current_dependencies.concat(
-            dependencies_in_existing_prs.filter_map(&:name)
+            deps_for_directory.filter_map(&:name)
           )
         )
       end
