@@ -194,6 +194,56 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     it "builds package-manager metadata from the typed manifest config" do
       expect(parser.ecosystem.package_manager.name).to eq("npm")
     end
+
+    context "when the manifest specifies an npm engine range" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { "engines" => { "npm" => "^10" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: { "lockfileVersion" => 3, "packages" => {} }.to_json
+          )
+        ]
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return("11.17.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:register_npm_version_selector).and_call_original
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "activates the selected npm major for the update process" do
+        parser.ecosystem
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+          .with("npm", "10", env: nil)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("10")
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:register_npm_version_selector).with("/", "10")
+      end
+
+      it "does not register the npm selector for a subsequently parsed Yarn directory" do
+        parser.ecosystem
+        yarn_files = project_dependency_files("yarn/simple")
+        yarn_parser = described_class.new(
+          dependency_files: yarn_files,
+          source: source,
+          credentials: credentials
+        )
+        yarn_package_manager_helper = yarn_parser.send(:package_manager_helper)
+        allow(yarn_parser).to receive(:package_manager_helper).and_return(yarn_package_manager_helper)
+        expect(yarn_package_manager_helper).not_to receive(:setup)
+
+        expect(yarn_parser.ecosystem.package_manager.name).to eq("yarn")
+
+        Dependabot::NpmAndYarn::Helpers.activate_npm_version_selector(yarn_files)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil
+      end
+    end
   end
 
   describe "parse" do

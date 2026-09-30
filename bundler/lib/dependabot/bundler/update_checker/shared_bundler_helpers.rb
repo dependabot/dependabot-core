@@ -74,11 +74,12 @@ module Dependabot
         #########################
 
         sig do
-          params(
-            error_handling: T::Boolean,
-            _blk: T.proc.params(arg0: String).returns(T.untyped)
-          )
-            .returns(T.untyped)
+          type_parameters(:T)
+            .params(
+              error_handling: T::Boolean,
+              _blk: T.proc.params(arg0: String).returns(T.type_parameter(:T))
+            )
+            .returns(T.type_parameter(:T))
         end
         def in_a_native_bundler_context(error_handling: true, &_blk)
           SharedHelpers
@@ -115,7 +116,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
-        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).void }
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_bundler_errors(error)
           if error.error_class == "JSON::ParserError"
             msg = "Error evaluating your dependency files: #{error.message}"

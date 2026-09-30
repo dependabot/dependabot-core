@@ -8,25 +8,68 @@ require "dependabot/shared_helpers"
 require_relative "../../support/corepack_registry"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  describe "::activate_npm_version_selector" do
+    let(:legacy_files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/legacy")]
+    end
+    let(:modern_files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/modern")]
+    end
+
+    after { described_class.npm_version_selector = nil }
+
+    it "restores the selector registered for each manifest directory" do
+      described_class.register_npm_version_selector("/legacy", "9")
+      described_class.register_npm_version_selector("/modern", "10")
+
+      described_class.activate_npm_version_selector(legacy_files)
+      expect(described_class.npm_version_selector).to eq("9")
+
+      described_class.activate_npm_version_selector(modern_files)
+      expect(described_class.npm_version_selector).to eq("10")
+    end
+  end
+
   describe "::run_npm_command" do
-    it "runs npm directly and passes through the environment" do
-      env = { "CUSTOM_VAR" => "custom-value" }
+    after { described_class.npm_version_selector = nil }
 
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "npm install",
-        fingerprint: "npm install dependencies",
-        output_observer: kind_of(Proc),
-        env: env
-      ).and_return("")
+    context "when an npm selector is configured" do
+      before { described_class.npm_version_selector = "10" }
 
-      described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
+      it "runs the Corepack-managed npm and passes through the environment" do
+        env = { "CUSTOM_VAR" => "custom-value" }
 
-      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-        "npm install",
-        fingerprint: "npm install dependencies",
-        output_observer: kind_of(Proc),
-        env: env
-      )
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10 install",
+          fingerprint: "corepack npm@10 install dependencies",
+          output_observer: kind_of(Proc),
+          env: env
+        ).and_return("")
+
+        described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm@10 install",
+          fingerprint: "corepack npm@10 install dependencies",
+          output_observer: kind_of(Proc),
+          env: env
+        )
+      end
+    end
+
+    context "when no npm selector is configured" do
+      it "runs the direct npm binary" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+        described_class.run_npm_command("install", fingerprint: "install dependencies")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "npm install",
+          fingerprint: "npm install dependencies",
+          output_observer: kind_of(Proc),
+          env: nil
+        )
+      end
     end
   end
 
@@ -72,20 +115,35 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::npm_version" do
-    it "returns the local npm version" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("npm -v", fingerprint: "npm -v")
-        .and_return("11.10.0\n")
+    before { described_class.npm_version_selector = "10" }
+    after { described_class.npm_version_selector = nil }
 
-      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
+    it "returns the Corepack-managed npm version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("corepack npm@10 -v", fingerprint: "corepack npm@10 -v", env: nil)
+        .and_return("10.9.4\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("10.9.4"))
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-        .with("npm -v", fingerprint: "npm -v")
+        .with("corepack npm@10 -v", fingerprint: "corepack npm@10 -v", env: nil)
     end
 
     it "returns nil when the local npm version cannot be determined" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing npm")
 
       expect(described_class.npm_version).to be_nil
+    end
+  end
+
+  describe "::npm_version without an active selector" do
+    it "checks the local npm binary directly instead of Corepack's unqualified default" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+        .and_return("11.9.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
     end
   end
 

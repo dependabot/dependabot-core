@@ -202,6 +202,34 @@ module Dependabot
           PyprojectValueParser.string_array(value, "project.dynamic")
         end
 
+        # Pip resolution ignores malformed containers and non-string entries in these fields.
+        sig { returns(T::Array[String]) }
+        def pip_dependencies
+          project = @data["project"]
+          return [] unless project.is_a?(Hash)
+
+          dependencies = T.cast(project["dependencies"], Object)
+          return [] unless dependencies.is_a?(Array)
+
+          dependencies.grep(String)
+        end
+
+        sig { returns(T::Array[String]) }
+        def pip_constraint_paths
+          tool = @data["tool"]
+          return [] unless tool.is_a?(Hash)
+
+          pip = T.cast(tool["pip"], Object)
+          return [] unless pip.is_a?(Hash)
+
+          constraints = T.cast(pip["constraints"], Object)
+          case constraints
+          when String then [constraints]
+          when Array then constraints.grep(String)
+          else []
+          end
+        end
+
         sig { params(name: String).returns(T::Boolean) }
         def optional_dependency_group?(name)
           project = section(@data, "project", "project")
