@@ -54,16 +54,28 @@ module Dependabot
             escape_userinfo(clean_check_and_remove_environment_variables(url))
           end
 
-          # The base index (a `replaces-base` registry, or public PyPI when none
-          # is configured) is searched last so that fully private registries take
+          # A `replaces-base` registry, or public PyPI when no index is
+          # configured, is searched last so that fully private registries take
           # precedence, avoiding dependency confusion attacks where a private
           # package name is claimed by a public package of the same name.
           #
-          # The base index is removed from the extras first, so that declaring it
+          # An index explicitly configured in a dependency file (a
+          # `--index-url`, a `pip.conf` `index-url`, or a default Poetry source)
+          # is an intentional choice of primary registry, so it keeps its place
+          # ahead of the extra indexes.
+          #
+          # The main index is removed from the extras first, so that declaring it
           # as both a main and an extra index (as a Pipfile `[[source]]` does)
           # doesn't keep it at the front of the list.
           main_url = escape_userinfo(main_index_url)
-          ordered_urls = extra_index_urls.reject { |url| url == main_url } + [main_url]
+          other_urls = extra_index_urls.reject { |url| url == main_url }
+
+          ordered_urls =
+            if demote_main_index?(main_url)
+              other_urls + [main_url]
+            else
+              [main_url] + other_urls
+            end
 
           # A configured main index may itself be fully private, while an extra
           # index may be public PyPI, so the public indexes are always moved to
@@ -76,6 +88,16 @@ module Dependabot
         end
 
         private
+
+        # The main index is only demoted below the extra indexes when it isn't a
+        # deliberate choice of primary private registry: either it comes from a
+        # `replaces-base` credential, or it's public PyPI.
+        sig { params(main_url: String).returns(T::Boolean) }
+        def demote_main_index?(main_url)
+          return true if public_pypi_url?(main_url)
+
+          !config_variable_index_urls[:main].nil?
+        end
 
         sig { params(url: String).returns(String) }
         def escape_userinfo(url)

@@ -440,6 +440,41 @@ RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
       end
     end
 
+    context "when two custom private indexes are configured in a file" do
+      let(:requirements_fixture_name) { "two_private_indexes.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "keeps the explicitly configured main index ahead of the extra" do
+        expect(registry_urls).to eq(
+          [
+            "https://main.example.com/simple/",
+            "https://extra.example.com/simple/"
+          ]
+        )
+      end
+
+      context "when the main index comes from a replaces-base credential" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://replaces-base.example.com/simple",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "demotes the replaces-base index below the extras" do
+          expect(registry_urls).to eq(
+            [
+              "https://extra.example.com/simple/",
+              "https://replaces-base.example.com/simple/"
+            ]
+          )
+        end
+      end
+    end
+
     context "when the public extra index has unescaped credentials" do
       let(:requirements_fixture_name) { "private_index_public_extra_creds.txt" }
       let(:dependency_files) { [requirements_file] }
