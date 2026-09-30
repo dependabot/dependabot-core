@@ -432,6 +432,27 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("deduplicates identical conflicts from a package and its alias", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/aliased-output-duplicate",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("traverses workspace packages not referenced by the root manifest", async () => {
     helpers.copyDependencies(
       "conflicting-dependency-parser/berry-workspace",
@@ -469,6 +490,35 @@ describe("findConflictingDependencies", () => {
       {
         explanation:
           "local-pkg@0.0.0-use.local requires abind@^1.0.0 via objnest@4.1.4",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
+  it("does not traverse a workspace with multiple descriptors twice", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/berry-multiple-workspace-descriptors",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation:
+          "local-pkg@0.0.0-use.local requires abind@^1.0.0 via objnest@4.1.4",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+      {
+        explanation:
+          "parent-pkg@0.0.0-use.local requires abind@^1.0.0 via a transitive dependency on objnest@4.1.4",
         name: "objnest",
         version: "4.1.4",
         requirement: "^1.0.0",

@@ -128,13 +128,20 @@ async function findNormalizedConflictingDependencies(
   // constraints are not dependency blockers. Traverse from each workspace's
   // dependencies while retaining the workspace as the top-level context. The
   // root workspace and manifest dependencies are already covered above.
+  const traversedWorkspaceNames = new Set(topLevelWorkspaceNames);
   const workspaceConflictingParents = lockfileJson
-    .filter(
-      (entry) =>
-        entry.requirement.startsWith(WORKSPACE_PROTOCOL) &&
-        entry.requirement !== `${WORKSPACE_PROTOCOL}.` &&
-        !topLevelWorkspaceNames.has(entry.name)
-    )
+    .filter((entry) => {
+      if (
+        !entry.requirement.startsWith(WORKSPACE_PROTOCOL) ||
+        entry.requirement === `${WORKSPACE_PROTOCOL}.` ||
+        traversedWorkspaceNames.has(entry.name)
+      ) {
+        return false;
+      }
+
+      traversedWorkspaceNames.add(entry.name);
+      return true;
+    })
     .flatMap((workspace) => {
       const topLevelSpec: TopLevelSpec = {
         name: workspace.name,
@@ -168,24 +175,25 @@ async function findNormalizedConflictingDependencies(
     ...workspaceConflictingParents,
   ];
 
-  // Collapse repeated paths within one top-level dependency while preserving
-  // each independent ancestor that must be updated.
+  // Collapse identical output while preserving each independent ancestor that
+  // must be updated.
   const conflicts = new Map<string, ConflictingDependency>();
   for (const parentSpec of conflictingParents) {
-    const key = [
-      realNameOf(parentSpec),
-      parentSpec.version,
-      parentSpec.requirement,
-      edgeKey(parentSpec.topLevelSpec),
-    ].join("\u0000");
-    if (conflicts.has(key)) continue;
-
-    conflicts.set(key, {
+    const conflict = {
       explanation: buildExplanation(parentSpec, depName),
       name: realNameOf(parentSpec),
       version: parentSpec.version,
       requirement: parentSpec.requirement,
-    });
+    };
+    const key = [
+      conflict.explanation,
+      conflict.name,
+      conflict.version,
+      conflict.requirement,
+    ].join("\u0000");
+    if (conflicts.has(key)) continue;
+
+    conflicts.set(key, conflict);
   }
 
   return Array.from(conflicts.values());
