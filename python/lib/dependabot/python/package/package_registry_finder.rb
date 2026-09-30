@@ -45,8 +45,8 @@ module Dependabot
 
           # The base index (a `replaces-base` registry, or public PyPI when none
           # is configured) is searched last so that private registries take
-          # precedence, avoiding dependency confusion attacks where a package is
-          # pre-empted by a public package of the same name.
+          # precedence, avoiding dependency confusion attacks where a private
+          # package name is claimed by a public package of the same name.
           #
           # URL encode any `@` characters within registry URL creds.
           # TODO: The test that fails if the `map` here is removed is likely a
