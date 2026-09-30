@@ -6,7 +6,6 @@ using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.Packaging.Core;
-using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
@@ -94,22 +93,15 @@ internal static class VersionFinder
 
         foreach (var source in sources)
         {
-            MetadataResource? feed = null;
             PackageMetadataResource? metadataResource = null;
+            PackageVersions feedVersions;
             try
             {
-                var sourceRepository = Repository.Factory.GetCoreV3(source);
-                feed = await sourceRepository.GetResourceAsync<MetadataResource>();
+                var sourceRepository = nugetContext.GetSourceRepository(source);
+                var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
                 if (feed is null)
                 {
                     logger.Warn($"Failed to get {nameof(MetadataResource)} for [{source.Source}]");
-                    continue;
-                }
-
-                var packageFinder = await sourceRepository.GetResourceAsync<FindPackageByIdResource>();
-                if (packageFinder is null)
-                {
-                    logger.Warn($"Failed to get {nameof(FindPackageByIdResource)} for [{source.Source}]");
                     continue;
                 }
 
@@ -123,15 +115,14 @@ internal static class VersionFinder
                     }
                 }
 
-                // a non-compliant v2 API returning 404 can cause this to throw
-                var existsInFeed = await feed.Exists(
+                feedVersions = await nugetContext.GetPackageVersionsAsync(
+                    source,
                     dependencyInfo.Name,
                     includePrerelease,
                     includeUnlisted: false,
-                    nugetContext.SourceCacheContext,
-                    NullLogger.Instance,
+                    feed,
                     cancellationToken);
-                if (!existsInFeed)
+                if (feedVersions.Count == 0)
                 {
                     continue;
                 }
@@ -152,20 +143,12 @@ internal static class VersionFinder
                 throw new BadResponseException(ex.Message, source.Source);
             }
 
-            var feedVersions = (await feed.GetVersions(
-                dependencyInfo.Name,
-                includePrerelease,
-                includeUnlisted: false,
-                nugetContext.SourceCacheContext,
-                NullLogger.Instance,
-                CancellationToken.None)).ToHashSet();
-
             if (feedVersions.Contains(currentVersion))
             {
                 result.AddCurrentVersionSource(source);
             }
 
-            var versions = feedVersions.Where(versionFilter).ToArray();
+            var versions = feedVersions.Items.Where(versionFilter).ToArray();
             foreach (var version in versions)
             {
                 var packageIdentity = new PackageIdentity(dependencyInfo.Name, version);
