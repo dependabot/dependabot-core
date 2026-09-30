@@ -57,6 +57,22 @@ RSpec.describe Dependabot::Julia::FileParser do
       expect(requirement[:groups]).to eq(["deps"])
     end
 
+    context "when there is a manifest per Julia release" do
+      let(:older_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.10.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+                   .sub('julia_version = "1.12.1"', 'julia_version = "1.10.0"')
+                   .sub('version = "0.4.1"', 'version = "0.4.0"')
+        )
+      end
+      let(:dependency_files) { [project_file, manifest_file, older_manifest_file] }
+
+      it "takes the oldest version across the manifests" do
+        expect(dependencies.find { |d| d.name == "Example" }.version).to eq("0.4.0")
+      end
+    end
+
     context "when only Project.toml exists (no Manifest.toml)" do
       let(:dependency_files) { [project_file] }
 
@@ -85,9 +101,12 @@ RSpec.describe Dependabot::Julia::FileParser do
         )
       end
 
-      it "parses runtime and weak dependencies (matching CompatHelper.jl)" do
-        # CompatHelper.jl only processes [deps] and [weakdeps], not [extras]
-        expect(dependencies.length).to eq(2) # Example (deps), JSON (weakdeps)
+      it "parses deps, weakdeps, and extras that already have compat entries" do
+        # Matches CompatHelper.jl's default IfExistingCompatExtras(): Aqua,
+        # an extra without a [compat] entry, is ignored.
+        expect(dependencies.map(&:name)).to contain_exactly(
+          "Example", "JSON", "FilePathsBase", "Test"
+        )
 
         # deps dependency
         example_dep = dependencies.find { |d| d.name == "Example" }
@@ -96,14 +115,65 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(example_dep.version).to eq("0.4.1") # Installed version from Manifest.toml
         expect(example_dep.requirements.first[:groups]).to eq(["deps"])
         expect(example_dep.requirements.first[:requirement]).to eq("0.4")
+        expect(example_dep).to be_production
 
-        # Weak dependency with compat entry
+        # Weak dependency with compat entry. Its manifest entry is an indirect
+        # dependency that the helper will not bump, so no version is recorded.
         json_dep = dependencies.find { |d| d.name == "JSON" }
         expect(json_dep).to be_a(Dependabot::Dependency)
         expect(json_dep.name).to eq("JSON")
-        expect(json_dep.version).to eq("0.21.4") # Weakdeps also get manifest versions
+        expect(json_dep.version).to be_nil
         expect(json_dep.requirements.first[:groups]).to eq(["weakdeps"])
         expect(json_dep.requirements.first[:requirement]).to eq("0.21")
+        expect(json_dep).to be_production
+
+        # Extras with existing compat entries: same, compat-only
+        filepaths_dep = dependencies.find { |d| d.name == "FilePathsBase" }
+        expect(filepaths_dep.version).to be_nil
+        expect(filepaths_dep.requirements.first[:groups]).to eq(["extras"])
+        expect(filepaths_dep.requirements.first[:requirement]).to eq("0.6, 0.7, 0.8")
+        expect(filepaths_dep).not_to be_production
+
+        # A stdlib under [extras] is handled like one under [deps]
+        test_dep = dependencies.find { |d| d.name == "Test" }
+        expect(test_dep.requirements.first[:groups]).to eq(["extras"])
+        expect(test_dep.requirements.first[:requirement]).to eq("1")
+        expect(test_dep.metadata[:julia_stdlib_versions]).to eq("Project.toml" => ["1.10.0"])
+      end
+    end
+
+    context "when a package is listed under both [weakdeps] and [extras]" do
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "ExtensionTester"
+            uuid = "1234e567-e89b-12d3-a456-789012345678"
+            version = "0.1.0"
+
+            [weakdeps]
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+            [extras]
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+            [extensions]
+            ExtensionTesterJSONExt = "JSON"
+
+            [compat]
+            JSON = "0.21"
+            julia = "1.10"
+
+            [targets]
+            test = ["JSON"]
+          TOML
+        )
+      end
+      let(:dependency_files) { [project_file] }
+
+      it "records the weakdep once" do
+        expect(dependencies.map(&:name)).to eq(["JSON"])
+        expect(dependencies.first.requirements.map { |req| req[:groups] }).to eq([["weakdeps"]])
       end
     end
 
