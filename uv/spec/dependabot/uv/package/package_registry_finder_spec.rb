@@ -425,5 +425,19 @@ RSpec.describe Dependabot::Uv::Package::PackageRegistryFinder do
         )
       end
     end
+
+    context "when the public extra index is spelled differently" do
+      let(:requirements_fixture_name) { "private_index_public_extra_alias.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "still treats it as public and keeps the private main index first" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://PYPI.org:443/simple/"
+          ]
+        )
+      end
+    end
   end
 end

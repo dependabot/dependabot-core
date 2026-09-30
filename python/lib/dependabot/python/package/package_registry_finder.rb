@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 require "dependabot/python/update_checker"
 require "dependabot/python/authed_url_builder"
 require "dependabot/errors"
@@ -13,12 +14,11 @@ module Dependabot
         extend T::Sig
 
         PYPI_BASE_URL = "https://pypi.org/simple/"
-        PUBLIC_PYPI_URLS = %w(
-          https://pypi.org/simple/
-          http://pypi.org/simple/
-          https://pypi.python.org/simple/
-          http://pypi.python.org/simple/
+        PUBLIC_PYPI_HOSTS = %w(
+          pypi.org
+          pypi.python.org
         ).freeze
+        PUBLIC_PYPI_PATH = "/simple"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
         UrlsHash = T.type_alias { { main: T.nilable(String), extra: T::Array[String] } }
@@ -64,7 +64,7 @@ module Dependabot
           # index may be public PyPI, so the public indexes are always moved to
           # the back rather than assuming the main index is the public one.
           private_urls, public_urls = ordered_urls.uniq.partition do |url|
-            !PUBLIC_PYPI_URLS.include?(url)
+            !public_pypi_url?(url)
           end
 
           # URL encode any `@` characters within registry URL creds.
@@ -76,6 +76,24 @@ module Dependabot
         end
 
         private
+
+        # Identifies the public PyPI index by its parsed host, scheme, port and
+        # path, so that equivalent spellings (case differences, an explicit
+        # default port, credentials, trailing slashes) aren't mistaken for a
+        # private index.
+        sig { params(url: String).returns(T::Boolean) }
+        def public_pypi_url?(url)
+          uri = URI.parse(url)
+          return false unless uri.is_a?(URI::HTTP)
+
+          host = uri.host&.downcase
+          return false unless host && PUBLIC_PYPI_HOSTS.include?(host)
+          return false unless uri.port == uri.default_port
+
+          uri.path.to_s.chomp("/") == PUBLIC_PYPI_PATH
+        rescue URI::InvalidURIError
+          false
+        end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
