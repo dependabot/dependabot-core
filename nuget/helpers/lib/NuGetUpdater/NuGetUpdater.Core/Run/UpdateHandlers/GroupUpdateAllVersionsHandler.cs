@@ -58,6 +58,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
+        var handledDependencies = new HashSet<(string Directory, string DependencyName)>();
         foreach (var group in job.DependencyGroups)
         {
             logger.Info($"Starting update for group {group.Name}");
@@ -66,6 +67,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updatedDependencies = new List<ReportedDependency>();
             var updatedDependenciesWithDirectories = new List<ReportedDependencyWithDirectory>();
             var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
+            var handledInThisGroup = new HashSet<(string Directory, string DependencyName)>();
             foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
                 var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -92,6 +94,12 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
                     if (!groupMatcher.IsMatch(dependency.Name))
                     {
+                        continue;
+                    }
+
+                    if (handledDependencies.Contains((directory, dependency.Name.ToLowerInvariant())))
+                    {
+                        logger.Info($"Skipping {dependency.Name} in group {group.Name} as it has already been handled by a previous group");
                         continue;
                     }
 
@@ -122,6 +130,9 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         logger.Info($"Dependency {dependency.Name} skipped for group {group.Name} because update type was not allowed.");
                         continue;
                     }
+
+                    logger.Info($"Adding dependencies as handled: ({dependency.Name}).");
+                    handledInThisGroup.Add((directory, dependency.Name.ToLowerInvariant()));
 
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
                     var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
@@ -154,6 +165,8 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
             }
+
+            handledDependencies.UnionWith(handledInThisGroup);
 
             if (updateOperationsPerformed.Count > 0)
             {
