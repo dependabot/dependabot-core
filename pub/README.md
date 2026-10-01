@@ -38,6 +38,21 @@ allows checking for available updates.
 
 It is implemented as helpers/bin/dependency_services.dart, that is mainly a wrapper around the implementation in the [pub client](https://github.com/dart-lang/pub).
 
+#### Helper response handling
+
+Dependabot checks helper responses before using their dependency fields.
+Reports must contain `compatible`, `singleBreaking` and `multiBreaking` arrays, which can be empty.
+The helper omits `smallestUpdate` when no security update is available.
+A null update version represents a removed dependency.
+
+Cached reports use the same checks as new reports.
+If a response or cached report is malformed, Dependabot reports the command and field instead of using a partial result.
+The report cache keeps the original dependency array, including source details and unknown fields.
+
+Publication metadata has a separate fallback.
+If a release or publication date cannot be parsed, Dependabot logs the error and discards the entire metadata list.
+Security version enumeration does not require publication dates.
+
 #### List Dependencies
 
 ```js

@@ -1,8 +1,6 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "json"
-require "time"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -29,7 +27,7 @@ module Dependabot
         sig { override.returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { override.returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.anything]) }
         attr_reader :options
 
         sig { override.returns(T::Array[Dependabot::Credential]) }
@@ -42,7 +40,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
-            options: T::Hash[Symbol, T.untyped]
+            options: T::Hash[Symbol, T.anything]
           )
             .void
         end
@@ -62,54 +60,32 @@ module Dependabot
           @options = options
         end
 
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[DependencyServicesResult::ReportEntry]) }
         def report
           @report ||= T.let(
             dependency_services_report,
-            T.nilable(T::Array[T::Hash[String, T.untyped]])
+            T.nilable(T::Array[DependencyServicesResult::ReportEntry])
           )
         end
 
-        sig { returns(T.any(T::Array[Dependabot::Package::PackageRelease], T.untyped)) }
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def package_details_metadata
           Dependabot.logger.info("Initializing package metadata for \"#{@dependency.name}\"")
 
           response = fetch_package_metadata(dependency)
           return [] if response.status >= 500
 
-          versions = JSON.parse(response.body).fetch("versions", [])
-
           # Build the full list up front. If any release can't be parsed (e.g. a
           # missing or invalid publish date) the partial result is discarded, so
           # callers can treat a non-empty list as a complete, trustworthy snapshot
           # and an empty list as "no usable metadata".
-          versions.map do |v|
-            package_release(
-              version: v["version"],
-              publish_date: Time.parse(v["published"])
-            )
-          end
-        rescue JSON::ParserError
+          RegistryPackage.from_json(response.body).releases
+        rescue JsonValueParser::InvalidValue
           Dependabot.logger.error("Failed to parse package metadata")
           []
         rescue StandardError => e
           Dependabot.logger.error("Failed to fetch package metadata #{e.message}")
           []
-        end
-
-        private
-
-        sig do
-          params(
-            version: String,
-            publish_date: T.nilable(Time)
-          ).returns(Dependabot::Package::PackageRelease)
-        end
-        def package_release(version:, publish_date: nil)
-          Dependabot::Package::PackageRelease.new(
-            version: Pub::Version.new(version),
-            released_at: publish_date
-          )
         end
       end
     end
