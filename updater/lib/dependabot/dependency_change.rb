@@ -105,7 +105,7 @@ module Dependabot
           }.compact
         end,
         notices: notices,
-        vulnerabilities_fixed: vulnerabilities_fixed
+        security_fix: security_fix?
       ).message
 
       @pr_message = message
@@ -199,40 +199,18 @@ module Dependabot
 
     private
 
-    # Maps each updated dependency whose update resolves a security advisory to
-    # the advisories it fixes, in the shape MessageBuilder expects:
-    # `{ name => [advisory_hash, ...] }`. A non-empty entry is what flips on the
-    # `[security]` PR-title prefix and the "includes a security fix" body line.
+    # Whether this change should be marked as a security fix, adding the
+    # `[security]` prefix to the pull request title and a note in its body.
     #
-    # That signposting machinery has existed since 2018 (PrNamePrefixer /
-    # MessageBuilder) but was never wired up from the updater — MessageBuilder
-    # defaulted `vulnerabilities_fixed: {}`, so security PRs raised by the
-    # updater went unmarked. See dependabot-core#4761.
-    #
-    # Gated behind the `add_security_pr_prefix` experiment (default off): a
-    # public `[security]` PR can disclose that a repo is currently vulnerable
-    # before the fix merges, so consumers opt in rather than getting it by
-    # default. With the flag off this returns `{}` — i.e. today's behaviour.
-    sig { returns(T::Hash[String, T::Array[T::Hash[String, T.untyped]]]) }
-    def vulnerabilities_fixed
-      return {} unless Dependabot::Experiments.enabled?(:add_security_pr_prefix)
+    # Opt-in via the `add_security_pr_prefix` experiment because marking a public
+    # pull request as a security fix reveals the repository is vulnerable before
+    # the fix is merged. When disabled this returns false, leaving the pull
+    # request unmarked.
+    sig { returns(T::Boolean) }
+    def security_fix?
+      return false unless Dependabot::Experiments.enabled?(:add_security_pr_prefix)
 
-      updated_dependencies.each_with_object({}) do |dep, fixed|
-        next unless job.security_fix?(dep)
-
-        advisories =
-          job.security_advisories
-             .select { |adv| adv.fetch("dependency-name", nil)&.casecmp(dep.name)&.zero? }
-             .map do |adv|
-               {
-                 "patched_versions" => Array(adv["patched-versions"]),
-                 "unaffected_versions" => Array(adv["unaffected-versions"]),
-                 "affected_versions" => Array(adv["affected-versions"])
-               }
-             end
-
-        fixed[dep.name] = advisories if advisories.any?
-      end
+      updated_dependencies.any? { |dep| job.security_fix?(dep) }
     end
 
     # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
