@@ -168,6 +168,25 @@ public class CompatibilityCheckerTests
         Assert.True(isCompatible);
     }
 
+    [Fact]
+    public async Task ExistsAndIsCompatibleAsync_ExistingPackageWithoutProjectFrameworks_ReportsAsCompatible()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0");
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+
+        var isCompatible = await CompatibilityChecker.ExistsAndIsCompatibleAsync(
+            packageId,
+            projectFrameworks: [],
+            context,
+            new TestLogger(),
+            CancellationToken.None);
+
+        Assert.True(isCompatible);
+    }
+
     [Theory]
     [InlineData("netstandard2.0")]
     [InlineData("net472")]

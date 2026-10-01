@@ -37,6 +37,48 @@ internal static class CompatibilityChecker
         return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
     }
 
+    public static async Task<bool> ExistsAndIsCompatibleAsync(
+        PackageIdentity package,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        NuGetContext nugetContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var packageInfo = await GetPackageInfoAsync(
+            package,
+            nugetContext,
+            cancellationToken);
+        if (packageInfo is null)
+        {
+            return false;
+        }
+
+        // dotnet-tools.json and global.json packages won't specify a TFM, so existence is sufficient
+        if (projectFrameworks.IsEmpty)
+        {
+            return true;
+        }
+
+        var (isDevDependency, packageFrameworks) = packageInfo.GetValueOrDefault();
+        return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
+    }
+
+    public static async Task<bool> ExistsAsync(
+        PackageIdentity package,
+        NuGetContext nugetContext,
+        CancellationToken cancellationToken)
+    {
+        var readersOption = await GetPackageReadersAsync(package, nugetContext, cancellationToken);
+        if (readersOption is null)
+        {
+            return false;
+        }
+
+        var readers = readersOption.GetValueOrDefault();
+        DisposeReaders(readers);
+        return true;
+    }
+
     internal static bool PerformCheck(
         PackageIdentity package,
         ImmutableArray<NuGetFramework> projectFrameworks,
@@ -99,50 +141,70 @@ internal static class CompatibilityChecker
         }
 
         var readers = readersOption.GetValueOrDefault();
-        var nuspecStream = await readers.CoreReader.GetNuspecAsync(cancellationToken);
-        var reader = new NuspecReader(nuspecStream);
-
-        var isDevDependency = reader.GetDevelopmentDependency();
-        var tfms = new HashSet<NuGetFramework>();
-        var dependencyGroups = reader.GetDependencyGroups().ToArray();
-
-        foreach (var d in dependencyGroups)
+        try
         {
-            if (!d.TargetFramework.IsAny)
+            var nuspecStream = await readers.CoreReader.GetNuspecAsync(cancellationToken);
+            var reader = new NuspecReader(nuspecStream);
+
+            var isDevDependency = reader.GetDevelopmentDependency();
+            var tfms = new HashSet<NuGetFramework>();
+            var dependencyGroups = reader.GetDependencyGroups().ToArray();
+
+            foreach (var d in dependencyGroups)
             {
-                tfms.Add(d.TargetFramework);
+                if (!d.TargetFramework.IsAny)
+                {
+                    tfms.Add(d.TargetFramework);
+                }
+            }
+
+            var refItems = (await readers.ContentReader.GetReferenceItemsAsync(cancellationToken)).ToArray();
+            foreach (var refItem in refItems)
+            {
+                tfms.Add(refItem.TargetFramework);
+            }
+
+            var libItems = (await readers.ContentReader.GetLibItemsAsync(cancellationToken)).ToArray();
+            foreach (var libItem in libItems)
+            {
+                tfms.Add(libItem.TargetFramework);
+            }
+
+            // if a package contains no assemblies that need to be referenced, we can consider it compatible with all frameworks
+            if (refItems.Length == 0 && libItems.Length == 0)
+            {
+                tfms.Clear();
+            }
+
+            if (!tfms.Any())
+            {
+                tfms.Add(NuGetFramework.AnyFramework);
+            }
+
+            return (isDevDependency, tfms.ToImmutableArray());
+        }
+        finally
+        {
+            DisposeReaders(readers);
+        }
+    }
+
+    private static void DisposeReaders(PackageReaders readers)
+    {
+        // The interfaces aren't disposable, but their implementations can be. The same object often implements both.
+        var coreReader = readers.CoreReader as IDisposable;
+        var contentReader = readers.ContentReader as IDisposable;
+        try
+        {
+            coreReader?.Dispose();
+        }
+        finally
+        {
+            if (!ReferenceEquals(coreReader, contentReader))
+            {
+                contentReader?.Dispose();
             }
         }
-
-        var refItems = (await readers.ContentReader.GetReferenceItemsAsync(cancellationToken)).ToArray();
-        foreach (var refItem in refItems)
-        {
-            tfms.Add(refItem.TargetFramework);
-        }
-
-        var libItems = (await readers.ContentReader.GetLibItemsAsync(cancellationToken)).ToArray();
-        foreach (var libItem in libItems)
-        {
-            tfms.Add(libItem.TargetFramework);
-        }
-
-        // if a package contains no assemblies that need to be referenced, we can consider it compatible with all frameworks
-        if (refItems.Length == 0 && libItems.Length == 0)
-        {
-            tfms.Clear();
-        }
-
-        if (!tfms.Any())
-        {
-            tfms.Add(NuGetFramework.AnyFramework);
-        }
-
-        // The interfaces we given are not disposable but the underlying type can be.
-        // This will ensure we dispose of any resources that need to be cleaned up.
-        (readers.CoreReader as IDisposable)?.Dispose();
-        (readers.ContentReader as IDisposable)?.Dispose();
-
-        return (isDevDependency, tfms.ToImmutableArray());
     }
 
     internal static PackageReaders ReadPackage(string packagePath)

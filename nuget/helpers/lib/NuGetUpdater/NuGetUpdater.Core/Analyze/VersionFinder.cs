@@ -52,7 +52,16 @@ internal static class VersionFinder
     {
         var versionFilter = CreateVersionFilter(currentVersion);
 
-        return GetVersionsAsync(projectTfms, dependencyInfo, currentVersion, versionFilter, currentTime, nugetContext, logger, cancellationToken);
+        return GetVersionsAsync(
+            projectTfms,
+            dependencyInfo,
+            currentVersion,
+            versionFilter,
+            currentTime,
+            nugetContext,
+            logger,
+            filterByCompatibility: true,
+            cancellationToken);
     }
 
     public static Task<VersionResult> GetVersionsAsync(
@@ -67,10 +76,42 @@ internal static class VersionFinder
         var currentVersion = versionRange.MinVersion!;
         var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
 
-        return GetVersionsAsync(projectTfms, dependencyInfo, currentVersion, versionFilter, currentTime, nugetContext, logger, cancellationToken);
+        return GetVersionsAsync(
+            projectTfms,
+            dependencyInfo,
+            currentVersion,
+            versionFilter,
+            currentTime,
+            nugetContext,
+            logger,
+            filterByCompatibility: true,
+            cancellationToken);
     }
 
-    public static async Task<VersionResult> GetVersionsAsync(
+    internal static Task<VersionResult> GetCandidateVersionsAsync(
+        DependencyInfo dependencyInfo,
+        DateTimeOffset currentTime,
+        NuGetContext nugetContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var versionRange = VersionRange.Parse(dependencyInfo.Version);
+        var currentVersion = versionRange.MinVersion!;
+        var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
+
+        return GetVersionsAsync(
+            projectTfms: [],
+            dependencyInfo,
+            currentVersion,
+            versionFilter,
+            currentTime,
+            nugetContext,
+            logger,
+            filterByCompatibility: false,
+            cancellationToken);
+    }
+
+    public static Task<VersionResult> GetVersionsAsync(
         ImmutableArray<NuGetFramework> projectTfms,
         DependencyInfo dependencyInfo,
         NuGetVersion currentVersion,
@@ -78,6 +119,29 @@ internal static class VersionFinder
         DateTimeOffset currentTime,
         NuGetContext nugetContext,
         ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        return GetVersionsAsync(
+            projectTfms,
+            dependencyInfo,
+            currentVersion,
+            versionFilter,
+            currentTime,
+            nugetContext,
+            logger,
+            filterByCompatibility: true,
+            cancellationToken);
+    }
+
+    private static async Task<VersionResult> GetVersionsAsync(
+        ImmutableArray<NuGetFramework> projectTfms,
+        DependencyInfo dependencyInfo,
+        NuGetVersion currentVersion,
+        Func<NuGetVersion, bool> versionFilter,
+        DateTimeOffset currentTime,
+        NuGetContext nugetContext,
+        ILogger logger,
+        bool filterByCompatibility,
         CancellationToken cancellationToken)
     {
         var includePrerelease = currentVersion.IsPrerelease;
@@ -153,30 +217,33 @@ internal static class VersionFinder
             {
                 var packageIdentity = new PackageIdentity(dependencyInfo.Name, version);
 
-                // check tfm
-                var isTfmCompatible = await CompatibilityChecker.CheckAsync(
-                    packageIdentity,
-                    projectTfms,
-                    nugetContext,
-                    logger,
-                    CancellationToken.None);
-
-                // dotnet-tools.json and global.json packages won't specify a TFM, so they're always compatible
-                if (isTfmCompatible || projectTfms.IsEmpty)
+                if (filterByCompatibility &&
+                    !await CompatibilityChecker.ExistsAndIsCompatibleAsync(
+                        packageIdentity,
+                        projectTfms,
+                        nugetContext,
+                        logger,
+                        cancellationToken))
                 {
-                    // check date
-                    if (dependencyInfo.Cooldown is not null)
-                    {
-                        var metadata = await metadataResource!.GetMetadataAsync(packageIdentity, nugetContext.SourceCacheContext, NullLogger.Instance, CancellationToken.None);
-                        if (!dependencyInfo.Cooldown.IsVersionUpdateAllowed(currentTime, metadata?.Published, currentVersion, version))
-                        {
-                            logger.Info($"Skipping update of {dependencyInfo.Name} from {currentVersion} to {version} due to cooldown settings.  Package publish date: {metadata?.Published}");
-                            continue;
-                        }
-                    }
-
-                    result.Add(source, version);
+                    continue;
                 }
+
+                // check date
+                if (dependencyInfo.Cooldown is not null)
+                {
+                    var metadata = await metadataResource!.GetMetadataAsync(
+                        packageIdentity,
+                        nugetContext.SourceCacheContext,
+                        NullLogger.Instance,
+                        cancellationToken);
+                    if (!dependencyInfo.Cooldown.IsVersionUpdateAllowed(currentTime, metadata?.Published, currentVersion, version))
+                    {
+                        logger.Info($"Skipping update of {dependencyInfo.Name} from {currentVersion} to {version} due to cooldown settings.  Package publish date: {metadata?.Published}");
+                        continue;
+                    }
+                }
+
+                result.Add(source, version);
             }
         }
 
@@ -241,42 +308,4 @@ internal static class VersionFinder
             && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version);
     }
 
-    public static async Task<bool> DoVersionsExistAsync(
-        IEnumerable<string> packageIds,
-        NuGetVersion version,
-        NuGetContext nugetContext,
-        ILogger logger,
-        CancellationToken cancellationToken)
-    {
-        foreach (var packageId in packageIds)
-        {
-            if (!await DoesVersionExistAsync(packageId, version, nugetContext, logger, cancellationToken))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static async Task<bool> DoesVersionExistAsync(
-        string packageId,
-        NuGetVersion version,
-        NuGetContext nugetContext,
-        ILogger logger,
-        CancellationToken cancellationToken)
-    {
-        // if it can be downloaded, it exists
-        var downloader = await CompatibilityChecker.DownloadPackageAsync(new PackageIdentity(packageId, version), nugetContext, cancellationToken);
-        var packageAndVersionExists = downloader is not null;
-        if (packageAndVersionExists)
-        {
-            // release the handles
-            var readers = downloader.GetValueOrDefault();
-            (readers.CoreReader as IDisposable)?.Dispose();
-            (readers.ContentReader as IDisposable)?.Dispose();
-        }
-
-        return packageAndVersionExists;
-    }
 }
