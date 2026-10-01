@@ -82,6 +82,30 @@ RSpec.describe Dependabot::Pub::Package::RegistryPackage do
     end
   end
 
+  [
+    { "repository" => false },
+    { "homepage" => false },
+    { "repository" => false, "homepage" => false }
+  ].each do |fields|
+    context "with false source metadata #{fields}" do
+      let(:data) { { "latest" => { "pubspec" => fields } } }
+
+      it "preserves the absent source fallback" do
+        expect(package.source_url).to be_nil
+      end
+    end
+  end
+
+  context "with a false repository and a homepage" do
+    let(:data) do
+      { "latest" => { "pubspec" => { "repository" => false, "homepage" => "https://example.test/homepage" } } }
+    end
+
+    it "uses the homepage" do
+      expect(package.source_url).to eq("https://example.test/homepage")
+    end
+  end
+
   context "without source metadata" do
     let(:data) { {} }
 

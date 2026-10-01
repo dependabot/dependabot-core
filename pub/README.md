@@ -53,6 +53,10 @@ Publication metadata has a separate fallback.
 If a release or publication date cannot be parsed, Dependabot logs the error and discards the entire metadata list.
 Security version enumeration does not require publication dates.
 
+Known URL options (`pub_hosted_url` and `flutter_releases_url`) accept strings or `nil`.
+Boolean values are invalid.
+Repository and homepage metadata retain the existing `false`-as-absent fallback.
+
 #### List Dependencies
 
 ```js

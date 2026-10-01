@@ -161,6 +161,35 @@ RSpec.describe Dependabot::Pub::Package::PackageDetailsFetcher do
       end
     end
 
+    %i(pub_hosted_url flutter_releases_url).each do |key|
+      context "with false #{key}" do
+        let(:options) { { key => false } }
+
+        it "rejects the option without generating or caching a report" do
+          expect { fetcher.report }.to raise_error(TypeError, "Pub option #{key} must be a string or nil")
+          expect(File.exist?(cache_file)).to be(false)
+          expect(Open3).not_to have_received(:capture3)
+            .with(anything,
+                  File.join(Dependabot::Pub::Helpers.pub_helpers_path, "dependency_services"),
+                  "report",
+                  anything)
+        end
+      end
+    end
+
+    context "with nil URL options" do
+      let(:options) { { pub_hosted_url: nil, flutter_releases_url: nil } }
+
+      it "uses the default URLs" do
+        expect(fetcher.report.first.name).to eq(dependency_name)
+        expect(Open3).to have_received(:capture3)
+          .with(hash_excluding("PUB_HOSTED_URL"),
+                File.join(Dependabot::Pub::Helpers.pub_helpers_path, "dependency_services"),
+                "report",
+                anything)
+      end
+    end
+
     context "with an unknown option" do
       let(:options) { { extra_configuration: { enabled: true } } }
 

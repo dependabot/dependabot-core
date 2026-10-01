@@ -407,10 +407,10 @@ module Dependabot
       sig { params(key: Symbol).returns(T.nilable(String)) }
       def option_string(key)
         value = options[key]
-        return unless value
 
         case value
         when String then value
+        when nil then nil
         else raise TypeError, "Pub option #{key} must be a string or nil"
         end
       end

@@ -49,6 +49,7 @@ module Dependabot
           return unless pubspec
 
           value = pubspec["repository"] || pubspec["homepage"]
+          # Preserve the existing false-as-absent behavior of optional source metadata.
           JsonValueParser.optional_string(value || nil, "Pub package repository or homepage")
         end
 
