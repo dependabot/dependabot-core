@@ -291,6 +291,36 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       ).to eq(%w(Gemfile Gemfile.lock))
     end
 
+    it "excludes deleted initial files until they are recreated" do
+      batch = described_class.new(initial_dependency_files: files)
+      deleted_file = Dependabot::DependencyFile.new(
+        name: files.first.name,
+        content: nil,
+        directory: files.first.directory,
+        deleted: true
+      )
+      recreated_file = Dependabot::DependencyFile.new(
+        name: files.first.name,
+        content: "recreated",
+        directory: files.first.directory,
+        operation: Dependabot::DependencyFile::Operation::CREATE
+      )
+
+      batch.merge(dependency_change_for(deleted_file))
+
+      expect(batch.current_dependency_files(job).map(&:name)).to eq(["Gemfile.lock"])
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(name: "Gemfile", operation: Dependabot::DependencyFile::Operation::DELETE)
+      )
+
+      batch.merge(dependency_change_for(recreated_file))
+
+      expect(batch.current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      expect(batch.updated_dependency_files).to contain_exactly(
+        have_attributes(content: "recreated", operation: Dependabot::DependencyFile::Operation::UPDATE)
+      )
+    end
+
     context "when the directory has a dot" do
       let(:directory) { "/." }
 
