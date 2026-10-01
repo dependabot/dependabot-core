@@ -258,8 +258,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         Func<NuGetVersion, Task<bool>>? candidateValidator,
         CancellationToken cancellationToken)
     {
-        var versionResult = await VersionFinder.GetVersionsAsync(
-            projectFrameworks,
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
             dependencyInfo,
             DateTimeOffset.UtcNow,
             nugetContext,
@@ -303,7 +302,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         return await FindFirstCompatibleVersion(
             packageIds,
             versionString,
-            versionResult,
             orderedVersions,
             projectFrameworks,
             nugetContext,
@@ -315,7 +313,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     internal static async Task<NuGetVersion?> FindFirstCompatibleVersion(
         ImmutableHashSet<string> packageIds,
         string versionString,
-        VersionResult versionResult,
         IEnumerable<NuGetVersion> orderedVersions,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
@@ -323,48 +320,35 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         Func<NuGetVersion, Task<bool>>? candidateValidator,
         CancellationToken cancellationToken)
     {
+        var checkCompatibility = true;
         if (NuGetVersion.TryParse(versionString, out var currentVersion))
         {
-            var isCompatible = await AreAllPackagesCompatibleAsync(
+            checkCompatibility = await AreAllPackagesCompatibleAsync(
                 packageIds,
                 currentVersion,
                 projectFrameworks,
                 nugetContext,
                 logger,
                 cancellationToken);
-
-            if (!isCompatible)
-            {
-                // If the current package is incompatible, then don't check for compatibility.
-                foreach (var version in orderedVersions)
-                {
-                    if (candidateValidator is null || await candidateValidator(version))
-                    {
-                        return version;
-                    }
-                }
-
-                return null;
-            }
         }
 
         foreach (var version in orderedVersions)
         {
-            var existsForAll = await VersionFinder.DoVersionsExistAsync(packageIds, version, nugetContext, logger, cancellationToken);
-            if (!existsForAll)
-            {
-                continue;
-            }
+            var isAcceptable = checkCompatibility
+                ? await AreAllPackagesCompatibleAsync(
+                    packageIds,
+                    version,
+                    projectFrameworks,
+                    nugetContext,
+                    logger,
+                    cancellationToken)
+                : await DoAllPackagesExistAsync(
+                    packageIds,
+                    version,
+                    nugetContext,
+                    cancellationToken);
 
-            var isCompatible = await AreAllPackagesCompatibleAsync(
-                packageIds,
-                version,
-                projectFrameworks,
-                nugetContext,
-                logger,
-                cancellationToken);
-
-            if (isCompatible &&
+            if (isAcceptable &&
                 (candidateValidator is null || await candidateValidator(version)))
             {
                 return version;
@@ -385,13 +369,33 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     {
         foreach (var packageId in packageIds)
         {
-            var isCompatible = await CompatibilityChecker.CheckAsync(
+            var isCompatible = await CompatibilityChecker.ExistsAndIsCompatibleAsync(
                 new(packageId, currentVersion),
                 projectFrameworks,
                 nugetContext,
                 logger,
                 cancellationToken);
             if (!isCompatible)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    internal static async Task<bool> DoAllPackagesExistAsync(
+        ImmutableHashSet<string> packageIds,
+        NuGetVersion version,
+        NuGetContext nugetContext,
+        CancellationToken cancellationToken)
+    {
+        foreach (var packageId in packageIds)
+        {
+            if (!await CompatibilityChecker.ExistsAsync(
+                    new(packageId, version),
+                    nugetContext,
+                    cancellationToken))
             {
                 return false;
             }
