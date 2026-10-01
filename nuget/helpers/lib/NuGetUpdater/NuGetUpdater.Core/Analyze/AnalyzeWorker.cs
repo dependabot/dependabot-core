@@ -20,6 +20,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     private readonly string _jobId;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
+    private readonly PackageVersionsCache _packageVersionsCache = new();
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -96,7 +97,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 
         bool isProjectUpdateNecessary = IsUpdateNecessary(dependencyInfo, projectsWithDependency);
         var isUpdateNecessary = isProjectUpdateNecessary || dotnetToolsHasDependency || globalJsonHasDependency;
-        using var nugetContext = new NuGetContext(startingDirectory);
+        using var nugetContext = new NuGetContext(startingDirectory, packageVersionsCache: _packageVersionsCache);
         AnalysisResult analysisResult;
         if (isUpdateNecessary)
         {
