@@ -7,6 +7,9 @@ require "dependabot/dependency_file"
 require "dependabot/pub/update_checker/latest_version_finder"
 require "dependabot/pub/package/package_details_fetcher"
 require "dependabot/pub/version"
+require "dependabot/package/package_release"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/update_checkers/cooldown_calculation"
 
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -54,9 +57,9 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
 
         expect(report).not_to be_nil
 
-        expect(report["name"]).to eq(dependency_name)
-        expect(report["version"]).to be_a(String)
-        expect(report["latest"]).to be_a(String)
+        expect(report.name).to eq(dependency_name)
+        expect(report.version).to be_a(String)
+        expect(report.latest).to be_a(String)
       end
     end
 
@@ -69,6 +72,191 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
         expect(versions.latest_resolvable_version).to be_a(String).or be_nil
         expect(versions.latest_resolvable_version_with_no_unlock).to be_a(String).or be_nil
         expect(versions.latest_version_resolvable_with_full_unlock).to be_a(String).or be_nil
+      end
+    end
+  end
+
+  describe "cooldown filtering" do
+    subject(:finder) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        cooldown_options: cooldown_options
+      )
+    end
+
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90, include: [dependency_name])
+    end
+
+    let(:package_details_fetcher) do
+      instance_double(Dependabot::Pub::Package::PackageDetailsFetcher)
+    end
+
+    let(:latest_version) { "2.0.0" }
+
+    let(:package_releases) do
+      [
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Pub::Version.new("1.0.0"),
+          released_at: Time.now
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::Pub::Package::PackageDetailsFetcher).to receive(:new).and_return(package_details_fetcher)
+      allow(package_details_fetcher).to receive_messages(
+        report: [Dependabot::Pub::DependencyServicesResult::ReportEntry.new(
+          name: dependency_name,
+          version: dependency_version,
+          latest: latest_version,
+          compatible: [],
+          single_breaking: [],
+          multi_breaking: [],
+          smallest_update: nil
+        )],
+        package_details_metadata: package_releases
+      )
+    end
+
+    context "when the candidate is absent from non-empty registry metadata" do
+      it "lets the update through without flagging cooldown as unavailable" do
+        expect(finder.latest_version).to eq("2.0.0")
+        expect(
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        ).to be(false)
+      end
+    end
+
+    context "when the registry lists other dated releases but not the candidate" do
+      let(:package_releases) do
+        [
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Pub::Version.new("1.5.0"),
+            released_at: Time.now
+          )
+        ]
+      end
+
+      it "does not falsely flag cooldown as unavailable for a healthy date source" do
+        expect(finder.latest_version).to eq("2.0.0")
+        expect(
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        ).to be(false)
+      end
+    end
+
+    context "when no registry metadata is available at all" do
+      let(:package_releases) { [] }
+
+      it "lets the update through and records that cooldown could not be applied" do
+        expect(finder.latest_version).to eq("2.0.0")
+        expect(
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        ).to be(true)
+      end
+    end
+
+    context "when no metadata is available and the candidate is not an upgrade" do
+      let(:latest_version) { dependency_version }
+      let(:package_releases) { [] }
+
+      it "does not flag cooldown as unavailable" do
+        expect(finder.latest_version).to eq(dependency_version)
+        expect(
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        ).to be(false)
+      end
+    end
+
+    context "when no metadata is available and the candidate is ignored" do
+      subject(:finder) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [">= 2.0.0"],
+          cooldown_options: cooldown_options
+        )
+      end
+
+      let(:package_releases) { [] }
+
+      it "does not flag cooldown as unavailable for a version that would be discarded" do
+        finder.latest_version
+        expect(
+          Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+        ).to be(false)
+      end
+    end
+
+    context "when a matching release is still within the cooldown window" do
+      let(:package_releases) do
+        [
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Pub::Version.new("2.0.0"),
+            released_at: Time.now
+          )
+        ]
+      end
+
+      it "holds back the update to the current version" do
+        expect(finder.latest_version).to eq(dependency_version)
+      end
+    end
+
+    describe "typed report candidates" do
+      let(:report_entry) do
+        {
+          "name" => dependency_name,
+          "version" => dependency_version,
+          "latest" => nil,
+          "compatible" => [],
+          "singleBreaking" => [],
+          "multiBreaking" => []
+        }
+      end
+      let(:reports) do
+        Dependabot::Pub::DependencyServicesResult
+          .report_from_json(JSON.dump("dependencies" => [report_entry])).dependencies
+      end
+      let(:fetcher) { instance_double(Dependabot::Pub::Package::PackageDetailsFetcher, report: reports) }
+
+      before do
+        allow(Dependabot::Pub::Package::PackageDetailsFetcher).to receive(:new).and_return(fetcher)
+      end
+
+      it "returns no candidates for valid empty solutions" do
+        expect(latest_version_finder.latest_version).to be_nil
+        expect(latest_version_finder.latest_resolvable_version).to be_nil
+        expect(latest_version_finder.latest_resolvable_version_with_no_unlock).to be_nil
+        expect(latest_version_finder.latest_version_resolvable_with_full_unlock).to be_nil
+        expect(latest_version_finder.full_unlock_updates).to eq([])
+        expect(latest_version_finder.latest_resolvable_update).to be_nil
+      end
+
+      context "with a removed dependency" do
+        let(:report_entry) do
+          super().merge("singleBreaking" => [{ "name" => dependency_name, "version" => nil, "kind" => "transitive" }])
+        end
+
+        it "retains the removal without treating it as a new version" do
+          expect(latest_version_finder.latest_resolvable_update).to have_attributes(version: nil, kind: "transitive")
+          expect(latest_version_finder.latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "without the requested dependency" do
+        let(:report_entry) { super().merge("name" => "other") }
+
+        it "raises an explicit helper failure" do
+          expect { latest_version_finder.current_report }.to raise_error(
+            Dependabot::SharedHelpers::HelperSubprocessFailed,
+            "dependency_services report does not include the requested dependency"
+          )
+        end
       end
     end
   end

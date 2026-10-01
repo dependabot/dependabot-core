@@ -137,6 +137,44 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           .to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
       end
 
+      context "when pinning a transitive dependency via a multi-line project header" do
+        let(:pom_body) { fixture("poms", "multiline_header_pom.xml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "injects dependencyManagement without modifying the project header attributes" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).to include("<dependencyManagement>")
+          expect(updated_content).to include("<groupId>org.apache.zookeeper</groupId>")
+
+          expect(updated_content).to include(
+            "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" \
+            "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" \
+            "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">"
+          )
+        end
+      end
+
       context "when handling dependencies with classifiers" do
         let(:dependencies) { [dependency, mockk_dependency] }
 

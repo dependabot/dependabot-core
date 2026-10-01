@@ -70,6 +70,12 @@ dependabot-updater-{ecosystem} (contains native tools like npm, pip)
 
 All code runs in Docker containers on Linux. Never run tests or native helpers on the host system.
 
+### NuGet Local Development Exception
+
+NuGet C# development under `nuget/helpers/lib/NuGetUpdater` is an exception to the Docker-only rule. When a
+compatible .NET SDK is installed, the C# projects may be built and tested directly on the host with `dotnet build`
+and `dotnet test`.
+
 ## File Naming Conventions
 
 - Main classes: `{ecosystem}/lib/dependabot/{ecosystem}/file_fetcher.rb`

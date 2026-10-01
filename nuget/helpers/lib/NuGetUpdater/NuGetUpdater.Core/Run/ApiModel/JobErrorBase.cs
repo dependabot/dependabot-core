@@ -41,6 +41,8 @@ public abstract record JobErrorBase : MessageBase
                 return new PrivateSourceBadResponse([badResponse.Uri], badResponse.Message);
             case DependencyNotFoundException dependencyNotFound:
                 return new DependencyNotFound(string.Join(", ", dependencyNotFound.Dependencies));
+            case HttpApiException:
+                return new UnknownError(ex, jobId);
             case HttpRequestException httpRequest:
                 if (httpRequest.StatusCode is null)
                 {
