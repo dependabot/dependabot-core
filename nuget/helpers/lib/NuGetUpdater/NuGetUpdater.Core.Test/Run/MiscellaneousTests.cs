@@ -74,6 +74,79 @@ public class MiscellaneousTests
             false,
         ];
 
+        // matching wildcard with normalized unconditional requirement
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.*",
+                    VersionRequirement = Requirement.Parse(">= 0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            true,
+        ];
+
+        // non-matching wildcard with normalized unconditional requirement
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Different.*",
+                    VersionRequirement = Requirement.Parse(">= 0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
+        ];
+
+        // matching name with a non-sentinel requirement
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.Dependency",
+                    VersionRequirement = Requirement.Parse("> 0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
+        ];
+
+        // normalized unconditional requirement with update type restrictions
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.Dependency",
+                    VersionRequirement = Requirement.Parse(">= 0"),
+                    UpdateTypes = [ConditionUpdateType.SemVerMajor],
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
+        ];
+
         // wildcard matching name
         yield return
         [
