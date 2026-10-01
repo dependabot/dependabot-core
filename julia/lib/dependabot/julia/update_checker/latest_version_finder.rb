@@ -55,6 +55,13 @@ module Dependabot
         @available_versions ||= T.let(fetch_available_versions, T.nilable(T::Array[Gem::Version]))
       end
 
+      # Lowest non-vulnerable version above the current one. Like
+      # Package::PackageLatestVersionFinder, security fixes skip the cooldown.
+      sig { returns(T.nilable(Gem::Version)) }
+      def lowest_security_fix_version
+        @lowest_security_fix_version ||= T.let(fetch_lowest_security_fix_version, T.nilable(Gem::Version))
+      end
+
       private
 
       sig { returns(Dependabot::Dependency) }
@@ -81,16 +88,29 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
       attr_reader :custom_registries
 
+      sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+      def package_releases
+        @package_releases ||= T.let(
+          Julia::Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            credentials: credentials,
+            custom_registries: custom_registries
+          ).fetch_package_releases,
+          T.nilable(T::Array[Dependabot::Package::PackageRelease])
+        )
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def fetch_lowest_security_fix_version
+        versions = filter_prerelease_versions(package_releases.map(&:version).sort)
+        versions = filter_ignored_versions(versions)
+        versions = filter_lower_versions(versions)
+        Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories).min
+      end
+
       sig { returns(T::Array[Gem::Version]) }
       def fetch_available_versions
-        # Fetch all package releases using the PackageDetailsFetcher
-        package_fetcher = Julia::Package::PackageDetailsFetcher.new(
-          dependency: dependency,
-          credentials: credentials,
-          custom_registries: custom_registries
-        )
-
-        releases = package_fetcher.fetch_package_releases
+        releases = package_releases
         return [] if releases.empty?
 
         # Filter releases based on cooldown
@@ -110,8 +130,10 @@ module Dependabot
         versions = filter_ignored_versions(versions)
         return [] if versions.empty?
 
-        # Filter out lower versions
-        versions = filter_lower_versions(versions)
+        # Filter out lower versions, keeping the current release so that an
+        # up-to-date dependency reports it as the latest: the base class takes
+        # a nil latest_version as out of date and goes on to look for unlocks
+        versions = filter_lower_versions(versions, keep_current: true)
         return [] if versions.empty?
 
         # Filter out vulnerable versions
@@ -168,12 +190,12 @@ module Dependabot
         filtered
       end
 
-      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
-      def filter_lower_versions(versions)
+      sig { params(versions: T::Array[Gem::Version], keep_current: T::Boolean).returns(T::Array[Gem::Version]) }
+      def filter_lower_versions(versions, keep_current: false)
         return versions unless dependency.version
 
         current_version = Dependabot::Julia::Version.new(dependency.version)
-        versions.select { |v| v > current_version }
+        versions.select { |v| v > current_version || (keep_current && v == current_version) }
       end
 
       sig { returns(T::Array[Dependabot::Requirement]) }
@@ -225,7 +247,10 @@ module Dependabot
         return nil unless cooldown_config
 
         current_version = dependency.version ? Dependabot::Julia::Version.new(dependency.version) : nil
-        return nil unless current_version
+        # Without a Manifest there is no version to measure a bump from; like
+        # CooldownCalculation.cooldown_days_for, fall back to default_days
+        # rather than skipping the cooldown
+        return cooldown_days_for_bump_type(:default) unless current_version
 
         version_bump_type = determine_version_bump_type(version, current_version)
         cooldown_days_for_bump_type(version_bump_type)

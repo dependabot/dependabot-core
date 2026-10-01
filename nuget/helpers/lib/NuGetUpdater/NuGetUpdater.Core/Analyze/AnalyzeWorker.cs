@@ -120,6 +120,34 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                     .ToImmutableArray()
                 : projectFrameworks;
 
+            ImmutableArray<Dependency> candidateUpdatedDependencies = [];
+            Func<NuGetVersion, Task<bool>>? candidateValidator = null;
+            if (isProjectUpdateNecessary)
+            {
+                candidateValidator = async candidateVersion =>
+                {
+                    try
+                    {
+                        candidateUpdatedDependencies = await FindUpdatedDependenciesAsync(
+                            repoRoot,
+                            discovery,
+                            dependenciesToUpdate,
+                            candidateVersion,
+                            nugetContext,
+                            _logger,
+                            CancellationToken.None);
+                        return true;
+                    }
+                    catch (DependencyNotFoundException ex)
+                    {
+                        _logger.Info(
+                            $"  Rejecting version {candidateVersion.ToNormalizedString()} because dependencies could not be found: " +
+                            $"{string.Join(", ", ex.Dependencies)}");
+                        return false;
+                    }
+                };
+            }
+
             _logger.Info($"  Finding updated version.");
             updatedVersion = await FindUpdatedVersionAsync(
                 startingDirectory,
@@ -128,6 +156,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 applicableTargetFrameworks,
                 nugetContext,
                 _logger,
+                candidateValidator,
                 CancellationToken.None);
 
             _logger.Info($"  Finding updated peer dependencies.");
@@ -137,14 +166,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             }
             else if (isProjectUpdateNecessary)
             {
-                updatedDependencies = await FindUpdatedDependenciesAsync(
-                    repoRoot,
-                    discovery,
-                    dependenciesToUpdate,
-                    updatedVersion,
-                    nugetContext,
-                    _logger,
-                    CancellationToken.None);
+                updatedDependencies = candidateUpdatedDependencies;
             }
             else if (dotnetToolsHasDependency)
             {
@@ -232,6 +254,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
         ILogger logger,
+        Func<NuGetVersion, Task<bool>>? candidateValidator,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
@@ -250,6 +273,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             findLowestVersion: dependencyInfo.IsVulnerable,
             nugetContext,
             logger,
+            candidateValidator,
             cancellationToken);
     }
 
@@ -261,6 +285,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         bool findLowestVersion,
         NuGetContext nugetContext,
         ILogger logger,
+        Func<NuGetVersion, Task<bool>>? candidateValidator,
         CancellationToken cancellationToken)
     {
         var versions = versionResult.GetVersions();
@@ -282,6 +307,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             projectFrameworks,
             nugetContext,
             logger,
+            candidateValidator,
             cancellationToken);
     }
 
@@ -293,6 +319,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
         ILogger logger,
+        Func<NuGetVersion, Task<bool>>? candidateValidator,
         CancellationToken cancellationToken)
     {
         if (NuGetVersion.TryParse(versionString, out var currentVersion))
@@ -308,7 +335,15 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             if (!isCompatible)
             {
                 // If the current package is incompatible, then don't check for compatibility.
-                return orderedVersions.First();
+                foreach (var version in orderedVersions)
+                {
+                    if (candidateValidator is null || await candidateValidator(version))
+                    {
+                        return version;
+                    }
+                }
+
+                return null;
             }
         }
 
@@ -328,7 +363,8 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 logger,
                 cancellationToken);
 
-            if (isCompatible)
+            if (isCompatible &&
+                (candidateValidator is null || await candidateValidator(version)))
             {
                 return version;
             }

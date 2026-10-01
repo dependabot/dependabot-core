@@ -1670,4 +1670,81 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
             ]
         );
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NormalizedNameOnlyIgnoreSkipsAnalysis(bool grouped)
+    {
+        var updatedDependencyList = new UpdatedDependencyList()
+        {
+            Dependencies = [
+                new()
+                {
+                    Name = "Aspire.Hosting.AppHost",
+                    Version = "1.0.0",
+                    Requirements = [
+                        new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                    ],
+                },
+            ],
+            DependencyFiles = ["/src/project.csproj"],
+        };
+        var expectedApiMessages = new List<object>()
+        {
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags = new()
+                {
+                    ["operation"] = "group_update_all_versions",
+                }
+            },
+        };
+        if (grouped)
+        {
+            expectedApiMessages.Add(updatedDependencyList);
+        }
+        expectedApiMessages.Add(updatedDependencyList);
+        expectedApiMessages.Add(new MarkAsProcessed("TEST-COMMIT-SHA"));
+
+        await TestAsync(
+            job: new Job()
+            {
+                Source = CreateJobSource("/src"),
+                DependencyGroups = grouped
+                    ? [new() { Name = "aspire", Rules = new() { ["patterns"] = new[] { "Aspire.*" } } }]
+                    : [],
+                IgnoreConditions = [
+                    new()
+                    {
+                        DependencyName = "Aspire.*",
+                        VersionRequirement = Requirement.Parse(">= 0"),
+                    }
+                ],
+            },
+            files: [("src/project.csproj", "initial contents")],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Aspire.Hosting.AppHost", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(_ => throw new InvalidOperationException("Ignored dependencies should not be analyzed.")),
+            updaterWorker: new TestUpdaterWorker(_ => throw new InvalidOperationException("Ignored dependencies should not be updated.")),
+            expectedUpdateHandler: GroupUpdateAllVersionsHandler.Instance,
+            expectedApiMessages: [.. expectedApiMessages]
+        );
+    }
 }

@@ -162,6 +162,22 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
         expect(latest_version).to be_nil
       end
 
+      context "without a Manifest version to measure the bump from" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Example",
+            version: nil,
+            requirements: [{ file: "Project.toml", requirement: "0.4", groups: ["deps"], source: nil }],
+            package_manager: "julia",
+            metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+          )
+        end
+
+        it "applies the default cooldown" do
+          expect(latest_version).to be_nil
+        end
+      end
+
       context "when the dependency is excluded from the cooldown" do
         let(:exclude_patterns) { ["Example"] }
 
@@ -177,6 +193,34 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
           expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
         end
       end
+    end
+  end
+
+  describe "with a Manifest version that is already the latest release" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "Example",
+        version: "0.5.0",
+        requirements: [{ file: "Project.toml", requirement: "0.5", groups: ["deps"], source: nil }],
+        package_manager: "julia",
+        metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+      )
+    end
+
+    before do
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return(
+          %w(0.4.1 0.5.0).map do |version|
+            Dependabot::Package::PackageRelease.new(version: Dependabot::Julia::Version.new(version))
+          end
+        )
+    end
+
+    it "is up to date and needs no unlock" do
+      expect(checker.latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+      expect(checker.up_to_date?).to be(true)
+      expect(checker.can_update?(requirements_to_unlock: :all)).to be(false)
     end
   end
 
@@ -446,6 +490,48 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         expect(Dependabot.logger).to have_received(:info)
           .with("All updates for Example were ignored")
+      end
+    end
+  end
+
+  describe "security updates" do
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: "Example",
+          package_manager: "julia",
+          vulnerable_versions: ["< 0.5.1"]
+        )
+      ]
+    end
+
+    before do
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return(
+          %w(0.4.1 0.5.0 0.5.1 0.6.0 1.0.0).map do |v|
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new(v),
+              released_at: Time.now - (100 * 24 * 60 * 60)
+            )
+          end
+        )
+    end
+
+    it "finds the lowest non-vulnerable release" do
+      expect(checker.lowest_security_fix_version).to eq(Gem::Version.new("0.5.1"))
+      expect(checker.lowest_resolvable_security_fix_version).to eq(Gem::Version.new("0.5.1"))
+    end
+
+    it "widens the compat entry to the fix rather than the latest release" do
+      expect(checker.updated_requirements.first[:requirement]).to eq("0.4, 0.5")
+    end
+
+    context "when the fix is ignored" do
+      let(:ignored_versions) { ["0.5.1"] }
+
+      it "skips it" do
+        expect(checker.lowest_security_fix_version).to eq(Gem::Version.new("0.6.0"))
       end
     end
   end

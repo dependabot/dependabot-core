@@ -343,6 +343,35 @@ public class SerializationTests : TestBase
     }
 
     [Theory]
+    [InlineData("Aspire.Hosting.AppHost", true)]
+    [InlineData("Microsoft.Extensions.Hosting", false)]
+    public void DeserializeNormalizedNameOnlyIgnoreCondition(string dependencyName, bool expectedIgnored)
+    {
+        var jobWrapper = RunWorker.Deserialize("""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo"
+                },
+                "ignore-conditions": [
+                  {
+                    "dependency-name": "Aspire.*",
+                    "version-requirement": ">= 0",
+                    "update-types": null
+                  }
+                ]
+              }
+            }
+            """)!;
+
+        var isIgnored = jobWrapper.Job.IsDependencyIgnoredByNameOnly(dependencyName);
+
+        Assert.Equal(expectedIgnored, isIgnored);
+    }
+
+    [Theory]
     [MemberData(nameof(DeserializeAllowedUpdatesData))]
     public void DeserializeAllowedUpdates(string? allowedUpdatesJsonBody, AllowedUpdate[] expectedAllowedUpdates)
     {
