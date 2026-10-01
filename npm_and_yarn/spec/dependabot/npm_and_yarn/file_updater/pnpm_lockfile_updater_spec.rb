@@ -1143,6 +1143,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .with(/falls back to the repo's own minimumReleaseAge \(1440 minutes\)/)
             .at_least(:once)
         end
+
+        # The retry runs under the repo's gate again. On pnpm 12.3+ that gate is
+        # strict by default and refuses `--no-save`, so strict has to stay off.
+        it "keeps strict mode off on the --no-save retry and says so" do
+          allow(Dependabot.logger).to receive(:warn)
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            if cmd.include?("--config.minimum-release-age=10080")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification",
+                error_context: {}
+              )
+            end
+            ""
+          end
+
+          updater.send(:run_pnpm_update_packages)
+
+          expect(commands.length).to eq(2)
+          expect(commands.last).not_to include("--config.minimum-release-age=")
+          expect(commands.last).to include("--config.minimum-release-age-strict=false")
+          expect(Dependabot.logger)
+            .to have_received(:warn).with(/strict mode kept off because pnpm refuses to combine it with --no-save/)
+        end
       end
 
       it "does not trust the lockfile on pnpm older than 11.3" do
@@ -1361,6 +1386,76 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end.at_least(:once)
 
         updater.send(:run_pnpm_update_packages)
+      end
+
+      it "leaves strict mode alone for install, which has no --no-save conflict" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("minimum-release-age")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+      end
+
+      context "when the repo enables minimumReleaseAgeStrict itself" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\n"
+            )]
+        end
+
+        it "logs once that strict mode does not hold for the --no-save update" do
+          allow(Dependabot.logger).to receive(:info)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+          2.times { updater.send(:run_pnpm_update_packages) }
+
+          expect(Dependabot.logger)
+            .to have_received(:info).with(/sets minimumReleaseAgeStrict: true, but strict mode/).once
+        end
+      end
+
+      context "when the running pnpm supports trustLockfile" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.3.0"))
+        end
+
+        it "trusts entries already in the lockfile, on every command" do
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            ""
+          end
+
+          updater.send(:run_pnpm_update_packages)
+          updater.send(:run_pnpm_install)
+
+          expect(commands.length).to eq(2)
+          expect(commands).to all(include("--config.trust-lockfile=true"))
+        end
+
+        context "when the repo sets trustLockfile itself" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(
+                name: "pnpm-workspace.yaml",
+                content: "minimumReleaseAge: 4320\ntrustLockfile: false\n"
+              )]
+          end
+
+          it "leaves the repo's lockfile-verification policy untouched" do
+            allow(Dependabot.logger).to receive(:info)
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).not_to include("trust-lockfile")
+              ""
+            end
+
+            updater.send(:run_pnpm_install)
+          end
+        end
       end
 
       context "when the running pnpm predates the strict toggle" do
