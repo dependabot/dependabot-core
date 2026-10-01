@@ -1,12 +1,12 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 
 require "dependabot/vcpkg"
+require "dependabot/vcpkg/manifest_document"
 
 module Dependabot
   module Vcpkg
@@ -52,36 +52,31 @@ module Dependabot
         manifest = vcpkg_manifest_file
         return nil unless manifest
 
-        baseline = parsed_json(manifest)&.dig(VCPKG_BUILTIN_BASELINE_KEY)
-        baseline.is_a?(String) ? baseline : nil
+        parsed_document(manifest)&.builtin_baseline
+      rescue Dependabot::DependencyFileNotParseable
+        nil
       end
 
       sig { returns(T.nilable(String)) }
       def default_registry_builtin_baseline
-        registry = default_registry
-        return nil unless registry
-        return nil unless builtin_registry?(registry)
-
-        baseline = registry["baseline"]
-        baseline.is_a?(String) ? baseline : nil
-      end
-
-      sig { returns(T.nilable(T::Hash[String, Object])) }
-      def default_registry
         config = vcpkg_configuration_file
         return nil unless config
 
-        registry = parsed_json(config)&.dig("default-registry")
-        registry.is_a?(Hash) ? registry : nil
+        document = parsed_document(config)
+        return nil unless document && builtin_registry?(document)
+
+        document.default_registry_baseline
+      rescue Dependabot::DependencyFileNotParseable
+        nil
       end
 
-      sig { params(registry: T::Hash[String, Object]).returns(T::Boolean) }
-      def builtin_registry?(registry)
-        return true if registry["kind"] == "builtin"
-        return false unless registry["kind"] == "git"
+      sig { params(document: ManifestDocument).returns(T::Boolean) }
+      def builtin_registry?(document)
+        return true if document.default_registry_kind == "builtin"
+        return false unless document.default_registry_kind == "git"
 
-        repository = registry["repository"]
-        return false unless repository.is_a?(String)
+        repository = document.default_registry_repository
+        return false unless repository
 
         official = [VCPKG_DEFAULT_REGISTRY_REPOSITORY, VCPKG_DEFAULT_BASELINE_URL]
         official.include?(repository.delete_suffix("/"))
@@ -97,14 +92,12 @@ module Dependabot
         dependency_files.find { |file| file.name == VCPKG_CONFIGURATION_JSON_FILENAME }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, Object])) }
-      def parsed_json(file)
-        content = file.content
-        return nil unless content
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(ManifestDocument)) }
+      def parsed_document(file)
+        return nil unless file.content
 
-        parsed = JSON.parse(content)
-        parsed.is_a?(Hash) ? parsed : nil
-      rescue JSON::ParserError
+        ManifestDocument.from_file(file)
+      rescue Dependabot::DependencyFileNotParseable
         nil
       end
     end

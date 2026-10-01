@@ -214,6 +214,7 @@ module Dependabot
           const :julia_version, String
           const :dependencies, T::Array[ProjectDependency]
           const :weak_dependencies, T::Array[ProjectDependency]
+          const :extra_dependencies, T::Array[ProjectDependency]
           const :project_path, String
 
           sig { params(value: Object).returns(T.any(Project, Failure)) }
@@ -230,6 +231,7 @@ module Dependabot
               julia_version: ValueParser.string(hash, "julia_version", context),
               dependencies: parse_dependencies(hash, "dependencies", context),
               weak_dependencies: parse_dependencies(hash, "weak_dependencies", context),
+              extra_dependencies: parse_dependencies(hash, "extra_dependencies", context),
               project_path: ValueParser.string(hash, "project_path", context)
             )
           end
@@ -336,6 +338,8 @@ module Dependabot
 
           const :project_files, T::Array[String]
           const :manifest_file, String
+          # Every manifest of the environment, including version-specific ones
+          const :manifest_files, T::Array[String], default: []
           const :workspace_root, String
 
           sig { params(value: Object).returns(T.any(WorkspaceFiles, Failure)) }
@@ -351,6 +355,7 @@ module Dependabot
                 "#{context} project_files"
               ),
               manifest_file: ValueParser.string(hash, "manifest_file", context),
+              manifest_files: ValueParser.optional_string_array(hash, "manifest_files", context),
               workspace_root: ValueParser.string(hash, "workspace_root", context)
             )
           end
