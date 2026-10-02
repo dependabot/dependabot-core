@@ -16,6 +16,7 @@ module Dependabot
 
         require_relative "npmrc_builder"
         require "dependabot/npm_and_yarn/pnpm_resolutions"
+require "dependabot/npm_and_yarn/pnpm_workspace_config"
         require_relative "package_json_updater"
 
         sig do
@@ -612,16 +613,7 @@ module Dependabot
         # disabled (pnpm/pnpm#10008), so the cooldown cannot be enforced there.
         sig { returns(T::Boolean) }
         def pnpm_shared_workspace_lockfile_disabled?
-          dependency_files.any? do |file|
-            case File.basename(file.name)
-            when "pnpm-workspace.yaml"
-              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", ":") == false
-            when ".npmrc"
-              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", "=") == false
-            else
-              false
-            end
-          end
+          PnpmWorkspaceConfig.lockfile_per_project?(dependency_files)
         end
 
         # Reads a YAML/INI boolean `key`, returning true/false, or nil when absent or
