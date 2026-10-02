@@ -16,7 +16,7 @@ module Dependabot
 
         require_relative "npmrc_builder"
         require "dependabot/npm_and_yarn/pnpm_resolutions"
-require "dependabot/npm_and_yarn/pnpm_workspace_config"
+        require "dependabot/npm_and_yarn/pnpm_workspace_config"
         require_relative "package_json_updater"
 
         sig do
@@ -56,24 +56,29 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
 
         sig do
           params(
-            pnpm_lock: Dependabot::DependencyFile,
+            pnpm_locks: T::Array[Dependabot::DependencyFile],
             updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
-          ).returns(String)
+          ).returns(T::Hash[String, String])
         end
-        def updated_pnpm_lock_content(pnpm_lock, updated_pnpm_workspace_content: nil)
+        def updated_pnpm_lock_contents(pnpm_locks, updated_pnpm_workspace_content: nil)
           @updated_pnpm_lock_content ||= T.let(
             {},
             T.nilable(T::Hash[String, String])
           )
-          return T.must(@updated_pnpm_lock_content[pnpm_lock.name]) if @updated_pnpm_lock_content[pnpm_lock.name]
+          cache = @updated_pnpm_lock_content
+          pending = pnpm_locks.reject { |lock| cache.key?(lock.name) }
+          return cache if pending.empty?
 
-          new_content = run_pnpm_update(
-            pnpm_lock: pnpm_lock,
-            updated_pnpm_workspace_content: updated_pnpm_workspace_content
-          )
-          @updated_pnpm_lock_content[pnpm_lock.name] = new_content
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_pnpm_lock_updater_error(e, pnpm_lock)
+          begin
+            cache.merge!(
+              run_pnpm_update_all(
+                pnpm_locks: pending,
+                updated_pnpm_workspace_content: updated_pnpm_workspace_content
+              )
+            )
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            handle_pnpm_lock_updater_error(e, pending)
+          end
         end
 
         private
@@ -191,21 +196,22 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
 
         sig do
           params(
-            pnpm_lock: Dependabot::DependencyFile,
+            pnpm_locks: T::Array[Dependabot::DependencyFile],
             updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
           )
-            .returns(String)
+            .returns(T::Hash[String, String])
         end
-        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
+        def run_pnpm_update_all(pnpm_locks:, updated_pnpm_workspace_content: nil)
           # Set dependency files and credentials for automatic env variable injection
           Helpers.dependency_files = dependency_files
           Helpers.credentials = credentials
 
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-            File.write(".npmrc", npmrc_content(pnpm_lock))
+            File.write(".npmrc", workspace_npmrc_content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              original_content = File.read(pnpm_lock.name)
+              names = pnpm_locks.map(&:name)
+              original_contents = read_lockfiles(names)
 
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
@@ -219,22 +225,154 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
 
               run_pnpm_install
 
-              updated_content = File.read(pnpm_lock.name)
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                run_pnpm_deep_update_fallback
-                updated_content = File.read(pnpm_lock.name)
-              end
-
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
-                updated_content = File.read(pnpm_lock.name)
-              end
+              updated_contents = run_fallbacks(original_contents, read_lockfiles(names), names)
 
               # After the fallbacks: they resolve without a version too.
-              verify_unpinned_updates!(original_content, updated_content) if updated_content != original_content
-              updated_content
+              verify_unpinned_updates!(original_contents, updated_contents)
+
+              updated_contents
             end
           end
+        end
+
+        sig do
+          params(
+            original_contents: T::Hash[String, String],
+            updated_contents: T::Hash[String, String],
+            names: T::Array[String]
+          ).returns(T::Hash[String, String])
+        end
+        def run_fallbacks(original_contents, updated_contents, names)
+          return updated_contents unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+
+          # One retry per dependency, adopted only where that dependency was owed.
+          # The command is workspace-recursive whatever it is asked for, so a
+          # project that had already settled this dependency would otherwise take
+          # a version-less re-resolution of it on another project's behalf.
+          owed_by_dependency(owed_by_unmoved_lockfiles(original_contents, updated_contents))
+            .each do |dep, lockfile_names|
+            run_pnpm_deep_update_fallback([dep])
+            updated_contents = adopt_fallback_output(updated_contents, names, lockfile_names)
+          end
+
+          owed = owed_by_unmoved_lockfiles(original_contents, updated_contents)
+          if owed.any?
+            run_pnpm_audit_fix_fallback(updated_contents)
+            updated_contents = adopt_fallback_output(updated_contents, names, owed.keys)
+          end
+
+          updated_contents
+        end
+
+        # The same map keyed the other way: each owed dependency, with the
+        # lockfiles that owe it.
+        sig do
+          params(owed: T::Hash[String, T::Array[Dependabot::Dependency]])
+            .returns(T::Array[[Dependabot::Dependency, T::Array[String]]])
+        end
+        def owed_by_dependency(owed)
+          dependencies_by_name = T.let({}, T::Hash[String, Dependabot::Dependency])
+          lockfiles_by_name = T.let({}, T::Hash[String, T::Array[String]])
+          owed.each do |lockfile_name, owed_dependencies|
+            owed_dependencies.each do |dep|
+              dependencies_by_name[dep.name] ||= dep
+              (lockfiles_by_name[dep.name] ||= []) << lockfile_name
+            end
+          end
+          lockfiles_by_name.map { |name, lockfile_names| [T.must(dependencies_by_name[name]), lockfile_names] }
+        end
+
+        sig do
+          params(
+            original_contents: T::Hash[String, String],
+            updated_contents: T::Hash[String, String]
+          ).returns(T::Hash[String, T::Array[Dependabot::Dependency]])
+        end
+        def owed_by_unmoved_lockfiles(original_contents, updated_contents)
+          owed = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
+          original_contents.each do |name, content|
+            next unless updated_contents[name] == content
+
+            short = dependencies_short_of_requested_version(content)
+            owed[name] = short if short.any?
+          end
+          owed
+        end
+
+        # A fallback resolves the whole workspace, so it can rewrite a project the
+        # update had already settled, onto whatever a version-less resolution picks.
+        # Only the projects that still owed something take its output; the rest keep
+        # what the pinned pass produced, on disk as well as in the result, so the
+        # next pass reads the tree this one returns.
+        sig do
+          params(
+            before: T::Hash[String, String],
+            names: T::Array[String],
+            owed_names: T::Array[String]
+          ).returns(T::Hash[String, String])
+        end
+        def adopt_fallback_output(before, names, owed_names)
+          adopted = T.let({}, T::Hash[String, String])
+          read_lockfiles(names).each do |name, content|
+            if owed_names.include?(name)
+              adopted[name] = content
+              next
+            end
+
+            previous = T.must(before[name])
+            File.write(name, previous) unless previous == content
+            adopted[name] = previous
+          end
+          adopted
+        end
+
+        sig { params(content: String).returns(T::Array[Dependabot::Dependency]) }
+        def dependencies_short_of_requested_version(content)
+          candidates = dependencies.select { |dep| mentions_package?(content, dep.name) }
+          return [] if candidates.empty?
+
+          resolutions = pnpm_resolutions(content)
+          candidates.select do |dep|
+            resolved = resolutions.versions(dep.name)
+            resolved.empty? || resolved.any? { |version| version != dep.version }
+          end
+        end
+
+        sig { params(content: String, name: String).returns(T::Boolean) }
+        def mentions_package?(content, name)
+          content.match?(%r{(?:^|[\s"':])/?#{Regexp.escape(name)}(?:[@:"'\s]|$)})
+        end
+
+        sig { params(content: String).returns(NpmAndYarn::PnpmResolutions) }
+        def pnpm_resolutions(content)
+          cache = (@pnpm_resolutions ||= T.let({}, T.nilable(T::Hash[String, NpmAndYarn::PnpmResolutions])))
+          cache[content] ||= PnpmResolutions.new(content)
+        end
+
+        sig { params(names: T::Array[String]).returns(T::Hash[String, String]) }
+        def read_lockfiles(names)
+          names.to_h { |name| [name, File.read(name)] }
+        end
+
+        sig { returns(String) }
+        def workspace_npmrc_content
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files,
+            dependencies: workspace_dependencies
+          ).npmrc_content
+        end
+
+        sig { returns(T::Array[Dependabot::Dependency]) }
+        def workspace_dependencies
+          workspace_pnpm_locks
+            .flat_map { |lock| lockfile_dependencies(lock) }
+            .uniq { |dep| [dep.name, dep.requirements.map { |requirement| requirement[:source] }] }
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def workspace_pnpm_locks
+          dependency_files.select { |file| file.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
         end
 
         sig { returns(T.nilable(String)) }
@@ -261,30 +399,68 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         # would, at every depth, which can differ from the version Dependabot
         # selected under its ignore and cooldown rules. A dependent whose range
         # cannot reach the requested version keeps a lower one, which bypasses
-        # nothing. Refuse the lockfile unless it holds the requested version and
-        # no edge the update moved sits above it, rather than open a pull
-        # request that names one version and installs another.
-        sig { params(original_content: String, updated_content: String).void }
-        def verify_unpinned_updates!(original_content, updated_content)
+        # nothing. Refuse the batch unless it holds the requested version and no
+        # edge the update moved sits above it, rather than open a pull request
+        # that names one version and installs another. The question is asked of
+        # the batch rather than of each lockfile, since a project that does not
+        # carry the dependency at all has nothing to answer with.
+        sig do
+          params(
+            original_contents: T::Hash[String, String],
+            updated_contents: T::Hash[String, String]
+          ).void
+        end
+        def verify_unpinned_updates!(original_contents, updated_contents)
           unpinned = @unpinned_dependency_names
           return if unpinned.empty?
+          return if original_contents.all? { |name, content| updated_contents[name] == content }
 
-          resolutions = PnpmResolutions.new(updated_content)
           dependencies.select { |d| unpinned.include?(d.name) }.each do |dep|
-            requested = Version.new(dep.version)
-            changed = PnpmResolutions.changed_versions(original_content, updated_content, dep.name)
-            above = changed.reject { |v| Version.correct?(v) && Version.new(v) <= requested }
-            next if above.empty? && resolutions.versions(dep.name).include?(dep.version)
-
-            outcome = if above.empty?
-                        "to #{changed.join(', ')} instead of the requested #{dep.version}"
-                      else
-                        "to #{above.join(', ')}, above the requested #{dep.version}"
-                      end
-            raise Dependabot::DependencyFileNotResolvable,
-                  "pnpm resolved #{dep.name} #{outcome}. It is not a direct dependency, so pnpm " \
-                  "updates it to what a fresh install would resolve rather than to the requested version."
+            verify_unpinned_dependency!(dep, original_contents, updated_contents)
           end
+        end
+
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            original_contents: T::Hash[String, String],
+            updated_contents: T::Hash[String, String]
+          ).void
+        end
+        def verify_unpinned_dependency!(dep, original_contents, updated_contents)
+          requested = Version.new(dep.version)
+          changed = changed_versions_across(dep.name, original_contents, updated_contents)
+          above = changed.reject { |v| Version.correct?(v) && Version.new(v) <= requested }
+          versions = updated_contents.values.flat_map { |c| pnpm_resolutions(c).versions(dep.name) }.uniq
+          return if above.empty? && versions.include?(dep.version)
+
+          resolved = changed.empty? ? versions : changed
+          outcome = if !above.empty?
+                      "to #{above.join(', ')}, above the requested #{dep.version}"
+                    elsif resolved.empty?
+                      "to nothing, rather than to the requested #{dep.version}"
+                    else
+                      "to #{resolved.join(', ')} instead of the requested #{dep.version}"
+                    end
+          raise Dependabot::DependencyFileNotResolvable,
+                "pnpm resolved #{dep.name} #{outcome}. It is not a direct dependency, so pnpm " \
+                "updates it to what a fresh install would resolve rather than to the requested version."
+        end
+
+        sig do
+          params(
+            name: String,
+            original_contents: T::Hash[String, String],
+            updated_contents: T::Hash[String, String]
+          ).returns(T::Array[String])
+        end
+        def changed_versions_across(name, original_contents, updated_contents)
+          original_contents.flat_map do |lockfile_name, original_content|
+            updated_content = T.must(updated_contents[lockfile_name])
+            next [] if updated_content == original_content
+
+            PnpmResolutions.changed_versions(original_content, updated_content, name)
+          end.uniq
         end
 
         sig { params(specs: T::Array[String]).returns(T.nilable(String)) }
@@ -616,10 +792,12 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
           PnpmWorkspaceConfig.lockfile_per_project?(dependency_files)
         end
 
-        # Reads a YAML/INI boolean `key`, returning true/false, or nil when absent or
-        # non-boolean. Handles optionally quoted keys/values (`"key": True`), boolean
-        # casing, and trailing comments so a valid native setting is never misread.
-        # The last occurrence wins, matching how pnpm/INI resolve a repeated key.
+        # Reads a line-oriented boolean `key`, returning true/false, or nil when absent
+        # or non-boolean. Used for `.npmrc`, whose INI syntax has no flow form; a
+        # pnpm-workspace.yaml is parsed as YAML instead. Handles optionally quoted
+        # keys/values (`"key"=True`), boolean casing, and trailing comments so a valid
+        # native setting is never misread. The last occurrence wins, matching how INI
+        # resolves a repeated key.
         sig { params(content: String, key: String, separator: String).returns(T.nilable(T::Boolean)) }
         def yaml_boolean_setting(content, key, separator)
           quoted_key = /["']?#{Regexp.escape(key)}["']?/
@@ -677,10 +855,10 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         # audit fixes that may modify manifests on older pnpm versions. It is
         # routed through the release-age gate so the fallback cannot bypass the
         # transitive dependency cooldown.
-        sig { void }
-        def run_pnpm_deep_update_fallback
+        sig { params(deps: T::Array[Dependabot::Dependency]).void }
+        def run_pnpm_deep_update_fallback(deps)
           recursive = workspace_files.any?
-          dependencies.each do |dep|
+          deps.each do |dep|
             cmd, fingerprint = NativeHelpers.pnpm_deep_update_command(dep.name, recursive: recursive)
             run_pnpm_command_with_release_age_gate(cmd, fingerprint)
             dep.metadata[:deep_update_used] = true
@@ -695,8 +873,8 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         # pnpm 11 updates the lockfile directly, while older versions may add
         # `overrides` to package.json. Since only lockfile content can be returned,
         # revert any manifest and lockfile changes so the operation remains consistent.
-        sig { params(pnpm_lock: Dependabot::DependencyFile, original_content: String).void }
-        def run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+        sig { params(snapshot_contents: T::Hash[String, String]).void }
+        def run_pnpm_audit_fix_fallback(snapshot_contents)
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
@@ -710,7 +888,7 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
                 "pnpm audit --fix modified package.json (overrides) — reverting fallback"
               )
               package_json_snapshots.each { |f, c| File.write(f, c) }
-              File.write(pnpm_lock.name, original_content)
+              snapshot_contents.each { |name, content| File.write(name, content) }
             else
               dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
             end
@@ -734,10 +912,43 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
           @lockfile_dependencies ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::Dependency]]))
           @lockfile_dependencies[lockfile.name] ||=
             NpmAndYarn::FileParser.new(
-              dependency_files: [lockfile, *package_files, *workspace_files],
+              dependency_files: [lockfile, *manifests_describing(lockfile), *workspace_files],
               source: nil,
               credentials: credentials
             ).parse
+        end
+
+        # A lockfile beside a project describes that project alone, so parsing it
+        # against every manifest in the workspace invents a copy of each other
+        # project's dependencies with no resolution behind it — source-less, and
+        # distinguishable from the copy that knows its registry only by that
+        # absence. Pair each lockfile with the manifests it actually describes.
+        # Where one lockfile is shared it describes them all, and that is the
+        # layout the fetcher leaves with no member lockfile at all, so nothing
+        # changes there.
+        sig { params(lockfile: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+        def manifests_describing(lockfile)
+          members = workspace_pnpm_locks.reject { |lock| File.dirname(lock.name) == "." }
+          return package_files if members.empty?
+
+          directory = File.dirname(lockfile.name)
+          owned = package_files.select { |file| File.dirname(file.name) == directory }
+          return package_files if owned.empty?
+          # The parser wants the manifest at the root whatever it is parsing.
+          return (root_package_files + owned).uniq unless directory == "."
+
+          # The root lockfile covers the root project, and any project that kept
+          # no lockfile of its own.
+          covered = members.map { |lock| File.dirname(lock.name) }
+          owned + package_files.reject do |file|
+            dir = File.dirname(file.name)
+            dir == "." || covered.include?(dir)
+          end
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def root_package_files
+          package_files.select { |file| File.dirname(file.name) == "." }
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -747,15 +958,15 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         sig do
           params(
             error: SharedHelpers::HelperSubprocessFailed,
-            pnpm_lock: Dependabot::DependencyFile
+            pnpm_locks: T::Array[Dependabot::DependencyFile]
           )
             .returns(T.noreturn)
         end
-        def handle_pnpm_lock_updater_error(error, pnpm_lock)
+        def handle_pnpm_lock_updater_error(error, pnpm_locks)
           error_message = error.message
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
-            raise_resolvability_error(error_message, pnpm_lock)
+            raise_resolvability_error(error_message, pnpm_locks)
           end
 
           if error_message.match?(UNREACHABLE_GIT)
@@ -776,7 +987,7 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
             next unless error_message.match?(regexp)
 
             dependency_url = T.must(error_message.match(regexp)&.named_captures&.[]("dependency_url"))
-            raise_package_access_error(error_message, dependency_url, pnpm_lock)
+            raise_package_access_error(error_message, dependency_url)
           end
 
           # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
@@ -847,7 +1058,7 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
           end
 
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
-          raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
+          raise_unsupported_engine_error(error_message, pnpm_locks) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
           if error_message.match?(ERR_INVALID_THIS) && error_message.match?(URL_SEARCH_PARAMS)
             msg = "Error while resolving dependencies."
@@ -856,7 +1067,7 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
           end
 
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
-            raise_unsupported_platform_error(error_message, pnpm_lock)
+            raise_unsupported_platform_error(error_message, pnpm_locks)
           end
 
           if error_message.match?(ERR_PNPM_TRUST_DOWNGRADE)
@@ -877,11 +1088,12 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
 
-        sig { params(error_message: String, pnpm_lock: Dependabot::DependencyFile).returns(T.noreturn) }
-        def raise_resolvability_error(error_message, pnpm_lock)
+        sig { params(error_message: String, pnpm_locks: T::Array[Dependabot::DependencyFile]).returns(T.noreturn) }
+        def raise_resolvability_error(error_message, pnpm_locks)
           dependency_names = dependencies.map(&:name).join(", ")
+          paths = pnpm_locks.map(&:path).join(", ")
           msg = "Error whilst updating #{dependency_names} in " \
-                "#{pnpm_lock.path}:\n#{error_message}"
+                "#{paths}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
@@ -897,10 +1109,10 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         sig do
           params(
             error_message: String,
-            _pnpm_lock: Dependabot::DependencyFile
+            _pnpm_locks: T::Array[Dependabot::DependencyFile]
           ).returns(T.nilable(T.noreturn))
         end
-        def raise_unsupported_engine_error(error_message, _pnpm_lock)
+        def raise_unsupported_engine_error(error_message, _pnpm_locks)
           match_pkg_mgr = error_message.match(PACAKGE_MANAGER)
           match_version = error_message.match(VERSION_REQUIREMENT)
 
@@ -930,18 +1142,17 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         sig do
           params(
             error_message: String,
-            dependency_url: String,
-            pnpm_lock: Dependabot::DependencyFile
+            dependency_url: String
           )
             .returns(T.noreturn)
         end
-        def raise_package_access_error(error_message, dependency_url, pnpm_lock)
+        def raise_package_access_error(error_message, dependency_url)
           package_name = RegistryParser.new(
             resolved_url: dependency_url,
             credentials: credentials
           ).dependency_name
-          missing_dep = lockfile_dependencies(pnpm_lock)
-                        .find { |dep| dep.name == package_name }
+          named = workspace_dependencies.select { |dep| dep.name == package_name }
+          missing_dep = named.find { |dep| dep.requirements.any? { |r| r[:source] } } || named.first
           raise DependencyNotFound, package_name unless missing_dep
 
           reg = Package::RegistryFinder.new(
@@ -965,11 +1176,11 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
         sig do
           params(
             error_message: String,
-            _pnpm_lock: Dependabot::DependencyFile
+            _pnpm_locks: T::Array[Dependabot::DependencyFile]
           )
             .returns(T.nilable(T.noreturn))
         end
-        def raise_unsupported_platform_error(error_message, _pnpm_lock)
+        def raise_unsupported_platform_error(error_message, _pnpm_locks)
           match_dep = error_message.match(PLATFORM_PACAKGE_DEP)
           match_version = error_message.match(PLATFORM_VERSION_REQUIREMENT)
 
@@ -996,15 +1207,6 @@ require "dependabot/npm_and_yarn/pnpm_workspace_config"
           end
 
           nil
-        end
-
-        sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
-        def npmrc_content(pnpm_lock)
-          NpmrcBuilder.new(
-            credentials: credentials,
-            dependency_files: dependency_files,
-            dependencies: lockfile_dependencies(pnpm_lock)
-          ).npmrc_content
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(String) }

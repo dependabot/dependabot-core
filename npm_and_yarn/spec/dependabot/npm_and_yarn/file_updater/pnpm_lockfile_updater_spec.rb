@@ -6,7 +6,8 @@ require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   subject(:updated_pnpm_lock_content) do
-    updater.updated_pnpm_lock_content(pnpm_lock, updated_pnpm_workspace_content: workspace_files)
+    updater.updated_pnpm_lock_contents([pnpm_lock], updated_pnpm_workspace_content: workspace_files)
+           .fetch(pnpm_lock.name)
   end
 
   let(:workspace_files) { nil }
@@ -816,8 +817,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
-              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only --no-save",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity " \
+                             "--lockfile-only --no-save" }
             )
             .ordered
             .and_return("")
@@ -931,6 +933,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when the retry leaves the dependency in no lockfile at all" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(unpinned_update, fingerprint) { drop_lockfile_acorn }
+      end
+
+      it "refuses the lockfile" do
+        expect { updated_pnpm_lock_content }.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          /resolved acorn to nothing, rather than to the requested 6\.7\.3/
+        )
+      end
+    end
+
     # Stands in for pnpm in the temporary directory the update runs in: moves
     # the fixture's first edge to acorn onto `version`, and every other edge
     # onto `extra` when given.
@@ -942,6 +958,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       edges = [version, extra].compact
       edge = -1
       content = content.gsub("acorn: 5.2.1") { "acorn: #{edges[[edge += 1, edges.size - 1].min]}" }
+      File.write("pnpm-lock.yaml", content)
+      ""
+    end
+
+    # Stands in for a retry that resolves the workspace without the dependency
+    # at all: drops every acorn package entry and every edge onto it.
+    def drop_lockfile_acorn
+      content = File.read("pnpm-lock.yaml")
+      content = content.sub(%r{^  /acorn@5\.2\.1:\n(?:    .*\n)+}, "")
+      content = content.gsub(/^ *acorn: 5\.2\.1\n/, "")
       File.write("pnpm-lock.yaml", content)
       ""
     end
@@ -1039,6 +1065,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         )
       end
 
+      context "when the workspace keeps a lockfile per project" do
+        let(:project_name) { "pnpm/workspaces_separate_lockfiles" }
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          [{
+            file: "packages/package1/package.json",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "packages/package1/package.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "does not pass a gate pnpm 10 ignores for this layout" do
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            ""
+          end
+
+          updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+          expect(commands).not_to be_empty
+          expect(commands.join(" ")).not_to include("minimum-release-age")
+        end
+      end
+
       it "passes minimumReleaseAge in minutes (days * 1440) to pnpm update" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           expect(cmd).to include("--config.minimum-release-age=10080")
@@ -1056,19 +1123,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           ""
         end.at_least(:once)
 
-        updater.send(:run_pnpm_deep_update_fallback)
+        updater.send(:run_pnpm_deep_update_fallback, [dependency])
       end
 
       it "routes the audit-fix fallback through the release-age gate" do
         allow(Dir).to receive(:glob).and_return([])
-        pnpm_lock = Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "original")
         gated = false
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           gated ||= cmd.include?("audit --fix") && cmd.include?("--config.minimum-release-age=10080")
           ""
         end
 
-        updater.send(:run_pnpm_audit_fix_fallback, pnpm_lock, "original")
+        updater.send(:run_pnpm_audit_fix_fallback, { "pnpm-lock.yaml" => "original" })
         expect(gated).to be(true)
       end
 
@@ -1112,7 +1178,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         # The deep-update fallback issues its own gated command, so scope to the
         # `update --no-save` pair: the gated attempt and its ungated retry.
-        updates = commands.select { |cmd| cmd.include?("--no-save") }
+        updates = commands.select { |cmd| cmd.include?("--no-save -r") }
         expect(updates.length).to eq(2)
         expect(updates.first).to include("--config.minimum-release-age=10080")
         expect(updates.last).not_to include("--config.minimum-release-age")
@@ -1588,34 +1654,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         it "warns even when the repo declares a longer gate that pnpm 10.x ignores" do
           allow(Dependabot.logger).to receive(:warn)
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimum-release-age")
-            ""
-          end.at_least(:once)
-
-          updater.send(:run_pnpm_update_packages)
-
-          expect(Dependabot.logger).to have_received(:warn).with(/shared-workspace-lockfile/)
-        end
-      end
-
-      context "when pnpm-workspace.yaml states the setting in flow style" do
-        let(:files) do
-          project_dependency_files(project_name) +
-            [Dependabot::DependencyFile.new(
-              name: "pnpm-workspace.yaml",
-              content: "{ packages: ['packages/*'], sharedWorkspaceLockfile: false }\n"
-            )]
-        end
-
-        before do
-          allow(Dependabot::NpmAndYarn::Helpers)
-            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
-        end
-
-        it "skips the cooldown, since pnpm reads the mapping whatever its shape" do
-          allow(Dependabot.logger).to receive(:warn)
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimum-release-age")
+            expect(cmd).not_to include("minimumReleaseAge")
             ""
           end.at_least(:once)
 
@@ -1640,12 +1679,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
 
         it "still applies the cooldown, because the lockfile is shared" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).to include("--config.minimum-release-age")
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
             ""
-          end.at_least(:once)
+          end
 
-          updater.send(:run_pnpm_update_packages)
+          updater.updated_pnpm_lock_contents([pnpm_lock])
+
+          expect(commands).not_to be_empty
+          expect(commands.join(" ")).to include("--config.minimum-release-age")
+        end
+      end
+
+      context "when pnpm-workspace.yaml states the setting in flow style" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "{ packages: ['packages/*'], sharedWorkspaceLockfile: false }\n"
+            )]
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "skips the cooldown, since pnpm reads the mapping whatever its shape" do
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            ""
+          end
+
+          updater.updated_pnpm_lock_contents([pnpm_lock])
+
+          expect(commands).not_to be_empty
+          expect(commands.join(" ")).not_to include("minimum-release-age")
         end
       end
 
@@ -1664,15 +1735,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
 
         it "skips the cooldown, because pnpm 10.x honours the .npmrc spelling" do
-          allow(Dependabot.logger).to receive(:warn)
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimum-release-age")
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
             ""
-          end.at_least(:once)
+          end
 
-          updater.send(:run_pnpm_update_packages)
+          updater.updated_pnpm_lock_contents([pnpm_lock])
 
-          expect(Dependabot.logger).to have_received(:warn).with(/shared-workspace-lockfile/)
+          expect(commands).not_to be_empty
+          expect(commands.join(" ")).not_to include("minimum-release-age")
         end
       end
 
@@ -1809,10 +1881,394 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         expect { updated_pnpm_lock_content }.to raise_error(StandardError)
 
-        updates = commands.select { |cmd| cmd.include?("--no-save") }
+        updates = commands.select { |cmd| cmd.include?("--no-save -r") }
         expect(updates.length).to eq(1)
         expect(updates.first).to include("--config.minimum-release-age=0")
       end
+    end
+  end
+
+  describe "error attribution across a batch" do
+    let(:files) { project_dependency_files("pnpm/workspaces_separate_lockfiles") }
+    let(:repo_contents_path) { build_tmp_repo("pnpm/workspaces_separate_lockfiles", path: "projects") }
+    let(:pnpm_locks) do
+      files.select { |f| f.name.end_with?("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml") }
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "ERR_PNPM_NO_MATCHING_VERSION no matching version found",
+          error_context: {}
+        )
+      )
+    end
+
+    it "names every lockfile the batch was resolving" do
+      expect { updater.updated_pnpm_lock_contents(pnpm_locks) }
+        .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("packages/package1/pnpm-lock.yaml")
+          expect(error.message).to include("packages/package2/pnpm-lock.yaml")
+        end
+    end
+  end
+
+  describe "a resolution that covers the whole workspace" do
+    let(:files) { project_dependency_files("pnpm/workspaces_separate_lockfiles") }
+    let(:repo_contents_path) { build_tmp_repo("pnpm/workspaces_separate_lockfiles", path: "projects") }
+    let(:package1_lock) { files.find { |f| f.name == "packages/package1/pnpm-lock.yaml" } }
+    let(:dependency_name) { "lodash" }
+    let(:version) { "1.3.1" }
+    let(:previous_version) { "1.2.0" }
+
+    it "configures the registries of projects it is not reading back" do
+      configured = []
+      allow(Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder)
+        .to receive(:new).and_wrap_original do |original, **kwargs|
+          configured.concat(kwargs[:dependencies].map(&:name))
+          original.call(**kwargs)
+        end
+
+      updater.updated_pnpm_lock_contents([package1_lock])
+
+      expect(configured).to include("ms")
+    end
+
+    it "still retries when one project moves and another does not" do
+      allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+
+      retried = false
+      allow(updater).to receive(:run_pnpm_deep_update_fallback) { retried = true }
+      reads = 0
+      allow(updater).to receive(:read_lockfiles).and_wrap_original do |original, names|
+        reads += 1
+        contents = original.call(names)
+        reads == 1 ? contents : contents.merge(names.first => "moved")
+      end
+
+      updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+      expect(retried).to be(true)
+    end
+
+    it "does not retry when the only lockfile that stayed put holds nothing it updates" do
+      allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+      retried = false
+      allow(updater).to receive(:run_pnpm_deep_update_fallback) { retried = true }
+      reads = 0
+      allow(updater).to receive(:read_lockfiles).and_wrap_original do |original, names|
+        reads += 1
+        contents = original.call(names)
+        reads == 1 ? contents : contents.merge(names.grep(%r{/}).to_h { |n| [n, "moved"] })
+      end
+
+      updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+      expect(retried).to be(false)
+    end
+
+    it "does not retry when a lockfile holds the dependency name only inside a longer package name" do
+      allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+      retried = false
+      allow(updater).to receive(:run_pnpm_deep_update_fallback) { retried = true }
+      allow(updater).to receive(:run_pnpm_audit_fix_fallback) { retried = true }
+      allow(updater).to receive(:read_lockfiles) do |names|
+        names.to_h { |name| [name, "packages:\n  lodash.merge@4.6.2:\n"] }
+      end
+
+      updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+      expect(retried).to be(false)
+    end
+
+    it "does not retry when a lockfile holds only a scoped package ending in the dependency name" do
+      allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+      retried = false
+      allow(updater).to receive(:run_pnpm_deep_update_fallback) { retried = true }
+      allow(updater).to receive(:run_pnpm_audit_fix_fallback) { retried = true }
+      allow(updater).to receive(:read_lockfiles) do |names|
+        names.to_h { |name| [name, "packages:\n  /@types/lodash@4.14.45:\n  @scope/lodash@4.6.2:\n"] }
+      end
+
+      updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+      expect(retried).to be(false)
+    end
+
+    context "when one project is still owed an update and another is already settled" do
+      let(:dependencies) { [dependency, debug_dependency] }
+      let(:dependency_name) { "lodash" }
+      let(:version) { "1.3.1" }
+      let(:previous_version) { "1.2.0" }
+      let(:requirements) do
+        [{ file: "packages/package1/package.json", requirement: "1.3.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:previous_requirements) do
+        [{ file: "packages/package1/package.json", requirement: "1.2.0", groups: ["dependencies"], source: nil }]
+      end
+      let(:debug_dependency) do
+        Dependabot::Dependency.new(
+          name: "debug",
+          version: "2.1.0",
+          previous_version: "2.0.0",
+          requirements: [{
+            file: "packages/package2/package.json", requirement: "2.1.0", groups: ["dependencies"], source: nil
+          }],
+          previous_requirements: [{
+            file: "packages/package2/package.json", requirement: "2.0.0", groups: ["dependencies"], source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:settled_lock) do
+        <<~LOCK
+          lockfileVersion: '9.0'
+          importers:
+            .:
+              dependencies:
+                lodash:
+                  specifier: 1.3.1
+                  version: 1.3.1
+                debug:
+                  specifier: 2.0.0
+                  version: 2.0.0
+        LOCK
+      end
+
+      it "retries only the dependency still awaiting one" do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+
+        commands = []
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          commands << cmd
+          ""
+        end
+        reads = 0
+        allow(updater).to receive(:read_lockfiles) do |names|
+          reads += 1
+          names.to_h do |name|
+            [name, name.include?("package2") ? settled_lock : "moved #{reads}"]
+          end
+        end
+
+        updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+        deep = commands.select { |cmd| cmd.include?("--depth Infinity") }
+        expect(deep).not_to be_empty
+        expect(deep.join(" ")).to include("update debug")
+        expect(deep.join(" ")).not_to include("update lodash")
+      end
+    end
+
+    context "when a fallback rewrites a project the update had already settled" do
+      let(:dependency_name) { "lodash" }
+      let(:version) { "1.3.1" }
+      let(:previous_version) { "1.2.0" }
+      let(:requirements) do
+        [{ file: "packages/package1/package.json", requirement: "1.3.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:previous_requirements) do
+        [{ file: "packages/package1/package.json", requirement: "1.2.0", groups: ["dependencies"], source: nil }]
+      end
+      let(:settled) { lock_resolving("1.3.1") }
+      let(:over_bumped) { lock_resolving("1.9.9") }
+
+      it "keeps the pinned result and takes the fallback only where it was owed" do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          if cmd.include?("--depth Infinity")
+            File.write("packages/package1/pnpm-lock.yaml", over_bumped)
+            File.write("packages/package2/pnpm-lock.yaml", over_bumped)
+          elsif cmd.start_with?("update ")
+            File.write("packages/package1/pnpm-lock.yaml", settled)
+          end
+          ""
+        end
+
+        contents = updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+        expect(contents["packages/package1/pnpm-lock.yaml"]).to eq(settled)
+        expect(contents["packages/package2/pnpm-lock.yaml"]).to eq(over_bumped)
+      end
+    end
+
+    def lock_resolving(version)
+      <<~LOCK
+        lockfileVersion: '9.0'
+        importers:
+          .:
+            dependencies:
+              lodash:
+                specifier: #{version}
+                version: #{version}
+      LOCK
+    end
+
+    context "when two projects each owe a different dependency" do
+      let(:dependencies) { [dependency, debug_dependency] }
+      let(:dependency_name) { "lodash" }
+      let(:version) { "1.3.1" }
+      let(:previous_version) { "1.2.0" }
+      let(:requirements) do
+        [{ file: "packages/package1/package.json", requirement: "1.3.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:previous_requirements) do
+        [{ file: "packages/package1/package.json", requirement: "1.2.0", groups: ["dependencies"], source: nil }]
+      end
+      let(:debug_dependency) do
+        Dependabot::Dependency.new(
+          name: "debug",
+          version: "2.1.0",
+          previous_version: "2.0.0",
+          requirements: [{
+            file: "packages/package2/package.json", requirement: "2.1.0", groups: ["dependencies"], source: nil
+          }],
+          previous_requirements: [{
+            file: "packages/package2/package.json", requirement: "2.0.0", groups: ["dependencies"], source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:owes_lodash) { lock_resolving_pair("1.2.0", "2.1.0") }
+      let(:owes_debug) { lock_resolving_pair("1.3.1", "2.0.0") }
+      let(:lodash_retry) { lock_resolving_pair("1.9.9", "2.1.0") }
+      let(:debug_retry) { lock_resolving_pair("1.3.1", "2.9.9") }
+
+      it "does not let one project's retry carry into a dependency the other had settled" do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+
+        p1 = "packages/package1/pnpm-lock.yaml"
+        p2 = "packages/package2/pnpm-lock.yaml"
+        state = { p1 => owes_lodash, p2 => owes_debug }
+
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          if cmd.include?("--depth Infinity")
+            written = cmd.include?("update lodash") ? lodash_retry : debug_retry
+            state[p1] = written
+            state[p2] = written
+          end
+          ""
+        end
+        allow(updater).to receive(:read_lockfiles) do |names|
+          names.to_h { |name| [name, state.fetch(name, "lockfileVersion: '9.0'\nimporters:\n  .: {}\n")] }
+        end
+
+        contents = updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+
+        expect(contents[p1]).to eq(lodash_retry)
+        expect(contents[p2]).to eq(debug_retry)
+      end
+    end
+
+    def lock_resolving_pair(lodash, debug)
+      <<~LOCK
+        lockfileVersion: '9.0'
+        importers:
+          .:
+            dependencies:
+              lodash:
+                specifier: #{lodash}
+                version: #{lodash}
+              debug:
+                specifier: #{debug}
+                version: #{debug}
+      LOCK
+    end
+
+    it "names the registry when a package only another project resolves is refused" do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "ERR_PNPM_FETCH_401 GET https://registry.npmjs.org/ms: Unauthorized - 401",
+          error_context: {}
+        )
+      )
+
+      expect { updater.updated_pnpm_lock_contents([package1_lock]) }
+        .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
+
+  describe "a workspace whose projects resolve from different registries" do
+    let(:project_name) { "pnpm/workspaces_separate_lockfiles_private" }
+    let(:credentials) do
+      [Dependabot::Credential.new(
+        {
+          "type" => "npm_registry",
+          "registry" => "npm.pkg.github.com",
+          "token" => "secret_token"
+        }
+      )]
+    end
+    let(:package1_lock) { files.find { |f| f.name == "packages/package1/pnpm-lock.yaml" } }
+    let(:dependency_name) { "lodash" }
+    let(:version) { "1.3.1" }
+    let(:previous_version) { "1.2.0" }
+    let(:requirements) do
+      [{
+        file: "packages/package1/package.json",
+        requirement: "1.3.1",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "packages/package1/package.json",
+        requirement: "1.2.0",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+
+    it "does not invent a copy of another project's dependency with no registry behind it" do
+      stub_request(:get, "https://npm.pkg.github.com/lodash").to_return(status: 404)
+      stub_request(:get, "https://npm.pkg.github.com/@dsp-testing%2Finner-source-top-secret-npm-2")
+        .to_return(status: 404)
+
+      offered = []
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+      allow(Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder)
+        .to receive(:new).and_wrap_original do |original, **kwargs|
+          offered.concat(kwargs[:dependencies])
+          original.call(**kwargs)
+        end
+
+      updater.updated_pnpm_lock_contents([package1_lock])
+
+      scoped = offered.select { |dep| dep.name == "@dsp-testing/inner-source-top-secret-npm-2" }
+      expect(scoped.length).to eq(1)
+      expect(scoped.first.requirements.filter_map { |requirement| requirement[:source] })
+        .to contain_exactly(hash_including(url: "https://npm.pkg.github.com"))
+    end
+
+    it "writes an npmrc routing the private dependency to its own registry" do
+      stub_request(:get, "https://npm.pkg.github.com/lodash").to_return(status: 404)
+      stub_request(:get, "https://npm.pkg.github.com/@dsp-testing%2Finner-source-top-secret-npm-2")
+        .to_return(status: 404)
+
+      npmrc = nil
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
+        npmrc ||= File.read(".npmrc")
+        ""
+      end
+
+      updater.updated_pnpm_lock_contents([package1_lock])
+
+      expect(npmrc).to include("@dsp-testing:registry=https://npm.pkg.github.com")
     end
   end
 end
