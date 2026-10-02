@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 471
+# Offense count: 435
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -279,7 +279,6 @@ Sorbet/ForbidTUntyped:
     - "go_modules/lib/dependabot/go_modules/file_parser.rb"
     - "go_modules/lib/dependabot/go_modules/file_updater/go_mod_updater.rb"
     - "go_modules/lib/dependabot/go_modules/package/package_details_fetcher.rb"
-    - "go_modules/lib/dependabot/go_modules/replace_stubber.rb"
     - "hex/lib/dependabot/hex/credential_helpers.rb"
     - "hex/lib/dependabot/hex/file_parser.rb"
     - "hex/lib/dependabot/hex/metadata_finder.rb"
@@ -314,11 +313,6 @@ Sorbet/ForbidTUntyped:
     - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
     - "opentofu/lib/dependabot/opentofu/registry_client.rb"
     - "opentofu/lib/dependabot/opentofu/update_checker/latest_version_resolver.rb"
-    - "pub/lib/dependabot/pub/helpers.rb"
-    - "pub/lib/dependabot/pub/metadata_finder.rb"
-    - "pub/lib/dependabot/pub/package/package_details_fetcher.rb"
-    - "pub/lib/dependabot/pub/update_checker.rb"
-    - "pub/lib/dependabot/pub/update_checker/latest_version_finder.rb"
     - "python/lib/dependabot/python/dependency_grapher.rb"
     - "python/lib/dependabot/python/file_fetcher.rb"
     - "python/lib/dependabot/python/file_parser.rb"
