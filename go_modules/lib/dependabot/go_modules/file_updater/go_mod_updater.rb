@@ -389,8 +389,9 @@ module Dependabot
             # An earlier `go get` bumped a sibling module's Go version (and go.work on
             # disk), but that go.work change isn't persisted when the job targets a single
             # module directory. `go work use` re-syncs the go.work Go version.
-            _, _, work_status = Open3.capture3("go work use")
-            _, stderr, status = Open3.capture3(command) if work_status.success?
+            _, work_stderr, work_status = Open3.capture3("go work use")
+            handle_subprocess_error(work_stderr) unless work_status.success?
+            _, stderr, status = Open3.capture3(command)
           end
           handle_subprocess_error(stderr) unless status.success?
         ensure
