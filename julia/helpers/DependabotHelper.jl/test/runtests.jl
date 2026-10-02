@@ -762,6 +762,18 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
         @test !haskey(result, "error")
         @test result["release_date"] === nothing
+        # A version above every dated one was registered after GeneralMetadata.jl was last built
+        @test result["release_date_pending"] === true
+        batch = DependabotHelper.batch_get_version_release_dates([Dict{String,Any}(
+            "name" => "JSON", "uuid" => json_uuid, "versions" => ["1.2.0", "999.999.999"])])
+        @test batch["JSON"]["1.2.0"] == "2025-10-17T01:08:11"
+        @test batch["JSON"]["999.999.999"]["release_date_pending"] === true
+        # A gap below the dated versions is not a new registration
+        result = DependabotHelper.get_version_release_date("JSON", "0.0.999", json_uuid)
+        @test result["release_date"] === nothing
+        @test !haskey(result, "release_date_pending")
+        result = DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
+        @test !haskey(result, "release_date_pending")
 
         # Test helper functions for General registry
         @testset "General Registry Helper Functions" begin

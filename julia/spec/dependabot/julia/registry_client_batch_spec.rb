@@ -178,7 +178,8 @@ RSpec.describe Dependabot::Julia::RegistryClient do
             "Example" => {
               "0.5.0" => "2023-01-01T00:00:00Z",
               "0.5.1" => nil,
-              "0.5.2" => { "error" => "Date unavailable" }
+              "0.5.2" => { "error" => "Date unavailable" },
+              "0.5.3" => { "release_date" => nil, "release_date_pending" => true }
             }
           }
         )
@@ -191,9 +192,10 @@ RSpec.describe Dependabot::Julia::RegistryClient do
 
         expect(dates).to be_a(Dependabot::Julia::RegistryClient::Result::ReleaseDates)
         expect(dates.dates.fetch("0.5.0")).to have_attributes(release_date: "2023-01-01T00:00:00Z")
-        expect(dates.dates.fetch("0.5.1")).to have_attributes(release_date: nil)
+        expect(dates.dates.fetch("0.5.1")).to have_attributes(release_date: nil, pending: false)
         expect(dates.dates.fetch("0.5.2")).to be_a(Dependabot::Julia::RegistryClient::Result::Failure)
         expect(dates.dates.fetch("0.5.2").message).to eq("Date unavailable")
+        expect(dates.dates.fetch("0.5.3")).to have_attributes(release_date: nil, pending: true)
       end
 
       it "allows a package named error" do
