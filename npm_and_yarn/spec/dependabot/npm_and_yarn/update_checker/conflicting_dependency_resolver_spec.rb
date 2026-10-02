@@ -80,7 +80,9 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
         end
 
-        it "uses the legacy fallback" do
+        it "uses the legacy fallback without consulting the Yarn experiment" do
+          expect(Dependabot::Experiments).not_to receive(:enabled?)
+
           expect(conflicting_dependencies).to be_empty
         end
       end
@@ -163,9 +165,9 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         project_dependency_files("yarn/subdependency_out_of_range_gt")
           .select { |file| file.name == "package.json" }
       end
-      let(:enable_yarn_berry_conflicting_dependencies) { false }
 
-      it "uses the legacy Yarn helper" do
+      it "uses the legacy Yarn helper without consulting the Yarn experiment" do
+        expect(Dependabot::Experiments).not_to receive(:enabled?)
         expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .with(
             hash_including(
@@ -182,8 +184,16 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
     context "with pnpm lockfiles" do
       let(:dependency_files) { project_dependency_files("pnpm/multiple_sub_dependencies") }
 
-      it "returns an empty array without invoking a helper" do
-        expect(Dependabot::SharedHelpers).not_to receive(:run_helper_subprocess)
+      it "uses the legacy Yarn helper without consulting the Yarn experiment" do
+        expect(Dependabot::Experiments).not_to receive(:enabled?)
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "yarn:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version, false]
+            )
+          )
+          .and_call_original
 
         expect(conflicting_dependencies).to be_empty
       end
@@ -207,16 +217,10 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         allow(dependency_files_builder).to receive(:write_temporary_dependency_files).and_raise(helper_error)
       end
 
-      it "raises the helper error" do
-        expect { conflicting_dependencies }.to raise_error(helper_error)
-      end
+      it "uses the legacy fallback without consulting the Yarn experiment" do
+        expect(Dependabot::Experiments).not_to receive(:enabled?)
 
-      context "when the yarn berry conflicting dependencies experiment is disabled" do
-        let(:enable_yarn_berry_conflicting_dependencies) { false }
-
-        it "uses the legacy fallback" do
-          expect(conflicting_dependencies).to be_empty
-        end
+        expect(conflicting_dependencies).to be_empty
       end
     end
 

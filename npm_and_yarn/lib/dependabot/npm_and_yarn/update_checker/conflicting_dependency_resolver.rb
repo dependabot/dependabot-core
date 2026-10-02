@@ -48,8 +48,7 @@ module Dependabot
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
         def conflicting_dependencies(dependency:, target_version:)
-          enable_normalized_yarn_traversal =
-            Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+          enable_normalized_yarn_traversal = false
 
           SharedHelpers.in_a_temporary_directory do
             dependency_files_builder = DependencyFilesBuilder.new(
@@ -58,6 +57,11 @@ module Dependabot
               credentials: credentials
             )
             dependency_files_builder.write_temporary_dependency_files
+
+            if dependency_files_builder.yarn_locks.any?
+              enable_normalized_yarn_traversal =
+                Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            end
 
             find_conflicting_dependencies(
               dependency_files_builder:,
@@ -102,22 +106,20 @@ module Dependabot
               target_version:,
               enable_normalized_yarn_traversal: false
             )
-          elsif !enable_normalized_yarn_traversal
+          elsif dependency_files_builder.yarn_locks.none? || !enable_normalized_yarn_traversal
             run_conflicting_dependency_helper(
               function: "yarn:findConflictingDependencies",
               dependency:,
               target_version:,
               enable_normalized_yarn_traversal: false
             )
-          elsif dependency_files_builder.yarn_locks.any?
+          else
             run_conflicting_dependency_helper(
               function: "yarn:findConflictingDependencies",
               dependency:,
               target_version:,
               enable_normalized_yarn_traversal:
             )
-          else
-            []
           end
         end
 
