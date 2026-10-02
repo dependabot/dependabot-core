@@ -7,7 +7,6 @@ require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
@@ -49,6 +48,9 @@ module Dependabot
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
         def conflicting_dependencies(dependency:, target_version:)
+          enable_normalized_yarn_traversal =
+            Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
           SharedHelpers.in_a_temporary_directory do
             dependency_files_builder = DependencyFilesBuilder.new(
               dependency: dependency,
@@ -57,38 +59,67 @@ module Dependabot
             )
             dependency_files_builder.write_temporary_dependency_files
 
-            # TODO: Look into using npm/arborist for parsing yarn lockfiles (there's currently partial yarn support)
-            #
-            # Prefer the npm conflicting dependency parser if there's both a npm lockfile and a yarn.lock file as the
-            # npm parser handles edge cases where the package.json is out of sync with the lockfile, something the yarn
-            # parser doesn't deal with at the moment.
-            if dependency_files_builder.package_locks.any? ||
-               dependency_files_builder.shrinkwraps.any?
-              run_conflicting_dependency_helper(
-                function: "npm:findConflictingDependencies",
-                dependency:,
-                target_version:,
-                enable_normalized_yarn_traversal: false
-              )
-            elsif dependency_files_builder.yarn_locks.any?
-              enable_normalized_yarn_traversal =
-                Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
-              return [] if Helpers.yarn_berry?(dependency_files_builder.yarn_locks.first) &&
-                           !enable_normalized_yarn_traversal
-
-              run_conflicting_dependency_helper(
-                function: "yarn:findConflictingDependencies",
-                dependency:,
-                target_version:,
-                enable_normalized_yarn_traversal:
-              )
-            else
-              []
-            end
+            find_conflicting_dependencies(
+              dependency_files_builder:,
+              dependency:,
+              target_version:,
+              enable_normalized_yarn_traversal:
+            )
           end
+        rescue SharedHelpers::HelperSubprocessFailed
+          raise if enable_normalized_yarn_traversal
+
+          []
         end
 
         private
+
+        sig do
+          params(
+            dependency_files_builder: DependencyFilesBuilder,
+            dependency: Dependabot::Dependency,
+            target_version: T.nilable(T.any(String, Dependabot::Version)),
+            enable_normalized_yarn_traversal: T::Boolean
+          )
+            .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
+        end
+        def find_conflicting_dependencies(
+          dependency_files_builder:,
+          dependency:,
+          target_version:,
+          enable_normalized_yarn_traversal:
+        )
+          # TODO: Look into using npm/arborist for parsing yarn lockfiles (there's currently partial yarn support)
+          #
+          # Prefer the npm conflicting dependency parser if there's both a npm lockfile and a yarn.lock file as the
+          # npm parser handles edge cases where the package.json is out of sync with the lockfile, something the yarn
+          # parser doesn't deal with at the moment.
+          if dependency_files_builder.package_locks.any? ||
+             dependency_files_builder.shrinkwraps.any?
+            run_conflicting_dependency_helper(
+              function: "npm:findConflictingDependencies",
+              dependency:,
+              target_version:,
+              enable_normalized_yarn_traversal: false
+            )
+          elsif !enable_normalized_yarn_traversal
+            run_conflicting_dependency_helper(
+              function: "yarn:findConflictingDependencies",
+              dependency:,
+              target_version:,
+              enable_normalized_yarn_traversal: false
+            )
+          elsif dependency_files_builder.yarn_locks.any?
+            run_conflicting_dependency_helper(
+              function: "yarn:findConflictingDependencies",
+              dependency:,
+              target_version:,
+              enable_normalized_yarn_traversal:
+            )
+          else
+            []
+          end
+        end
 
         sig do
           params(
