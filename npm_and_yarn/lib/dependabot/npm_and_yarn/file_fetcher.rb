@@ -11,6 +11,7 @@ require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/npm_and_yarn/pnpm_workspace_config"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
@@ -22,6 +23,9 @@ module Dependabot
       extend T::Helpers
 
       require_relative "file_fetcher/path_dependency_builder"
+
+      # pnpm 11 stopped reading non-registry settings from `.npmrc`.
+      PNPM_NPMRC_SETTINGS_DROPPED_MAJOR = 11
 
       # Npm always prefixes file paths in the lockfile "version" with "file:"
       # even when a naked path is used (e.g. "../dep")
@@ -141,6 +145,7 @@ module Dependabot
         fetched_pnpm_files << pnpm_lock if pnpm_lock && !skip_pnpm_lock?
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
+        fetched_pnpm_files += pnpm_workspace_locks unless skip_pnpm_lock?
         fetched_pnpm_files
       end
 
@@ -481,6 +486,11 @@ module Dependabot
         @pnpm_workspace_package_jsons ||= T.let(fetch_pnpm_workspace_package_jsons, T.nilable(T::Array[DependencyFile]))
       end
 
+      sig { returns(T::Array[DependencyFile]) }
+      def pnpm_workspace_locks
+        @pnpm_workspace_locks ||= T.let(fetch_pnpm_workspace_locks, T.nilable(T::Array[DependencyFile]))
+      end
+
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/MethodLength
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
@@ -662,6 +672,56 @@ module Dependabot
         workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
           fetch_package_json_if_present(workspace)
         end
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def fetch_pnpm_workspace_locks
+        return [] unless lockfile_per_project?
+
+        pnpm_workspace_package_jsons.filter_map do |package_json|
+          workspace = File.dirname(package_json.name)
+          next if workspace == "."
+
+          fetch_pnpm_lock_if_present(workspace)
+        end
+      end
+
+      # Only the repository's own files are consulted. pnpm takes this setting
+      # from an environment variable and the command line too, but neither
+      # reaches the install we run, so a workspace configured that way would
+      # resolve here into the lockfile at its root however many we fetched.
+      #
+      sig { returns(T::Boolean) }
+      def lockfile_per_project?
+        return true if PnpmWorkspaceConfig.declared_in_workspace_yaml?([pnpm_workspace_yaml].compact)
+        return false unless pnpm_predates_npmrc_cutoff?
+
+        PnpmWorkspaceConfig.declared_in_npmrc?([npmrc].compact)
+      end
+
+      # pnpm stopped reading this setting from `.npmrc` in 11, so that spelling
+      # can only be acted on once the repository says which pnpm will run.
+      # `packageManager` is the one statement of that which is exact; a version
+      # guessed from the lockfile is no use here, because pnpm 10, 11 and 12 all
+      # write lockfileVersion 9.0 and the guess resolves every one of them to 10.
+      # Guessing 10 for a pnpm 11 workspace is the error that matters: it fetches
+      # a member lockfile pnpm no longer maintains, which
+      # `LockfileParser#potential_lockfiles_for_manifest` then prefers over the
+      # root, so that project's dependencies are read from an abandoned file.
+      sig { returns(T::Boolean) }
+      def pnpm_predates_npmrc_cutoff?
+        pinned = parsed_package_json["packageManager"]
+        return false unless pinned.is_a?(String)
+
+        major = pinned[/\Apnpm@(\d+)/, 1]
+        !major.nil? && major.to_i < PNPM_NPMRC_SETTINGS_DROPPED_MAJOR
+      end
+
+      sig { params(workspace: String).returns(T.nilable(DependencyFile)) }
+      def fetch_pnpm_lock_if_present(workspace)
+        fetch_file_from_host(File.join(workspace, PNPMPackageManager::LOCKFILE_NAME))
+      rescue Dependabot::DependencyFileNotFound
+        nil
       end
 
       sig { params(path: String).returns(T::Array[T.nilable(DependencyFile)]) }
