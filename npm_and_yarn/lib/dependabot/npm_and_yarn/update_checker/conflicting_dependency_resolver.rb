@@ -48,7 +48,7 @@ module Dependabot
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
         def conflicting_dependencies(dependency:, target_version:)
-          enable_normalized_yarn_traversal = false
+          enable_normalized_yarn_traversal = T.let(false, T::Boolean)
 
           SharedHelpers.in_a_temporary_directory do
             dependency_files_builder = DependencyFilesBuilder.new(
