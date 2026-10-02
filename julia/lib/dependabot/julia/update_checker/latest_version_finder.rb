@@ -209,6 +209,8 @@ module Dependabot
       def cooldown_active_for_release?(release)
         cooldown_days = determine_cooldown_days(release.version)
         return false unless cooldown_days&.positive?
+        # A General release too new to have a published date is at most about a day old
+        return true if release.details[Julia::Package::PackageDetailsFetcher::RELEASE_DATE_PENDING]
         return false unless release.released_at
 
         # Check if enough time has passed since release

@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
     )
   end
   let(:release_dates) { Hash.new(Time.now - (365 * 24 * 60 * 60)) }
+  let(:pending_versions) { [] }
 
   let(:ignored_versions) { [] }
   let(:cooldown_config) { nil }
@@ -47,7 +48,8 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
         available_versions.map do |v|
           Dependabot::Package::PackageRelease.new(
             version: Dependabot::Julia::Version.new(v),
-            released_at: release_dates[v]
+            released_at: pending_versions.include?(v) ? nil : release_dates[v],
+            details: pending_versions.include?(v) ? { "release_date_pending" => true } : {}
           )
         end
       )
@@ -140,6 +142,34 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
 
       it "treats them literally" do
         expect(finder.latest_version).to be_nil
+      end
+    end
+  end
+
+  describe "cooldown with release dates" do
+    let(:available_versions) { %w(1.4.0 1.5.0) }
+    let(:release_dates) { { "1.4.0" => Time.now - (30 * 24 * 60 * 60) } }
+    let(:cooldown_config) { { default_days: 3 } }
+
+    context "when the newest release is not in GeneralMetadata.jl yet" do
+      let(:pending_versions) { %w(1.5.0) }
+
+      it "holds it back" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.4.0"))
+      end
+
+      context "without a cooldown" do
+        let(:cooldown_config) { nil }
+
+        it "offers it" do
+          expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.5.0"))
+        end
+      end
+    end
+
+    context "when a release has no date for another reason" do
+      it "offers it" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.5.0"))
       end
     end
   end
