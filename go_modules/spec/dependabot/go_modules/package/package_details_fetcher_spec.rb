@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/package/package_details_fetcher"
+require "dependabot/go_modules/go_mod_manifest"
 require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
@@ -65,6 +66,55 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
 
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch_available_versions }
+
+    context "with typed manifest output" do
+      let(:manifest_json) do
+        JSON.generate("Exclude" => [{ "Path" => dependency_name, "Version" => "v0.9.0" }])
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return('{"Versions":["v1.0.0"]}')
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json").and_return(manifest_json)
+      end
+
+      it "preserves exclusions when fetching versions" do
+        expect(fetch.map(&:version)).to eq([Dependabot::GoModules::Version.new("1.0.0")])
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("go mod edit -exclude=#{dependency_name}@v0.9.0")
+      end
+
+      [nil, false, [], { "Require" => [nil] }, { "Exclude" => [{ "Path" => "example.com/module" }] }].each do |data|
+        context "with malformed manifest #{data.inspect}" do
+          let(:manifest_json) { JSON.generate(data) }
+
+          it "propagates the error instead of returning the current version or retrying" do
+            expect { fetch }.to raise_error(
+              Dependabot::GoModules::GoModManifest::InvalidOutput, %r{go mod edit -json for /go.mod:}
+            )
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with("go mod edit -json").once
+            expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+              .with(a_string_starting_with("go list"), anything)
+          end
+        end
+      end
+
+      [["unclassified command failure", 1], ["EOF", 2]].each do |message, attempts|
+        context "when the manifest command fails with #{message}" do
+          before do
+            failure = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+              .with("go mod edit -json").and_raise(failure)
+          end
+
+          it "retains the existing error classification and retry count" do
+            expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable, message)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with("go mod edit -json").exactly(attempts).times
+          end
+        end
+      end
+    end
 
     context "with a valid response" do
       before do
