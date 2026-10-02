@@ -523,6 +523,83 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     end
   end
 
+  describe "#changelog_url" do
+    subject(:changelog_url) { finder.changelog_url }
+
+    let(:dependency_name) { "google-cloud-pubsub" }
+    let(:repository_url) { "https://github.com/googleapis/google-cloud-python" }
+    let(:contents_url) { "https://api.github.com/repos/googleapis/google-cloud-python/contents/" }
+    let(:package_directory) { "packages/google-cloud-pubsub" }
+    let(:project_url) { "#{repository_url}/tree/main/#{package_directory}#{trailing_slash}" }
+    let(:changelog_files) do
+      {
+        "CHANGELOG.md" => <<~CHANGELOG,
+          # Repository changelog
+
+          ## 1.0
+
+          * Update an unrelated package in this monorepo. See each package's changelog
+            for its release history and changes.
+        CHANGELOG
+        "#{package_directory}/CHANGELOG.md" => <<~CHANGELOG
+          # Changelog
+
+          ## 1.0
+
+          * Fix message delivery in google-cloud-pubsub and improve handling of
+            retries when publishing messages to a topic.
+        CHANGELOG
+      }
+    end
+
+    before do
+      stub_request(:get, "https://pypi.org/pypi/#{dependency_name}/json")
+        .to_return(
+          status: 200,
+          body: JSON.dump({ info: { project_urls: { project_url_label => project_url } } })
+        )
+      stub_request(:get, contents_url + "packages")
+        .to_return(status: 200, body: "[]", headers: { "Content-Type" => "application/json" })
+
+      changelog_files.each do |path, text|
+        file = {
+          name: "CHANGELOG.md",
+          path: path,
+          type: "file",
+          size: text.bytesize,
+          html_url: "#{repository_url}/blob/main/#{path}",
+          download_url: "https://raw.githubusercontent.com/googleapis/google-cloud-python/main/#{path}",
+          url: "#{contents_url}#{path}?ref=main"
+        }
+        directory = path == "CHANGELOG.md" ? "" : package_directory
+        stub_request(:get, contents_url + directory)
+          .to_return(
+            status: 200,
+            body: JSON.dump([file]),
+            headers: { "Content-Type" => "application/json" }
+          )
+        stub_request(:get, file.fetch(:url))
+          .to_return(
+            status: 200,
+            body: JSON.dump(file.merge(content: Base64.strict_encode64(text), encoding: "base64")),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+    end
+
+    %w(Repository Homepage).product(["", "/"]).each do |label, suffix|
+      context "with a #{label} project URL #{suffix.empty? ? 'without' : 'with'} a trailing slash" do
+        let(:project_url_label) { label }
+        let(:trailing_slash) { suffix }
+
+        it "finds the package changelog instead of the repository changelog" do
+          expect(changelog_url).to eq("#{repository_url}/blob/main/#{package_directory}/CHANGELOG.md")
+          expect(WebMock).to have_requested(:get, contents_url + package_directory).once
+        end
+      end
+    end
+  end
+
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
 
