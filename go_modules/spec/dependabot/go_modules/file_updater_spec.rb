@@ -438,4 +438,38 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
   end
+
+  context "when updating one module of a workspace whose go.work is not fetched" do
+    let(:project_name) { "workspace" }
+    let(:directory) { "/libs" }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "go.mod", content: fixture("projects", project_name, "libs", "go.mod"), directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "go.sum", content: fixture("projects", project_name, "libs", "go.sum"), directory: directory
+        )
+      ]
+    end
+    let(:dependency_name) { "github.com/fatih/color" }
+    let(:dependency_previous_version) { "v1.7.0" }
+    let(:dependency_version) { "v1.16.0" }
+    let(:repo_contents_path) do
+      path = build_tmp_repo(project_name)
+      # Simulate a sibling module bumped by an earlier directory in a grouped update
+      # while go.work still lists the old Go version.
+      Dir.chdir(path) do
+        File.write("services/go.mod", File.read("services/go.mod").sub("go 1.21", "go 1.22"))
+        Dependabot::SharedHelpers.run_shell_command("git commit -am sibling-bump")
+      end
+      path
+    end
+
+    it "updates the module despite a sibling requiring a newer Go version than go.work" do
+      updated_go_mod = updater.updated_dependency_files.find { |f| f.name == "go.mod" }
+
+      expect(updated_go_mod&.content).to match(%r{github\.com/fatih/color\s+#{Regexp.escape(dependency_version)}})
+    end
+  end
 end

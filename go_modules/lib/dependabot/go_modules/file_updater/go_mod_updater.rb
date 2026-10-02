@@ -110,6 +110,8 @@ module Dependabot
 
         GO_VERSION_MISMATCH = /requires go (?<current_ver>.*) .*running go (?<req_ver>.*);/
 
+        GO_WORK_VERSION_MISMATCH = /listed in go\.work file requires go >= .*, but go\.work lists go /
+
         GITHUB_403_REGEX =
           %r{https://github\.com/(?<repo>[^/'\s]+/[^/'\s]+)/?': The requested URL returned error: 403}
 
@@ -381,6 +383,13 @@ module Dependabot
           command = SharedHelpers.escape_command(command)
 
           _, stderr, status = Open3.capture3(command)
+          if !status.success? && stderr.match?(GO_WORK_VERSION_MISMATCH)
+            # An earlier `go get` bumped a sibling module's Go version (and go.work on
+            # disk), but that go.work change isn't persisted when the job targets a single
+            # module directory. `go work use` re-syncs the go.work Go version.
+            _, _, work_status = Open3.capture3("go work use")
+            _, stderr, status = Open3.capture3(command) if work_status.success?
+          end
           handle_subprocess_error(stderr) unless status.success?
         ensure
           FileUtils.rm_f(T.must(tmp_go_file))
