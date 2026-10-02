@@ -18,6 +18,7 @@ export interface LockfileEntry {
   resolved?: string;
   resolution?: string;
   dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
 }
 
 // Yarn berry descriptors are prefixed with the protocol used to resolve them,
@@ -243,6 +244,7 @@ function normalizeLockfile(
   const pendingDependencies: {
     entry: NormalizedLockfileEntry;
     dependencies?: Record<string, string>;
+    optionalDependencies?: Record<string, string>;
   }[] = [];
 
   for (const [entry, pkg] of Object.entries(lockfileJson)) {
@@ -269,6 +271,7 @@ function normalizeLockfile(
       pendingDependencies.push({
         entry: normalizedEntry,
         dependencies: pkg.dependencies,
+        optionalDependencies: pkg.optionalDependencies,
       });
     }
   }
@@ -277,7 +280,7 @@ function normalizeLockfile(
 
   for (const pending of pendingDependencies) {
     pending.entry.dependencies = normalizeDependencies(
-      pending.dependencies,
+      [pending.dependencies, pending.optionalDependencies],
       normalized
     );
   }
@@ -289,12 +292,12 @@ function normalizeLockfile(
 // that aliased edges resolving to the same package (e.g. `foo: npm:^1.0.0` and
 // `foo-v2: npm:foo@^2.0.0`) are all preserved instead of overwriting each other.
 function normalizeDependencies(
-  dependencies: Record<string, string> | undefined,
+  dependencyGroups: (Record<string, string> | undefined)[],
   lockfile: NormalizedLockfileEntry[]
 ): DependencyEdge[] {
-  if (!dependencies) return [];
-
-  return Object.entries(dependencies).map(([name, spec]) =>
-    normalizeDependencyEdge(name, spec, lockfile)
+  return dependencyGroups.flatMap((dependencies) =>
+    Object.entries(dependencies ?? {}).map(([name, spec]) =>
+      normalizeDependencyEdge(name, spec, lockfile)
+    )
   );
 }

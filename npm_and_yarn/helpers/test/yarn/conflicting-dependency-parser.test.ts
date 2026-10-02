@@ -38,6 +38,27 @@ describe("findConflictingDependencies", () => {
     ]);
   });
 
+  it("finds conflicts through yarn v1 optional dependencies", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/optional-blocker",
+      tempDir
+    );
+
+    const result = await findNormalizedConflictingDependencies(
+      tempDir,
+      "abind",
+      "2.0.0"
+    );
+    expect(result).toEqual([
+      {
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
+        name: "objnest",
+        version: "4.1.4",
+        requirement: "^1.0.0",
+      },
+    ]);
+  });
+
   it("finds the top-level conflicting dependency", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/nested", tempDir);
 
@@ -445,8 +466,7 @@ describe("findConflictingDependencies", () => {
     );
     expect(result).toEqual([
       {
-        explanation:
-          "top-level@1.0.0 requires abind@^1.0.0 via blocker@1.0.0",
+        explanation: "top-level@1.0.0 requires abind@^1.0.0 via blocker@1.0.0",
         name: "blocker",
         version: "1.0.0",
         requirement: "^1.0.0",

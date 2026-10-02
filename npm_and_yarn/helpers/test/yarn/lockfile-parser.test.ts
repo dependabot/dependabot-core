@@ -127,6 +127,18 @@ describe("parseNormalized", () => {
     ]);
   });
 
+  it("includes yarn v1 optional dependency edges", async () => {
+    const lockfile = await parseFixture("optional-blocker");
+
+    expect(
+      findEntries(lockfile, { name: "objnest", requirement: "^4.1.2" })[0]
+        .dependencies
+    ).toEqual([
+      { name: "extend", requirement: "^3.0.0" },
+      { name: "abind", requirement: "^1.0.0" },
+    ]);
+  });
+
   it("retains yarn v1 alias descriptor identity", async () => {
     const lockfile = await parseFixture("aliased");
 
