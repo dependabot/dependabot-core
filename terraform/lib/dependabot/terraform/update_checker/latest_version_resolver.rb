@@ -5,14 +5,14 @@ require "dependabot/update_checkers/base"
 require "dependabot/terraform/package/package_details_fetcher"
 require "sorbet-runtime"
 require "dependabot/git_commit_checker"
+require "dependabot/update_checkers/tag_cooldown_filter"
 
 module Dependabot
   module Terraform
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class LatestVersionResolver
         extend T::Sig
-
-        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+        include Dependabot::UpdateCheckers::TagCooldownFilter
 
         sig do
           params(
@@ -29,8 +29,11 @@ module Dependabot
           @git_commit_checker = git_commit_checker
         end
 
-        sig { returns(Dependabot::Dependency) }
+        sig { override.returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { override.returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :cooldown_options
 
         # To filter versions in cooldown period based on version tags from registry call
         sig do
@@ -84,35 +87,12 @@ module Dependabot
           versions
         end
 
-        sig { params(release_date: String).returns(T::Boolean) }
-        def check_if_version_in_cooldown_period?(release_date)
-          return false unless release_date.length.positive?
-
-          cooldown = @cooldown_options
-          return false unless cooldown
-
-          return false if cooldown.nil?
-
-          # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
-          # Check if the release is within the cooldown period
-          passed_seconds < cooldown.default_days * DAY_IN_SECONDS
-        end
-
-        sig { params(release_date: String).returns(Integer) }
-        def release_date_to_seconds(release_date)
-          Time.parse(release_date).to_i
-        rescue ArgumentError => e
-          Dependabot.logger.error("Invalid release date format: #{release_date} and error: #{e.message}")
-          0 # Default to 360 days in seconds if parsing fails, so that it will not be in cooldown
-        end
-
         sig { returns(T.nilable(T::Array[String])) }
         def select_tags_which_in_cooldown_from_provider
           version_tags_in_cooldown_from_provider = T.let([], T::Array[String])
 
           package_details_fetcher.fetch_tag_and_release_date_from_provider.each do |git_tag_with_detail|
-            if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
+            if check_if_version_in_cooldown_period?(git_tag_with_detail.release_date)
               version_tags_in_cooldown_from_provider << git_tag_with_detail.tag
             end
           end
@@ -127,7 +107,7 @@ module Dependabot
           version_tags_in_cooldown_from_module = T.let([], T::Array[String])
 
           package_details_fetcher.fetch_tag_and_release_date_from_module.each do |git_tag_with_detail|
-            if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
+            if check_if_version_in_cooldown_period?(git_tag_with_detail.release_date)
               version_tags_in_cooldown_from_module << git_tag_with_detail.tag
             end
           end
