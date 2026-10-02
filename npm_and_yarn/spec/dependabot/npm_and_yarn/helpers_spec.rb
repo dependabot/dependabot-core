@@ -136,6 +136,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::npm_version without an active selector" do
+    before { described_class.npm_version_selector = nil }
+
     it "checks the local npm binary directly instead of Corepack's unqualified default" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
