@@ -466,10 +466,23 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       path
     end
 
-    it "updates the module despite a sibling requiring a newer Go version than go.work" do
-      updated_go_mod = updater.updated_dependency_files.find { |f| f.name == "go.mod" }
+    after { Dependabot::Experiments.reset! }
 
-      expect(updated_go_mod&.content).to match(%r{github\.com/fatih/color\s+#{Regexp.escape(dependency_version)}})
+    context "when enable_go_work_version_sync is enabled" do
+      before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
+
+      it "updates the module despite a sibling requiring a newer Go version than go.work" do
+        updated_go_mod = updater.updated_dependency_files.find { |f| f.name == "go.mod" }
+
+        expect(updated_go_mod&.content).to match(%r{github\.com/fatih/color\s+#{Regexp.escape(dependency_version)}})
+      end
+    end
+
+    context "when enable_go_work_version_sync is disabled" do
+      it "keeps the existing behaviour and surfaces the go.work error" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::DependabotError, /listed in go\.work file requires go >= 1\.22/)
+      end
     end
   end
 end

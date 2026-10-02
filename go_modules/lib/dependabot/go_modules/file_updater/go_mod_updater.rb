@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/go_work_parser"
@@ -383,7 +384,8 @@ module Dependabot
           command = SharedHelpers.escape_command(command)
 
           _, stderr, status = Open3.capture3(command)
-          if !status.success? && stderr.match?(GO_WORK_VERSION_MISMATCH)
+          if !status.success? && stderr.match?(GO_WORK_VERSION_MISMATCH) &&
+             Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
             # An earlier `go get` bumped a sibling module's Go version (and go.work on
             # disk), but that go.work change isn't persisted when the job targets a single
             # module directory. `go work use` re-syncs the go.work Go version.
