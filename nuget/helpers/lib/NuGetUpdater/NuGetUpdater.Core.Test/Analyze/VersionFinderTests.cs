@@ -233,6 +233,43 @@ public class VersionFinderTests : TestBase
     }
 
     [Fact]
+    public async Task CandidateVersionsAreNotFilteredByTargetFramework()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+
+        // act
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            CancellationToken.None);
+
+        // assert
+        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        var expected = new[] { "2.0.0", "3.0.0" };
+        AssertEx.Equal(expected, actual);
+    }
+
+    [Fact]
     public async Task FeedReturnsBadJson()
     {
         // arrange

@@ -37,6 +37,49 @@ internal static class CompatibilityChecker
         return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
     }
 
+    public static async Task<bool> ExistsAndIsCompatibleAsync(
+        PackageIdentity package,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        NuGetContext nugetContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var packageInfo = await GetPackageInfoAsync(
+            package,
+            nugetContext,
+            cancellationToken);
+        if (packageInfo is null)
+        {
+            return false;
+        }
+
+        // dotnet-tools.json and global.json packages won't specify a TFM, so existence is sufficient
+        if (projectFrameworks.IsEmpty)
+        {
+            return true;
+        }
+
+        var (isDevDependency, packageFrameworks) = packageInfo.GetValueOrDefault();
+        return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
+    }
+
+    public static async Task<bool> ExistsAsync(
+        PackageIdentity package,
+        NuGetContext nugetContext,
+        CancellationToken cancellationToken)
+    {
+        var readersOption = await GetPackageReadersAsync(package, nugetContext, cancellationToken);
+        if (readersOption is null)
+        {
+            return false;
+        }
+
+        var readers = readersOption.GetValueOrDefault();
+        (readers.CoreReader as IDisposable)?.Dispose();
+        (readers.ContentReader as IDisposable)?.Dispose();
+        return true;
+    }
+
     internal static bool PerformCheck(
         PackageIdentity package,
         ImmutableArray<NuGetFramework> projectFrameworks,
