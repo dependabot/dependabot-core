@@ -6,6 +6,7 @@ require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/package/package_details_fetcher"
 require "dependabot/go_modules/go_mod_manifest"
+require "dependabot/go_modules/module_info"
 require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
@@ -66,6 +67,155 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
 
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch_available_versions }
+
+    context "with module-list responses" do
+      let(:dependency_name) { "example.com/owner/repo/cmd/tool" }
+      let(:fingerprint) { "go list -m -versions -json <dependency_name>" }
+      let(:query) { "go list -m -versions -json #{dependency_name}" }
+      let(:parent_query) { "go list -m -versions -json example.com/owner/repo/cmd" }
+      let(:root_query) { "go list -m -versions -json example.com/owner/repo" }
+      let(:last_query) { "go list -m -versions -json example.com/owner" }
+      let(:response) { JSON.generate("Versions" => ["v2.0.0", "invalid-version", "v1.0.0", "v2.0.0"]) }
+      let(:parent_response) { '{"Versions":["v3.0.0"]}' }
+      let(:root_response) { '{"Versions":["v4.0.0"]}' }
+      let(:last_response) { "{}" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(a_string_starting_with("git "), any_args).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with("go mod edit -json").and_return("{}")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(query, fingerprint: fingerprint).and_return(response)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(parent_query, fingerprint: fingerprint).and_return(parent_response)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(root_query, fingerprint: fingerprint).and_return(root_response)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(last_query, fingerprint: fingerprint).and_return(last_response)
+      end
+
+      it "preserves version filtering, order, duplicates, and original strings" do
+        expect(fetch.map { |release| release.version.to_s }).to eq(%w(2.0.0 1.0.0 2.0.0))
+        expect(fetch.map { |release| release.details["version_string"] }).to eq(%w(v2.0.0 v1.0.0 v2.0.0))
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+          .with(parent_query, fingerprint: fingerprint)
+      end
+
+      ["{}", '{"Versions":null}'].each do |body|
+        context "with absent initial versions #{body}" do
+          let(:response) { body }
+
+          it "searches shorter paths" do
+            expect(fetch.map { |release| release.version.to_s }).to eq(["3.0.0"])
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with(parent_query, fingerprint: fingerprint).once
+          end
+        end
+      end
+
+      context "with an empty initial version list" do
+        let(:response) { '{"Versions":[]}' }
+
+        it "does not search shorter paths or return the current version" do
+          expect(fetch).to eq([])
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(parent_query, fingerprint: fingerprint)
+        end
+      end
+
+      ["{}", '{"Versions":null}', '{"Versions":[]}'].each do |body|
+        context "with no versions at a shorter path #{body}" do
+          let(:response) { "{}" }
+          let(:parent_response) { body }
+
+          it "continues to the next shorter path" do
+            expect(fetch.map { |release| release.version.to_s }).to eq(["4.0.0"])
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with(root_query, fingerprint: fingerprint).once
+          end
+        end
+      end
+
+      context "when all shorter paths lack versions" do
+        let(:response) { "{}" }
+        let(:parent_response) { '{"Versions":[]}' }
+        let(:root_response) { '{"Versions":null}' }
+
+        it "retains the current-version fallback and minimum search depth" do
+          expect(fetch.map(&:version)).to eq([Dependabot::GoModules::Version.new(dependency.version)])
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(last_query, fingerprint: fingerprint).once
+        end
+      end
+
+      [
+        "null",
+        "false",
+        "[]",
+        '{"Versions":false}',
+        '{"Versions":["v1.0.0",null]}',
+        '{"Versions":["v1.0.0"],"Time":"do-not-echo-this"}'
+      ].each do |body|
+        context "with malformed initial output #{body}" do
+          let(:response) { body }
+
+          it "propagates the error without retrying or looking for another module" do
+            expect { fetch }.to raise_error(Dependabot::GoModules::ModuleInfo::InvalidOutput)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with(query, fingerprint: fingerprint).once
+            expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+              .with(parent_query, fingerprint: fingerprint)
+          end
+        end
+      end
+
+      context "when a shorter path returns malformed output before a valid module" do
+        let(:response) { "{}" }
+        let(:parent_response) { '{"Versions":["v3.0.0",false]}' }
+
+        it "does not hide the error behind the later valid result" do
+          expect { fetch }.to raise_error(Dependabot::GoModules::ModuleInfo::InvalidOutput, /Versions\[1\]/)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(query, fingerprint: fingerprint).once
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(root_query, fingerprint: fingerprint)
+        end
+      end
+
+      context "when a shorter-path command fails normally" do
+        let(:response) { "{}" }
+
+        before do
+          failure = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "no matching versions", error_context: {}
+          )
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(parent_query, fingerprint: fingerprint).and_raise(failure)
+        end
+
+        it "continues the search without restarting it" do
+          expect(fetch.map { |release| release.version.to_s }).to eq(["4.0.0"])
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(query, fingerprint: fingerprint).once
+        end
+      end
+
+      [["ordinary failure", 1], ["EOF", 2]].each do |message, attempts|
+        context "when the initial query fails with #{message}" do
+          before do
+            failure = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+              .with(query, fingerprint: fingerprint).and_raise(failure)
+          end
+
+          it "preserves the error classification and retry limit" do
+            expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable, message)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with(query, fingerprint: fingerprint).exactly(attempts).times
+          end
+        end
+      end
+    end
 
     context "with typed manifest output" do
       let(:manifest_json) do
