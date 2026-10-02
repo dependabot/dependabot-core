@@ -8,6 +8,7 @@ require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/go_work_parser"
+require "dependabot/go_modules/go_mod_manifest"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
@@ -386,13 +387,13 @@ module Dependabot
           FileUtils.rm_f(T.must(tmp_go_file))
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(GoModManifest) }
         def parse_manifest
           command = "go mod edit -json"
           stdout, stderr, status = Open3.capture3(command)
           handle_subprocess_error(stderr) unless status.success?
 
-          JSON.parse(stdout) || {}
+          GoModManifest.from_json(stdout, file_path: File.join(directory, "go.mod"))
         end
 
         sig do
@@ -426,7 +427,7 @@ module Dependabot
         # the layout of the filesystem with a structure we can reproduce (i.e.
         # no paths such as ../../../foo), run the Go tooling, then reverse the
         # process afterwards.
-        sig { params(manifest: T::Hash[String, T.untyped]).returns(T::Hash[String, String]) }
+        sig { params(manifest: GoModManifest).returns(T::Hash[String, String]) }
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
             T.let(

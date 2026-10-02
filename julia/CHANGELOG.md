@@ -7,6 +7,7 @@
 - Added support for Julia workspaces (multiple packages sharing a common manifest file)
 - Added warning notices to PRs when manifest updates fail due to dependency conflicts
 - Added absolute path resolution for workspace manifests in user-facing notices
+- `[extras]` packages that already have a `[compat]` entry now get compat updates, matching CompatHelper.jl's default `IfExistingCompatExtras()` policy; they are reported as development dependencies
 
 ### Changed
 
@@ -17,10 +18,18 @@
 ### Fixed
 
 - Fixed registry lookups on Julia 1.13, where Pkg changed `registry_info` to also take the registry instance
+- Fixed suggested `[compat]` entries for JLL packages carrying the build number (e.g. `Zlib_jll = "1.6.10+0"`), which Pkg rejects as an invalid version specifier
+- A JLL rebuild (`0.0.43+1`) now satisfies a compat entry admitting `0.0.43`, as it does for Pkg, instead of proposing a redundant `=0.0.43, 0.0.43` widening; prerelease tags are ignored the same way, so `2.0.0-rc1` is not taken as admitted by `"1"`
+- Weakdeps and extras that appear in the manifest as indirect dependencies no longer get a manifest version, which announced a version bump the manifest update then refused to apply
 - Compat entries for standard libraries are now derived from the versions bundled across the project's `julia` compat range (using HistoricalStdlibVersions.jl) instead of the latest registry release, which produced bounds like `Artifacts = "1.3.0"` from a legacy bridge package or `Statistics = "1.11.5"` from an upgradable stdlib release; stdlib entries are only ever widened and their manifest entries are left alone (#16227, #16228)
 - Stdlib compat entries of a workspace environment (`test/`, `docs/`, ...) are now derived from the Julia range Pkg resolves the workspace under, the intersection of every workspace project's `julia` entry, and those of a package's `test/` environment outside a workspace from the package's entry; an environment without a `julia` entry was treated as supporting every Julia release, producing floors like `Statistics = "0.0.0, 1"` in `test/Project.toml`. Packages keep using their own entry since they are also installed on their own
+- Fixed update jobs failing with `NotImplementedError` once a `Manifest.toml` gave a dependency already at its latest release a version; it is now reported as up to date (#16370)
+- Cooldown `default-days` now applies to a dependency without a manifest version, as in the other ecosystems; it was skipped entirely
+- A spec added to a compat entry is placed in ascending order, and the old test sandbox pin is written as in the General registry PSA: `"<0.0.1, 1"` instead of `"1, < 0.0.1"` (#16355)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
+- A checked-in manifest is now resolved by the Julia version recorded in its `julia_version`, launched through juliaup, instead of the updater's Julia, which rewrote `julia_version` and the stdlib entries to the updater's release
+- Every manifest of an environment is now updated, each by its own Julia: a version-specific `Manifest-v1.12.toml` was invisible to the updater's Julia 1.13, so it was never fetched or updated, and only one manifest was considered when an environment had several
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)
 
 ### Initial Release

@@ -118,6 +118,113 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task FindsLaterUpdatedVersionWhenEarlierVersionHasMissingTransitiveDependency()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Missing.Transitive.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = true,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse("= 1.0.0")],
+                        SafeVersions = [Requirement.Parse(">= 1.1.0")],
+                    },
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.2.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.2.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ReturnsUpToDateWhenAllUpdatedVersionsHaveMissingTransitiveDependencies()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Missing.Transitive.Dependency", "1.0.0")])]),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = true,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse("= 1.0.0")],
+                        SafeVersions = [Requirement.Parse(">= 1.1.0")],
+                    },
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
     public async Task FailsToUpdateMultiPropertyVersion()
     {
         // Package.A and Package.B happen to share some versions but would fail to update in sync with each other.
