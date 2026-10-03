@@ -18,13 +18,15 @@ module Dependabot
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
             dependencies: T::Array[Dependabot::Dependency],
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependency_files:, dependencies:, credentials:)
+        def initialize(dependency_files:, dependencies:, credentials:, repo_contents_path: nil)
           @dependency_files = dependency_files
           @dependencies = dependencies
           @credentials = credentials
+          @repo_contents_path = repo_contents_path
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -68,6 +70,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
 
         sig { returns(T::Boolean) }
         def needs_lockfile_update?
@@ -131,12 +136,6 @@ module Dependabot
           )
 
           bzlmod_updater.send(:update_file_content, module_file)
-        end
-
-        sig { returns(T.nilable(String)) }
-        def repo_contents_path
-          # For now, return nil. This can be enhanced later if needed.
-          nil
         end
 
         sig { void }
