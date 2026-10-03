@@ -837,6 +837,77 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with long options" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_long_options.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "more_requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "constraints.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "python_constraints_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "my/setup.py?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "my/setup.cfg?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + "my?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: "[]", headers: json_header)
+        stub_request(:get, url + "my-single/setup.py?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "my-single/setup.cfg?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + "my-single?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: "[]", headers: json_header)
+      end
+
+      it "fetches the referenced requirements, constraints and path dependencies" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(
+            %w(requirements.txt more_requirements.txt no_dot/more_requirements.txt
+               constraints.txt my/setup.py my-single/setup.py)
+          )
+      end
+    end
+
     context "with a constraints file" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_requirements.json")
