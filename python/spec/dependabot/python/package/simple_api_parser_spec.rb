@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Python::Package::SimpleApiParser do
     end
   end
 
-  [false, 1, "", "invalid", "1", "1.1.extra", []].each do |value|
+  [false, 1, "", "invalid", "1", "1.1.extra", [], nil].each do |value|
     context "with invalid API version #{value.inspect}" do
       let(:api_version) { value }
 

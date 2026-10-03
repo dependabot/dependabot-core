@@ -296,6 +296,14 @@ RSpec.describe Dependabot::Uv::Package::PackageDetailsFetcher do
         end
       end
 
+      context "with an explicit null API version" do
+        let(:body) { '{"meta":{"api-version":null},"files":[]}' }
+
+        it "rejects the supplied non-string value through the shared parser" do
+          expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable, /api-version/)
+        end
+      end
+
       context "with HTML" do
         let(:response_type) { "text/html" }
         let(:body) do
