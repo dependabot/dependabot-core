@@ -311,4 +311,55 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
       end
     end
   end
+
+  describe "remote_pom.xml property_source guard" do
+    subject(:updated_requirements) { updater.updated_requirements }
+
+    let(:latest_version) { version_class.new("3.6.0") }
+    let(:source_url) { "https://repo.maven.apache.org/maven2" }
+    let(:requirements) do
+      [
+        {
+          file: "pom.xml",
+          requirement: "3.4.0",
+          groups: ["plugin"],
+          source: nil,
+          metadata: {
+            packaging_type: "jar",
+            property_name: "version.maven-clean-plugin",
+            property_source: "pom.xml"
+          }
+        },
+        {
+          file: "pom.xml",
+          requirement: "3.5.0",
+          groups: ["plugin"],
+          source: nil,
+          metadata: {
+            packaging_type: "jar",
+            property_name: "version.maven-clean-plugin",
+            property_source: "remote_pom.xml"
+          }
+        }
+      ]
+    end
+    let(:updater) do
+      described_class.new(
+        requirements: requirements.map { |r| Dependabot::DependencyRequirement.create(r) },
+        latest_version: latest_version,
+        source_url: source_url,
+        properties_to_update: ["version.maven-clean-plugin"]
+      )
+    end
+
+    it "updates the local requirement" do
+      local = updated_requirements.find { |r| r.metadata_string("property_source") == "pom.xml" }
+      expect(local&.requirement_string).to eq("3.6.0")
+    end
+
+    it "does not update the remote_pom.xml requirement even when it shares the same property name" do
+      remote = updated_requirements.find { |r| r.metadata_string("property_source") == "remote_pom.xml" }
+      expect(remote&.requirement_string).to eq("3.5.0")
+    end
+  end
 end
