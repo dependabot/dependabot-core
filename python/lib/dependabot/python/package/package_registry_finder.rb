@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 require "dependabot/python/update_checker"
 require "dependabot/python/authed_url_builder"
 require "dependabot/errors"
@@ -13,6 +14,11 @@ module Dependabot
         extend T::Sig
 
         PYPI_BASE_URL = "https://pypi.org/simple/"
+        PUBLIC_PYPI_HOSTS = %w(
+          pypi.org
+          pypi.python.org
+        ).freeze
+        PUBLIC_PYPI_PATH = "/simple"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
         UrlsHash = T.type_alias { { main: T.nilable(String), extra: T::Array[String] } }
@@ -39,19 +45,82 @@ module Dependabot
             pip_conf_index_urls[:extra] +
             pyproject_index_urls[:extra]
 
-          extra_index_urls = extra_index_urls.map do |url|
-            clean_check_and_remove_environment_variables(url)
-          end
-
-          # URL encode any `@` characters within registry URL creds.
+          # URL encode any `@` characters within registry URL creds. This is done
+          # before the URLs are classified and ordered below, so that a URL with
+          # unescaped credentials is still parseable.
           # TODO: The test that fails if the `map` here is removed is likely a
           # bug in Ruby's URI parser, and should be fixed there.
-          [main_index_url, *extra_index_urls].map do |url|
-            url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
-          end.uniq
+          extra_index_urls = extra_index_urls.map do |url|
+            escape_userinfo(clean_check_and_remove_environment_variables(url))
+          end
+
+          # A `replaces-base` registry, or public PyPI when no index is
+          # configured, is searched last so that fully private registries take
+          # precedence, avoiding dependency confusion attacks where a private
+          # package name is claimed by a public package of the same name.
+          #
+          # An index explicitly configured in a dependency file (a
+          # `--index-url`, a `pip.conf` `index-url`, or a default Poetry source)
+          # is an intentional choice of primary registry, so it keeps its place
+          # ahead of the extra indexes.
+          #
+          # The main index is removed from the extras first, so that declaring it
+          # as both a main and an extra index (as a Pipfile `[[source]]` does)
+          # doesn't keep it at the front of the list.
+          main_url = escape_userinfo(main_index_url)
+          other_urls = extra_index_urls.reject { |url| url == main_url }
+
+          ordered_urls =
+            if demote_main_index?(main_url)
+              other_urls + [main_url]
+            else
+              [main_url] + other_urls
+            end
+
+          # A configured main index may itself be fully private, while an extra
+          # index may be public PyPI, so the public indexes are always moved to
+          # the back rather than assuming the main index is the public one.
+          private_urls, public_urls = ordered_urls.uniq.partition do |url|
+            !public_pypi_url?(url)
+          end
+
+          private_urls + public_urls
         end
 
         private
+
+        # The main index is only demoted below the extra indexes when it isn't a
+        # deliberate choice of primary private registry: either it comes from a
+        # `replaces-base` credential, or it's public PyPI.
+        sig { params(main_url: String).returns(T::Boolean) }
+        def demote_main_index?(main_url)
+          return true if public_pypi_url?(main_url)
+
+          !config_variable_index_urls[:main].nil?
+        end
+
+        sig { params(url: String).returns(String) }
+        def escape_userinfo(url)
+          url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
+        end
+
+        # Identifies the public PyPI index by its parsed host, scheme, port and
+        # path, so that equivalent spellings (case differences, an explicit
+        # default port, credentials, trailing slashes) aren't mistaken for a
+        # private index.
+        sig { params(url: String).returns(T::Boolean) }
+        def public_pypi_url?(url)
+          uri = URI.parse(url)
+          return false unless uri.is_a?(URI::HTTP)
+
+          host = uri.host&.downcase
+          return false unless host && PUBLIC_PYPI_HOSTS.include?(host)
+          return false unless uri.port == uri.default_port
+
+          uri.path.to_s.chomp("/") == PUBLIC_PYPI_PATH
+        rescue URI::InvalidURIError
+          false
+        end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
