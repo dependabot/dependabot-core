@@ -540,6 +540,105 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    context "when go get reports that go.work lists an older Go version than a module" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:go_get_command) { "go get rsc.io/quote@v1.5.2" }
+      let(:failure) { double(status: 1, success?: false) }
+      let(:success) { double(status: 0, success?: true) }
+      let(:go_get_stderr) do
+        <<~ERROR
+          go: module ../events listed in go.work file requires go >= 1.26.0, but go.work lists go 1.25.0; to download and use go 1.26.0:
+          	go work use
+        ERROR
+      end
+      let(:experiment_enabled) { true }
+
+      before do
+        Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
+        allow(Open3).to receive(:capture3).and_call_original
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      context "when `go work use` fixes it" do
+        before do
+          allow(Open3).to receive(:capture3).with(go_get_command)
+                                            .and_return(["", go_get_stderr, failure], ["", "", success])
+          allow(Open3).to receive(:capture3).with("go work use").and_return(["", "", success])
+        end
+
+        it "runs `go work use` and retries `go get` once" do
+          expect { updated_go_mod_content }.not_to raise_error
+
+          expect(Open3).to have_received(:capture3).with("go work use").once
+          expect(Open3).to have_received(:capture3).with(go_get_command).twice
+        end
+      end
+
+      context "when `go work use` fails" do
+        before do
+          allow(Open3).to receive(:capture3).with(go_get_command).and_return(["", go_get_stderr, failure])
+          allow(Open3).to receive(:capture3).with("go work use")
+                                            .and_return(["", "write go.work: no space left on device", failure])
+        end
+
+        it "surfaces the `go work use` error instead of the original one and does not retry" do
+          expect { updated_go_mod_content }.to raise_error(Dependabot::OutOfDisk)
+
+          expect(Open3).to have_received(:capture3).with(go_get_command).once
+        end
+      end
+
+      context "when `go get` still fails after `go work use`" do
+        before do
+          allow(Open3).to receive(:capture3).with(go_get_command).and_return(["", go_get_stderr, failure])
+          allow(Open3).to receive(:capture3).with("go work use").and_return(["", "", success])
+        end
+
+        it "raises the error without looping" do
+          expect { updated_go_mod_content }
+            .to raise_error(Dependabot::DependabotError, /listed in go\.work file requires go >= 1\.26\.0/)
+
+          expect(Open3).to have_received(:capture3).with("go work use").once
+          expect(Open3).to have_received(:capture3).with(go_get_command).twice
+        end
+      end
+
+      context "when `go get` fails for an unrelated reason" do
+        let(:go_get_stderr) { "go: rsc.io/quote@v1.5.2: unrecognized import path \"rsc.io/quote\"\n" }
+
+        before do
+          allow(Open3).to receive(:capture3).with(go_get_command).and_return(["", go_get_stderr, failure])
+        end
+
+        it "does not run `go work use`" do
+          expect { updated_go_mod_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+
+          expect(Open3).not_to have_received(:capture3).with("go work use")
+        end
+      end
+
+      context "when the enable_go_work_version_sync experiment is disabled" do
+        let(:experiment_enabled) { false }
+
+        before do
+          allow(Open3).to receive(:capture3).with(go_get_command).and_return(["", go_get_stderr, failure])
+        end
+
+        it "keeps the existing behaviour and does not run `go work use`" do
+          expect { updated_go_mod_content }
+            .to raise_error(Dependabot::DependabotError, /listed in go\.work file requires go >= 1\.26\.0/)
+
+          expect(Open3).not_to have_received(:capture3).with("go work use")
+          expect(Open3).to have_received(:capture3).with(go_get_command).once
+        end
+      end
+    end
+
     context "when dealing with an explicit indirect dependency" do
       let(:project_name) { "indirect" }
       let(:dependency_name) { "github.com/mattn/go-isatty" }
