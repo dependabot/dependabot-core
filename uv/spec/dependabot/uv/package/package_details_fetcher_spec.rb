@@ -229,5 +229,88 @@ RSpec.describe Dependabot::Uv::Package::PackageDetailsFetcher do
         expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
       end
     end
+
+    context "with typed PyPI distributions" do
+      let(:body) do
+        JSON.generate(
+          "releases" => { "1.0.0" => [
+            { "url" => "first.tar.gz", "yanked" => false },
+            { "url" => "last.whl", "yanked" => true, "yanked_reason" => "Broken", "requires_python" => ">=3.8" }
+          ] }
+        )
+      end
+
+      before { stub_request(:get, json_url).to_return(status: 200, body: body) }
+
+      it "uses Python's last-file policy and preserves its typed metadata" do
+        expect(fetch.releases.length).to eq(1)
+        expect(fetch.releases.first).to have_attributes(url: "last.whl", yanked: true, yanked_reason: "Broken")
+        expect(fetch.releases.first.language.requirement.to_s).to eq(">= 3.8")
+      end
+
+      context "with malformed earlier metadata" do
+        let(:body) { '{"releases":{"1.0.0":[{"yanked":1},{}]}}' }
+
+        it "does not hide the error through HTML fallback" do
+          expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect(a_request(:get, registry_url)).not_to have_been_made
+        end
+      end
+    end
+
+    context "with typed private distributions" do
+      let(:registry_base) { "https://uv-index.example.test/simple" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "requirements.txt", content: "--index-url #{registry_base}/\nrequests==2.4.1\n"
+        )]
+      end
+      let(:response_type) { "application/vnd.pypi.simple.v1+json" }
+      let(:body) do
+        JSON.generate(
+          "files" => [
+            { "filename" => "requests-1.0.0.tar.gz", "url" => "first.tar.gz" },
+            { "filename" => "requests-1.0.0.whl", "url" => "last.whl", "yanked" => "Broken" }
+          ]
+        )
+      end
+
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          headers: { "Content-Type" => response_type },
+          body: body
+        )
+      end
+
+      it "retains every Simple JSON distribution" do
+        expect(fetch.releases.map(&:url)).to contain_exactly("#{registry_url}first.tar.gz", "#{registry_url}last.whl")
+        expect(fetch.releases.map(&:yanked)).to contain_exactly(false, true)
+      end
+
+      context "with malformed Simple JSON" do
+        let(:body) { "not JSON" }
+
+        it "raises instead of returning no releases" do
+          expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable, /Simple API JSON/)
+        end
+      end
+
+      context "with HTML" do
+        let(:response_type) { "text/html" }
+        let(:body) do
+          '<a href="first.tar.gz">requests-1.0.0.tar.gz</a>' \
+            '<a href="last.whl#sha256=abc" data-yanked="Broken" data-requires-python="&gt;=3.8">requests-1.0.0.whl</a>'
+        end
+
+        it "uses resolved hrefs and actual withdrawal attributes for the selected file" do
+          expect(fetch.releases.length).to eq(1)
+          expect(fetch.releases.first).to have_attributes(
+            url: "#{registry_url}last.whl#sha256=abc", yanked: true, yanked_reason: "Broken"
+          )
+          expect(fetch.releases.first.language.requirement.to_s).to eq(">= 3.8")
+        end
+      end
+    end
   end
 end
