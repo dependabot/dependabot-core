@@ -3,6 +3,7 @@
 
 require "yaml"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/helpers"
@@ -15,12 +16,18 @@ module Dependabot
         extend T::Sig
 
         require_relative "bun_lock/record"
+        require_relative "bun_lock/workspace"
+        require_relative "bun_lock/dependency_type_resolver"
+
+        DEVELOPMENT_SECTIONS = %w(devDependencies).freeze
 
         sig { params(dependency_file: DependencyFile).void }
         def initialize(dependency_file)
           @dependency_file = dependency_file
           @parsed = T.let(nil, T.nilable(T::Hash[Object, Object]))
           @records = T.let(nil, T.nilable(T::Hash[String, Record]))
+          @workspaces = T.let(nil, T.nilable(T::Array[Workspace]))
+          @production_by_key_for = T.let(nil, T.nilable(T::Hash[String, T::Boolean]))
         end
 
         sig { returns(T::Hash[Object, Object]) }
@@ -63,6 +70,14 @@ module Dependabot
           end
         end
 
+        # The roots of the dependency graph, one per entry in the "workspaces" object.
+        # Malformed entries are skipped rather than reported, because only dependency
+        # type classification reads them.
+        sig { returns(T::Array[Workspace]) }
+        def workspaces
+          @workspaces ||= parse_workspaces
+        end
+
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -73,7 +88,9 @@ module Dependabot
           packages = records
           raise_invalid!("expected 'packages' to be an object") unless packages
 
-          packages.each_value do |record|
+          production_by_key = production_by_key_for(packages)
+
+          packages.each do |key, record|
             name = record.name
             next if name.empty?
 
@@ -84,12 +101,71 @@ module Dependabot
               name: name,
               version: semver,
               package_manager: "bun",
-              requirements: []
+              requirements: [],
+              subdependency_metadata: subdependency_metadata_for(key, production_by_key)
             )
           end
 
           dependency_set
         end
+
+        sig { params(packages: T::Hash[String, Record]).returns(T.nilable(T::Hash[String, T::Boolean])) }
+        def production_by_key_for(packages)
+          return unless Dependabot::Experiments.enabled?(:enable_bun_subdependency_types)
+
+          @production_by_key_for ||=
+            DependencyTypeResolver.new(workspaces: workspaces, records: packages).production_by_key
+        end
+        private :production_by_key_for
+
+        # The packages key a manifest dependency resolves to in this lockfile: the
+        # workspace's own nested copy (such as "app/ms") first, then the hoisted copy.
+        sig { params(dependency_name: String, workspace_name: T.nilable(String)).returns(T.nilable(String)) }
+        def manifest_key(dependency_name, workspace_name)
+          packages = records
+          return unless packages
+
+          [workspace_name && "#{workspace_name}/#{dependency_name}", dependency_name]
+            .compact
+            .find { |candidate| packages.key?(candidate) }
+        end
+
+        # Whether the copy at a packages key is installed through a production dependency.
+        # False unless dependency types are enabled, or when no workspace reaches the key.
+        sig { params(key: String).returns(T::Boolean) }
+        def production_key?(key)
+          packages = records
+          return false unless packages
+
+          production_by_key = production_by_key_for(packages)
+          return false unless production_by_key
+
+          production_by_key.fetch(key, false)
+        end
+
+        # Whether the copy a manifest dependency resolves to is installed through a
+        # production dependency. Other copies of the name do not count: a production-only
+        # "debug/ms" says nothing about the root's own "ms".
+        sig { params(dependency_name: String, workspace_name: T.nilable(String)).returns(T::Boolean) }
+        def production_reachable?(dependency_name, workspace_name)
+          key = manifest_key(dependency_name, workspace_name)
+          key ? production_key?(key) : false
+        end
+
+        # Record the type for every package, not only development ones. DependencySet joins
+        # metadata across copies of a package, so a copy with no entry next to one marked
+        # { production: false } would make the package look development-only.
+        sig do
+          params(key: String, production_by_key: T.nilable(T::Hash[String, T::Boolean]))
+            .returns(T::Array[T::Hash[Symbol, T::Boolean]])
+        end
+        def subdependency_metadata_for(key, production_by_key)
+          return [] unless production_by_key
+
+          # Packages that no workspace reaches keep the previous default of production.
+          [{ production: production_by_key.fetch(key, true) }]
+        end
+        private :subdependency_metadata_for
 
         sig do
           params(dependency_name: String, _requirement: T.nilable(String), _manifest_name: String)
@@ -100,6 +176,25 @@ module Dependabot
         end
 
         private
+
+        sig { returns(T::Array[Workspace]) }
+        def parse_workspaces
+          raw_workspaces = parsed["workspaces"]
+          return [] unless raw_workspaces.is_a?(Hash)
+
+          raw_workspaces.filter_map do |raw_path, raw_details|
+            path = T.cast(raw_path, Object)
+            details = T.cast(raw_details, Object)
+            next unless path.is_a?(String) && details.is_a?(Hash)
+
+            name = T.cast(details["name"], Object)
+            Workspace.new(
+              key_prefix: path.empty? || !name.is_a?(String) ? nil : name,
+              production_names: Record.section_names(details, Record::EDGE_SECTIONS),
+              development_names: Record.section_names(details, DEVELOPMENT_SECTIONS)
+            )
+          end
+        end
 
         sig { returns(T::Hash[Object, Object]) }
         def parse_document

@@ -163,6 +163,29 @@ RSpec.describe Dependabot::Bun::DependencyGrapher do
       end
     end
 
+    context "with transitive development dependencies" do
+      let(:dependency_files) { project_dependency_files("bun/simple_v1") }
+
+      after { Dependabot::Experiments.reset! }
+
+      it "reports them as runtime when the experiment is disabled" do
+        expect(grapher.resolved_dependencies["pkg:npm/%40types/node@22.10.10"].runtime).to be(true)
+      end
+
+      context "when the experiment is enabled" do
+        before { Dependabot::Experiments.register(:enable_bun_subdependency_types, true) }
+
+        it "reports packages reached only through devDependencies as not runtime" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies["pkg:npm/%40types/node@22.10.10"])
+            .to have_attributes(direct: false, runtime: false)
+          expect(resolved_dependencies["pkg:npm/whatwg-fetch@3.6.20"])
+            .to have_attributes(direct: false, runtime: true)
+        end
+      end
+    end
+
     context "with a lockfile containing subdependencies" do
       let(:dependency_files) { project_dependency_files("bun/grapher_with_subdeps") }
 
