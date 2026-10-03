@@ -4,6 +4,17 @@ namespace NuGetUpdater.Core;
 
 internal sealed class ProjectBuildFile : XmlBuildFile
 {
+    public static bool IsSupportedDependencyFile(string path)
+    {
+        var extension = System.IO.Path.GetExtension(path);
+        return extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".vbproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".fsproj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".proj", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".props", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".targets", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static ProjectBuildFile Open(string basePath, string path)
         => Parse(basePath, path, File.ReadAllText(path));
 
@@ -24,7 +35,9 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         .GetElements("Sdk", StringComparison.OrdinalIgnoreCase);
 
     public IEnumerable<IXmlElementSyntax> ImportNodes => ProjectNode
-        .GetElements("Import", StringComparison.OrdinalIgnoreCase);
+        .GetElements("Import", StringComparison.OrdinalIgnoreCase)
+        .Concat(ProjectNode.GetElements("ImportGroup", StringComparison.OrdinalIgnoreCase)
+            .SelectMany(g => g.GetElements("Import", StringComparison.OrdinalIgnoreCase)));
 
     public IEnumerable<IXmlElementSyntax> PropertyNodes => ProjectNode
         .GetElements("PropertyGroup", StringComparison.OrdinalIgnoreCase)
@@ -56,7 +69,10 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         List<Dependency> dependencies = [];
         if (ProjectNode.GetAttributeValueCaseInsensitive("Sdk") is string sdk)
         {
-            dependencies.Add(GetMSBuildSdkDependency(sdk));
+            foreach (var sdkPart in sdk.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                dependencies.Add(GetMSBuildSdkDependency(sdkPart.Trim()));
+            }
         }
 
         foreach (var sdkNode in SdkNodes)
@@ -79,6 +95,12 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             {
                 dependencies.Add(GetMSBuildSdkDependency(name, version));
             }
+
+            var sdkAttr = importNode.GetAttributeValueCaseInsensitive("Sdk");
+            if (sdkAttr is not null && !sdkAttr.Contains('/'))
+            {
+                dependencies.Add(GetMSBuildSdkDependency(sdkAttr, version));
+            }
         }
 
         return dependencies;
@@ -86,10 +108,21 @@ internal sealed class ProjectBuildFile : XmlBuildFile
 
     private static Dependency GetMSBuildSdkDependency(string name, string? version = null)
     {
-        var parts = name.Split('/');
-        return parts.Length == 2
-            ? new Dependency(parts[0], parts[1], DependencyType.MSBuildSdk)
-            : new Dependency(name, version, DependencyType.MSBuildSdk);
+        var slashIndex = name.IndexOf('/');
+        if (slashIndex >= 0)
+        {
+            version = name[(slashIndex + 1)..];
+            name = name[..slashIndex];
+        }
+
+        name = name.Trim();
+        version = version?.Trim();
+        if (version?.StartsWith("min=", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            version = version[4..].Trim();
+        }
+
+        return new Dependency(name, string.IsNullOrEmpty(version) ? null : version, DependencyType.MSBuildSdk);
     }
 
     private static IEnumerable<Dependency>? GetPackageDependencies(IXmlElementSyntax element)
