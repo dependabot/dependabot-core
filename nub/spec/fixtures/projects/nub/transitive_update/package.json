@@ -1,0 +1,6 @@
+{
+  "name": "transitive_update",
+  "dependencies": {
+    "fetch-factory": "^0.0.1"
+  }
+}

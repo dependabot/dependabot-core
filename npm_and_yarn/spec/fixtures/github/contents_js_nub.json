@@ -1,0 +1,34 @@
+[
+  {
+    "name": "nub.lock",
+    "path": "nub.lock",
+    "sha": "b88b24cfdbec377492a261e7ca7311740c472ff7",
+    "size": 2574,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/nub.lock?ref=main",
+    "html_url": "https://github.com/gocardless/bump/blob/main/nub.lock",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/b88b24cfdbec377492a261e7ca7311740c472ff7",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/main/nub.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/nub.lock?ref=main",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/b88b24cfdbec377492a261e7ca7311740c472ff7",
+      "html": "https://github.com/gocardless/bump/blob/main/nub.lock"
+    }
+  },
+  {
+    "name": "package.json",
+    "path": "package.json",
+    "sha": "1393fcaa2e31945e9599741fbf04ed271cb7de22",
+    "size": 1371,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/package.json?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/package.json",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/1393fcaa2e31945e9599741fbf04ed271cb7de22",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/package.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/package.json?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/1393fcaa2e31945e9599741fbf04ed271cb7de22",
+      "html": "https://github.com/gocardless/bump/blob/sha/package.json"
+    }
+  }
+]

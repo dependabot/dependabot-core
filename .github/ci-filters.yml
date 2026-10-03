@@ -83,6 +83,12 @@ nix:
 npm_and_yarn:
   - *shared
   - 'npm_and_yarn/**'
+nub:
+  - *shared
+  - 'nub/**'
+  # Nub aliases and executes classes from npm_and_yarn, so a change there can
+  # regress it without touching nub/.
+  - 'npm_and_yarn/**'
 nuget:
   - *shared
   - 'nuget/**'

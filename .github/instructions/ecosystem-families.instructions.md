@@ -12,7 +12,7 @@ Many ecosystems are different tools for the **same language**, so they often tar
 
 Grouping is a **prompt to check the siblings**, not a guarantee they share code. How much they share varies — from heavy reuse to near-independent reimplementations — so confirm the real relationship in the code.
 
-- **JavaScript / TypeScript**: `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno`
+- **JavaScript / TypeScript**: `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno`, `nub`
 - **Python**: `python` (pip, pip-compile, pipenv, Poetry), `uv`, `conda`
 - **JVM**: `maven`, `gradle`, `sbt`
 - **Containers**: `docker`, `docker_compose`

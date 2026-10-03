@@ -11,7 +11,7 @@ Because of that, a bug or improvement is often — **but not always** — genera
 
 | Family | Ecosystems |
 | --- | --- |
-| **JavaScript / TypeScript** | `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno` |
+| **JavaScript / TypeScript** | `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno`, `nub` |
 | **Python** | `python` (pip, pip-compile, pipenv, Poetry), `uv`, `conda` |
 | **JVM** | `maven`, `gradle`, `sbt` |
 | **Containers** | `docker`, `docker_compose` |
