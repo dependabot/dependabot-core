@@ -26,6 +26,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
       .to have_attributes(version: "1.2.0", resolution: "example@npm:1.2.0")
   end
 
+  context "when the requirement is only a prefix of another descriptor" do
+    let(:result) do
+      {
+        "example@npm:^1.0.0 || ^2.0.0" => {
+          "version" => "2.0.0",
+          "resolution" => "example@npm:2.0.0"
+        },
+        "example@npm:^3.0.0" => {
+          "version" => "3.0.0",
+          "resolution" => "example@npm:3.0.0"
+        }
+      }
+    end
+
+    it "does not match an incomplete descriptor" do
+      expect(reader.details("example", "^1.0.0", "package.json")).to be_nil
+    end
+  end
+
+  context "when bare descriptors contain a range with spaces" do
+    let(:result) do
+      {
+        "example@^1.0.0" => { "version" => "1.2.0" },
+        "example@^1.0.0 || ^2.0.0" => { "version" => "2.0.0" }
+      }
+    end
+
+    it "finds the entry matching the complete range" do
+      expect(reader.details("example", "^1.0.0 || ^2.0.0", "package.json"))
+        .to have_attributes(version: "2.0.0")
+    end
+  end
+
   context "with unconsumed malformed dependency data" do
     let(:entry) { super().merge("dependencies" => []) }
 

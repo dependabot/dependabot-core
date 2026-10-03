@@ -106,8 +106,8 @@ module Dependabot
           details = if details_candidates.one?
                       T.must(details_candidates.first).last
                     else
-                      details_candidates.find do |k, _|
-                        k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
+                      details_candidates.find do |descriptor_key, _|
+                        descriptor_key_includes_requirement?(descriptor_key, dependency_name, requirement)
                       end&.last
                     end
           return if details.nil?
@@ -143,6 +143,24 @@ module Dependabot
         sig { returns(T::Boolean) }
         def dealias_packages?
           @dealias_packages
+        end
+
+        sig do
+          params(
+            descriptor_key: String,
+            dependency_name: String,
+            requirement: T.nilable(String)
+          )
+            .returns(T::Boolean)
+        end
+        def descriptor_key_includes_requirement?(descriptor_key, dependency_name, requirement)
+          return false unless requirement
+
+          # Requirements can contain spaces; compare complete descriptors
+          # rather than interpreting or truncating the range.
+          descriptor_key.split(/ *, */).any? do |descriptor|
+            descriptor == "#{dependency_name}@#{requirement}" || descriptor == "#{dependency_name}@npm:#{requirement}"
+          end
         end
 
         sig { params(requirement: String).returns(T::Boolean) }
