@@ -300,6 +300,37 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
         )
       end
     end
+
+    context "when a pnpm workspace catalog is updated and each project keeps its own lockfile" do
+      let(:project_name) { "pnpm/catalog_separate_lockfiles" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "1.3.1",
+          requirements: [{
+            file: "pnpm-workspace.yaml",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "keeps every workspace project's lockfile alongside the catalog" do
+        expect(files_requiring_update).to contain_exactly(
+          project_dependency_file("pnpm-workspace.yaml"),
+          project_dependency_file("pnpm-lock.yaml"),
+          project_dependency_file("packages/package1/pnpm-lock.yaml"),
+          project_dependency_file("packages/package2/pnpm-lock.yaml")
+        )
+      end
+
+      it "leaves out a project whose lockfile holds nothing the catalog entry covers" do
+        expect(files_requiring_update)
+          .not_to include(project_dependency_file("packages/package3/pnpm-lock.yaml"))
+      end
+    end
   end
 
   describe ".paths_requiring_update_check" do

@@ -1,0 +1,7 @@
+packages:
+  - ./packages/*
+
+sharedWorkspaceLockfile: false
+
+catalog:
+  lodash: 1.2.0
