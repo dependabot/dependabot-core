@@ -288,7 +288,41 @@ RSpec.describe Dependabot::Gradle::FileParser do
     context "when the build file is specified in a dependencySet" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
 
-      its(:length) { is_expected.to eq(21) }
+      its(:length) { is_expected.to eq(25) }
+
+      it "includes entries written with and without parentheses" do
+        expect(dependencies.map(&:name)).to include(
+          "com.google.protobuf:protoc",
+          "org.slf4j:slf4j-api",
+          "org.slf4j:slf4j-simple",
+          "org.slf4j:jul-to-slf4j",
+          "org.slf4j:log4j-over-slf4j"
+        )
+      end
+
+      describe "a dependencySet dependency declared with coordinates" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "org.slf4j:slf4j-simple" }
+        end
+
+        it "has the right details" do
+          expect(dependency.version).to eq("1.7.25")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.7.25",
+              file: "build.gradle",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: {
+                  group: "org.slf4j",
+                  version: "1.7.25"
+                }
+              }
+            }]
+          )
+        end
+      end
 
       describe "a dependencySet dependency" do
         subject(:dependency) do
@@ -749,6 +783,101 @@ RSpec.describe Dependabot::Gradle::FileParser do
                 groups: %w(plugins),
                 source: nil,
                 metadata: { property_name: "helmVersion" }
+              }]
+            )
+          end
+        end
+      end
+
+      context "when the build file uses the Kotlin DSL dependencySet syntax" do
+        let(:buildfile_fixture_name) { "dependency_set.gradle.kts" }
+
+        its(:length) { is_expected.to eq(26) }
+
+        it "includes every dependencySet entry" do
+          expect(dependencies.map(&:name)).to include(
+            "com.google.protobuf:protoc",
+            "com.google.protobuf:protobuf-java",
+            "com.google.protobuf:protobuf-java-util",
+            "io.grpc:grpc-netty",
+            "io.grpc:grpc-core",
+            "io.grpc:grpc-services",
+            "io.grpc:grpc-protobuf",
+            "io.grpc:grpc-stub",
+            "io.grpc:protoc-gen-grpc-java"
+          )
+        end
+
+        describe "a dependencySet dependency" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "com.google.protobuf:protoc" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.version).to eq("3.6.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "3.6.1",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
+                metadata: {
+                  dependency_set: {
+                    group: "com.google.protobuf",
+                    version: "3.6.1"
+                  }
+                }
+              }]
+            )
+          end
+        end
+
+        describe "a dependency whose version is a val" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "org.slf4j:slf4j-api" }
+          end
+
+          it "has the right details" do
+            expect(dependency.version).to eq("1.7.25")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.7.25",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "slf4jVersion",
+                  dependency_set: {
+                    group: "org.slf4j",
+                    version: "$slf4jVersion"
+                  }
+                }
+              }]
+            )
+          end
+        end
+
+        describe "a dependency whose version is an extra property" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "io.netty:netty-handler" }
+          end
+
+          it "has the right details" do
+            expect(dependency.version).to eq("4.1.30.Final")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "4.1.30.Final",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "nettyVersion",
+                  dependency_set: {
+                    group: "io.netty",
+                    version: "${nettyVersion}"
+                  }
+                }
               }]
             )
           end
