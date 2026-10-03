@@ -27,8 +27,7 @@ module Dependabot
           data = Distribution.object(Distribution.parse_json(json_body, context), context)
           meta = data["meta"]
           metadata = meta.nil? ? {} : Distribution.object(meta, "#{context}.meta")
-          api_version = Distribution.optional_string(metadata["api-version"], "#{context}.meta.api-version") || "1.0"
-          validate_api_version!(api_version, context)
+          validate_api_version!(metadata.fetch("api-version", "1.0"), context)
 
           releases = T.let({}, T::Hash[String, T::Array[Distribution]])
           Distribution.array(data.fetch("files", []), "#{context}.files").each_with_index do |entry, index|
@@ -57,9 +56,9 @@ module Dependabot
         sig { returns(String) }
         attr_reader :project_url
 
-        sig { params(api_version: String, context: String).void }
+        sig { params(api_version: Object, context: String).void }
         def validate_api_version!(api_version, context)
-          unless api_version.match?(/\A[0-9]+\.[0-9]+\z/)
+          unless api_version.is_a?(String) && api_version.match?(/\A[0-9]+\.[0-9]+\z/)
             Distribution.invalid("#{context}.meta.api-version", "must be a Major.Minor string")
           end
           return unless api_version.split(".").first.to_i > 1
