@@ -12,14 +12,16 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
       dependency: dependency,
       dependency_files: [],
       credentials: [],
-      ignored_versions: [],
+      ignored_versions: ignored_versions,
       security_advisories: [],
       raise_on_ignored: false,
       cooldown_config: cooldown_config
     )
   end
   let(:release_dates) { Hash.new(Time.now - (365 * 24 * 60 * 60)) }
+  let(:pending_versions) { [] }
 
+  let(:ignored_versions) { [] }
   let(:cooldown_config) { nil }
   let(:current_version) { "1.0.0" }
   let(:dependency_name) { "Example" }
@@ -46,10 +48,30 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
         available_versions.map do |v|
           Dependabot::Package::PackageRelease.new(
             version: Dependabot::Julia::Version.new(v),
-            released_at: release_dates[v]
+            released_at: pending_versions.include?(v) ? nil : release_dates[v],
+            details: pending_versions.include?(v) ? { "release_date_pending" => true } : {}
           )
         end
       )
+  end
+
+  describe "#latest_version ignore conditions" do
+    let(:current_version) { "1.6.10+0" }
+    let(:available_versions) { %w(1.6.10+0 1.6.10+1 1.6.11+0) }
+
+    it "offers a JLL rebuild as an update" do
+      expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.6.11+0"))
+    end
+
+    context "when everything above the current release is ignored" do
+      let(:ignored_versions) { ["> 1.6.10"] }
+
+      # Ignore conditions keep the ordering between builds, unlike compat
+      # entries, so the rebuild is ignored too
+      it "does not offer the rebuild" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.6.10+0"))
+      end
+    end
   end
 
   describe "#latest_version prerelease handling" do
@@ -120,6 +142,34 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
 
       it "treats them literally" do
         expect(finder.latest_version).to be_nil
+      end
+    end
+  end
+
+  describe "cooldown with release dates" do
+    let(:available_versions) { %w(1.4.0 1.5.0) }
+    let(:release_dates) { { "1.4.0" => Time.now - (30 * 24 * 60 * 60) } }
+    let(:cooldown_config) { { default_days: 3 } }
+
+    context "when the newest release is not in GeneralMetadata.jl yet" do
+      let(:pending_versions) { %w(1.5.0) }
+
+      it "holds it back" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.4.0"))
+      end
+
+      context "without a cooldown" do
+        let(:cooldown_config) { nil }
+
+        it "offers it" do
+          expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.5.0"))
+        end
+      end
+    end
+
+    context "when a release has no date for another reason" do
+      it "offers it" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.5.0"))
       end
     end
   end

@@ -1034,7 +1034,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+        it "keeps the current version when the update requires an incompatible React peer" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("15.2.0"))
+        end
       end
     end
 
@@ -1201,6 +1203,31 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(latest_allowable_version) }
+      end
+
+      context "when updating a catalog dependency" do
+        let(:project_name) { "pnpm/catalog_prettier" }
+        let(:latest_allowable_version) { Gem::Version.new("3.3.3") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "prettier",
+            version: "3.4.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "pnpm-workspace.yaml",
+              requirement: "^3.3.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it "leaves the manifest in the working tree untouched" do
+          latest_resolvable_version
+
+          manifest = JSON.parse(File.read(File.join(repo_contents_path, "package.json")))
+          expect(manifest.dig("devDependencies", "prettier")).to eq("catalog:")
+        end
       end
 
       describe "updating a dependency with a peer requirement" do

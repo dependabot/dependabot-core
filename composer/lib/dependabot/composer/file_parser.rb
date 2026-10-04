@@ -1,9 +1,11 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/composer"
 require "dependabot/dependency"
 require "dependabot/composer/version"
+require "dependabot/composer/manifest_document"
+require "dependabot/composer/lockfile_document"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -94,7 +96,7 @@ module Dependabot
       # Capture PHP requirement from the composer.json
       sig { returns(T.nilable(Requirement)) }
       def php_requirement
-        requirement_string = Helpers.php_constraint(parsed_composer_json)
+        requirement_string = Helpers.php_constraint(manifest_document)
 
         return nil unless requirement_string
 
@@ -117,15 +119,15 @@ module Dependabot
           manifest = keys[:manifest]
           next unless manifest.is_a?(String)
 
-          next unless parsed_composer_json[manifest].is_a?(Hash)
-
-          parsed_composer_json[manifest].each do |name, req|
+          manifest_document.requirements(manifest).each do |entry|
+            name = entry.name
             next unless package?(name)
 
+            req = entry.string_requirement
             local_package_prefix = ["dev-main", "dev-master", "@dev"]
 
             # we avoid updating local packages, so we skip them adding to dependency list
-            if local_package_prefix.include?(req)
+            if req && local_package_prefix.include?(req)
               Dependabot.logger.info("Skipping #{name} with version #{req} as it cannot be updated.")
               next
             end
@@ -143,7 +145,7 @@ module Dependabot
                           version&.match?(/^[0-9a-f]{40}$/)
             end
 
-            dependencies << build_manifest_dependency(name, req, keys)
+            dependencies << build_manifest_dependency(name, entry.requirement, keys)
           end
         end
 
@@ -180,13 +182,11 @@ module Dependabot
 
         DEPENDENCY_GROUP_KEYS.each do |keys|
           key = keys.fetch(:lockfile)
-          next unless parsed_lockfile&.[](key).is_a?(Array)
+          lockfile_document&.packages(key)&.each do |details|
+            name = details.name
+            next unless name && package?(name)
 
-          parsed_lockfile&.[](key)&.each do |details|
-            name = details["name"]
-            next unless name.is_a?(String) && package?(name)
-
-            version = details["version"]&.to_s&.sub(/^v?/, "")
+            version = details.version&.sub(/^v?/, "")
             next unless version.is_a?(String)
             next unless version.match?(/^\d/) ||
                         version.match?(/^[0-9a-f]{40}$/)
@@ -219,10 +219,10 @@ module Dependabot
         package = lockfile_details(name: name, type: type)
         return unless package
 
-        version = package.fetch("version")&.to_s&.sub(/^v?/, "")
+        version = package.required_version&.sub(/^v?/, "")
         return version unless version&.start_with?("dev-")
 
-        package.dig("source", "reference")
+        package.source_reference
       end
 
       sig do
@@ -230,7 +230,7 @@ module Dependabot
           name: String,
           type: String,
           requirement: String
-        ).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        ).returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash))
       end
       def dependency_source(name:, type:, requirement:)
         return unless lockfile
@@ -238,22 +238,20 @@ module Dependabot
         package_details = lockfile_details(name: name, type: type)
         return unless package_details
 
-        if package_details["source"].nil? &&
-           package_details.dig("dist", "type") == "path"
-          return { type: "path" }
-        end
+        return { type: "path" } if package_details.path_source?
 
         git_dependency_details(package_details, requirement)
       end
 
       sig do
         params(
-          package_details: T::Hash[String, T.untyped],
+          package_details: LockfileDocument::PackageRecord,
           requirement: String
-        ).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        ).returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash))
       end
       def git_dependency_details(package_details, requirement)
-        return unless package_details.dig("source", "type") == "git"
+        details = package_details.git_source
+        return unless details
 
         branch =
           if requirement.start_with?("dev-")
@@ -261,20 +259,19 @@ module Dependabot
               .sub(/^dev-/, "")
               .sub(/\s+as\s.*/, "")
               .split("#").first
-          elsif package_details.fetch("version")&.to_s&.start_with?("dev-")
-            package_details.fetch("version")&.to_s&.sub(/^dev-/, "")
+          elsif package_details.required_version&.start_with?("dev-")
+            package_details.required_version&.sub(/^dev-/, "")
           end
 
-        details = { type: "git", url: package_details.dig("source", "url") }
         return details unless branch
 
         details.merge(branch: branch, ref: nil)
       end
 
-      sig { params(name: String, type: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { params(name: String, type: String).returns(T.nilable(LockfileDocument::PackageRecord)) }
       def lockfile_details(name:, type:)
         key = lockfile_key(type)
-        parsed_lockfile&.fetch(key, [])&.find { |d| d["name"] == name }
+        lockfile_document&.find_package(key, name)
       end
 
       sig { params(type: String).returns(String) }
@@ -296,21 +293,21 @@ module Dependabot
         raise "No #{PackageManager::MANIFEST_FILENAME}!" unless get_original_file(PackageManager::MANIFEST_FILENAME)
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def parsed_lockfile # rubocop:disable Metrics/PerceivedComplexity
+      sig { returns(T.nilable(LockfileDocument)) }
+      def lockfile_document # rubocop:disable Metrics/PerceivedComplexity
         return unless lockfile
 
         content = lockfile&.content
 
         raise Dependabot::DependencyFileNotParseable, lockfile&.path || "" if content.nil? || content.strip.empty?
 
-        @parsed_lockfile ||= T.let(JSON.parse(content), T.nilable(T::Hash[String, T.untyped]))
+        @lockfile_document ||= T.let(LockfileDocument.from_file(T.must(lockfile)), T.nilable(LockfileDocument))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, lockfile&.path || ""
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_composer_json
+      sig { returns(ManifestDocument) }
+      def manifest_document
         content = composer_json&.content
 
         if content.nil? || content.strip.empty?
@@ -318,7 +315,7 @@ module Dependabot
                 composer_json&.path || ""
         end
 
-        @parsed_composer_json ||= T.let(JSON.parse(content), T.nilable(T::Hash[String, T.untyped]))
+        @manifest_document ||= T.let(ManifestDocument.from_file(T.must(composer_json)), T.nilable(ManifestDocument))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, composer_json&.path || ""
       end
@@ -342,7 +339,7 @@ module Dependabot
       sig { returns(String) }
       def composer_version
         @composer_version ||= T.let(
-          Helpers.composer_version(parsed_composer_json, parsed_lockfile),
+          Helpers.composer_version(manifest_document, lockfile_document),
           T.nilable(String)
         )
       end

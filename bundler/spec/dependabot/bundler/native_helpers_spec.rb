@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/bundler/file_parser/helper_dependencies"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/update_checker/version_details"
 
 RSpec.describe Dependabot::Bundler::NativeHelpers do
   subject(:native_helper) { described_class }
@@ -163,6 +164,101 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
           )
 
           expect(version).to start_with("#{bundler_version}.")
+        end
+
+        context "when resolving a local dependency" do
+          subject(:result) do
+            Dependabot::SharedHelpers.in_a_temporary_repo_directory do |directory|
+              FileUtils.mkdir_p("example")
+              File.write("example/example.gemspec", gemspec)
+              if git_source
+                Dependabot::SharedHelpers.run_shell_command("git -C example init --quiet")
+                Dependabot::SharedHelpers.run_shell_command("git -C example config user.name dependabot-ci")
+                Dependabot::SharedHelpers.run_shell_command("git -C example config user.email no-reply@github.com")
+                Dependabot::SharedHelpers.run_shell_command("git -C example add example.gemspec")
+                Dependabot::SharedHelpers.run_shell_command('git -C example commit --quiet -m "Fixture"')
+              end
+              source_type = git_source ? "git" : "path"
+              source_path = git_source ? File.join(directory, "example") : "./example"
+              File.write("Gemfile", "ruby '#{RUBY_VERSION}'\ngem 'example', #{source_type}: '#{source_path}'\n")
+
+              native_helper.run_bundler_subprocess(
+                function: "resolve_version",
+                args: {
+                  dir: directory.to_s,
+                  dependency_name: dependency_name,
+                  dependency_requirements: dependency_requirements,
+                  gemfile_name: "Gemfile",
+                  lockfile_name: nil,
+                  credentials: []
+                },
+                bundler_version: bundler_version
+              )
+            end
+          end
+
+          let(:dependency_name) { "example" }
+          let(:dependency_requirements) { [{ requirement: ">= 0", file: "Gemfile", groups: [], source: nil }] }
+          let(:git_source) { false }
+          let(:gemspec) do
+            <<~GEMSPEC
+              Gem::Specification.new do |spec|
+                spec.name = "example"
+                spec.version = "1.2.3"
+                spec.summary = "Resolution protocol fixture"
+                spec.authors = ["Dependabot"]
+              end
+            GEMSPEC
+          end
+
+          it "preserves the native JSON shape and decodes typed details" do
+            expect(result).to eq("version" => "1.2.3", "ruby_version" => RUBY_VERSION, "fetcher" => nil)
+            details = Dependabot::Bundler::UpdateChecker::VersionDetails.from_helper_result(result)
+            expect(details).to have_attributes(
+              version: Dependabot::Bundler::Version.new("1.2.3"),
+              ruby_version: RUBY_VERSION,
+              fetcher: nil,
+              commit_sha: nil
+            )
+          end
+
+          context "with a local Git source" do
+            let(:git_source) { true }
+
+            around do |example|
+              ::Bundler.with_original_env { example.run }
+            end
+
+            it "decodes the commit SHA without a remote registry" do
+              expect(result.fetch("commit_sha")).to match(/\A[0-9a-f]{40}\z/)
+              details = Dependabot::Bundler::UpdateChecker::VersionDetails.from_helper_result(result)
+              expect(details.commit_sha).to eq(result.fetch("commit_sha"))
+            end
+          end
+
+          context "when resolving Bundler itself" do
+            let(:dependency_name) { "bundler" }
+
+            it "returns nil" do
+              expect(result).to be_nil
+            end
+          end
+
+          context "when the required dependency is absent from the definition" do
+            let(:dependency_name) { "missing" }
+
+            it "returns the latest-version sentinel" do
+              expect(result).to eq("latest")
+            end
+
+            context "without a declared requirement" do
+              let(:dependency_requirements) { [] }
+
+              it "returns nil for the removed subdependency" do
+                expect(result).to be_nil
+              end
+            end
+          end
         end
 
         context "when parsing a Gemfile" do

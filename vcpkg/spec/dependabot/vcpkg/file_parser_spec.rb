@@ -26,6 +26,27 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
   describe "#parse" do
     subject(:dependencies) { parser.parse }
 
+    context "with malformed manifest structures" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "vcpkg-configuration.json", content: "{}"),
+          Dependabot::DependencyFile.new(name: "vcpkg.json", directory: "/project", content: JSON.dump(data))
+        ]
+      end
+
+      [nil, [], "invalid", false, { "dependencies" => {} }].each do |value|
+        context "with #{value.inspect}" do
+          let(:data) { value }
+
+          it "reports the actual manifest path" do
+            expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_path).to eq("/project/vcpkg.json")
+            end
+          end
+        end
+      end
+    end
+
     context "with a valid vcpkg.json file" do
       let(:dependency_files) { [vcpkg_json] }
       let(:vcpkg_json) do

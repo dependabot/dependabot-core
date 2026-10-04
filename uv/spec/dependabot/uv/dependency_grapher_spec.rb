@@ -378,6 +378,74 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       end
     end
 
+    context "with versionless roots, repeated packages, and malformed optional data" do
+      let(:uv_lock_content) do
+        <<~TOML
+          [[package]]
+          name = "Root"
+          source = { directory = false }
+          dependencies = ["Foo_Bar", false, { name = false }]
+          optional-dependencies = { extra = ["optional"], ignored = false }
+          dev-dependencies = { test = ["Foo_Bar", "test"] }
+
+          [[package]]
+          name = "Foo_Bar"
+          version = "1.0"
+          dependencies = ["optional", "optional"]
+
+          [[package]]
+          name = "Foo_Bar"
+          version = "2.0"
+          dependencies = ["test"]
+
+          [[package]]
+          name = "optional"
+          version = "1.0"
+          dependencies = false
+
+          [[package]]
+          name = "test"
+          version = "1.0"
+          optional-dependencies = false
+        TOML
+      end
+
+      it "keeps runtime precedence and aggregates edges across occurrences" do
+        resolved = grapher.resolved_dependencies
+
+        expect(resolved.keys).not_to include("pkg:pypi/root")
+        %w(1.0 2.0).each do |version|
+          package = resolved.fetch("pkg:pypi/foo-bar@#{version}")
+          expect(package.direct).to be(true)
+          expect(package.runtime).to be(true)
+          expect(package.dependencies).to eq(%w(pkg:pypi/optional@1.0 pkg:pypi/test@1.0))
+        end
+        expect(resolved.fetch("pkg:pypi/optional@1.0").direct).to be(true)
+        expect(resolved.fetch("pkg:pypi/test@1.0").runtime).to be(false)
+        expect(grapher.errored_fetching_subdependencies).to be(false)
+      end
+
+      context "when membership uses a different spelling" do
+        let(:uv_lock_content) { "[manifest]\nmembers = [\"root\"]\n" + super() }
+
+        it "does not normalize names before root selection" do
+          expect(grapher.resolved_dependencies.fetch("pkg:pypi/foo-bar@1.0").direct).to be(false)
+        end
+      end
+    end
+
+    context "when the package container is malformed" do
+      let(:uv_lock_content) { "package = false" }
+
+      it "records the preparation failure" do
+        expect(Dependabot.logger).to receive(:error).with(/Failed to parse uv.lock for graphing/)
+        expect(grapher.resolved_dependencies).to eq({})
+        expect(grapher.prepared).to be(true)
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+        expect(grapher.subdependency_error).to be_a(TypeError)
+      end
+    end
+
     context "when uv.lock is invalid TOML" do
       let(:uv_lock_content) { "not valid toml {{{" }
 

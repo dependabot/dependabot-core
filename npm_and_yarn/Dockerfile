@@ -2,7 +2,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.34.6
+ARG COREPACK_VERSION=0.36.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
@@ -22,6 +22,13 @@ ARG NODEJS_VERSION=24
 # This version should be aligned with NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
 ARG NPM_VERSION=11.17.0
+
+# Route Node's built-in fetch() and http(s) agents through HTTP_PROXY/HTTPS_PROXY.
+# Corepack >=0.35 requires this setting for proxy support, and pnpm 12's
+# npm package is a launcher that downloads the native `@pnpm/exe.<platform>` binary
+# with a bare fetch() on first run. Without this, that download bypasses the
+# Dependabot proxy and fails with "fetch failed".
+ENV NODE_USE_ENV_PROXY=1
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \
@@ -46,13 +53,6 @@ EOF
 
 # Configure Node to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
-# Route Node's built-in fetch() and http(s) agents through HTTP_PROXY/HTTPS_PROXY.
-# npm, yarn, pnpm and corepack read the proxy variables themselves, but pnpm 12's
-# npm package is a launcher that downloads the native `@pnpm/exe.<platform>` binary
-# with a bare fetch() on first run. Without this, that download bypasses the
-# Dependabot proxy and fails with "fetch failed".
-ENV NODE_USE_ENV_PROXY=1
 
 # Silence warning messages that aren't useful within the Dependabot context.
 # CAUTION: `NPM_CONFIG_*` vars take precedence over the user's .npmrc settings. For these it always makes sense, but for
