@@ -67,14 +67,14 @@ module Dependabot
           @options                     = options
 
           @latest_allowable_version_incompatible_with_ruby = T.let(false, T::Boolean)
-          @latest_resolvable_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @latest_resolvable_version_details = T.let(nil, T.nilable(VersionDetails))
           @dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-          @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @latest_version_details = T.let(nil, T.nilable(VersionDetails))
           @gemspec_ruby_unlocked = T.let(false, T::Boolean)
           @bundler_version = T.let(nil, T.nilable(String))
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(VersionDetails)) }
         def latest_resolvable_version_details
           @latest_resolvable_version_details ||=
             fetch_latest_resolvable_version_details
@@ -136,7 +136,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(VersionDetails)) }
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
 
@@ -145,7 +145,7 @@ module Dependabot
             # some errors we want to handle specifically ourselves, including
             # potentially retrying in the case of the Ruby version being locked
             in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-              details = NativeHelpers.run_bundler_subprocess(
+              result = NativeHelpers.run_bundler_subprocess(
                 bundler_version: bundler_version,
                 function: "resolve_version",
                 options: options,
@@ -159,23 +159,24 @@ module Dependabot
                 }
               )
 
-              return latest_version_details if details == "latest"
+              result = T.cast(result, Object)
+              return latest_version_details if result == "latest"
+              return if result.nil?
 
-              if details
-                details.transform_keys!(&:to_sym)
+              details = VersionDetails.from_helper_result(result)
 
-                # If the old Gemfile index was used then it won't have checked
-                # Ruby compatibility. Fix that by doing the check manually and
-                # saying no update is possible if the Ruby version is a
-                # mismatch
-                return nil if ruby_version_incompatible?(details)
+              # If the old Gemfile index was used then it won't have checked
+              # Ruby compatibility. Fix that by doing the check manually and
+              # saying no update is possible if the Ruby version is a
+              # mismatch
+              return if ruby_version_incompatible?(details)
 
-                details[:version] = Dependabot::Bundler::Version.new(details[:version])
-              end
               details
             end
           end
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          raise if e.is_a?(VersionDetails::InvalidResult)
+
           return if error_due_to_restrictive_upper_bound?(e)
           return if circular_dependency_at_new_version?(e)
 
@@ -184,7 +185,8 @@ module Dependabot
           handle_bundler_errors(e) unless ruby_lock_error?(e)
 
           @gemspec_ruby_unlocked = true
-          regenerate_dependency_files_without_ruby_lock && retry
+          regenerate_dependency_files_without_ruby_lock
+          retry
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
@@ -206,7 +208,7 @@ module Dependabot
           error.message.include?("#{dependency.name} ")
         end
 
-        sig { params(error: T.untyped).returns(T::Boolean) }
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def ruby_lock_error?(error)
           return false unless conflict_on_ruby?(error)
           return false if @gemspec_ruby_unlocked
@@ -223,7 +225,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Boolean) }
+        sig { void }
         def regenerate_dependency_files_without_ruby_lock
           @dependency_files =
             FilePreparer.new(
@@ -235,10 +237,9 @@ module Dependabot
               latest_allowable_version: latest_allowable_version,
               lock_ruby_version: false
             ).prepared_dependency_files
-          true
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(VersionDetails)) }
         def latest_version_details
           @latest_version_details ||=
             LatestVersionFinder.new(
@@ -253,13 +254,14 @@ module Dependabot
             ).latest_version_details
         end
 
-        sig { params(details: T.untyped).returns(T::Boolean) }
+        sig { params(details: VersionDetails).returns(T::Boolean) }
         def ruby_version_incompatible?(details)
           # It's only the old index we have a problem with
-          return false unless details[:fetcher] == "Bundler::Fetcher::Dependency"
+          return false unless details.fetcher == "Bundler::Fetcher::Dependency"
 
           # If no Ruby version is specified, we don't have a problem
-          return false unless details[:ruby_version]
+          ruby_version = details.ruby_version
+          return false unless ruby_version
 
           versions = Dependabot::RegistryClient.get(
             url: "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
@@ -272,7 +274,7 @@ module Dependabot
 
           ruby_requirement =
             JSON.parse(versions.body)
-                .find { |version| version["number"] == details[:version] }
+                .find { |version| version["number"] == details.version.to_semver }
                 &.fetch("ruby_version", nil)
 
           # Give the benefit of the doubt if we can't find the version's
@@ -280,7 +282,7 @@ module Dependabot
           return false unless ruby_requirement
 
           ruby_requirement = Dependabot::Bundler::Requirement.new(ruby_requirement)
-          current_ruby_version = Dependabot::Bundler::Version.new(details[:ruby_version])
+          current_ruby_version = Dependabot::Bundler::Version.new(ruby_version)
 
           return false if ruby_requirement.satisfied_by?(current_ruby_version)
 

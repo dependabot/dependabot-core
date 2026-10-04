@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pip_version_resolver"
+require_relative "shared_examples_for_pip_pyproject_reads"
 
 RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   before do
@@ -69,6 +70,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       source: nil
     }]
   end
+
+  it_behaves_like "a pip resolver reading pyproject constraints"
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }

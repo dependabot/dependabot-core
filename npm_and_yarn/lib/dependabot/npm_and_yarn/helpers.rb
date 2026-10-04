@@ -38,6 +38,38 @@ module Dependabot
         def credentials
           T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
         end
+
+        sig { params(version: T.nilable(String)).void }
+        def npm_version_selector=(version)
+          Thread.current[:npm_and_yarn_npm_version_selector] = version
+        end
+
+        sig { returns(T.nilable(String)) }
+        def npm_version_selector
+          T.cast(Thread.current[:npm_and_yarn_npm_version_selector], T.nilable(String))
+        end
+
+        sig { params(directory: String, version: T.nilable(String)).void }
+        def register_npm_version_selector(directory, version)
+          npm_version_selectors[directory] = version
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def activate_npm_version_selector(files)
+          manifest = files.find { |file| file.name == "package.json" && !file.support_file }
+          self.npm_version_selector = manifest && npm_version_selectors[manifest.directory]
+        end
+
+        private
+
+        sig { returns(T::Hash[String, T.nilable(String)]) }
+        def npm_version_selectors
+          Thread.current[:npm_and_yarn_npm_version_selectors] ||= {}
+          T.cast(
+            Thread.current[:npm_and_yarn_npm_version_selectors],
+            T::Hash[String, T.nilable(String)]
+          )
+        end
       end
 
       YARN_PATH_NOT_FOUND =
@@ -259,9 +291,18 @@ module Dependabot
 
       # The concrete npm version that will run. Returns nil when it can't be determined.
       # Used to gate `--min-release-age`, added in npm 11.10.
+      #
+      # Mirrors run_npm_command's own branching: without a selector, update commands
+      # run the local `npm` binary directly (bypassing Corepack), which can differ
+      # from Corepack's unqualified default. Only route through Corepack once a
+      # selector is active, so this reflects the npm version that will actually run.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
-        raw = local_package_manager_version(NpmPackageManager::NAME)
+        raw = if npm_version_selector
+                package_manager_version(npm_package_manager_name, env: merge_corepack_env(nil))
+              else
+                local_package_manager_version(NpmPackageManager::NAME)
+              end
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
@@ -461,13 +502,30 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "npm #{command}",
-          fingerprint: "npm #{fingerprint}",
+        unless npm_version_selector
+          return Dependabot::SharedHelpers.run_shell_command(
+            "#{NpmPackageManager::NAME} #{command}",
+            fingerprint: "#{NpmPackageManager::NAME} #{fingerprint || command}",
+            output_observer: ->(output) { command_observer(output) },
+            env: env
+          )
+        end
+
+        package_manager_run_command(
+          npm_package_manager_name,
+          command,
+          fingerprint: fingerprint,
           output_observer: ->(output) { command_observer(output) },
-          env: env
+          env: merge_corepack_env(env)
         )
       end
+
+      sig { returns(String) }
+      def self.npm_package_manager_name
+        selector = npm_version_selector
+        selector ? "#{NpmPackageManager::NAME}@#{selector}" : NpmPackageManager::NAME
+      end
+      private_class_method :npm_package_manager_name
 
       sig do
         params(output: String)
@@ -697,6 +755,8 @@ module Dependabot
       # disabled when a configured private registry strips `dist.signatures`
       # from its version endpoint (a known Artifactory behaviour that otherwise
       # aborts the run with COREPACK_SIGNATURE_METADATA_ERROR).
+      # Corepack >=0.36 first checks package-root metadata; this retry still
+      # applies when that endpoint also omits signatures.
       sig do
         params(
           full_command: String,

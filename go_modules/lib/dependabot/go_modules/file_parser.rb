@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -7,6 +7,7 @@ require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/go_modules/go_work_parser"
+require "dependabot/go_modules/go_mod_manifest"
 require "dependabot/go_modules/path_converter"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
@@ -291,49 +292,46 @@ module Dependabot
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr, file_path: mod_file.path) unless status.success?
 
-          parsed = JSON.parse(stdout)
-          packages = parsed["Require"] || []
+          parsed = GoModManifest.from_json(stdout, file_path: mod_file.path)
 
-          packages.filter_map do |hsh|
-            next if skip_dependency_in_manifest?(hsh, parsed)
+          parsed.requirements.filter_map do |entry|
+            next if skip_dependency_in_manifest?(entry, parsed)
 
-            source = { type: "default", source: hsh["Path"] }
-            version = hsh["Version"]&.sub(/^v?/, "")
+            source = { type: "default", source: entry.path }
+            version = entry.version&.sub(/^v?/, "")
 
             reqs = [{
-              requirement: hsh["Version"],
+              requirement: entry.version,
               file: mod_file.name,
               source: source,
               groups: []
             }]
 
             Dependency.new(
-              name: hsh["Path"],
+              name: entry.path,
               version: version,
-              requirements: hsh["Indirect"] ? [] : reqs,
+              requirements: entry.indirect ? [] : reqs,
               package_manager: "go_modules"
             )
           end
         end
       end
 
-      sig { params(dep: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(dep: GoModManifest::RequirementEntry, mod_manifest: GoModManifest).returns(T::Boolean) }
       def skip_dependency_in_manifest?(dep, mod_manifest)
         return true if dependency_is_replaced_in?(dep, mod_manifest)
 
-        path_uri = URI.parse("https://#{dep['Path']}")
+        path_uri = URI.parse("https://#{dep.path}")
         !path_uri.host&.include?(".")
       rescue URI::InvalidURIError
         false
       end
 
-      sig { params(details: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(details: GoModManifest::RequirementEntry, mod_manifest: GoModManifest).returns(T::Boolean) }
       def dependency_is_replaced_in?(details, mod_manifest)
-        return false unless mod_manifest["Replace"]
-
-        mod_manifest["Replace"].any? do |replace|
-          replace["Old"]["Path"] == details["Path"] &&
-            (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
+        mod_manifest.replacements.any? do |replacement|
+          replacement.old.path == details.path &&
+            (replacement.old.version.nil? || replacement.old.version == details.version)
         end
       end
 
@@ -342,32 +340,35 @@ module Dependabot
         raise "No go.mod or go.work!" unless go_mod || go_work
       end
 
-      sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
+      sig { params(details: GoModManifest::RequirementEntry).returns(Dependabot::Dependency) }
       def dependency_from_details(details)
-        source = { type: "default", source: details["Path"] }
-        version = details["Version"]&.sub(/^v?/, "")
+        source = { type: "default", source: details.path }
+        version = details.version&.sub(/^v?/, "")
 
         reqs = [{
-          requirement: details["Version"],
+          requirement: details.version,
           file: go_mod&.name,
           source: source,
           groups: []
         }]
 
         Dependency.new(
-          name: details["Path"],
+          name: details.path,
           version: version,
-          requirements: details["Indirect"] ? [] : reqs,
+          requirements: details.indirect ? [] : reqs,
           package_manager: "go_modules"
         )
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[GoModManifest::RequirementEntry]) }
       def required_packages
         @required_packages ||=
           T.let(
-            JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
-            T.nilable(T::Array[T::Hash[String, T.untyped]])
+            GoModManifest.from_json(
+              run_in_parsed_context("go mod edit -json"),
+              file_path: T.must(go_mod).path
+            ).requirements,
+            T.nilable(T::Array[GoModManifest::RequirementEntry])
           )
       end
 
@@ -384,7 +385,7 @@ module Dependabot
           )
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(GoModManifest) }
       def manifest
         @manifest ||=
           T.let(
@@ -398,9 +399,9 @@ module Dependabot
               stdout, stderr, status = Open3.capture3(command)
               handle_parser_error(path, stderr) unless status.success?
 
-              JSON.parse(stdout)
+              GoModManifest.from_json(stdout, file_path: T.must(go_mod).path)
             end,
-            T.nilable(T::Hash[String, T.untyped])
+            T.nilable(GoModManifest)
           )
       end
 
@@ -418,18 +419,18 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable.new(resolved_path, msg)
       end
 
-      sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(dep: GoModManifest::RequirementEntry).returns(T::Boolean) }
       def skip_dependency?(dep)
         # Updating replaced dependencies is not supported
         return true if dependency_is_replaced(dep)
 
-        path_uri = URI.parse("https://#{dep['Path']}")
+        path_uri = URI.parse("https://#{dep.path}")
         !path_uri.host&.include?(".")
       rescue URI::InvalidURIError
         false
       end
 
-      sig { params(details: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(details: GoModManifest::RequirementEntry).returns(T::Boolean) }
       def dependency_is_replaced(details)
         # Mark dependency as replaced if the requested dependency has a
         # "replace" directive and that either has the same version, or no
@@ -437,15 +438,7 @@ module Dependabot
         # prevents that we change dependency versions without any impact since
         # the actual version that is being imported is defined by the replace
         # directive.
-        if manifest["Replace"]
-          dep_replace = manifest["Replace"].find do |replace|
-            replace["Old"]["Path"] == details["Path"] &&
-              (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
-          end
-
-          return true if dep_replace
-        end
-        false
+        dependency_is_replaced_in?(details, manifest)
       end
     end
   end

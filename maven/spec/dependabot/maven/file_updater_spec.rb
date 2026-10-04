@@ -137,6 +137,44 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           .to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
       end
 
+      context "when pinning a transitive dependency via a multi-line project header" do
+        let(:pom_body) { fixture("poms", "multiline_header_pom.xml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "injects dependencyManagement without modifying the project header attributes" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).to include("<dependencyManagement>")
+          expect(updated_content).to include("<groupId>org.apache.zookeeper</groupId>")
+
+          expect(updated_content).to include(
+            "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" \
+            "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" \
+            "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">"
+          )
+        end
+      end
+
       context "when handling dependencies with classifiers" do
         let(:dependencies) { [dependency, mockk_dependency] }
 
@@ -427,6 +465,508 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       </dependency>
     </dependencies>
   </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a transitive dependency and an existing empty self-closing dependencyManagement element" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_empty_self_closing.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "expands the self-closing element and injects the dependency" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to include("<dependencyManagement />")
+          expect(updated_content).to include(
+            "<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+        end
+
+        shared_examples "a project-level transitive pin" do
+          it "pins only in project dependency management and preserves all surrounding XML" do
+            updated_content = updated_pom_file.content
+            document = Nokogiri::XML(updated_content) { |config| config.strict.nonet }
+            document.remove_namespaces!
+            sections = document.xpath("/project/dependencyManagement")
+            expect(sections.length).to eq(1)
+            pins = document.xpath("//dependency[artifactId='zookeeper']")
+            expect(pins.length).to eq(1)
+            expect(pins.first.parent.parent).to eq(sections.first)
+            expect(pins.first.at_xpath("groupId").text).to eq("org.apache.zookeeper")
+            expect(pins.first.at_xpath("version").text).to eq("3.7.2")
+            expect(updated_content).to start_with(original_prefix)
+            expect(updated_content).to end_with(original_suffix)
+            expect(document.xpath("/project/dependencies/dependency[artifactId='zookeeper']")).to be_empty
+          end
+        end
+
+        context "with tag-shaped text in an internal DTD" do
+          let(:pom_body) { fixture("poms", "transitive_dependency_pom_dep_management_doctype.xml") }
+          let(:original_prefix) { pom_body.rpartition("  <dependencyManagement/>").first + "  " }
+          let(:original_suffix) { pom_body.rpartition("  <dependencyManagement/>").last }
+
+          it_behaves_like "a project-level transitive pin"
+
+          context "with multibyte text and enough content to compact the parser buffer" do
+            let(:pom_body) do
+              super().sub("<!-- Keep", "<!-- #{"\u00e9" * 55_000} -->\n  <!-- Keep")
+            end
+
+            it_behaves_like "a project-level transitive pin"
+          end
+
+          context "with a UTF-8 byte-order mark" do
+            let(:pom_body) { "\uFEFF#{super()}" }
+
+            it_behaves_like "a project-level transitive pin"
+          end
+
+          context "with CRLF line endings" do
+            let(:pom_body) { super().gsub("\n", "\r\n") }
+
+            it_behaves_like "a project-level transitive pin"
+          end
+
+          context "with a second dependency pinned in the same update" do
+            let(:second_dependency) do
+              Dependabot::Dependency.new(
+                name: "com.example:other",
+                version: dependency.version,
+                requirements: dependency.requirements,
+                previous_requirements: dependency.previous_requirements,
+                package_manager: "maven"
+              )
+            end
+            let(:dependencies) { [dependency, second_dependency] }
+
+            it_behaves_like "a project-level transitive pin"
+
+            it "keeps both pins in the same project-level section" do
+              document = Nokogiri::XML(updated_pom_file.content) { |config| config.strict.nonet }
+              document.remove_namespaces!
+              pins = document.xpath("/project/dependencyManagement/dependencies/dependency/artifactId").map(&:text)
+              expect(pins).to eq(%w(zookeeper other))
+            end
+          end
+        end
+
+        context "with paired tags containing tag-shaped comments and processing instructions" do
+          let(:original_element) do
+            <<~XML.chomp
+              <dependencyManagement >
+                  <!-- Keep </dependencyManagement> and <dependencyManagement/> here. -->
+                  <?tool keep </dependencyManagement> ?>
+                  <dependencies >
+                    <!-- Keep C:\\tools\\1 and C:\\tools\\& unchanged. -->
+                    <dependency>
+                      <groupId>org.junit</groupId>
+                      <artifactId>junit-bom</artifactId>
+                      <version>5.11.0</version>
+                      <type>pom</type>
+                      <scope>import</scope>
+                    </dependency>
+                  </dependencies >
+                </dependencyManagement >
+            XML
+          end
+          let(:pom_body) do
+            fixture("poms", "transitive_dependency_pom_dep_management_doctype.xml")
+              .sub("\n  <dependencyManagement/>") { "\n  #{original_element}" }
+          end
+          let(:original_prefix) { pom_body.partition(original_element).first }
+          let(:original_suffix) { pom_body.partition(original_element).last }
+
+          it_behaves_like "a project-level transitive pin"
+
+          it "preserves the existing BOM import, comments and processing instruction" do
+            document = Nokogiri::XML(updated_pom_file.content) { |config| config.strict.nonet }
+            document.remove_namespaces!
+            bom = document.at_xpath("/project/dependencyManagement/dependencies/dependency[artifactId='junit-bom']")
+            expect(bom.at_xpath("version").text).to eq("5.11.0")
+            expect(bom.at_xpath("type").text).to eq("pom")
+            expect(bom.at_xpath("scope").text).to eq("import")
+            expect(updated_pom_file.content).to include(
+              "<!-- Keep </dependencyManagement> and <dependencyManagement/> here. -->",
+              "<!-- Keep C:\\tools\\1 and C:\\tools\\& unchanged. -->"
+            )
+            instruction = document.at_xpath("/project/dependencyManagement/processing-instruction('tool')")
+            expect(instruction.content).to eq("keep </dependencyManagement>")
+          end
+        end
+
+        context "with no project-level element and trailing comments and processing instructions" do
+          let(:pom_body) do
+            fixture("poms", "transitive_dependency_pom_dep_management_doctype.xml")
+              .sub("\n  <dependencyManagement/>\n", "\n")
+          end
+          let(:original_prefix) { pom_body.partition("</project >").first }
+          let(:original_suffix) { "</project >" + pom_body.partition("</project >").last }
+
+          it_behaves_like "a project-level transitive pin"
+
+          context "with multibyte text and enough content to compact the parser buffer" do
+            let(:pom_body) do
+              super().sub("<!-- Keep", "<!-- #{"\u00e9" * 55_000} -->\n  <!-- Keep")
+            end
+
+            it_behaves_like "a project-level transitive pin"
+          end
+        end
+
+        context "with a self-closing project instead of a Maven model" do
+          let(:pom_body) { "<project/>" }
+
+          it "fails explicitly rather than appending dependency management outside the project" do
+            expect { updated_files }.to raise_error(
+              RuntimeError,
+              "Cannot insert dependency management into a self-closing <project> element"
+            )
+          end
+        end
+      end
+
+      context "with a transitive dependency and a profile-level dependencyManagement element" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_with_profile.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "pins into the project-level element without clobbering the profile element" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to include("<dependencyManagement />")
+          expect(updated_content).to include(
+            "<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+          expect(updated_content).to include(
+            "<dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>profile-managed</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a profile-level dependencyManagement declared before the project-level one" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_profile_before.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "pins into the project-level element without clobbering the earlier profile element" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to include("<dependencyManagement />")
+          expect(updated_content).to include(
+            "<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+          expect(updated_content).to include(
+            "<dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>profile-managed</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a profile comment containing a literal </profiles> before the project-level element" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_profile_before_fake_close.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "ignores the commented closing tag and pins the project-level element" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to include("<dependencyManagement />")
+          expect(updated_content).to include(
+            "<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+          expect(updated_content).to include(
+            "<dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>profile-managed</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with whitespace before the closing > of profile and project-level tags" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_whitespace_tags.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "pins into the project-level element and leaves the earlier profile element intact" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to eq(pom_body)
+          expect(updated_content).to include("<artifactId>zookeeper</artifactId>")
+          expect(updated_content).to include("<version>3.7.2</version>")
+          expect(updated_content).to include("<artifactId>junit-bom</artifactId>")
+          expect(updated_content).to include("<artifactId>profile-managed</artifactId>")
+          expect(updated_content.scan("<artifactId>profile-managed</artifactId>").length).to eq(1)
+        end
+      end
+
+      context "with a profile processing instruction containing </profiles> before the project element" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_profile_before_pi.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "ignores the processing instruction and pins the project-level element" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to include("<dependencyManagement />")
+          expect(updated_content).to include(
+            "<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+          expect(updated_content).to include(
+            "<dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>profile-managed</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with tag-shaped text inside comments or CDATA near the project-level element" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_comment_cdata.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "ignores the comment/CDATA text and pins into the project-level element" do
+          updated_content = updated_pom_file.content
+
+          expect(updated_content).not_to include("<dependencyManagement />")
+          expect(updated_content).to include(
+            "<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+          expect(updated_content).to include(
+            "<![CDATA[Build notes that also mention <profiles> and </dependencyManagement>.]]>"
+          )
+          expect(updated_content).to include(
+            "<dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>profile-managed</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>"
           )
         end
       end

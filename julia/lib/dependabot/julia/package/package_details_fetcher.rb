@@ -14,6 +14,7 @@ module Dependabot
         extend T::Sig
 
         PACKAGE_LANGUAGE = "julia"
+        RELEASE_DATE_PENDING = "release_date_pending"
 
         sig do
           params(
@@ -73,9 +74,14 @@ module Dependabot
 
           available_versions.map do |version_string|
             version = Julia::Version.new(version_string)
-            release_date = release_dates[version_string]
+            date_result = release_dates[version_string]
+            date_result = nil if date_result.is_a?(RegistryClient::Result::Failure)
 
-            create_package_release(version, release_date)
+            create_package_release(
+              version,
+              convert_single_date(date_result&.release_date),
+              release_date_pending: date_result&.pending || false
+            )
           end
         end
 
@@ -84,7 +90,9 @@ module Dependabot
             registry_client: RegistryClient,
             available_versions: T::Array[String],
             uuid: T.nilable(String)
-          ).returns(T::Hash[String, T.nilable(Time)])
+          ).returns(
+            T::Hash[String, T.any(RegistryClient::Result::ReleaseDate, RegistryClient::Result::Failure)]
+          )
         end
         def fetch_release_dates_batch(registry_client, available_versions, uuid)
           return {} if available_versions.empty?
@@ -103,20 +111,7 @@ module Dependabot
           dates_for_package = result.packages[dependency.name]
           return {} unless dates_for_package.is_a?(RegistryClient::Result::ReleaseDates)
 
-          convert_dates_to_time_objects(dates_for_package)
-        end
-
-        sig do
-          params(
-            release_dates: RegistryClient::Result::ReleaseDates
-          ).returns(T::Hash[String, T.nilable(Time)])
-        end
-        def convert_dates_to_time_objects(release_dates)
-          release_dates.dates.transform_values do |result|
-            next if result.is_a?(RegistryClient::Result::Failure)
-
-            convert_single_date(result.release_date)
-          end
+          dates_for_package.dates
         end
 
         sig { params(date_value: T.nilable(String)).returns(T.nilable(Time)) }
@@ -131,16 +126,18 @@ module Dependabot
         sig do
           params(
             version: Julia::Version,
-            release_date: T.nilable(Time)
+            release_date: T.nilable(Time),
+            release_date_pending: T::Boolean
           ).returns(Dependabot::Package::PackageRelease)
         end
-        def create_package_release(version, release_date)
+        def create_package_release(version, release_date, release_date_pending:)
           Dependabot::Package::PackageRelease.new(
             version: version,
             released_at: release_date,
             latest: false, # Will be determined later
             yanked: false, # Yanked versions are filtered out by the Julia registry helper
-            language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE)
+            language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE),
+            details: release_date_pending ? { RELEASE_DATE_PENDING => true } : {}
           )
         end
 

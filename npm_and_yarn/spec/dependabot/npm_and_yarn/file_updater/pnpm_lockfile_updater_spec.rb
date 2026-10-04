@@ -753,6 +753,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         files.find { |f| f.name == "pnpm-workspace.yaml" }
       end
 
+      context "when the manifest on disk no longer matches the dependency files" do
+        # The update checker runs `pnpm update` in the same working tree
+        # before the FileUpdater. On a catalog dependency that rewrote the
+        # root package.json from `catalog:` to a pinned version.
+        let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+        let(:workspace_files) do
+          {
+            "pnpm-workspace.yaml" => "packages:\n  - packages/*\n\ncatalog:\n  prettier: 3.3.3\n"
+          }
+        end
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            manifest = JSON.parse(File.read("package.json"))
+            manifest["devDependencies"]["prettier"] = "3.3.3"
+            File.write("package.json", JSON.pretty_generate(manifest))
+            Dependabot::SharedHelpers.run_shell_command("git commit -am leftover")
+          end
+        end
+
+        it "keeps the catalog specifier in the lockfile" do
+          lockfile = YAML.safe_load(updated_pnpm_lock_content)
+
+          expect(lockfile.dig("importers", ".", "devDependencies", "prettier", "specifier")).to eq("catalog:")
+          expect(lockfile.dig("importers", ".", "devDependencies", "prettier", "version")).to eq("3.3.3")
+          expect(lockfile.dig("catalogs", "default", "prettier", "version")).to eq("3.3.3")
+        end
+      end
+
       context "when pnpm updates followed by install for non catalog dependencies" do
         let(:workspace_files) do
           {
@@ -941,22 +970,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         )
       end
 
-      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm update" do
+      it "passes --config.minimum-release-age=0 --config.minimum-release-age-strict=false to pnpm update" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
           # blocked by a release-age gate the user configured for regular updates.
-          expect(cmd).to include("--config.minimumReleaseAge=0")
-          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          expect(cmd).to include("--config.minimum-release-age=0")
+          expect(cmd).to include("--config.minimum-release-age-strict=false")
           ""
         end.at_least(:once)
 
         updater.send(:run_pnpm_update_packages)
       end
 
-      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm install" do
+      it "passes --config.minimum-release-age=0 --config.minimum-release-age-strict=false to pnpm install" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).to include("--config.minimumReleaseAge=0")
-          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          expect(cmd).to include("--config.minimum-release-age=0")
+          expect(cmd).to include("--config.minimum-release-age-strict=false")
           ""
         end
 
@@ -975,23 +1004,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updated_pnpm_lock_content
 
         expect(commands).not_to be_empty
-        expect(commands.join(" ")).not_to include("trustLockfile")
+        expect(commands.join(" ")).not_to include("trust-lockfile")
       end
     end
 
     context "when security_updates_only is false (default)" do
-      it "does not pass --config.minimumReleaseAge=0 to pnpm update" do
+      it "does not pass --config.minimum-release-age=0 to pnpm update" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).not_to include("--config.minimumReleaseAge=0")
+          expect(cmd).not_to include("--config.minimum-release-age=0")
           ""
         end
 
         updater.send(:run_pnpm_update_packages)
       end
 
-      it "does not pass --config.minimumReleaseAge=0 to pnpm install" do
+      it "does not pass --config.minimum-release-age=0 to pnpm install" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).not_to include("--config.minimumReleaseAge=0")
+          expect(cmd).not_to include("--config.minimum-release-age=0")
           ""
         end
 
@@ -1012,8 +1041,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "passes minimumReleaseAge in minutes (days * 1440) to pnpm update" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).to include("--config.minimumReleaseAge=10080")
-          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          expect(cmd).to include("--config.minimum-release-age=10080")
+          expect(cmd).to include("--config.minimum-release-age-strict=false")
           ""
         end.at_least(:once)
 
@@ -1023,7 +1052,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "routes the deep-update fallback through the release-age gate" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           expect(cmd).to include("--depth Infinity")
-          expect(cmd).to include("--config.minimumReleaseAge=10080")
+          expect(cmd).to include("--config.minimum-release-age=10080")
           ""
         end.at_least(:once)
 
@@ -1035,7 +1064,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         pnpm_lock = Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "original")
         gated = false
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          gated ||= cmd.include?("audit --fix") && cmd.include?("--config.minimumReleaseAge=10080")
+          gated ||= cmd.include?("audit --fix") && cmd.include?("--config.minimum-release-age=10080")
           ""
         end
 
@@ -1048,13 +1077,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           call_count += 1
           if call_count == 1
-            expect(cmd).to include("--config.minimumReleaseAge=10080")
+            expect(cmd).to include("--config.minimum-release-age=10080")
             raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
               message: "ERR_PNPM_MISSING_TIME  The metadata of etag is missing the \"time\" field",
               error_context: {}
             )
           end
-          expect(cmd).not_to include("--config.minimumReleaseAge")
+          expect(cmd).not_to include("--config.minimum-release-age")
           ""
         end
 
@@ -1085,8 +1114,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         # `update --no-save` pair: the gated attempt and its ungated retry.
         updates = commands.select { |cmd| cmd.include?("--no-save") }
         expect(updates.length).to eq(2)
-        expect(updates.first).to include("--config.minimumReleaseAge=10080")
-        expect(updates.last).not_to include("--config.minimumReleaseAge")
+        expect(updates.first).to include("--config.minimum-release-age=10080")
+        expect(updates.last).not_to include("--config.minimum-release-age")
       end
 
       context "when the repo sets its own minimumReleaseAge" do
@@ -1098,7 +1127,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         it "reports the gate the retry falls back to, rather than implying none" do
           allow(Dependabot.logger).to receive(:warn)
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            if cmd.include?("--config.minimumReleaseAge=10080")
+            if cmd.include?("--config.minimum-release-age=10080")
               raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification",
                 error_context: {}
@@ -1114,6 +1143,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .with(/falls back to the repo's own minimumReleaseAge \(1440 minutes\)/)
             .at_least(:once)
         end
+
+        # The retry runs under the repo's gate again. On pnpm 12.3+ that gate is
+        # strict by default and refuses `--no-save`, so strict has to stay off.
+        it "keeps strict mode off on the --no-save retry and says so" do
+          allow(Dependabot.logger).to receive(:warn)
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            if cmd.include?("--config.minimum-release-age=10080")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification",
+                error_context: {}
+              )
+            end
+            ""
+          end
+
+          updater.send(:run_pnpm_update_packages)
+
+          expect(commands.length).to eq(2)
+          expect(commands.last).not_to include("--config.minimum-release-age=")
+          expect(commands.last).to include("--config.minimum-release-age-strict=false")
+          expect(Dependabot.logger)
+            .to have_received(:warn).with(/strict mode kept off because pnpm refuses to combine it with --no-save/)
+        end
       end
 
       it "does not trust the lockfile on pnpm older than 11.3" do
@@ -1126,7 +1180,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updated_pnpm_lock_content
 
         expect(commands).not_to be_empty
-        expect(commands.join(" ")).not_to include("trustLockfile")
+        expect(commands.join(" ")).not_to include("trust-lockfile")
       end
 
       # On pnpm 11.3+ the cooldown is kept and the existing lockfile is trusted, so
@@ -1146,9 +1200,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
           updated_pnpm_lock_content
 
-          gated = commands.select { |cmd| cmd.include?("--config.minimumReleaseAge=10080") }
+          gated = commands.select { |cmd| cmd.include?("--config.minimum-release-age=10080") }
           expect(gated).not_to be_empty
-          expect(gated).to all(include("--config.trustLockfile=true"))
+          expect(gated).to all(include("--config.trust-lockfile=true"))
         end
 
         context "when the repo sets trustLockfile itself" do
@@ -1167,7 +1221,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             updated_pnpm_lock_content
 
             expect(commands).not_to be_empty
-            expect(commands.join(" ")).not_to include("trustLockfile=true")
+            expect(commands.join(" ")).not_to include("trust-lockfile=true")
           end
         end
 
@@ -1190,7 +1244,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             updated_pnpm_lock_content
 
             expect(commands).not_to be_empty
-            expect(commands.join(" ")).not_to include("trustLockfile")
+            expect(commands.join(" ")).not_to include("trust-lockfile")
             expect(Dependabot.logger)
               .to have_received(:info).with(/pnpm-workspace\.yaml sets trustPolicy/).at_least(:once)
           end
@@ -1214,7 +1268,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             updated_pnpm_lock_content
 
             expect(commands).not_to be_empty
-            expect(commands.join(" ")).not_to include("trustLockfile")
+            expect(commands.join(" ")).not_to include("trust-lockfile")
           end
         end
       end
@@ -1251,11 +1305,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 20160\n")]
           end
 
-          it "leaves the explicit pnpm-workspace.yaml value untouched" do
+          it "leaves the explicit pnpm-workspace.yaml value untouched and only turns strict off" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
               # User's 20160 (14 days) is longer than the 10080 (7 day) cooldown, so pnpm
-              # keeps the user's own value and no CLI override is injected.
-              expect(cmd).not_to include("--config.minimumReleaseAge")
+              # keeps the user's own value and no age override is injected. Strict mode
+              # still has to go: it refuses `--no-save` outright on pnpm 12.3+.
+              expect(cmd).not_to include("--config.minimum-release-age=")
+              expect(cmd).to include("--config.minimum-release-age-strict=false")
               ""
             end.at_least(:once)
 
@@ -1272,8 +1328,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           it "overrides with the longer cooldown value" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
               # Cooldown 10080 (7 days) is longer than the user's 4320 (3 days), so it wins.
-              expect(cmd).to include("--config.minimumReleaseAge=10080")
-              expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+              expect(cmd).to include("--config.minimum-release-age=10080")
+              expect(cmd).to include("--config.minimum-release-age-strict=false")
               ""
             end.at_least(:once)
 
@@ -1289,7 +1345,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
           it "overrides with the longer cooldown value" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-              expect(cmd).to include("--config.minimumReleaseAge=10080")
+              expect(cmd).to include("--config.minimum-release-age=10080")
               ""
             end.at_least(:once)
 
@@ -1303,14 +1359,118 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")]
           end
 
-          it "leaves the shared value untouched (no redundant override)" do
+          it "leaves the shared value untouched (no redundant override) and only turns strict off" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-              expect(cmd).not_to include("--config.minimumReleaseAge")
+              expect(cmd).not_to include("--config.minimum-release-age=")
+              expect(cmd).to include("--config.minimum-release-age-strict=false")
               ""
             end.at_least(:once)
 
             updater.send(:run_pnpm_update_packages)
           end
+        end
+      end
+    end
+
+    context "when no cooldown is configured but the repo sets its own minimumReleaseAge" do
+      let(:files) do
+        project_dependency_files(project_name) +
+          [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 4320\n")]
+      end
+
+      it "turns strict mode off without adding an age override" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("--config.minimum-release-age=")
+          expect(cmd).to include("--config.minimum-release-age-strict=false")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
+      it "leaves strict mode alone for install, which has no --no-save conflict" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("minimum-release-age")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+      end
+
+      context "when the repo enables minimumReleaseAgeStrict itself" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\n"
+            )]
+        end
+
+        it "logs once that strict mode does not hold for the --no-save update" do
+          allow(Dependabot.logger).to receive(:info)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+          2.times { updater.send(:run_pnpm_update_packages) }
+
+          expect(Dependabot.logger)
+            .to have_received(:info).with(/sets minimumReleaseAgeStrict: true, but strict mode/).once
+        end
+      end
+
+      context "when the running pnpm supports trustLockfile" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.3.0"))
+        end
+
+        it "trusts entries already in the lockfile, on every command" do
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            ""
+          end
+
+          updater.send(:run_pnpm_update_packages)
+          updater.send(:run_pnpm_install)
+
+          expect(commands.length).to eq(2)
+          expect(commands).to all(include("--config.trust-lockfile=true"))
+        end
+
+        context "when the repo sets trustLockfile itself" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(
+                name: "pnpm-workspace.yaml",
+                content: "minimumReleaseAge: 4320\ntrustLockfile: false\n"
+              )]
+          end
+
+          it "leaves the repo's lockfile-verification policy untouched" do
+            allow(Dependabot.logger).to receive(:info)
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).not_to include("trust-lockfile")
+              ""
+            end
+
+            updater.send(:run_pnpm_install)
+          end
+        end
+      end
+
+      context "when the running pnpm predates the strict toggle" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "passes no release-age flags" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("--config.minimum-release-age")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
         end
       end
     end
@@ -1334,8 +1494,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         it "applies minimumReleaseAge without the strict toggle (added in pnpm 11.0)" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).to include("--config.minimumReleaseAge=10080")
-            expect(cmd).not_to include("minimumReleaseAgeStrict")
+            expect(cmd).to include("--config.minimum-release-age=10080")
+            expect(cmd).not_to include("minimum-release-age-strict")
             ""
           end.at_least(:once)
 
@@ -1403,7 +1563,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         it "still passes minimumReleaseAge=0 so remediation is never blocked" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).to include("--config.minimumReleaseAge=0")
+            expect(cmd).to include("--config.minimum-release-age=0")
             ""
           end.at_least(:once)
 
@@ -1452,7 +1612,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
           it "ignores the .npmrc gate and still applies the cooldown floor" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-              expect(cmd).to include("--config.minimumReleaseAge=10080")
+              expect(cmd).to include("--config.minimum-release-age=10080")
               ""
             end.at_least(:once)
 
@@ -1468,7 +1628,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
           it "respects the longer .npmrc gate and does not inject the shorter cooldown" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-              expect(cmd).not_to include("--config.minimumReleaseAge=10080")
+              expect(cmd).not_to include("--config.minimum-release-age=10080")
               ""
             end.at_least(:once)
 
@@ -1490,8 +1650,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         it "ignores the unsupported .npmrc setting and disables strict CLI enforcement" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).to include("--config.minimumReleaseAge=10080")
-            expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+            expect(cmd).to include("--config.minimum-release-age=10080")
+            expect(cmd).to include("--config.minimum-release-age-strict=false")
             ""
           end.at_least(:once)
 
@@ -1517,8 +1677,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           it "disables strict mode for the --no-save CLI override" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
               expect(cmd).to include("--no-save")
-              expect(cmd).to include("--config.minimumReleaseAge=10080")
-              expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+              expect(cmd).to include("--config.minimum-release-age=10080")
+              expect(cmd).to include("--config.minimum-release-age-strict=false")
               ""
             end.at_least(:once)
 
@@ -1535,10 +1695,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               )]
           end
 
-          it "leaves the native age and strict settings untouched" do
+          it "leaves the native age untouched but turns strict off for --no-save" do
             expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-              expect(cmd).not_to include("--config.minimumReleaseAge")
-              expect(cmd).not_to include("--config.minimumReleaseAgeStrict")
+              expect(cmd).not_to include("--config.minimum-release-age=")
+              expect(cmd).to include("--config.minimum-release-age-strict=false")
               ""
             end.at_least(:once)
 
@@ -1573,7 +1733,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         updates = commands.select { |cmd| cmd.include?("--no-save") }
         expect(updates.length).to eq(1)
-        expect(updates.first).to include("--config.minimumReleaseAge=0")
+        expect(updates.first).to include("--config.minimum-release-age=0")
       end
     end
   end

@@ -48,6 +48,38 @@ public class PullRequestTextTests
         Assert.Equal(expectedTitle, actualTitle);
     }
 
+    [Fact]
+    public void DependencyNameGroupUsesDependencyFocusedTitle()
+    {
+        var job = FromCommitOptions(null);
+        var updateOperations = new UpdateOperationBase[]
+        {
+            new DirectUpdate()
+            {
+                DependencyName = "Incidental.Package",
+                OldVersion = NuGetVersion.Parse("1.0.0"),
+                NewVersion = NuGetVersion.Parse("2.0.0"),
+                UpdatedFiles = ["src/project.csproj"],
+            },
+            new DirectUpdate()
+            {
+                DependencyName = "Some.Package",
+                OldVersion = NuGetVersion.Parse("1.0.0"),
+                NewVersion = NuGetVersion.Parse("2.0.0"),
+                UpdatedFiles = ["src/project.csproj"],
+            },
+        };
+
+        var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(
+            job,
+            [.. updateOperations],
+            dependencyGroupName: "parent/Some.Package",
+            dependencyNameGroupTarget: "Some.Package",
+            updatedDirectories: ["/src", "/test"]);
+
+        Assert.Equal("Bump Some.Package across 2 directories", actualTitle);
+    }
+
     [Theory]
     [MemberData(nameof(GetPullRequestTextTestData))]
     public async Task PullRequestText(

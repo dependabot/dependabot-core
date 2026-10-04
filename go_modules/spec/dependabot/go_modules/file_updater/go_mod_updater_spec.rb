@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/file_updater/go_mod_updater"
 require "dependabot/go_modules/file_parser"
+require "dependabot/go_modules/go_mod_manifest"
 
 RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
@@ -111,6 +112,23 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       context "when no files have changed" do
         it { is_expected.to eq(go_mod_content) }
+      end
+
+      context "when the manifest command returns malformed output" do
+        before do
+          status = instance_double(Process::Status, success?: true)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3)
+            .with("go mod edit -json").and_return(['{"Require":[null]}', "", status])
+        end
+
+        it "rejects the output before running go get" do
+          expect { updated_go_mod_content }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: Require[0] must be an object"
+          )
+          expect(Open3).not_to have_received(:capture3).with(a_string_starting_with("go get"))
+        end
       end
 
       context "when the requirement has changed" do
