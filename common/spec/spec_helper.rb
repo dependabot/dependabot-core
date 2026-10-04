@@ -52,7 +52,7 @@ ENV["GIT_COMMITTER_NAME"] = "dependabot-ci"
 ENV["GIT_COMMITTER_EMAIL"] = "no-reply@github.com"
 
 RSpec.configure do |config|
-  config.color = true
+  config.color_mode = :automatic
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.expect_with(:rspec) { |expectations| expectations.max_formatted_output_length = 1000 }
