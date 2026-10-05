@@ -816,8 +816,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
-              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only --no-save",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity " \
+                             "--lockfile-only --no-save" }
             )
             .ordered
             .and_return("")
@@ -1112,7 +1113,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         # The deep-update fallback issues its own gated command, so scope to the
         # `update --no-save` pair: the gated attempt and its ungated retry.
-        updates = commands.select { |cmd| cmd.include?("--no-save") }
+        updates = commands.select { |cmd| cmd.include?("--no-save -r") }
         expect(updates.length).to eq(2)
         expect(updates.first).to include("--config.minimum-release-age=10080")
         expect(updates.last).not_to include("--config.minimum-release-age")
@@ -1731,7 +1732,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         expect { updated_pnpm_lock_content }.to raise_error(StandardError)
 
-        updates = commands.select { |cmd| cmd.include?("--no-save") }
+        updates = commands.select { |cmd| cmd.include?("--no-save -r") }
         expect(updates.length).to eq(1)
         expect(updates.first).to include("--config.minimum-release-age=0")
       end
