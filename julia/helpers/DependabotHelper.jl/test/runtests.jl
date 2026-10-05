@@ -762,6 +762,18 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
         @test !haskey(result, "error")
         @test result["release_date"] === nothing
+        # A version above every dated one was registered after GeneralMetadata.jl was last built
+        @test result["release_date_pending"] === true
+        batch = DependabotHelper.batch_get_version_release_dates([Dict{String,Any}(
+            "name" => "JSON", "uuid" => json_uuid, "versions" => ["1.2.0", "999.999.999"])])
+        @test batch["JSON"]["1.2.0"] == "2025-10-17T01:08:11"
+        @test batch["JSON"]["999.999.999"]["release_date_pending"] === true
+        # A gap below the dated versions is not a new registration
+        result = DependabotHelper.get_version_release_date("JSON", "0.0.999", json_uuid)
+        @test result["release_date"] === nothing
+        @test !haskey(result, "release_date_pending")
+        result = DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
+        @test !haskey(result, "release_date_pending")
 
         # Test helper functions for General registry
         @testset "General Registry Helper Functions" begin
@@ -867,6 +879,43 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
             json_dep = findfirst(d -> d["name"] == "JSON", updated_manifest["dependencies"])
             @test json_dep !== nothing
             @test updated_manifest["dependencies"][json_dep]["version"] == "0.21.1"
+
+            # The manifest is resolved by the Julia that wrote it, keeping its stdlib versions
+            if Sys.which("juliaup") !== nothing
+                @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
+                dates = findfirst(d -> d["name"] == "Dates", updated_manifest["dependencies"])
+                @test updated_manifest["dependencies"][dates]["version"] == "1.11.0"
+            end
+        end
+
+        # Only names some Julia release reads count as manifests
+        mktempdir() do dir
+            for name in ("Manifest.toml", "Manifest-v1.9.toml", "Manifest-v01.12.toml", "Manifest-v1.11.toml",
+                         "Manifest-v1.12.toml", "JuliaManifest-v1.12.toml")
+                touch(joinpath(dir, name))
+            end
+            @test sort(basename.(DependabotHelper.environment_manifest_files(dir))) ==
+                  ["JuliaManifest-v1.12.toml", "Manifest-v1.11.toml", "Manifest.toml"]
+        end
+
+        # A version-specific manifest is only read by its own Julia release
+        if Sys.which("juliaup") !== nothing
+            mktempdir() do tmpdir
+                cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
+                project_dir = joinpath(tmpdir, "TestPackage.jl")
+                mv(joinpath(project_dir, "Manifest.toml"), joinpath(project_dir, "Manifest-v1.12.toml"))
+
+                @test basename.(DependabotHelper.environment_manifest_files(project_dir)) == ["Manifest-v1.12.toml"]
+                result = DependabotHelper.update_manifest(Dict(
+                    "project_path" => project_dir,
+                    "manifest_path" => "Manifest-v1.12.toml",
+                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
+                ))
+                @test !haskey(result, "error")
+                @test result["manifest_path"] == "Manifest-v1.12.toml"
+                @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
+                @test !isfile(joinpath(project_dir, "Manifest.toml"))
+            end
         end
     end
 
@@ -1103,7 +1152,6 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                 @test weak_by_name["Statistics"]["stdlib"] == true
                 @test weak_by_name["Statistics"]["stdlib_versions"] == ["1.10.0"]
             end
-
             # Before Julia 1.6, Artifacts came from the registry
             mktempdir() do tmpdir
                 write(joinpath(tmpdir, "Project.toml"), """
@@ -1194,6 +1242,52 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
 
                 write(joinpath(tmpdir, "test", "Project.toml"), package_header("PackageTests") * statistics_dep)
                 @test floor_of(joinpath(tmpdir, "test")) == ["0.0.0", "1.0.0"]
+            end
+        end
+
+        @testset "parse_project lists extras" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "ExtrasUser"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [deps]
+                Example = "$example_uuid"
+
+                [weakdeps]
+                JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+                [extras]
+                Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+                FilePathsBase = "48062228-2e41-5def-b9a4-89aafe57970f"
+                JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+                Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+                [compat]
+                Example = "0.5"
+                FilePathsBase = "0.9"
+                JSON = "0.21"
+                julia = "1.10"
+
+                [targets]
+                test = ["Aqua", "FilePathsBase", "JSON", "Test"]
+                """)
+                result = DependabotHelper.parse_project(joinpath(tmpdir, "Project.toml"))
+                @test !haskey(result, "error")
+                @test [d["name"] for d in result["dependencies"]] == ["Example"]
+                @test [d["name"] for d in result["weak_dependencies"]] == ["JSON"]
+                # Every extra is listed with its compat entry when it has one;
+                # the Ruby side decides what to do with the rest. JSON is
+                # already covered by [weakdeps].
+                extras_by_name = Dict(d["name"] => d for d in result["extra_dependencies"])
+                @test sort(collect(keys(extras_by_name))) == ["Aqua", "FilePathsBase", "Test"]
+                @test extras_by_name["FilePathsBase"]["uuid"] == "48062228-2e41-5def-b9a4-89aafe57970f"
+                @test extras_by_name["FilePathsBase"]["requirement"] == "0.9"
+                @test extras_by_name["FilePathsBase"]["stdlib"] == false
+                @test !haskey(extras_by_name["Aqua"], "requirement")
+                @test extras_by_name["Test"]["stdlib"] == true
+                @test extras_by_name["Test"]["stdlib_versions"] == ["1.10.0"]
             end
         end
     end
