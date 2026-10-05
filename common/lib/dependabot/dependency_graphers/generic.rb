@@ -41,7 +41,7 @@ module Dependabot
         case dependency.package_manager
         when "bundler"
           "gem"
-        when "npm_and_yarn", "bun"
+        when "npm_and_yarn", "bun", "nub"
           "npm"
         when "maven", "gradle"
           "maven"

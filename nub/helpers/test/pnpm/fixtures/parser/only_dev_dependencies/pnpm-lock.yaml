@@ -1,0 +1,16 @@
+lockfileVersion: 5.4
+
+specifiers:
+  etag: ^1.0.0
+
+devDependencies:
+  etag:
+    specifier: ^1.0.0
+    version: 1.8.0
+
+packages:
+
+  /etag@1.8.0:
+    resolution: { integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg== }
+    engines: { node: '>= 0.6' }
+    dev: true
