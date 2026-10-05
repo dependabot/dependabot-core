@@ -6,6 +6,9 @@ require "dependabot/dependency"
 require "dependabot/security_advisory"
 require "dependabot/apm/update_checker"
 require "dependabot/apm/version"
+require "dependabot/git_metadata_fetcher"
+require "dependabot/git_tag_with_detail"
+require "dependabot/package/release_cooldown_options"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Apm::UpdateChecker do
@@ -191,6 +194,78 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
     it "preserves the declaration_string metadata" do
       expect(updated_requirements.first[:metadata])
         .to eq(declaration_string: "microsoft/edge-ai#v1.0.0")
+    end
+
+    context "when merged declarations span different version lines under cooldown" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 0,
+          semver_major_days: 90,
+          semver_minor_days: 0,
+          semver_patch_days: 0,
+          include: [dependency_name]
+        )
+      end
+      let(:tag_details) do
+        today = Time.now.strftime("%Y-%m-%d")
+        [
+          Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2020-01-01"),
+          Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2020-06-01"),
+          Dependabot::GitTagWithDetail.new(tag: "v1.2.0", release_date: "2020-09-01"),
+          Dependabot::GitTagWithDetail.new(tag: "v2.0.0", release_date: today),
+          Dependabot::GitTagWithDetail.new(tag: "v2.1.0", release_date: today)
+        ]
+      end
+      let(:shared_metadata_fetcher) do
+        Dependabot::GitMetadataFetcher.new(
+          url: "https://github.com/#{dependency_name}",
+          credentials: github_credentials
+        )
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-two-lines"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+        allow(Dependabot::GitMetadataFetcher).to receive(:new).and_return(shared_metadata_fetcher)
+        allow(shared_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return(tag_details)
+      end
+
+      # v2.1.0 is still inside the 90-day MAJOR cooldown but outside the 0-day
+      # MINOR one. The v2.0.0 declaration must be scoped to its own pin so the
+      # candidate reads as a minor bump (2.0 -> 2.1) and is allowed, instead of a
+      # major bump from the merged dependency's lowest pin (1.0 -> 2.1) that
+      # cooldown would hold back -- which would leave the declaration on v2.0.0.
+      it "classifies cooldown per declaration, not the merged lowest pin" do
+        refs = updated_requirements.map { |req| req[:source][:ref] }
+        expect(refs).to eq(%w(v1.2.0 v2.1.0))
+      end
     end
 
     context "when the ref is a branch rather than a version" do
@@ -521,6 +596,65 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       it "still rewrites each family to its own latest tag" do
         refs = updated_dependency.requirements.map { |req| req[:source][:ref] }
         expect(refs).to eq(%w(review-v1.4.0 review--v1.5.0))
+      end
+    end
+
+    context "when only a higher merged declaration is vulnerable" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
+            }
+          ],
+          package_manager: "apm"
+        )
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "apm",
+            vulnerable_versions: [">= 2.0.0, < 2.1.0"]
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "apm-package-two-lines"),
+            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+          )
+      end
+
+      # DependencySet collapses the merged dependency to its LOWEST (here
+      # unaffected) v1.0.0 for both version and previous_version. Unless the
+      # update surfaces the vulnerable pin, SecurityAdvisory#fixed_by? -- which
+      # needs previous_version vulnerable and version safe -- rejects it and the
+      # security update is reported as not possible even though the vulnerable
+      # declaration is being fixed.
+      it "reports the vulnerable pin as previous_version and its fix as version" do
+        expect(updated_dependency.previous_version).to eq("2.0.0")
+        expect(updated_dependency.version).to eq("2.1.0")
+      end
+
+      it "satisfies the security advisory fixed_by? gate" do
+        expect(security_advisories.first.fixed_by?(updated_dependency)).to be(true)
       end
     end
   end

@@ -125,12 +125,31 @@ module Dependabot
       def updated_dependency_with_own_req_unlock
         new_requirements = updated_requirements
         new_version = pinned_versions(new_requirements).min
+        previous_version = dependency.version
+
+        # A merged dependency reports its LOWEST pin as both `version` and
+        # `previous_version`. When a security update only fixes a HIGHER
+        # declaration (e.g. pins `v1.0.0` and `v2.0.0` with an advisory on the
+        # latter), that lowest pin is the unaffected one, so Job#security_fix? ->
+        # SecurityAdvisory#fixed_by? -- which requires `previous_version` to be
+        # vulnerable and `version` safe -- would reject the rewrite as
+        # `security_update_not_possible` even though `updated_requirements` fixes
+        # the vulnerable pin. Represent a vulnerable pin and its fix so the
+        # security-update path recognises the merged update as a security fix.
+        if security_advisories.any?
+          affected = pinned_versions(dependency.requirements).select { |v| ref_vulnerable?(v) }.min
+          fix = lowest_security_fix_version
+          if affected && fix
+            previous_version = affected.to_s
+            new_version = fix.to_s
+          end
+        end
 
         Dependabot::Dependency.new(
           name: dependency.name,
           version: new_version || dependency.version,
           requirements: new_requirements,
-          previous_version: dependency.version,
+          previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager,
           metadata: dependency.metadata,
@@ -188,7 +207,7 @@ module Dependabot
           .returns(T.nilable(Dependabot::GitTagDetails))
       end
       def resolved_tag_for_requirement(source, ref_version)
-        checker = git_commit_checker_for(source)
+        checker = git_commit_checker_for(source, ref_version)
         return unless checker.pinned_ref_looks_like_version?
 
         parsed = Version.new(ref_version)
@@ -224,7 +243,7 @@ module Dependabot
           ref_version = current_ref && Version.semver_from_ref(current_ref, dependency_name: dependency.name)
           next unless source && ref_version
 
-          [ref_version, git_commit_checker_for(source)]
+          [ref_version, git_commit_checker_for(source, ref_version)]
         end
       end
 
@@ -308,11 +327,36 @@ module Dependabot
       # one remote metadata fetch across every requirement so per-requirement
       # resolution does not re-fetch the upload pack for each declaration. The
       # scoped ref makes the parent's family filtering (`same_prefix?`) select
-      # tags in that declaration's own family.
-      sig { params(source: Dependabot::DependencyRequirement::ObjectHash).returns(Dependabot::GitCommitChecker) }
-      def git_commit_checker_for(source)
+      # tags in that declaration's own family. When `ref_version` is given the
+      # checker's dependency version is scoped to this requirement's own pinned
+      # ref, so GitCommitChecker#current_version (and therefore cooldown's
+      # SemVer-distance classification) reflects THIS declaration rather than the
+      # merged dependency's lowest pin -- e.g. a `v2.1.0` candidate for a `v2.0.0`
+      # pin stays a minor bump even when a sibling `v1.4.0` pin lowers the merged
+      # version to 1.4.0.
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          ref_version: T.nilable(String)
+        ).returns(Dependabot::GitCommitChecker)
+      end
+      def git_commit_checker_for(source, ref_version = nil)
+        scoped_dependency =
+          if ref_version
+            Dependabot::Dependency.new(
+              name: dependency.name,
+              version: ref_version,
+              requirements: dependency.requirements,
+              package_manager: dependency.package_manager,
+              metadata: dependency.metadata,
+              subdependency_metadata: dependency.subdependency_metadata
+            )
+          else
+            dependency
+          end
+
         Dependabot::Apm::GitCommitChecker.new(
-          dependency: dependency,
+          dependency: scoped_dependency,
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
