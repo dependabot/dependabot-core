@@ -1,9 +1,10 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/maven/update_checker/property_updater"
+require "dependabot/maven/file_updater"
 
 RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
   let(:updater) do
@@ -148,6 +149,113 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       end
 
       it { is_expected.to be(true) }
+    end
+
+    context "with merged declarations from different POMs" do
+      let(:pom_body) do
+        fixture("poms", "writable_versions.xml")
+          .sub("<shared.version>1.0</shared.version>", "<shared.version>[1.0,3.0)</shared.version>")
+      end
+      let(:other_pom_body) { fixture("poms", "shared_property_other_declarations.xml") }
+      let(:other_pom) { Dependabot::DependencyFile.new(name: "other/pom.xml", content: other_pom_body) }
+      let(:dependency_files) { [pom, other_pom] }
+      let(:dependency_name) { "com.example:shared-one" }
+      let(:dependency_version) { "1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "[1.0,3.0)",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "shared.version",
+            property_source: "pom.xml",
+            packaging_type: "jar"
+          }
+        }]
+      end
+      let(:target_version_details) do
+        { version: version_class.new("3.0"), source_url: "https://repo.maven.apache.org/maven2" }
+      end
+
+      before do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/parent/1.0/parent-1.0.pom")
+          .to_return(body: "<project/>")
+        stub_request(:get, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/example/shared-(one|two)/maven-metadata\.xml\z})
+          .to_return(body: "<metadata><versioning><versions><version>3.0</version></versions></versioning></metadata>")
+      end
+
+      it "rejects changes to exact declarations that leave the shared range untouched" do
+        expect(updater.update_possible?).to be(false)
+        expect { updater.updated_dependencies }.to raise_error("Update not possible!")
+      end
+
+      context "with the same property name from a different source" do
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${shared.version}</version>")
+        end
+
+        it "does not count changes to the other property source" do
+          expect(updater.update_possible?).to be(false)
+          expect { updater.updated_dependencies }.to raise_error("Update not possible!")
+        end
+      end
+
+      context "with a different property name" do
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${other.version}</version>")
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the selected property is already at the target version" do
+        let(:pom_body) { super().sub("[1.0,3.0)", "3.0") }
+        let(:dependency_version) { "3.0" }
+        let(:dependency_requirements) { super().map { |req| req.merge(requirement: "3.0") } }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the selected property has a writable exact version" do
+        let(:pom_body) { super().sub("[1.0,3.0)", "1.0") }
+        let(:dependency_requirements) { super().map { |req| req.merge(requirement: "1.0") } }
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${other.version}</version>")
+        end
+
+        shared_examples "an isolated property update" do
+          it "updates the selected property without touching unrelated properties" do
+            expect(updater.update_possible?).to be(true)
+            updates = updater.updated_dependencies
+            expect(updates.map(&:name)).to contain_exactly("com.example:shared-one", "com.example:shared-two")
+            expect(updates.map(&:version)).to eq(["3.0", "3.0"])
+
+            files = Dependabot::Maven::FileUpdater.new(
+              dependencies: updates,
+              dependency_files: dependency_files,
+              credentials: []
+            ).updated_dependency_files
+
+            expect(files.map(&:name)).to eq(["pom.xml"])
+            expect(files.first.content).to eq(
+              pom_body.sub("<shared.version>1.0</shared.version>", "<shared.version>3.0</shared.version>")
+            )
+            updates.each do |update|
+              expect(update.requirements.select { |req| req.file == "other/pom.xml" })
+                .to eq(update.previous_requirements.select { |req| req.file == "other/pom.xml" })
+            end
+          end
+        end
+
+        it_behaves_like "an isolated property update"
+
+        context "with the same property name in another POM" do
+          let(:other_pom_body) { super().gsub("${other.version}", "${shared.version}") }
+
+          it_behaves_like "an isolated property update"
+        end
+      end
     end
   end
 

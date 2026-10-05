@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -672,6 +672,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     it "delegates to the RequirementsUpdater" do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
+        .at_least(:once)
         .with(
           requirements: dependency_requirements,
           latest_version: "23.6-jre",
@@ -717,6 +718,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       it "delegates to the RequirementsUpdater" do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
+          .at_least(:once)
           .with(
             requirements: dependency_requirements,
             latest_version: "20.0",
