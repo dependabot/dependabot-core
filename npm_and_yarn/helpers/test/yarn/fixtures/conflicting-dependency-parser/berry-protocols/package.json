@@ -1,0 +1,13 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "my-objnest": "npm:objnest@^4.1.2",
+    "local-pkg": "workspace:*",
+    "extend": "patch:extend@npm%3A3.0.2#./.yarn/patches/extend.patch"
+  }
+}
