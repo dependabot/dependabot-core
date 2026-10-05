@@ -1,0 +1,5 @@
+apply:
+  - deeper.module-template.yaml
+settings:
+  kotlin:
+    version: 2.2.20

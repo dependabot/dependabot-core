@@ -47,6 +47,9 @@ function set_tag() {
       rust_toolchain)
         TAG=rust-toolchain
         ;;
+      kotlin_toolchain)
+        TAG=kotlin-toolchain
+        ;;
       *)
         TAG=$ECOSYSTEM
         ;;

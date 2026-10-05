@@ -74,6 +74,11 @@ hex:
 julia:
   - *shared
   - 'julia/**'
+kotlin_toolchain:
+  - *shared
+  - 'gradle/**'
+  - 'maven/**'
+  - 'kotlin_toolchain/**'
 maven:
   - *shared
   - 'maven/**'

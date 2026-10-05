@@ -44,6 +44,7 @@ Sentry.init do |config|
     helm|
     hex|
     julia|
+    kotlin_toolchain|
     maven|
     nix|
     npm_and_yarn|
@@ -89,6 +90,7 @@ require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
+require "dependabot/kotlin_toolchain"
 require "dependabot/maven"
 require "dependabot/nix"
 require "dependabot/npm_and_yarn"

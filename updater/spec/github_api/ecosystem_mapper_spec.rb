@@ -15,6 +15,7 @@ RSpec.describe GithubApi::EcosystemMapper do
       "uv" => "pypi",
       "go_modules" => "golang",
       "maven" => "maven",
+      "kotlin_toolchain" => "maven",
       "gradle" => "gradle",
       "nuget" => "nuget"
     }.each do |package_manager, expected_ecosystem|

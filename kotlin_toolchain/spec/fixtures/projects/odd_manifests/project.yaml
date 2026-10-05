@@ -1,0 +1,6 @@
+modules:
+  - .
+  - /absolute
+  - ../escape
+  - missing/*
+  - libs/*
