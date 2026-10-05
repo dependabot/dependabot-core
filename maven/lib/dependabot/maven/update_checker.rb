@@ -70,12 +70,14 @@ module Dependabot
         # Maven's version resolution algorithm is very simple: it just uses
         # the version defined "closest", with the first declaration winning
         # if two declarations are equally close. As a result, we can just
-        # return that latest version unless dealing with a property dep.
+        # return the latest version with writable requirements unless dealing
+        # with a property dep.
         # https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Transitive_Dependencies
         return nil if version_comes_from_multi_dependency_property?
-        return nil if version_comes_from_project_parent_version?
+        return nil if version_comes_from_parent_version?
 
-        latest_version
+        version = latest_version
+        version if writable_requirements?(version)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -88,7 +90,10 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
-        lowest_security_fix_version
+        return nil if version_comes_from_parent_version?
+
+        version = lowest_security_fix_version
+        version if writable_requirements?(version)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -105,16 +110,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        property_names =
-          declarations_using_a_property
-          .filter_map { |req| req.metadata_string("property_name") }
-
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_version: preferred_resolvable_version&.to_s,
-          source_url: preferred_version_details&.fetch(:source_url),
-          properties_to_update: property_names
-        ).updated_requirements
+        updated_requirements_for(preferred_resolvable_version)
       end
 
       sig { override.returns(T::Boolean) }
@@ -136,9 +132,40 @@ module Dependabot
 
       private
 
+      sig { params(version: T.nilable(Dependabot::Version)).returns(T::Boolean) }
+      def writable_requirements?(version)
+        return false unless version
+        return false unless requirements_unlocked_or_can_be?
+
+        updated = updated_requirements_for(version)
+        return true if updated.map(&:requirement) != dependency.requirements.map(&:requirement)
+
+        Dependabot.logger.info(
+          "Cannot update #{dependency.name} to #{version}: no writable requirement changes " \
+          "(requirements may be inherited or ranges)"
+        )
+        false
+      end
+
+      sig do
+        params(version: T.nilable(T.any(String, Gem::Version))).returns(T::Array[Dependabot::DependencyRequirement])
+      end
+      def updated_requirements_for(version)
+        property_names =
+          declarations_using_a_property
+          .filter_map { |req| req.metadata_string("property_name") }
+
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: version&.to_s,
+          source_url: preferred_version_details&.fetch(:source_url),
+          properties_to_update: property_names
+        ).updated_requirements
+      end
+
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        return false if version_comes_from_project_parent_version?
+        return false if version_comes_from_parent_version?
         return false unless version_comes_from_multi_dependency_property?
 
         property_updater.update_possible?
@@ -251,9 +278,9 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
-      def version_comes_from_project_parent_version?
+      def version_comes_from_parent_version?
         declarations_using_a_property.any? do |requirement|
-          requirement.metadata_string("property_name") == "project.parent.version"
+          requirement.metadata_string("property_name")&.sub(/\A(?:pom|project)\./, "") == "parent.version"
         end
       end
     end

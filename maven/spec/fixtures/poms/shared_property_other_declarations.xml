@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>other-application</artifactId>
+  <version>1.0</version>
+  <properties>
+    <shared.version>2.0</shared.version>
+    <other.version>1.0</other.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>shared-one</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>shared-two</artifactId>
+      <version>1.0</version>
+    </dependency>
+  </dependencies>
+</project>
