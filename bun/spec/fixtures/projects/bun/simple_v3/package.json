@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "fetch-factory": "^0.0.1"
+  },
+  "devDependencies": {
+    "etag": "^1.0.0"
+  },
+  "overrides": {
+    "node-fetch": {
+      ".": "1.7.3",
+      "encoding": "0.1.13"
+    }
+  }
+}
