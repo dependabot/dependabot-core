@@ -43,15 +43,14 @@ RSpec.describe Dependabot::Python::Package::SimpleApiParser do
   let(:api_version) { "1.1" }
 
   it "normalizes matching files into releases" do
-    expect(parsed_releases).to eq(
-      "2.32.3" => [{
-        "version" => "2.32.3",
-        "requires_python" => ">=3.8",
-        "yanked" => true,
-        "yanked_reason" => "Broken release",
-        "upload_time" => "2026-08-24T12:34:56Z",
-        "url" => "https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl"
-      }]
+    expect(parsed_releases.keys).to eq(["2.32.3"])
+    expect(parsed_releases.fetch("2.32.3").first).to have_attributes(
+      version_string: "2.32.3",
+      requires_python: ">=3.8",
+      yanked: true,
+      yanked_reason: "Broken release",
+      released_at: Time.utc(2026, 8, 24, 12, 34, 56),
+      url: "https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl"
     )
   end
 
@@ -76,15 +75,15 @@ RSpec.describe Dependabot::Python::Package::SimpleApiParser do
 
     it "preserves each distribution's metadata" do
       expect(parsed_releases.fetch("2.32.3")).to contain_exactly(
-        hash_including(
-          "yanked" => false,
-          "yanked_reason" => nil,
-          "url" => "https://registry.example.com/simple/files/requests-2.32.3.tar.gz"
+        have_attributes(
+          yanked: false,
+          yanked_reason: nil,
+          url: "https://registry.example.com/simple/files/requests-2.32.3.tar.gz"
         ),
-        hash_including(
-          "yanked" => true,
-          "yanked_reason" => "Broken wheel",
-          "url" => "https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl"
+        have_attributes(
+          yanked: true,
+          yanked_reason: "Broken wheel",
+          url: "https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl"
         )
       )
     end
@@ -96,6 +95,69 @@ RSpec.describe Dependabot::Python::Package::SimpleApiParser do
     it "rejects the response" do
       expect { parsed_releases }
         .to raise_error(Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: 2.0")
+    end
+  end
+
+  context "with an omitted API version" do
+    let(:response) { { "files" => [] } }
+
+    it "retains the version 1.0 default" do
+      expect(parsed_releases).to eq({})
+    end
+  end
+
+  context "with a newer minor version" do
+    let(:api_version) { "1.99" }
+
+    it "continues to read known fields" do
+      expect(parsed_releases.keys).to eq(["2.32.3"])
+    end
+  end
+
+  [false, 1, "", "invalid", "1", "1.1.extra", [], nil].each do |value|
+    context "with invalid API version #{value.inspect}" do
+      let(:api_version) { value }
+
+      it "rejects the malformed supplied version" do
+        expect { parsed_releases }.to raise_error(Dependabot::DependencyFileNotResolvable, /api-version/)
+      end
+    end
+  end
+
+  context "with malformed earlier eligible metadata" do
+    let(:response) do
+      { "files" => [
+        { "filename" => "requests-2.32.3-py3-none-any.whl", "requires-python" => false },
+        { "filename" => "requests-2.32.3.tar.gz" }
+      ] }
+    end
+
+    it "does not discard the malformed first file" do
+      expect { parsed_releases }.to raise_error(Dependabot::DependencyFileNotResolvable, /files\[0\].requires-python/)
+    end
+  end
+
+  context "with malformed unused metadata on an ineligible file" do
+    let(:response) do
+      { "files" => [
+        { "filename" => "unrelated-1.0.0.tar.gz", "requires-python" => false },
+        { "filename" => "requests-invalid.tar.gz", "url" => [] },
+        { "filename" => nil, "yanked" => {} }
+      ] }
+    end
+
+    it "keeps eligibility filtering before metadata decoding" do
+      expect(parsed_releases).to eq({})
+    end
+  end
+
+  [nil, [], { "meta" => false }, { "files" => nil }, { "files" => [nil] }].each do |value|
+    context "with a malformed response shape #{value.inspect}" do
+      let(:response) { value }
+
+      it "raises a contextual response error" do
+        expect { parsed_releases }.to raise_error(Dependabot::DependencyFileNotResolvable, /Simple API JSON/)
+      end
     end
   end
 end
