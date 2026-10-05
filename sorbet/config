@@ -7,8 +7,8 @@
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 --enable-experimental-rspec
 
-# Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
-# See https://stackoverflow.com/a/76548429
+# Sorbet's RSpec support is experimental, so common specs are checked incrementally
+# while the remaining spec trees are ignored.
 --ignore=bazel/spec/
 --ignore=bun/spec/
 --ignore=bundler/helpers/
