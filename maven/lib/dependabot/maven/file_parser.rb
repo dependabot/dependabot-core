@@ -46,7 +46,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        if Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+        if scan_dependency_tree?
           parse_with_transitive_dependencies
         else
           parse_standard_dependencies
@@ -67,26 +67,39 @@ module Dependabot
 
       private
 
+      # Maven's own reparses (update checker, property updater) pass `skip_dependency_tree: true`:
+      # they only need declared dependencies, so they skip the expensive scan.
+      sig { returns(T::Boolean) }
+      def scan_dependency_tree?
+        return false if T.cast(options[:skip_dependency_tree], Object) == true
+
+        Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+      end
+
+      # Starts from the XML-only result and adds what `mvn dependency:tree` resolves.
+      # If the scan fails, the result is the same as with the experiment off.
       sig { returns(T::Array[Dependabot::Dependency]) }
       def parse_with_transitive_dependencies
-        dependency_set = DependencySet.new
-        dependency_set += MavenDependencyParser.build_dependency_set(pomfiles)
+        declared = parse_standard_dependencies
+        tree = MavenDependencyParser.build_dependency_set(pomfiles, credentials: credentials)
+        return declared unless tree
 
-        pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
-        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
-        add_wrapper_dependencies(dependency_set)
+        dependency_set = DependencySet.new(declared)
+        tree.dependencies.each do |dep|
+          next if internal_dependency_names.include?(dep.name)
 
-        dependencies = []
-        dependency_set.dependencies.each do |dep|
-          requirements = merge_requirements(dep.requirements)
-          dependencies << Dependabot::Dependency.new(
+          tree.all_versions_for_name(dep.name).each { |version| dependency_set << version }
+        end
+
+        dependency_set.dependencies.map do |dep|
+          Dependabot::Dependency.new(
             name: dep.name,
             version: dep.version,
             package_manager: "maven",
-            requirements: requirements
+            requirements: MavenDependencyParser.merge_requirements(dep.requirements),
+            metadata: dep.metadata
           )
         end
-        dependencies
       end
 
       sig { returns(T::Array[Dependabot::Dependency]) }
@@ -525,132 +538,6 @@ module Dependabot
       sig { override.void }
       def check_required_files
         raise "No pom.xml!" unless get_original_file("pom.xml")
-      end
-
-      # Merge dependency scan requirements with file parsing requirements.
-      # Since dependency scan evaluates properties, we need to combine results with XML parsing,
-      # so we know when certain requirement not a literal value and can differentiate transitive dependencies
-      # from direct dependencies.
-      sig do
-        params(requirements: T::Array[Dependabot::DependencyRequirement])
-          .returns(T::Array[Dependabot::DependencyRequirement])
-      end
-      def merge_requirements(requirements)
-        return requirements if requirements.length <= 1
-
-        merged = []
-        used_indices = Set.new
-        requirements.each_with_index do |dep_scan_req, i|
-          merge_requirement_at(requirements, dep_scan_req, i, merged, used_indices)
-        end
-
-        merged
-      end
-
-      sig do
-        params(
-          requirements: T::Array[Dependabot::DependencyRequirement],
-          dep_scan_req: Dependabot::DependencyRequirement,
-          index: Integer,
-          merged: T::Array[Dependabot::DependencyRequirement],
-          used_indices: T::Set[Integer]
-        ).void
-      end
-      def merge_requirement_at(requirements, dep_scan_req, index, merged, used_indices)
-        return if used_indices.include?(index)
-
-        pom_file = dep_scan_req.metadata_string("pom_file")
-        return merged << dep_scan_req if pom_file.nil?
-
-        merge_matching_requirement(requirements, dep_scan_req, index, merged, used_indices)
-      end
-
-      sig do
-        params(
-          requirements: T::Array[Dependabot::DependencyRequirement],
-          dep_scan_req: Dependabot::DependencyRequirement,
-          index: Integer,
-          merged: T::Array[Dependabot::DependencyRequirement],
-          used_indices: T::Set[Integer]
-        ).void
-      end
-      def merge_matching_requirement(requirements, dep_scan_req, index, merged, used_indices)
-        # Look for another requirement where pom_file matches property_source
-        pom_file = T.must(dep_scan_req.metadata_string("pom_file"))
-        match_index = matching_requirement_index(requirements, pom_file, index, used_indices)
-        return merge_unmatched_requirement(dep_scan_req, index, merged, used_indices) unless match_index
-
-        parsing_req = T.must(requirements[match_index])
-        merged << merge_requirement(dep_scan_req, parsing_req)
-        used_indices.add(index)
-        used_indices.add(match_index)
-      end
-
-      sig do
-        params(
-          dep_scan_req: Dependabot::DependencyRequirement,
-          index: Integer,
-          merged: T::Array[Dependabot::DependencyRequirement],
-          used_indices: T::Set[Integer]
-        ).void
-      end
-      def merge_unmatched_requirement(dep_scan_req, index, merged, used_indices)
-        merged << dep_scan_req
-        used_indices.add(index)
-      end
-
-      sig do
-        params(
-          requirements: T::Array[Dependabot::DependencyRequirement],
-          pom_file: String,
-          index: Integer,
-          used_indices: T::Set[Integer]
-        ).returns(T.nilable(Integer))
-      end
-      def matching_requirement_index(requirements, pom_file, index, used_indices)
-        requirements.find_index.with_index do |parsing_req, i|
-          i > index && !used_indices.include?(i) && pom_file == parsing_req.file
-        end
-      end
-
-      sig do
-        params(
-          dep_scan_req: Dependabot::DependencyRequirement,
-          parsing_req: Dependabot::DependencyRequirement
-        ).returns(Dependabot::DependencyRequirement)
-      end
-      def merge_requirement(dep_scan_req, parsing_req)
-        # We prefer file and requirement properties from parsed requirements,
-        # because they include correct file and not evaluated property value.
-        merged_req = {
-          requirement: parsing_req.requirement,
-          file: parsing_req.file,
-          groups: [*dep_scan_req.groups, *parsing_req.groups].uniq.compact,
-          source: dep_scan_req.source,
-          metadata: merge_metadata(T.must(dep_scan_req.metadata), T.must(parsing_req.metadata))
-        }
-
-        Dependabot::DependencyRequirement.create(merged_req)
-      end
-
-      # Merge metadata from two requirements, combining all keys
-      sig do
-        params(
-          metadata1: Dependabot::DependencyRequirement::ObjectHash,
-          metadata2: Dependabot::DependencyRequirement::ObjectHash
-        ).returns(Dependabot::DependencyRequirement::ObjectHash)
-      end
-      def merge_metadata(metadata1, metadata2)
-        metadata1.merge(metadata2) do |_key, old_value, new_value|
-          case [old_value, new_value]
-          in [nil, new_value] then new_value
-          in [old_value, nil] then old_value
-          in [old_value, new_value] if old_value == new_value then old_value
-          else
-            # If values differ, combine them
-            [*old_value, *new_value].uniq
-          end
-        end
       end
 
       sig { params(doc: Nokogiri::XML::Document).returns(Nokogiri::XML::NodeSet) }
