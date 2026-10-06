@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -43,7 +43,7 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
         it "raises a DependencyFileNotSupported error" do
           expect { dependencies }
             .to raise_error(Dependabot::DependencyFileNotSupported) do |error|
-              expect(error.message).to include("Unsupported bun.lock 'lockfileVersion' 2")
+              expect(error.message).to include("Unsupported bun.lock 'lockfileVersion' 3")
               expect(error.message).to include(
                 "supports up to #{Dependabot::Bun::BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION}"
               )
@@ -125,6 +125,17 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
             version: "1.8.1"
           )
           expect(dependencies.length).to eq(17)
+        end
+      end
+
+      context "when dealing with v2 format" do
+        let(:dependency_files) { project_dependency_files("bun/simple_v2") }
+
+        it "parses dependencies properly" do
+          expect(dependencies).to contain_exactly(
+            have_attributes(name: "etag", version: "1.0.1"),
+            have_attributes(name: "is-number", version: "7.0.0")
+          )
         end
       end
 

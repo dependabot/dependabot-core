@@ -35,6 +35,14 @@ RSpec.describe Dependabot::Bun::PackageManagerHelper do
       end
     end
 
+    context "with Bun 1.4 in packageManager" do
+      let(:package_json) { { "packageManager" => "bun@1.4.2" } }
+
+      it "detects the requested Bun version" do
+        expect(detected_version).to eq("1.4.2")
+      end
+    end
+
     context "with an engine constraint" do
       let(:package_json) { { "engines" => { "bun" => ">=1.1.39" } } }
 
