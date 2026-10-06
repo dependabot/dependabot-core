@@ -2388,6 +2388,115 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    # pnpm reduces the workspace-root lockfile to the root project the first time
+    # it honours `sharedWorkspaceLockfile: false`, writing each member one of its
+    # own. Whether that is safe to ship turns on whether those member lockfiles
+    # are files this job can return.
+    describe "a resolution that reduces the workspace-root lockfile" do
+      let(:reduced) { "lockfileVersion: '9.0'\nimporters:\n  .: {}\n" }
+
+      def lock_listing(importers)
+        body = importers.map do |importer|
+          "  #{importer}:\n    dependencies:\n      lodash:\n        specifier: 1.2.0\n        version: 1.2.0\n"
+        end.join
+        "lockfileVersion: '9.0'\nimporters:\n  .: {}\n#{body}"
+      end
+
+      def resolve_with(original_root, updated_root)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+        reads = 0
+        allow(updater).to receive(:read_lockfiles) do |names|
+          reads += 1
+          names.to_h do |name|
+            next [name, reduced] unless name == "pnpm-lock.yaml"
+
+            [name, reads == 1 ? original_root : updated_root]
+          end
+        end
+        updater.updated_pnpm_lock_contents(files.select { |f| f.name.end_with?("pnpm-lock.yaml") })
+      end
+
+      context "when no project has a lockfile of its own" do
+        let(:files) { project_dependency_files("pnpm/workspaces") }
+        let(:repo_contents_path) { build_tmp_repo("pnpm/workspaces", path: "projects") }
+        let(:members) { lock_listing(%w(other_package packages/package1)) }
+
+        it "refuses rather than deleting every member's resolution" do
+          expect { resolve_with(members, reduced) }.to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            %r{dropped other_package, packages/package1}
+          )
+        end
+
+        it "says what the repository has to commit" do
+          expect { resolve_with(members, reduced) }.to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            /commit one for each of those projects/
+          )
+        end
+
+        # A side that will not parse would otherwise read as empty, making every
+        # importer look dropped and refusing an update over a file this check
+        # simply could not read.
+        it "says nothing when a lockfile cannot be parsed" do
+          expect do
+            resolve_with(lock_listing(%w(other_package packages/package1)), "importers: [\n")
+          end.not_to raise_error
+        end
+
+        # pnpm drops a stale importer whenever the project behind it is gone. That
+        # is tidying, not loss, and must not stop the repository being updated.
+        it "accepts the loss of an importer whose project no longer exists" do
+          expect do
+            resolve_with(
+              lock_listing(%w(other_package packages/package1 packages/removed)),
+              lock_listing(%w(other_package packages/package1))
+            )
+          end.not_to raise_error
+        end
+      end
+
+      # A member withheld from the dependency files — by `exclude_paths`, say — is
+      # still a project on the tree, so pnpm tidying up after something that is
+      # gone does not explain its importer going missing. Whether that is loss
+      # turns on whether anything still carries the project's resolution, which
+      # has to be asked of the tree too: the fetched files are exactly what the
+      # member was withheld from.
+      context "when a member is withheld from the dependency files but still on disk" do
+        context "with no lockfile of its own" do
+          let(:files) do
+            project_dependency_files("pnpm/workspaces")
+              .reject { |f| f.name.start_with?("other_package/") }
+          end
+          let(:repo_contents_path) { build_tmp_repo("pnpm/workspaces", path: "projects") }
+
+          it "still counts it as a project whose resolution would be lost" do
+            expect { resolve_with(lock_listing(%w(other_package packages/package1)), reduced) }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, /other_package/)
+          end
+        end
+
+        context "with its own lockfile committed" do
+          let(:files) do
+            project_dependency_files("pnpm/workspaces_separate_lockfiles")
+              .reject { |f| f.name.start_with?("packages/package2/") }
+          end
+
+          it "does not ask the repository to commit a lockfile it already has" do
+            expect { resolve_with(lock_listing(%w(packages/package1 packages/package2)), reduced) }
+              .not_to raise_error
+          end
+        end
+      end
+
+      context "when each project has a lockfile of its own" do
+        it "accepts it, since those lockfiles carry what the root gave up" do
+          expect { resolve_with(lock_listing(%w(packages/package1 packages/package2)), reduced) }
+            .not_to raise_error
+        end
+      end
+    end
+
     it "names the registry when a package only another project resolves is refused" do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(

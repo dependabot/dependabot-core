@@ -245,6 +245,8 @@ module Dependabot
               updated_contents = restore_unrequested(original_contents, updated_contents, names, requested)
               discard_lockfiles_written_here(lockfiles_on_entry)
 
+              verify_importers_retained!(original_contents, updated_contents)
+
               # After the fallbacks: they resolve without a version too.
               verify_unpinned_updates!(only(original_contents, requested), only(updated_contents, requested))
 
@@ -514,6 +516,108 @@ module Dependabot
           run_pnpm_update_specs(
             dependencies.map { |d| indirect.include?(d.name) ? d.name : "#{d.name}@#{d.version}" }
           )
+        end
+
+        # A workspace that declares a lockfile per project but has never been
+        # installed that way still records every member in the lockfile at its
+        # root. pnpm honours the declaration on the first install: it reduces that
+        # file to the root project alone and writes each member a lockfile of its
+        # own. Those files did not exist when the job fetched, so they are not
+        # ours to return, and shipping only the reduction deletes every member's
+        # resolution while putting nothing in its place — a pull request that
+        # cannot install. Measured on pnpm 10.34.5.
+        #
+        # Only a project that still exists and has nowhere else to go counts.
+        # pnpm also drops an importer once the project behind it is gone, and
+        # that reduction is pnpm tidying up rather than resolution being lost:
+        # reading it as loss would refuse every update a repository in that
+        # state ever gets, and tell it to commit a lockfile for a directory it
+        # does not have. A project that kept a lockfile of its own is not losing
+        # anything either, whether or not this job fetched that lockfile.
+        sig do
+          params(
+            original_contents: T::Hash[String, String],
+            updated_contents: T::Hash[String, String]
+          ).void
+        end
+        def verify_importers_retained!(original_contents, updated_contents)
+          original_contents.each do |name, original|
+            updated = updated_contents[name]
+            next unless updated
+
+            orphaned = orphaned_importers(name, original, updated)
+            next if orphaned.empty?
+
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Updating #{name} dropped #{orphaned.join(', ')}, which no lockfile in this " \
+                  "repository records. pnpm keeps a lockfile per project where " \
+                  "`sharedWorkspaceLockfile` is disabled; commit one for each of those projects so " \
+                  "an update has somewhere to write their dependencies."
+          end
+        end
+
+        # Projects this lockfile stopped recording that have nowhere else to go:
+        # still part of the workspace, and holding no lockfile of their own.
+        sig do
+          params(name: String, original: String, updated: String).returns(T::Array[String])
+        end
+        def orphaned_importers(name, original, updated)
+          before = importers_in(original)
+          after = importers_in(updated)
+          return [] unless before && after
+
+          carried = carrying_lockfile_dirs
+          root = File.dirname(name)
+
+          (before - after)
+            .map { |importer| importer_path(root, importer) }
+            .select { |path| project_on_disk?(path) }
+            .reject { |path| carried.include?(File.expand_path(path)) }
+        end
+
+        # The directories a lockfile sits in, asked of the tree as well as of the
+        # fetched files. Existence is already read off the tree, and asking only
+        # the fetched files what carries a project reads a member withheld by
+        # `exclude_paths` as having nowhere to go — refusing the update, and
+        # telling the repository to commit a lockfile that is already there.
+        # Generated lockfiles are gone by now, so what is left was committed.
+        sig { returns(T::Array[String]) }
+        def carrying_lockfile_dirs
+          (workspace_pnpm_locks.map(&:name) + lockfile_paths)
+            .map { |name| File.expand_path(File.dirname(name)) }
+        end
+
+        # The importers a lockfile records, or nil where it cannot be parsed.
+        #
+        # Both sides have to be readable for the comparison to mean anything: a
+        # side read as empty because it would not parse makes every importer look
+        # dropped, which would refuse an update over a file this check simply
+        # could not read. Skip it instead and leave the parse failure to be
+        # reported where it can be explained.
+        sig { params(content: String).returns(T.nilable(T::Array[String])) }
+        def importers_in(content)
+          pnpm_resolutions(content).importers
+        rescue Psych::SyntaxError
+          nil
+        end
+
+        # Whether a project is still part of the workspace, asked of the tree
+        # rather than of the fetched files. A member withheld by `exclude_paths` is
+        # absent from the dependency files but present on disk, and an importer
+        # dropped for it is resolution lost rather than pnpm tidying up after a
+        # project that is gone.
+        sig { params(path: String).returns(T::Boolean) }
+        def project_on_disk?(path)
+          File.exist?(File.join(path, MANIFEST_FILENAME))
+        end
+
+        # An importer is named relative to the lockfile that records it.
+        sig { params(root: String, importer: String).returns(String) }
+        def importer_path(root, importer)
+          return root if importer == "."
+          return importer if root == "."
+
+          File.join(root, importer)
         end
 
         # An update retried without a version resolves whatever a fresh install
