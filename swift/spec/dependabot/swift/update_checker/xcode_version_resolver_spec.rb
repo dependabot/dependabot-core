@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/swift/update_checker/xcode_version_resolver"
 require "dependabot/dependency"
 require "dependabot/git_commit_checker"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/security_advisory"
 require "dependabot/swift/version"
 
@@ -94,6 +95,24 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
 
     it "returns the version from the tag" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::Swift::Version.new("7.0.2"))
+    end
+
+    context "with update_cooldown" do
+      let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(semver_major_days: 90) }
+
+      let(:resolver) do
+        described_class.new(
+          dependency: dependency,
+          git_commit_checker: git_commit_checker,
+          security_advisories: security_advisories,
+          update_cooldown: cooldown
+        )
+      end
+
+      it "passes cooldown to local_tag_for_latest_version" do
+        resolver.latest_resolvable_version
+        expect(git_commit_checker).to have_received(:local_tag_for_latest_version).with(cooldown)
+      end
     end
   end
 

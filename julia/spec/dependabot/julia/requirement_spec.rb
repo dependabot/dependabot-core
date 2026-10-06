@@ -78,6 +78,30 @@ RSpec.describe Dependabot::Julia::Requirement do
       it_behaves_like "version satisfaction", "2", ["2.0.0", "2.6.0", "2.99.99"], ["3.0.0", "1.9.9"]
     end
 
+    context "with JLL build metadata in a compat check" do
+      let(:satisfied_versions) { versions.select { |v| requirement.admits?(Dependabot::Julia::Version.new(v)) } }
+      let(:unsatisfied_versions) { versions.reject { |v| requirement.admits?(Dependabot::Julia::Version.new(v)) } }
+
+      # Pkg's bounds compare major.minor.patch only, so a rebuild of a version
+      # is admitted wherever that version is, and the build number never
+      # lifts a version over an exclusive upper bound
+      it_behaves_like "version satisfaction", "=0.0.43", ["0.0.43", "0.0.43+0", "0.0.43+1"], ["0.0.44+0"]
+      it_behaves_like "version satisfaction", "0.0.42 - 0.0.43", ["0.0.42+2", "0.0.43+1"], ["0.0.44+0"]
+      it_behaves_like "version satisfaction", "1.6.10", ["1.6.10+0", "1.6.10+1", "1.6.11+0"], ["1.6.9+5", "2.0.0+0"]
+      it_behaves_like "version satisfaction", "< 2.0.0", ["1.99.0+1"], ["2.0.0+0", "2.0.0+1"]
+
+      # Prerelease tags are compared the same way
+      it_behaves_like "version satisfaction", "1", ["1.9.0-rc1"], ["2.0.0-rc1"]
+      it_behaves_like "version satisfaction", "1.6.10", ["1.6.10-rc1", "1.6.10-rc.1+3"], ["1.6.9-rc1"]
+    end
+
+    context "with JLL build metadata in an ignore condition" do
+      # Ignore conditions keep Dependabot's ordering between builds, so
+      # "> 1.6.10" still catches the rebuilds of 1.6.10
+      it_behaves_like "version satisfaction", "> 1.6.10", ["1.6.10+1", "1.6.11"], ["1.6.10", "1.6.10+0"]
+      it_behaves_like "version satisfaction", "=0.0.43", ["0.0.43"], ["0.0.43+1"]
+    end
+
     context "with hyphen ranges (Julia docs)" do
       # Ranges require spaces around the hyphen. A fully-specified end version
       # is inclusive; a partial end version acts as a wildcard.
@@ -201,6 +225,30 @@ RSpec.describe Dependabot::Julia::Requirement do
           requirements = described_class.requirements_array(requirement_string)
           expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("1.3.0")) }).to be true
         end
+      end
+    end
+
+    context "with a list of equality specs" do
+      let(:requirement_string) { "=0.5.4, =0.5.5" }
+
+      # Pkg reads this as 0.5.4 - 0.5.5
+      it "admits each listed version" do
+        requirements = described_class.requirements_array(requirement_string)
+        %w(0.5.4 0.5.5).each do |version|
+          expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new(version)) }).to be true
+        end
+        expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("0.5.6")) }).to be false
+      end
+    end
+
+    context "with an equality and a bound" do
+      let(:requirement_string) { "= 1.2.3, < 2" }
+
+      # As an ignore condition or advisory range this is an intersection
+      it "admits only the listed version" do
+        requirements = described_class.requirements_array(requirement_string)
+        expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("1.2.3")) }).to be true
+        expect(requirements.any? { |r| r.satisfied_by?(Dependabot::Julia::Version.new("1.2.4")) }).to be false
       end
     end
 

@@ -208,6 +208,46 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       end
     end
 
+    context "when Julia helper finds a manifest per Julia release" do
+      let(:versioned_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.12.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+        )
+      end
+
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest.toml",
+              manifest_files: ["/tmp/test/Manifest-v1.12.toml", "/tmp/test/Manifest.toml"],
+              workspace_root: "/tmp/test"
+            )
+          )
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest-v1.12.toml")
+          .and_return(versioned_manifest_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest.toml")
+          .and_return(manifest_file)
+
+        allow(File).to receive(:exist?).and_return(true)
+      end
+
+      it "fetches every manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest-v1.12.toml", "Manifest.toml")
+      end
+    end
+
     context "when no Project.toml found" do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
@@ -221,6 +261,48 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         expect do
           fetched_files
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
+      end
+    end
+
+    context "when Pkg cannot read the Project.toml" do
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(
+              message: "Failed to find workspace project files: Compat `Gone` not listed in `deps`, " \
+                       "`weakdeps` or `extras` section at \"/tmp/test/Project.toml\"."
+            )
+          )
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with("/tmp/test/Project.toml").and_return(true)
+      end
+
+      it "reports Pkg's reason against the project file" do
+        expect { fetched_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_path).to eq("/Project.toml")
+          expect(error.message).to include("Compat `Gone` not listed", "section at \"Project.toml\"")
+        end
+      end
+
+      context "when Pkg reports the realpath of the temporary directory" do
+        before do
+          allow(registry_client).to receive(:find_workspace_project_files)
+            .with("/tmp/test")
+            .and_return(
+              Dependabot::Julia::RegistryClient::Result::Failure.new(
+                message: "Compat `Gone` not listed at \"/private/tmp/test/Project.toml\"."
+              )
+            )
+          allow(File).to receive(:exist?).with("/tmp/test").and_return(true)
+          allow(File).to receive(:realpath).with("/tmp/test").and_return("/private/tmp/test")
+        end
+
+        it "strips it whole" do
+          expect { fetched_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.message).to eq("Compat `Gone` not listed at \"Project.toml\".")
+          end
+        end
       end
     end
   end

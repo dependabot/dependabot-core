@@ -74,6 +74,50 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with selectively consumed fields" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "composer.json", content: manifest_data.to_json),
+          Dependabot::DependencyFile.new(name: "composer.lock", content: lock_data.to_json)
+        ]
+      end
+      let(:manifest_data) do
+        { "require" => { "php" => false, "vendor/package" => "^1", "vendor/absent" => false } }
+      end
+      let(:lock_data) do
+        {
+          "packages" => [
+            { "name" => "ignored", "source" => false },
+            { "name" => "vendor/package", "version" => 123, "source" => { "type" => "git", "url" => false } },
+            { "name" => "vendor/transitive", "version" => "2", "source" => false }
+          ]
+        }
+      end
+
+      it "retains source metadata and ignores fields that parsing does not consume" do
+        expect(dependencies.map(&:name)).to eq(%w(vendor/package vendor/transitive))
+        expect(dependencies.first.version).to eq("123")
+        expect(dependencies.first.requirements.first.source).to eq(type: "git", url: false)
+      end
+
+      context "with a consumed malformed requirement" do
+        let(:manifest_data) { { "require" => { "vendor/package" => false } } }
+
+        it "rejects the requirement instead of hiding the dependency" do
+          expect { dependencies }.to raise_error(TypeError)
+        end
+      end
+
+      context "with non-object requirement sections and non-array package sections" do
+        let(:manifest_data) { { "require" => false, "require-dev" => [] } }
+        let(:lock_data) { { "packages" => false, "packages-dev" => {} } }
+
+        it "retains the enumeration skips" do
+          expect(dependencies).to eq([])
+        end
+      end
+    end
+
     context "with doctored entries" do
       let(:project_name) { "doctored" }
 

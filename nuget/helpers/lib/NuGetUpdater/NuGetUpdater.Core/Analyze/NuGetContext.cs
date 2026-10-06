@@ -21,11 +21,13 @@ internal record NuGetContext : IDisposable
     public ImmutableArray<PackageSource> PackageSources { get; }
     public NuGet.Common.ILogger Logger { get; }
     private readonly Func<PackageSource, SourceRepository> _sourceRepositoryFactory;
+    private readonly PackageVersionsCache _packageVersionsCache;
 
     public NuGetContext(
         string? currentDirectory = null,
         NuGet.Common.ILogger? logger = null,
-        Func<PackageSource, SourceRepository>? sourceRepositoryFactory = null)
+        Func<PackageSource, SourceRepository>? sourceRepositoryFactory = null,
+        PackageVersionsCache? packageVersionsCache = null)
     {
         SourceCacheContext = new SourceCacheContext();
         PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
@@ -41,6 +43,7 @@ internal record NuGetContext : IDisposable
             .ToImmutableArray();
         Logger = logger ?? NullLogger.Instance;
         _sourceRepositoryFactory = sourceRepositoryFactory ?? Repository.Factory.GetCoreV3;
+        _packageVersionsCache = packageVersionsCache ?? new PackageVersionsCache();
     }
 
     public void Dispose()
@@ -71,6 +74,32 @@ internal record NuGetContext : IDisposable
         return infoUrl;
     }
 
+    internal SourceRepository GetSourceRepository(PackageSource source) => _sourceRepositoryFactory(source);
+
+    internal Task<PackageVersions> GetPackageVersionsAsync(
+        PackageSource source,
+        string packageId,
+        bool includePrerelease,
+        bool includeUnlisted,
+        MetadataResource metadataResource,
+        CancellationToken cancellationToken)
+    {
+        return _packageVersionsCache.GetVersionsAsync(
+            CurrentDirectory,
+            source,
+            packageId,
+            includePrerelease,
+            includeUnlisted,
+            token => metadataResource.GetVersions(
+                packageId,
+                includePrerelease,
+                includeUnlisted,
+                SourceCacheContext,
+                NullLogger.Instance,
+                token),
+            cancellationToken);
+    }
+
     private async Task<string?> FindPackageInfoUrlAsync(PackageIdentity packageIdentity, CancellationToken cancellationToken)
     {
         var globalPackagesFolder = SettingsUtility.GetGlobalPackagesFolder(Settings);
@@ -88,7 +117,7 @@ internal record NuGetContext : IDisposable
         foreach (var source in sources)
         {
             message.AppendLine($"  checking {source.Name}");
-            var sourceRepository = _sourceRepositoryFactory(source);
+            var sourceRepository = GetSourceRepository(source);
             var feed = await sourceRepository.GetResourceAsync<MetadataResource>(cancellationToken);
             if (feed is null)
             {

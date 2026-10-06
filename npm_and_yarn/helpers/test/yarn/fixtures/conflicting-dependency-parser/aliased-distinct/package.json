@@ -1,0 +1,12 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "objnest": "^4.1.2",
+    "objnest-alias": "npm:objnest@^4.1.2"
+  }
+}
