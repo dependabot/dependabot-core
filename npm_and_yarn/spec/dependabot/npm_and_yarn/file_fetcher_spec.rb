@@ -580,6 +580,484 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with a pnpm workspace that keeps a lockfile per project" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm_workspace_root.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_lock_9.0_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_workspace_separate_lockfiles_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "packages?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "packages_files.json"),
+          headers: json_header
+        )
+      %w(package1 package2).each do |package|
+        stub_request(:get, File.join(url, "packages/#{package}/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/#{package}/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_workspace_member_content.json"),
+            headers: json_header
+          )
+      end
+    end
+
+    it "fetches the lockfile of every workspace project" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+    end
+
+    it "still fetches the workspace manifests and the root lockfile" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to include(
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "packages/package1/package.json",
+          "packages/package2/package.json"
+        )
+    end
+
+    it "fetches each workspace project's own lockfile content" do
+      member_lock = file_fetcher_instance.files.find { |f| f.name == "packages/package1/pnpm-lock.yaml" }
+      expect(member_lock.content).to include("etag")
+    end
+
+    context "when a workspace project has no lockfile of its own" do
+      before do
+        stub_request(:get, File.join(url, "packages/package2/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "fetches the lockfiles it can and ignores the missing one" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to include("packages/package1/pnpm-lock.yaml")
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("packages/package2/pnpm-lock.yaml")
+      end
+    end
+
+    context "when the .npmrc disables lockfiles entirely" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_js_pnpm_workspace_root_with_config.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "npmrc_content_pnpm_no_lockfile.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches no lockfiles at all" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("pnpm-lock.yaml", "packages/package1/pnpm-lock.yaml")
+      end
+    end
+  end
+
+  context "with a pnpm workspace that shares one lockfile" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm_workspace_root.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_lock_9.0_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_workspace_shared_lockfile_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "packages?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "packages_files.json"),
+          headers: json_header
+        )
+      %w(package1 package2).each do |package|
+        stub_request(:get, File.join(url, "packages/#{package}/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/#{package}/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+    end
+
+    it "fetches the root lockfile and the workspace manifests, and nothing else" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to contain_exactly(
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "packages/package1/package.json",
+          "packages/package2/package.json"
+        )
+    end
+  end
+
+  context "when .npmrc asks for a lockfile per project and the repo pins no pnpm version" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm_workspace_root_with_config.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_lock_9.0_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_workspace_shared_lockfile_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "npmrc_shared_workspace_lockfile_off_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "packages?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "packages_files.json"),
+          headers: json_header
+        )
+      %w(package1 package2).each do |package|
+        stub_request(:get, File.join(url, "packages/#{package}/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: fixture("github", "package_json_content.json"), headers: json_header)
+        stub_request(:get, File.join(url, "packages/#{package}/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_workspace_member_content.json"),
+            headers: json_header
+          )
+      end
+    end
+
+    # Unpinned, nothing states which pnpm runs: the lockfile cannot tell 10 from 11,
+    # and the version resolved from it is only cached, never activated. So the
+    # `.npmrc` spelling is left alone rather than acted on for a pnpm that may ignore it.
+    it "leaves the member lockfiles alone, since nothing says pnpm still reads that file" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .not_to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+    end
+
+    it "does not request them" do
+      file_fetcher_instance.files
+
+      expect(WebMock)
+        .not_to have_requested(:get, File.join(url, "packages/package1/pnpm-lock.yaml?ref=sha"))
+    end
+  end
+
+  context "when .npmrc asks for a lockfile per project and the repo pins pnpm 10" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm_workspace_root_with_config.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_lock_9.0_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_workspace_shared_lockfile_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "npmrc_shared_workspace_lockfile_off_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "packages?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "packages_files.json"),
+          headers: json_header
+        )
+      %w(package1 package2).each do |package|
+        stub_request(:get, File.join(url, "packages/#{package}/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: fixture("github", "package_json_content.json"), headers: json_header)
+        stub_request(:get, File.join(url, "packages/#{package}/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_workspace_member_content.json"),
+            headers: json_header
+          )
+      end
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "package_json_pnpm_10_content.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches each project's lockfile, since pnpm 10 still reads that file" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+    end
+
+    # Credential generation withholds the committed `.npmrc` and writes a
+    # replacement from credentials alone, so the install never sees the setting.
+    # Deciding the layout from a file the update will not get is what let this
+    # and the updater disagree about the same repository.
+    context "when scoped credentials replace the committed .npmrc" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "npm.pkg.github.com",
+            "token" => "my_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      before { Dependabot::Experiments.register(:enable_npmrc_credential_generation, true) }
+
+      after { Dependabot::Experiments.reset! }
+
+      it "leaves the member lockfiles alone, since the install resolves without that file" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+      end
+    end
+  end
+
+  context "when .npmrc asks for a lockfile per project and the repo pins pnpm 11" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm_workspace_root_with_config.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_lock_9.0_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_workspace_shared_lockfile_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "npmrc_shared_workspace_lockfile_off_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "packages?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "packages_files.json"),
+          headers: json_header
+        )
+      %w(package1 package2).each do |package|
+        stub_request(:get, File.join(url, "packages/#{package}/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: fixture("github", "package_json_content.json"), headers: json_header)
+        stub_request(:get, File.join(url, "packages/#{package}/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_workspace_member_content.json"),
+            headers: json_header
+          )
+      end
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "package_json_pnpm_11_content.json"),
+          headers: json_header
+        )
+    end
+
+    it "leaves the member lockfiles alone, since pnpm 11 stopped reading that file" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .not_to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+    end
+  end
+
+  context "with a pnpm workspace that shares one lockfile and a stale member lockfile" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm_workspace_root.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_lock_workspace_shared_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "pnpm_workspace_shared_lockfile_content.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "packages?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "packages_files.json"),
+          headers: json_header
+        )
+      %w(package1 package2).each do |package|
+        stub_request(:get, File.join(url, "packages/#{package}/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/#{package}/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_workspace_member_content.json"),
+            headers: json_header
+          )
+      end
+    end
+
+    it "ignores member lockfiles the repository has not asked for" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to contain_exactly(
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "packages/package1/package.json",
+          "packages/package2/package.json"
+        )
+    end
+
+    it "does not request them" do
+      file_fetcher_instance.files
+
+      expect(WebMock)
+        .not_to have_requested(:get, File.join(url, "packages/package1/pnpm-lock.yaml?ref=sha"))
+    end
+  end
+
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
     before do
       stub_request(:get, url + "?ref=sha")

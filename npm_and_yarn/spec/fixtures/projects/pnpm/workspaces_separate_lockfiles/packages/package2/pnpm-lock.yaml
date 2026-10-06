@@ -1,0 +1,43 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      debug:
+        specifier: 2.0.0
+        version: 2.0.0
+      lodash:
+        specifier: 1.2.0
+        version: 1.2.0
+
+packages:
+
+  debug@2.0.0:
+    resolution: {integrity: sha512-jRxFR0Fb657ikmm6IjHY32v/Nqp9Ndcx4LBISXPfpguNaHh5JJnb+x37qalKPTu4fxMFnVBIyEGi72mmvl0BCw==}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
+  lodash@1.2.0:
+    resolution: {integrity: sha512-ExQAVirH2oQGyLAJv8jODSh25/hP2Fz24nn/7Yu6XeYcJKs5l/AY/9N1CZ85nykxoRkJBB6CyWrv+AxO3eSXyg==}
+    engines: {'0': node, '1': rhino}
+
+  ms@0.6.2:
+    resolution: {integrity: sha512-/pc3eh7TWorTtbvXg8je4GvrvEqCfH7PA3P7iW01yL2E53FKixzgMBaQi0NOPbMJqY34cBSvR0tZtmlTkdUG4A==}
+
+snapshots:
+
+  debug@2.0.0:
+    dependencies:
+      ms: 0.6.2
+
+  lodash@1.2.0: {}
+
+  ms@0.6.2: {}
