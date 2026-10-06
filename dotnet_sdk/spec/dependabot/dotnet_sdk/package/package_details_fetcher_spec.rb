@@ -27,11 +27,11 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
       .with(headers: { "Accept" => "application/json" })
       .to_return(status: 200, body: releases_index_body)
 
-    stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json")
+    stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json")
       .with(headers: { "Accept" => "application/json" })
       .to_return(status: 200, body: fixture("releases", "releases-8.0.json"))
 
-    stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/9.0/releases.json")
+    stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/9.0/releases.json")
       .with(headers: { "Accept" => "application/json" })
       .to_return(status: 200, body: fixture("releases", "releases-9.0.json"))
   end
@@ -44,6 +44,15 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
         expect(result).to be_a(Dependabot::Package::PackageDetails)
         expect(result.dependency).to eq(dependency)
         expect(result.releases).not_to be_empty
+      end
+
+      it "fetches the releases index from the official .NET CDN" do
+        fetcher.fetch
+
+        expect(WebMock).to have_requested(
+          :get,
+          "https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json"
+        ).once
       end
 
       it "returns releases in descending order by version" do
@@ -113,7 +122,7 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
 
     context "when individual release channel request fails" do
       before do
-        stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json")
+        stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json")
           .with(headers: { "Accept" => "application/json" })
           .to_return(status: 404, body: "")
       end
@@ -128,7 +137,7 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
 
     context "when individual release channel returns invalid JSON" do
       before do
-        stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json")
+        stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json")
           .with(headers: { "Accept" => "application/json" })
           .to_return(status: 200, body: "invalid json")
       end
@@ -167,7 +176,7 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
       end
 
       before do
-        stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json")
+        stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json")
           .with(headers: { "Accept" => "application/json" })
           .to_return(status: 200, body: legacy_release_json)
       end
@@ -195,7 +204,7 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
       end
 
       before do
-        stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json")
+        stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json")
           .with(headers: { "Accept" => "application/json" })
           .to_return(status: 200, body: modern_release_json)
       end
@@ -234,7 +243,7 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
       end
 
       before do
-        stub_request(:get, "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json")
+        stub_request(:get, "https://builds.dotnet.microsoft.com/dotnet/release-metadata/8.0/releases.json")
           .with(headers: { "Accept" => "application/json" })
           .to_return(status: 200, body: incomplete_release_json)
       end
