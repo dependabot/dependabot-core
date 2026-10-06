@@ -103,6 +103,9 @@ module Dependabot
               )
           end
 
+          updated_ancestor_go_work = updated_ancestor_go_work_file
+          updated_files << updated_ancestor_go_work if updated_ancestor_go_work
+
           vendor_updater.updated_files(base_directory: T.must(directory))
                         .each do |file|
             updated_files << file
@@ -110,6 +113,17 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def updated_ancestor_go_work_file
+        original = dependency_files.find { |f| f.name.match?(%r{\A(\.\./)+go\.work\z}) }
+        content = file_updater.updated_ancestor_go_work_content
+        return nil unless original && content && content != original.content
+
+        # Fetched as a support file, but once its Go version is bumped it is a real change
+        # and must not be filtered out like other contextual support files.
+        updated_file(file: original, content: content).tap { |file| file.support_file = false }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

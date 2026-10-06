@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/experiments"
 require "dependabot/go_modules/go_work_parser"
 
 module Dependabot
@@ -58,6 +59,7 @@ module Dependabot
         else
           fetched_files << T.must(go_mod) if go_mod
           fetched_files << T.must(go_sum) if go_sum
+          fetched_files << T.must(ancestor_go_work) if ancestor_go_work
         end
 
         fetched_files << T.must(go_env) if go_env
@@ -117,6 +119,34 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_work
         @go_work ||= T.let(fetch_file_if_present("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      # The nearest go.work above the job directory, when it lists this module. It is
+      # fetched as a support file (e.g. "../../go.work") so a Go version bump made by
+      # `go get` can be returned, without switching the job into workspace mode.
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def ancestor_go_work
+        return nil unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
+
+        @ancestor_go_work ||= T.let(find_ancestor_go_work, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def find_ancestor_go_work
+        segments = directory.split("/").reject(&:empty?)
+        (1..segments.length).each do |depth|
+          file = fetch_file_if_present("#{'../' * depth}go.work")
+          next unless file
+
+          module_path = T.must(segments.last(depth)).join("/")
+          listed = GoWorkParser.use_paths(T.must(file.content)).map { |p| Pathname.new(p).cleanpath.to_s }
+          return nil unless listed.include?(module_path)
+
+          file.support_file = true
+          return file
+        end
+
+        nil
       end
 
       sig { returns(T::Array[String]) }
