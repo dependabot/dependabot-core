@@ -16,6 +16,7 @@ module Dependabot
 
         require_relative "npmrc_builder"
         require "dependabot/npm_and_yarn/pnpm_resolutions"
+        require "dependabot/npm_and_yarn/pnpm_workspace_config"
         require_relative "package_json_updater"
 
         sig do
@@ -612,22 +613,16 @@ module Dependabot
         # disabled (pnpm/pnpm#10008), so the cooldown cannot be enforced there.
         sig { returns(T::Boolean) }
         def pnpm_shared_workspace_lockfile_disabled?
-          dependency_files.any? do |file|
-            case File.basename(file.name)
-            when "pnpm-workspace.yaml"
-              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", ":") == false
-            when ".npmrc"
-              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", "=") == false
-            else
-              false
-            end
-          end
+          PnpmWorkspaceConfig.lockfile_per_project?(dependency_files)
         end
 
-        # Reads a YAML/INI boolean `key`, returning true/false, or nil when absent or
-        # non-boolean. Handles optionally quoted keys/values (`"key": True`), boolean
-        # casing, and trailing comments so a valid native setting is never misread.
-        # The last occurrence wins, matching how pnpm/INI resolve a repeated key.
+        # Reads a boolean setting matched line by line, returning true/false, or
+        # nil when absent or non-boolean. Its remaining caller reads
+        # `minimumReleaseAgeStrict` out of a pnpm-workspace.yaml; the layout
+        # setting moved to `PnpmWorkspaceConfig`, which parses that file instead
+        # so a flow-style mapping is not missed. Handles optionally quoted
+        # keys/values, boolean casing, and trailing comments. The last occurrence
+        # wins, matching how pnpm and INI resolve a repeated key.
         sig { params(content: String, key: String, separator: String).returns(T.nilable(T::Boolean)) }
         def yaml_boolean_setting(content, key, separator)
           quoted_key = /["']?#{Regexp.escape(key)}["']?/
