@@ -15,9 +15,9 @@ module Dependabot
       MIN_SUPPORTED_VERSION = Version.new("1.1.39")
 
       # The highest bun.lock `lockfileVersion` the bun binary bundled in `bun/Dockerfile` can parse.
-      # Bun 1.4 raised the default to 2 (https://github.com/oven-sh/bun/pull/31539).
+      # Bun 1.4.2 also supports version 3 for scoped overrides.
       # Bump this in lockstep with `ARG BUN_VERSION` in `bun/Dockerfile`.
-      MAX_SUPPORTED_LOCKFILE_VERSION = 2
+      MAX_SUPPORTED_LOCKFILE_VERSION = 3
       SUPPORTED_VERSIONS = T.let([MIN_SUPPORTED_VERSION].freeze, T::Array[Dependabot::Version])
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
