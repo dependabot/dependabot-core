@@ -56,4 +56,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       expect(resolved_version).to be_nil
     end
   end
+
+  context "when more than one package requests the peer" do
+    let(:peer_warning) do
+      "YN0060: │ react is listed by your project with version 15.2.0 (p89012), " \
+        "which doesn't satisfy what react-dom and other dependencies request (^16.0.0)."
+    end
+
+    it "rejects a candidate whose peer requirements are unsatisfied" do
+      expect(resolved_version).to be_nil
+    end
+  end
+
+  context "when the requesting packages have non-overlapping ranges" do
+    let(:peer_warning) do
+      "YN0060: │ react is listed by your project with version 15.2.0 (p89012), " \
+        "which doesn't satisfy what react-dom and other dependencies request " \
+        "(but they have non-overlapping ranges!)."
+    end
+
+    it "rejects a candidate whose peer requirements are unsatisfied" do
+      expect(resolved_version).to be_nil
+    end
+  end
 end
