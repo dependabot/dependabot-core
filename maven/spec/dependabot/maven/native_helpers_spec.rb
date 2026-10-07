@@ -21,32 +21,98 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
     e
   end
 
-  describe "handle_tool_error" do
-    context "when the output contains a 403 error" do
-      let(:output) { "Could not transfer artifact com.example:example:jar:1.0.0 from/to example-repo (https://example.com/repo): status code: 403" }
+  describe "wrapper_mirror" do
+    it "keeps the wrapper settings unchanged" do
+      mirror = described_class.wrapper_mirror("https://repo.example.test/maven&releases")
 
-      it "raises PrivateSourceAuthenticationFailure for 401 and 403 errors" do
-        expect do
-          described_class.handle_tool_error(output)
-        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      expect(Dependabot::Maven::Shared::MavenSettings.xml(mirror: mirror)).to eq(<<~XML)
+        <settings>
+          <proxies>
+            <proxy>
+              <id>dependabot-proxy</id>
+              <active>true</active>
+              <protocol>http</protocol>
+              <host>${env.PROXY_HOST}</host>
+              <port>1080</port>
+            </proxy>
+          </proxies>
+          <mirrors>
+            <mirror>
+              <id>dependabot-wrapper-mirror</id>
+              <mirrorOf>external:*</mirrorOf>
+              <url>https://repo.example.test/maven&amp;releases</url>
+            </mirror>
+          </mirrors>
+        </settings>
+      XML
+    end
+  end
+
+  describe "run_mvn_dependency_tree_plugin" do
+    let(:mirror) do
+      Dependabot::Maven::Shared::MavenSettings::Mirror.new(
+        id: "dependabot-registry-mirror", url: "https://base.example.test/maven", mirror_of: "central"
+      )
+    end
+    let(:calls) { [] }
+
+    before do
+      # spec_helper fakes the scan for every spec; this one tests the real method.
+      allow(described_class).to receive(:run_mvn_dependency_tree_plugin).and_call_original
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **kwargs|
+        settings_path = command[command.index("-s") + 1]
+        calls << { command: command, kwargs: kwargs, settings_path: settings_path,
+                   settings: File.read(settings_path) }
+        ""
       end
     end
 
-    context "when the output contains a 401 error" do
-      let(:output) { "Could not transfer artifact com.example:example:jar:1.0.0 from/to example-repo (https://example.com/repo): status code: 401" }
+    it "runs in batch mode with generated settings and a bounded timeout" do
+      described_class.run_mvn_dependency_tree_plugin(
+        "tree.json", mirror: mirror, repository_urls: ["https://one.example.test/maven"]
+      )
 
-      it "raises PrivateSourceAuthenticationFailure for 401 and 403 errors" do
-        expect do
-          described_class.handle_tool_error(output)
-        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
-      end
+      call = calls.first
+      expect(call[:command]).to include("-B", "-DoutputFile=tree.json", "-DoutputType=json")
+      expect(call[:command]).not_to include("--no-transfer-progress", "-ntp")
+      expect(call[:kwargs][:timeout]).to eq(Dependabot::CommandHelpers::TIMEOUTS::DEFAULT)
+      expect(call[:settings]).to include("<mirrorOf>central</mirrorOf>", "https://one.example.test/maven")
     end
 
-    it "raises DependabotError for other errors" do
-      output = "Some other error occurred"
-      expect do
-        described_class.handle_tool_error(output)
-      end.to raise_error(Dependabot::DependabotError)
+    it "removes the temporary settings file" do
+      described_class.run_mvn_dependency_tree_plugin("tree.json")
+
+      expect(File.exist?(calls.first[:settings_path])).to be(false)
+    end
+
+    it "uses the proxy environment from the settings" do
+      allow(Dependabot::Maven::Shared::MavenSettings).to receive(:proxy_env).and_return("PROXY_HOST" => "proxy")
+
+      described_class.run_mvn_dependency_tree_plugin("tree.json")
+
+      expect(calls.first[:kwargs][:env]).to eq("PROXY_HOST" => "proxy")
+      expect(calls.first[:settings]).to include("${env.PROXY_HOST}")
+    end
+
+    it "leaves out the proxy block when there is no proxy" do
+      allow(Dependabot::Maven::Shared::MavenSettings).to receive(:proxy_env).and_return({})
+
+      described_class.run_mvn_dependency_tree_plugin("tree.json")
+
+      expect(calls.first[:kwargs][:env]).to eq({})
+      expect(calls.first[:settings]).not_to include("<proxies>")
+    end
+
+    it "raises the subprocess failure and still removes the settings file" do
+      settings_path = nil
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **|
+        settings_path = command[command.index("-s") + 1]
+        raise wrapper_failure("[ERROR] Timed out due to inactivity after 900 seconds")
+      end
+
+      expect { described_class.run_mvn_dependency_tree_plugin("tree.json") }
+        .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      expect(File.exist?(settings_path)).to be(false)
     end
   end
 

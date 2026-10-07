@@ -824,6 +824,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           .and_call_original
         expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
+
+      context "with the transitive experiment on" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(true)
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+        end
+
+        it "re-parses the POMs without running the dependency tree scan" do
+          expect(latest_version_resolvable_with_full_unlock).to be(true)
+          expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
+        end
+      end
     end
   end
 
