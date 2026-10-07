@@ -6,11 +6,13 @@ Yarn and npm support for [`dependabot-core`][core-repo].
 
 Workspace records in modern npm lockfiles describe local projects, not registry dependencies. Packages installed beneath a workspace's `node_modules` directory remain update candidates.
 
-For npm v3 lockfiles, version updates retain alias installation names and their independent versions, while registry and metadata requests use the actual package name. Native npm updates therefore preserve alias constraints instead of merging aliases with an ordinary installation of the same package.
+For npm v3 lockfiles, version updates retain the installation name and carry the canonical npm package name separately. Registry and metadata requests use the canonical name; native commands use the installation name.
 
-This does not enable rewriting alias requirements in `package.json` or matching canonical security advisories to alias installation names. Dependency graph parsing continues to use canonical package identities.
+`all_versions` contains only versions of the selected canonical package, so unrelated alias versions do not affect its vulnerability checks. When different packages share an installation name, `npm_package_versions` retains every installed record for target-aware resolution and installation-name version blocking.
 
-Native npm's update selection is unchanged: a workspace-only alias that native npm leaves untouched remains unchanged.
+This does not enable rewriting alias requirements in `package.json` or matching canonical security advisories to alias installation names. The updater still schedules by installation name, not independently for every canonical target sharing that name. Dependency graph parsing continues to use canonical package identities.
+
+Native npm's update selection is unchanged. This does not add canonical-target isolation between workspaces or force updates that npm leaves untouched.
 
 ### Running locally
 

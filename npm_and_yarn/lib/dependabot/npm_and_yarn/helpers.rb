@@ -903,7 +903,8 @@ module Dependabot
       def self.dependency_for_npm_package(dependency, package_name)
         return dependency if npm_package_name(dependency) == package_name
 
-        all_versions = dependency.metadata_dependencies(:all_versions)
+        all_versions = dependency.metadata_dependencies(:npm_package_versions) ||
+                       dependency.metadata_dependencies(:all_versions)
         return unless all_versions
 
         # One installation name can contain aliases and ordinary packages.
@@ -914,7 +915,27 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|
-          dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)
+          all_versions = dependency_set.all_versions_for_name(dependency.name)
+          # A singleton slot exports its raw record; do not make its metadata refer to itself.
+          if all_versions.one?
+            dependency = Dependency.new(
+              name: dependency.name,
+              version: dependency.version,
+              requirements: dependency.requirements,
+              package_manager: dependency.package_manager,
+              previous_version: dependency.previous_version,
+              previous_requirements: dependency.previous_requirements,
+              directory: dependency.directory,
+              subdependency_metadata: dependency.subdependency_metadata,
+              removed: dependency.removed?,
+              metadata: dependency.metadata
+            )
+          end
+          package_name = npm_package_name(dependency)
+          package_versions = all_versions.select { |dep| npm_package_name(dep) == package_name }
+          # Generic version consumers must never compare versions from different registry packages.
+          dependency.metadata[:all_versions] = package_versions
+          dependency.metadata[:npm_package_versions] = all_versions if package_versions.length < all_versions.length
           dependency
         end
       end

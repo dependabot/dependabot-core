@@ -5,18 +5,20 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/job/blocked_version"
 require "dependabot/updater/blocked_version_detector"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "support/dummy_package_manager/dummy"
 
 RSpec.describe Dependabot::Updater::BlockedVersionDetector do
   subject(:detector) do
     described_class.new(
-      package_manager: "dummy",
+      package_manager: package_manager,
       blocked_versions: blocked_versions,
       previous_dependencies: previous_dependencies,
       current_dependencies: current_dependencies
     )
   end
 
+  let(:package_manager) { "dummy" }
   let(:blocked_versions) { [] }
   let(:previous_dependencies) { [] }
   let(:current_dependencies) { [] }
@@ -140,6 +142,32 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
   describe "#blocked_changes" do
     let(:previous_dependencies) { [transitive_dependency(name: "left-pad", version: "1.0.0")] }
     let(:current_dependencies) { [transitive_dependency(name: "left-pad", version: "1.1.0")] }
+
+    context "when an npm alias update changes the combined package identity" do
+      let(:package_manager) { "npm_and_yarn" }
+      let(:previous_dependencies) { alias_collision_dependencies("1.0.0") }
+      let(:current_dependencies) { alias_collision_dependencies("7.0.0") }
+      let(:blocked_versions) { [blocked_version(name: "ms", requirement: ">= 7.0.0")] }
+
+      def alias_collision_dependencies(alias_version)
+        lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: {
+            "lockfileVersion" => 3,
+            "packages" => {
+              "node_modules/ms" => { "name" => "is-number", "version" => alias_version },
+              "node_modules/debug/node_modules/ms" => { "version" => "2.0.0" }
+            }
+          }.to_json
+        )
+        Dependabot::NpmAndYarn::FileParser::LockfileParser.new(dependency_files: [lockfile]).parse
+      end
+
+      it "still applies installation-name blocks to the updated sibling alias" do
+        expect(detector.blocked_changes.map { |change| [change.name, change.new_version] })
+          .to eq([["ms", "7.0.0"]])
+      end
+    end
 
     context "when a changed transitive dependency matches a blocked version" do
       let(:blocked_versions) do

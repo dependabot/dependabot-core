@@ -207,6 +207,37 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.dependency_for_npm_package(combined, "ms")).to be(combined)
     end
 
+    it "does not expose another registry package's versions to generic version consumers" do
+      expect(combined.all_versions).to eq(["2.0.0"])
+    end
+
+    it "retains every installed target and version regardless of insertion order" do
+      [[ordinary, *aliases], [*aliases.reverse, ordinary]].each do |records|
+        set = Dependabot::FileParsers::Base::DependencySet.new(records)
+        dependency = described_class.dependencies_with_all_versions_metadata(set).first
+
+        expect(dependency.all_versions).to eq(["2.0.0"])
+        expect(
+          dependency.metadata_dependencies(:npm_package_versions).map do |dep|
+            [described_class.npm_package_name(dep), dep.version]
+          end
+        ).to contain_exactly(["ms", "2.0.0"], ["is-number", "6.0.0"], ["is-number", "7.0.0"])
+        expect(described_class.dependency_for_npm_package(dependency, "is-number").version).to eq("6.0.0")
+      end
+    end
+
+    it "supports dependencies whose versions were supplied before target-specific aggregation" do
+      dependency = Dependabot::Dependency.new(
+        name: "ms",
+        version: ordinary.version,
+        requirements: requirements,
+        package_manager: "npm_and_yarn",
+        metadata: { all_versions: [ordinary, *aliases] }
+      )
+
+      expect(described_class.dependency_for_npm_package(dependency, "is-number").version).to eq("6.0.0")
+    end
+
     it "selects the lowest version of a different canonical target" do
       expect(described_class.dependency_for_npm_package(combined, "is-number").version).to eq("6.0.0")
     end
@@ -372,6 +403,20 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
             )
           ]
         )
+      end
+
+      it "keeps singleton exports out of their own metadata and leaves raw slots reusable" do
+        dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new([foo_a])
+        dependency = described_class.dependencies_with_all_versions_metadata(dependency_set).first
+
+        expect(dependency.all_versions).to eq(["0.0.1"])
+        expect(dependency.metadata_dependencies(:all_versions).first).not_to be(dependency)
+        expect(foo_a.metadata).to be_empty
+        expect(dependency.metadata).not_to have_key(:npm_package_versions)
+
+        dependency_set << foo_b
+        expect(described_class.dependencies_with_all_versions_metadata(dependency_set).first.all_versions)
+          .to contain_exactly("0.0.1", "0.0.2")
       end
     end
   end
