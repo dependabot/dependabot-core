@@ -131,9 +131,12 @@ module Dependabot
             source: nil,
             credentials: credentials
           ).parse.find { |d| d.name == dependency.name }
-          return unless parsed_dep&.version
+          return unless parsed_dep
 
-          combined = version_class.new(parsed_dep.version)
+          matching_dep = Helpers.dependency_for_npm_package(parsed_dep, Helpers.npm_package_name(dependency))
+          return unless matching_dep&.version
+
+          combined = version_class.new(matching_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
           candidate = audit_fix_best_version(parsed_dep, current_version) || combined
           return candidate unless pnpm_update.pin_dropped
@@ -178,9 +181,10 @@ module Dependabot
         end
         def best_candidate_version(all_versions, current_version)
           allowable = allowable_version
+          package_name = Helpers.npm_package_name(dependency)
 
           all_versions
-            .filter_map { |d| version_class.new(d.version) if d.version }
+            .filter_map { |d| version_class.new(d.version) if d.version && Helpers.npm_package_name(d) == package_name }
             .select { |v| v > current_version && (allowable.nil? || v <= allowable) }
             .max
         end

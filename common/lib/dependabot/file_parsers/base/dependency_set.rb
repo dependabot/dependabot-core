@@ -109,7 +109,7 @@ module Dependabot
 
           sig { params(dep: Dependabot::Dependency).returns(T.self_type) }
           def <<(dep)
-            return self if @all_versions.include?(dep)
+            return self if @all_versions.any? { |other| other == dep && same_npm_package?(other, dep) }
 
             @combined = if @combined
                           combined_dependency(@combined, dep)
@@ -118,7 +118,7 @@ module Dependabot
                         end
 
             index_of_same_version =
-              @all_versions.find_index { |other| other.version == dep.version }
+              @all_versions.find_index { |other| other.version == dep.version && same_npm_package?(other, dep) }
 
             if index_of_same_version.nil?
               @all_versions << dep
@@ -132,10 +132,21 @@ module Dependabot
 
           private
 
+          sig { params(old_dep: Dependabot::Dependency, new_dep: Dependabot::Dependency).returns(T::Boolean) }
+          def same_npm_package?(old_dep, new_dep)
+            return true unless old_dep.package_manager == "npm_and_yarn"
+
+            old_name = old_dep.metadata_string(:npm_package_name)
+            new_name = new_dep.metadata_string(:npm_package_name)
+            return true unless old_name || new_name
+
+            (old_name || old_dep.name) == (new_name || new_dep.name)
+          end
+
           # Produces a new dependency by merging the attributes of `old_dep` with those of
           # `new_dep`. Requirements and subdependency metadata will be combined and deduped.
-          # The version of the combined dependency is determined by the
-          # `#combined_version` method below.
+          # The version and npm package identity come from the record selected by
+          # `#preferred_dependency` below; other metadata keeps its existing precedence.
           sig do
             params(
               old_dep: Dependabot::Dependency,
@@ -144,7 +155,15 @@ module Dependabot
               .returns(Dependabot::Dependency)
           end
           def combined_dependency(old_dep, new_dep)
-            version = combined_version(old_dep, new_dep)
+            preferred = preferred_dependency(old_dep, new_dep)
+            metadata = old_dep.metadata
+            if old_dep.package_manager == "npm_and_yarn" &&
+               (old_dep.metadata.key?(:npm_package_name) || new_dep.metadata.key?(:npm_package_name))
+              metadata = metadata.except(:npm_package_name)
+              if preferred.metadata.key?(:npm_package_name)
+                metadata[:npm_package_name] = preferred.metadata[:npm_package_name]
+              end
+            end
             requirements = (old_dep.requirements + new_dep.requirements).uniq
             subdependency_metadata = (
               (old_dep.subdependency_metadata || []) +
@@ -152,10 +171,10 @@ module Dependabot
             ).uniq
             Dependency.new(
               name: old_dep.name,
-              version: version,
+              version: preferred.version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
-              metadata: old_dep.metadata,
+              metadata: metadata,
               subdependency_metadata: subdependency_metadata
             )
           end
@@ -165,21 +184,21 @@ module Dependabot
               old_dep: Dependabot::Dependency,
               new_dep: Dependabot::Dependency
             )
-              .returns(T.nilable(String))
+              .returns(Dependabot::Dependency)
           end
-          def combined_version(old_dep, new_dep)
+          def preferred_dependency(old_dep, new_dep)
             if old_dep.version.nil? ^ new_dep.version.nil?
-              T.must([old_dep, new_dep].find(&:version)).version
+              T.must([old_dep, new_dep].find(&:version))
             elsif old_dep.top_level? ^ new_dep.top_level? # Prefer a direct dependency over a transitive one
-              T.must([old_dep, new_dep].find(&:top_level?)).version
+              T.must([old_dep, new_dep].find(&:top_level?))
             elsif !version_class.correct?(new_dep.version)
-              old_dep.version
+              old_dep
             elsif !version_class.correct?(old_dep.version)
-              new_dep.version
+              new_dep
             elsif version_class.new(new_dep.version) > version_class.new(old_dep.version)
-              old_dep.version
+              old_dep
             else
-              new_dep.version
+              new_dep
             end
           end
 

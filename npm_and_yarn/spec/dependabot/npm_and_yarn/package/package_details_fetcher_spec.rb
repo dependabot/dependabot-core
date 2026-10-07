@@ -21,6 +21,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
   end
 
   let(:dependency_name) { "react" }
+  let(:metadata) { {} }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -31,7 +32,8 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
         groups: ["dependencies"],
         source: nil
       }],
-      package_manager: "npm_and_yarn"
+      package_manager: "npm_and_yarn",
+      metadata: metadata
     )
   end
 
@@ -47,6 +49,62 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
         status: 200,
         body: fixture("npm_responses", "react.json")
       )
+    end
+
+    context "with an npm lockfile alias" do
+      let(:dependency_name) { "react-alias" }
+      let(:metadata) { { npm_package_name: "react" } }
+      let(:registry_url) { "https://registry.npmjs.org/react" }
+
+      it "fetches target releases while retaining the installation dependency" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "16.6.0" }
+
+        expect(release.url).to include("/react/v/16.6.0")
+        expect(details.dependency.name).to eq("react-alias")
+        expect(WebMock).to have_requested(:get, registry_url)
+        expect(WebMock).not_to have_requested(:get, "https://registry.npmjs.org/react-alias")
+      end
+
+      context "with a replaces-base registry" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              "type" => "npm_registry",
+              "registry" => "https://registry.example.com/npm",
+              "token" => "proxy_token",
+              "replaces-base" => true
+            )
+          ]
+        end
+        let(:registry_url) { "https://registry.example.com/npm/react" }
+
+        it "uses the target name with the configured registry" do
+          expect(details.releases).not_to be_empty
+          expect(WebMock).to have_requested(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer proxy_token" })
+        end
+      end
+
+      context "with a scoped target and an unscoped alias" do
+        let(:metadata) { { npm_package_name: "@actual/react" } }
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              "type" => "npm_registry",
+              "registry" => "https://actual.example.com/npm",
+              "token" => "actual_token",
+              "scope" => "@actual"
+            )
+          ]
+        end
+        let(:registry_url) { "https://actual.example.com/npm/%40actual%2Freact" }
+
+        it "uses credentials belonging to the target scope" do
+          expect(details.releases).not_to be_empty
+          expect(WebMock).to have_requested(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer actual_token" })
+        end
+      end
     end
 
     context "when version field exists" do

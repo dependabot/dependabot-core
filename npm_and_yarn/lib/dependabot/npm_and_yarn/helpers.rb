@@ -890,6 +890,27 @@ module Dependabot
         nil
       end
 
+      # Lockfile aliases keep their installation name for native npm updates.
+      sig { params(dependency: Dependabot::Dependency).returns(String) }
+      def self.npm_package_name(dependency)
+        dependency.metadata_string(:npm_package_name) || dependency.name
+      end
+
+      sig do
+        params(dependency: Dependabot::Dependency, package_name: String)
+          .returns(T.nilable(Dependabot::Dependency))
+      end
+      def self.dependency_for_npm_package(dependency, package_name)
+        return dependency if npm_package_name(dependency) == package_name
+
+        all_versions = dependency.metadata_dependencies(:all_versions)
+        return unless all_versions
+
+        # One installation name can contain aliases and ordinary packages.
+        matching_versions = all_versions.select { |dep| npm_package_name(dep) == package_name }
+        Dependabot::FileParsers::Base::DependencySet.new(matching_versions).dependency_for_name(dependency.name)
+      end
+
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|

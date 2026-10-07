@@ -306,9 +306,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       context "when there is an aliased dependency" do
         let(:dependency_files) { project_dependency_files("grapher/npm_with_alias") }
 
-        it "excludes the real package name by default" do
+        it "retains the installation name and records the registry name" do
+          dependency = dependencies.find { |dep| dep.name == "my-is-number" }
+
+          expect(dependency.version).to eq("7.0.0")
+          expect(dependency.metadata_string(:npm_package_name)).to eq("is-number")
           expect(dependencies.map(&:name)).not_to include("is-number")
-          expect(dependencies.map(&:name)).to include("my-is-number")
         end
 
         context "with dealias_packages enabled" do
@@ -319,6 +322,63 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           it "includes the real aliased package" do
             expect(dependencies.map(&:name)).to include("is-number")
             expect(dependencies.map(&:name)).not_to include("my-is-number")
+          end
+        end
+      end
+
+      context "with multiple aliases and ordinary versions in a v3 lockfile" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package-lock.json",
+              content: {
+                "lockfileVersion" => 3,
+                "packages" => {
+                  "" => { "name" => "root", "version" => "1.0.0" },
+                  "node_modules/undici8" => { "name" => "undici", "version" => "8.0.0" },
+                  "node_modules/undici" => { "version" => "7.0.0" },
+                  "node_modules/parent/node_modules/another-undici" => { "name" => "undici", "version" => "6.0.0" },
+                  "node_modules/parent/node_modules/undici8" => { "name" => "undici", "version" => "8.1.0" },
+                  "node_modules/web-vitals-soft-navs" => { "name" => "web-vitals", "version" => "5.0.0" },
+                  "node_modules/scoped-alias" => { "name" => "@scope/real", "version" => "2.0.0" },
+                  "node_modules/@aliases/another" => { "name" => "@scope/real", "version" => "1.0.0" }
+                }
+              }.to_json
+            )
+          ]
+        end
+
+        it "keeps alias installations separate from each other and the ordinary package" do
+          expect(dependencies.map(&:name)).to contain_exactly(
+            "undici8", "undici", "another-undici", "web-vitals-soft-navs", "scoped-alias", "@aliases/another"
+          )
+          aliases = dependencies.reject { |dep| dep.name == "undici" }
+          expect(aliases.to_h { |dep| [dep.name, dep.metadata_string(:npm_package_name)] }).to eq(
+            "undici8" => "undici",
+            "another-undici" => "undici",
+            "web-vitals-soft-navs" => "web-vitals",
+            "scoped-alias" => "@scope/real",
+            "@aliases/another" => "@scope/real"
+          )
+        end
+
+        it "retains all versions for each installation name" do
+          dependency = dependencies.find { |dep| dep.name == "undici8" }
+
+          expect(dependency.metadata_dependencies(:all_versions).map(&:version)).to contain_exactly("8.0.0", "8.1.0")
+        end
+
+        context "with dealias_packages enabled" do
+          subject(:lockfile_parser) do
+            described_class.new(dependency_files: dependency_files, dealias_packages: true)
+          end
+
+          it "still combines real registry identities for the dependency graph" do
+            expect(dependencies.map(&:name)).to contain_exactly("undici", "web-vitals", "@scope/real")
+            undici = dependencies.find { |dep| dep.name == "undici" }
+
+            expect(undici.metadata_dependencies(:all_versions).map(&:version))
+              .to contain_exactly("6.0.0", "7.0.0", "8.0.0", "8.1.0")
           end
         end
       end

@@ -338,6 +338,133 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
     end
 
+    context "with an npm v3 alias" do
+      let(:dependency_files) { project_dependency_files("npm8/aliased_subdependency") }
+      let(:dependency_name) { "number-alias" }
+      let(:dependency) { parsed_dependencies.find { |dep| dep.name == dependency_name } }
+      let(:parsed_dependencies) do
+        Dependabot::NpmAndYarn::FileParser.new(
+          dependency_files: dependency_files,
+          source: nil,
+          credentials: credentials
+        ).parse
+      end
+      let(:latest_allowable_version) { "7.0.0" }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_audit_fix_fallback).and_return(false)
+      end
+
+      it "resolves an alias update independently of the direct package and pinned alias" do
+        ordinary = parsed_dependencies.find { |dep| dep.name == "is-number" }
+        expect(ordinary.version).to eq("5.0.0")
+        expect(ordinary).to be_top_level
+        expect(dependency.version).to eq("6.0.0")
+        expect(dependency.requirements).to be_empty
+        expect(dependency.metadata_string(:npm_package_name)).to eq("is-number")
+        expect(latest_resolvable_version).to eq(Gem::Version.new("7.0.0"))
+      end
+
+      context "when the other alias is pinned" do
+        let(:dependency_name) { "pinned-number" }
+
+        it "does not resolve it to the independently updateable alias version" do
+          expect(dependency.version).to eq("5.0.0")
+          expect(latest_resolvable_version).to eq(Gem::Version.new("5.0.0"))
+        end
+      end
+
+      context "with npm-shrinkwrap.json" do
+        let(:dependency_files) do
+          project_dependency_files("npm8/aliased_subdependency").map do |file|
+            next file unless file.name == "package-lock.json"
+
+            Dependabot::DependencyFile.new(name: "npm-shrinkwrap.json", content: file.content)
+          end
+        end
+
+        it "resolves the alias update from the shrinkwrap" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("7.0.0"))
+        end
+      end
+    end
+
+    context "when an npm installation name contains different registry packages" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: "{}"),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: lockfile_content)
+        ]
+      end
+      let(:lockfile_content) do
+        {
+          "lockfileVersion" => 3,
+          "packages" => {
+            "" => {},
+            "node_modules/ms" => { "name" => "is-number", "version" => "1.0.0" },
+            "node_modules/parent/node_modules/ms" => { "version" => "2.0.0" }
+          }
+        }.to_json
+      end
+      let(:dependency) do
+        Dependabot::NpmAndYarn::FileParser.new(
+          dependency_files: dependency_files,
+          source: nil,
+          credentials: credentials
+        ).parse.find { |dep| dep.name == "ms" }
+      end
+      let(:latest_allowable_version) { "10.0.0" }
+      let(:updated_packages) do
+        JSON.parse(lockfile_content).fetch("packages").merge(
+          "node_modules/ms" => { "name" => "is-number", "version" => "7.0.0" }
+        )
+      end
+      let(:audit_fix_enabled) { false }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_audit_fix_fallback).and_return(audit_fix_enabled)
+        allow(resolver).to receive(:update_subdependency_in_lockfile)
+          .and_return({ "lockfileVersion" => 3, "packages" => updated_packages }.to_json)
+      end
+
+      it "resolves the original alias after an ordinary package becomes the lowest version" do
+        expect(dependency.version).to eq("1.0.0")
+        expect(dependency.metadata_string(:npm_package_name)).to eq("is-number")
+        expect(latest_resolvable_version).to eq(Gem::Version.new("7.0.0"))
+      end
+
+      context "with multiple remaining versions of the alias" do
+        let(:updated_packages) do
+          super().merge("node_modules/other/node_modules/ms" => { "name" => "is-number", "version" => "6.0.0" })
+        end
+
+        it "keeps the lowest version within the original registry package" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("6.0.0"))
+        end
+
+        context "when audit fix fallback is enabled" do
+          let(:audit_fix_enabled) { true }
+          let(:updated_packages) do
+            super().merge("node_modules/third/node_modules/ms" => { "version" => "9.0.0" })
+          end
+
+          it "selects the highest allowable alias version without considering another registry package" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("7.0.0"))
+          end
+        end
+      end
+
+      context "when only the ordinary package remains" do
+        let(:updated_packages) { super().except("node_modules/ms") }
+
+        it "does not report the other package's version as the resolved alias" do
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
+    end
+
     context "with a npm8 package-lock.json" do
       let(:dependency_files) { project_dependency_files("npm8/subdependency_update") }
 

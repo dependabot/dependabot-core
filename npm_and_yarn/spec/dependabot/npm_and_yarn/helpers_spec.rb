@@ -167,6 +167,63 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::dependency_for_npm_package" do
+    let(:requirements) do
+      [{ file: "package.json", requirement: "*", groups: ["dependencies"], source: nil }]
+    end
+    let(:alias_requirements) { [] }
+    let(:ordinary) do
+      Dependabot::Dependency.new(
+        name: "ms",
+        version: "2.0.0",
+        requirements: requirements,
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:aliases) do
+      [
+        Dependabot::Dependency.new(
+          name: "ms",
+          version: "7.0.0",
+          requirements: alias_requirements,
+          package_manager: "npm_and_yarn",
+          metadata: { npm_package_name: "is-number" }
+        ),
+        Dependabot::Dependency.new(
+          name: "ms",
+          version: "6.0.0",
+          requirements: [],
+          package_manager: "npm_and_yarn",
+          metadata: { npm_package_name: "is-number" }
+        )
+      ]
+    end
+    let(:combined) do
+      set = Dependabot::FileParsers::Base::DependencySet.new([ordinary, *aliases])
+      described_class.dependencies_with_all_versions_metadata(set).first
+    end
+
+    it "preserves the combined dependency when its canonical target matches" do
+      expect(described_class.dependency_for_npm_package(combined, "ms")).to be(combined)
+    end
+
+    it "selects the lowest version of a different canonical target" do
+      expect(described_class.dependency_for_npm_package(combined, "is-number").version).to eq("6.0.0")
+    end
+
+    it "returns nil when the canonical target is not installed" do
+      expect(described_class.dependency_for_npm_package(combined, "other")).to be_nil
+    end
+
+    context "when the target also has a direct dependency" do
+      let(:alias_requirements) { requirements }
+
+      it "preserves direct-dependency precedence within the requested target" do
+        expect(described_class.dependency_for_npm_package(combined, "is-number").version).to eq("7.0.0")
+      end
+    end
+  end
+
   describe "::dependencies_with_all_versions_metadata" do
     let(:foo_a) do
       Dependabot::Dependency.new(

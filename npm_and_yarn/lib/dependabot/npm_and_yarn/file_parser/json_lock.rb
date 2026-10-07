@@ -89,7 +89,13 @@ module Dependabot
             package_name = package_name_for(name, details)
             version = version.to_s
 
-            metadata = aliased_package?(name, details) ? { alias: name.split("node_modules/").last } : nil
+            metadata = if aliased_package?(name, details)
+                         if dealias_packages?
+                           { alias: name.split("node_modules/").last }
+                         else
+                           { npm_package_name: details.name }
+                         end
+                       end
             subdependency_metadata = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, Object]]))
             subdependency_metadata = [{ npm_bundled: true }] if details.bundled?
             subdependency_metadata = [{ production: false }] if details.dev?
@@ -122,7 +128,7 @@ module Dependabot
 
         sig { params(package_path: String, details: Record).returns(T::Boolean) }
         def aliased_package?(package_path, details)
-          return false unless dealias_packages?
+          return false unless dealias_packages? || package_path.include?("node_modules/")
 
           real_package_name = details.name
           return false if real_package_name.nil?

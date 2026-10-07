@@ -81,7 +81,7 @@ module Dependabot
           version_without_build_metadata = version.to_s.gsub(/\+.*/, "")
 
           # Dependency name needs to be unescaped since tarball URLs don't always work with escaped slashes
-          "#{registry_url}/#{dependency&.name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
+          "#{registry_url}/#{package_name}/-/#{package_name&.split('/')&.last}-#{version_without_build_metadata}.tgz"
         end
 
         sig { params(registry: String).returns(T::Boolean) }
@@ -209,7 +209,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def configured_registry
-          configured_registry_url = explicit_registry_from_rc(dependency&.name)
+          configured_registry_url = explicit_registry_from_rc(package_name)
           return unless configured_registry_url
 
           normalize_configured_registry(configured_registry_url)
@@ -336,7 +336,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def scoped_credential_registry_for_dependency
-          dep_name = dependency&.name
+          dep_name = package_name
           return unless dep_name&.start_with?("@") && dep_name.include?("/")
 
           scope = T.must(dep_name.split("/").first)
@@ -400,15 +400,15 @@ module Dependabot
           nil
         end
 
+        sig { returns(T.nilable(String)) }
+        def package_name
+          dependency&.then { |dep| Helpers.npm_package_name(dep) }
+        end
+
         # npm registries expect slashes to be escaped
         sig { returns(T.nilable(String)) }
         def escaped_dependency_name
-          dependency&.name&.gsub("/", "%2F")
-        end
-
-        sig { returns(T.nilable(String)) }
-        def scopeless_name
-          dependency&.name&.split("/")&.last
+          package_name&.gsub("/", "%2F")
         end
 
         sig { returns(T.nilable(String)) }
