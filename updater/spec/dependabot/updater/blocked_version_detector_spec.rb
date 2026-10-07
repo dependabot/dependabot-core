@@ -5,7 +5,6 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/job/blocked_version"
 require "dependabot/updater/blocked_version_detector"
-require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "support/dummy_package_manager/dummy"
 
 RSpec.describe Dependabot::Updater::BlockedVersionDetector do
@@ -144,23 +143,25 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
     let(:current_dependencies) { [transitive_dependency(name: "left-pad", version: "1.1.0")] }
 
     context "when an npm alias update changes the combined package identity" do
-      let(:package_manager) { "npm_and_yarn" }
       let(:previous_dependencies) { alias_collision_dependencies("1.0.0") }
       let(:current_dependencies) { alias_collision_dependencies("7.0.0") }
       let(:blocked_versions) { [blocked_version(name: "ms", requirement: ">= 7.0.0")] }
 
       def alias_collision_dependencies(alias_version)
-        lockfile = Dependabot::DependencyFile.new(
-          name: "package-lock.json",
-          content: {
-            "lockfileVersion" => 3,
-            "packages" => {
-              "node_modules/ms" => { "name" => "is-number", "version" => alias_version },
-              "node_modules/debug/node_modules/ms" => { "version" => "2.0.0" }
-            }
-          }.to_json
-        )
-        Dependabot::NpmAndYarn::FileParser::LockfileParser.new(dependency_files: [lockfile]).parse
+        aliased = transitive_dependency(name: "ms", version: alias_version)
+        aliased.metadata[:npm_package_name] = "is-number"
+        versions = [aliased, transitive_dependency(name: "ms", version: "2.0.0")]
+        primary = versions.min_by { |dependency| Gem::Version.new(dependency.version) }
+
+        [
+          Dependabot::Dependency.new(
+            name: "ms",
+            version: primary.version,
+            requirements: [],
+            package_manager: "dummy",
+            metadata: primary.metadata.merge(all_versions: [primary], npm_package_versions: versions)
+          )
+        ]
       end
 
       it "still applies installation-name blocks to the updated sibling alias" do
