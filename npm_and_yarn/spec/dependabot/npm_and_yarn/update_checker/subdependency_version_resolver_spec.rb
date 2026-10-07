@@ -171,15 +171,15 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           package_manager: "npm_and_yarn"
         )
       end
-      # pnpm refuses the pin on a transitive package, and the retry resolves
-      # acorn to 5.7.4 and 6.4.2 at the depths the dependents' ranges allow,
-      # whatever the bound is. The best resolution within the bound is proposed.
-      let(:latest_allowable_version) { "6.4.2" }
+      # pnpm refuses the pin on a transitive package, and the retry resolves acorn to the newest version
+      # the dependents' ranges allow (5.7.4), whatever the bound is. That resolution is proposed when it
+      # is within the bound.
+      let(:latest_allowable_version) { "5.7.4" }
 
-      it { is_expected.to eq(Gem::Version.new("6.4.2")) }
+      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
 
-      context "when an occurrence resolves above the allowable version" do
-        let(:latest_allowable_version) { "6.0.2" }
+      context "when the resolution is above the allowable version" do
+        let(:latest_allowable_version) { "5.5.0" }
 
         it { is_expected.to be_nil }
       end
