@@ -351,9 +351,23 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      it "calls run_npm_updater" do
-        expect(resolver).to receive(:run_npm_updater).and_call_original
-        expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+      it "rejects an update when a higher nested occurrence exceeds the cap" do
+        expect(latest_resolvable_version).to be_nil
+      end
+
+      context "when native npm exceeds the allowable version" do
+        let(:latest_allowable_version) { "5.6.0" }
+
+        it "rejects the actual lockfile instead of reporting a lower version" do
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "when native npm selects an ignored version below the allowable version" do
+        let(:ignored_versions) { [">= 5.7.0, < 6"] }
+        let(:latest_allowable_version) { "7.0.0" }
+
+        it { is_expected.to be_nil }
       end
 
       context "when resolving a security update" do
@@ -426,103 +440,6 @@ RSpec.describe namespace::SubdependencyVersionResolver do
             .not_to receive(:run_npm_audit_fix_command)
 
           latest_resolvable_version
-        end
-      end
-
-      context "when all_versions metadata is present" do
-        let(:all_version_deps) do
-          [
-            Dependabot::Dependency.new(
-              name: "acorn",
-              version: "5.5.3",
-              requirements: [],
-              package_manager: "npm_and_yarn"
-            ),
-            Dependabot::Dependency.new(
-              name: "acorn",
-              version: "5.6.0",
-              requirements: [],
-              package_manager: "npm_and_yarn"
-            ),
-            Dependabot::Dependency.new(
-              name: "acorn",
-              version: "5.7.4",
-              requirements: [],
-              package_manager: "npm_and_yarn"
-            )
-          ]
-        end
-
-        let(:parsed_dep) do
-          Dependabot::Dependency.new(
-            name: "acorn",
-            version: "5.7.4",
-            requirements: [],
-            package_manager: "npm_and_yarn",
-            metadata: { all_versions: all_version_deps }
-          )
-        end
-
-        before do
-          parser = instance_double(Dependabot::NpmAndYarn::FileParser)
-          allow(Dependabot::NpmAndYarn::FileParser).to receive(:new).and_return(parser)
-          allow(parser).to receive(:parse).and_return([parsed_dep])
-        end
-
-        it "returns the highest version from all_versions within the allowable range" do
-          expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
-        end
-
-        context "when latest_allowable_version caps the result" do
-          let(:latest_allowable_version) { "5.6.0" }
-
-          it "returns the highest version at or below the allowable version" do
-            expect(latest_resolvable_version).to eq(Gem::Version.new("5.6.0"))
-          end
-        end
-
-        context "when no all_versions candidate is above the current version" do
-          let(:all_version_deps) do
-            [
-              Dependabot::Dependency.new(
-                name: "acorn",
-                version: "5.5.3",
-                requirements: [],
-                package_manager: "npm_and_yarn"
-              )
-            ]
-          end
-
-          it "falls back to the combined parsed version" do
-            expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
-          end
-        end
-
-        context "when all_versions metadata is empty" do
-          let(:parsed_dep) do
-            Dependabot::Dependency.new(
-              name: "acorn",
-              version: "5.7.4",
-              requirements: [],
-              package_manager: "npm_and_yarn",
-              metadata: { all_versions: [] }
-            )
-          end
-
-          it "falls back to the combined parsed version" do
-            expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
-          end
-        end
-
-        context "when the experiment is disabled" do
-          before do
-            allow(Dependabot::Experiments).to receive(:enabled?)
-              .with(:enable_audit_fix_fallback).and_return(false)
-          end
-
-          it "returns the combined parsed version without checking all_versions" do
-            expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
-          end
         end
       end
     end

@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/file_parser/json_lock"
 
 module Dependabot
   module NpmAndYarn
@@ -73,6 +74,52 @@ module Dependabot
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
+
+      # npm update accepts names, not version constraints. Check the actual
+      # changed occurrences before accepting its result, including audit fallback.
+      sig do
+        params(
+          lockfile: DependencyFile,
+          updated_content: String,
+          dependency: Dependency,
+          ignored_versions: T::Array[String]
+        ).returns(T::Boolean)
+      end
+      def self.npm_subdependency_update_allowed?(lockfile:, updated_content:, dependency:, ignored_versions: [])
+        allowable_version = dependency.version
+        allowable = Version.new(allowable_version) if allowable_version
+        ignored = ignored_versions.flat_map { |req| dependency.requirement_class.requirements_array(req) }
+
+        changed_npm_dependency_records(lockfile, updated_content, dependency.name).all? do |record|
+          version = record.version
+          next false unless version && Version.correct?(version)
+
+          candidate = Version.new(version)
+          next false if allowable && candidate > allowable
+
+          ignored.none? { |requirement| requirement.satisfied_by?(candidate) }
+        end
+      end
+
+      sig do
+        params(lockfile: DependencyFile, updated_content: String, dependency_name: String)
+          .returns(T::Array[FileParser::JsonLock::Record])
+      end
+      def self.changed_npm_dependency_records(lockfile, updated_content, dependency_name)
+        updated_lockfile = lockfile.dup
+        updated_lockfile.content = updated_content
+        before = FileParser::JsonLock.new(lockfile).parsed.package_entries
+        after = FileParser::JsonLock.new(updated_lockfile).parsed.package_entries
+
+        after.filter_map do |path, record|
+          next unless path.include?("node_modules/")
+          next unless path.split("node_modules/").last == dependency_name || record.name == dependency_name
+
+          previous = before[path]
+          record unless previous && previous.version == record.version && previous.name == record.name
+        end
+      end
+      private_class_method :changed_npm_dependency_records
 
       # Masks the varying cooldown day count out of the telemetry fingerprint while
       # keeping the security `=0` bypass distinguishable (mirrors the npm lockfile

@@ -239,7 +239,21 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def run_current_npm_update
-          run_npm_updater(top_level_dependencies: top_level_dependencies, sub_dependencies: sub_dependencies)
+          updated_files = run_npm_updater(
+            top_level_dependencies: top_level_dependencies,
+            sub_dependencies: sub_dependencies
+          )
+          # The previous-state diagnostic must not enforce the new update's policy.
+          invalid_dependencies = sub_dependencies.reject do |dependency|
+            NativeHelpers.npm_subdependency_update_allowed?(
+              lockfile: lockfile,
+              updated_content: updated_files.fetch(lockfile_basename),
+              dependency: dependency
+            )
+          end
+          raise Dependabot::UpdateNotPossible, invalid_dependencies.map(&:name) if invalid_dependencies.any?
+
+          updated_files
         end
 
         sig { returns(T::Hash[String, String]) }
