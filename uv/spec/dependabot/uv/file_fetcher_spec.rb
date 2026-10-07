@@ -1468,25 +1468,43 @@ RSpec.describe Dependabot::Uv::FileFetcher do
     end
   end
 
-  describe "#files with exclude_paths covering the directory" do
-    let(:repo_contents_path) { build_tmp_repo("excluded_subdirectory") }
+  describe "#files with exclude_paths" do
+    let(:repo_contents_path) { build_tmp_repo("exclude_paths") }
+    let(:directory) { "/frozen_project" }
+    let(:exclude_paths) { ["frozen_project/**"] }
     let(:file_fetcher_instance) do
       described_class.new(
-        source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/frozen_project"),
+        source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: directory),
         credentials: [],
         repo_contents_path: repo_contents_path
-      ).tap { |ff| ff.exclude_paths = ["frozen_project/**"] }
+      ).tap { |ff| ff.exclude_paths = exclude_paths }
     end
 
     after do
       FileUtils.rm_rf(repo_contents_path)
     end
 
-    # requirements.txt is dropped by the listing filter, but pyproject.toml is loaded
-    # from the clone by path, so only the final filter can exclude it.
-    it "excludes pyproject.toml as well as the listed files" do
+    # pyproject.toml is loaded from the clone by path rather than from the filtered listing,
+    # and its path dependency is unreachable, so it must be excluded before that is followed.
+    it "skips a fully excluded directory" do
       expect { file_fetcher_instance.files }
         .to raise_error(Dependabot::DependencyFileNotFound)
+    end
+
+    context "when a non-root job falls back to the top-level .python-version" do
+      let(:directory) { "/app" }
+
+      it "keeps it under its local name" do
+        expect(file_fetcher_instance.files.map(&:name)).to include(".python-version")
+      end
+
+      context "when that file is excluded" do
+        let(:exclude_paths) { [".python-version"] }
+
+        it "matches the exclusion against its real path" do
+          expect(file_fetcher_instance.files.map(&:name)).not_to include(".python-version")
+        end
+      end
     end
   end
 end
