@@ -1,0 +1,303 @@
+/* YARN.LOCK PARSER
+ *
+ * Inputs:
+ *  - directory containing a yarn.lock
+ *
+ * Outputs:
+ *  - JSON formatted yarn.lock
+ */
+import fs from "fs";
+import path from "path";
+import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
+const parseLockfile =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@dependabot/yarn-lib/lib/lockfile/parse").default;
+
+export interface LockfileEntry {
+  version: string;
+  resolved?: string;
+  resolution?: string;
+  dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+}
+
+// Yarn berry descriptors are prefixed with the protocol used to resolve them,
+// e.g. `abind@npm:^1.0.0` or `my-app@workspace:.`. Only the `npm:` protocol
+// resolves to a semver range we can reason about.
+const NPM_PROTOCOL = "npm:";
+const NPM_ALIAS_KEY_SEPARATOR = `@${NPM_PROTOCOL}`;
+const PATCH_PROTOCOL = "patch:";
+const WORKSPACE_PROTOCOL = "workspace:";
+
+// Yarn berry entries can list several descriptors for the same resolution,
+// e.g. `"abind@npm:^1.0.0, abind@npm:^1.0.4"`.
+const DESCRIPTOR_SEPARATOR = ", ";
+
+const METADATA_KEY = "__metadata";
+
+export async function parse(
+  directory: string
+): Promise<Record<string, LockfileEntry>> {
+  const readFile = (fileName: string) =>
+    fs.readFileSync(path.join(directory, fileName)).toString();
+  const data = readFile("yarn.lock");
+  return parseLockfile(data).object;
+}
+
+// A single `name -> requirement` edge of the dependency graph. The original
+// descriptor identity is preserved for lockfile lookups, while `realName`
+// stores the de-aliased package name for vulnerability comparisons.
+export interface DependencyEdge {
+  name: string;
+  requirement: string;
+  realName?: string;
+}
+
+export interface NormalizedLockfileEntry extends DependencyEdge {
+  version: string;
+  resolved?: string;
+  dependencies: DependencyEdge[];
+}
+
+interface LockfileIndex {
+  entriesByEdge: Map<string, NormalizedLockfileEntry[]>;
+  workspaceEntriesByName: Map<string, NormalizedLockfileEntry[]>;
+}
+
+const lockfileIndexes = new WeakMap<NormalizedLockfileEntry[], LockfileIndex>();
+
+// Parses a yarn.lock into a flat list of entries, one per descriptor, where the
+// descriptors and the dependency edges are normalized in the same way so they
+// can be compared against the requirements declared in a package.json manifest
+// (also normalized, via `normalizeDescriptor`).
+//
+// Normalizing is required because yarn berry lockfiles, which are parsed by the
+// yarn v1 parser too, keep the berry protocol prefixes and may group several
+// descriptors under a single key. Yarn v1 lockfiles are normalized with the
+// same rules, which only affects npm aliases (`alias@npm:real-pkg@^1.0.0`).
+//
+// A list is used rather than an object keyed by the normalized descriptor
+// because distinct descriptors can normalize to the same edge while resolving
+// to different versions, e.g. a manifest depending on both `foo@^1.0.0` and
+// `foo-alias@npm:foo@^1.0.0`. Keying would discard one of the resolutions along
+// with its dependency subtree.
+export async function parseNormalized(
+  directory: string
+): Promise<NormalizedLockfileEntry[]> {
+  return normalizeLockfile(await parse(directory));
+}
+
+// Resolves a `name`/`requirement` descriptor pair into a dependency edge.
+// The alias name and original descriptor requirement are kept so lockfile entry
+// lookup remains exact, but the de-aliased package name is stored separately for
+// real-package comparisons (e.g. vulnerable dependency checks).
+export function normalizeDescriptor(
+  name: string,
+  requirement: string,
+  resolution?: string
+): DependencyEdge {
+  const aliasKeySeparatorIndex = name.indexOf(NPM_ALIAS_KEY_SEPARATOR);
+  if (aliasKeySeparatorIndex > 0) {
+    const aliasName = name.slice(0, aliasKeySeparatorIndex);
+    const realName = name.slice(
+      aliasKeySeparatorIndex + NPM_ALIAS_KEY_SEPARATOR.length
+    );
+    return {
+      name: aliasName,
+      requirement: `${NPM_PROTOCOL}${realName}@${requirement}`,
+      realName,
+    };
+  }
+
+  if (requirement.startsWith(NPM_PROTOCOL)) {
+    const rest = requirement.slice(NPM_PROTOCOL.length);
+    const aliasMatch = rest.match(LOCKFILE_ENTRY_REGEX);
+    if (aliasMatch && aliasMatch[2]) {
+      return {
+        name,
+        requirement,
+        realName: aliasMatch[1],
+      };
+    }
+
+    const resolutionMatch = resolution?.match(LOCKFILE_ENTRY_REGEX);
+    const resolvedName = resolutionMatch?.[1];
+    if (resolvedName && resolvedName !== name) {
+      return {
+        name,
+        requirement,
+        realName: resolvedName,
+      };
+    }
+
+    return { name, requirement: rest };
+  }
+
+  return { name, requirement };
+}
+
+export function edgeKey(edge: DependencyEdge): string {
+  return `${edge.name}@${edge.requirement}`;
+}
+
+// Finds every lockfile entry a dependency edge resolves to.
+//
+// Workspace ranges are matched by name alone because their manifest range and
+// lockfile path differ. Patch entries are also indexed under their underlying
+// source descriptor so generated plain dependency edges can resolve them.
+export function findEntries(
+  lockfile: NormalizedLockfileEntry[],
+  edge: DependencyEdge
+): NormalizedLockfileEntry[] {
+  const index = getLockfileIndex(lockfile);
+
+  if (isWorkspaceRequirement(edge.requirement)) {
+    return index.workspaceEntriesByName.get(edge.name) ?? [];
+  }
+
+  return index.entriesByEdge.get(edgeKey(edge)) ?? [];
+}
+
+export function normalizeDependencyEdge(
+  name: string,
+  requirement: string,
+  lockfile: NormalizedLockfileEntry[]
+): DependencyEdge {
+  const matchingEntries = findEntries(lockfile, { name, requirement });
+  const realNames = new Set(
+    matchingEntries
+      .map((entry) => entry.realName)
+      .filter((realName): realName is string => Boolean(realName))
+  );
+
+  if (realNames.size === 1) {
+    return {
+      name,
+      requirement,
+      realName: realNames.values().next().value,
+    };
+  }
+
+  return normalizeDescriptor(name, requirement);
+}
+
+function isWorkspaceRequirement(requirement: string): boolean {
+  return requirement.startsWith(WORKSPACE_PROTOCOL);
+}
+
+function getLockfileIndex(lockfile: NormalizedLockfileEntry[]): LockfileIndex {
+  const existingIndex = lockfileIndexes.get(lockfile);
+  if (existingIndex) return existingIndex;
+
+  const index: LockfileIndex = {
+    entriesByEdge: new Map(),
+    workspaceEntriesByName: new Map(),
+  };
+
+  for (const entry of lockfile) {
+    addIndexedEntry(index.entriesByEdge, edgeKey(entry), entry);
+    const patchSource = patchSourceEdge(entry);
+    if (patchSource) {
+      addIndexedEntry(index.entriesByEdge, edgeKey(patchSource), entry);
+    }
+    if (isWorkspaceRequirement(entry.requirement)) {
+      addIndexedEntry(index.workspaceEntriesByName, entry.name, entry);
+    }
+  }
+
+  lockfileIndexes.set(lockfile, index);
+  return index;
+}
+
+function patchSourceEdge(
+  entry: NormalizedLockfileEntry
+): DependencyEdge | undefined {
+  if (!entry.requirement.startsWith(PATCH_PROTOCOL)) return undefined;
+
+  const source = entry.requirement
+    .slice(PATCH_PROTOCOL.length)
+    .split("#", 1)[0];
+  const packagePrefix = `${entry.name}@`;
+  if (!source.startsWith(packagePrefix)) return undefined;
+
+  const requirement = decodeURIComponent(source.slice(packagePrefix.length));
+  return normalizeDescriptor(entry.name, requirement);
+}
+
+function addIndexedEntry(
+  index: Map<string, NormalizedLockfileEntry[]>,
+  key: string,
+  entry: NormalizedLockfileEntry
+): void {
+  const entries = index.get(key);
+  if (entries) {
+    entries.push(entry);
+  } else {
+    index.set(key, [entry]);
+  }
+}
+
+function normalizeLockfile(
+  lockfileJson: Record<string, LockfileEntry>
+): NormalizedLockfileEntry[] {
+  const normalized: NormalizedLockfileEntry[] = [];
+  const pendingDependencies: {
+    entry: NormalizedLockfileEntry;
+    dependencies?: Record<string, string>;
+    optionalDependencies?: Record<string, string>;
+  }[] = [];
+
+  for (const [entry, pkg] of Object.entries(lockfileJson)) {
+    if (entry === METADATA_KEY) continue;
+
+    for (const descriptor of entry.split(DESCRIPTOR_SEPARATOR)) {
+      const match = descriptor.match(LOCKFILE_ENTRY_REGEX);
+      if (!match) continue;
+
+      const edge = normalizeDescriptor(match[1], match[2], pkg.resolution);
+      // Give each descriptor its own entry object and dependency list so that
+      // callers mutating one entry don't affect the other descriptors sharing
+      // this resolution. The edges themselves are treated as immutable values
+      // and are intentionally shared.
+      const normalizedEntry: NormalizedLockfileEntry = {
+        name: edge.name,
+        requirement: edge.requirement,
+        ...(edge.realName && { realName: edge.realName }),
+        version: pkg.version,
+        resolved: pkg.resolved,
+        dependencies: [],
+      };
+      normalized.push(normalizedEntry);
+      pendingDependencies.push({
+        entry: normalizedEntry,
+        dependencies: pkg.dependencies,
+        optionalDependencies: pkg.optionalDependencies,
+      });
+    }
+  }
+
+  getLockfileIndex(normalized);
+
+  for (const pending of pendingDependencies) {
+    pending.entry.dependencies = normalizeDependencies(
+      [pending.dependencies, pending.optionalDependencies],
+      normalized
+    );
+  }
+
+  return normalized;
+}
+
+// Dependencies are returned as a list rather than an object keyed by name so
+// that aliased edges resolving to the same package (e.g. `foo: npm:^1.0.0` and
+// `foo-v2: npm:foo@^2.0.0`) are all preserved instead of overwriting each other.
+function normalizeDependencies(
+  dependencyGroups: (Record<string, string> | undefined)[],
+  lockfile: NormalizedLockfileEntry[]
+): DependencyEdge[] {
+  return dependencyGroups.flatMap((dependencies) =>
+    Object.entries(dependencies ?? {}).map(([name, spec]) =>
+      normalizeDependencyEdge(name, spec, lockfile)
+    )
+  );
+}

@@ -61,18 +61,55 @@ public class MessageReportTests
         yield return
         [
             // message
+            new CreateDependencySubmission()
+            {
+                Version = 0,
+                Sha = "unused",
+                Ref = "unused",
+                Job = new CreateDependencySubmission.SubmissionJob() { Correlator = "unused", Id = "unused" },
+                Detector = new CreateDependencySubmission.SubmissionDetector() { Name = "unused", Version = "unused", Url = "unused" },
+                Manifests = new Dictionary<string, CreateDependencySubmission.Manifest>()
+                {
+                    ["manifest1"] = new CreateDependencySubmission.Manifest()
+                    {
+                        Name = "manifest1",
+                        File = new CreateDependencySubmission.ManifestFile() { SourceLocation = "unused" },
+                        Metadata = new CreateDependencySubmission.ManifestMetadata() { Ecosystem = "unused" },
+                        Resolved = new Dictionary<string, CreateDependencySubmission.ResolvedDependency>(),
+                    },
+                },
+                Metadata = new CreateDependencySubmission.SubmissionMetadata()
+                {
+                    Status = "succeeded",
+                    ScannedManifestPath = "path/to/manifest",
+                },
+            },
+            // expected
+            """
+            CreateDependencySubmission
+            - Status: succeeded
+            - Scanned: path/to/manifest
+            - Manifests: 1
+            """
+        ];
+
+        yield return
+        [
+            // message
             new CreatePullRequest()
             {
                 Dependencies = [
                     new()
                     {
                         Name = "Dependency1",
+                        Directory = "/",
                         Version = "1.2.3",
                         Requirements = [], // unused
                     },
                     new()
                     {
                         Name = "Dependency2",
+                        Directory = "/",
                         Version = "4.5.6",
                         Requirements = [], // unused
                     }
@@ -136,6 +173,17 @@ public class MessageReportTests
             Error type: job_repo_not_found
             - message: custom message
             """
+        ];
+
+        yield return
+        [
+            // message
+            new OutOfDisk(),
+            // expected
+            """
+            Error type: out_of_disk
+            """
+
         ];
 
         yield return

@@ -1,0 +1,29 @@
+name: ARM64 Build
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  merge_group:
+    types:
+      - checks_requested
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'merge_group' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'merge_group' && github.ref != 'refs/heads/main' }}
+
+jobs:
+  arm64-build:
+    runs-on: ubuntu-24.04-arm
+    if: github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Build bundler ecosystem image
+        run: script/build bundler

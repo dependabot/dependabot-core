@@ -1,6 +1,6 @@
 namespace NuGetUpdater.Core.Run.ApiModel;
 
-public sealed class JobSource
+public sealed record JobSource
 {
     public required string Provider { get; init; }
     public required string Repo { get; init; }

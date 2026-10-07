@@ -2,7 +2,8 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "parser/current"
+require "parser"
+require "prism"
 require "dependabot/bundler/file_updater"
 
 module Dependabot
@@ -19,15 +20,15 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency, new_pin: String).void }
         def initialize(dependency:, new_pin:)
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @new_pin = T.let(new_pin, String)
+          @dependency = dependency
+          @new_pin = new_pin
         end
 
         sig { params(content: String).returns(String) }
         def rewrite(content)
           buffer = Parser::Source::Buffer.new("(gemfile_content)")
           buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
+          ast = Prism::Translation::ParserCurrent.new.parse(buffer)
 
           Rewriter
             .new(dependency: dependency, new_pin: new_pin)
@@ -37,7 +38,7 @@ module Dependabot
         class Rewriter < Parser::TreeRewriter
           extend T::Sig
 
-          PIN_KEYS = T.let(%i(ref tag).freeze, T::Array[Symbol])
+          PIN_KEYS = %i(ref tag).freeze
 
           sig { returns(Dependabot::Dependency) }
           attr_reader :dependency
@@ -48,11 +49,11 @@ module Dependabot
           sig { params(dependency: Dependabot::Dependency, new_pin: String).void }
           def initialize(dependency:, new_pin:)
             super()
-            @dependency = T.let(dependency, Dependabot::Dependency)
-            @new_pin = T.let(new_pin, String)
+            @dependency = dependency
+            @new_pin = new_pin
           end
 
-          sig { params(node: Parser::AST::Node).returns(T.untyped) }
+          sig { params(node: Parser::AST::Node).void }
           def on_send(node)
             return unless declares_targeted_gem?(node)
             return unless node.children.last.type == :hash

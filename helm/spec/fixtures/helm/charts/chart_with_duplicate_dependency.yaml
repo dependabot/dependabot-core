@@ -1,0 +1,12 @@
+apiVersion: v2
+name: umbrella
+version: 1.0.0
+description: Chart depending on the same subchart twice with different constraints
+type: application
+dependencies:
+  - name: common
+    version: "^1.0.0"
+    repository: https://charts.bitnami.com/bitnami
+  - name: common
+    version: 1.2.0
+    repository: https://charts.bitnami.com/bitnami

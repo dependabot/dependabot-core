@@ -21,19 +21,9 @@ RSpec.describe Dependabot::Uv::Language do
       expect(language.deprecated?).to be false
     end
 
-    context "when detected version is deprecated but not unsupported" do
-      let(:detected_version) { "3.8.1" }
-
-      before do
-        allow(language).to receive(:unsupported?).and_return(false)
-      end
-
-      it "returns true" do
-        expect(language.deprecated?).to be true
-      end
-    end
-
     context "when detected version is unsupported" do
+      let(:detected_version) { "3.9.1" }
+
       it "returns false, as unsupported takes precedence" do
         expect(language.deprecated?).to be false
       end
@@ -46,7 +36,7 @@ RSpec.describe Dependabot::Uv::Language do
     end
 
     context "when detected version is unsupported" do
-      let(:detected_version) { "3.8" }
+      let(:detected_version) { "3.9" }
 
       it "returns true" do
         expect(language.unsupported?).to be true
@@ -60,7 +50,7 @@ RSpec.describe Dependabot::Uv::Language do
     end
 
     context "when detected version is unsupported" do
-      let(:detected_version) { "3.8" }
+      let(:detected_version) { "3.9" }
 
       it "raises a ToolVersionNotSupported error" do
         expect { language.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)

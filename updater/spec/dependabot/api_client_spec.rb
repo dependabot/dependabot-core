@@ -83,7 +83,6 @@ RSpec.describe Dependabot::ApiClient do
 
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
       stub_request(:post, create_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -246,6 +245,27 @@ RSpec.describe Dependabot::ApiClient do
         end.to raise_error(Dependabot::DependencyFileNotSupported)
       end
     end
+
+    context "when base URL includes a path" do
+      subject(:client) { described_class.new("http://example.com/api/v1", 1, "token") }
+
+      let(:create_pull_request_url) do
+        "http://example.com/api/v1/update_jobs/1/create_pull_request"
+      end
+
+      before do
+        stub_request(:post, create_pull_request_url)
+          .to_return(status: 204, headers: headers)
+      end
+
+      it "combines base path with request path" do
+        client.create_pull_request(dependency_change, base_commit)
+
+        expect(WebMock)
+          .to have_requested(:post, create_pull_request_url)
+          .with(headers: { "Authorization" => "token" })
+      end
+    end
   end
 
   describe "update_pull_request" do
@@ -265,7 +285,8 @@ RSpec.describe Dependabot::ApiClient do
         source: source,
         credentials: [],
         commit_message_options: [],
-        updating_a_pull_request?: true
+        updating_a_pull_request?: true,
+        ignore_conditions: []
       )
     end
     let(:dependency) do
@@ -296,12 +317,21 @@ RSpec.describe Dependabot::ApiClient do
         )
       ]
     end
+    let(:message) do
+      Dependabot::PullRequestCreator::Message.new(
+        pr_name: "PR name",
+        pr_message: "PR message",
+        commit_message: "Commit message"
+      )
+    end
     let(:update_pull_request_url) do
       "http://example.com/update_jobs/1/update_pull_request"
     end
     let(:base_commit) { "sha" }
 
     before do
+      allow(Dependabot::PullRequestCreator::MessageBuilder)
+        .to receive_message_chain(:new, :message).and_return(message)
       stub_request(:post, update_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -314,9 +344,7 @@ RSpec.describe Dependabot::ApiClient do
         .with(headers: { "Authorization" => "token" })
     end
 
-    it "does not encode the pull request fields" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
-
+    it "encodes the pull request fields" do
       client.update_pull_request(dependency_change, base_commit)
 
       expect(WebMock)
@@ -347,10 +375,9 @@ RSpec.describe Dependabot::ApiClient do
                 ]
               )
               expect(data["base-commit-sha"]).to eql("sha")
-              expect(data).not_to have_key("commit-message")
-              expect(data).not_to have_key("pr-title")
-              expect(data).not_to have_key("pr-body")
-              expect(data).not_to have_key("grouped-update")
+              expect(data["commit-message"]).to eq("Commit message")
+              expect(data["pr-title"]).to eq("PR name")
+              expect(data["pr-body"]).to eq("PR message")
             end)
     end
   end
@@ -630,10 +657,6 @@ RSpec.describe Dependabot::ApiClient do
   end
 
   describe "record_ecosystem_meta" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
-    end
-
     let(:ecosystem) do
       Dependabot::Ecosystem.new(
         name: "bundler",
@@ -661,6 +684,11 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
     let(:record_ecosystem_meta_url) { "http://example.com/update_jobs/1/record_ecosystem_meta" }
+
+    before do
+      stub_request(:post, record_ecosystem_meta_url)
+        .to_return(status: 204, headers: headers)
+    end
 
     it "hits the correct endpoint" do
       client.record_ecosystem_meta(ecosystem)
@@ -702,17 +730,6 @@ RSpec.describe Dependabot::ApiClient do
     context "when ecosystem is nil" do
       it "does not send a request" do
         client.record_ecosystem_meta(nil)
-        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
-      end
-    end
-
-    context "when feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(false)
-      end
-
-      it "does not send a request" do
-        client.record_ecosystem_meta(ecosystem)
         expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
       end
     end
@@ -776,10 +793,201 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
 
-    context "when cooldown is nil" do
+    context "when job is nil" do
       it "does not send a request" do
         client.record_cooldown_meta(nil)
         expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+
+    context "when the host does not implement the endpoint" do
+      before do
+        stub_request(:post, record_cooldown_meta_url).to_return(status: 404, body: "The resource cannot be found.")
+      end
+
+      it "does not retry" do
+        client.record_cooldown_meta(job)
+
+        expect(WebMock).to have_requested(:post, record_cooldown_meta_url).once
+      end
+    end
+
+    context "when running through the Dependabot CLI" do
+      subject(:client) { described_class.new("http://example.com", "cli", "token") }
+
+      let(:record_cooldown_meta_url) { "http://example.com/update_jobs/cli/record_cooldown_meta" }
+
+      it "does not send hosted-service telemetry" do
+        client.record_cooldown_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+  end
+
+  describe "fetch_blocked_versions" do
+    let(:blocked_versions_url) { "http://example.com/update_jobs/1/blocked_versions" }
+
+    context "when the API returns blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [
+                { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+                { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
+              ]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns the blocked versions array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq(
+          [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
+          ]
+        )
+      end
+    end
+
+    context "when the API returns an error" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 500, body: "Internal Server Error", headers: headers)
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API times out" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_timeout
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns no blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns an empty array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns invalid JSON" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: "not json", headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API returns data that is not an array" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: "unexpected" }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API returns a non-object JSON body" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: "[]", headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API returns data entries that are not hashes" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [1, "not-a-hash"] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API omits data" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: {}.to_json, headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when an entry has malformed fields" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [{ "dependency-name" => 1, "version-requirement" => [], "reason" => true }]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
       end
     end
   end

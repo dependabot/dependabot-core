@@ -1,5 +1,7 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
+
+require "dependabot/dependency_requirement"
 
 module Dependabot
   module Gradle
@@ -9,10 +11,10 @@ module Dependabot
       DISTRIBUTION_REPOSITORY_URL = "https://services.gradle.org"
       DISTRIBUTION_DEPENDENCY_TYPE = "gradle-distribution"
 
-      sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def self.distribution_requirements?(requirements)
         requirements.any? do |req|
-          req.dig(:source, :type) == DISTRIBUTION_DEPENDENCY_TYPE
+          req.source_string("type") == DISTRIBUTION_DEPENDENCY_TYPE
         end
       end
     end

@@ -15,6 +15,248 @@ namespace NuGetUpdater.Core.Test.Run.UpdateHandlers;
 public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
 {
     [Fact]
+    public async Task ClosesObsoleteAggregatePullRequestForDependencyNameParent()
+    {
+        await TestAsync(
+            job: new Job()
+            {
+                Dependencies = ["Some.Dependency"],
+                DependencyGroups = [
+                    new()
+                    {
+                        Name = "parent",
+                        Rules = new()
+                        {
+                            ["patterns"] = new[] { "*" },
+                            ["group-by"] = "dependency-name",
+                        },
+                    },
+                ],
+                DependencyGroupToRefresh = "parent",
+                ExistingGroupPullRequests = [
+                    new()
+                    {
+                        DependencyGroupName = "parent",
+                        Dependencies = [
+                            new()
+                            {
+                                DependencyName = "Some.Dependency",
+                                DependencyVersion = NuGetVersion.Parse("1.0.0"),
+                            },
+                        ],
+                    },
+                ],
+                Source = CreateJobSource("/src"),
+                UpdatingAPullRequest = true,
+            },
+            files: [],
+            discoveryWorker: TestDiscoveryWorker.FromResults(),
+            analyzeWorker: TestAnalyzeWorker.FromResults(),
+            updaterWorker: TestUpdaterWorker.FromResults(),
+            expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new() { ["operation"] = "update_version_group_pr" },
+                },
+                new ClosePullRequest()
+                {
+                    DependencyNames = ["Some.Dependency"],
+                    Reason = "update_no_longer_possible",
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task GeneratesUpdatePullRequestForDependencyNameSubgroup()
+    {
+        await TestAsync(
+            job: new Job()
+            {
+                Dependencies = ["Some.Dependency"],
+                DependencyGroups = [
+                    new()
+                    {
+                        Name = "parent",
+                        Rules = new()
+                        {
+                            ["patterns"] = new[] { "*" },
+                            ["group-by"] = "dependency-name",
+                        },
+                    },
+                ],
+                DependencyGroupToRefresh = "parent/Some.Dependency",
+                ExistingGroupPullRequests = [
+                    new()
+                    {
+                        DependencyGroupName = "parent/Some.Dependency",
+                        Dependencies = [
+                            new()
+                            {
+                                DependencyName = "Some.Dependency",
+                                DependencyVersion = NuGetVersion.Parse("2.0.0"),
+                            },
+                        ],
+                    },
+                ],
+                Source = CreateJobSource("/src1", "/src2"),
+                UpdatingAPullRequest = true,
+            },
+            files: [
+                ("src1/project.csproj", "initial contents"),
+                ("src2/project.csproj", "initial contents"),
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src1", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src1",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Other.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }),
+                ("/src2", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src2",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("some.dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var dependencyInfo = input.Item3;
+                Assert.Equal("Some.Dependency", dependencyInfo.Name, ignoreCase: true);
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = "2.0.0",
+                    UpdatedDependencies = [],
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRoot = input.Item1;
+                var workspacePath = input.Item2;
+                await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = input.Item3,
+                            NewVersion = NuGetVersion.Parse("2.0.0"),
+                            UpdatedFiles = [workspacePath],
+                        },
+                    ],
+                };
+            }),
+            expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new() { ["operation"] = "update_version_group_pr" },
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Other.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src1/project.csproj",
+                                    Groups = ["dependencies"],
+                                },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src1/project.csproj",
+                                    Groups = ["dependencies"],
+                                },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src1/project.csproj"],
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "some.dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src2/project.csproj",
+                                    Groups = ["dependencies"],
+                                },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src2/project.csproj"],
+                },
+                new UpdatePullRequest()
+                {
+                    DependencyNames = ["Some.Dependency"],
+                    DependencyGroup = "parent/Some.Dependency",
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src1",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        },
+                        new()
+                        {
+                            Directory = "/src2",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
     public async Task GeneratesUpdatePullRequest()
     {
         await TestAsync(
@@ -24,20 +266,37 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                 DependencyGroups = [new() { Name = "test_group" }],
                 DependencyGroupToRefresh = "test_group",
                 ExistingPullRequests = [new() { Dependencies = [new() { DependencyName = "Some.Dependency", DependencyVersion = NuGetVersion.Parse("2.0.0") }] }],
-                Source = CreateJobSource("/src"),
+                Source = CreateJobSource("/src1", "/src2"),
                 UpdatingAPullRequest = true,
             },
             files: [
-                ("src/project.csproj", "initial contents"),
+                ("src1/project1.csproj", "initial contents"),
+                ("src2/project2.csproj", "initial contents"),
             ],
             discoveryWorker: TestDiscoveryWorker.FromResults(
-                ("/src", new WorkspaceDiscoveryResult()
+                ("/src1", new WorkspaceDiscoveryResult()
                 {
-                    Path = "/src",
+                    Path = "/src1",
                     Projects = [
                         new()
                         {
-                            FilePath = "project.csproj",
+                            FilePath = "project1.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Unrelated.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                }),
+                ("/src2", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src2",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project2.csproj",
                             Dependencies = [
                                 new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                                 new("Unrelated.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
@@ -72,39 +331,17 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/src/project.csproj"] }],
+                    UpdateOperations = [new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [workspacePath] }],
                 };
             }),
             expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
             expectedApiMessages: [
-                new UpdatedDependencyList()
-                {
-                    Dependencies = [
-                        new()
-                        {
-                            Name = "Some.Dependency",
-                            Version = "1.0.0",
-                            Requirements = [
-                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
-                            ],
-                        },
-                        new()
-                        {
-                            Name = "Unrelated.Dependency",
-                            Version = "3.0.0",
-                            Requirements = [
-                                new() { Requirement = "3.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
-                            ],
-                        },
-                    ],
-                    DependencyFiles = ["/src/project.csproj"],
-                },
                 new IncrementMetric()
                 {
                     Metric = "updater.started",
@@ -113,6 +350,52 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         ["operation"] = "update_version_group_pr",
                     }
                 },
+                // for `/src1`
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src1/project1.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Unrelated.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/src1/project1.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src1/project1.csproj"],
+                },
+                // for `/src2`
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src2/project2.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Unrelated.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/src2/project2.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src2/project2.csproj"],
+                },
                 new UpdatePullRequest()
                 {
                     DependencyNames = ["Some.Dependency"],
@@ -120,8 +403,14 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                     UpdatedDependencyFiles = [
                         new()
                         {
-                            Directory = "/src",
-                            Name = "project.csproj",
+                            Directory = "/src1",
+                            Name = "project1.csproj",
+                            Content = "updated contents",
+                        },
+                        new()
+                        {
+                            Directory = "/src2",
+                            Name = "project2.csproj",
                             Content = "updated contents",
                         }
                     ],
@@ -204,7 +493,7 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 ImmutableArray<UpdateOperationBase> updateOperations = [];
                 if (workspacePath.EndsWith("project2.csproj"))
@@ -221,6 +510,14 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
             }),
             expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
             expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_version_group_pr",
+                    }
+                },
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -258,14 +555,6 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         },
                     ],
                     DependencyFiles = ["/src/project1.csproj", "/src/project2.csproj"],
-                },
-                new IncrementMetric()
-                {
-                    Metric = "updater.started",
-                    Tags = new()
-                    {
-                        ["operation"] = "update_version_group_pr",
-                    }
                 },
                 new UpdatePullRequest()
                 {
@@ -359,7 +648,7 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 ImmutableArray<UpdateOperationBase> updateOperations = [];
                 if (workspacePath.EndsWith("project2.csproj"))
@@ -376,6 +665,14 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
             }),
             expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
             expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_version_group_pr",
+                    }
+                },
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -413,14 +710,6 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         },
                     ],
                     DependencyFiles = ["/src/project1.csproj", "/src/project2.csproj"],
-                },
-                new IncrementMetric()
-                {
-                    Metric = "updater.started",
-                    Tags = new()
-                    {
-                        ["operation"] = "update_version_group_pr",
-                    }
                 },
                 new UpdatePullRequest()
                 {
@@ -497,6 +786,14 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
             updaterWorker: new TestUpdaterWorker(input => throw new NotImplementedException("test shouldn't get this far")),
             expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
             expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_version_group_pr",
+                    }
+                },
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -510,14 +807,6 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         }
                     ],
                     DependencyFiles = ["/src/project.csproj"],
-                },
-                new IncrementMetric()
-                {
-                    Metric = "updater.started",
-                    Tags = new()
-                    {
-                        ["operation"] = "update_version_group_pr",
-                    }
                 },
                 new ClosePullRequest() { DependencyNames = ["Some.Dependency"], Reason = "update_no_longer_possible" },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
@@ -593,7 +882,7 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -604,6 +893,14 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
             }),
             expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
             expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_version_group_pr",
+                    }
+                },
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -626,14 +923,6 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                     ],
                     DependencyFiles = ["/src/project.csproj"],
                 },
-                new IncrementMetric()
-                {
-                    Metric = "updater.started",
-                    Tags = new()
-                    {
-                        ["operation"] = "update_version_group_pr",
-                    }
-                },
                 new ClosePullRequest() { DependencyNames = ["Some.Dependency", "Some.Other.Dependency"], Reason = "dependencies_changed" },
                 new CreatePullRequest()
                 {
@@ -641,6 +930,7 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.1",
                             Requirements = [
                                 new() { Requirement = "2.0.1", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -653,6 +943,7 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Other.Dependency",
+                            Directory = "/src",
                             Version = "4.0.1",
                             Requirements = [
                                 new() { Requirement = "4.0.1", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -748,7 +1039,7 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -759,6 +1050,14 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
             }),
             expectedUpdateHandler: RefreshGroupUpdatePullRequestHandler.Instance,
             expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_version_group_pr",
+                    }
+                },
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -773,20 +1072,13 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                     ],
                     DependencyFiles = ["/src/project.csproj"],
                 },
-                new IncrementMetric()
-                {
-                    Metric = "updater.started",
-                    Tags = new()
-                    {
-                        ["operation"] = "update_version_group_pr",
-                    }
-                },
                 new CreatePullRequest()
                 {
                     Dependencies = [
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },

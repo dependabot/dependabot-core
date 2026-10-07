@@ -1,0 +1,18 @@
+[
+  {
+    "name": "my-package",
+    "path": "packages/my-package",
+    "sha": "ghi789",
+    "size": 0,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/packages/my-package?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/tree/sha/packages/my-package",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/ghi789",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/packages/my-package?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/trees/ghi789",
+      "html": "https://github.com/gocardless/bump/tree/sha/packages/my-package"
+    }
+  }
+]

@@ -16,7 +16,7 @@ module Dependabot
         abstract
           .params(
             event: ::Sentry::Event,
-            hint: T::Hash[Symbol, T.untyped]
+            hint: T::Hash[Symbol, Object]
           )
           .returns(::Sentry::Event)
       end

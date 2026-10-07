@@ -1,14 +1,57 @@
 # typed: false
 # frozen_string_literal: true
 
-require "octokit"
+require "base64"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/message_builder"
 
+RSpec.shared_context "with stubbed message builder collaborators" do
+  let(:pr_name_prefix) do
+    vulnerabilities_fixed.values.flatten.any? ? "[Security] " : ""
+  end
+  let(:capitalize_first_word) { true }
+  let(:pr_name_prefixer) do
+    instance_double(
+      Dependabot::PullRequestCreator::PrNamePrefixer,
+      pr_name_prefix: pr_name_prefix,
+      capitalize_first_word?: capitalize_first_word
+    )
+  end
+  let(:metadata_finder_attributes) { {} }
+  let(:metadata_finders) do
+    dependencies.to_h do |dep|
+      attributes = metadata_finder_attributes.fetch(dep.name, {})
+      [dep.name, metadata_finder_double(dependency: dep, **attributes)]
+    end
+  end
+
+  before do
+    allow(Dependabot::PullRequestCreator::PrNamePrefixer)
+      .to receive(:new)
+      .with(
+        source: source,
+        dependencies: dependencies,
+        credentials: credentials,
+        commit_message_options: commit_message_options,
+        security_fix: vulnerabilities_fixed.values.flatten.any?
+      )
+      .and_return(pr_name_prefixer)
+
+    dependencies.each do |dependency|
+      allow(DummyPackageManager::MetadataFinder)
+        .to receive(:new)
+        .with(dependency: dependency, credentials: credentials)
+        .and_return(metadata_finders.fetch(dependency.name))
+    end
+  end
+end
+
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   subject(:message_builder) { builder }
+
+  include_context "with stubbed message builder collaborators"
 
   let(:builder) do
     described_class.new(
@@ -71,8 +114,54 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     )
   end
 
-  let(:json_header) { { "Content-Type" => "application/json" } }
-  let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
+  def metadata_finder_double(dependency:, **attributes)
+    defaults = {
+      attestation_changes: nil,
+      changelog_url: nil,
+      changelog_text: nil,
+      commits_url: nil,
+      commits: nil,
+      homepage_url: nil,
+      install_script_changes: nil,
+      maintainer_changes: nil,
+      releases_url: nil,
+      releases_text: nil,
+      source_url: "https://github.com/gocardless/#{dependency.name}",
+      upgrade_guide_url: nil,
+      upgrade_guide_text: nil
+    }
+
+    instance_double(Dependabot::MetadataFinders::Base, **defaults, **attributes)
+  end
+
+  def decoded_github_content(fixture_name)
+    Base64.decode64(JSON.parse(fixture("github", fixture_name)).fetch("content"))
+  end
+
+  def changelog_section(version)
+    decoded_github_content("changelog_contents.json")
+      .match(/^## #{Regexp.escape(version)}.*?(?=^## |\z)/m)
+      .to_s
+  end
+
+  def changelog_from(version)
+    decoded_github_content("changelog_contents.json")
+      .match(/^## #{Regexp.escape(version)}.*\z/m)
+      .to_s
+  end
+
+  def business_commits
+    JSON.parse(fixture("github", "commits-business-1.4.0.json"))
+        .first(7)
+        .reverse
+        .map do |commit|
+      {
+        sha: commit.fetch("sha"),
+        message: commit.fetch("commit").fetch("message"),
+        html_url: commit.fetch("html_url")
+      }
+    end
+  end
 
   def commits_details(base:, head:)
     "<details>\n" \
@@ -173,61 +262,30 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
     context "when dealing with an application" do
       context "when not using a commit convention" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(
-              status: 200,
-              body: commits_response,
-              headers: json_header
-            )
-        end
-
-        let(:commits_response) { fixture("github", "commits.json") }
-
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
         context "when the internet goes down" do
           before do
-            stub_request(:any, /.*/).to_raise(SocketError)
+            allow(pr_name_prefixer).to receive(:pr_name_prefix).and_raise(SocketError)
           end
+
+          let(:capitalize_first_word) { false }
 
           it { is_expected.to eq("bump business from 1.4.0 to 1.5.0") }
         end
 
-        context "when there are prefixed commits" do
-          let(:commits_response) { fixture("github", "commits_prefixed.json") }
+        context "when the prefixer returns a commit prefix" do
+          let(:pr_name_prefix) { "build(deps): " }
+          let(:capitalize_first_word) { false }
 
           it {
             expect(pr_name).to eq("build(deps): bump business from 1.4.0 to 1.5.0")
           }
         end
 
-        context "when a 409 is returned on asking for commits" do
-          before do
-            stub_request(:get, watched_repo_url + "/commits?per_page=100")
-              .to_return(status: 409, headers: json_header)
-          end
-
-          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
-        end
-
-        context "when using GitLab" do
+        context "with a GitLab source" do
           let(:source) do
             Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
-          end
-          let(:watched_repo_url) do
-            "https://gitlab.com/api/v4/projects/" \
-              "#{CGI.escape(source.repo)}/repository"
-          end
-          let(:commits_response) { fixture("gitlab", "commits.json") }
-
-          before do
-            stub_request(:get, watched_repo_url + "/commits")
-              .to_return(
-                status: 200,
-                body: commits_response,
-                headers: json_header
-              )
           end
 
           it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
@@ -237,6 +295,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:vulnerabilities_fixed) { { business: [{}] } }
 
           it { is_expected.to start_with("[Security] Bump business") }
+        end
+
+        context "when a dependency has audit_fix_used metadata" do
+          let(:metadata) { { audit_fix_used: true } }
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 (via audit fix)") }
         end
 
         context "with two dependencies" do
@@ -491,27 +555,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "when using angular commits" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "commits_angular.json"),
-                       headers: json_header)
-        end
+      context "when the prefixer returns an angular commit prefix" do
+        let(:pr_name_prefix) { "chore(deps): " }
+        let(:capitalize_first_word) { false }
 
         it do
           expect(pr_name).to eq("chore(deps): bump business from 1.4.0 to 1.5.0")
         end
 
         context "when capitalizing message" do
-          before do
-            stub_request(:get, watched_repo_url + "/commits?per_page=100")
-              .to_return(
-                status: 200,
-                body: fixture("github", "commits_angular_capitalized.json"),
-                headers: json_header
-              )
-          end
+          let(:pr_name_prefix) { "Chore(deps): " }
+          let(:capitalize_first_word) { true }
 
           it do
             expect(pr_name).to eq("Chore(deps): Bump business from 1.4.0 to 1.5.0")
@@ -519,21 +573,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "when capitalizing the message but not the prefix" do
-          before do
-            stub_request(:get, watched_repo_url + "/commits?per_page=100")
-              .to_return(
-                status: 200,
-                body: fixture("github", "commits_angular_sentence_case.json"),
-                headers: json_header
-              )
-          end
+          let(:capitalize_first_word) { true }
 
           it do
             expect(pr_name).to eq("chore(deps): Bump business from 1.4.0 to 1.5.0")
           end
 
-          context "when commit messages are explicitly configured" do
-            let(:commit_message_options) { super().merge(prefix: "chore(dependencies)") }
+          context "when the prefixer returns an explicitly configured prefix" do
+            let(:pr_name_prefix) { "chore(dependencies): " }
 
             it do
               expect(pr_name).to eq("chore(dependencies): Bump business from 1.4.0 to 1.5.0")
@@ -543,6 +590,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+          let(:pr_name_prefix) { "chore(deps): [security] " }
 
           it { is_expected.to start_with("chore(deps): [security] bump") }
         end
@@ -568,18 +616,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               }]
             )
           end
+          let(:pr_name_prefix) { "chore(deps-dev): " }
 
           it { is_expected.to start_with("chore(deps-dev): bump") }
         end
       end
 
-      context "when using eslint commits" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "commits_eslint.json"),
-                       headers: json_header)
-        end
+      context "when the prefixer returns an eslint commit prefix" do
+        let(:pr_name_prefix) { "Upgrade: " }
 
         it do
           expect(pr_name).to eq("Upgrade: Bump business from 1.4.0 to 1.5.0")
@@ -587,23 +631,20 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+          let(:pr_name_prefix) { "Upgrade: [Security] " }
 
           it { is_expected.to start_with("Upgrade: [Security] Bump") }
         end
       end
 
-      context "when using gitmoji commits" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "commits_gitmoji.json"),
-                       headers: json_header)
-        end
+      context "when the prefixer returns a gitmoji prefix" do
+        let(:pr_name_prefix) { "⬆️ " }
 
         it { is_expected.to start_with("⬆️ Bump business") }
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+          let(:pr_name_prefix) { "⬆️🔒 " }
 
           it { is_expected.to start_with("⬆️🔒 Bump business") }
         end
@@ -630,11 +671,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "when not using a commit convention" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(status: 200, body: "[]", headers: json_header)
-        end
-
         it "has the right title" do
           expect(pr_name)
             .to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0")
@@ -715,6 +751,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:vulnerabilities_fixed) { { business: [{}] } }
 
           it { is_expected.to start_with("[Security] Update business") }
+        end
+
+        context "when a dependency has audit_fix_used metadata" do
+          let(:metadata) { { audit_fix_used: true } }
+
+          it "appends (via audit fix) to the PR name" do
+            expect(pr_name)
+              .to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0 (via audit fix)")
+          end
         end
 
         context "with two dependencies" do
@@ -800,13 +845,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "when using angular commits" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "commits_angular.json"),
-                       headers: json_header)
-        end
+      context "when the prefixer returns an angular commit prefix" do
+        let(:pr_name_prefix) { "chore(deps): " }
+        let(:capitalize_first_word) { false }
 
         it "uses an angular commit prefix" do
           expect(pr_name)
@@ -818,18 +859,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+          let(:pr_name_prefix) { "chore(deps): [security] " }
 
           it { is_expected.to start_with("chore(deps): [security] update") }
         end
       end
 
-      context "when using eslint commits" do
-        before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "commits_eslint.json"),
-                       headers: json_header)
-        end
+      context "when the prefixer returns an eslint commit prefix" do
+        let(:pr_name_prefix) { "Upgrade: " }
 
         it "uses an eslint commit prefix" do
           expect(pr_name)
@@ -841,6 +878,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+          let(:pr_name_prefix) { "Upgrade: [Security] " }
 
           it { is_expected.to start_with("Upgrade: [Security] Update") }
         end
@@ -850,16 +888,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     context "when dealing with a dependency group with one dependency" do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
-      end
-      let(:commits_response) { fixture("github", "commits.json") }
-
-      before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100")
-          .to_return(
-            status: 200,
-            body: commits_response,
-            headers: json_header
-          )
       end
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the all-the-things group") }
@@ -959,15 +987,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
       let(:metadata) { { directory: "/foo" } }
 
-      before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100")
-          .to_return(
-            status: 200,
-            body: commits_response,
-            headers: json_header
-          )
-      end
-
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the go_modules group across 1 directory") }
 
       context "with two dependencies" do
@@ -988,61 +1007,63 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it { is_expected.to eq("Bump the go_modules group across 2 directories with 2 updates") }
       end
     end
+
+    context "when dealing with a dependency-name group with multiple directories" do
+      let(:source) do
+        Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/frontend", "/backend"])
+      end
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(
+          name: "monorepo-deps/business",
+          rules: { "patterns" => ["business"], "group-by" => "dependency-name" }
+        )
+      end
+      let(:metadata) { { directory: "/frontend", updated_directories: ["/frontend", "/backend"] } }
+
+      it { is_expected.to eq("Bump business across 2 directories") }
+
+      context "with a single directory" do
+        let(:metadata) { { directory: "/frontend", updated_directories: ["/frontend"] } }
+
+        it { is_expected.to eq("Bump business in /frontend") }
+      end
+
+      context "with no directory info" do
+        let(:metadata) { {} }
+
+        it { is_expected.to eq("Bump business") }
+      end
+    end
   end
 
   describe "#pr_message" do
     subject(:pr_message) { builder.pr_message }
 
-    let(:business_repo_url) do
-      "https://api.github.com/repos/gocardless/business"
+    let(:metadata_finder_attributes) do
+      {
+        "business" => business_metadata,
+        "statesman" => statesman_metadata
+      }
     end
-
-    before do
-      stub_request(:get, watched_repo_url + "/commits?per_page=100")
-        .to_return(status: 200, body: "[]", headers: json_header)
-
-      stub_request(:get, business_repo_url)
-        .to_return(status: 200,
-                   body: fixture("github", "business_repo.json"),
-                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/contents/")
-        .to_return(status: 200,
-                   body: fixture("github", "business_files.json"),
-                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/releases?per_page=100")
-        .to_return(status: 200,
-                   body: fixture("github", "business_releases.json"),
-                   headers: json_header)
-      stub_request(
-        :get,
-        "https://api.github.com/repos/gocardless/" \
-        "business/contents/CHANGELOG.md?ref=master"
-      )
-        .to_return(status: 200,
-                   body: fixture("github", "changelog_contents.json"),
-                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/commits?sha=v1.5.0")
-        .to_return(status: 200,
-                   body: fixture("github", "commits-business-1.4.0.json"),
-                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/commits?sha=v1.4.0")
-        .to_return(status: 200,
-                   body: fixture("github", "commits-business-1.3.0.json"),
-                   headers: json_header)
-      stub_request(:get, "https://rubygems.org/api/v1/gems/business.json")
-        .to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
-
-      service_pack_url =
-        "https://github.com/gocardless/business.git/info/refs" \
-        "?service=git-upload-pack"
-      stub_request(:get, service_pack_url)
-        .to_return(
-          status: 200,
-          body: fixture("git", "upload_packs", "business"),
-          headers: {
-            "content-type" => "application/x-git-upload-pack-advertisement"
-          }
-        )
+    let(:business_metadata) do
+      {
+        source_url: "https://github.com/gocardless/business",
+        releases_url: "https://github.com/gocardless/business/releases",
+        changelog_url: "https://github.com/gocardless/business/blob/master/CHANGELOG.md",
+        changelog_text: changelog_section("1.5.0"),
+        commits_url: "https://github.com/gocardless/business/compare/v1.4.0...v1.5.0",
+        commits: business_commits
+      }
+    end
+    let(:statesman_metadata) do
+      {
+        source_url: "https://github.com/gocardless/statesman",
+        releases_url: "https://github.com/gocardless/statesman/releases",
+        changelog_url: "https://github.com/gocardless/statesman/blob/master/CHANGELOG.md",
+        changelog_text: changelog_section("1.7.0"),
+        commits_url: "https://github.com/gocardless/statesman/commits",
+        commits: []
+      }
     end
 
     context "when dealing with an application" do
@@ -1070,12 +1091,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "when there's a network error" do
         before do
-          stub_request(:any, /.*/).to_raise(SocketError)
+          allow(metadata_finders.fetch("business"))
+            .to receive(:changelog_text)
+            .and_raise(SocketError)
         end
 
-        it "has a blank message" do
+        it "still builds the pr_message without the metadata cascade" do
           expect(pr_message)
-            .to eq("")
+            .to include("Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.")
         end
       end
 
@@ -1107,18 +1130,27 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "with a relative link in the changelog" do
+      context "when github.com is unreachable while fetching metadata" do
         before do
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/" \
-            "business/contents/CHANGELOG.md?ref=master"
+          allow(metadata_finders.fetch("business"))
+            .to receive(:changelog_text)
+            .and_raise(SocketError, "Connection refused - connect(2) for \"api.github.com\" port 443")
+        end
+
+        it "still builds the pr_message without the metadata cascade" do
+          expect(pr_message).to include(
+            "Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0."
           )
-            .to_return(
-              status: 200,
-              body: fixture("github", "changelog_contents_rel_link.json"),
-              headers: json_header
-            )
+        end
+      end
+
+      context "with a relative link in the changelog" do
+        let(:business_metadata) do
+          super().merge(
+            changelog_text: Base64.decode64(
+              JSON.parse(fixture("github", "changelog_contents_rel_link.json")).fetch("content")
+            ).match(/^## 1\.5\.0.*?(?=^## |\z)/m).to_s
+          )
         end
 
         it "has the right text" do
@@ -1178,25 +1210,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         let(:previous_version) { "2468a02a6230e59ed1232d95d1ad3ef157195b03" }
         let(:new_ref) { nil }
         let(:old_ref) { nil }
-
-        before do
-          stub_request(
-            :get,
-            "#{business_repo_url}/commits?sha=" \
-            "2468a02a6230e59ed1232d95d1ad3ef157195b03"
-          ).to_return(
-            status: 200,
-            body: fixture("github", "commits-business-1.3.0.json"),
-            headers: json_header
-          )
-          stub_request(
-            :get,
-            "#{business_repo_url}/commits?sha=" \
-            "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
-          ).to_return(
-            status: 200,
-            body: fixture("github", "commits-business-1.4.0.json"),
-            headers: json_header
+        let(:business_metadata) do
+          super().merge(
+            changelog_url: nil,
+            changelog_text: nil,
+            commits_url: "https://github.com/gocardless/business/compare/" \
+                         "2468a02a6230e59ed1232d95d1ad3ef157195b03..." \
+                         "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
           )
         end
 
@@ -1216,6 +1236,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "when there is a ref change" do
           let(:new_ref) { "v1.1.0" }
           let(:old_ref) { "v1.0.0" }
+          let(:business_metadata) do
+            super().merge(
+              changelog_url: "https://github.com/gocardless/business/blob/master/CHANGELOG.md",
+              changelog_text: changelog_section("1.1.0")
+            )
+          end
 
           it "has the right text" do
             commits_details = commits_details(
@@ -1245,14 +1271,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           context "with no previous version" do
             let(:previous_version) { nil }
-
-            before do
-              stub_request(:get, "#{business_repo_url}/commits?sha=v1.0.0")
-                .to_return(
-                  status: 200,
-                  body: fixture("github", "commits-business-1.3.0.json"),
-                  headers: json_header
-                )
+            let(:business_metadata) do
+              super().merge(
+                commits_url: "https://github.com/gocardless/business/compare/" \
+                             "v1.0.0...cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
+              )
             end
 
             it "has the right text" do
@@ -1373,23 +1396,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
         end
         let(:previous_version) { "2468a02a6230e59ed1232d95d1ad3ef157195b03" }
-
-        before do
-          stub_request(
-            :get,
-            "#{business_repo_url}/commits?sha=" \
-            "2468a02a6230e59ed1232d95d1ad3ef157195b03"
-          ).to_return(
-            status: 200,
-            body: fixture("github", "commits-business-1.3.0.json"),
-            headers: json_header
+        let(:business_metadata) do
+          super().merge(
+            changelog_text: changelog_from("1.5.0"),
+            commits_url: "https://github.com/gocardless/business/compare/" \
+                         "2468a02a6230e59ed1232d95d1ad3ef157195b03...v1.5.0"
           )
-          stub_request(:get, "#{business_repo_url}/commits?sha=v1.5.0")
-            .to_return(
-              status: 200,
-              body: fixture("github", "commits-business-1.4.0.json"),
-              headers: json_header
-            )
         end
 
         it "has the right text" do
@@ -1454,29 +1466,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "with commits (but no changelog)" do
-        before do
-          stub_request(:get, "#{business_repo_url}/contents/")
-            .to_return(
-              status: 200,
-              body: fixture("github", "business_files_no_changelog.json"),
-              headers: json_header
-            )
-          stub_request(:get, "#{business_repo_url}/contents/?ref=v1.5.0")
-            .to_return(
-              status: 200,
-              body: fixture("github", "business_files_no_changelog.json"),
-              headers: json_header
-            )
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/business/compare/" \
-            "v1.4.0...v1.5.0"
-          ).with(headers: { "Authorization" => "token token" })
-            .to_return(
-              status: 200,
-              body: fixture("github", "business_compare_commits.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
+        let(:business_metadata) do
+          super().merge(changelog_url: nil, changelog_text: nil)
         end
 
         it "has the right text" do
@@ -1511,25 +1502,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
 
-          before do
-            stub_request(:get, "#{business_repo_url}/contents/?ref=v1.6.0")
-              .to_return(
-                status: 200,
-                body: fixture("github", "business_files_no_changelog.json"),
-                headers: json_header
-              )
-            stub_request(:get, "#{business_repo_url}/commits?sha=v1.6.0")
-              .to_return(
-                status: 200,
-                body: fixture("github", "commits-business-1.4.0.json"),
-                headers: json_header
-              )
-            stub_request(:get, "#{business_repo_url}/commits?sha=v1.5.0")
-              .to_return(
-                status: 200,
-                body: fixture("github", "commits-business-1.3.0.json"),
-                headers: json_header
-              )
+          let(:business_metadata) do
+            super().merge(
+              releases_text: "## v1.6.0\n\nMad props to @greysteil and @hmarr for the " \
+                             "`@\u200Bangular/scope` work - see [changelog](CHANGELOG.md).",
+              commits_url: "https://github.com/gocardless/business/compare/v1.5.0...v1.6.0"
+            )
           end
 
           it "has the right text" do
@@ -1603,47 +1581,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_requirements: []
           )
         end
-
-        before do
-          statesman_repo_url =
-            "https://api.github.com/repos/gocardless/statesman"
-          stub_request(:get, statesman_repo_url)
-            .to_return(status: 200,
-                       body: fixture("github", "statesman_repo.json"),
-                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/contents/")
-            .to_return(status: 200,
-                       body: fixture("github", "statesman_files.json"),
-                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/releases?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "business_releases.json"),
-                       headers: json_header)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/" \
-            "statesman/contents/CHANGELOG.md?ref=master"
+        let(:statesman_metadata) do
+          super().merge(
+            releases_text: "## v1.6.0\n\nRelease notes",
+            changelog_text: changelog_section("1.6.0")
           )
-            .to_return(status: 200,
-                       body: fixture("github", "changelog_contents.json"),
-                       headers: json_header)
-          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json")
-            .to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems_response_statesman.json")
-            )
-
-          service_pack_url =
-            "https://github.com/gocardless/statesman.git/info/refs" \
-            "?service=git-upload-pack"
-          stub_request(:get, service_pack_url)
-            .to_return(
-              status: 200,
-              body: fixture("git", "upload_packs", "no_tags"),
-              headers: {
-                "content-type" => "application/x-git-upload-pack-advertisement"
-              }
-            )
         end
 
         it "includes details of both dependencies" do
@@ -1680,35 +1622,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             }]
           )
         end
-
-        before do
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/business/compare/" \
-            "v0.9.0...v1.5.0"
-          ).with(headers: { "Authorization" => "token token" })
-            .to_return(
-              status: 200,
-              body: fixture("github", "business_compare_commits.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-          stub_request(:get, "#{business_repo_url}/contents/")
-            .to_return(
-              status: 200,
-              body:
-                fixture("github", "business_files_with_upgrade_guide.json"),
-              headers: json_header
-            )
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/" \
-            "business/contents/UPGRADE.md?ref=master"
+        let(:business_metadata) do
+          super().merge(
+            changelog_text: changelog_from("1.5.0"),
+            commits_url: "https://github.com/gocardless/business/compare/v0.9.0...v1.5.0",
+            upgrade_guide_url: "https://github.com/gocardless/business/blob/master/UPGRADE.md",
+            upgrade_guide_text: decoded_github_content("upgrade_guide_contents.json")
           )
-            .to_return(
-              status: 200,
-              body: fixture("github", "upgrade_guide_contents.json"),
-              headers: json_header
-            )
         end
 
         it "has the right text" do
@@ -1762,7 +1682,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "when there is a change in maintainer" do
         before do
-          allow_any_instance_of(Dependabot::MetadataFinders::Base)
+          allow(metadata_finders.fetch("business"))
             .to receive(:maintainer_changes)
             .and_return("Maintainer change")
         end
@@ -1799,48 +1719,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               source: nil
             }]
           )
-        end
-
-        before do
-          statesman_repo_url =
-            "https://api.github.com/repos/gocardless/statesman"
-          stub_request(:get, statesman_repo_url)
-            .to_return(status: 200,
-                       body: fixture("github", "statesman_repo.json"),
-                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/contents/")
-            .to_return(status: 200,
-                       body: fixture("github", "statesman_files.json"),
-                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/releases?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "business_releases.json"),
-                       headers: json_header)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/" \
-            "statesman/contents/CHANGELOG.md?ref=master"
-          )
-            .to_return(status: 200,
-                       body: fixture("github", "changelog_contents.json"),
-                       headers: json_header)
-          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json")
-            .to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems_response_statesman.json")
-            )
-
-          service_pack_url =
-            "https://github.com/gocardless/statesman.git/info/refs" \
-            "?service=git-upload-pack"
-          stub_request(:get, service_pack_url)
-            .to_return(
-              status: 200,
-              body: fixture("git", "upload_packs", "no_tags"),
-              headers: {
-                "content-type" => "application/x-git-upload-pack-advertisement"
-              }
-            )
         end
 
         it "includes details of both dependencies" do
@@ -1888,18 +1766,27 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
         end
 
-        context "when dealing with a property dependency (e.g., with Maven)" do
+        context "when one dependency's metadata cascade raises" do
           before do
-            statesman_repo_url =
-              "https://api.github.com/repos/gocardless/statesman"
-            stub_request(:get, "#{statesman_repo_url}/compare/v1.4.0...v1.5.0")
-              .to_return(
-                status: 200,
-                body: fixture("github", "business_compare_commits.json"),
-                headers: json_header
-              )
+            allow(metadata_finders.fetch("statesman"))
+              .to receive(:changelog_text)
+              .and_raise(SocketError, "Connection refused - connect(2) for \"api.github.com\" port 443")
           end
 
+          it "still renders the PR message with the unaffected dependency's metadata" do
+            expect(pr_message).to include(
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "and [statesman](https://github.com/gocardless/statesman). " \
+              "These dependencies needed to be updated together."
+            )
+            expect(pr_message).to include("Updates `business` from 1.4.0 to 1.5.0")
+            expect(pr_message).to include("business's changelog")
+            expect(pr_message).to include("Updates `statesman` from 1.6.0 to 1.7.0")
+            expect(pr_message).not_to include("statesman's changelog")
+          end
+        end
+
+        context "when dealing with a property dependency (e.g., with Maven)" do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "business",
@@ -1996,6 +1883,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       context "with multiple git source requirements", :vcr do
         include_context "with multiple git sources"
 
+        let(:metadata_finder_attributes) do
+          super().merge(
+            "actions/checkout" => { source_url: "https://github.com/gocardless/actions" }
+          )
+        end
+
         it "has the correct message" do
           expect(pr_message).to start_with(
             "Updates the requirements on " \
@@ -2052,48 +1945,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency, dependency2] }
-
-          before do
-            business2_repo_url =
-              "https://api.github.com/repos/gocardless/business2"
-            stub_request(:get, business2_repo_url)
-              .to_return(status: 200,
-                         body: fixture("github", "business_repo.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/contents/")
-              .to_return(status: 200,
-                         body: fixture("github", "business_files.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/releases?per_page=100")
-              .to_return(status: 200,
-                         body: fixture("github", "business_releases.json"),
-                         headers: json_header)
-            stub_request(
-              :get,
-              "https://api.github.com/repos/gocardless/" \
-              "business2/contents/CHANGELOG.md?ref=master"
-            )
-              .to_return(status: 200,
-                         body: fixture("github", "changelog_contents.json"),
-                         headers: json_header)
-            stub_request(:get, "https://rubygems.org/api/v1/gems/business2.json")
-              .to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response_statesman.json")
-              )
-
-            business2_service_pack_url =
-              "https://github.com/gocardless/business2.git/info/refs" \
-              "?service=git-upload-pack"
-            stub_request(:get, business2_service_pack_url)
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
 
           it "has the correct PR message" do
             expect(pr_message).to start_with(
@@ -2166,88 +2017,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependencies) { [dependency, dependency2, dependency3] }
 
-          before do
-            business2_repo_url =
-              "https://api.github.com/repos/gocardless/business2"
-            stub_request(:get, business2_repo_url)
-              .to_return(status: 200,
-                         body: fixture("github", "business_repo.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/contents/")
-              .to_return(status: 200,
-                         body: fixture("github", "business_files.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/releases?per_page=100")
-              .to_return(status: 200,
-                         body: fixture("github", "business_releases.json"),
-                         headers: json_header)
-            stub_request(
-              :get,
-              "https://api.github.com/repos/gocardless/" \
-              "business2/contents/CHANGELOG.md?ref=master"
-            )
-              .to_return(status: 200,
-                         body: fixture("github", "changelog_contents.json"),
-                         headers: json_header)
-            stub_request(:get, "https://rubygems.org/api/v1/gems/business2.json")
-              .to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response_statesman.json")
-              )
-
-            business2_service_pack_url =
-              "https://github.com/gocardless/business2.git/info/refs" \
-              "?service=git-upload-pack"
-            stub_request(:get, business2_service_pack_url)
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-
-            business3_repo_url =
-              "https://api.github.com/repos/gocardless/business3"
-            stub_request(:get, business3_repo_url)
-              .to_return(status: 200,
-                         body: fixture("github", "business_repo.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business3_repo_url}/contents/")
-              .to_return(status: 200,
-                         body: fixture("github", "business_files.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business3_repo_url}/releases?per_page=100")
-              .to_return(status: 200,
-                         body: fixture("github", "business_releases.json"),
-                         headers: json_header)
-            stub_request(
-              :get,
-              "https://api.github.com/repos/gocardless/" \
-              "business3/contents/CHANGELOG.md?ref=master"
-            )
-              .to_return(status: 200,
-                         body: fixture("github", "changelog_contents.json"),
-                         headers: json_header)
-            stub_request(:get, "https://rubygems.org/api/v1/gems/business3.json")
-              .to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response.json")
-              )
-
-            business3_service_pack_url =
-              "https://github.com/gocardless/business3.git/info/refs" \
-              "?service=git-upload-pack"
-            stub_request(:get, business3_service_pack_url)
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
-
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 3 updates: " \
@@ -2300,51 +2069,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency, dependency2, dependency3, dependency4, dependency5] }
-
-          before do
-            (2..5).each do |i|
-              repo_url = "https://api.github.com/repos/gocardless/business#{i}"
-
-              stub_request(:get, repo_url)
-                .to_return(status: 200,
-                           body: fixture("github", "business_repo.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/contents/")
-                .to_return(status: 200,
-                           body: fixture("github", "business_files.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/releases?per_page=100")
-                .to_return(status: 200,
-                           body: fixture("github", "business_releases.json"),
-                           headers: json_header)
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/" \
-                "business#{i}/contents/CHANGELOG.md?ref=master"
-              )
-                .to_return(status: 200,
-                           body: fixture("github", "changelog_contents.json"),
-                           headers: json_header)
-              stub_request(:get, "https://rubygems.org/api/v1/gems/business#{i}.json")
-                .to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_statesman.json")
-                )
-
-              service_pack_url =
-                "https://github.com/gocardless/business#{i}.git/info/refs" \
-                "?service=git-upload-pack"
-
-              stub_request(:get, service_pack_url)
-                .to_return(
-                  status: 200,
-                  body: fixture("git", "upload_packs", "no_tags"),
-                  headers: {
-                    "content-type" => "application/x-git-upload-pack-advertisement"
-                  }
-                )
-            end
-          end
 
           it "has the correct message" do
             expect(pr_message).to start_with(
@@ -2413,51 +2137,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependencies) do
             [dependency, dependency2, dependency3, dependency4, dependency5, dependency5, dependency6]
-          end
-
-          before do
-            (2..6).each do |i|
-              repo_url = "https://api.github.com/repos/gocardless/business#{i}"
-
-              stub_request(:get, repo_url)
-                .to_return(status: 200,
-                           body: fixture("github", "business_repo.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/contents/")
-                .to_return(status: 200,
-                           body: fixture("github", "business_files.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/releases?per_page=100")
-                .to_return(status: 200,
-                           body: fixture("github", "business_releases.json"),
-                           headers: json_header)
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/" \
-                "business#{i}/contents/CHANGELOG.md?ref=master"
-              )
-                .to_return(status: 200,
-                           body: fixture("github", "changelog_contents.json"),
-                           headers: json_header)
-              stub_request(:get, "https://rubygems.org/api/v1/gems/business#{i}.json")
-                .to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_statesman.json")
-                )
-
-              service_pack_url =
-                "https://github.com/gocardless/business#{i}.git/info/refs" \
-                "?service=git-upload-pack"
-
-              stub_request(:get, service_pack_url)
-                .to_return(
-                  status: 200,
-                  body: fixture("git", "upload_packs", "no_tags"),
-                  headers: {
-                    "content-type" => "application/x-git-upload-pack-advertisement"
-                  }
-                )
-            end
           end
 
           it "has the correct message" do
@@ -2552,51 +2231,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
              dependency8]
           end
 
-          before do
-            (2..6).each do |i|
-              repo_url = "https://api.github.com/repos/gocardless/business#{i}"
-
-              stub_request(:get, repo_url)
-                .to_return(status: 200,
-                           body: fixture("github", "business_repo.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/contents/")
-                .to_return(status: 200,
-                           body: fixture("github", "business_files.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/releases?per_page=100")
-                .to_return(status: 200,
-                           body: fixture("github", "business_releases.json"),
-                           headers: json_header)
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/" \
-                "business#{i}/contents/CHANGELOG.md?ref=master"
-              )
-                .to_return(status: 200,
-                           body: fixture("github", "changelog_contents.json"),
-                           headers: json_header)
-              stub_request(:get, "https://rubygems.org/api/v1/gems/business#{i}.json")
-                .to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_statesman.json")
-                )
-
-              service_pack_url =
-                "https://github.com/gocardless/business#{i}.git/info/refs" \
-                "?service=git-upload-pack"
-
-              stub_request(:get, service_pack_url)
-                .to_return(
-                  status: 200,
-                  body: fixture("git", "upload_packs", "no_tags"),
-                  headers: {
-                    "content-type" => "application/x-git-upload-pack-advertisement"
-                  }
-                )
-            end
-          end
-
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 7 updates:\n\n" \
@@ -2659,47 +2293,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           before do
             (2..5).each do |i|
-              repo_url = "https://api.github.com/repos/gocardless/business#{i}"
-
-              stub_request(:get, repo_url)
-                .to_return(status: 200,
-                           body: fixture("github", "business_repo.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/contents/")
-                .to_return(status: 200,
-                           body: fixture("github", "business_files.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/releases?per_page=100")
-                .to_return(status: 200,
-                           body: fixture("github", "business_releases.json"),
-                           headers: json_header)
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/" \
-                "business#{i}/contents/CHANGELOG.md?ref=master"
-              )
-                .to_return(status: 200,
-                           body: fixture("github", "changelog_contents.json"),
-                           headers: json_header)
-              stub_request(:get, "https://rubygems.org/api/v1/gems/business#{i}.json")
-                .to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_statesman.json")
-                )
-
-              service_pack_url =
-                "https://github.com/gocardless/business#{i}.git/info/refs" \
-                "?service=git-upload-pack"
-
-              stub_request(:get, service_pack_url)
-                .to_return(
-                  status: 200,
-                  body: fixture("git", "upload_packs", "no_tags"),
-                  headers: {
-                    "content-type" => "application/x-git-upload-pack-advertisement"
-                  }
-
-                )
               ignore_conditions.push(
                 {
                   "dependency-name" => "business#{i}",
@@ -2745,51 +2338,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency1, dependency2] }
-
-          before do
-            (2..5).each do |i|
-              repo_url = "https://api.github.com/repos/gocardless/business#{i}"
-
-              stub_request(:get, repo_url)
-                .to_return(status: 200,
-                           body: fixture("github", "business_repo.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/contents/")
-                .to_return(status: 200,
-                           body: fixture("github", "business_files.json"),
-                           headers: json_header)
-              stub_request(:get, "#{repo_url}/releases?per_page=100")
-                .to_return(status: 200,
-                           body: fixture("github", "business_releases.json"),
-                           headers: json_header)
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/" \
-                "business#{i}/contents/CHANGELOG.md?ref=master"
-              )
-                .to_return(status: 200,
-                           body: fixture("github", "changelog_contents.json"),
-                           headers: json_header)
-              stub_request(:get, "https://rubygems.org/api/v1/gems/business#{i}.json")
-                .to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_statesman.json")
-                )
-
-              service_pack_url =
-                "https://github.com/gocardless/business#{i}.git/info/refs" \
-                "?service=git-upload-pack"
-
-              stub_request(:get, service_pack_url)
-                .to_return(
-                  status: 200,
-                  body: fixture("git", "upload_packs", "no_tags"),
-                  headers: {
-                    "content-type" => "application/x-git-upload-pack-advertisement"
-                  }
-                )
-            end
-          end
 
           it "does not include the ignore conditions section in the message" do
             expect(pr_message).not_to include("Most Recent Ignore Conditions Applied to This Pull Request")
@@ -2860,48 +2408,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependencies) { [dependency, dependency2] }
 
-          before do
-            business2_repo_url =
-              "https://api.github.com/repos/gocardless/business2"
-            stub_request(:get, business2_repo_url)
-              .to_return(status: 200,
-                         body: fixture("github", "business_repo.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/contents/")
-              .to_return(status: 200,
-                         body: fixture("github", "business_files.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/releases?per_page=100")
-              .to_return(status: 200,
-                         body: fixture("github", "business_releases.json"),
-                         headers: json_header)
-            stub_request(
-              :get,
-              "https://api.github.com/repos/gocardless/" \
-              "business2/contents/CHANGELOG.md?ref=master"
-            )
-              .to_return(status: 200,
-                         body: fixture("github", "changelog_contents.json"),
-                         headers: json_header)
-            stub_request(:get, "https://rubygems.org/api/v1/gems/business2.json")
-              .to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response_statesman.json")
-              )
-
-            business2_service_pack_url =
-              "https://github.com/gocardless/business2.git/info/refs" \
-              "?service=git-upload-pack"
-            stub_request(:get, business2_service_pack_url)
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
-
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the go_modules group with 2 updates in the /foo directory: " \
@@ -2924,48 +2430,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency, dependency2] }
-
-          before do
-            business2_repo_url =
-              "https://api.github.com/repos/gocardless/business2"
-            stub_request(:get, business2_repo_url)
-              .to_return(status: 200,
-                         body: fixture("github", "business_repo.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/contents/")
-              .to_return(status: 200,
-                         body: fixture("github", "business_files.json"),
-                         headers: json_header)
-            stub_request(:get, "#{business2_repo_url}/releases?per_page=100")
-              .to_return(status: 200,
-                         body: fixture("github", "business_releases.json"),
-                         headers: json_header)
-            stub_request(
-              :get,
-              "https://api.github.com/repos/gocardless/" \
-              "business2/contents/CHANGELOG.md?ref=master"
-            )
-              .to_return(status: 200,
-                         body: fixture("github", "changelog_contents.json"),
-                         headers: json_header)
-            stub_request(:get, "https://rubygems.org/api/v1/gems/business2.json")
-              .to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response_statesman.json")
-              )
-
-            business2_service_pack_url =
-              "https://github.com/gocardless/business2.git/info/refs" \
-              "?service=git-upload-pack"
-            stub_request(:get, business2_service_pack_url)
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
 
           it "has the correct message" do
             expect(pr_message).to start_with(
@@ -2993,29 +2457,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependencies) { dependencies2 + [dependency] }
 
-          before do
-            json_header = { "Content-Type" => "application/json" }
-
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+})
-              .to_return(status: 200, body: fixture("github", "business_repo.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/contents/})
-              .to_return(status: 200, body: fixture("github", "business_files.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/releases\?per_page=100})
-              .to_return(status: 200, body: fixture("github", "business_releases.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/contents/CHANGELOG\.md\?ref=master})
-              .to_return(status: 200, body: fixture("github", "changelog_contents.json"), headers: json_header)
-            stub_request(:get, %r{https://rubygems\.org/api/v1/gems/.+\.json})
-              .to_return(status: 200, body: fixture("ruby", "rubygems_response_statesman.json"))
-            stub_request(:get, %r{https://github\.com/gocardless/.+\.git/info/refs\?service=git-upload-pack})
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
-
           it "has the correct message" do
             expect(pr_message).to include(
               "Bumps the go_modules group with 1 update in the /foo directory: " \
@@ -3040,10 +2481,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 removed: true
               )
             end
-
-            before do
-              dependencies2.push(removed_dependency)
-            end
+            let(:dependencies) { dependencies2 + [removed_dependency, dependency] }
 
             it "lists the dependency as removed in the table" do
               expect(pr_message).to include(
@@ -3079,29 +2517,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { dependencies1 + [dependency] + [dependency2] }
-
-          before do
-            json_header = { "Content-Type" => "application/json" }
-
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+})
-              .to_return(status: 200, body: fixture("github", "business_repo.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/contents/})
-              .to_return(status: 200, body: fixture("github", "business_files.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/releases\?per_page=100})
-              .to_return(status: 200, body: fixture("github", "business_releases.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/contents/CHANGELOG\.md\?ref=master})
-              .to_return(status: 200, body: fixture("github", "changelog_contents.json"), headers: json_header)
-            stub_request(:get, %r{https://rubygems\.org/api/v1/gems/.+\.json})
-              .to_return(status: 200, body: fixture("ruby", "rubygems_response_statesman.json"))
-            stub_request(:get, %r{https://github\.com/gocardless/.+\.git/info/refs\?service=git-upload-pack})
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
 
           it "has the correct message" do
             expected_message = "Bumps the go_modules group with 6 updates in the /foo directory:\n\n" \
@@ -3148,29 +2563,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependencies) { dependencies1 + dependencies2 + [dependency] }
 
-          before do
-            json_header = { "Content-Type" => "application/json" }
-
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+})
-              .to_return(status: 200, body: fixture("github", "business_repo.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/contents/})
-              .to_return(status: 200, body: fixture("github", "business_files.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/releases\?per_page=100})
-              .to_return(status: 200, body: fixture("github", "business_releases.json"), headers: json_header)
-            stub_request(:get, %r{https://api\.github\.com/repos/gocardless/.+/contents/CHANGELOG\.md\?ref=master})
-              .to_return(status: 200, body: fixture("github", "changelog_contents.json"), headers: json_header)
-            stub_request(:get, %r{https://rubygems\.org/api/v1/gems/.+\.json})
-              .to_return(status: 200, body: fixture("ruby", "rubygems_response_statesman.json"))
-            stub_request(:get, %r{https://github\.com/gocardless/.+\.git/info/refs\?service=git-upload-pack})
-              .to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "no_tags"),
-                headers: {
-                  "content-type" => "application/x-git-upload-pack-advertisement"
-                }
-              )
-          end
-
           it "has the correct message" do
             expected_message = "Bumps the go_modules group with 6 updates in the /foo directory:\n\n" \
                                "| Package | From | To |\n" \
@@ -3191,6 +2583,63 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                                "| [business6](https://github.com/gocardless/business6) | `6.4.0` | `6.5.0`"
 
             expect(pr_message).to include(expected_message)
+          end
+        end
+      end
+
+      context "when dealing with a dependency-name group" do
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "gocardless/bump",
+            directories: ["/frontend", "/backend"]
+          )
+        end
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(
+            name: "monorepo-deps/business",
+            rules: { "patterns" => ["business"], "group-by" => "dependency-name" }
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: [],
+            metadata: { directory: "/frontend", updated_directories: ["/frontend", "/backend"] }
+          )
+        end
+
+        it "lists each directory with version changes" do
+          expect(pr_message).to start_with(
+            "Bumps [business](https://github.com/gocardless/business) " \
+            "across 2 directories:\n\n" \
+            "- `/frontend`: 1.4.0 → 1.5.0\n" \
+            "- `/backend`: 1.4.0 → 1.5.0\n"
+          )
+        end
+
+        context "with a single directory" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: [],
+              metadata: { directory: "/frontend", updated_directories: ["/frontend"] }
+            )
+          end
+
+          it "shows the single directory inline" do
+            expect(pr_message).to start_with(
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "in `/frontend` from 1.4.0 to 1.5.0."
+            )
           end
         end
       end
@@ -3249,48 +2698,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               source: nil
             }]
           )
-        end
-
-        before do
-          statesman_repo_url =
-            "https://api.github.com/repos/gocardless/statesman"
-          stub_request(:get, statesman_repo_url)
-            .to_return(status: 200,
-                       body: fixture("github", "statesman_repo.json"),
-                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/contents/")
-            .to_return(status: 200,
-                       body: fixture("github", "statesman_files.json"),
-                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/releases?per_page=100")
-            .to_return(status: 200,
-                       body: fixture("github", "business_releases.json"),
-                       headers: json_header)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/" \
-            "statesman/contents/CHANGELOG.md?ref=master"
-          )
-            .to_return(status: 200,
-                       body: fixture("github", "changelog_contents.json"),
-                       headers: json_header)
-          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json")
-            .to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems_response_statesman.json")
-            )
-
-          service_pack_url =
-            "https://github.com/gocardless/statesman.git/info/refs" \
-            "?service=git-upload-pack"
-          stub_request(:get, service_pack_url)
-            .to_return(
-              status: 200,
-              body: fixture("git", "upload_packs", "no_tags"),
-              headers: {
-                "content-type" => "application/x-git-upload-pack-advertisement"
-              }
-            )
         end
 
         it "includes details of both dependencies" do
@@ -3461,6 +2868,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#commit_message", :vcr do
     subject(:commit_message) { builder.commit_message }
 
+    let(:metadata_finder_attributes) do
+      {
+        "business" => {
+          source_url: "https://github.com/gocardless/business",
+          releases_url: "https://github.com/gocardless/business/releases",
+          changelog_url: "https://github.com/gocardless/business/blob/master/CHANGELOG.md",
+          commits_url: "https://github.com/gocardless/business/compare/v1.4.0...v1.5.0"
+        }
+      }
+    end
+
     let(:expected_commit_message) do
       <<~MSG.chomp
         Bump business from 1.4.0 to 1.5.0
@@ -3490,6 +2908,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           .to start_with(
             "build(deps-dev): update postcss-import requirement in /electron\n"
           )
+      end
+
+      context "when the requirements contain spaces" do
+        before do
+          allow(builder).to receive(:pr_name)
+            .and_return(
+              "Update JSON requirement from ^0.20, ^0.21 to ^0.20, ^0.21, 1.5 " \
+              "in /BasicPackage.jl"
+            )
+        end
+
+        it "drops the whole of both requirements" do
+          expect(commit_message)
+            .to start_with("Update JSON requirement in /BasicPackage.jl\n")
+        end
       end
 
       context "when the directory needs to be truncated" do
@@ -3580,14 +3013,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "when dealing with a repo that uses gitmoji commits" do
+    context "when the prefixer returns a gitmoji prefix" do
       before do
         allow(builder).to receive(:pr_name).and_call_original
-        stub_request(:get, watched_repo_url + "/commits?per_page=100")
-          .to_return(status: 200,
-                     body: fixture("github", "commits_gitmoji.json"),
-                     headers: json_header)
       end
+
+      let(:pr_name_prefix) { "⬆️ " }
 
       it "uses gitmoji" do
         expect(commit_message).to start_with(":arrow_up: Bump ")
@@ -3595,6 +3026,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { business: [{}] } }
+        let(:pr_name_prefix) { "⬆️🔒 " }
 
         it "uses gitmoji" do
           expect(commit_message).to start_with(":arrow_up::lock: Bump ")
@@ -3606,9 +3038,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#message" do
     subject(:message) { builder.message }
 
-    pr_name = "PR title"
-    pr_message = "PR message"
-    commit_message = "Commit message"
+    let(:pr_name) { "PR title" }
+    let(:pr_message) { "PR message" }
+    let(:commit_message) { "Commit message" }
+
     before do
       allow(builder).to receive_messages(pr_name: pr_name, pr_message: pr_message, commit_message: commit_message)
     end

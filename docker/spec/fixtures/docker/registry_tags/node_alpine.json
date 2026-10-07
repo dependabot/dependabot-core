@@ -1,0 +1,14 @@
+{
+  "name": "library/node",
+  "tags": [
+    "18.0.0-alpine3.17",
+    "18.0.0-alpine3.18",
+    "18.0.0-bullseye",
+    "20.0.0-alpine3.17",
+    "20.0.0-alpine3.18",
+    "20.0.0-bookworm",
+    "22.0.0-alpine3.18",
+    "22.0.0-alpine3.19",
+    "22.0.0-bookworm"
+  ]
+}

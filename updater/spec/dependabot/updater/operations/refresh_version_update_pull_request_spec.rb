@@ -38,7 +38,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       update_pull_request: nil,
       close_pull_request: nil,
       record_ecosystem_meta: nil,
-      record_cooldown_meta: nil
+      record_cooldown_meta: nil,
+      increment_metric: nil
     )
   end
   let(:mock_error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
@@ -137,22 +138,11 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_exclude_paths_subdirectory_manifest_files)
-      .and_return(true)
-
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
       .and_return(stub_dependency_change)
     allow(dependency_snapshot).to receive(:ecosystem).and_return(ecosystem)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
   end
 
   describe "#perform" do
@@ -186,6 +176,94 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
         perform
       end
     end
+
+    context "when all versions are ignored only on the resolvable-version path" do
+      # Regression: the cooldown fallback can let the `all_versions_ignored?` guard pass
+      # while `can_update?` still raises AllVersionsIgnored via a different finder. Driving
+      # `perform` exercises the real error handling: a non-security refresh must close the
+      # PR as no-longer-possible without the error reaching the run-level handler.
+      before do
+        allow(stub_update_checker).to receive_messages(up_to_date?: false, requirements_unlocked_or_can_be?: true)
+        allow(stub_update_checker).to receive(:can_update?).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          dependencies: ["dummy-pkg-a"],
+          blocked_versions_for?: false,
+          security_updates_only?: false
+        )
+      end
+
+      it "closes the pull request without raising or reporting a job error" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:close_pull_request)
+
+        expect { perform }.not_to raise_error
+      end
+    end
+
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still
+      # raise AllVersionsIgnored. This operation only runs for non-security refreshes
+      # (see .applies_to?), so it must close the PR as no-longer-possible without the
+      # error reaching the run-level handler.
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          can_update?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          dependencies: ["dummy-pkg-a"],
+          blocked_versions_for?: false,
+          security_updates_only?: false
+        )
+      end
+
+      it "closes the pull request as no-longer-possible without raising or reporting a job error" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-a"], :update_no_longer_possible)
+
+        expect { perform }.not_to raise_error
+      end
+    end
+
+    context "when the refresh job carries more than one directory" do
+      let(:job_definition) do
+        definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
+        definition["job"]["dependencies"] = ["dummy-pkg-a"]
+        definition["job"]["updating-a-pull-request"] = true
+        definition["job"]["source"].delete("directory")
+        definition["job"]["source"]["directories"] = %w(/foo /bar)
+        definition
+      end
+
+      let(:dependency_files) do
+        %w(/foo /bar).flat_map do |dir|
+          [
+            Dependabot::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("bundler/original/Gemfile"),
+              directory: dir
+            ),
+            Dependabot::DependencyFile.new(
+              name: "Gemfile.lock",
+              content: fixture("bundler/original/Gemfile.lock"),
+              directory: dir
+            )
+          ]
+        end
+      end
+
+      it "ends the job gracefully without raising or touching pull requests" do
+        expect(mock_service).to receive(:capture_exception)
+        expect(mock_service).not_to receive(:create_pull_request)
+        expect(mock_service).not_to receive(:update_pull_request)
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+
+        expect { perform }.not_to raise_error
+      end
+    end
   end
 
   describe "#check_and_update_pull_request" do
@@ -210,6 +288,45 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       end
     end
 
+    context "when the lead dependency has an active GitHub Security block" do
+      before do
+        allow(stub_update_checker).to receive(:up_to_date?).and_return(false)
+        allow(refresh_version_update_pull_request).to receive(:all_versions_ignored?).and_return(true)
+        allow(refresh_version_update_pull_request).to receive(:close_pull_request)
+        allow(job).to receive_messages(dependencies: ["dummy-pkg-a"], blocked_versions_for?: true)
+      end
+
+      it "increments the blocked versions ignored metric tagged with refresh_version_update" do
+        refresh_version_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        expect(mock_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            operation: "refresh_version_update",
+            package_manager: "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the lead dependency has no active GitHub Security block" do
+      before do
+        allow(stub_update_checker).to receive(:up_to_date?).and_return(false)
+        allow(refresh_version_update_pull_request).to receive(:all_versions_ignored?).and_return(true)
+        allow(refresh_version_update_pull_request).to receive(:close_pull_request)
+        allow(job).to receive_messages(dependencies: ["dummy-pkg-a"], blocked_versions_for?: false)
+      end
+
+      it "does not increment the blocked versions ignored metric" do
+        refresh_version_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
+    end
+
     context "when all versions are ignored" do
       before do
         allow(stub_update_checker).to receive(:up_to_date?).and_return(false)
@@ -217,6 +334,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
           :all_versions_ignored?
         ).and_return(true)
         allow(job).to receive(:dependencies).and_return(["dummy-pkg-a"])
+      end
+
+      it "closes the pull request with reason :up_to_date" do
+        expect(refresh_version_update_pull_request).to receive(
+          :close_pull_request
+        ).with(reason: :up_to_date)
+        refresh_version_update_pull_request.send(
+          :check_and_update_pull_request, [dependency]
+        )
       end
 
       it "does not create or update a pull request" do

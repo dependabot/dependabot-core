@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 ARG TARGETARCH
@@ -29,7 +30,7 @@ RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL11_URL_ARM64} || echo ${LIBS
  && dpkg -i /tmp/libssl-1.1.deb \
  && rm /tmp/libssl-1.1.deb
 
-ARG POWERSHELL_VERSION=7.4.5
+ARG POWERSHELL_VERSION=7.6.5
 RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && POWERSHELL_VERSION_MAJOR=$(echo $POWERSHELL_VERSION | cut -d. -f1) \
  && INSTALL_PATH=/usr/local/microsoft/powershell/${POWERSHELL_VERSION_MAJOR} \
@@ -43,8 +44,7 @@ RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
 
 # Install .NET SDK
 # these versions should be kept in sync with the files `.devcontainer/devcontainer.json` and `nuget/helpers/lib/NuGetUpdater/global.json`
-ARG DOTNET_LTS_SDK_VERSION=8.0.412
-ARG DOTNET_STS_SDK_VERSION=9.0.302
+ARG DOTNET_SDK_VERSIONS="8.0.424 9.0.317 10.0.400"
 ARG DOTNET_SDK_INSTALL_URL=https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh
@@ -57,8 +57,9 @@ ENV NUGET_SCRATCH=/opt/nuget/helpers/tmp
 RUN curl --location --output "${DOTNET_INSTALL_SCRIPT_PATH}" "${DOTNET_SDK_INSTALL_URL}" \
  && chmod +x "${DOTNET_INSTALL_SCRIPT_PATH}" \
  && mkdir -p "${DOTNET_INSTALL_DIR}" \
- && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_LTS_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
- && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_STS_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
+ && for ver in ${DOTNET_SDK_VERSIONS}; do \
+      "${DOTNET_INSTALL_SCRIPT_PATH}" --version "$ver" --install-dir "${DOTNET_INSTALL_DIR}"; \
+    done \
  && chown -R dependabot:dependabot "$DOTNET_INSTALL_DIR"
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes
@@ -69,8 +70,7 @@ USER dependabot
 COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
-COPY --chown=dependabot:dependabot nuget $DEPENDABOT_HOME/nuget
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents nuget common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # ensure windows-style environment variables are set
@@ -86,6 +86,9 @@ RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
 
 # .NET install targeting packs
 RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
+
+# Extract the Dependabot gem version for runtime use
+RUN sed -n 's/.*VERSION = "\(.*\)"/\1/p' $DEPENDABOT_HOME/common/lib/dependabot.rb > $DEPENDABOT_HOME/.dependabot-version
 
 # Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
 ENV NBGV_GitEngine=Disabled

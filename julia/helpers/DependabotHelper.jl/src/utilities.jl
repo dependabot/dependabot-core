@@ -1,5 +1,13 @@
 # Core utility functions for DependabotHelper.jl
 
+# Pkg 1.13 changed `registry_info` to take the `RegistryInstance` alongside the
+# `PkgEntry`; earlier versions only accept the entry. Dispatch on what this Pkg has.
+if hasmethod(Pkg.Registry.registry_info, Tuple{Pkg.Registry.RegistryInstance, Pkg.Registry.PkgEntry})
+    registry_info(reg::Pkg.Registry.RegistryInstance, entry::Pkg.Registry.PkgEntry) = Pkg.Registry.registry_info(reg, entry)
+else
+    registry_info(::Pkg.Registry.RegistryInstance, entry::Pkg.Registry.PkgEntry) = Pkg.Registry.registry_info(entry)
+end
+
 """
     with_autoprecompilation_disabled(f::Function)
 
@@ -57,4 +65,147 @@ Get the name of the manifest file in a directory (e.g., "Manifest.toml" or "Juli
 function get_manifest_file_name(dir::String)
     _, manifest_file = find_environment_files(dir)
     return basename(manifest_file)
+end
+
+"""
+    environment_manifest_files(dir::String) -> Vector{String}
+
+The manifests in `dir` that some Julia release uses: each version-specific
+`Manifest-vX.Y.toml`, and the unversioned manifest the other releases fall back to.
+For each name, `JuliaManifest` wins over `Manifest`, as in Julia's own lookup.
+"""
+function environment_manifest_files(dir::String)
+    names = readdir(dir)
+    versions = unique(m[2] for m in (match(r"^(Julia)?Manifest-v(\d+\.\d+)\.toml$", name) for name in names) if m !== nothing)
+    # Julia reads version-specific manifests from 1.10 on, and only by the canonical name
+    filter!(versions) do v
+        version = VersionNumber(v)
+        v == "$(version.major).$(version.minor)" && version >= v"1.10"
+    end
+    candidates = [("JuliaManifest-v$v.toml", "Manifest-v$v.toml") for v in versions]
+    push!(candidates, ("JuliaManifest.toml", "Manifest.toml"))
+    manifests = String[]
+    for pair in candidates
+        i = findfirst(in(names), pair)
+        i === nothing || push!(manifests, joinpath(dir, pair[i]))
+    end
+    return manifests
+end
+
+"""
+    find_workspace_project_files(dir::String)
+
+Find all Project.toml files in a workspace that share the same manifest file.
+Returns a Dict with:
+- "project_files": Array of absolute paths to all Project.toml files in the workspace
+- "manifest_file": Absolute path to the shared manifest file
+- "workspace_root": Absolute path to the workspace root directory
+
+This function discovers workspace member Project.toml files using Julia's native approach:
+1. Finding the manifest file for the given directory (which points to the workspace root)
+2. Reading the [workspace].projects array from the root Project.toml (authoritative source)
+3. Recursively processing nested workspaces
+"""
+function find_workspace_project_files(dir::String)
+    if !isdir(dir)
+        return Dict("error" => "Directory does not exist: $dir")
+    end
+
+    try
+        # First find the environment files for the given directory
+        # Julia's Pkg.Types.Context handles workspace detection automatically
+        project_file, manifest_file = find_environment_files(dir)
+
+        # Pkg computes the manifest path (and thus the workspace root) even
+        # when the manifest has not been committed, so workspace member
+        # discovery must not depend on the file's existence.
+        workspace_root = dirname(manifest_file)
+        project_files = String[]
+
+        # Use Julia's authoritative approach: read [workspace].projects from root Project.toml
+        # This matches how Julia's base_project() function works in Base.loading
+        collect_workspace_projects!(project_files, workspace_root)
+
+        # Ensure the original project file is included (in case it's not in [workspace].projects)
+        if isfile(project_file) && !(project_file in project_files)
+            push!(project_files, project_file)
+        end
+
+        return Dict(
+            "project_files" => project_files,
+            "manifest_file" => isfile(manifest_file) ? manifest_file : "",
+            "manifest_files" => environment_manifest_files(workspace_root),
+            "workspace_root" => workspace_root
+        )
+    catch ex
+        @error "find_workspace_project_files: Failed to find workspace project files" exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to find workspace project files: $(sprint(showerror, ex))")
+    end
+end
+
+"""
+    collect_workspace_projects!(project_files::Vector{String}, dir::String)
+
+Recursively collect all Project.toml files in a workspace by reading the [workspace].projects
+array from each Project.toml. This follows Julia's native workspace discovery pattern.
+"""
+function collect_workspace_projects!(project_files::Vector{String}, dir::String)
+    # Find the project file in this directory
+    proj_file = nothing
+    for name in ("JuliaProject.toml", "Project.toml")
+        candidate = normpath(joinpath(dir, name))
+        if isfile(candidate)
+            proj_file = candidate
+            break
+        end
+    end
+
+    proj_file === nothing && return
+
+    # Already visited: stop here, otherwise mutually-referencing
+    # [workspace].projects entries would recurse forever
+    proj_file in project_files && return
+    push!(project_files, proj_file)
+
+    # Parse the project file to find workspace members
+    try
+        proj_data = Pkg.TOML.parsefile(proj_file)
+        workspace = get(proj_data, "workspace", nothing)
+
+        if workspace !== nothing
+            # Get the projects array from [workspace] section
+            workspace_projects = get(workspace, "projects", nothing)
+
+            if workspace_projects isa Vector
+                for member_path in workspace_projects
+                    member_dir = joinpath(dir, member_path)
+                    if isdir(member_dir)
+                        # Recursively collect projects from this member (handles nested workspaces)
+                        collect_workspace_projects!(project_files, member_dir)
+                    end
+                end
+            elseif workspace_projects isa String
+                # Single project specified as string
+                member_dir = joinpath(dir, workspace_projects)
+                if isdir(member_dir)
+                    collect_workspace_projects!(project_files, member_dir)
+                end
+            end
+        end
+    catch ex
+        @warn "Failed to parse project file for workspace members" proj_file exception=(ex, catch_backtrace())
+    end
+end
+
+"""
+    find_workspace_project_files(args::AbstractDict)
+
+Args wrapper for find_workspace_project_files function.
+"""
+function find_workspace_project_files(args::AbstractDict)
+    directory = get(args, "directory", "")
+    if isempty(directory)
+        return Dict("error" => "directory argument is required")
+    end
+    return find_workspace_project_files(directory)
 end

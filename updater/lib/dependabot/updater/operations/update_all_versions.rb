@@ -124,6 +124,9 @@ module Dependabot
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
           log_checking_for_update(dependency)
+          record_blocked_version_ignored(
+            job: job, dependency: dependency, operation: BlockedVersionsOperation::VERSION_UPDATE
+          )
 
           return if all_versions_ignored?(dependency, checker)
           return log_up_to_date(dependency) if checker.up_to_date?
@@ -192,7 +195,13 @@ module Dependabot
 
           create_pull_request(dependency_change)
         end
-        sig { params(dependency_name: String, latest_version: String, latest_version_obj: T.untyped).void }
+        sig do
+          params(
+            dependency_name: String,
+            latest_version: String,
+            latest_version_obj: T.nilable(T.any(String, Gem::Version))
+          ).void
+        end
         def log_existing_pr_for_latest_version(dependency_name, latest_version, latest_version_obj)
           existing_pr = job.existing_pull_requests.find do |pr|
             pr.contains_dependency?(dependency_name, latest_version, T.must(job.source.directory))
@@ -237,7 +246,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
-            update_cooldown: job.cooldown,
+            update_cooldown: job.security_updates_only? ? nil : job.cooldown,
             options: job.experiments
           )
         end
@@ -250,8 +259,14 @@ module Dependabot
           job.log_ignore_conditions_for(dependency)
         end
 
-        sig { params(error: StandardError, dependency: Dependabot::Dependency).returns(T.untyped) }
+        sig { params(error: StandardError, dependency: Dependabot::Dependency).void }
         def process_dependency_error(error, dependency)
+          # updated_dependencies can raise AllVersionsIgnored after requirements_to_unlock
+          # succeeds; for a non-security job that means "no update possible", so skip it.
+          if error.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
+            return Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          end
+
           if error.class.to_s.include?("RegistryError")
             ex = Dependabot::DependencyFileNotResolvable.new(error.message)
             error_handler.handle_dependency_error(error: ex, dependency: dependency)
@@ -311,6 +326,13 @@ module Dependabot
           else
             :update_not_possible
           end
+        rescue Dependabot::AllVersionsIgnored
+          # Security updates rely on this being surfaced to halt the run, so only
+          # non-security jobs treat every ignored version as "no update possible".
+          raise if job.security_updates_only?
+
+          Dependabot.logger.info("All updates for #{checker.dependency.name} were ignored")
+          :update_not_possible
         end
 
         sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }

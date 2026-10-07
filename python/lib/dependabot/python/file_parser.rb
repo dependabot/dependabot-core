@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -20,6 +21,11 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
+      require_relative "file_parser/pyproject_document"
+      require_relative "file_parser/poetry_lock"
+      require_relative "file_parser/pep_dependency"
+      require_relative "file_parser/pipfile_document"
+      require_relative "file_parser/pipfile_lock_document"
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
@@ -101,20 +107,22 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
-        end
-
         @package_manager ||= T.let(detected_package_manager, T.nilable(Dependabot::Ecosystem::VersionManager))
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+        setup_python_environment
 
         return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
-        return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
+        poetry_version = detect_poetry_version
+        if poetry_version
+          return PoetryPackageManager.new(
+            poetry_version,
+            requires_poetry_version_constraint
+          )
+        end
 
         return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
 
@@ -136,6 +144,19 @@ module Dependabot
           version if version&.match?(/^\d+(?:\.\d+)*$/)
         end
       rescue StandardError
+        nil
+      end
+
+      sig { returns(T.nilable(Dependabot::Python::Requirement)) }
+      def requires_poetry_version_constraint
+        return nil unless pyproject&.content
+
+        parsed = TomlRB.parse(T.must(pyproject).content)
+        constraint = parsed.dig("tool", "poetry", "requires-poetry")
+        return nil unless constraint.is_a?(String) && !constraint.strip.empty?
+
+        Dependabot::Python::Requirement.new(constraint.strip)
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError, Gem::Requirement::BadRequirementError
         nil
       end
 
@@ -225,11 +246,6 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
-          Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
-        end
-
         language_version_manager.python_version
       end
 
@@ -281,16 +297,16 @@ module Dependabot
           # probably blocked. Ignore it.
           next if blocking_marker?(dep)
 
-          name = dep["name"]
-          file = dep["file"]
-          version = dep["version"]
+          name = dep.name
+          file = dep.file
+          version = dep.version
           original_file = get_original_file(file)
 
           requirements =
             if original_file && pip_compile_file_matcher.lockfile_for_pip_compile_file?(original_file) then []
             else
               [{
-                requirement: dep["requirement"],
+                requirement: dep.requirement,
                 file: Pathname.new(file).cleanpath.to_path,
                 source: nil,
                 groups: group_from_filename(file)
@@ -302,10 +318,11 @@ module Dependabot
 
           dependencies <<
             Dependency.new(
-              name: normalised_name(name, dep["extras"]),
+              name: NameNormaliser.normalise(name),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "pip"
+              package_manager: "pip",
+              metadata: extras_metadata(dep.extras)
             )
         end
         dependencies
@@ -327,36 +344,33 @@ module Dependabot
         end
       end
 
-      sig { params(dep: T.untyped).returns(T::Boolean) }
+      sig { params(dep: PepDependency).returns(T::Boolean) }
       def blocking_marker?(dep)
-        return false if dep["markers"] == "None"
+        marker = dep.markers
+        return false if marker.nil? || marker == "None"
 
-        marker = dep["markers"]
         version = python_raw_version
 
         if marker.include?("python_version")
           !marker_satisfied?(marker, version)
         else
-          return true if dep["markers"].include?("<")
-          return false if dep["markers"].include?(">")
-          return false if dep["requirement"].nil?
+          return true if marker.include?("<")
+          return false if marker.include?(">")
 
-          dep["requirement"].include?("<")
+          dep.requirement&.include?("<") || false
         end
       end
 
-      sig do
-        params(marker: T.untyped, python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
-      end
+      sig { params(marker: String, python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean) }
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
 
         # Explicitly define the type of result as T::Boolean
-        result = T.let(evaluate_condition(conditions.shift, python_version), T::Boolean)
+        result = T.let(evaluate_condition(T.must(conditions.shift), python_version), T::Boolean)
 
         until conditions.empty?
           operator = conditions.shift
-          next_condition = conditions.shift
+          next_condition = T.must(conditions.shift)
           next_result = evaluate_condition(next_condition, python_version)
 
           result = if operator == "and"
@@ -371,12 +385,13 @@ module Dependabot
 
       sig do
         params(
-          condition: T.untyped,
+          condition: String,
           python_version: T.any(String, Integer, Gem::Version)
         ).returns(T::Boolean)
       end
       def evaluate_condition(condition, python_version)
         operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
+        return false unless version
 
         case operator
         when "<"
@@ -403,17 +418,18 @@ module Dependabot
         )
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T::Array[PepDependency]) }
       def parsed_requirement_files
         SharedHelpers.in_a_temporary_directory do
           write_temporary_dependency_files
 
-          requirements = SharedHelpers.run_helper_subprocess(
+          result = SharedHelpers.run_helper_subprocess(
             command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "parse_requirements",
             args: [Dir.pwd]
           )
 
+          requirements = PepDependency.from_requirements_helper_result(result)
           check_requirements(requirements)
           requirements
         end
@@ -424,12 +440,13 @@ module Dependabot
         raise Dependabot::DependencyFileNotEvaluatable, e.message
       end
 
-      sig { params(requirements: T.untyped).returns(T.untyped) }
+      sig { params(requirements: T::Array[PepDependency]).void }
       def check_requirements(requirements)
         requirements.each do |dep|
-          next unless dep["requirement"]
+          requirement = dep.requirement
+          next unless requirement
 
-          Python::Requirement.new(dep["requirement"].split(","))
+          Python::Requirement.new(requirement.split(","))
         rescue Gem::Requirement::BadRequirementError => e
           raise Dependabot::DependencyFileNotEvaluatable, e.message
         end
@@ -476,6 +493,13 @@ module Dependabot
         NameNormaliser.normalise_including_extras(name, extras)
       end
 
+      sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+      def extras_metadata(extras)
+        return {} if extras.empty?
+
+        { extras: extras.join(",") }
+      end
+
       sig { override.returns(T.untyped) }
       def check_required_files
         filenames = dependency_files.map(&:name)
@@ -520,7 +544,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pip_compile_files
-        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
+        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { returns(Dependabot::Python::PipCompileFileMatcher) }

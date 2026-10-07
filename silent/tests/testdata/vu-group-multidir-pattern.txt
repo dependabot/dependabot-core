@@ -84,6 +84,8 @@ pr-created bar/expected-individual.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/foo"

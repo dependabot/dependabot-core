@@ -2,22 +2,22 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
+project_hash = "76153b498e84e6b6c10403085c26b604382ebb3d"
 
-[[Example]]
+[[deps.Example]]
 git-tree-sha1 = "46e44e869b4d90b96bd8ed1fdcf32244fddfb6cc"
 uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
 version = "0.4.1"
 
-[[FilePathsBase]]
+[[deps.FilePathsBase]]
 git-tree-sha1 = "915e3f36a93a97290c4e8b7f35f8f1c1a3a2e75b"
 uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
 version = "0.8.1"
 
-[[JSON]]
+[[deps.JSON]]
 git-tree-sha1 = "f1f9e4e5b8b8c5c5322c5fa4b3b54f8e6f4a5c5e"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.4"
 
-[[Test]]
-deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
+[[deps.Test]]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

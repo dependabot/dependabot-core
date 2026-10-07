@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Install VCPKG and dependencies
@@ -22,6 +23,5 @@ USER dependabot
 ENV VCPKG_ROOT="/opt/vcpkg"
 ENV PATH="/opt/vcpkg:$PATH"
 
-COPY --chown=dependabot:dependabot vcpkg $DEPENDABOT_HOME/vcpkg
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents vcpkg common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

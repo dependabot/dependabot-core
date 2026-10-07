@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
-require "dependabot/uv/package/package_registry_finder"
+require "dependabot/uv/package"
 
 RSpec.describe Dependabot::Uv::Package::PackageRegistryFinder do
   let(:finder) do

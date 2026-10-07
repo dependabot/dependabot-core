@@ -1,12 +1,17 @@
+# syntax=docker.io/docker/dockerfile:1.20
 # This cannot be inlined below (e.g., COPY --from=maven:...) because Dependabot does not support that syntax yet
-FROM maven:3.9.9 as maven
+FROM maven:3.9.16 as maven
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jdk \
+    openjdk-21-jdk-headless \
     ca-certificates-java \
+    && chgrp dependabot /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \
+    && chmod g+w /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --chmod=755 updater/bin/java-truststore-entrypoint.sh /usr/local/bin/java-truststore-entrypoint.sh
 
 COPY --from=maven /usr/share/maven /usr/share/maven
 
@@ -16,12 +21,12 @@ RUN ln -s ${MAVEN_HOME}/bin/mvn /usr/bin/mvn
 
 USER dependabot
 
-ENV PATH=$JAVA_HOME/bin:$PATH
-ENV MAVEN_CONFIG "$DEPENDABOT_HOME/.m2"
+ENV MAVEN_ARGS="-Dmaven.repo.local=$DEPENDABOT_HOME/.m2"
 
-COPY --chown=dependabot:dependabot maven $DEPENDABOT_HOME/maven
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # symlink so script/dependabot just works
 RUN mkdir -p ~/.m2 && ln -s ~/maven/settings.xml ~/.m2/settings.xml
+
+ENTRYPOINT ["/usr/local/bin/java-truststore-entrypoint.sh"]

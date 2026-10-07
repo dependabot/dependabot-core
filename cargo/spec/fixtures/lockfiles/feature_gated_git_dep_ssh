@@ -1,0 +1,72 @@
+[[package]]
+name = "dependabot"
+version = "0.1.0"
+dependencies = [
+ "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
+ "utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)",
+ "utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/dependabot-fixtures/utf8-ranges)",
+]
+
+[[package]]
+name = "kernel32-sys"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+checksum = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
+
+[[package]]
+name = "libc"
+version = "0.2.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fd41f331ac7c5b8ac259b8bf82c75c0fb2e469bbf37d2becbba9a6a2221965b"
+
+[[package]]
+name = "redox_syscall"
+version = "0.1.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d92eecebad22b767915e4d529f89f28ee96dbbf5a4810d2b844373f136417fd"
+
+[[package]]
+name = "time"
+version = "0.1.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "redox_syscall 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+checksum = "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
+
+[[package]]
+name = "utf8-ranges"
+version = "1.0.0"
+source = "git+ssh://git@github.com/BurntSushi/utf8-ranges#83141b376b93484341c68fbca3ca110ae5cd2708"
+dependencies = [
+ "chrono 0.4.0",
+ "serde 1.0.0",
+ "url 2.0.0",
+]
+
+[[package]]
+name = "utf8-ranges-parent"
+version = "1.0.2"
+source = "git+ssh://git@github.com/dependabot-fixtures/utf8-ranges#9996043f61e9bd18eead9051a238271478089bd2"
+dependencies = [
+ "utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)",
+]
+
+[[package]]
+name = "winapi"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
+
+[[package]]
+name = "winapi-build"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"

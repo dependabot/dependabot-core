@@ -4,45 +4,78 @@ Conda support for [`dependabot-core`][core-repo].
 
 ## Overview
 
-Dependabot-Conda provides support for updating Python packages defined in Conda `environment.yml` files. This implementation focuses on Python packages only, supporting both conda channel packages (main dependencies section) and PyPI packages (pip section).
+Dependabot-Conda provides support for updating packages defined in Conda `environment.yml` files. It supports all package types from Conda channels, as well as PyPI packages installed via pip.
 
 ## Features
 
-- **Python Package Updates**: Manages Python packages from both conda channels and PyPI
-- **Environment.yml Support**: Parses and updates standard Conda environment files
-- **Dual Source Support**: Handles packages from conda channels (defaults, conda-forge) and pip (PyPI)
-- **Security Updates**: Leverages existing Python/PyPI advisory database for vulnerability detection
-- **Beta Feature**: Protected by feature flag for safe rollout
+- Universal Conda Package Support: Updates packages from Conda channels regardless of language (Python, R, Julia, C/C++ libraries, system tools)
+- Multi-Channel Support: Queries packages from anaconda, conda-forge, bioconda, and other public channels
+- PyPI Integration: Supports pip packages via Python/PyPI integration
+- Environment.yml Support: Parses and updates standard Conda environment files
+- Dual-Source Routing: Automatically routes conda packages to Anaconda API and pip packages to PyPI
+- Beta Feature: Protected by `enable-beta-ecosystems` flag
 
-## Supported Environment Types
+## How It Works
 
-**Tier 1: Full Support** - Environments with simplified conda specifications
+`dependabot-conda` uses dynamic routing based on where packages are defined:
 
-- Main dependencies using simplified syntax: `package=1.2.3`, `package>=1.2.0`  
-- Optional pip section with any packages
-- All Python packages from both sections are managed
+- Conda packages (from `dependencies:` section) are queried via Anaconda channel APIs (api.anaconda.org)
+- Pip packages (from `pip:` section) are queried via PyPI (delegated to Python ecosystem)
 
-**Tier 2: Pip-Only Support** - Environments with fully qualified conda packages + pip section
+### Supported Package Types
 
-- Main dependencies using fully qualified syntax: `package=1.2.3=py313hd6b623d_100`
-- Must have pip section with packages
-- Only pip section packages are managed
+Conda Packages (via Conda channels):
 
-**Tier 3: No Support** - Pure fully qualified environments
+- Python packages
+- R packages
+- Julia packages
+- System tools
+- Any other conda-installable package
 
-- All dependencies use fully qualified syntax
-- No pip section present
-- Environment is rejected with clear error message
+Pip Packages (via PyPI):
 
-### Scope Limitations
+- Any Python package installable via `pip`
 
-This implementation focuses on Python packages only. The following are explicitly out of scope for Phase 1:
+## Supported Environment Files
 
-- Non-Python packages (R packages, system tools, etc.)
-- Lock file support (conda-lock.yml)
-- Custom conda channels beyond defaults/conda-forge
-- Complex environment inheritance
-- Cross-language dependency management
+### Supported
+
+Environments with simple version specifications:
+
+```yaml
+name: myenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy>=1.24.0
+  - r-base>=4.0
+  - pip:
+    - requests>=2.28.0
+```
+
+### Not Supported
+
+Environments using fully-qualified package specifications (with build strings):
+
+```yaml
+dependencies:
+  - python=3.11.0=h2628c8c_0_cpython  # Build string present
+  - numpy=1.24.0=py311h1f0f07a_0      # Build string present
+```
+
+Fully-qualified specs pin to specific builds, making updates complex and potentially breaking. Use simple version specs for Dependabot compatibility.
+
+## Scope Limitations
+
+The following are out of scope for the current implementation:
+
+- Security updates: Vulnerability-driven updates (planned for future release)
+- Lock files: `conda-lock.yml` or similar lock file formats
+- Private channels: Authentication to private Conda channels
+- Fully-qualified specs: Packages pinned with build strings
+- Environment inheritance: Environments that extend other environments
 
 ## Running locally
 
@@ -58,16 +91,22 @@ This implementation focuses on Python packages only. The following are explicitl
    cd conda && rspec
    ```
 
+3. Run dry-run against a repository
+
+   ```bash
+   bin/dry-run.rb conda owner/repo --enable-beta-ecosystems
+   ```
+
 ### Configuration
 
-To enable Conda support, add to your `dependabot.yml`:
+To enable Conda support, add to your `.github/dependabot.yml`:
 
 ```yaml
 version: 2
 enable-beta-ecosystems: true
 updates:
   - package-ecosystem: "conda"
-    directory: "/"
+    directory: "/"  # Location of environment.yml
     schedule:
       interval: "weekly"
 ```

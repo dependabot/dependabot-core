@@ -57,6 +57,45 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
       end
 
       it { is_expected.to eq("https://github.com/actions/checkout") }
+
+      context "with string-keyed source details" do
+        let(:dependency_source) do
+          {
+            "type" => "git",
+            "url" => "https://github.com/actions/checkout",
+            "ref" => "master",
+            "branch" => nil
+          }
+        end
+
+        it { is_expected.to eq("https://github.com/actions/checkout") }
+      end
+
+      context "when an earlier requirement has no source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: nil,
+            requirements: [
+              {
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                source: nil
+              },
+              {
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                source: dependency_source
+              }
+            ],
+            package_manager: "github_actions"
+          )
+        end
+
+        it { is_expected.to eq("https://github.com/actions/checkout") }
+      end
     end
 
     context "when dealing with a subdependency" do
@@ -70,6 +109,37 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
       end
 
       it { is_expected.to eq("https://github.com/actions/checkout") }
+    end
+
+    context "when dealing with a subdependency on GHE" do
+      # Simulates GitCommitChecker calling look_up_source with a subdependency
+      # (empty requirements) when the job is configured with GHE source
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "mycompany.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: nil,
+          requirements: [],
+          package_manager: "github_actions"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://mycompany.com/status")
+          .to_return(
+            status: 200,
+            headers: { "X-GitHub-Request-Id" => "12345" }
+          )
+      end
+
+      it { is_expected.to eq("https://mycompany.com/actions/checkout") }
     end
   end
 end

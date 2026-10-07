@@ -3,7 +3,6 @@
 
 require "json"
 require "time"
-require "cgi"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -27,7 +26,10 @@ module Dependabot
         def initialize(dependency:)
           @dependency = dependency
 
-          @dependency_url = T.let("https://hex.pm/api/packages/#{dependency.name}", T.nilable(String))
+          @dependency_url = T.let(
+            "https://hex.pm/api/packages/#{dependency.metadata[:hex_package] || dependency.name}",
+            T.nilable(String)
+          )
         end
 
         sig { returns(Dependabot::Dependency) }

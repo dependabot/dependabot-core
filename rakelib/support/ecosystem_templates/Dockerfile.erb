@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # TODO: Install any required dependencies for your ecosystem
@@ -14,6 +15,5 @@ USER dependabot
 # COPY --chown=dependabot:dependabot <%= ecosystem_name %>/helpers /opt/<%= ecosystem_name %>/helpers
 # RUN bash /opt/<%= ecosystem_name %>/helpers/build
 
-COPY --chown=dependabot:dependabot <%= ecosystem_name %> $DEPENDABOT_HOME/<%= ecosystem_name %>
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents <%= ecosystem_name %> common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

@@ -30,7 +30,7 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :local
 
-      INFINITY = T.let(1000, Integer)
+      INFINITY = 1000
       NEGATIVE_INFINITY = T.let(-INFINITY, Integer)
 
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
@@ -78,7 +78,7 @@ module Dependabot
       def initialize(version) # rubocop:disable Metrics/AbcSize
         raise Dependabot::BadRequirementError, "Malformed version string - string is nil" if version.nil?
 
-        @version_string = T.let(version.to_s, String)
+        @version_string = T.let(version.to_s.strip, String)
 
         raise Dependabot::BadRequirementError, "Malformed version string - string is empty" if @version_string.empty?
 

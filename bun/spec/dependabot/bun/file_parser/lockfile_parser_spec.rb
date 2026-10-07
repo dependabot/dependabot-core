@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -33,6 +33,43 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
             .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("bun.lock")
               expect(error.message).to include("lockfileVersion")
+            end
+        end
+      end
+
+      context "when the lockfile version is newer than the bundled bun supports" do
+        let(:dependency_files) { project_dependency_files("bun/unsupported_lockfile_version") }
+
+        it "raises a DependencyFileNotSupported error" do
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotSupported) do |error|
+              expect(error.message).to include("Unsupported bun.lock 'lockfileVersion' 4")
+              expect(error.message).to include(
+                "supports up to #{Dependabot::Bun::BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION}"
+              )
+            end
+        end
+      end
+
+      context "when the configVersion is invalid" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"dependencies": {"etag": "^1.0.0"}}'
+            ),
+            Dependabot::DependencyFile.new(
+              name: "bun.lock",
+              content: '{"lockfileVersion": 0, "configVersion": "invalid", "workspaces": {}, "packages": {}}'
+            )
+          ]
+        end
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("bun.lock")
+              expect(error.message).to include("configVersion")
             end
         end
       end
@@ -88,6 +125,47 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
             version: "1.8.1"
           )
           expect(dependencies.length).to eq(17)
+        end
+      end
+
+      context "when dealing with v2 format" do
+        let(:dependency_files) { project_dependency_files("bun/simple_v2") }
+
+        it "parses dependencies properly" do
+          expect(dependencies).to contain_exactly(
+            have_attributes(name: "etag", version: "1.0.1"),
+            have_attributes(name: "is-number", version: "7.0.0")
+          )
+        end
+      end
+
+      context "when dealing with v3 format and scoped overrides" do
+        let(:dependency_files) { project_dependency_files("bun/simple_v3") }
+
+        it "parses dependencies and retains both overridden and top-level versions" do
+          expect(dependencies).to contain_exactly(
+            have_attributes(name: "etag", version: "1.0.1"),
+            have_attributes(name: "is-number", version: "6.0.0", all_versions: match_array(%w(7.0.0 6.0.0))),
+            have_attributes(name: "is-odd", version: "3.0.1")
+          )
+        end
+      end
+
+      context "when the lockfile has configVersion" do
+        context "with configVersion: 0" do
+          let(:dependency_files) { project_dependency_files("bun/simple_v0_with_config_version") }
+
+          it "parses dependencies properly" do
+            expect(dependencies.find { |d| d.name == "fetch-factory" }).to have_attributes(
+              name: "fetch-factory",
+              version: "0.0.1"
+            )
+            expect(dependencies.find { |d| d.name == "etag" }).to have_attributes(
+              name: "etag",
+              version: "1.8.1"
+            )
+            expect(dependencies.length).to eq(11)
+          end
         end
       end
     end

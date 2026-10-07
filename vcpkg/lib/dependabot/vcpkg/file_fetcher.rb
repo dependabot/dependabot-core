@@ -15,12 +15,12 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.include?(VCPKG_JSON_FILENAME)
+        filenames.intersect?([VCPKG_JSON_FILENAME, VCPKG_CONFIGURATION_JSON_FILENAME])
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a vcpkg.json file."
+        "Repo must contain a vcpkg.json or vcpkg-configuration.json file."
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

@@ -25,8 +25,13 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Source)) }
       attr_reader :source
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
+
+      sig { returns(T::Boolean) }
+      def reject_external_code?
+        @reject_external_code
+      end
 
       sig do
         params(
@@ -35,7 +40,7 @@ module Dependabot
           repo_contents_path: T.nilable(String),
           credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
-          options: T::Hash[Symbol, T.untyped]
+          options: T::Hash[Symbol, T.anything]
         )
           .void
       end
@@ -79,6 +84,14 @@ module Dependabot
       sig { params(_command: String).returns(String) }
       def run_in_parsed_context(_command)
         raise Dependabot::NotImplemented, "No run_parsed_context utility method is provided for this ecosystem."
+      end
+
+      # Enables alias extraction so that aliased packages are parsed using the
+      # real package name rather than being skipped. Must be called before #parse.
+      # This is a no-op for ecosystems that don't support aliases.
+      sig { void }
+      def dealias_packages!
+        options[:dealias_packages] = true
       end
 
       private

@@ -16,9 +16,12 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       mark_job_as_processed: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil,
+      record_update_job_warning: nil,
+      record_workflow_result: nil,
       update_dependency_list: nil,
       increment_metric: nil,
-      wait_for_calls_to_finish: nil
+      wait_for_calls_to_finish: nil,
+      write_workflow_summary: nil
     )
   end
   let(:job_definition) do
@@ -60,6 +63,45 @@ RSpec.describe Dependabot::UpdateGraphCommand do
         expect(args[:dependency_submission].job_id).to eql(job_id)
         expect(args[:dependency_submission].package_manager).to eql("bundler")
       end
+
+      perform_job
+    end
+  end
+
+  describe "#perform_job when a directory has a non-fatal fetch error" do
+    subject(:perform_job) { job.perform_job }
+
+    let(:fetched_files) do
+      Dependabot::FetchedFiles.new(
+        dependency_files: [],
+        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848",
+        directory_fetch_errors: {
+          "/" => Dependabot::PathDependenciesNotReachable.new(["./local-gem"])
+        }
+      )
+    end
+
+    before do
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+    end
+
+    it "hands the fetch error to the processor and submits a skipped snapshot for the affected directory" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        submission = args[:dependency_submission]
+
+        expect(submission).to be_a(GithubApi::DependencySubmission)
+        expect(submission.job_id).to eql(job_id)
+        expect(submission.status).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED)
+        expect(submission.reason).to eq(
+          GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+        )
+        expect(submission.resolved_dependencies).to be_empty
+      end
+
+      # The affected directory is reported without ever parsing or graphing its files.
+      expect(Dependabot::FileParsers).not_to receive(:for_package_manager)
+      expect(Dependabot::DependencyGraphers).not_to receive(:for_package_manager)
 
       perform_job
     end
@@ -137,7 +179,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_graph_error",
+          error_type: "unknown_update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -154,7 +196,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records the a update job unknown error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_unknown_error).with(
-          error_type: "update_graph_error",
+          error_type: "unknown_update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -168,6 +210,34 @@ RSpec.describe Dependabot::UpdateGraphCommand do
         perform_job
         Dependabot::Experiments.reset!
       end
+
+      context "with an EOF socket error" do
+        let(:error) do
+          Excon::Error::Socket.new(EOFError.new).tap do |socket_error|
+            socket_error.set_backtrace(
+              [
+                "/home/dependabot/common/lib/dependabot/registry_client.rb:32:in 'get'",
+                "/home/dependabot/bundler/lib/dependabot/bundler/file_parser.rb:100:in 'parse'"
+              ]
+            )
+          end
+        end
+
+        it "records the call-site fingerprint with the duplicate unknown error" do
+          expect(service).to receive(:record_update_job_unknown_error).with(
+            error_type: "unknown_update_graph_error",
+            error_details: hash_including(
+              Dependabot::ErrorAttributes::FINGERPRINT => [
+                "excon-eof",
+                "bundler",
+                "bundler/lib/dependabot/bundler/file_parser.rb:parse"
+              ]
+            )
+          )
+
+          perform_job
+        end
+      end
     end
 
     context "with an update graph error (ghes)" do
@@ -178,7 +248,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_graph_error",
+          error_type: "unknown_update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",

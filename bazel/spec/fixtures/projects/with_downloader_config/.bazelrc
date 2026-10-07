@@ -1,0 +1,8 @@
+# Bazel configuration file
+build --java_runtime_version=remotejdk_11
+
+# Custom downloader configuration for mirrors
+build --downloader_config=downloader.cfg
+
+# Other build options
+test --test_output=all

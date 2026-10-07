@@ -11,42 +11,78 @@ namespace NuGetUpdater.Core.Test.Update;
 
 public class PackageReferenceUpdaterTests
 {
+    [Fact]
+    public void BuildReverseGraph_ReturnsCorrectParents()
+    {
+        // arrange
+        var dependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Parent.Package/1.0.0"] = ["Transitive.Package/2.0.0"],
+            ["Transitive.Package/2.0.0"] = ["Super.Transitive.Package/3.0.0"],
+            ["Super.Transitive.Package/3.0.0"] = [],
+        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
+        // act
+        var packageParents = PackageReferenceUpdater.BuildReverseGraph(dependencyGraph, new TestLogger());
+
+        // assert
+        Assert.Equal("Parent.Package", packageParents["Transitive.Package"].Single());
+        Assert.Equal("Transitive.Package", packageParents["Super.Transitive.Package"].Single());
+    }
+
+    [Fact]
+    public void BuildReverseGraph_HandlesMultipleVersionsOfSamePackage()
+    {
+        // arrange - simulates a merged graph where the same package appears at different versions
+        var dependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Parent.Package/1.0.0"] = ["Child.Package/1.0.0"],
+            ["Parent.Package/2.0.0"] = ["Child.Package/2.0.0"],
+            ["Child.Package/1.0.0"] = [],
+            ["Child.Package/2.0.0"] = [],
+        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
+        // act
+        var packageParents = PackageReferenceUpdater.BuildReverseGraph(dependencyGraph, new TestLogger());
+
+        // assert - both version entries contribute the same parent name
+        Assert.Equal("Parent.Package", packageParents["Child.Package"].Single());
+    }
+
     [Theory]
     [MemberData(nameof(ComputeUpdateOperationsTestData))]
-    public async Task ComputeUpdateOperations
+    public void ComputeUpdateOperations
     (
         ImmutableArray<Dependency> topLevelDependencies,
         ImmutableArray<Dependency> requestedUpdates,
         ImmutableArray<Dependency> resolvedDependencies,
+        ImmutableDictionary<string, ImmutableArray<string>> dependencyGraph,
         ImmutableArray<UpdateOperationBase> expectedUpdateOperations
     )
     {
-        // arrange
-        using var repoRoot = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />"));
-        var projectPath = Path.Combine(repoRoot.DirectoryPath, "project.csproj");
-        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
-            MockNuGetPackage.CreateSimplePackage("Parent.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "1.0.0")])]),
-            MockNuGetPackage.CreateSimplePackage("Parent.Package", "2.0.0", "net9.0", [(null, [("Transitive.Package", "2.0.0")])]),
-            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net9.0", [(null, [("Super.Transitive.Package", "1.0.0")])]),
-            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0", [(null, [("Super.Transitive.Package", "2.0.0")])]),
-            MockNuGetPackage.CreateSimplePackage("Super.Transitive.Package", "1.0.0", "net9.0"),
-            MockNuGetPackage.CreateSimplePackage("Super.Transitive.Package", "2.0.0", "net9.0"),
-            MockNuGetPackage.CreateSimplePackage("Unrelated.Package", "1.0.0", "net9.0"),
-        ], repoRoot.DirectoryPath);
-
         // act
-        var actualUpdateOperations = await PackageReferenceUpdater.ComputeUpdateOperations(
-            repoRoot.DirectoryPath,
-            projectPath,
-            "net9.0",
+        var actualUpdateOperations = PackageReferenceUpdater.ComputeUpdateOperations(
             topLevelDependencies,
             requestedUpdates,
             resolvedDependencies,
+            dependencyGraph,
             new TestLogger());
 
         // assert
         AssertEx.Equal(expectedUpdateOperations, actualUpdateOperations);
     }
+
+    /// <summary>
+    /// A dependency graph representing:
+    ///   Parent.Package/2.0.0 -> Transitive.Package/2.0.0 -> Super.Transitive.Package/2.0.0
+    /// </summary>
+    private static readonly ImmutableDictionary<string, ImmutableArray<string>> TestDependencyGraph =
+        new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Parent.Package/2.0.0"] = ["Transitive.Package/2.0.0"],
+            ["Transitive.Package/2.0.0"] = ["Super.Transitive.Package/2.0.0"],
+            ["Super.Transitive.Package/2.0.0"] = [],
+        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
 
     public static IEnumerable<object[]> ComputeUpdateOperationsTestData()
     {
@@ -69,6 +105,13 @@ public class PackageReferenceUpdaterTests
                 new Dependency("Some.Package", "1.0.1", DependencyType.PackageReference),
                 new Dependency("Unrelated.Package", "2.0.0", DependencyType.PackageReference)
             ),
+
+            // dependencyGraph
+            new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Some.Package/1.0.1"] = [],
+                ["Unrelated.Package/2.0.0"] = [],
+            }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
 
             // expectedUpdateOperations
             ImmutableArray.Create<UpdateOperationBase>(
@@ -100,6 +143,13 @@ public class PackageReferenceUpdaterTests
                 new Dependency("Transitive.Package", "2.0.0", DependencyType.PackageReference)
             ),
 
+            // dependencyGraph
+            new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Top.Level.Package/1.0.0"] = ["Transitive.Package/2.0.0"],
+                ["Transitive.Package/2.0.0"] = [],
+            }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+
             // expectedUpdateOperations
             ImmutableArray.Create<UpdateOperationBase>(
                 new PinnedUpdate()
@@ -128,6 +178,9 @@ public class PackageReferenceUpdaterTests
             ImmutableArray.Create(
                 new Dependency("Parent.Package", "2.0.0", DependencyType.PackageReference)
             ),
+
+            // dependencyGraph
+            TestDependencyGraph,
 
             // expectedUpdateOperations
             ImmutableArray.Create<UpdateOperationBase>(
@@ -160,6 +213,9 @@ public class PackageReferenceUpdaterTests
                 new Dependency("Parent.Package", "2.0.0", DependencyType.PackageReference)
             ),
 
+            // dependencyGraph
+            TestDependencyGraph,
+
             // expectedUpdateOperations
             ImmutableArray.Create<UpdateOperationBase>(
                 new ParentUpdate()
@@ -188,6 +244,12 @@ public class PackageReferenceUpdaterTests
             ImmutableArray.Create(
                 new Dependency("Parent.Package", "1.0.0", DependencyType.PackageReference)
             ),
+            // dependencyGraph
+            new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Parent.Package/1.0.0"] = ["Transitive.Package/1.0.0"],
+                ["Transitive.Package/1.0.0"] = [],
+            }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
             // expectedUpdateOperations
             ImmutableArray<UpdateOperationBase>.Empty,
         ];
@@ -209,6 +271,8 @@ public class PackageReferenceUpdaterTests
                 new Dependency("Parent.Package", "2.0.0", DependencyType.PackageReference),
                 new Dependency("Unrelated.Package", "1.0.0", DependencyType.PackageReference)
             ),
+            // dependencyGraph
+            TestDependencyGraph,
             // expectedUpdateOperations
             ImmutableArray.Create<UpdateOperationBase>(
                 new ParentUpdate()

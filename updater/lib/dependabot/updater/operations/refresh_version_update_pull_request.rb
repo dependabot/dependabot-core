@@ -58,6 +58,9 @@ module Dependabot
         def perform
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking and updating versions pull requests...")
+
+          return if abort_multi_directory_refresh?
+
           dependency = dependencies.last
 
           # Retrieve the list of initial notices from dependency snapshot
@@ -73,6 +76,30 @@ module Dependabot
         end
 
         private
+
+        # A multi-directory pull request should be refreshed through the group
+        # operation, which carries a dependency-group-to-refresh. When such a
+        # payload reaches this individual strategy we end the job cleanly and
+        # report a non-fatal exception instead of raising an unknown error.
+        sig { returns(T::Boolean) }
+        def abort_multi_directory_refresh?
+          directories = job.source.directories
+          return false unless directories && directories.count > 1
+
+          Dependabot.logger.warn(
+            "Skipping refresh for #{T.must(job.dependencies).join(', ')}: an individual pull request " \
+            "refresh cannot span multiple directories (#{directories.join(', ')})."
+          )
+
+          service.capture_exception(
+            error: Dependabot::DependabotError.new(
+              "Individual pull request refresh received multiple directories without a group to refresh."
+            ),
+            job: job
+          )
+
+          true
+        end
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
@@ -133,8 +160,11 @@ module Dependabot
 
           checker = update_checker_for(lead_dependency, raise_on_ignored: raise_on_ignored?(lead_dependency))
           log_checking_for_update(lead_dependency)
+          record_blocked_version_ignored(
+            job: job, dependency: lead_dependency, operation: BlockedVersionsOperation::REFRESH_VERSION_UPDATE
+          )
 
-          return if all_versions_ignored?(lead_dependency, checker)
+          return close_pull_request(reason: :up_to_date) if all_versions_ignored?(lead_dependency, checker)
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
@@ -178,6 +208,12 @@ module Dependabot
             # The existing PR is for a previous version. Supersede it.
             create_pull_request(dependency_change)
           end
+        rescue Dependabot::AllVersionsIgnored
+          # updated_dependencies can raise this even after requirements_to_unlock
+          # succeeds, when the resolvable-version finder ignores every candidate.
+          # Security refreshes are handled by RefreshSecurityUpdatePullRequest (see
+          # .applies_to?), so here the PR is always closed as no-longer-possible.
+          close_pull_request(reason: :update_no_longer_possible)
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
@@ -272,6 +308,13 @@ module Dependabot
           else
             :update_not_possible
           end
+        rescue Dependabot::AllVersionsIgnored
+          # Security updates rely on this being surfaced to halt the run, so only
+          # non-security jobs treat every ignored version as "no update possible".
+          raise if job.security_updates_only?
+
+          Dependabot.logger.info("All updates for #{checker.dependency.name} were ignored")
+          :update_not_possible
         end
 
         sig do

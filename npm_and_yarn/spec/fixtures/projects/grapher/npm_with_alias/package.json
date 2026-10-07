@@ -1,0 +1,9 @@
+{
+  "name": "grapher-npm-with-alias",
+  "version": "1.0.0",
+  "description": "Test project with an aliased dependency",
+  "dependencies": {
+    "my-is-number": "npm:is-number@7.0.0",
+    "etag": "^1.8.1"
+  }
+}

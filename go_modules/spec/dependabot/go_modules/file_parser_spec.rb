@@ -6,6 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/go_modules/file_parser"
+require "dependabot/go_modules/go_mod_manifest"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
@@ -36,6 +37,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
     ENV.delete("GOENV")
     ENV.delete("GOPROXY")
     ENV.delete("GOPRIVATE")
+    ENV.delete("GONOPROXY")
+    ENV.delete("GONOSUMDB")
   end
 
   it_behaves_like "a dependency file parser"
@@ -89,6 +92,38 @@ RSpec.describe Dependabot::GoModules::FileParser do
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
     end
 
+    it "strips surrounding quotes from values in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=\"https://proxy.example.com\"\nGONOPROXY='*.company.com'\n",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
+      expect(`go env GONOPROXY`.strip).to eq("*.company.com")
+    end
+
+    it "strips quotes from go.env values that contain = signs" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=\"https://proxy.example.com?token=abc&env=prod\"\n",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com?token=abc&env=prod")
+    end
+
+    it "handles go.env files with a mix of quoted and unquoted values" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=\"https://proxy.example.com\"\nGONOPROXY=*.company.com\n",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
+      expect(`go env GONOPROXY`.strip).to eq("*.company.com")
+    end
+
     it "does not set the GOPRIVATE environment variable if a goproxy_server credential is passed" do
       credentials = [
         Dependabot::Credential.new(
@@ -106,6 +141,132 @@ RSpec.describe Dependabot::GoModules::FileParser do
         options: { goprivate: "*" }
       )
       expect(`go env GOPRIVATE`.strip).to be_empty
+    end
+
+    it "sets GONOPROXY from the gonoproxy option" do
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*", gonoproxy: "none" }
+      )
+      expect(`go env GOPRIVATE`.strip).to eq("*")
+      expect(`go env GONOPROXY`.strip).to eq("none")
+    end
+
+    it "sets GONOSUMDB from the gonosumdb option" do
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*", gonosumdb: "*" }
+      )
+      expect(`go env GOPRIVATE`.strip).to eq("*")
+      expect(`go env GONOSUMDB`.strip).to eq("*")
+    end
+
+    it "does not set GONOPROXY when the option is omitted" do
+      ENV.delete("GONOPROXY")
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*" }
+      )
+      expect(ENV.fetch("GONOPROXY", nil)).to be_nil
+    end
+
+    it "does not set GONOSUMDB when the option is omitted" do
+      ENV.delete("GONOSUMDB")
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*" }
+      )
+      expect(ENV.fetch("GONOSUMDB", nil)).to be_nil
+    end
+
+    it "does not override GONOPROXY if it is already set in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GONOPROXY=*.company.com",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonoproxy: "none" }
+      )
+      expect(`go env GONOPROXY`.strip).to eq("*.company.com")
+    end
+
+    it "does not override GONOSUMDB if it is already set in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GONOSUMDB=*.company.com",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonosumdb: "*" }
+      )
+      expect(`go env GONOSUMDB`.strip).to eq("*.company.com")
+    end
+
+    it "does not set GONOPROXY if GOPRIVATE is set in the go.env file" do
+      ENV.delete("GONOPROXY")
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPRIVATE=github.com/dependabot-fixtures",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonoproxy: "none" }
+      )
+      expect(ENV.fetch("GONOPROXY", nil)).to be_nil
+    end
+
+    it "does not set GONOSUMDB if GOPRIVATE is set in the go.env file" do
+      ENV.delete("GONOSUMDB")
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPRIVATE=github.com/dependabot-fixtures",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonosumdb: "*" }
+      )
+      expect(ENV.fetch("GONOSUMDB", nil)).to be_nil
+    end
+
+    it "does not set GONOPROXY if a goproxy_server credential is passed" do
+      ENV.delete("GONOPROXY")
+      credentials = [
+        Dependabot::Credential.new(
+          {
+            "type" => "goproxy_server",
+            "url" => "https://proxy.example.com"
+          }
+        )
+      ]
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        credentials: credentials,
+        repo_contents_path: repo_contents_path,
+        options: { gonoproxy: "none" }
+      )
+      expect(ENV.fetch("GONOPROXY", nil)).to be_nil
     end
   end
 
@@ -348,7 +509,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect { parser.parse }
           .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_path).to eq("/go.mod")
-            expect(error.message).to match(/v0 or v1/)
+            expect(error.message).to include("v0 or v1")
           end
       end
     end
@@ -378,6 +539,84 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
 
       its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with typed command output" do
+      let(:command_status) { instance_double(Process::Status, success?: true) }
+      let(:required) { { "Path" => "example.com/module", "Version" => "v1.2.3" } }
+      let(:manifest_json) { JSON.generate("Require" => [required]) }
+
+      before do
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3)
+          .with("go mod edit -json").and_return([manifest_json, "", command_status])
+      end
+
+      it "preserves dependency details from the command" do
+        expect(dependencies.first).to have_attributes(name: "example.com/module", version: "1.2.3")
+        expect(dependencies.first.requirements.first).to have_attributes(requirement: "v1.2.3", file: "go.mod")
+      end
+
+      context "when the original manifest contains a malformed later entry" do
+        let(:manifest_json) { JSON.generate("Require" => [required, nil]) }
+
+        it "does not return a partially parsed dependency list" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: Require[1] must be an object"
+          )
+        end
+      end
+
+      context "when the prepared manifest contains malformed JSON" do
+        before do
+          allow(Open3).to receive(:capture3)
+            .with("go mod edit -json")
+            .and_return([manifest_json, "", command_status], ['{"do-not-echo-this":', "", command_status])
+        end
+
+        it "reports the original path for the prepared command result" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: result must be valid JSON"
+          )
+        end
+      end
+
+      context "when a matching replacement precedes malformed data" do
+        let(:manifest_json) do
+          JSON.generate(
+            "Require" => [required],
+            "Replace" => [{ "Old" => { "Path" => required.fetch("Path") }, "New" => { "Path" => "../local" } }, nil]
+          )
+        end
+
+        it "does not hide the later replacement behind a match" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: Replace[1] must be an object"
+          )
+        end
+      end
+
+      [nil, "v1.2.3", "v9.0.0", ""].each do |old_version|
+        context "with replacement version #{old_version.inspect}" do
+          let(:manifest_json) do
+            JSON.generate(
+              "Require" => [required],
+              "Replace" => [{
+                "Old" => { "Path" => required.fetch("Path"), "Version" => old_version },
+                "New" => { "Path" => "example.com/replacement", "Version" => "v1.0.0" }
+              }]
+            )
+          end
+
+          it "skips only replacements for this dependency version" do
+            expected_names = old_version.nil? || old_version == "v1.2.3" ? [] : ["example.com/module"]
+            expect(dependencies.map(&:name)).to eq(expected_names)
+          end
+        end
+      end
     end
 
     context "when using a monorepo" do
@@ -418,6 +657,167 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
   end
 
+  context "with a go.work workspace" do
+    let(:project_name) { "workspace" }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(
+        name: "go.work",
+        content: fixture("projects", project_name, "go.work"),
+        directory: directory
+      )
+    end
+    let(:go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "go.mod",
+        content: fixture("projects", project_name, "go.mod"),
+        directory: directory
+      )
+    end
+    let(:libs_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "libs/go.mod",
+        content: fixture("projects", project_name, "libs", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:services_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "services/go.mod",
+        content: fixture("projects", project_name, "services", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:files) { [go_work, go_mod, libs_go_mod, services_go_mod] }
+    let(:parser) do
+      described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+    end
+
+    describe "parse" do
+      subject(:dependencies) { parser.parse }
+
+      it "parses dependencies from all workspace modules" do
+        dep_names = dependencies.map(&:name)
+        expect(dep_names).to include("github.com/fatih/color")
+        expect(dep_names).to include("rsc.io/quote")
+        expect(dep_names).to include("golang.org/x/tools")
+      end
+
+      it "deduplicates shared dependencies across modules" do
+        color_deps = dependencies.select { |d| d.name == "github.com/fatih/color" }
+        expect(color_deps.length).to eq(1)
+      end
+
+      it "preserves requirement file provenance for shared deps" do
+        color_dep = dependencies.find { |d| d.name == "github.com/fatih/color" }
+        req_files = color_dep.requirements.map { |r| r[:file] }
+        expect(req_files).to include("go.mod")
+      end
+
+      it "identifies top-level dependencies correctly" do
+        top_level = dependencies.select(&:top_level?)
+        top_level_names = top_level.map(&:name)
+        expect(top_level_names).to include("github.com/fatih/color")
+        expect(top_level_names).to include("rsc.io/quote")
+        expect(top_level_names).to include("golang.org/x/tools")
+      end
+
+      context "when a workspace module returns malformed output" do
+        before do
+          status = instance_double(Process::Status, success?: true)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3)
+            .with("go mod edit -json").and_return(['{"Require":[]}', "", status], ['{"Require":[null]}', "", status])
+        end
+
+        it "identifies the workspace manifest rather than the temporary path" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /libs/go.mod: Require[0] must be an object"
+          )
+        end
+      end
+    end
+  end
+
+  context "with a go.work workspace (no root module)" do
+    let(:project_name) { "workspace_no_root_mod" }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(
+        name: "go.work",
+        content: fixture("projects", project_name, "go.work"),
+        directory: directory
+      )
+    end
+    let(:api_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "api/go.mod",
+        content: fixture("projects", project_name, "api", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:worker_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "worker/go.mod",
+        content: fixture("projects", project_name, "worker", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:files) { [go_work, api_go_mod, worker_go_mod] }
+    let(:parser) do
+      described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+    end
+
+    describe "parse" do
+      subject(:dependencies) { parser.parse }
+
+      it "parses dependencies from all sub-modules" do
+        dep_names = dependencies.map(&:name)
+        expect(dep_names).to include("rsc.io/quote")
+        expect(dep_names).to include("golang.org/x/tools")
+      end
+
+      it "does not require a root go.mod" do
+        expect { parser.parse }.not_to raise_error
+      end
+    end
+  end
+
+  describe "#sanitize_go_env_content" do
+    subject(:parser) do
+      described_class.new(dependency_files: [go_mod], source: source, repo_contents_path: repo_contents_path)
+    end
+
+    it "strips double quotes from values" do
+      expect(parser.send(:sanitize_go_env_content, "GOPROXY=\"https://proxy.example.com\"\n"))
+        .to eq("GOPROXY=https://proxy.example.com\n")
+    end
+
+    it "strips single quotes from values" do
+      expect(parser.send(:sanitize_go_env_content, "GONOPROXY='*.company.com'\n"))
+        .to eq("GONOPROXY=*.company.com\n")
+    end
+
+    it "does not modify unquoted values" do
+      content = "GOPROXY=https://proxy.example.com\n"
+      expect(parser.send(:sanitize_go_env_content, content)).to eq(content)
+    end
+
+    it "does not strip mismatched quotes" do
+      content = "GOPROXY=\"https://proxy.example.com'\n"
+      expect(parser.send(:sanitize_go_env_content, content)).to eq(content)
+    end
+
+    it "preserves blank lines" do
+      content = "GOPROXY=https://proxy.example.com\n\nGONOPROXY=*.company.com\n"
+      expect(parser.send(:sanitize_go_env_content, content)).to eq(content)
+    end
+
+    it "preserves = signs inside quoted values" do
+      expect(parser.send(:sanitize_go_env_content, "GOPROXY=\"https://proxy.example.com?token=abc\"\n"))
+        .to eq("GOPROXY=https://proxy.example.com?token=abc\n")
+    end
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
@@ -431,7 +831,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "go_modules"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.25.0"
+        expect(package_manager.version.to_s).to eq "1.27.0"
       end
     end
 

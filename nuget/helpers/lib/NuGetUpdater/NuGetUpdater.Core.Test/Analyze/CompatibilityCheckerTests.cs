@@ -5,6 +5,7 @@ using NuGet.Packaging.Core;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
 
@@ -141,6 +142,30 @@ public class CompatibilityCheckerTests
             new TestLogger());
 
         Assert.False(result);
+    }
+
+    [Fact]
+    public async Task CheckAsync_PackageWithFrameworkDependencyGroupButNoAssemblies_ReportsAsCompatible()
+    {
+        // package has an explicit dependency group that is incompatible with the project framework, but lib and ref directories are empty
+        // a real-world example is a project targeting `net9.0` and referencing `Microsoft.VisualStudio.Azure.Containers.Tools.Targets/1.22.1`
+        // depending on the project's properties, it's entirely possible for this to be a supported scenario
+
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var package = new MockNuGetPackage("Some.Package", "1.0.0", DependencyGroups: [(".NETFramework4.7.2", [])]);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        var projectFramework = NuGetFramework.Parse("net9.0");
+        var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+        var logger = new TestLogger();
+
+        // act
+        var isCompatible = await CompatibilityChecker.CheckAsync(packageId, [projectFramework], context, logger, CancellationToken.None);
+
+        //assert
+        Assert.True(isCompatible);
     }
 
     [Theory]

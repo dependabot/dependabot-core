@@ -21,6 +21,8 @@ stdout '{"data":{"error-type":"pull_request_exists_for_security_update","error-d
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:

@@ -47,6 +47,11 @@ module Dependabot
 
           if file.name.match?(CHART_YAML_REGEXP)
             updated_content = chart_updater.updated_chart_yaml_content(file)
+            # A dependency may span several files/entries; when a strategy leaves
+            # this file's constraint unchanged (e.g. an already-in-range range),
+            # skip it rather than emit an identical file (which would raise).
+            next if updated_content == file.content
+
             updated_files << updated_file(
               file: file,
               content: T.must(updated_content)

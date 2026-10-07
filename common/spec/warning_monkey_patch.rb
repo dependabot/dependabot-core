@@ -7,7 +7,10 @@ ALLOW_PATTERNS = [
   # ahead of our installed ruby version.
   %r{parser/current is loading parser/ruby31},
   /3.1.\d-compliant syntax, but you are running 3.1.\d/,
-  %r{whitequark/parser}
+  %r{whitequark/parser},
+  # AWS SDK attempts to fetch instance profile credentials in CI, which
+  # triggers a VCR error that gets emitted as a warning.
+  /Error retrieving instance profile credentials/
 ].freeze
 
 # Called internally by Ruby for all warnings

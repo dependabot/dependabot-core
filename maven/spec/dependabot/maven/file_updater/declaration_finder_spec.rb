@@ -27,13 +27,13 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
   let(:dependency_version) { "4.5.3" }
   let(:dependency_metadata) { { packaging_type: "jar" } }
   let(:declaring_requirement) do
-    {
+    Dependabot::DependencyRequirement.create(
       requirement: dependency_version,
       file: "pom.xml",
       groups: groups,
       source: nil,
       metadata: dependency_metadata
-    }
+    )
   end
   let(:dependency_files) { [pom] }
   let(:pom) do
@@ -433,7 +433,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         {
           requirement: dependency_version,
           file: "pom.xml",
-          groups: [],
+          groups: ["plugin"],
           source: nil,
           metadata: { packaging_type: "jar", property_name: "kotlin.version" }
         }

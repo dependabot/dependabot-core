@@ -1,8 +1,11 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 
+using Microsoft.Build.Evaluation;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -18,13 +21,13 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var expectedDependencies = new List<Dependency>()
         {
-            new Dependency("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+            new Dependency("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
         };
         if (Path.GetExtension(projectPath)! == ".fsproj")
         {
             // this package ships with the SDK and is automatically added for F# projects but should be manually added here to make the test consistent
             // only direct package discovery finds this, though
-            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true));
+            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false));
         }
 
         await TestDiscoveryAsync(
@@ -57,10 +60,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = Path.GetFileName(projectPath),
                         TargetFrameworks = ["net8.0"],
                         Dependencies = expectedDependencies.ToImmutableArray(),
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", projectPath),
-                            new("TargetFramework", "net8.0", projectPath),
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -101,10 +100,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net472"],
                         Dependencies = [
-                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net472"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net472", "src/project.csproj"),
+                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net472"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -148,11 +144,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
-                            new("TargetFramework", "net8.0", "src/project.csproj"),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -198,12 +190,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
-                            new("TargetFramework", "net8.0", "src/project.csproj"),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -281,6 +269,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "src",
+                SolutionDirectory = "src",
                 Projects = [
                     new()
                     {
@@ -288,10 +277,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/test/project1/project1.csproj"),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -302,10 +288,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/TEST/project2/project2.csproj"),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -350,12 +333,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
-                            new("TargetFramework", "net8.0", "src/project.csproj"),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -365,10 +344,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestPackageConfig(bool useDirectDiscovery)
+    [Fact]
+    public async Task TestPackageConfig()
     {
         await TestDiscoveryAsync(
             packages:
@@ -413,7 +390,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                         ],
-                        Properties = [],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [
@@ -470,10 +446,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/project.csproj")
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -578,16 +551,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
                         FilePath = "src/project.csproj",
                         TargetFrameworks = ["net7.0", "net8.0"],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj")
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"]),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -618,7 +589,314 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
-    public async Task TestRepo_DirectDiscovery_Slnx()
+    public async Task SdkPackagesAreReportedAppropriately()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="2.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SdkPackagesThatAreUpdatedAreReportedAsTopLevel()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        // HOWEVER a later statement in the files updates the package version, so it's now considered top level
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="1.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Transitive.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestRepo_Sln()
+    {
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/solution.sln", """
+                    Microsoft Visual Studio Solution File, Format Version 12.00
+                    # Visual Studio 14
+                    VisualStudioVersion = 14.0.22705.0
+                    MinimumVisualStudioVersion = 10.0.40219.1
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project.A", "client\client.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+                    EndProject
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project.B", "server\server.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20D}"
+                    EndProject
+                    Global
+                      GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        Debug|Any CPU = Debug|Any CPU
+                        Release|Any CPU = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.Build.0 = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(SolutionProperties) = preSolution
+                        HideSolutionNode = FALSE
+                      EndGlobalSection
+                    EndGlobal
+                    """),
+                ("src/client/client.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/server/server.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.B" Version="4.5.6" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                SolutionDirectory = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "client/client.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "server/server.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestRepo_SolutionDirectoryIsCapturedAndHonored()
+    {
+        // the workspace directly contains a solution file, so the `SolutionDir` MSBuild property is faked during
+        // discovery; the project only references the package when `$(SolutionDir)` is set, and the resolved solution
+        // directory is reported on the discovery result so it can be retrieved later
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Solution.Scoped.Package", "9.0.1", "net8.0"),
+            ],
+            workspacePath: "",
+            files: new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup Condition="Exists('$(SolutionDir)')">
+                        <PackageReference Include="Solution.Scoped.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("solution.slnx", """
+                    <Solution>
+                      <Project Path="project.csproj" />
+                    </Solution>
+                    """)
+            },
+            expectedResult: new()
+            {
+                Path = "",
+                SolutionDirectory = ".",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Solution.Scoped.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestRepo_Slnx()
     {
         var solutionPath = "solution.slnx";
         await TestDiscoveryAsync(
@@ -651,16 +929,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
                         FilePath = "src/project.csproj",
                         TargetFrameworks = ["net7.0"],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0", "src/project.csproj")
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -734,87 +1010,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
                         FilePath = "src/project.csproj",
                         TargetFrameworks = ["net7.0", "net8.0"],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [
-                            "../Directory.Build.props",
-                            "../Directory.Packages.props",
-                        ],
-                        AdditionalFiles = [],
-                    }
-                ],
-            }
-        );
-    }
-
-    [Fact]
-    public async Task TestDirsProj_CasingMismatchIsResolved()
-    {
-        var dirsProjPath = "dirs.proj";
-        await TestDiscoveryAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
-            ],
-            workspacePath: "",
-            files: new[]
-            {
-            ("src/project.csproj", """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Some.Package" />
-                  </ItemGroup>
-                </Project>
-                """),
-            ("Directory.Build.props", "<Project />"),
-            ("Directory.Packages.props", """
-                <Project>
-                  <PropertyGroup>
-                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                    <SomePackageVersion>9.0.1</SomePackageVersion>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """),
-            // Introduce a casing difference in the project reference
-            (dirsProjPath, """
-                <Project>
-                  <ItemGroup>
-                    <ProjectReference Include="SRC/PROJECT.CSPROJ" />
-                  </ItemGroup>
-                </Project>
-                """)
-            },
-            expectedResult: new()
-            {
-                Path = "",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "src/project.csproj",
-                        TargetFrameworks = ["net7.0", "net8.0"],
-                        Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -891,16 +1094,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
                         FilePath = "src/supported.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", @"src/supported.csproj"),
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1238,10 +1439,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "project.csproj"),
+                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1373,11 +1571,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("RestoreUseStaticGraphEvaluation", "true", "project.csproj"),
-                            new("TargetFramework", "net8.0", "project.csproj"),
+                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1446,13 +1640,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net9.0"],
                         Dependencies = [
-                            new("Package1", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
-                            new("Package2", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("MSBuildTreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
-                            new("TargetFramework", "net9.0", "src/project.csproj"),
-                            new("TreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
+                            new("Package1", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            new("Package2", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = ["Directory.Packages.props"],
@@ -1497,15 +1686,738 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net9.0"],
                         Dependencies = [
-                            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
-                            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net9.0", "src/project.csproj"),
+                            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" /><!-- relative -->
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)project2\project2.csproj" /><!-- absolute -->
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project1/project1.csproj", $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("src/project2/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger(), repoRootPath: tempDir.DirectoryPath))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
+            Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints_IgnoresSolutionFolders()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("solution.sln", """
+                Microsoft Visual Studio Solution File, Format Version 12.00
+                Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project", "src\project.csproj", "{00000000-0000-0000-0000-000000000001}"
+                EndProject
+                Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".sln", ".sln", "{2730C57A-D6A7-4A4F-913A-AF211E54B717}"
+                    ProjectSection(SolutionItems) = preProject
+                        .editorconfig = .editorconfig
+                    EndProjectSection
+                EndProject
+                """),
+            ("src/project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        Directory.CreateDirectory(Path.Combine(tempDir.DirectoryPath, ".sln"));
+
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync(
+            [Path.Combine(tempDir.DirectoryPath, "solution.sln")],
+            new ExperimentsManager(),
+            new TestLogger(),
+            repoRootPath: tempDir.DirectoryPath))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project.csproj").NormalizePathToUnix(),
+        };
+
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints_FiltersProjectsInSubmodules()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            (".gitmodules", """
+                [submodule "vendor/external"]
+                    path = vendor/external
+                    url = https://github.com/example/external.git
+                """),
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" />
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)..\vendor\external\project2.csproj" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project1/project1.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("vendor/external/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger(), repoRootPath: tempDir.DirectoryPath))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_Default()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", "<Project />"),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.Default,
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_CentralPackageVersions()
+    {
+        // to avoid a test dependency on a real NuGet package, we fake the basic shape of the central package versions SDK
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("Microsoft.Build.CentralPackageVersions.TEST", "2.1.3",
+                    // special file contents based on the real ones
+                    sdkPropsContent: """
+                        <Project>
+                          <PropertyGroup>
+                            <UsingMicrosoftCentralPackageVersionsSdk>true</UsingMicrosoftCentralPackageVersionsSdk>
+                          </PropertyGroup>
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <PropertyGroup>
+                            <CentralPackagesFile>$([MSBuild]::GetPathOfFileAbove('Packages.props', $(MSBuildProjectDirectory)))</CentralPackagesFile>
+                          </PropertyGroup>
+
+                          <Import Project="$(CentralPackagesFile)" />
+                        </Project>
+                        """)
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", """
+                    <Project>
+                      <Sdk Name="Microsoft.Build.CentralPackageVersions.TEST" Version="2.1.3" />
+                    </Project>
+                    """),
+                ("Directory.Packages.props", "<Project />"),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                            "../Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.CentralPackageVersions,
+                        ExpectedPackageManagementSpecialFileRelativePath = "../Packages.props",
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_CentralPackageManagement()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.CentralPackageManagement,
+                        ExpectedPackageManagementSpecialFileRelativePath = "../Directory.Packages.props",
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_CentralPackageManagementWithTransitivePinning()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.CentralPackageManagementWithTransitivePinning,
+                        ExpectedPackageManagementSpecialFileRelativePath = "../Directory.Packages.props",
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public void MergeProjectDiscovery()
+    {
+        // project discovery is frequently merged with prior results (e.g., `packages.config` followed by `<PackageReference>`)
+        // some of the groups getting merged are unlikely to happen in the wild, but it's still interesting just in case it shows up, e.g.,
+        // consider a hybrid project where one set of dependencies exists only in packages.config and another set only in PackageReference
+        var result1 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project.csproj",
+            Dependencies = [new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net9.0"])],
+            IsSuccess = true,
+            Error = null,
+            TargetFrameworks = ["net8.0"],
+            ReferencedProjectPaths = ["referenced/a.csproj"],
+            ImportedFiles = ["imported/a.props"],
+            AdditionalFiles = ["a/packages.config"],
+            PackageManagementKind = PackageManagementKind.Default,
+            PackageManagementSpecialFileRelativePath = null,
+            HasNoWarnNU1701 = false,
+        };
+        var result2 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project.csproj",
+            Dependencies = [
+                new("Package.A", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]), // duplicate package; latest wins
+                new("Package.B", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false)
+            ],
+            IsSuccess = true,
+            Error = null,
+            TargetFrameworks = ["net9.0"],
+            ReferencedProjectPaths = ["referenced/b.csproj"],
+            ImportedFiles = ["imported/b.props"],
+            AdditionalFiles = ["b/app.config"],
+            PackageManagementKind = PackageManagementKind.CentralPackageManagement,
+            PackageManagementSpecialFileRelativePath = "Directory.Packages.props",
+            HasNoWarnNU1701 = true,
+        };
+
+        // to make sure we're checking everything exactly, we'll explicitly check each item
+        var merged = DiscoveryWorker.MergeProjectDiscovery(result1, result2);
+        Assert.Equal("src/project.csproj", merged.FilePath);
+        Assert.Equal(2, merged.Dependencies.Length);
+
+        Assert.Equal("Package.A", merged.Dependencies[0].Name);
+        Assert.Equal("2.0.0", merged.Dependencies[0].Version);
+        Assert.Equal(DependencyType.PackageReference, merged.Dependencies[0].Type);
+        Assert.True(merged.Dependencies[0].IsTopLevel);
+        AssertEx.Equal(["net9.0"], merged.Dependencies[0].TargetFrameworks);
+
+        Assert.Equal("Package.B", merged.Dependencies[1].Name);
+        Assert.Equal("3.0.0", merged.Dependencies[1].Version);
+        Assert.Equal(DependencyType.Unknown, merged.Dependencies[1].Type);
+        Assert.False(merged.Dependencies[1].IsTopLevel);
+        AssertEx.Equal(["net9.0"], merged.Dependencies[1].TargetFrameworks);
+
+        Assert.True(merged.IsSuccess);
+        Assert.Null(merged.Error);
+
+        AssertEx.Equal(["net8.0", "net9.0"], merged.TargetFrameworks);
+        AssertEx.Equal(["referenced/a.csproj", "referenced/b.csproj"], merged.ReferencedProjectPaths);
+        AssertEx.Equal(["imported/a.props", "imported/b.props"], merged.ImportedFiles);
+        AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);
+        Assert.Equal(PackageManagementKind.CentralPackageManagement, merged.PackageManagementKind);
+        Assert.Equal("Directory.Packages.props", merged.PackageManagementSpecialFileRelativePath);
+        Assert.True(merged.HasNoWarnNU1701);
+    }
+
+    [Fact]
+    public void MergeProjectDiscovery_ThrowsOnNotMatchingPaths()
+    {
+        var result1 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project1.csproj",
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        var result2 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project2.csproj",
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        Assert.Throws<InvalidOperationException>(() => DiscoveryWorker.MergeProjectDiscovery(result1, result2));
+    }
+
+    [Fact]
+    public async Task ProjectsInSubmodulesAreFilteredOut()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            ],
+            workspacePath: "",
+            files:
+            [
+                (".gitmodules", """
+                    [submodule "vendor/external"]
+                        path = vendor/external
+                        url = https://github.com/example/external.git
+                    """),
+                ("myapp.slnx", """
+                    <Solution>
+                      <Folder Name="/src/">
+                        <Project Path="src\project.csproj" />
+                      </Folder>
+                      <Folder Name="/vendor/external/">
+                        <Project Path="vendor\external\project.csproj" />
+                      </Folder>
+                    </Solution>
+                    """),
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("vendor/external/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                SolutionDirectory = ".",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "src/project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ],
+                ExpectedProjectCount = 1,
+            }
+        );
+    }
+
+    [Fact]
+    public async Task GlobalJsonInSubmoduleIsFilteredOut()
+    {
+        await TestDiscoveryAsync(
+            packages: [],
+            workspacePath: "vendor/external",
+            files:
+            [
+                (".gitmodules", """
+                    [submodule "vendor/external"]
+                        path = vendor/external
+                        url = https://github.com/example/external.git
+                    """),
+                ("vendor/external/global.json", """
+                    {
+                      "sdk": {
+                        "version": "8.0.100"
+                      }
+                    }
+                    """),
+                ("vendor/external/.config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "dotnetsay": {
+                          "version": "2.1.3",
+                          "commands": ["dotnetsay"]
+                        }
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "vendor/external",
+                GlobalJson = null,
+                DotNetToolsJson = null,
+                Projects = [],
+                ExpectedProjectCount = 0,
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestDependencyGraphIsEmpty_PackagesConfig()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45",
+                    dependencyGroups: [(null, [("Some.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net45"),
+            ],
+            workspacePath: "src",
+            files:
+            [
+                ("src/project.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("src/packages.config", """
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net45"],
+                        Dependencies =
+                        [
+                            new Dependency("Some.Package", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [
+                            "packages.config",
+                        ],
+                        ExpectedDependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Some.Package/1.0.0"] = [],
+                        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestDependencyGraphIsPopulated()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0",
+                    dependencyGroups: [(null, [("Some.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net8.0"),
+            ],
+            workspacePath: "src",
+            files:
+            [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies =
+                        [
+                            new Dependency("Some.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+                            new Dependency("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                        ExpectedDependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Some.Package/1.0.0"] = ["Some.Dependency/2.0.0"],
+                            ["Some.Dependency/2.0.0"] = [],
+                        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+                    }
+                ]
+            }
+        );
+    }
+
+    [Theory]
+    [InlineData("net10.0", "net10.0")]
+    [InlineData("net10.0-android", "net10.0")]
+    [InlineData("net10.0-android", "net10.0-android")]
+    public async Task TestDependencyGraphWithDifferentTargetFrameworks(string projectTfm, string packageTfm)
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Parent.Package", "1.0.0", packageTfm,
+                    dependencyGroups: [(null, [("Transitive.Package", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", packageTfm,
+                    dependencyGroups: [(null, [("Super.Transitive.Package", "3.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Super.Transitive.Package", "3.0.0", "net8.0"),
+            ],
+            workspacePath: "src",
+            files:
+            [
+                ("src/project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>{projectTfm}</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Parent.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = [projectTfm],
+                        Dependencies =
+                        [
+                            new Dependency("Parent.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [projectTfm]),
+                            new Dependency("Super.Transitive.Package", "3.0.0", DependencyType.Unknown, TargetFrameworks: [projectTfm], IsTopLevel: false),
+                            new Dependency("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: [projectTfm], IsTopLevel: false),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                        ExpectedDependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Parent.Package/1.0.0"] = ["Transitive.Package/2.0.0"],
+                            ["Transitive.Package/2.0.0"] = ["Super.Transitive.Package/3.0.0"],
+                            ["Super.Transitive.Package/3.0.0"] = [],
+                        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
                     }
                 ]
             }

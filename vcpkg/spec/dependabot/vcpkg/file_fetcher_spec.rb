@@ -41,7 +41,8 @@ RSpec.describe Dependabot::Vcpkg::FileFetcher do
 
   describe ".required_files_message" do
     it "returns the correct message" do
-      expect(described_class.required_files_message).to eq("Repo must contain a vcpkg.json file.")
+      expect(described_class.required_files_message)
+        .to eq("Repo must contain a vcpkg.json or vcpkg-configuration.json file.")
     end
   end
 

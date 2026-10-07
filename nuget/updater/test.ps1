@@ -3,6 +3,9 @@ $ErrorActionPreference = "Stop"
 
 . $PSScriptRoot\common.ps1
 
+# uncomment line to enable detailed test logging
+#$env:DEPENDABOT_LOG_MESSAGES = "true"
+
 function Assert-ArraysEqual([string[]]$expected, [string[]]$actual) {
     $expectedText = $expected -join ", "
     $actualText = $actual -join ", "
@@ -11,10 +14,10 @@ function Assert-ArraysEqual([string[]]$expected, [string[]]$actual) {
     }
 }
 
-function Test-GlobalJsonVersions([string] $testDirectory, [string[]] $directories, [string[]] $installedSdks, [string[]] $expectedSdksToInstall) {
+function Test-GlobalJsonVersions([string] $testDirectory, [string[]] $installedSdks, [string[]] $expectedSdksToInstall) {
     Write-Host "Test-GlobalJsonVersions in $testDirectory ... " -NoNewline
     $testDirectoryFull = "$PSScriptRoot/test-data/$testDirectory"
-    $actualSdksToInstall = Get-SdkVersionsToInstall -repoRoot $testDirectoryFull -updateDirectories $directories -installedSdks $installedSdks
+    $actualSdksToInstall = Get-SdkVersionsToInstall -repoRoot $testDirectoryFull -installedSdks $installedSdks
     Assert-ArraysEqual -expected $expectedSdksToInstall -actual $actualSdksToInstall
     Write-Host "OK"
 }
@@ -37,58 +40,44 @@ function Test-NuGetConfig([string]$scenarioName, [string]$jobString, [string[]]$
 
 try {
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-root-no-file" `
-        -directories @("/") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @()
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-root-with-file" `
-        -directories @("/") `
+        -testDirectory "global-json-discovery-root" `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-none" `
-        -directories @("src") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @()
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-2-values" `
-        -directories @("src") `
-        -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @("1.2.3", "4.5.6")
-
-    Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-empty-object" `
-        -directories @("/src") `
+        -testDirectory "global-json-discovery-skips-empty-object" `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-recursive-wildcard" `
-        -directories @("/**") `
+        -testDirectory "global-json-discovery-deep" `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-recursive-wildcard" `
-        -directories @("/src/**/*") `
+        -testDirectory "global-json-discovery-hidden-directory" `
         -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @()
+        -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
-        -testDirectory "global-json-discovery-none" `
-        -directories @("/dir-that-does-not-exist") `
+        -testDirectory "global-json-discovery-multiple-directories" `
         -installedSdks @("8.0.404", "9.0.101") `
-        -expectedSdksToInstall @()
+        -expectedSdksToInstall @("4.5.6", "7.8.9", "1.2.3")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-unsupported-version" `
-        -directories @("/") `
         -installedSdks @("8.0.404") `
         -expectedSdksToInstall @("9.0")
+
+    Test-GlobalJsonVersions `
+        -testDirectory "global-json-whitespace" `
+        -installedSdks @("8.0.404") `
+        -expectedSdksToInstall @("1.2.3-leading-comment", "1.2.3-leading-newline", "1.2.3-leading-whitespace")
 
     Test-RequiredTargetingPacks `
         -testDirectory "targeting-packs" `
@@ -150,6 +139,65 @@ try {
             '  <packageSources>',
             '    <add key="nuget_source_1" value="https://nuget.example.com/1/index.json" />',
             '    <add key="nuget_source_2" value="https://nuget.example.com/2/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "insecure-connections" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"http://nuget.example.com/insecure/index.json"}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="http://nuget.example.com/insecure/index.json" allowInsecureConnections="true" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "feed-without-url-is-ignored" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"https://nuget.example.com/v3/index.json"},
+    {"type":"nuget_feed", "host":"nuget.host.example.com"}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="https://nuget.example.com/v3/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "feed-with-null-url-is-ignored" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"https://nuget.example.com/v3/index.json"},
+    {"type":"nuget_feed", "url":null}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="https://nuget.example.com/v3/index.json" />',
             '  </packageSources>',
             '</configuration>'
         )

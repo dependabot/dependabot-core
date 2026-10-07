@@ -8,7 +8,7 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public sealed record CreatePullRequest : MessageBase
 {
-    public required ReportedDependency[] Dependencies { get; init; }
+    public required ReportedDependencyWithDirectory[] Dependencies { get; init; }
 
     [JsonPropertyName("updated-dependency-files")]
     public required DependencyFile[] UpdatedDependencyFiles { get; init; }

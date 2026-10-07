@@ -53,7 +53,10 @@ module Dependabot
         # Fetch the manifests.txt file and parse each line to extract version information
         sig { returns(T::Array[Dependabot::RustToolchain::Version]) }
         def fetch_and_parse_manifests
-          response = Dependabot::RegistryClient.get(url: MANIFESTS_URL)
+          # Cache bust by appending a timestamp query param so CDN treats each request uniquely
+          # This avoids relying on headers that might be ignored by intermediate caches.
+          busted_url = "#{MANIFESTS_URL}?t=#{Time.now.to_i}"
+          response = Dependabot::RegistryClient.get(url: busted_url)
           manifests_content = response.body
 
           channels = T.let([], T::Array[Dependabot::RustToolchain::Version])

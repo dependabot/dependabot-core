@@ -10,6 +10,7 @@ require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/metadata_finder"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/dependency_grapher"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
@@ -34,7 +35,7 @@ ErrorHandler = T.type_alias do
 end
 
 module Dependabot
-  # rubocop:disable Metrics/ModuleLength
+  # rubocop:disable-next Metrics/ModuleLength
   module NpmAndYarn
     NODE_VERSION_NOT_SATISFY_REGEX = /The current Node version (?<current_version>v?\d+\.\d+\.\d+) does not satisfy the required version (?<required_version>v?\d+\.\d+\.\d+)\./ # rubocop:disable Layout/LineLength
 
@@ -404,7 +405,7 @@ module Dependabot
       }.freeze,
       T::Hash[String,
               {
-                message: T.any(String, NilClass),
+                message: T.nilable(String),
                 handler: ErrorHandler
               }]
     )
@@ -555,10 +556,10 @@ module Dependabot
             error_message = message.gsub(/[[:space:]]+/, " ").strip
 
             filename = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
-                                      .named_captures["filename"]
+                                    .named_captures["filename"]
 
             env_var = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
-                                  .named_captures["token"]
+                                   .named_captures["token"]
 
             msg = "Environment variable \"#{env_var}\" not found in \"#{filename.split('/').last}\"."
             Dependabot::MissingEnvironmentVariable.new(env_var, msg)
@@ -659,5 +660,4 @@ module Dependabot
       }]
     )
   end
-  # rubocop:enable Metrics/ModuleLength
 end

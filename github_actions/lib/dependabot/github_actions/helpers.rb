@@ -26,7 +26,8 @@ module Dependabot
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean,
             consider_version_branches_pinned: T::Boolean,
-            dependency_source_details: T.nilable(T::Hash[Symbol, String])
+            dependency_source_details: T.nilable(T::Hash[Symbol, String]),
+            git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
           )
             .void
         end
@@ -36,7 +37,8 @@ module Dependabot
           ignored_versions: [],
           raise_on_ignored: false,
           consider_version_branches_pinned: false,
-          dependency_source_details: nil
+          dependency_source_details: nil,
+          git_metadata_fetcher: nil
         )
           @dependency = dependency
           @credentials = credentials
@@ -44,6 +46,7 @@ module Dependabot
           @raise_on_ignored = raise_on_ignored
           @consider_version_branches_pinned = consider_version_branches_pinned
           @dependency_source_details = dependency_source_details
+          @git_metadata_fetcher = git_metadata_fetcher
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -79,7 +82,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: true,
-            dependency_source_details: source
+            dependency_source_details: source,
+            git_metadata_fetcher: @git_metadata_fetcher
           )
         end
       end

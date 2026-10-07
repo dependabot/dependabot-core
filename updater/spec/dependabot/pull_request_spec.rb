@@ -5,6 +5,59 @@ require "spec_helper"
 require "dependabot/pull_request"
 
 RSpec.describe Dependabot::PullRequest do
+  describe Dependabot::PullRequest::Dependency do
+    describe ".from_hash" do
+      it "parses a dependency" do
+        dependency = described_class.from_hash(
+          {
+            "dependency-name" => "foo",
+            "dependency-version" => "1.0.0",
+            "dependency-removed" => true,
+            "directory" => "/foo"
+          }
+        )
+
+        expect(dependency).to have_attributes(
+          name: "foo",
+          version: "1.0.0",
+          removed: true,
+          directory: "/foo"
+        )
+      end
+
+      it "fails when the dependency name is missing" do
+        expect { described_class.from_hash({}) }.to raise_error(KeyError)
+      end
+
+      it "fails when an optional field has the wrong type" do
+        expect do
+          described_class.from_hash(
+            {
+              "dependency-name" => "foo",
+              "dependency-version" => 1
+            }
+          )
+        end.to raise_error(TypeError, /dependency-version/)
+      end
+    end
+
+    describe "#to_h" do
+      it "omits nil and false values" do
+        dependency = described_class.new(name: "foo", version: nil)
+
+        expect(dependency.to_h).to eq(name: "foo")
+      end
+    end
+
+    describe "==" do
+      it "returns false for another object type" do
+        dependency = described_class.new(name: "foo", version: nil)
+
+        expect(dependency).not_to eq("foo")
+      end
+    end
+  end
+
   context "when there are different formats from the job" do
     let(:existing_pull_requests) do
       [[{ "dependency-name" => "foo", "dependency-version" => "1.0.0", "directory" => "/", "pr-number" => 123 }]]
@@ -58,6 +111,12 @@ RSpec.describe Dependabot::PullRequest do
       )
 
       expect(pr2).to eq(pr1)
+    end
+
+    it "fails fast for an unsupported pull request shape" do
+      expect do
+        described_class.create_from_job_definition(existing_pull_requests: ["invalid"])
+      end.to raise_error(TypeError, /pull request/)
     end
   end
 
@@ -277,6 +336,94 @@ RSpec.describe Dependabot::PullRequest do
       )
 
       expect(pr1).not_to eq(pr2)
+    end
+
+    it "is true when one has directory and the other doesn't" do
+      pr1 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0",
+            directory: "/foo"
+          )
+        ],
+        pr_number: 123
+      )
+      pr2 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0"
+          )
+        ],
+        pr_number: 456
+      )
+
+      expect(pr1).to eq(pr2)
+    end
+
+    it "is false when directories are different" do
+      existing_pr = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "rollup",
+            version: "2.79.2",
+            directory: "/packages/corelib"
+          )
+        ],
+        pr_number: 123
+      )
+      new_pr = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "rollup",
+            version: "2.79.2",
+            directory: "/"
+          )
+        ]
+      )
+
+      expect(existing_pr).not_to eq(new_pr)
+    end
+
+    it "is false when comparing PRs from job definition with different directories" do
+      existing_prs = described_class.create_from_job_definition(
+        existing_pull_requests: [
+          [{ "dependency-name" => "rollup", "dependency-version" => "2.79.2", "directory" => "/packages/corelib" }]
+        ]
+      )
+
+      updated_dependency = instance_double(
+        Dependabot::Dependency,
+        name: "rollup",
+        version: "2.79.2",
+        removed?: false,
+        directory: "/."
+      )
+      new_pr = described_class.create_from_updated_dependencies([updated_dependency])
+
+      expect(existing_prs.find { |pr| pr == new_pr }).to be_nil
+    end
+
+    it "is true when existing PR has no directory but new PR does" do
+      existing_prs = described_class.create_from_job_definition(
+        existing_pull_requests: [
+          [{ "dependency-name" => "rollup", "dependency-version" => "2.79.2" }]
+        ]
+      )
+
+      updated_dependency = instance_double(
+        Dependabot::Dependency,
+        name: "rollup",
+        version: "2.79.2",
+        removed?: false,
+        directory: "/."
+      )
+      new_pr = described_class.create_from_updated_dependencies([updated_dependency])
+
+      expect(existing_prs.first.using_directory?).to be false
+      expect(new_pr.using_directory?).to be true
+      expect(existing_prs.find { |pr| pr == new_pr }).not_to be_nil
     end
   end
 end

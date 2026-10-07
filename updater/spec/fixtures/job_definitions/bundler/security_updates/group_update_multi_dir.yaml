@@ -23,7 +23,6 @@ job:
   grouped-update: false
   ignore-conditions: []
   lockfile-only: false
-  max-updater-run-time: 2700
   package-manager: bundler
   proxy-log-response-body-on-auth-failure: true
   requirements-update-strategy:

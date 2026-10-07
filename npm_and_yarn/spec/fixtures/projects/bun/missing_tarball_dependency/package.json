@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "this-does-not-exist": "https://example.com/this-does-not-exist.tar.gz"
-  }
-}

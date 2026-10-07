@@ -7,6 +7,8 @@ require "dependabot/rust_toolchain/package/package_details_fetcher"
 RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
   subject(:finder) { described_class.new(dependency: dependency) }
 
+  let(:manifests_url_with_timestamp) { /\A#{Regexp.escape(described_class::MANIFESTS_URL)}(\?t=\d+)?\z/o }
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "rust-toolchain",
@@ -33,8 +35,9 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
     end
 
     before do
+      # Stub any cache-busted URL variant without assertions inside the hook
       allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: described_class::MANIFESTS_URL)
+        .with(url: manifests_url_with_timestamp)
         .and_return(instance_double(Excon::Response, body: manifests_response))
     end
 
@@ -78,7 +81,7 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(nightly_channel.version).to be_nil
     end
 
-    # rubocop:disable Naming/VariableNumber
+    # rubocop:disable-next Naming/VariableNumber
     it "parses specific version releases correctly" do
       package_details = finder.fetch
       version_releases = package_details.releases.select do |r|
@@ -104,12 +107,11 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(channel_1_42_0.date).to be_nil
       expect(channel_1_42_0.stability).to be_nil
     end
-    # rubocop:enable Naming/VariableNumber
 
     it "handles network errors gracefully" do
       allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: described_class::MANIFESTS_URL)
-        .and_raise(Excon::Error::Timeout.new("Request timeout"))
+        .with(url: manifests_url_with_timestamp)
+        .and_raise(Excon::Error::Timeout, "Request timeout")
 
       expect { finder.fetch }.to raise_error(Excon::Error::Timeout)
     end

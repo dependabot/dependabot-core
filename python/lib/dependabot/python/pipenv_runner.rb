@@ -13,16 +13,20 @@ module Dependabot
 
       sig do
         params(
-          dependency: Dependabot::Dependency,
+          dependency: T.nilable(Dependabot::Dependency),
           lockfile: T.nilable(Dependabot::DependencyFile),
-          language_version_manager: LanguageVersionManager
+          language_version_manager: LanguageVersionManager,
+          dependency_files: T.nilable(T::Array[Dependabot::DependencyFile]),
+          repo_contents_path: T.nilable(String)
         )
           .void
       end
-      def initialize(dependency:, lockfile:, language_version_manager:)
+      def initialize(dependency:, lockfile:, language_version_manager:, dependency_files: nil, repo_contents_path: nil)
         @dependency = dependency
         @lockfile = lockfile
         @language_version_manager = language_version_manager
+        @dependency_files = dependency_files
+        @repo_contents_path = repo_contents_path
       end
 
       sig { params(constraint: T.nilable(String)).returns(String) }
@@ -48,6 +52,18 @@ module Dependabot
         fetch_version_from_parsed_lockfile(updated_lockfile)
       end
 
+      # Called by Python::DependencyGrapher.
+      sig { returns(String) }
+      def run_pipenv_graph
+        SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
+          File.write(".python-version", language_version_manager.python_major_minor)
+          write_temporary_dependency_files
+          language_version_manager.install_required_python
+          run_command("pyenv exec pipenv sync --dev", fingerprint: "pyenv exec pipenv sync --dev")
+          run_command("pyenv exec pipenv graph --json", fingerprint: "pyenv exec pipenv graph --json")
+        end
+      end
+
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run(command, fingerprint: nil)
         run_command(
@@ -60,7 +76,7 @@ module Dependabot
 
       private
 
-      sig { returns(Dependabot::Dependency) }
+      sig { returns(T.nilable(Dependabot::Dependency)) }
       attr_reader :dependency
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -68,6 +84,33 @@ module Dependabot
 
       sig { returns(LanguageVersionManager) }
       attr_reader :language_version_manager
+
+      sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+      attr_reader :dependency_files
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :repo_contents_path
+
+      sig { returns(Dependabot::Dependency) }
+      def current_dependency
+        T.must(dependency)
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def write_temporary_dependency_files
+        T.must(dependency_files)
+         .reject { |f| f.name == ".python-version" }
+         .each do |file|
+          path = file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, file.content)
+        end
+      end
+
+      sig { returns(String) }
+      def base_directory
+        dependency_files&.first&.directory || "/"
+      end
 
       sig { returns(String) }
       def extras_specification
@@ -85,9 +128,10 @@ module Dependabot
         return nil unless lockfile_content
 
         parsed_lockfile = JSON.parse(lockfile_content)
-        section = lockfile_section
-        dependency_data = parsed_lockfile.dig(section, dependency_name)
+        section_data = parsed_lockfile_section(parsed_lockfile, lockfile_section)
+        return nil unless section_data
 
+        dependency_data = section_data[dependency_name]
         return nil unless dependency_data
 
         dependency_data["extras"]
@@ -95,10 +139,11 @@ module Dependabot
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
-        deps = updated_lockfile[lockfile_section] || {}
+        section_data = parsed_lockfile_section(updated_lockfile, lockfile_section)
+        return nil unless section_data
 
-        deps.dig(dependency_name, "version")
-            &.gsub(/^==/, "")
+        section_data.dig(dependency_name, "version")
+                    &.gsub(/^==/, "")
       end
 
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
@@ -106,21 +151,42 @@ module Dependabot
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def lockfile_section
-        if dependency.requirements.any?
-          T.must(dependency.requirements.first)[:groups].first
+        if current_dependency.requirements.any?
+          T.must(T.must(current_dependency.requirements.first).groups).first&.to_s
         else
+          parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             section = keys.fetch(:lockfile)
-            return section if JSON.parse(T.must(T.must(lockfile).content))[section].keys.any?(dependency_name)
+            section_data = parsed_lockfile_section(parsed_lockfile, section)
+            next unless section_data
+
+            return section if section_data.key?(dependency_name)
           end
+
+          nil
         end
+      end
+
+      sig do
+        params(
+          parsed_lockfile: T::Hash[String, T.untyped],
+          section: T.nilable(String)
+        ).returns(T.nilable(T::Hash[String, T.untyped]))
+      end
+      def parsed_lockfile_section(parsed_lockfile, section)
+        return nil unless section
+
+        section_data = parsed_lockfile[section]
+        return section_data if section_data.is_a?(Hash)
+
+        nil
       end
 
       sig { returns(String) }
       def dependency_name
-        dependency.metadata[:original_name] || dependency.name
+        current_dependency.metadata_string(:original_name) || current_dependency.name
       end
 
       sig { returns(T::Hash[String, String]) }

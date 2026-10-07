@@ -2,6 +2,7 @@ name: Sorbet
 on: # yamllint disable-line rule:truthy
   pull_request:
     branches: [main]  # Adjust this to the branch you want for creating PRs
+permissions: {}
 
 jobs:
   check-sorbet-typing-mode:
@@ -12,11 +13,13 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Get Changed Files
         id: changed-files
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: '**/lib/dependabot/**/*.rb'  # Only get changed Ruby files in dependabot directory
 
@@ -57,3 +60,23 @@ jobs:
           else
             echo "All changed Ruby files have Sorbet typings."
           fi
+
+  untyped-burndown-ratchet:
+    name: Sorbet T.untyped Burndown Ratchet
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # need the base branch to compare against
+
+      - uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+
+      - name: Ensure the Sorbet/ForbidTUntyped burndown only shrinks
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: ruby script/sorbet-untyped-ratchet

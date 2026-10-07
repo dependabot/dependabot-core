@@ -114,10 +114,22 @@ internal static class CompatibilityChecker
             }
         }
 
-        var refItems = await readers.ContentReader.GetReferenceItemsAsync(cancellationToken);
+        var refItems = (await readers.ContentReader.GetReferenceItemsAsync(cancellationToken)).ToArray();
         foreach (var refItem in refItems)
         {
             tfms.Add(refItem.TargetFramework);
+        }
+
+        var libItems = (await readers.ContentReader.GetLibItemsAsync(cancellationToken)).ToArray();
+        foreach (var libItem in libItems)
+        {
+            tfms.Add(libItem.TargetFramework);
+        }
+
+        // if a package contains no assemblies that need to be referenced, we can consider it compatible with all frameworks
+        if (refItems.Length == 0 && libItems.Length == 0)
+        {
+            tfms.Clear();
         }
 
         if (!tfms.Any())
@@ -160,15 +172,13 @@ internal static class CompatibilityChecker
 
         foreach (var source in sources)
         {
-            var sourceRepository = Repository.Factory.GetCoreV3(source);
-            var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>();
-            if (feed is null)
-            {
-                throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
-            }
-
+            FindPackageByIdResource feed;
             try
             {
+                var sourceRepository = Repository.Factory.GetCoreV3(source);
+                feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>()
+                    ?? throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
+
                 // a non-compliant v2 API returning 404 can cause this to throw
                 var exists = await feed.DoesPackageExistAsync(
                     package.Id,

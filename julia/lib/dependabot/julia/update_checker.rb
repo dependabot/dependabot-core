@@ -49,6 +49,10 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_version
+        # A standard library has no registry target: Julia pins the version,
+        # only its compat entry is maintained (see #updated_requirements)
+        return nil if stdlib?
+
         @latest_version ||= T.let(latest_version_finder.latest_version, T.nilable(Gem::Version))
       end
 
@@ -56,7 +60,8 @@ module Dependabot
       def custom_registries
         return @custom_registries if @custom_registries
 
-        registries = T.cast(options.dig(:registries, :julia), T.nilable(T::Array[T.untyped])) || []
+        registries_config = T.cast(options[:registries], T.nilable(T::Hash[Symbol, T.anything]))
+        registries = T.cast(registries_config&.dig(:julia), T.nilable(T::Array[T.untyped])) || []
         # Convert string keys to symbols if needed
         @custom_registries = registries.map do |registry|
           if registry.is_a?(Hash)
@@ -74,33 +79,73 @@ module Dependabot
         @latest_resolvable_version ||= T.let(latest_version, T.nilable(Gem::Version))
       end
 
-      sig { override.returns(T.nilable(T.any(Dependabot::Version, String))) }
-      def latest_resolvable_version_with_no_unlock
-        # Return latest version that satisfies current requirement constraints
-        return nil unless latest_version
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def lowest_security_fix_version
+        return nil if stdlib?
 
-        current_requirement = T.cast(dependency.requirements.first&.fetch(:requirement, nil), T.nilable(String))
-
-        if current_requirement.nil? || current_requirement == "*"
-          return Dependabot::Julia::Version.new(latest_version.to_s)
-        end
-
-        req = requirement_class.new(current_requirement)
-        return unless T.cast(req.satisfied_by?(latest_version), T::Boolean)
-
-        Dependabot::Julia::Version.new(latest_version.to_s)
+        latest_version_finder.lowest_security_fix_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def lowest_resolvable_security_fix_version
+        # Resolvability is not checked, as for latest_resolvable_version
+        lowest_security_fix_version
+      end
+
+      sig { override.returns(T.nilable(T.any(Dependabot::Version, String))) }
+      def latest_resolvable_version_with_no_unlock
+        return nil if stdlib?
+
+        # Return the highest available version that satisfies the current
+        # requirement constraints. requirements_array applies Julia compat
+        # semantics (implicit caret, tilde, hyphen ranges) and returns
+        # alternatives that are OR'd together.
+        candidates = latest_version_finder.available_versions
+        return nil if candidates.empty?
+
+        current_requirement = dependency.requirements.first&.requirement_string
+
+        best = if current_requirement.nil? || current_requirement.strip == "*"
+                 candidates.max
+               else
+                 reqs = requirement_class.requirements_array(current_requirement)
+                 candidates.select { |version| reqs.any? { |req| req.admits?(version) } }.max
+               end
+        return nil unless best
+
+        Dependabot::Julia::Version.new(best.to_s)
+      end
+
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         Dependabot::Julia::RequirementsUpdater.new(
           requirements: dependency.requirements,
-          target_version: latest_resolvable_version&.to_s,
-          update_strategy: requirements_update_strategy&.to_s&.to_sym
+          target_version: preferred_resolvable_version&.to_s,
+          update_strategy: requirements_update_strategy&.to_s&.to_sym,
+          stdlib_versions: stdlib_versions
         ).updated_requirements
       end
 
       private
+
+      sig { override.returns(T::Boolean) }
+      def latest_version_resolvable_with_full_unlock?
+        # Full unlock checks aren't implemented for Julia (yet)
+        false
+      end
+
+      # Versions a stdlib's compat entry has to admit, by project file; set by
+      # the file parser for packages that ship with any Julia release the
+      # project supports
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def stdlib_versions
+        T.cast(dependency.metadata[:julia_stdlib_versions], T.nilable(T::Hash[String, T::Array[String]])) || {}
+      end
+
+      sig { returns(T::Boolean) }
+      def stdlib?
+        stdlib_versions.any?
+      end
 
       sig { returns(Dependabot::Julia::LatestVersionFinder) }
       def latest_version_finder
@@ -130,8 +175,9 @@ module Dependabot
           semver_major_days: cooldown.semver_major_days,
           semver_minor_days: cooldown.semver_minor_days,
           semver_patch_days: cooldown.semver_patch_days,
-          include: cooldown.include,
-          exclude: cooldown.exclude
+          # ReleaseCooldownOptions stores these as Sets; LatestVersionFinder expects Arrays.
+          include: cooldown.include.to_a,
+          exclude: cooldown.exclude.to_a
         }
       end
 

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/bundler/file_updater"
@@ -56,18 +56,18 @@ module Dependabot
 
           updated_requirement =
             dependency.requirements
-                      .find { |r| r[:file] == file.name }
-                      &.fetch(:requirement)
+                      .find { |r| r.file == file.name }
+                      &.requirement_string
 
           previous_requirement =
             dependency.previous_requirements
-                      &.find { |r| r[:file] == file.name }
-                      &.fetch(:requirement)
+                      &.find { |r| r.file == file.name }
+                      &.requirement_string
 
           RequirementReplacer.new(
             dependency: dependency,
             file_type: :gemfile,
-            updated_requirement: updated_requirement,
+            updated_requirement: T.must(updated_requirement),
             previous_requirement: previous_requirement
           ).rewrite(content)
         end
@@ -77,34 +77,34 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |f| f.file == file.name }
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def remove_git_source?(dependency)
           old_gemfile_req =
             dependency.previous_requirements
-                      &.find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
+                      &.find { |f| GEMFILE_FILENAMES.include?(f.file) }
 
-          return false unless old_gemfile_req&.dig(:source, :type) == "git"
+          return false unless old_gemfile_req&.source_string("type") == "git"
 
           new_gemfile_req =
             dependency.requirements
-                      .find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
+                      .find { |f| GEMFILE_FILENAMES.include?(f.file) }
 
-          T.must(new_gemfile_req)[:source].nil?
+          T.must(new_gemfile_req).source.nil?
         end
 
         sig { params(dependency: Dependabot::Dependency, file: Dependabot::DependencyFile).returns(T::Boolean) }
         def update_git_pin?(dependency, file)
           new_gemfile_req =
             dependency.requirements
-                      .find { |f| f[:file] == file.name }
-          return false unless new_gemfile_req&.dig(:source, :type) == "git"
+                      .find { |f| f.file == file.name }
+          return false unless new_gemfile_req&.source_string("type") == "git"
 
           # If the new requirement is a git dependency with a ref then there's
           # no harm in doing an update
-          !T.must(new_gemfile_req).dig(:source, :ref).nil?
+          !T.must(new_gemfile_req).source_string("ref").nil?
         end
 
         sig { params(dependency: Dependabot::Dependency, content: String).returns(String) }
@@ -118,12 +118,11 @@ module Dependabot
         def update_gemfile_git_pin(dependency, file, content)
           new_pin =
             dependency.requirements
-                      .find { |f| f[:file] == file.name }
-                      &.fetch(:source)
-                      &.fetch(:ref)
+                      .find { |f| f.file == file.name }
+                      &.source_string("ref")
 
           GitPinReplacer
-            .new(dependency: dependency, new_pin: new_pin)
+            .new(dependency: dependency, new_pin: T.must(new_pin))
             .rewrite(content)
         end
       end

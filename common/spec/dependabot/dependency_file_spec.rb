@@ -370,6 +370,73 @@ RSpec.describe Dependabot::DependencyFile do
     end
   end
 
+  describe "#blob_oid" do
+    it "returns the Git blob SHA-1 matching git hash-object" do
+      # echo -n "a" | git hash-object --stdin
+      expect(file.blob_oid).to eq("2e65efe2a145dda7ee51d1741299f848e5bf752e")
+    end
+
+    context "when content is nil" do
+      let(:file) { described_class.new(name: "Gemfile", content: nil) }
+
+      it "returns nil" do
+        expect(file.blob_oid).to be_nil
+      end
+    end
+
+    context "when content is base64-encoded" do
+      let(:file) do
+        described_class.new(
+          name: "example.gem",
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+          content: "YWJj\n"
+        )
+      end
+
+      it "computes the blob OID from the decoded bytes" do
+        # echo -n "abc" | git hash-object --stdin
+        expect(file.blob_oid).to eq("f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f")
+      end
+    end
+
+    context "when content is base64-encoded with non-ASCII bytes" do
+      let(:file) do
+        described_class.new(
+          name: "binary.dat",
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+          content: "gP8A/g=="
+        )
+      end
+
+      it "computes the blob OID without encoding errors" do
+        # printf '\x80\xff\x00\xfe' | git hash-object --stdin
+        expect(file.blob_oid).to eq("4edea47ba105055cdec8a27d3ba236f576b59059")
+      end
+    end
+
+    context "with algorithm: :sha256" do
+      it "returns a SHA-256 blob OID" do
+        expect(file.blob_oid(algorithm: :sha256))
+          .to eq("eb337bcee2061c5313c9a1392116b6c76039e9e30d71467ae359b36277e17dc7")
+      end
+
+      context "when content is base64-encoded with non-ASCII bytes" do
+        let(:file) do
+          described_class.new(
+            name: "binary.dat",
+            content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+            content: "gP8A/g=="
+          )
+        end
+
+        it "computes the SHA-256 blob OID without encoding errors" do
+          expect(file.blob_oid(algorithm: :sha256))
+            .to eq("99955a54a0e195e06a6a74e7573046a935f74d5d1f4c10ae2ff27ce02dcdebc6")
+        end
+      end
+    end
+  end
+
   describe "#vendored_file?" do
     it "is false by default" do
       expect(file.vendored_file?).to be false

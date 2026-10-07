@@ -54,6 +54,8 @@ pr-created expected-2.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directory: "/"
     provider: example

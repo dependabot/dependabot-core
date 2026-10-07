@@ -1,7 +1,8 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/bun/requirement"
 
 module Dependabot
   module Bun
@@ -16,48 +17,42 @@ module Dependabot
       # Matches semantic versions:
       VERSION = T.let("#{DIGIT}(?:\\.#{DIGIT}){0,2}#{PRERELEASE}#{BUILD_METADATA}".freeze, String)
 
-      VERSION_REGEX = T.let(/^#{VERSION}$/, Regexp)
+      VERSION_REGEX = /^#{VERSION}$/
 
       # Base regex for SemVer (major.minor.patch[-prerelease][+build])
       # This pattern extracts valid semantic versioning strings based on the SemVer 2.0 specification.
-      SEMVER_REGEX = T.let(
-        /
+      SEMVER_REGEX = /
           (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
           (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
           (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
-        /x,
-        Regexp
-      )
+        /x
 
       # Full SemVer validation regex (ensures the entire string is a valid SemVer)
       # This ensures the entire input strictly follows SemVer, without extra characters before/after.
-      SEMVER_VALIDATION_REGEX = T.let(/^#{SEMVER_REGEX}$/, Regexp)
+      SEMVER_VALIDATION_REGEX = /^#{SEMVER_REGEX}$/
 
       # SemVer constraint regex (supports package.json version constraints)
       # This pattern ensures proper parsing of SemVer versions with optional operators.
-      SEMVER_CONSTRAINT_REGEX = T.let(
-        /
+      SEMVER_CONSTRAINT_REGEX = /
                 (?: (>=|<=|>|<|=|~|\^)\s*)?  # Make operators optional (e.g., >=, ^, ~)
                 (\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)  # Match full SemVer versions
                 | (\*|latest) # Match wildcard (*) or 'latest'
-              /x,
-        Regexp
-      )
+              /x
 
       # /(>=|<=|>|<|=|~|\^)\s*(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)|(\*|latest)/
 
       SEMVER_OPERATOR_REGEX = /^(>=|<=|>|<|~|\^|=)$/
 
       # Constraint Types as Constants
-      CARET_CONSTRAINT_REGEX = T.let(/^\^\s*(#{VERSION})$/, Regexp)
-      TILDE_CONSTRAINT_REGEX = T.let(/^~\s*(#{VERSION})$/, Regexp)
-      EXACT_CONSTRAINT_REGEX = T.let(/^\s*(#{VERSION})$/, Regexp)
-      GREATER_THAN_EQUAL_REGEX = T.let(/^>=\s*(#{VERSION})$/, Regexp)
-      LESS_THAN_EQUAL_REGEX = T.let(/^<=\s*(#{VERSION})$/, Regexp)
-      GREATER_THAN_REGEX = T.let(/^>\s*(#{VERSION})$/, Regexp)
-      LESS_THAN_REGEX = T.let(/^<\s*(#{VERSION})$/, Regexp)
-      WILDCARD_REGEX = T.let(/^\*$/, Regexp)
-      LATEST_REGEX = T.let(/^latest$/, Regexp)
+      CARET_CONSTRAINT_REGEX = /^\^\s*(#{VERSION})$/
+      TILDE_CONSTRAINT_REGEX = /^~\s*(#{VERSION})$/
+      EXACT_CONSTRAINT_REGEX = /^\s*(#{VERSION})$/
+      GREATER_THAN_EQUAL_REGEX = /^>=\s*(#{VERSION})$/
+      LESS_THAN_EQUAL_REGEX = /^<=\s*(#{VERSION})$/
+      GREATER_THAN_REGEX = /^>\s*(#{VERSION})$/
+      LESS_THAN_REGEX = /^<\s*(#{VERSION})$/
+      WILDCARD_REGEX = /^\*$/
+      LATEST_REGEX = /^latest$/
       SEMVER_CONSTANTS = ["*", "latest"].freeze
 
       # Unified Regex for Valid Constraints
@@ -185,11 +180,35 @@ module Dependabot
       def self.find_highest_version_from_constraint_expression(constraint_expression, dependabot_versions = nil)
         parsed_constraints = parse_constraints(constraint_expression, dependabot_versions)
 
-        return nil unless parsed_constraints
+        return nil if parsed_constraints.nil? || parsed_constraints.empty?
 
-        parsed_constraints
-          .filter_map { |parsed| parsed[:version] } # Extract all versions
-          .max_by { |version| Version.new(version) }
+        parsed_versions = parsed_constraints.filter_map { |parsed| parsed[:version] }
+        parsed_versions = parsed_versions.map { |version| Version.new(version) }
+        candidates = T.let(parsed_versions + (dependabot_versions || []), T::Array[Dependabot::Version])
+
+        return candidates.max&.to_s if unconstrained_expression?(constraint_expression)
+
+        matching_versions_for(constraint_expression, candidates).max&.to_s
+      end
+
+      sig do
+        params(
+          constraint_expression: T.nilable(String),
+          candidates: T::Array[Dependabot::Version]
+        ).returns(T::Array[Dependabot::Version])
+      end
+      def self.matching_versions_for(constraint_expression, candidates)
+        requirements = Requirement.requirements_array(constraint_expression)
+        candidates.select do |version|
+          requirements.any? { |requirement| requirement.satisfied_by?(version) }
+        end
+      end
+
+      sig { params(constraint_expression: T.nilable(String)).returns(T::Boolean) }
+      def self.unconstrained_expression?(constraint_expression)
+        constraint_expression.to_s.split("||").map(&:strip).any? do |group|
+          SEMVER_CONSTANTS.include?(group)
+        end
       end
 
       # Parse all constraints (split by logical OR `||`) and convert to Ruby-compatible constraints.

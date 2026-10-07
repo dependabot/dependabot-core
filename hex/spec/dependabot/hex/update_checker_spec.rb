@@ -226,6 +226,38 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
+
+      context "with a cooldown period configured" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        before do
+          allow(checker.send(:git_commit_checker))
+            .to receive(:refs_for_tag_with_detail)
+            .and_return(
+              [
+                Dependabot::GitTagWithDetail.new(tag: "v1.3.1", release_date: "2017-01-02"),
+                Dependabot::GitTagWithDetail.new(
+                  tag: "v1.3.2",
+                  release_date: Time.now.strftime("%Y-%m-%d")
+                )
+              ]
+            )
+        end
+
+        it "skips the version tag still within its cooldown window" do
+          expect(latest_version).to eq("4ba4a733f1412967209bcaa91603c0e85257dcd1")
+        end
+
+        context "when there is no cooldown (e.g. a security update)" do
+          let(:update_cooldown) { nil }
+
+          it "uses the latest version tag" do
+            expect(latest_version).to eq("81705318ff929b2bc3c9c1b637c3f801e7371551")
+          end
+        end
+      end
     end
   end
 
@@ -378,6 +410,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             body: fixture("git", "upload_packs", "phoenix"),
             headers: git_header
           )
+
+        # Without release-date metadata, git-tag cooldown is a no-op, so the
+        # dependency still resolves to its latest version tag.
+        allow(checker.send(:git_commit_checker))
+          .to receive(:refs_for_tag_with_detail)
+          .and_return([])
       end
 
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
@@ -554,8 +592,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
       let(:lockfile_body) { fixture("lockfiles", "private_repo") }
+      let(:private_registry_url) { "https://dependabot-private.fly.dev" }
 
-      before { `mix hex.repo remove dependabot` }
+      before do
+        `mix hex.repo remove dependabot`
+      end
 
       context "with good credentials" do
         let(:credentials) do
@@ -564,12 +605,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               "type" => "hex_repository",
               "repo" => "dependabot",
               "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => "https://dependabot-private.fly.dev"
+              "url" => private_registry_url
             }
           )]
         end
 
-        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        before do
+          # Mock successful version resolution from private registry
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_return("1.1.0")
+        end
+
+        it "returns the expected version" do
+          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
       end
 
       context "with bad credentials" do
@@ -579,9 +629,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               "type" => "hex_repository",
               "repo" => "dependabot",
               "auth_key" => "111f6cbeffc6e14c6a884f0111caff3e",
-              "url" => "https://dependabot-private.fly.dev"
+              "url" => private_registry_url
             }
           )]
+        end
+
+        before do
+          # Mock subprocess to raise authentication failure with bad credentials
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "Downloading public key for repo \"dependabot\" failed: {:error, :econnrefused}",
+                error_context: {}
+              )
+            )
         end
 
         it "raises a helpful error" do
@@ -601,13 +663,22 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               "type" => "hex_repository",
               "repo" => "dependabot",
               "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => "https://dependabot-private.fly.dev",
-              "public_key_fingerprint" => "SHA256:jn36tNgSXuEljoob8fkejX9LIyXqCcwShjRGps7RVgw"
+              "url" => private_registry_url,
+              "public_key_fingerprint" => "SHA256:z6VBddQXuo/nbwel0AMqHDAxvYuja4wt4qoQTTl3Ew4="
             }
           )]
         end
 
-        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        before do
+          # Mock successful version resolution with correct fingerprint
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_return("1.1.0")
+        end
+
+        it "returns the expected version" do
+          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
       end
 
       context "with incorrect public key fingerprint verification" do
@@ -617,10 +688,22 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               "type" => "hex_repository",
               "repo" => "dependabot",
               "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => "https://dependabot-private.fly.dev",
-              "public_key_fingerprint" => "SHA256:kejX9LIyXqCcwShjRGps7RVgjn36tNgSXuEljoob8fw"
+              "url" => private_registry_url,
+              "public_key_fingerprint" => "SHA256:incorrectFingerprintValue="
             }
           )]
+        end
+
+        before do
+          # Mock subprocess to raise fingerprint mismatch error
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "Public key fingerprint mismatch for repo \"dependabot\"",
+                error_context: {}
+              )
+            )
         end
 
         it "raises a helpful error" do
@@ -628,6 +711,41 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
           expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "when the helper fails to decode the public key (tuple order regression)" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url
+            }
+          )]
+        end
+
+        before do
+          # Simulate the error produced by the Elixir helper when
+          # Hex.Repo.get_public_key/1 returns data in the wrong tuple order,
+          # causing `key` to be a headers map that :public_key.pem_decode/1
+          # cannot decode.
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Failed to decode public key for repo "dependabot"',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -646,12 +764,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               "type" => "hex_repository",
               "repo" => "dependabot",
               "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => "https://dependabot-private.fly.dev"
+              "url" => private_registry_url
             }
           )]
         end
 
-        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        before do
+          # Mock successful version resolution with both org and repo credentials
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_return("1.1.0")
+        end
+
+        it "returns the expected version" do
+          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
       end
     end
 
@@ -1014,6 +1141,30 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               }
             }]
           )
+      end
+
+      context "with string-keyed source details" do
+        let(:dependency_requirements) do
+          [{
+            requirement: nil,
+            file: "mix.exs",
+            groups: [],
+            source: {
+              "type" => "git",
+              "url" => "https://github.com/dependabot-fixtures/phoenix.git",
+              "branch" => "master",
+              "ref" => "v1.2.0",
+              "custom" => "preserved"
+            }
+          }]
+        end
+
+        it "preserves the source payload and key style" do
+          source = checker.updated_requirements.first.source_hash
+
+          expect(source).to include("ref" => "v1.3.2", "custom" => "preserved")
+          expect(source).not_to have_key(:ref)
+        end
       end
     end
   end

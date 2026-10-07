@@ -1,9 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sentry-ruby"
 require "sorbet-runtime"
 
+require "dependabot/errors"
 require "dependabot/sentry/processor"
 
 class SentryContext < ::Dependabot::Sentry::Processor
@@ -11,13 +12,14 @@ class SentryContext < ::Dependabot::Sentry::Processor
     override
       .params(
         event: ::Sentry::Event,
-        hint: T::Hash[Symbol, T.untyped]
+        hint: T::Hash[Symbol, Object]
       )
       .returns(::Sentry::Event)
   end
   def process(event, hint)
-    if (exception = hint[:exception]) && exception.respond_to?(:sentry_context)
-      exception.sentry_context&.each do |key, value|
+    exception = hint[:exception]
+    if exception.is_a?(Dependabot::HasSentryContext)
+      exception.sentry_context.each do |key, value|
         event.send(:"#{key}=", value)
       end
     end

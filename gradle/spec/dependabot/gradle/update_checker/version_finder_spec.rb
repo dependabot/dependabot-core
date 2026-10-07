@@ -61,6 +61,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       .to_return(status: 200, body: maven_central_releases)
   end
 
+  describe "class extension behavior" do
+    it "inherits from SharedVersionFinder" do
+      expect(described_class < Dependabot::Maven::Shared::SharedVersionFinder).to be true
+    end
+
+    it "matches_dependency_version_type? is reused from the shared class" do
+      method_owner = described_class.instance_method(:matches_dependency_version_type?).owner
+      expect(method_owner).to eq(Dependabot::Maven::Shared::SharedVersionFinder)
+    end
+  end
+
   describe "#latest_version_details" do
     subject(:latest_version_details) { finder.latest_version_details }
 
@@ -572,6 +583,129 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     end
   end
 
+  describe "#in_cooldown_period?" do
+    subject(:in_cooldown) { finder.send(:in_cooldown_period?, release) }
+
+    let(:release) do
+      Dependabot::Package::PackageRelease.new(
+        version: version_class.new("1.0.0"),
+        released_at: release_date,
+        url: "https://repo.maven.apache.org/maven2"
+      )
+    end
+    let(:release_date) { Time.parse("2018-10-25T17:30:00.000Z") }
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.parse("2018-10-25T17:30:00.000Z"))
+    end
+
+    context "when cooldown_options is nil" do
+      let(:cooldown_options) { nil }
+
+      before do
+        allow(finder.send(:package_details_fetcher)).to receive(:fetch_release_metadata).and_call_original
+      end
+
+      context "when release date is available" do
+        it { is_expected.to be false }
+
+        it "does not hydrate release metadata" do
+          finder.send(:in_cooldown_period?, release)
+
+          expect(finder.send(:package_details_fetcher)).not_to have_received(:fetch_release_metadata)
+        end
+      end
+
+      context "when release date is not available" do
+        let(:release_date) { nil }
+
+        it "allows the version through" do
+          expect(in_cooldown).to be false
+        end
+
+        it "does not hydrate release metadata" do
+          finder.send(:in_cooldown_period?, release)
+
+          expect(finder.send(:package_details_fetcher)).not_to have_received(:fetch_release_metadata)
+        end
+      end
+    end
+
+    context "when cooldown_options is configured" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 14,
+          semver_minor_days: 7,
+          semver_patch_days: 3,
+          include: [],
+          exclude: []
+        )
+      end
+
+      context "when release date is available" do
+        context "when release is outside cooldown period" do
+          before do
+            allow(Time).to receive(:now).and_return(Time.parse("2018-11-05T17:30:00.000Z"))
+          end
+
+          it { is_expected.to be false }
+        end
+
+        context "when release is inside cooldown period" do
+          before do
+            allow(Time).to receive(:now).and_return(Time.parse("2018-10-26T17:30:00.000Z"))
+          end
+
+          it { is_expected.to be true }
+        end
+      end
+
+      context "when release date is not available" do
+        let(:release_date) { nil }
+
+        before do
+          allow(finder.send(:package_details_fetcher))
+            .to receive(:fetch_release_metadata)
+            .with(release: release)
+            .and_return(release)
+        end
+
+        it "filters out the version" do
+          expect(in_cooldown).to be true
+        end
+
+        it "logs that release date is not available and filtering out" do
+          expect(Dependabot.logger).to receive(:info)
+            .with("Release date not available for version 1.0.0 - filtering out")
+          in_cooldown
+        end
+      end
+
+      context "when release metadata can be loaded lazily" do
+        let(:release_date) { nil }
+        let(:hydrated_release) do
+          Dependabot::Package::PackageRelease.new(
+            version: version_class.new("1.0.0"),
+            released_at: Time.parse("2018-10-10T17:30:00.000Z"),
+            url: "https://repo.maven.apache.org/maven2"
+          )
+        end
+
+        before do
+          allow(finder.send(:package_details_fetcher))
+            .to receive(:fetch_release_metadata)
+            .with(release: release)
+            .and_return(hydrated_release)
+        end
+
+        it "uses the hydrated release date for cooldown evaluation" do
+          expect(in_cooldown).to be false
+        end
+      end
+    end
+  end
+
   describe "#lowest_security_fix_version_details" do
     subject { finder.lowest_security_fix_version_details }
 
@@ -641,6 +775,15 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
+      let(:gradle_plugin_html_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
+      let(:spring_boot_plugin_pom_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/2.0.5.RELEASE/" \
+          "org.springframework.boot.gradle.plugin-2.0.5.RELEASE.pom"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
@@ -669,6 +812,58 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+
+      context "with cooldown and missing listing dates" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 3,
+            semver_major_days: 3,
+            semver_minor_days: 3,
+            semver_patch_days: 3,
+            include: [],
+            exclude: []
+          )
+        end
+
+        before do
+          allow(Time).to receive(:now).and_return(Time.parse("2026-05-13T17:30:00.000Z"))
+          stub_request(:get, gradle_plugin_html_url).to_return(
+            status: 200,
+            body: <<~HTML
+              <html>
+                <body>
+                  <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+                </body>
+              </html>
+            HTML
+          )
+          stub_request(:head, spring_boot_plugin_pom_url).to_return(
+            status: 200,
+            headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+          )
+        end
+
+        it "loads fallback release dates lazily during cooldown filtering" do
+          logger = instance_double(Logger, info: nil, debug: nil)
+          allow(Dependabot).to receive(:logger).and_return(logger)
+
+          release = Dependabot::Package::PackageRelease.new(
+            version: version_class.new("2.0.5.RELEASE"),
+            url: "https://plugins.gradle.org/m2"
+          )
+
+          finder.send(:in_cooldown_period?, release)
+
+          expect(a_request(:head, spring_boot_plugin_pom_url)).to have_been_made.once
+          expect(logger).to have_received(:info).with(
+            "Using POM Last-Modified fallback release dates for org.springframework.boot from https://plugins.gradle.org/m2"
+          )
+          expect(logger).to have_received(:debug).with(
+            "Using POM Last-Modified fallback for org.springframework.boot version 2.0.5.RELEASE " \
+            "from https://plugins.gradle.org/m2: 2026-05-11 10:08:43 UTC"
+          )
         end
       end
     end

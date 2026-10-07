@@ -26,6 +26,10 @@ module Dependabot
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
         GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
         GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
+        # No `/m`: it would let the greedy `.*` in `entries` match newlines and
+        # swallow the trailing `BUNDLED WITH` section. `^` is line-anchored anyway.
+        CHECKSUMS_SECTION = /(^CHECKSUMS\n)(?<entries>(?:^  .*\n)+)/
+        BUNDLER_CHECKSUM_ENTRY_REGEX = /^  bundler \([^)]+\).*\n?$/
 
         sig do
           params(
@@ -43,11 +47,11 @@ module Dependabot
           options:,
           repo_contents_path: nil
         )
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @repo_contents_path = T.let(repo_contents_path, T.nilable(String))
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @options = T.let(options, T::Hash[Symbol, T.untyped])
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @repo_contents_path = repo_contents_path
+          @credentials = credentials
+          @options = options
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @gemfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -221,7 +225,71 @@ module Dependabot
         sig { params(lockfile_body: String).returns(String) }
         def post_process_lockfile(lockfile_body)
           lockfile_body = reorder_git_dependencies(lockfile_body)
+          lockfile_body = strip_new_bundler_checksum(lockfile_body)
+          lockfile_body = restore_bundler_checksum(lockfile_body)
           replace_lockfile_ending(lockfile_body)
+        end
+
+        sig { params(lockfile_body: String).returns(String) }
+        def strip_new_bundler_checksum(lockfile_body)
+          return lockfile_body unless should_strip_bundler_checksum?
+
+          checksums_section = lockfile_body.match(CHECKSUMS_SECTION)
+          return lockfile_body unless checksums_section
+
+          entries = T.must(checksums_section[:entries])
+          stripped_entries = entries.lines.reject { |line| line.match?(BUNDLER_CHECKSUM_ENTRY_REGEX) }.join
+
+          lockfile_body.sub(CHECKSUMS_SECTION) { "CHECKSUMS\n#{stripped_entries}" }
+        end
+
+        sig { returns(T::Boolean) }
+        def should_strip_bundler_checksum?
+          lockfile_content = T.must(lockfile).content
+          return false unless lockfile_content&.include?("CHECKSUMS\n")
+
+          # Strip a bundler self-checksum only when the original CHECKSUMS
+          # section did not contain one. If the original pins one,
+          # restore_bundler_checksum separately swaps a generated entry back to
+          # the original when present. Dependabot must not introduce a missing
+          # entry: the runner's regular-gem install can calculate a checksum that
+          # a default-gem install cannot (ruby/rubygems#9512), and its runtime
+          # bundler version need not match BUNDLED WITH because Dependabot does
+          # not manage that version. This can add unrelated or mismatched
+          # metadata and cause lockfile churn.
+          checksums_section = lockfile_content.match(CHECKSUMS_SECTION)
+          !(checksums_section && T.must(checksums_section[:entries]).match?(BUNDLER_CHECKSUM_ENTRY_REGEX))
+        end
+
+        sig { params(lockfile_body: String).returns(String) }
+        def restore_bundler_checksum(lockfile_body)
+          original_entry = original_bundler_checksum_entry
+          return lockfile_body unless original_entry
+
+          checksums_section = lockfile_body.match(CHECKSUMS_SECTION)
+          return lockfile_body unless checksums_section
+
+          entries = T.must(checksums_section[:entries])
+          return lockfile_body unless entries.match?(BUNDLER_CHECKSUM_ENTRY_REGEX)
+
+          restored_entries = entries.lines.map do |line|
+            line.match?(BUNDLER_CHECKSUM_ENTRY_REGEX) ? original_entry : line
+          end.join
+
+          lockfile_body.sub(CHECKSUMS_SECTION) { "CHECKSUMS\n#{restored_entries}" }
+        end
+
+        sig { returns(T.nilable(String)) }
+        def original_bundler_checksum_entry
+          checksums_section = T.must(lockfile).content&.match(CHECKSUMS_SECTION)
+          return nil unless checksums_section
+
+          entry = T.must(checksums_section[:entries]).lines.find do |line|
+            line.match?(BUNDLER_CHECKSUM_ENTRY_REGEX)
+          end
+          return nil unless entry
+
+          "#{entry.chomp}\n"
         end
 
         sig { params(lockfile_body: String).returns(String) }

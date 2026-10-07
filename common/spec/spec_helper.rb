@@ -4,6 +4,7 @@
 require "rspec/its"
 require "rspec/sorbet"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "vcr"
 require "debug"
 require "simplecov"
@@ -62,6 +63,9 @@ RSpec.configure do |config|
     # Ensure we clear any cached timeouts between tests
     Dependabot::RegistryClient.clear_cache!
 
+    # Ensure process-wide GitHub Enterprise probes do not leak between examples
+    Dependabot::Source.reset_github_enterprise_cache! if defined?(Dependabot::Source)
+
     # Ensure we reset any experiments between tests
     Dependabot::Experiments.reset!
   end
@@ -87,7 +91,7 @@ VCR.configure do |config|
   config.configure_rspec_metadata!
 
   unless ENV["DEPENDABOT_TEST_DEBUG_LOGGER"].nil?
-    config.debug_logger = File.open(ENV["DEPENDABOT_TEST_DEBUG_LOGGER"], "w")
+    config.debug_logger = File.new(ENV.fetch("DEPENDABOT_TEST_DEBUG_LOGGER"), "w")
   end
 
   # Prevent auth headers and username:password params being written to VCR cassets

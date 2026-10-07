@@ -1,0 +1,7 @@
+on: [push]
+
+name: Multiple same-line actions
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps: [{ uses: actions/setup-node@master }, { uses: actions/setup-node@master, with: { source: actions/setup-node@master } }]

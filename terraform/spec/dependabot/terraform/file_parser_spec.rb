@@ -151,6 +151,28 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a registry source that includes a port" do
+      let(:files) { project_dependency_files("registry_with_port") }
+
+      it "parses the module dependency with the port in the hostname" do
+        module_dep = dependencies.find { |d| d.name == "terraform-aws-modules/vpc/aws" }
+        expect(module_dep).not_to be_nil
+        expect(module_dep.version).to eq("5.5.1")
+        expect(module_dep.requirements).to eq(
+          [{
+            requirement: "5.5.1",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io:443",
+              module_identifier: "terraform-aws-modules/vpc/aws"
+            }
+          }]
+        )
+      end
+    end
+
     context "with a private registry" do
       let(:files) { project_dependency_files("private_registry") }
 
@@ -912,6 +934,35 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with nested local modules" do
+      let(:files) { project_dependency_files("provider_with_nested_local_modules") }
+
+      it "discovers provider requirements in all local modules" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.version).to eq("5.75.1")
+        expect(dependency.requirements.length).to eq(3)
+
+        # Check that we found providers in main file and both nested modules
+        file_names = dependency.requirements.map { |r| r[:file] }.sort
+        expect(file_names).to eq(
+          [
+            "modules/foo/providers.tf",
+            "modules/global/providers.tf",
+            "providers.tf"
+          ]
+        )
+
+        # All should have the same version requirement
+        dependency.requirements.each do |req|
+          expect(req[:requirement]).to eq("5.75.1")
+          expect(req[:source][:type]).to eq("provider")
+          expect(req[:source][:module_identifier]).to eq("hashicorp/aws")
+        end
+      end
+    end
+
     context "with a required provider block with multiple versions" do
       let(:files) { project_dependency_files("registry_provider_compound_local_name") }
 
@@ -947,6 +998,26 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when a module source address is interpolated" do
+      let(:files) { project_dependency_files("interpolated_module_source") }
+
+      it "does not raise" do
+        expect { dependencies }.not_to raise_error
+      end
+
+      it "skips the interpolated module" do
+        expect(dependencies.map(&:name).any? { |name| name.start_with?("interpolated") }).to be(false)
+      end
+
+      it "still parses the provider requirement in the same file" do
+        expect(dependencies.map(&:name)).to include("hashicorp/aws")
+      end
+
+      it "still parses a sibling module whose ref is a literal" do
+        expect(dependencies.map(&:name)).to include("literal::github::example/modules::v1.2.3")
+      end
+    end
+
     context "with a toplevel provider" do
       let(:files) { project_dependency_files("provider") }
 
@@ -967,6 +1038,24 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         expect(dependency.version).to eq("2.2.1")
         expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
+      end
+    end
+
+    context "with a provider declared with mixed case in multiple files" do
+      let(:files) { project_dependency_files("provider_with_mixed_case_sources") }
+
+      it "normalizes provider source identifiers to lowercase" do
+        dependency = dependencies.find { |d| d.name == "mongey/confluentcloud" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.requirements.length).to eq(2)
+        dependency.requirements.each do |req|
+          expect(req[:source][:module_identifier]).to eq("mongey/confluentcloud")
+        end
+      end
+
+      it "does not raise a multiple sources error" do
+        expect { dependencies }.not_to raise_error
       end
     end
 
@@ -1018,17 +1107,46 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "when a file is a support file" do
-      let(:support_file) do
-        Dependabot::DependencyFile.new(
-          name: "support.tf",
-          content: "module { source = 'foo/bar' }",
-          support_file: true
-        )
-      end
-      let(:files) { [support_file] }
+      context "with only module declarations" do
+        let(:support_file) do
+          Dependabot::DependencyFile.new(
+            name: "support.tf",
+            content: 'module "example" { source = "foo/bar" }',
+            support_file: true
+          )
+        end
+        let(:files) { [support_file] }
 
-      it "skips the file and does not parse it" do
-        expect(dependencies).to be_empty
+        it "skips module dependencies in support files" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "with provider declarations" do
+        let(:support_file) do
+          Dependabot::DependencyFile.new(
+            name: "modules/local/providers.tf",
+            content: <<~CONTENT,
+              terraform {
+                required_providers {
+                  aws = {
+                    source  = "hashicorp/aws"
+                    version = "5.75.1"
+                  }
+                }
+              }
+            CONTENT
+            support_file: true
+          )
+        end
+        let(:files) { [support_file] }
+
+        it "parses provider dependencies in support files" do
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("hashicorp/aws")
+          expect(dependencies.first.version).to eq("5.75.1")
+          expect(dependencies.first.requirements.first[:file]).to eq("modules/local/providers.tf")
+        end
       end
     end
   end

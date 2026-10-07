@@ -9,13 +9,27 @@ require "dependabot/updater/pattern_specificity_calculator"
 RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
   let(:calculator) { described_class.new }
 
+  # Builds a DependencyGroup instance_double, deriving the typed rule readers
+  # (patterns/exclude_patterns/update_types) from the same rules hash so the
+  # double matches how DependencyGroup parses its rules. A nil reader means the
+  # rule is absent, mirroring DependencyGroup#string_array_rule.
+  def group_double(rules:, **attrs)
+    instance_double(
+      Dependabot::DependencyGroup,
+      rules: rules,
+      patterns: rules.key?("patterns") ? Array(rules["patterns"]) : nil,
+      exclude_patterns: rules.key?("exclude-patterns") ? Array(rules["exclude-patterns"]) : nil,
+      update_types: rules.key?("update-types") ? Array(rules["update-types"]) : nil,
+      **attrs
+    )
+  end
+
   describe "#dependency_belongs_to_more_specific_group?" do
     let(:dependency) { create_dependency("docker-compose", "2.0.0") }
     let(:directory) { "/api" }
 
     let(:generic_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "all-dependencies",
         dependencies: [],
         rules: { "patterns" => ["*"] }
@@ -23,8 +37,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
     end
 
     let(:docker_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "docker-dependencies",
         dependencies: [],
         rules: { "patterns" => ["docker*"] }
@@ -32,8 +45,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
     end
 
     let(:exact_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "exact-docker-compose",
         dependencies: [],
         rules: { "patterns" => ["docker-compose"] }
@@ -41,8 +53,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
     end
 
     let(:explicit_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "explicit-dependencies",
         dependencies: [dependency],
         rules: { "patterns" => ["other*"] }
@@ -78,8 +89,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
 
       it "returns true when dependency belongs to exact match group" do
         nginx_dep = create_dependency("nginx", "1.21.0")
-        nginx_exact_group = instance_double(
-          Dependabot::DependencyGroup,
+        nginx_exact_group = group_double(
           name: "nginx-exact",
           dependencies: [],
           rules: { "patterns" => ["nginx"] }
@@ -103,6 +113,98 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
     end
 
+    context "when dependency is excluded by current group" do
+      let(:generic_group) do
+        group_double(
+          name: "all-dependencies",
+          dependencies: [],
+          rules: { "patterns" => ["*"], "exclude-patterns" => ["docker-compose"] }
+        )
+      end
+
+      it "returns false even if other groups would match" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dependency, all_groups, contains_checker, directory
+        )
+        expect(result).to be false
+      end
+    end
+
+    context "when other groups restrict update types" do
+      let(:docker_group) do
+        group_double(
+          name: "docker-dependencies",
+          dependencies: [],
+          rules: { "patterns" => ["docker*"], "update-types" => ["minor"] }
+        )
+      end
+
+      let(:all_groups) { [generic_group, docker_group] }
+
+      it "ignores more specific group when update_type is not allowed" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dependency, all_groups, contains_checker, directory, update_type: "major"
+        )
+        expect(result).to be false
+      end
+
+      it "considers more specific group when update_type is allowed" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dependency, all_groups, contains_checker, directory, update_type: "minor"
+        )
+        expect(result).to be true
+      end
+    end
+
+    context "when other groups have different applies_to" do
+      let(:generic_group) do
+        group_double(
+          name: "all-dependencies",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["*"] }
+        )
+      end
+
+      let(:security_group) do
+        group_double(
+          name: "security-dependencies",
+          dependencies: [],
+          applies_to: "security-updates",
+          rules: { "patterns" => ["docker*"] }
+        )
+      end
+
+      let(:all_groups) { [generic_group, security_group] }
+
+      let(:contains_checker) do
+        proc do |group, dep, _directory|
+          case group
+          when generic_group
+            true
+          when security_group
+            dep.name.start_with?("docker")
+          else
+            false
+          end
+        end
+      end
+
+      it "ignores groups with non-matching applies_to" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dependency, all_groups, contains_checker, directory, applies_to: "version-updates"
+        )
+        expect(result).to be false
+      end
+
+      it "considers groups with matching applies_to" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dependency, all_groups, contains_checker, directory, applies_to: "security-updates"
+        )
+        expect(result).to be true
+      end
+    end
+
     context "when current group has specific pattern" do
       it "returns true when dependency belongs to even more specific group" do
         result = calculator.dependency_belongs_to_more_specific_group?(
@@ -113,8 +215,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
 
       it "returns false when no more specific group exists" do
         redis_dep = create_dependency("redis-client", "0.11.0")
-        redis_group = instance_double(
-          Dependabot::DependencyGroup,
+        redis_group = group_double(
           name: "redis-dependencies",
           dependencies: [],
           rules: { "patterns" => ["redis*"] }
@@ -169,8 +270,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
 
     context "when current group has no patterns" do
       let(:no_patterns_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "patch-updates",
           dependencies: [],
           rules: { "update-types" => ["patch"] }
@@ -191,8 +291,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
 
       it "returns false when group has nil patterns" do
-        nil_patterns_group = instance_double(
-          Dependabot::DependencyGroup,
+        nil_patterns_group = group_double(
           name: "nil-patterns",
           dependencies: [],
           rules: { "patterns" => nil, "update-types" => ["patch"] }
@@ -205,8 +304,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
 
       it "returns false when group has empty patterns array" do
-        empty_patterns_group = instance_double(
-          Dependabot::DependencyGroup,
+        empty_patterns_group = group_double(
           name: "empty-patterns",
           dependencies: [],
           rules: { "patterns" => [], "update-types" => ["patch"] }
@@ -221,8 +319,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
 
     context "with complex pattern hierarchy" do
       let(:multi_wildcard_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "multi-wildcard",
           dependencies: [],
           rules: { "patterns" => ["*docker*"] }
@@ -230,8 +327,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
 
       let(:prefix_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "prefix-group",
           dependencies: [],
           rules: { "patterns" => ["docker*"] }
@@ -277,8 +373,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
 
     context "with length bonus considerations" do
       let(:short_pattern_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "short-pattern",
           dependencies: [],
           rules: { "patterns" => ["doc*"] }
@@ -286,8 +381,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
 
       let(:long_pattern_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "long-pattern",
           dependencies: [],
           rules: { "patterns" => ["docker-compose*"] }
@@ -314,6 +408,126 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
           short_pattern_group, dependency, length_groups, length_contains_checker, directory
         )
         expect(result).to be true
+      end
+    end
+
+    context "with complex group rules" do
+      let(:generic_group) do
+        group_double(
+          name: "generic",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["*"] }
+        )
+      end
+
+      let(:docker_minor_group) do
+        group_double(
+          name: "docker-minor",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["docker*"], "update-types" => ["minor"] }
+        )
+      end
+
+      let(:docker_exact_group) do
+        group_double(
+          name: "docker-compose-exact",
+          dependencies: [],
+          applies_to: nil,
+          rules: { "patterns" => ["docker-compose"], "update-types" => ["minor"] }
+        )
+      end
+
+      let(:docker_security_group) do
+        group_double(
+          name: "docker-security",
+          dependencies: [],
+          applies_to: "security-updates",
+          rules: { "patterns" => ["docker*"], "update-types" => ["minor"] }
+        )
+      end
+
+      let(:excluded_group) do
+        group_double(
+          name: "docker-exclude-compose",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["docker*"], "exclude-patterns" => ["docker-compose"] }
+        )
+      end
+
+      let(:all_groups) do
+        [generic_group, docker_minor_group, docker_exact_group, docker_security_group, excluded_group]
+      end
+
+      let(:contains_checker) do
+        proc do |group, dep, _directory|
+          case group
+          when generic_group then true
+          when docker_minor_group, docker_security_group, excluded_group
+            dep.name.start_with?("docker")
+          when docker_exact_group
+            dep.name == "docker-compose"
+          else
+            false
+          end
+        end
+      end
+
+      let(:docker_compose_dep) { create_dependency("docker-compose", "2.0.0") }
+      let(:docker_tool_dep) { create_dependency("docker-tool", "1.0.0") }
+
+      it "prefers the most specific allowed group for minor version updates" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group,
+          docker_compose_dep,
+          all_groups,
+          contains_checker,
+          directory,
+          update_type: "minor",
+          applies_to: "version-updates"
+        )
+        expect(result).to be true # exact > prefix > generic
+      end
+
+      it "ignores more specific groups when update_type is not allowed" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group,
+          docker_compose_dep,
+          all_groups,
+          contains_checker,
+          directory,
+          update_type: "major",
+          applies_to: "version-updates"
+        )
+        expect(result).to be false
+      end
+
+      it "respects applies_to when selecting security groups" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group,
+          docker_tool_dep,
+          all_groups,
+          contains_checker,
+          directory,
+          update_type: "minor",
+          applies_to: "security-updates"
+        )
+        expect(result).to be true
+      end
+
+      it "respects exclusions on candidate groups" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          excluded_group,
+          docker_compose_dep,
+          all_groups,
+          contains_checker,
+          directory,
+          update_type: "minor",
+          applies_to: "version-updates"
+        )
+        expect(result).to be false
       end
     end
   end

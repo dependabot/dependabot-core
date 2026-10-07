@@ -1,0 +1,31 @@
+repos:
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.38.0
+    hooks:
+      - id: eslint
+        language: node
+        additional_dependencies:
+          - eslint@4.15.0
+          - eslint-config-google@0.7.1
+          - eslint-plugin-react@6.10.3
+          - babel-eslint@6.1.2
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        language: node
+        additional_dependencies:
+          - prettier@3.1.0
+          - "@prettier/plugin-xml@3.2.0"
+  - repo: https://github.com/example/caret-range-hooks
+    rev: v1.0.0
+    hooks:
+      - id: lint
+        language: node
+        additional_dependencies:
+          - "typescript@~5.3.0"
+          - "ts-node@^10.9.0"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace

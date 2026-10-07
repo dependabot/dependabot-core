@@ -49,19 +49,26 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
 
       # Mock the batch operation for release dates
       allow(registry_client).to receive(:batch_fetch_version_release_dates)
-        .with([{
-          name: "Example",
-          uuid: "7876af07-990d-54b4-ab0e-23690620f79a",
-          versions: available_versions
-        }])
-        .and_return({
-          "Example" => {
-            "0.5.0" => release_date1.to_s,
-            "0.5.1" => release_date2.to_s,
-            "0.5.2" => nil,
-            "0.5.3" => release_date2.to_s
-          }
-        })
+        .and_return(
+          Dependabot::Julia::RegistryClient::Result::ReleaseDatesBatch.new(
+            packages: {
+              "Example" => Dependabot::Julia::RegistryClient::Result::ReleaseDates.new(
+                dates: {
+                  "0.5.0" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
+                    release_date: release_date1.to_s
+                  ),
+                  "0.5.1" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
+                    release_date: release_date2.to_s
+                  ),
+                  "0.5.2" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(release_date: nil),
+                  "0.5.3" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
+                    release_date: nil, pending: true
+                  )
+                }
+              )
+            }
+          )
+        )
     end
 
     it "returns an array of PackageRelease objects" do
@@ -91,6 +98,14 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
       expect(release_zero_five_two.released_at).to be_nil
     end
 
+    it "marks releases whose date is not published yet" do
+      releases = fetcher.fetch_package_releases.to_h { |r| [r.version.to_s, r] }
+
+      expect(releases["0.5.3"].released_at).to be_nil
+      expect(releases["0.5.3"].details).to eq("release_date_pending" => true)
+      expect(releases["0.5.2"].details).to eq({})
+    end
+
     it "marks the latest version correctly" do
       releases = fetcher.fetch_package_releases
       latest_release = releases.find { |r| r.version.to_s == "0.5.3" }
@@ -118,18 +133,14 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
       end
     end
 
-    context "when an error occurs" do
+    context "when an infrastructure error occurs" do
       before do
         allow(registry_client).to receive(:fetch_available_versions)
           .and_raise(StandardError, "Network error")
       end
 
-      it "logs error and returns empty array" do
-        expect(Dependabot.logger).to receive(:error)
-          .with(/Error while fetching package releases for Example/)
-
-        releases = fetcher.fetch_package_releases
-        expect(releases).to eq([])
+      it "propagates the error instead of reporting no versions" do
+        expect { fetcher.fetch_package_releases }.to raise_error(StandardError, "Network error")
       end
     end
   end

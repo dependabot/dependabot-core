@@ -1,13 +1,15 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "wildcard_matcher"
+require "dependabot/utils"
 require "dependabot/dependency_attribution"
 require "dependabot/dependency_change"
 require "dependabot/dependency_group"
 require "dependabot/dependency_snapshot"
 require "dependabot/updater/pattern_specificity_calculator"
+require "dependabot/updater/update_type_helper"
 
 module Dependabot
   class Updater
@@ -25,9 +27,8 @@ module Dependabot
     # The class implements a two-layer filtering system:
     # 1. Group membership check via group.contains_dependency?
     # 2. Configuration compliance check via job.allowed_update?
-    #
-    # Note: Filtering requires the :group_membership_enforcement feature to be enabled.
     class GroupDependencySelector
+      include UpdateTypeHelper
       extend T::Sig
 
       MAX_DEPENDENCIES_TO_LOG = 10
@@ -40,8 +41,8 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup, dependency_snapshot: Dependabot::DependencySnapshot).void }
       def initialize(group:, dependency_snapshot:)
-        @group = T.let(group, Dependabot::DependencyGroup)
-        @snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+        @group = group
+        @snapshot = dependency_snapshot
         @source_directory = T.let(nil, T.nilable(String))
         @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
         @filtered_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
@@ -92,8 +93,6 @@ module Dependabot
 
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def filter_to_group!(dependency_change)
-        return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
         Dependabot.logger.info("Applying GroupDependencySelector filtering for group '#{group.name}'")
 
         original_count = dependency_change.updated_dependencies.length
@@ -113,8 +112,6 @@ module Dependabot
 
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def annotate_dependency_drift!(dependency_change)
-        return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
         dependency_drift = T.let([], T::Array[String])
         directory = dependency_change.job.source.directory || "."
 
@@ -134,17 +131,63 @@ module Dependabot
 
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_dependencies(changes_by_dir)
-        seen_updates = T.let(Set.new, T::Set[[String, String]])
+        if @group.group_by_dependency_name?
+          deduplicate_by_name_only(changes_by_dir)
+        else
+          deduplicate_by_directory_and_name(changes_by_dir)
+        end
+      end
+
+      sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
+      def deduplicate_by_directory_and_name(changes_by_dir)
+        deduplicate_dependencies_with_key(changes_by_dir) { |directory, dep| [directory, dep.name] }
+      end
+
+      sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
+      def deduplicate_by_name_only(changes_by_dir)
+        directories_by_name = T.let({}, T::Hash[String, T::Array[String]])
+
+        # Collect all directories per dependency name before deduplication
+        changes_by_dir.each do |change|
+          directory = change.job.source.directory || "."
+          Array(change.updated_dependencies).each do |dep|
+            directories_by_name[dep.name] ||= []
+            T.must(directories_by_name[dep.name]) << directory
+          end
+        end
+
+        merged = deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+
+        # Annotate each surviving dependency with all directories where it was updated
+        merged.each do |dep|
+          dep.metadata[:updated_directories] = T.must(directories_by_name[dep.name]).uniq
+        end
+
+        merged
+      end
+
+      sig do
+        type_parameters(:Key)
+          .params(
+            changes_by_dir: T::Array[Dependabot::DependencyChange],
+            _blk: T.proc
+                  .params(directory: String, dep: Dependabot::Dependency)
+                   .returns(T.type_parameter(:Key))
+          )
+          .returns(T::Array[Dependabot::Dependency])
+      end
+      def deduplicate_dependencies_with_key(changes_by_dir, &_blk)
+        seen_keys = T.let(Set.new, T::Set[T.type_parameter(:Key)])
         merged_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         changes_by_dir.each do |change|
           directory = change.job.source.directory || "."
 
           Array(change.updated_dependencies).each do |dep|
-            key = [directory, dep.name]
-            next if seen_updates.include?(key)
+            key = yield(directory, dep)
+            next if seen_keys.include?(key)
 
-            seen_updates.add(key)
+            seen_keys.add(key)
             @source_directory = directory
             merged_dependencies << dep
           end
@@ -154,7 +197,9 @@ module Dependabot
       end
 
       sig do
-        params(dependency_change: Dependabot::DependencyChange)
+        params(
+          dependency_change: Dependabot::DependencyChange
+        )
           .returns([T::Array[Dependabot::Dependency], T::Array[Dependabot::Dependency]])
       end
       def partition_dependencies(dependency_change)
@@ -190,19 +235,20 @@ module Dependabot
         :unknown
       end
 
-      sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
-      def group_contains_dependency?(dep, directory)
-        if @group.respond_to?(:contains_dependency?)
-          T.unsafe(@group).contains_dependency?(dep, directory: directory)
-        else
-          @group.contains?(dep)
-        end
+      sig { params(dep: Dependabot::Dependency, _directory: String).returns(T::Boolean) }
+      def group_contains_dependency?(dep, _directory)
+        @group.contains?(dep)
       end
 
       sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
       def dependency_belongs_to_more_specific_group?(dep, directory)
         contains_checker = T.let(
-          proc { |group, dependency, dir| group_contains_dependency_for_group?(group, dependency, dir) },
+          proc do |raw_group, raw_dependency, raw_directory|
+            group = T.cast(raw_group, Dependabot::DependencyGroup)
+            dependency = T.cast(raw_dependency, Dependabot::Dependency)
+            checked_directory = T.cast(raw_directory, T.nilable(String))
+            group_contains_dependency_for_group?(group, dependency, checked_directory)
+          end,
           T.proc.params(
             group: Dependabot::DependencyGroup,
             dep: Dependabot::Dependency,
@@ -210,20 +256,28 @@ module Dependabot
           ).returns(T::Boolean)
         )
 
+        update_type = update_type_for_dependency(dep)
+        applies_to = group_applies_to
+
         @specificity_calculator.dependency_belongs_to_more_specific_group?(
-          @group, dep, @snapshot.groups, contains_checker, directory
+          @group, dep, @snapshot.groups, contains_checker, directory, applies_to:, update_type:
         )
       end
 
       sig do
-        params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean)
+        params(
+          group: Dependabot::DependencyGroup,
+          dep: Dependabot::Dependency,
+          _directory: T.nilable(String)
+        ).returns(T::Boolean)
       end
-      def group_contains_dependency_for_group?(group, dep, directory)
-        if group.respond_to?(:contains_dependency?)
-          T.unsafe(group).contains_dependency?(dep, directory: directory)
-        else
-          group.contains?(dep)
-        end
+      def group_contains_dependency_for_group?(group, dep, _directory)
+        group.contains?(dep)
+      end
+
+      sig { returns(T.nilable(String)) }
+      def group_applies_to
+        @group.applies_to
       end
 
       sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }
@@ -264,7 +318,7 @@ module Dependabot
         updated_dep_names = updated_deps.to_set(&:name)
 
         file_dependencies = @snapshot.dependencies.select do |dep|
-          dep.requirements.any? { |req| req[:file] == file.name }
+          dep.requirements.any? { |req| req.file == file.name }
         end
 
         file_dependencies.filter_map do |dep|
@@ -318,24 +372,27 @@ module Dependabot
 
       sig { params(filtered_deps: T::Array[Dependabot::Dependency]).returns(T::Hash[Symbol, T::Array[String]]) }
       def group_dependencies_by_reason(filtered_deps)
-        grouped = {
-          not_in_group: T.let([], T::Array[String]),
-          filtered_by_config: T.let([], T::Array[String]),
-          belongs_to_more_specific_group: T.let([], T::Array[String]),
-          other: T.let([], T::Array[String])
-        }
+        grouped = T.let(
+          {
+            not_in_group: [],
+            filtered_by_config: [],
+            belongs_to_more_specific_group: [],
+            other: []
+          },
+          T::Hash[Symbol, T::Array[String]]
+        )
 
         filtered_deps.each do |dep|
           attribution = DependencyAttribution.get_attribution(dep)
-          case attribution&.dig(:selection_reason)
-          when :not_in_group
-            grouped[:not_in_group] << dep.name
-          when :filtered_by_config
-            grouped[:filtered_by_config] << dep.name
-          when :belongs_to_more_specific_group
-            grouped[:belongs_to_more_specific_group] << dep.name
+          case attribution&.selection_reason
+          when DependencyAttribution::SelectionReason::NOT_IN_GROUP
+            grouped.fetch(:not_in_group) << dep.name
+          when DependencyAttribution::SelectionReason::FILTERED_BY_CONFIG
+            grouped.fetch(:filtered_by_config) << dep.name
+          when DependencyAttribution::SelectionReason::BELONGS_TO_MORE_SPECIFIC_GROUP
+            grouped.fetch(:belongs_to_more_specific_group) << dep.name
           else
-            grouped[:other] << dep.name
+            grouped.fetch(:other) << dep.name
           end
         end
 

@@ -38,7 +38,10 @@ module Dependabot
         fetched_files += [lockfile] if lockfile
 
         filtered_files = fetched_files.compact.reject do |file|
-          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+          # `file.name` is relative to the fetched directory, while exclude_paths are
+          # relative to the repository root -- so comparing the two only ever matched
+          # for files in the root directory. `file.path` joins the two.
+          Dependabot::FileFiltering.should_exclude_path?(file.path, "file from final collection", @exclude_paths)
         end
 
         filtered_files
@@ -94,8 +97,9 @@ module Dependabot
           end
         end
 
-        # NOTE: The `support_file` attribute is not used but we set this to
-        # match what we do in other ecosystems
+        # NOTE: Mark local module files as support files. The FileParser will
+        # still parse provider requirements from these files, but will skip
+        # module declarations (since we can't update local path modules)
         terraform_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
 

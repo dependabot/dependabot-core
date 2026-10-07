@@ -392,5 +392,27 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }
     end
+
+    context "when it is the gradle wrapper" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gradle-wrapper",
+          version: "9.3.1",
+          requirements: [{
+            requirement: "9.3.1",
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            source: {
+              type: "gradle-distribution",
+              url: "https://services.gradle.org/distributions/gradle-9.3.1-bin.zip",
+              property: "distributionUrl"
+            },
+            groups: []
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      it { is_expected.to eq("https://github.com/gradle/gradle") }
+    end
   end
 end

@@ -161,6 +161,35 @@ using JSON
         end
     end
 
+    @testset "Registry URL normalization" begin
+        n = DependabotHelper.normalize_registry_url
+        @test n("https://github.com/Org/Reg.git") == n("https://github.com/org/reg")
+        @test n("https://example.com/reg/") == n("https://example.com/reg")
+        @test n("https://example.com/reg") != n("https://example.com/registries")
+    end
+
+    @testset "ensure_registries_fresh TTL marker" begin
+        with_temp_depot() do
+            old_env = get(ENV, "DEPENDABOT_SKIP_REGISTRY_UPDATE", nothing)
+            try
+                delete!(ENV, "DEPENDABOT_SKIP_REGISTRY_UPDATE")
+                DependabotHelper.ensure_registries_fresh()
+                marker = joinpath(Base.DEPOT_PATH[1], "registries", ".dependabot_registry_updated")
+                @test isfile(marker)
+
+                first_mtime = mtime(marker)
+                DependabotHelper.ensure_registries_fresh() # within TTL: no refresh
+                @test mtime(marker) == first_mtime
+            finally
+                if old_env === nothing
+                    delete!(ENV, "DEPENDABOT_SKIP_REGISTRY_UPDATE")
+                else
+                    ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = old_env
+                end
+            end
+        end
+    end
+
     @testset "Multiple Registry Support" begin
         @testset "Add Multiple Registries" begin
             with_temp_depot() do

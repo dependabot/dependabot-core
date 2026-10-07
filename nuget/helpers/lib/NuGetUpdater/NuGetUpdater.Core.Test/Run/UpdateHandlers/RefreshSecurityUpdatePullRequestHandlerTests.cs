@@ -72,7 +72,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -203,7 +203,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, "src/Directory.Packages.props"), "updated contents");
 
@@ -339,7 +339,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, "src/Directory.Packages.props"), "updated contents");
 
@@ -476,7 +476,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, "src/Directory.Packages.props"), "updated contents");
 
@@ -616,7 +616,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -1018,7 +1018,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -1058,6 +1058,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.1",
                             Requirements = [
                                 new() { Requirement = "2.0.1", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -1144,7 +1145,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -1183,6 +1184,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },

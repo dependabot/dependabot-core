@@ -1,13 +1,15 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/dependency_requirement"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/git_commit_checker"
 require "dependabot/swift/native_requirement"
 require "dependabot/swift/file_updater/manifest_updater"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -16,7 +18,7 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
-      require_relative "update_checker/latest_version_resolver"
+      require_relative "update_checker/xcode_version_resolver"
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
@@ -48,43 +50,104 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
+        return updated_xcode_requirements if xcode_spm_mode?
+
+        # If no target version is available, return old requirements unchanged
+        target = preferred_resolvable_version
+        return old_requirements unless target
+
         RequirementsUpdater.new(
           requirements: old_requirements,
-          target_version: T.must(preferred_resolvable_version)
+          target_version: target
         ).updated_requirements
       end
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+      def updated_xcode_requirements
+        # If no target version is available (e.g., revision-only or branch-pinned
+        # dependency), return old requirements unchanged
+        target = preferred_resolvable_version
+        return old_requirements unless target
+
+        # Only use the "latest" tag's commit SHA when the chosen target version
+        # is actually the latest resolvable version. This avoids attaching a
+        # mismatched SHA when preferred_resolvable_version selects a different
+        # version (for example, the lowest resolvable security-fix version).
+        commit_sha = nil
+        latest = latest_resolvable_version
+        if latest && target == latest
+          tag = xcode_version_resolver.latest_resolvable_version_tag
+          tag_commit_sha = tag&.fetch(:commit_sha, nil)
+          commit_sha = tag_commit_sha if tag_commit_sha.is_a?(String)
+        end
+
+        RequirementsUpdater.new(
+          requirements: old_requirements,
+          target_version: target,
+          xcode_mode: true,
+          target_commit_sha: commit_sha
+        ).updated_requirements
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def old_requirements
         dependency.requirements
       end
 
+      sig { returns(T::Boolean) }
+      def xcode_spm_mode?
+        manifest.nil? && xcode_resolved_files.any?
+      end
+
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_version
+        return fetch_xcode_latest_version if xcode_spm_mode?
+
         return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
         tag = latest_version_tag
         return unless tag
 
-        tag.fetch(:version)
+        tag_version(tag)
+      end
+
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def fetch_xcode_latest_version
+        # For branch-pinned or revision-only dependencies, don't report a latest version
+        # since they can't be meaningfully updated to version-based pins
+        return nil unless xcode_version_resolver.version_pinned?
+
+        tag = latest_version_tag
+        return unless tag
+
+        tag_version(tag)
       end
 
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_security_fix_version
+        return fetch_xcode_lowest_security_fix_version if xcode_spm_mode?
+
         return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
         tag = lowest_security_fix_version_tag
         return unless tag
 
-        tag.fetch(:version)
+        tag_version(tag)
+      end
+
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def fetch_xcode_lowest_security_fix_version
+        xcode_version_resolver.lowest_security_fix_version
       end
 
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_resolvable_version
+        return fetch_xcode_latest_resolvable_version if xcode_spm_mode?
+
         latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
         return current_version unless latest_resolvable_version
 
@@ -92,7 +155,14 @@ module Dependabot
       end
 
       sig { returns(T.nilable(Dependabot::Version)) }
+      def fetch_xcode_latest_resolvable_version
+        xcode_version_resolver.latest_resolvable_version
+      end
+
+      sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_resolvable_security_fix_version
+        return fetch_xcode_lowest_security_fix_version if xcode_spm_mode?
+
         lowest_resolvable_security_fix_version = version_resolver_for(
           force_lowest_security_fix_requirements
         ).latest_resolvable_version
@@ -101,7 +171,10 @@ module Dependabot
         Version.new(lowest_resolvable_security_fix_version)
       end
 
-      sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(VersionResolver) }
+      sig do
+        params(requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(VersionResolver)
+      end
       def version_resolver_for(requirements)
         VersionResolver.new(
           dependency: dependency,
@@ -112,31 +185,29 @@ module Dependabot
         )
       end
 
-      sig { returns(LatestVersionResolver) }
-      def cooldown_check_version_resolver_for
-        LatestVersionResolver.new(
-          dependency: dependency,
-          credentials: credentials,
-          cooldown_options: update_cooldown,
-          git_commit_checker: git_commit_checker
-        )
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+      def latest_version_tag
+        git_commit_checker.local_tag_for_latest_version(update_cooldown)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def unlocked_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
           "\"#{dependency.version}\"...\"#{latest_version}\""
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def force_lowest_security_fix_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
           "\"#{lowest_security_fix_version}\"...\"#{lowest_security_fix_version}\""
         end
       end
 
-      sig { params(new_requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(Dependabot::DependencyFile) }
+      sig do
+        params(new_requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(Dependabot::DependencyFile)
+      end
       def prepare_manifest_for(new_requirements)
         manifest_file = T.must(manifest)
 
@@ -192,31 +263,69 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def latest_version_tag
-        cooldown_check_version_resolver_for.latest_version_tag
-      end
-
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def lowest_security_fix_version_tag
         tags = git_commit_checker.local_tags_for_allowed_versions
         find_lowest_secure_version(tags)
       end
 
-      sig { params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig do
+        params(tags: T::Array[T::Hash[Symbol, Object]])
+          .returns(T.nilable(T::Hash[Symbol, Object]))
+      end
       def find_lowest_secure_version(tags)
-        relevant_tags = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(tags, security_advisories)
+        relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+          tags.filter_map { |tag| tag_version(tag) },
+          security_advisories
+        )
+        relevant_tags = tags.select { |tag| (version = tag_version(tag)) && relevant_versions.include?(version) }
         relevant_tags = filter_lower_tags(relevant_tags)
 
-        relevant_tags.min_by { |tag| tag.fetch(:version) }
+        relevant_tags.min_by { |tag| T.must(tag_version(tag)) }
       end
 
-      sig { params(tags_array: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig do
+        params(tags_array: T::Array[T::Hash[Symbol, Object]])
+          .returns(T::Array[T::Hash[Symbol, Object]])
+      end
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
 
         tags_array
-          .select { |tag| tag.fetch(:version) > current_version }
+          .select do |tag|
+            version = tag_version(tag)
+            version && version > current_version
+          end
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
+      def tag_version(tag)
+        version = tag.is_a?(Dependabot::GitTagDetails) ? tag.version : tag[:version]
+        Dependabot::Swift::Version.new(version.to_s) if version.is_a?(Gem::Version)
+      end
+
+      sig { returns(XcodeVersionResolver) }
+      def xcode_version_resolver
+        @xcode_version_resolver ||= T.let(
+          XcodeVersionResolver.new(
+            dependency: dependency,
+            git_commit_checker: git_commit_checker,
+            security_advisories: security_advisories,
+            update_cooldown: update_cooldown
+          ),
+          T.nilable(XcodeVersionResolver)
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def xcode_resolved_files
+        @xcode_resolved_files ||= T.let(
+          dependency_files.select do |f|
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
+              !f.support_file?
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
     end
   end

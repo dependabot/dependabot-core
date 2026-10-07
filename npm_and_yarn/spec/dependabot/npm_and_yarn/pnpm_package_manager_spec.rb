@@ -39,6 +39,10 @@ RSpec.describe Dependabot::NpmAndYarn::PNPMPackageManager do
       it "sets the supported_versions correctly" do
         expect(package_manager.supported_versions).to eq(Dependabot::NpmAndYarn::PNPMPackageManager::SUPPORTED_VERSIONS)
       end
+
+      it "supports pnpm 11" do
+        expect(package_manager.supported_versions).to include(Dependabot::Version.new("11"))
+      end
     end
   end
 

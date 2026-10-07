@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/bazel/file_updater"
+require "dependabot/bazel/package_manager"
 require "dependabot/shared_helpers"
 require "pathname"
 require "fileutils"
@@ -46,6 +47,15 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_bazel_error_for_lockfile(e)
+        end
+
+        sig { returns(String) }
+        def determine_bazel_version
+          bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
+          return Dependabot::Bazel::DEFAULT_BAZEL_VERSION unless bazelversion_file
+
+          version = T.must(bazelversion_file.content).strip
+          version.empty? ? Dependabot::Bazel::DEFAULT_BAZEL_VERSION : version
         end
 
         private
@@ -94,7 +104,7 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def bzlmod_dependency?(dependency)
-          dependency.requirements.any? { |req| req[:file]&.end_with?("MODULE.bazel") }
+          dependency.requirements.any? { |req| req.file&.end_with?("MODULE.bazel") }
         end
 
         sig { returns(String) }
@@ -136,39 +146,34 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname) if path.include?("/")
             File.write(path, T.must(file.content))
           end
+
+          write_bazelversion_if_missing
+        end
+
+        sig { void }
+        def write_bazelversion_if_missing
+          return if dependency_files.any? { |f| f.name == ".bazelversion" }
+
+          bazel_version = determine_bazel_version
+          File.write(".bazelversion", bazel_version)
+          Dependabot.logger.info("Using Bazel version: #{bazel_version}")
         end
 
         sig { void }
         def run_bazel_mod_tidy_command
-          bazel_version = determine_bazel_version
           bazel_command = bazelisk_available? ? "bazelisk" : "bazel"
-
-          if bazel_version
-            ENV["USE_BAZEL_VERSION"] = bazel_version
-            Dependabot.logger.info("Using Bazel version: #{bazel_version}")
-          end
 
           SharedHelpers.run_shell_command(
             "#{bazel_command} mod tidy --lockfile_mode=update",
             fingerprint: "#{bazel_command} mod tidy --lockfile_mode=update"
           )
 
-          unless File.exist?("MODULE.bazel.lock")
-            raise SharedHelpers::HelperSubprocessFailed.new(
-              message: "MODULE.bazel.lock file was not generated",
-              error_context: {}
-            )
-          end
-        ensure
-          ENV.delete("USE_BAZEL_VERSION") if bazel_version
-        end
+          return if File.exist?("MODULE.bazel.lock")
 
-        sig { returns(T.nilable(String)) }
-        def determine_bazel_version
-          bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
-          return nil unless bazelversion_file
-
-          T.must(bazelversion_file.content).strip
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            message: "MODULE.bazel.lock file was not generated",
+            error_context: {}
+          )
         end
 
         sig { returns(T::Boolean) }
@@ -181,9 +186,12 @@ module Dependabot
           Dependabot.logger.warn("Bazel lockfile generation failed: #{error.message}")
 
           case error.message
-          when /command not found/i, /bazel.*not found/i
+          when /command not found/i, /bazel(isk)?\s*:\s*(command\s+)?not found/i
             raise Dependabot::DependencyFileNotResolvable,
                   "Bazel binary not available. Cannot generate MODULE.bazel.lock file."
+          when /module.*not.*found/i, /registry.*not.*found/i
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Dependency not found in Bazel Central Registry."
           when /network.*error/i, /timeout/i, /connection.*refused/i
             raise Dependabot::DependencyFileNotResolvable,
                   "Network error during lockfile generation. Please try again later."
@@ -193,9 +201,6 @@ module Dependabot
           when /permission.*denied/i
             raise Dependabot::DependencyFileNotResolvable,
                   "Permission error during lockfile generation."
-          when /registry.*not.*found/i, /module.*not.*found/i
-            raise Dependabot::DependencyFileNotResolvable,
-                  "Dependency not found in Bazel Central Registry."
           else
             raise Dependabot::DependencyFileNotResolvable,
                   "Error generating lockfile: #{error.message}"
@@ -207,9 +212,12 @@ module Dependabot
           Dependabot.logger.warn("Bazel lockfile generation failed: #{error.message}")
 
           case error.message
-          when /command not found/i, /bazel.*not found/i
+          when /command not found/i, /bazel(isk)?\s*:\s*(command\s+)?not found/i
             raise Dependabot::DependencyFileNotResolvable,
                   "Bazel binary not available. Cannot generate MODULE.bazel.lock file."
+          when /module.*not.*found/i, /registry.*not.*found/i
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Dependency not found in Bazel Central Registry."
           when /network.*error/i, /timeout/i, /connection.*refused/i
             raise Dependabot::DependencyFileNotResolvable,
                   "Network error during lockfile generation. Please try again later."
@@ -219,9 +227,6 @@ module Dependabot
           when /permission.*denied/i
             raise Dependabot::DependencyFileNotResolvable,
                   "Permission error during lockfile generation."
-          when /registry.*not.*found/i, /module.*not.*found/i
-            raise Dependabot::DependencyFileNotResolvable,
-                  "Dependency not found in Bazel Central Registry."
           else
             raise Dependabot::DependencyFileNotResolvable,
                   "Error generating lockfile: #{error.message}"

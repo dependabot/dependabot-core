@@ -15,7 +15,7 @@ module Sentry
     attr_accessor :release
 
     sig { returns(T.nilable(::Logger)) }
-    attr_accessor :logger
+    attr_accessor :sdk_logger
 
     sig { returns(T.nilable(String)) }
     attr_accessor :project_root

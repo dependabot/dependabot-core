@@ -1,0 +1,636 @@
+# typed: strong
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+
+require "dependabot/file_updaters"
+require "dependabot/file_updaters/base"
+require "dependabot/dependency_requirement"
+require "dependabot/errors"
+require "dependabot/opentofu/file_selector"
+require "dependabot/opentofu/registry_client"
+require "dependabot/shared_helpers"
+
+module Dependabot
+  module Opentofu
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
+      extend T::Sig
+
+      include FileSelector
+
+      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
+      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
+      GIT_HTTPS_PREFIX = %r{^git::https://}
+
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_dependency_files
+        updated_files = []
+
+        [*opentofu_files, *terragrunt_files].each do |file|
+          next unless file_changed?(file)
+
+          updated_content = updated_opentofu_file_content(file)
+
+          raise "Content didn't change!" if updated_content == file.content
+
+          updated_file = updated_file(file: file, content: updated_content)
+
+          updated_files << updated_file unless updated_files.include?(updated_file)
+        end
+        updated_lockfile_content = update_lockfile_declaration(updated_files)
+
+        if updated_lockfile_content && T.must(lockfile).content != updated_lockfile_content
+          updated_files << updated_file(file: T.must(lockfile), content: updated_lockfile_content)
+        end
+
+        updated_files.compact!
+
+        raise "No files changed!" if updated_files.none?
+
+        updated_files
+      end
+
+      private
+
+      # OpenTofu allows to use a module from the same source multiple times
+      # To detect any changes in dependencies we need to overwrite an implementation from the base class
+      #
+      # Example (for simplicity other parameters are skipped):
+      # previous_requirements = [{requirement: "0.9.1"}, {requirement: "0.11.0"}]
+      # requirements = [{requirement: "0.11.0"}, {requirement: "0.11.0"}]
+      #
+      # Simple difference between arrays gives:
+      # requirements - previous_requirements
+      #  => []
+      # which loses an information that one of our requirements has changed.
+      #
+      # By using symmetric difference:
+      # (requirements - previous_requirements) | (previous_requirements - requirements)
+      #  => [{requirement: "0.9.1"}]
+      # we can detect that change.
+      sig { params(file: Dependabot::DependencyFile, dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def requirement_changed?(file, dependency)
+        changed_requirements =
+          (dependency.requirements - T.must(dependency.previous_requirements)) |
+          (T.must(dependency.previous_requirements) - dependency.requirements)
+
+        changed_requirements.any? { |requirement| requirement.file == file.name }
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      def updated_opentofu_file_content(file)
+        content = T.must(file.content.dup)
+
+        reqs = dependency.requirements.zip(T.must(dependency.previous_requirements))
+                         .reject { |new_req, old_req| new_req == old_req }
+
+        # Loop through each changed requirement and update the files and lockfile
+        reqs.each do |new_req, old_req|
+          raise "Bad req match" unless new_req.file == old_req&.file
+          next unless new_req.file == file.name
+
+          source_type = T.must(new_req.source_string("type"))
+          case source_type
+          when "git"
+            update_git_declaration(new_req, old_req, content, file.name)
+          when "registry", "provider"
+            if new_req.source_string("local_variable")
+              update_local_variable_declaration(new_req, old_req, content)
+            else
+              update_registry_declaration(new_req, old_req, content)
+            end
+          when "oci"
+            update_oci_declaration(new_req, old_req, content)
+          else
+            raise "Don't know how to update a #{source_type} declaration!"
+          end
+        end
+
+        content
+      end
+
+      sig do
+        params(
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
+          updated_content: String,
+          filename: String
+        )
+          .void
+      end
+      def update_git_declaration(new_req, old_req, updated_content, filename)
+        url = T.must(old_req&.source_string("url")).gsub(%r{^https://}, "")
+        old_ref = T.must(old_req&.source_string("ref"))
+        new_ref = T.must(new_req.source_string("ref"))
+        tag = old_ref
+        url_regex = /#{Regexp.quote(url)}.*ref=#{Regexp.quote(tag)}/
+
+        declaration_regex = git_declaration_regex(filename)
+
+        updated_content.sub!(declaration_regex) do |regex_match|
+          regex_match.sub(url_regex) do |url_match|
+            url_match.sub(old_ref, new_ref)
+          end
+        end
+      end
+
+      sig do
+        params(
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
+          updated_content: String
+        )
+          .void
+      end
+      def update_oci_declaration(new_req, old_req, updated_content)
+        old_tag = old_req&.source_string("tag")
+        new_tag = new_req.source_string("tag")
+        artifact = old_req&.source_string("artifact_identifier")
+        return if old_tag.nil? || new_tag.nil? || artifact.nil? || old_tag == new_tag
+
+        # Scoped to this artifact's source string so unrelated modules with
+        # the same tag value aren't touched.
+        oci_source_re = %r{
+          (["']oci://#{Regexp.escape(artifact)}(?://[^"'?]*)?\?[^"']*\btag=)
+          #{Regexp.escape(old_tag)}
+        }x
+        updated_content.gsub!(oci_source_re) { T.must(Regexp.last_match(1)) + new_tag }
+      end
+
+      sig do
+        params(
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
+          updated_content: String
+        )
+          .void
+      end
+      def update_registry_declaration(new_req, old_req, updated_content)
+        regex = if new_req.source_string("type") == "provider"
+                  provider_declaration_regex(updated_content)
+                else
+                  registry_declaration_regex
+                end
+
+        old_requirement = T.must(old_req&.requirement_string)
+        new_requirement = T.must(new_req.requirement_string)
+
+        # Define and break down the version regex for better clarity
+        version_key_pattern = /^\s*version\s*=\s*/
+        version_value_pattern = /["'].*#{Regexp.escape(old_requirement)}.*['"]/
+        version_regex = /#{version_key_pattern}#{version_value_pattern}/
+
+        updated_content.gsub!(regex) do |regex_match|
+          regex_match.sub(version_regex) do |req_line_match|
+            req_line_match.sub!(old_requirement, new_requirement)
+          end
+        end
+      end
+
+      sig do
+        params(
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
+          updated_content: String
+        )
+          .void
+      end
+      def update_local_variable_declaration(new_req, old_req, updated_content)
+        var_name = T.must(new_req.source_string("local_variable"))
+        old_version = old_req&.requirement_string
+        new_version = new_req.requirement_string
+        return if old_version.nil? || new_version.nil? || old_version == new_version
+
+        local_var_regex = /
+          (?<prefix>\b#{Regexp.escape(var_name)}\s*=\s*["'])
+          #{Regexp.escape(old_version)}
+          (?<suffix>["'])
+        /x
+
+        updated_content.sub!(local_var_regex) do
+          "#{Regexp.last_match(:prefix)}#{new_version}#{Regexp.last_match(:suffix)}"
+        end
+      end
+
+      sig { params(content: String, declaration_regex: Regexp).returns(T::Array[String]) }
+      def extract_provider_h1_hashes(content, declaration_regex)
+        content.match(declaration_regex).to_s
+               .match(hashes_object_regex).to_s
+               .split("\n").map { |hash| hash.match(hashes_string_regex).to_s }
+               .select { |h| h.match?(/^h1:/) }
+      end
+
+      sig { params(content: String, declaration_regex: Regexp).returns(String) }
+      def remove_provider_h1_hashes(content, declaration_regex)
+        content.match(declaration_regex).to_s
+               .sub(hashes_object_regex, "")
+      end
+
+      sig do
+        params(
+          new_req: Dependabot::DependencyRequirement
+        )
+          .returns([String, String, Regexp])
+      end
+      def lockfile_details(new_req)
+        content = T.must(lockfile).content.dup
+        registry_hostname = T.must(new_req.source_string("registry_hostname"))
+        module_identifier = T.must(new_req.source_string("module_identifier"))
+        provider_source = "#{registry_hostname}/#{module_identifier}"
+        declaration_regex = lockfile_declaration_regex(provider_source)
+
+        [T.must(content), provider_source, declaration_regex]
+      end
+
+      sig { returns(T.nilable(T::Array[Symbol])) }
+      def lookup_hash_architecture
+        new_req = T.must(dependency.requirements.first)
+
+        # NOTE: Only providers are included in the lockfile, modules are not
+        return unless new_req.source_string("type") == "provider"
+
+        result = lookup_hash_architecture_from_registry(new_req)
+        return result if result
+
+        lookup_hash_architecture_from_cli(new_req)
+      end
+
+      sig do
+        params(new_req: Dependabot::DependencyRequirement)
+          .returns(T.nilable(T::Array[Symbol]))
+      end
+      def lookup_hash_architecture_from_registry(new_req) # rubocop:disable Metrics/PerceivedComplexity
+        content, _provider_source, declaration_regex = lockfile_details(new_req)
+        existing_h1 = extract_provider_h1_hashes(content, declaration_regex)
+        return nil if existing_h1.empty?
+
+        identifier = T.must(new_req.source_string("module_identifier"))
+        old_version = dependency.previous_version
+        return nil unless old_version
+
+        hostname = new_req.source_string("registry_hostname") || RegistryClient::PUBLIC_HOSTNAME
+        client = RegistryClient.new(hostname: hostname, credentials: credentials)
+        packages = client.all_provider_package_hashes(identifier: identifier, version: old_version)
+        return nil unless packages
+
+        h1_to_platform = T.let({}, T::Hash[String, String])
+        packages.each do |platform, hashes|
+          hashes.each do |h|
+            h1_to_platform[h] = platform if h.start_with?("h1:")
+          end
+        end
+
+        architectures = existing_h1.filter_map { |h| h1_to_platform[h]&.to_sym }
+        architectures.empty? ? nil : architectures.uniq
+      rescue Dependabot::DependabotError
+        nil
+      end
+
+      sig { params(new_req: Dependabot::DependencyRequirement).returns(T::Array[Symbol]) }
+      def lookup_hash_architecture_from_cli(new_req) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+        architectures = []
+        content, provider_source, declaration_regex = lockfile_details(new_req)
+        hashes = extract_provider_h1_hashes(content, declaration_regex)
+
+        possible_architectures = %w(
+          linux_amd64
+          darwin_amd64
+          windows_amd64
+          darwin_arm64
+          linux_arm64
+        )
+
+        base_dir = T.must(dependency_files.first).directory
+        lockfile_hash_removed = remove_provider_h1_hashes(content, declaration_regex)
+
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          possible_architectures.each do |arch|
+            break if architectures.count == hashes.count
+
+            File.write(".terraform.lock.hcl", lockfile_hash_removed)
+
+            SharedHelpers.run_shell_command(
+              "tofu providers lock -platform=#{arch} #{provider_source} -no-color",
+              fingerprint: "tofu providers lock -platform=<arch> <provider_source> -no-color"
+            )
+
+            updated_lockfile = File.read(".terraform.lock.hcl")
+            updated_hashes = extract_provider_h1_hashes(updated_lockfile, declaration_regex)
+            next if updated_hashes.nil?
+
+            hashes.each do |hash|
+              updated_hashes.select { |h| h.match?(/^h1:/) }.each do |updated_hash|
+                architectures.append(arch.to_sym) if hash == updated_hash
+              end
+            end
+
+            File.delete(".terraform.lock.hcl")
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
+            mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
+            raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
+          end
+          raise if @retrying_lock || !e.message.include?("tofu init")
+
+          @retrying_lock = true
+          run_opentofu_init
+          retry
+        end
+
+        architectures.to_a
+      end
+
+      sig { returns(T::Array[Symbol]) }
+      def architecture_type
+        @architecture_type ||= T.let(
+          begin
+            detected = lookup_hash_architecture
+            detected.nil? || detected.empty? ? [:linux_amd64] : detected
+          end,
+          T.nilable(T::Array[Symbol])
+        )
+      end
+
+      sig { params(updated_manifest_files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
+      def update_lockfile_declaration(updated_manifest_files)
+        return if lockfile.nil?
+
+        new_req = T.must(dependency.requirements.first)
+        return unless new_req.source_string("type") == "provider"
+
+        result = update_lockfile_from_registry(new_req)
+        return result if result
+
+        update_lockfile_from_cli(new_req, updated_manifest_files)
+      end
+
+      sig { params(new_req: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+      def update_lockfile_from_registry(new_req) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        content, provider_source, declaration_regex = lockfile_details(new_req)
+        platforms = architecture_type
+        return nil if platforms.empty?
+
+        identifier = T.must(new_req.source_string("module_identifier"))
+        new_version = dependency.version
+        return nil unless new_version
+
+        hostname = new_req.source_string("registry_hostname") || RegistryClient::PUBLIC_HOSTNAME
+        client = RegistryClient.new(hostname: hostname, credentials: credentials)
+        packages = client.all_provider_package_hashes(identifier: identifier, version: new_version)
+        return nil unless packages
+
+        platform_strings = platforms.map(&:to_s)
+        return nil unless platform_strings.all? { |p| packages.key?(p) }
+
+        h1_hashes = platform_strings.flat_map { |p| packages.fetch(p).select { |h| h.start_with?("h1:") } }.uniq.sort
+        zh_hashes = packages.values.flat_map { |hs| hs.select { |h| h.start_with?("zh:") } }.uniq.sort
+        all_hashes = h1_hashes + zh_hashes
+        return nil if all_hashes.empty?
+
+        new_declaration = build_lockfile_declaration(
+          provider_source: provider_source,
+          version: new_version,
+          constraints: extract_constraints(content, declaration_regex),
+          hashes: all_hashes
+        )
+
+        replace_lockfile_provider_block(content, declaration_regex, new_declaration)
+      rescue Dependabot::DependabotError
+        nil
+      end
+
+      sig do
+        params(
+          provider_source: String,
+          version: String,
+          constraints: T.nilable(String),
+          hashes: T::Array[String]
+        ).returns(String)
+      end
+      def build_lockfile_declaration(provider_source:, version:, constraints:, hashes:)
+        lines = []
+        lines << "provider \"#{provider_source}\" {"
+        if constraints
+          lines << "  version     = \"#{version}\""
+          lines << "  constraints = \"#{constraints}\""
+        else
+          lines << "  version = \"#{version}\""
+        end
+        lines << "  hashes = ["
+        hashes.each { |h| lines << "    \"#{h}\"," }
+        lines << "  ]"
+        lines << "}"
+        lines.join("\n")
+      end
+
+      sig { params(content: String, declaration_regex: Regexp, new_declaration: String).returns(String) }
+      def replace_lockfile_provider_block(content, declaration_regex, new_declaration)
+        provider_block_regex = /provider\s*["'][^"']+["']\s*\{[^}]*\}/m
+        content.sub(declaration_regex) do |match|
+          match.sub(provider_block_regex, new_declaration)
+        end
+      end
+
+      sig { params(content: String, declaration_regex: Regexp).returns(T.nilable(String)) }
+      def extract_constraints(content, declaration_regex)
+        match = content.match(declaration_regex)
+        return nil unless match
+
+        constraint_match = match.to_s.match(/^\s*constraints\s*=\s*"([^"]*)"/)
+        constraint_match ? constraint_match[1] : nil
+      end
+
+      sig do
+        params(
+          new_req: Dependabot::DependencyRequirement,
+          updated_manifest_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T.nilable(String))
+      end
+      def update_lockfile_from_cli(new_req, updated_manifest_files) # rubocop:disable Metrics/AbcSize
+        content, provider_source, declaration_regex = lockfile_details(new_req)
+        lockfile_dependency_removed = content.sub(declaration_regex, "")
+
+        base_dir = T.must(dependency_files.first).directory
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
+
+          updated_manifest_files.each { |f| File.write(f.name, f.content) }
+
+          File.write(".terraform.lock.hcl", lockfile_dependency_removed)
+
+          SharedHelpers.run_shell_command(
+            "tofu providers lock #{platforms} #{provider_source}",
+            fingerprint: "tofu providers lock <platforms> <provider_source>"
+          )
+
+          updated_lockfile = File.read(".terraform.lock.hcl")
+          updated_dependency = T.cast(updated_lockfile.scan(declaration_regex).first, String)
+
+          unless T.cast(updated_dependency.scan(declaration_regex).first, String).scan(/^\s*version\s*=.*/) ==
+                 T.cast(content.scan(declaration_regex).first, String).scan(/^\s*version\s*=.*/)
+            content.sub!(declaration_regex, updated_dependency)
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          error_handler = FileUpdaterErrorHandler.new
+          error_handler.handle_helper_subprocess_failed_error(e)
+
+          if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
+            mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
+            raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
+          end
+          raise if @retrying_lock || !e.message.include?("tofu init")
+
+          @retrying_lock = T.let(true, T.nilable(T::Boolean))
+          run_opentofu_init
+          retry
+        end
+
+        content
+      end
+
+      sig { void }
+      def run_opentofu_init
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          # -backend=false option used to ignore any backend configuration, as these won't be accessible
+          # -input=false option used to immediately fail if it needs user input
+          # -no-color option used to prevent any color characters being printed in the output
+          SharedHelpers.run_shell_command("tofu init -backend=false -input=false -no-color")
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          output = e.message
+
+          if output.match?(PRIVATE_MODULE_ERROR)
+            repo = T.must(output.match(PRIVATE_MODULE_ERROR)).named_captures.fetch("repo")
+            if repo&.match?(GIT_HTTPS_PREFIX)
+              repo = repo.sub(GIT_HTTPS_PREFIX, "")
+              repo = repo.sub(/\.git$/, "")
+            end
+            raise PrivateSourceAuthenticationFailure, repo
+          end
+
+          raise Dependabot::DependencyFileNotResolvable, "Error running `tofu init`: #{output}"
+        end
+      end
+
+      sig { returns(Dependabot::Dependency) }
+      def dependency
+        # OpenTofu updates will only ever be updating a single dependency
+        T.must(dependencies.first)
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def files_with_requirement
+        filenames = dependency.requirements.map(&:file)
+        dependency_files.select { |file| filenames.include?(file.name) }
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if [*opentofu_files, *terragrunt_files].any?
+
+        raise "No Opentofu configuration file!"
+      end
+
+      sig { returns(Regexp) }
+      def hashes_object_regex
+        /hashes\s*=\s*[^\]]*\]/m
+      end
+
+      sig { returns(Regexp) }
+      def hashes_string_regex
+        /(?<=\").*(?=\")/
+      end
+
+      sig { params(updated_content: String).returns(Regexp) }
+      def provider_declaration_regex(updated_content)
+        name = Regexp.escape(dependency.name)
+        registry_host = Regexp.escape(registry_host_for(dependency))
+        regex_version_preceeds = %r{
+          (((?<!required_)version\s=\s*["'].*["'])
+          (\s*source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*))
+        }mxi
+        regex_source_preceeds = %r{
+          ((source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
+          (?:(?!^\}).)+)
+        }mxi
+
+        if updated_content.match(regex_version_preceeds)
+          regex_version_preceeds
+        else
+          regex_source_preceeds
+        end
+      end
+
+      sig { returns(Regexp) }
+      def registry_declaration_regex
+        %r{
+          (?<=\{)
+          (?:(?!^\}).)*
+          source\s*=\s*["']
+            (#{Regexp.escape(registry_host_for(dependency))}/)?
+            #{Regexp.escape(dependency.name)}
+            (//modules/\S+)?
+            ["']
+          (?:(?!^\}).)*
+        }mxi
+      end
+
+      sig { params(filename: String).returns(Regexp) }
+      def git_declaration_regex(filename)
+        # For terragrunt dependencies there's not a lot we can base the
+        # regex on. Just look for declarations within a `terraform` block
+        return /terraform\s*\{(?:(?!^\}).)*/m if terragrunt_file?(filename)
+
+        # For modules we can do better - filter for module blocks that use the
+        # name of the module
+        module_name = T.must(dependency.name.split("::").first)
+        /
+         module\s+["']#{Regexp.escape(module_name)}["']\s*\{
+         (?:(?!^\}).)*
+        /mx
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(String) }
+      def registry_host_for(dependency)
+        dependency.requirements.first&.source_string("registry_hostname") || "registry.opentofu.org"
+      end
+
+      sig { params(provider_source: String).returns(Regexp) }
+      def lockfile_declaration_regex(provider_source)
+        /
+          (?:(?!^\}).)*
+          provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
+          (?:(?!^\}).)*}
+        /mix
+      end
+    end
+
+    class FileUpdaterErrorHandler
+      extend T::Sig
+
+      RESOLVE_ERROR = /Could not retrieve providers for locking/
+      CONSTRAINTS_ERROR = /no available releases match/
+
+      # Handles errors with specific to yarn error codes
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_helper_subprocess_failed_error(error)
+        unless sanitize_message(error.message).match?(RESOLVE_ERROR) &&
+               sanitize_message(error.message).match?(CONSTRAINTS_ERROR)
+          return
+        end
+
+        raise Dependabot::DependencyFileNotResolvable,
+              "Error while updating lockfile, " \
+              "no matching constraints found."
+      end
+
+      sig { params(message: String).returns(String) }
+      def sanitize_message(message)
+        message.gsub(/\e\[[\d;]*[A-Za-z]/, "").delete("\n").delete("│").squeeze(" ")
+      end
+    end
+  end
+end
+
+Dependabot::FileUpdaters
+  .register("opentofu", Dependabot::Opentofu::FileUpdater)

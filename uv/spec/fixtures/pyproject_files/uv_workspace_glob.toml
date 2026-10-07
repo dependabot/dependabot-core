@@ -1,0 +1,23 @@
+[project]
+name = "workspace-root-glob"
+version = "0.1.0"
+description = "Test UV workspace with glob patterns"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "pkg-a",
+    "pkg-b",
+]
+
+[tool.uv.sources]
+pkg-a = { workspace = true }
+pkg-b = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "packages/*",
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"

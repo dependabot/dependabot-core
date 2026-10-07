@@ -20,8 +20,14 @@ internal record NuGetContext : IDisposable
     public IMachineWideSettings MachineWideSettings { get; }
     public ImmutableArray<PackageSource> PackageSources { get; }
     public NuGet.Common.ILogger Logger { get; }
+    private readonly Func<PackageSource, SourceRepository> _sourceRepositoryFactory;
+    private readonly PackageVersionsCache _packageVersionsCache;
 
-    public NuGetContext(string? currentDirectory = null, NuGet.Common.ILogger? logger = null)
+    public NuGetContext(
+        string? currentDirectory = null,
+        NuGet.Common.ILogger? logger = null,
+        Func<PackageSource, SourceRepository>? sourceRepositoryFactory = null,
+        PackageVersionsCache? packageVersionsCache = null)
     {
         SourceCacheContext = new SourceCacheContext();
         PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
@@ -36,6 +42,8 @@ internal record NuGetContext : IDisposable
             .Where(p => p.IsEnabled)
             .ToImmutableArray();
         Logger = logger ?? NullLogger.Instance;
+        _sourceRepositoryFactory = sourceRepositoryFactory ?? Repository.Factory.GetCoreV3;
+        _packageVersionsCache = packageVersionsCache ?? new PackageVersionsCache();
     }
 
     public void Dispose()
@@ -66,6 +74,32 @@ internal record NuGetContext : IDisposable
         return infoUrl;
     }
 
+    internal SourceRepository GetSourceRepository(PackageSource source) => _sourceRepositoryFactory(source);
+
+    internal Task<PackageVersions> GetPackageVersionsAsync(
+        PackageSource source,
+        string packageId,
+        bool includePrerelease,
+        bool includeUnlisted,
+        MetadataResource metadataResource,
+        CancellationToken cancellationToken)
+    {
+        return _packageVersionsCache.GetVersionsAsync(
+            CurrentDirectory,
+            source,
+            packageId,
+            includePrerelease,
+            includeUnlisted,
+            token => metadataResource.GetVersions(
+                packageId,
+                includePrerelease,
+                includeUnlisted,
+                SourceCacheContext,
+                NullLogger.Instance,
+                token),
+            cancellationToken);
+    }
+
     private async Task<string?> FindPackageInfoUrlAsync(PackageIdentity packageIdentity, CancellationToken cancellationToken)
     {
         var globalPackagesFolder = SettingsUtility.GetGlobalPackagesFolder(Settings);
@@ -83,7 +117,7 @@ internal record NuGetContext : IDisposable
         foreach (var source in sources)
         {
             message.AppendLine($"  checking {source.Name}");
-            var sourceRepository = Repository.Factory.GetCoreV3(source);
+            var sourceRepository = GetSourceRepository(source);
             var feed = await sourceRepository.GetResourceAsync<MetadataResource>(cancellationToken);
             if (feed is null)
             {
@@ -111,23 +145,31 @@ internal record NuGetContext : IDisposable
                 // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
+            catch (InvalidDataException)
+            {
+                // this usually means the feed returns an unexpected 404 when paging results; nothing we can do about it here
+                continue;
+            }
 
             var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
-            using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, PackageDownloadContext, globalPackagesFolder, Logger, cancellationToken);
-            if (downloadResult.Status == DownloadResourceResultStatus.Available)
+            if (downloadResource is not null)
             {
-                var repositoryMetadata = downloadResult.PackageReader.NuspecReader.GetRepositoryMetadata();
-                message.AppendLine($"    repometadata: type=[{repositoryMetadata.Type}], url=[{repositoryMetadata.Url}], branch=[{repositoryMetadata.Branch}], commit=[{repositoryMetadata.Commit}]");
-                if (!string.IsNullOrEmpty(repositoryMetadata.Url))
+                using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, PackageDownloadContext, globalPackagesFolder, Logger, cancellationToken);
+                if (downloadResult.Status == DownloadResourceResultStatus.Available &&
+                    downloadResult.PackageReader is not null)
                 {
-                    return repositoryMetadata.Url;
+                    var repositoryMetadata = downloadResult.PackageReader.NuspecReader.GetRepositoryMetadata();
+                    message.AppendLine($"    repometadata: type=[{repositoryMetadata.Type}], url=[{repositoryMetadata.Url}], branch=[{repositoryMetadata.Branch}], commit=[{repositoryMetadata.Commit}]");
+                    if (!string.IsNullOrEmpty(repositoryMetadata.Url))
+                    {
+                        return repositoryMetadata.Url;
+                    }
+                }
+                else
+                {
+                    message.AppendLine($"    download result status: {downloadResult.Status}");
                 }
             }
-            else
-            {
-                message.AppendLine($"    download result status: {downloadResult.Status}");
-            }
-
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
             if (metadataResource is not null)
             {

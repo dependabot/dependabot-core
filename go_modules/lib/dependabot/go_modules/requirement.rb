@@ -30,7 +30,7 @@ module Dependabot
 
       # Use GoModules::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
-      sig { params(obj: T.untyped).returns([String, Gem::Version]) }
+      sig { params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -156,7 +156,7 @@ module Dependabot
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^?v?/, "")
         parts = version.split(".")
-        upper_bound = [parts.first.to_i + 1, 0, 0, "a"].map(&:to_s).join(".")
+        upper_bound = [parts.first.to_i + 1, 0, 0, "a"].join(".")
 
         [">= #{version}", "< #{upper_bound}"]
       end

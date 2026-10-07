@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         "https://repo.maven.apache.org/maven2"
       end
 
-      encoded_token = Base64.strict_encode64("dependabot:dependabotPassword")
+      let(:encoded_token) { Base64.strict_encode64("dependabot:dependabotPassword") }
 
       it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
     end
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
           "https://gitlab.com/api/v4/groups/some-group/-/packages/maven"
         end
 
-        encoded_token = Base64.encode64("dependabot:dependabotPassword").delete("\n")
+        let(:encoded_token) { Base64.encode64("dependabot:dependabotPassword").delete("\n") }
 
         it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
       end

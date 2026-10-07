@@ -121,8 +121,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
             requirement: "1.*",
             groups: [],
             source: {
-              type: "git",
-              url: "https://github.com/Seldaek/monolog.git"
+              "type" => "git",
+              "url" => "https://github.com/Seldaek/monolog.git"
             }
           }]
         end

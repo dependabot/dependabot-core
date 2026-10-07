@@ -4,12 +4,15 @@
 require "sorbet-runtime"
 
 require "dependabot/gradle/file_parser"
+require "dependabot/maven/shared/property_value_finding"
 
 module Dependabot
   module Gradle
     class FileParser
       class PropertyValueFinder
         extend T::Sig
+
+        include Dependabot::Maven::Shared::PropertyValueFinding
 
         # rubocop:disable Layout/LineLength
         SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
@@ -70,13 +73,14 @@ module Dependabot
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @dependency_files = dependency_files
           @properties = T.let({}, T::Hash[String, T::Hash[String, T::Hash[Symbol, String]]])
           @top_level_buildfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
         sig do
-          params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
+          override
+            .params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
             .returns(T.nilable(T::Hash[Symbol, String]))
         end
         def property_details(property_name:, callsite_buildfile:)

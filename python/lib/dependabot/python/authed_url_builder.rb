@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "cgi/escape"
 require "sorbet-runtime"
 
 module Dependabot
@@ -16,7 +17,8 @@ module Dependabot
         return url unless token
 
         basic_auth_details =
-          if token.ascii_only? && token.include?(":") then token
+          if token.ascii_only? && token.include?(":")
+            token
           elsif Base64.decode64(token).ascii_only? &&
                 Base64.decode64(token).include?(":")
             Base64.decode64(token)

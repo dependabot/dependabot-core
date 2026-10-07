@@ -226,6 +226,63 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "with a dependency name that would generate a branch longer than 100 characters" do
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "this.is.an.extremely.long.package.name.that.will.definitely.exceed.the.maximum.length.limit",
+          version: "1.5.0",
+          previous_version: "1.4.0",
+          package_manager: "bundler",
+          requirements:
+            [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
+          previous_requirements:
+            [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+        )
+      end
+
+      it "shortens the branch name to 100 characters by default" do
+        expect(described_class::Github)
+          .to receive(:new) do |**kwargs|
+            expect(kwargs[:branch_name].length).to eq(100)
+            dummy_creator
+          end
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+
+      context "when branch_name_max_length is explicitly set to nil" do
+        subject(:creator) do
+          described_class.new(
+            source: source,
+            base_commit: base_commit,
+            dependencies: dependencies,
+            files: files,
+            credentials: credentials,
+            custom_labels: custom_labels,
+            reviewers: reviewers,
+            assignees: assignees,
+            milestone: milestone,
+            author_details: author_details,
+            signature_key: signature_key,
+            provider_metadata: provider_metadata,
+            branch_name_max_length: nil
+          )
+        end
+
+        it "does not shorten the branch name" do
+          expect(described_class::Github)
+            .to receive(:new) do |**kwargs|
+              expect(kwargs[:branch_name].length).to be > 100
+              dummy_creator
+            end
+          expect(dummy_creator).to receive(:create)
+          creator.create
+        end
+      end
+    end
+
     context "with a GitLab source" do
       let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Gitlab) }

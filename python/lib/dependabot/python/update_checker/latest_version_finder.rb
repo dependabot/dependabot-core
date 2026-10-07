@@ -1,7 +1,6 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -35,7 +34,29 @@ module Dependabot
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          true
+          return false if cooldown_options.nil?
+
+          cooldown = T.must(cooldown_options)
+          cooldown.default_days.to_i.positive? ||
+            cooldown.semver_major_days.to_i.positive? ||
+            cooldown.semver_minor_days.to_i.positive? ||
+            cooldown.semver_patch_days.to_i.positive?
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+        end
+        def eligible_releases(language_version: nil)
+          releases = available_versions
+          return unless releases
+
+          releases = filter_yanked_versions(releases)
+          releases = filter_by_cooldown(releases)
+          releases = filter_unsupported_versions(releases, language_version)
+          releases = filter_prerelease_versions(releases)
+          releases = filter_ignored_versions(releases)
+          apply_post_fetch_latest_versions_filter(releases)
         end
       end
     end

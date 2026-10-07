@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     )
   end
   let(:dependencies) { [dependency] }
-  let(:dependency_files) { [buildfile] }
+  let(:dependency_files) { [buildfile, wrapper_file] }
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
@@ -51,10 +51,26 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     )
   end
 
+  let(:wrapper_file) do
+    Dependabot::DependencyFile.new(
+      name: "gradle/wrapper/gradle-wrapper.properties",
+      content: fixture(
+        "wrapper_files",
+        "gradle-wrapper-8.14.2-bin.properties"
+      )
+    )
+  end
+
   it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, _|
+        raise "Unexpected shell command: #{command}"
+      end
+    end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
@@ -230,6 +246,78 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               'kotlin("jvm") version "1.4.21-2"'
             )
           end
+        end
+      end
+
+      context "with a dependencySubstitution block sharing a coordinate" do
+        let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "io.airlift:aircompressor",
+            version: "2.0.4",
+            requirements: [{
+              file: "build.gradle",
+              requirement: "2.0.4",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "build.gradle",
+              requirement: "2.0.2",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        it "updates the real dependency but leaves the substitution rule untouched" do
+          expect(updated_buildfile.content).to include(
+            "implementation group: 'io.airlift', name: 'aircompressor', version: '2.0.4'"
+          )
+          expect(updated_buildfile.content).to include(
+            'substitute module("io.airlift:aircompressor:2.0.2") using ' \
+            'module("io.airlift:aircompressor:2.0.3")'
+          )
+        end
+      end
+
+      context "with a multiline dependencySubstitution rule sharing a coordinate" do
+        let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "com.google.guava:guava",
+            version: "32.0-jre",
+            requirements: [{
+              file: "build.gradle",
+              requirement: "32.0-jre",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "build.gradle",
+              requirement: "30.0-jre",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        it "updates the real dependency but leaves the multiline substitution rule untouched" do
+          expect(updated_buildfile.content).to include(
+            "implementation group: 'com.google.guava', name: 'guava', version: '32.0-jre'"
+          )
+          expect(updated_buildfile.content).to include(
+            'substitute(module("com.google.guava:guava:30.0-jre"))'
+          )
+          expect(updated_buildfile.content).to include(
+            '.using(module("com.google.guava:guava:31.0-jre"))'
+          )
         end
       end
 
@@ -634,6 +722,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
 
           let(:buildfile) do
+            wrapper_file
+          end
+
+          let(:wrapper_file) do
             Dependabot::DependencyFile.new(
               name: "gradle/wrapper/gradle-wrapper.properties",
               content: fixture(
@@ -643,19 +735,23 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           end
 
+          let(:distribution_url) do
+            "https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
+          end
+
           let(:dependency) do
             requirements = [{
               file: "gradle/wrapper/gradle-wrapper.properties",
               requirement: "9.0.0",
               groups: [],
-              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              source: { type: "gradle-distribution", url: distribution_url, property: "distributionUrl" }
             }]
             if checksum
               requirements << {
                 file: "gradle/wrapper/gradle-wrapper.properties",
                 requirement: updated_checksum,
                 groups: [],
-                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+                source: { type: "gradle-distribution", url: distribution_url, property: "distributionSha256Sum" }
               }
             end
 
@@ -684,16 +780,46 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           end
 
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            allow(File).to receive(:exist?).and_return(true)
+            allow(FileUtils).to receive(:chmod)
+          end
+
           its(:content) do
-            is_expected.to include(
-              "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
-            )
+            expected_command = %W(
+              ./gradlew --no-daemon --stacktrace wrapper --gradle-version 9.0.0 --no-validate-url
+              --network-timeout 10000
+              --distribution-type #{type}
+            ).join(" ")
+            expected_env = { "JAVA_OPTS" => %w(
+              -Dhttp.proxyHost=host.docker.internal
+              -Dhttp.proxyPort=1080
+              -Dhttps.proxyHost=host.docker.internal
+              -Dhttps.proxyPort=1080
+            ).join(" ") }
+
+            is_expected.to include("distributionUrl=#{distribution_url}")
+
+            # Regression guard for #15312: user-customized and structural keys must survive the
+            # wrapper update rather than being reset to Gradle's hardcoded defaults.
+            is_expected.to include("networkTimeout=10000")
+            is_expected.to include("validateDistributionUrl=true")
+            is_expected.to include("distributionBase=GRADLE_USER_HOME")
+            is_expected.to include("zipStoreBase=GRADLE_USER_HOME")
 
             if checksum
+              expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
               is_expected.to include("distributionSha256Sum=#{updated_checksum}")
             else
               is_expected.not_to include("distributionSha256Sum=")
             end
+
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+              expected_command,
+              cwd: anything,
+              env: expected_env
+            )
           end
         end
 
@@ -749,6 +875,61 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected.to include(
             'kotlinter = { id = "org.jmailen.kotlinter", version = "3.12.0" }'
           )
+        end
+      end
+
+      context "when a version catalog dependency has a lockfile" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            content: "androidx.core:core-ktx:1.7.0=compileClasspath\nempty=\n"
+          )
+        end
+        let(:dependency_files) { [buildfile, lockfile] }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "androidx.core:core-ktx",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "1.8.0",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "corektx" }
+            }],
+            previous_requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "1.7.0",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "corektx" }
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+            File.write(
+              File.join(cwd, "gradle.lockfile"),
+              "androidx.core:core-ktx:1.8.0=compileClasspath\nempty=\n"
+            )
+          end
+        end
+
+        it "updates the version catalog and the lockfile" do
+          expect(updated_files.map(&:name)).to contain_exactly("gradle/libs.versions.toml", "gradle.lockfile")
+          expect(updated_files.find { |f| f.name == "gradle/libs.versions.toml" }.content)
+            .to include('corektx = "1.8.0"')
+          expect(updated_files.find { |f| f.name == "gradle.lockfile" }.content)
+            .to include("androidx.core:core-ktx:1.8.0")
         end
       end
 

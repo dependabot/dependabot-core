@@ -6,9 +6,9 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-conda"
   spec.summary      = "Provides Dependabot support for Conda"
-  spec.description  = "Dependabot-Conda provides support for bumping Python packages in Conda environment.yml files " \
-                      "via Dependabot. If you want support for multiple package managers, you probably want the " \
-                      "meta-gem dependabot-omnibus."
+  spec.description  = "Dependabot-Conda provides support for updating Conda packages " \
+                      "defined in Conda environment.yml files. Routes conda packages to Conda channel " \
+                      "APIs and pip packages to PyPI for accurate version information."
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

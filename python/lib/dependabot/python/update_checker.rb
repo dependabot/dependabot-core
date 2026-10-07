@@ -2,11 +2,13 @@
 # frozen_string_literal: true
 
 require "excon"
-require "toml-rb"
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
+require "dependabot/python/file_parser"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/requirement"
@@ -17,6 +19,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Python
+    # rubocop:disable-next Metrics/ClassLength
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -27,6 +30,8 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
 
+      PyprojectDocument = FileParser::PyprojectDocument
+
       MAIN_PYPI_INDEXES = %w(
         https://pypi.python.org/simple/
         https://pypi.org/simple/
@@ -35,6 +40,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_version
+        return latest_version_for_git_dependency if git_dependency?
+
         @latest_version ||= T.let(
           fetch_latest_version,
           T.nilable(Gem::Version)
@@ -43,6 +50,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version
+        return latest_resolvable_version_for_git_dependency if git_dependency?
+
         @latest_resolvable_version ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version
@@ -59,6 +68,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version_with_no_unlock
+        return T.cast(dependency.version, T.nilable(Gem::Version)) if git_dependency? && git_commit_checker.pinned?
+
         @latest_resolvable_version_with_no_unlock ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version_with_no_unlock
@@ -86,10 +97,12 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
+        return updated_git_requirements if git_dependency?
+
         RequirementsUpdater.new(
-          requirements: requirements,
+          requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
           has_lockfile: !(pipfile_lock || poetry_lock).nil?
@@ -111,6 +124,64 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Boolean) }
+      def git_dependency?
+        git_commit_checker.git_dependency?
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def latest_version_for_git_dependency
+        latest_git_version_details&.version
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def latest_resolvable_version_for_git_dependency
+        # For git dependencies, we assume the latest version is resolvable
+        latest_version_for_git_dependency
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+      def updated_git_requirements
+        updated_source = updated_git_source
+        return dependency.requirements unless updated_source
+
+        dependency.requirements.map do |req|
+          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
+        end
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def updated_git_source
+        # Update the git tag if a new version is available
+        if git_commit_checker.pinned_ref_looks_like_version? && latest_git_version_details
+          new_tag = T.must(latest_git_version_details).tag
+          source_details = dependency.source_details
+          return source_details.transform_keys(&:to_sym).merge(ref: new_tag) if source_details
+        end
+
+        # Otherwise return the original source
+        dependency.source_details&.transform_keys(&:to_sym)
+      end
+
+      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
+      def latest_git_version_details
+        @latest_git_version_details ||= T.let(
+          git_commit_checker.local_tag_for_latest_version(@update_cooldown),
+          T.nilable(Dependabot::GitTagDetails)
+        )
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_commit_checker
+        @git_commit_checker ||= T.let(
+          Dependabot::GitCommitChecker.new(
+            dependency: dependency,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
+      end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
@@ -135,10 +206,6 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def resolver
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Python package resolver : #{resolver_type}")
-        end
-
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :pipenv then pipenv_version_resolver
@@ -184,15 +251,14 @@ module Dependabot
         # For hybrid projects with both [tool.poetry] and [project] sections but no lockfile,
         # use the requirements resolver to handle PEP 621 dependencies
         # For pure Poetry projects, use Poetry resolver even without lockfile
-        return :poetry if poetry_based? && (poetry_lock || !standard_details)
+        return :poetry if poetry_based? && (poetry_lock || !pyproject_document.project?)
 
         :requirements
       end
 
-      sig { params(reqs: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { params(reqs: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def exact_requirement?(reqs)
-        reqs = reqs.map { |r| r.fetch(:requirement) }
-        reqs = reqs.compact
+        reqs = reqs.filter_map(&:requirement_string)
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
         reqs.any? { |r| Python::Requirement.new(r).exact? }
       end
@@ -210,7 +276,7 @@ module Dependabot
         )
       end
 
-      sig { returns(PipCompileVersionResolver) }
+      sig { overridable.returns(Object) }
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||= T.let(
           PipCompileVersionResolver.new(
@@ -268,12 +334,13 @@ module Dependabot
         return if reqs.none?
 
         requirement = reqs.find do |r|
-          file = r[:file]
+          file = r.file
+          next false unless file
 
           file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
         end
 
-        requirement&.fetch(:requirement)
+        requirement&.requirement_string
       end
 
       sig { returns(String) }
@@ -297,13 +364,13 @@ module Dependabot
       def updated_version_req_lower_bound
         return ">=#{dependency.version}" if dependency.version
 
-        version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }
-                      .reject { |req_string| req_string.start_with?("<") }
-                      .select { |req_string| req_string.match?(VERSION_REGEX) }
-                      .map { |req_string| req_string.match(VERSION_REGEX).to_s }
-                      .select { |version| Python::Version.correct?(version) }
-                      .max_by { |version| Python::Version.new(version) }
+        version_for_requirement = requirements
+                                  .filter_map(&:requirement_string)
+                                  .reject { |req_string| req_string.start_with?("<") }
+                                  .select { |req_string| req_string.match?(VERSION_REGEX) }
+                                  .map { |req_string| req_string.match(VERSION_REGEX).to_s }
+                                  .select { |version| Python::Version.correct?(version) }
+                                  .max_by { |version| Python::Version.new(version) }
 
         ">=#{version_for_requirement || 0}"
       end
@@ -331,30 +398,56 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def poetry_based?
-        updating_pyproject? && !poetry_details.nil?
+        updating_pyproject? && pyproject_document.poetry?
       end
 
       sig { returns(T::Boolean) }
       def library?
+        return @is_library unless @is_library.nil?
+
+        @is_library = T.let(check_pypi_for_library_match, T.nilable(T::Boolean))
+        @is_library || false
+      end
+
+      sig { returns(T::Boolean) }
+      def check_pypi_for_library_match
         return false unless updating_pyproject?
-        return false unless library_details
 
-        return false if T.must(library_details)["name"].nil?
+        metadata = library_details
+        name = metadata&.name
+        return false unless name
 
-        # Hit PyPi and check whether there are details for a library with a
-        # matching name and description
-        index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
-        )
+        local_description = metadata.description
+        has_library_metadata = !local_description.nil?
 
-        return false unless index_response.status == 200
+        begin
+          response = Dependabot::RegistryClient.get(
+            url: "https://pypi.org/pypi/#{normalised_name(name)}/json/"
+          )
+          return has_library_metadata unless response.status == 200
 
-        pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == T.must(library_details)["description"]
-      rescue Excon::Error::Timeout, Excon::Error::Socket
-        false
-      rescue URI::InvalidURIError
-        false
+          return true if local_description.nil?
+
+          pypi_summary(response.body) == local_description
+        rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
+          has_library_metadata
+        end
+      end
+
+      sig { params(body: String).returns(T.nilable(String)) }
+      def pypi_summary(body)
+        metadata = T.cast(JSON.parse(body), Object)
+        raise TypeError, "PyPI metadata must be an object" unless metadata.is_a?(Hash)
+
+        info = T.cast(metadata["info"], Object)
+        return if info.nil?
+        raise TypeError, "PyPI info must be an object" unless info.is_a?(Hash)
+
+        summary = T.cast(info["summary"], Object)
+        return if summary.nil?
+        return summary if summary.is_a?(String)
+
+        raise TypeError, "PyPI info.summary must be a string"
       end
 
       sig { returns(T::Boolean) }
@@ -379,10 +472,10 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def requirement_files
-        requirements.map { |r| r.fetch(:file) }
+        requirements.filter_map(&:file)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements
         dependency.requirements
       end
@@ -412,43 +505,21 @@ module Dependabot
         dependency_files.find { |f| f.name == "poetry.lock" }
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { returns(T.nilable(PyprojectDocument::ProjectMetadata)) }
       def library_details
         @library_details ||= T.let(
-          poetry_details || standard_details || build_system_details,
-          T.nilable(T::Hash[String, T.untyped])
+          pyproject_document.poetry_metadata ||
+            pyproject_document.project_metadata ||
+            pyproject_document.build_system_metadata,
+          T.nilable(PyprojectDocument::ProjectMetadata)
         )
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def poetry_details
-        @poetry_details ||= T.let(
-          toml_content.dig("tool", "poetry"),
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def standard_details
-        @standard_details ||= T.let(
-          toml_content["project"],
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def build_system_details
-        @build_system_details ||= T.let(
-          toml_content["build-system"],
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def toml_content
-        @toml_content ||= T.let(
-          TomlRB.parse(T.must(pyproject).content),
-          T.nilable(T::Hash[String, T.untyped])
+      sig { returns(PyprojectDocument) }
+      def pyproject_document
+        @pyproject_document ||= T.let(
+          PyprojectDocument.from_content(T.must(T.must(pyproject).content)),
+          T.nilable(PyprojectDocument)
         )
       end
 

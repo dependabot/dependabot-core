@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 # Install Elm
@@ -13,6 +14,5 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot elm $DEPENDABOT_HOME/elm
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents elm common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

@@ -15,9 +15,9 @@ module Dependabot
         ).void
       end
       def initialize(name:, version: nil, requirement: nil)
-        @name = T.let(name, String)
-        @version = T.let(version, T.nilable(Dependabot::Version))
-        @requirement = T.let(requirement, T.nilable(Dependabot::Requirement))
+        @name = name
+        @version = version
+        @requirement = requirement
       end
 
       sig { returns(String) }

@@ -239,6 +239,120 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         perform
       end
     end
+
+    context "when all versions are ignored only on the resolvable-version path" do
+      # Regression: the cooldown fallback can let the `all_versions_ignored?` guard pass
+      # (latest_version returns the current version) while `can_update?` still raises
+      # AllVersionsIgnored via a different finder. Driving `perform` exercises the real
+      # per-dependency error handling, so it proves the run is not halted for non-security
+      # jobs and that AllVersionsIgnored still bubbles to the handler for security jobs.
+      let(:other_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          version: "1.0.0",
+          requirements: [{ file: "Gemfile", requirement: "~> 1.0.0", groups: ["default"], source: nil }],
+          package_manager: "bundler",
+          metadata: { all_versions: ["1.0.0"] }
+        )
+      end
+
+      before do
+        allow(Dependabot::Environment).to receive(:deterministic_updates?).and_return(true)
+        allow(dependency_snapshot).to receive_messages(
+          dependencies: [dependency, other_dependency],
+          allowed_dependencies: [dependency, other_dependency],
+          ungrouped_dependencies: [dependency, other_dependency]
+        )
+        allow(stub_update_checker).to receive_messages(up_to_date?: false, requirements_unlocked_or_can_be?: true)
+        allow(stub_update_checker).to receive(:can_update?).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(blocked_versions_for?: false, existing_pull_requests: [])
+      end
+
+      context "when the job is not a security update" do
+        before { allow(job).to receive(:security_updates_only?).and_return(false) }
+
+        it "skips every ignored dependency without raising, erroring, or opening a PR" do
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(update_all_versions).not_to receive(:create_pull_request)
+
+          expect { perform }.not_to raise_error
+        end
+      end
+
+      context "when the job is a security update" do
+        before { allow(job).to receive(:security_updates_only?).and_return(true) }
+
+        it "still surfaces AllVersionsIgnored through the run-level error handler" do
+          allow(mock_error_handler).to receive(:handle_dependency_error)
+
+          perform
+
+          expect(mock_error_handler).to have_received(:handle_dependency_error)
+            .with(hash_including(error: an_instance_of(Dependabot::AllVersionsIgnored)))
+            .at_least(:once)
+        end
+      end
+    end
+
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still raise
+      # AllVersionsIgnored when the resolvable-version finder ignores every candidate. Driving
+      # `perform` proves a non-security run is not halted and that AllVersionsIgnored still
+      # bubbles to the handler for security jobs.
+      let(:other_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          version: "1.0.0",
+          requirements: [{ file: "Gemfile", requirement: "~> 1.0.0", groups: ["default"], source: nil }],
+          package_manager: "bundler",
+          metadata: { all_versions: ["1.0.0"] }
+        )
+      end
+
+      before do
+        allow(Dependabot::Environment).to receive(:deterministic_updates?).and_return(true)
+        allow(dependency_snapshot).to receive_messages(
+          dependencies: [dependency, other_dependency],
+          allowed_dependencies: [dependency, other_dependency],
+          ungrouped_dependencies: [dependency, other_dependency]
+        )
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          can_update?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(blocked_versions_for?: false, existing_pull_requests: [])
+      end
+
+      context "when the job is not a security update" do
+        before { allow(job).to receive(:security_updates_only?).and_return(false) }
+
+        it "skips every ignored dependency without raising, erroring, or opening a PR" do
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(update_all_versions).not_to receive(:create_pull_request)
+
+          expect { perform }.not_to raise_error
+
+          # Both dependencies are processed: the loop is not abandoned after the first skip.
+          expect(stub_update_checker).to have_received(:updated_dependencies).twice
+        end
+      end
+
+      context "when the job is a security update" do
+        before { allow(job).to receive(:security_updates_only?).and_return(true) }
+
+        it "still surfaces AllVersionsIgnored through the run-level error handler" do
+          allow(mock_error_handler).to receive(:handle_dependency_error)
+
+          perform
+
+          expect(mock_error_handler).to have_received(:handle_dependency_error)
+            .with(hash_including(error: an_instance_of(Dependabot::AllVersionsIgnored)))
+            .at_least(:once)
+        end
+      end
+    end
   end
 
   describe "#check_and_create_pull_request" do
@@ -356,6 +470,161 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
           stub_dependency_change
         )
         update_all_versions.send(:check_and_create_pull_request, dependency)
+      end
+    end
+  end
+
+  describe "#update_checker_for" do
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when job is a security update with cooldown configured" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|
+          definition["job"]["security_updates_only"] = true
+          definition["job"]["dependencies"] = ["dummy-pkg-a"]
+          definition["job"]["cooldown"] = {
+            "default-days" => 7
+          }
+        end
+      end
+
+      it "does not pass cooldown to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(update_cooldown: nil)
+        )
+      end
+    end
+
+    context "when job is a version update without cooldown configured" do
+      it "passes the default cooldown to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            update_cooldown: having_attributes(default_days: Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+          )
+        )
+      end
+    end
+
+    context "when job is a version update with cooldown configured" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|
+          definition["job"]["security_updates_only"] = false
+          definition["job"]["cooldown"] = {
+            "default-days" => 7
+          }
+        end
+      end
+
+      it "passes cooldown to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(update_cooldown: having_attributes(default_days: 7))
+        )
+      end
+    end
+
+    context "when allow rules specify update-types (patch only)" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/allow_update_types_patch_only")
+      end
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_allow_update_types")
+      end
+
+      it "passes ignored_versions that block major and minor updates to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            ignored_versions: a_collection_containing_exactly(
+              a_string_matching(/>= 5/),
+              a_string_matching(/>= 4\.1/)
+            )
+          )
+        )
+      end
+    end
+
+    context "when allow rules specify update-types (minor and patch)" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/allow_update_types_minor_and_patch")
+      end
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_allow_update_types")
+      end
+
+      it "passes ignored_versions that block only major updates to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            ignored_versions: a_collection_containing_exactly(
+              a_string_matching(/>= 5/)
+            )
+          )
+        )
+      end
+    end
+
+    context "when allow rules have no update-types" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple")
+      end
+
+      it "passes no implicit ignored_versions to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(ignored_versions: [])
+        )
+      end
+    end
+  end
+
+  describe "blocked versions ignored metric" do
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+      allow(stub_update_checker).to receive_messages(up_to_date?: true)
+      allow(update_all_versions).to receive(:all_versions_ignored?).and_return(false)
+    end
+
+    context "when the dependency has an active GitHub Security block" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(true)
+      end
+
+      it "increments the ignored metric tagged with the package manager" do
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+
+        expect(mock_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            operation: "version_update",
+            package_manager: "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the dependency only has user ignore rules (no block)" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(false)
+      end
+
+      it "does not increment the ignored metric" do
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
       end
     end
   end

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -6,6 +6,8 @@ require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
+require "dependabot/go_modules/go_work_parser"
+require "dependabot/go_modules/go_mod_manifest"
 require "dependabot/go_modules/path_converter"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
@@ -52,11 +54,13 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |hsh|
-          unless skip_dependency?(hsh) # rubocop:disable Style/Next
+        if workspace?
+          parse_workspace_dependencies(dependency_set)
+        else
+          required_packages.each do |hsh|
+            next if skip_dependency?(hsh)
 
-            dep = dependency_from_details(hsh)
-            dependency_set << dep
+            dependency_set << dependency_from_details(hsh)
           end
         end
 
@@ -104,6 +108,8 @@ module Dependabot
         set_goenv_variable
         set_goproxy_variable
         set_goprivate_variable
+        set_gonoproxy_variable
+        set_gonosumdb_variable
       end
 
       sig { void }
@@ -111,8 +117,28 @@ module Dependabot
         return unless go_env
 
         env_file = T.must(go_env)
-        File.write(env_file.name, env_file.content)
+        File.write(env_file.name, sanitize_go_env_content(T.must(env_file.content)))
         ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      # Go's GOENV file format does not support shell-style quoting, but users
+      # commonly write values like GOPROXY="https://..." which Go reads literally
+      # (including the quotes), causing URL parse failures. Strip surrounding
+      # matching " or ' from each value.
+      sig { params(content: String).returns(String) }
+      def sanitize_go_env_content(content)
+        content.gsub(
+          /
+            ^          # start of line
+            ([^=\n]+)  # key: one or more chars that are not = or newline
+            =          # separator
+            (["'])     # opening quote, captured for backreference
+            (.*)       # value
+            \2         # closing quote must match opening
+            $          # end of line
+          /x,
+          '\1=\3'
+        )
       end
 
       sig { void }
@@ -121,8 +147,41 @@ module Dependabot
         return if go_env&.content&.include?("GOPROXY")
         return if goproxy_credentials.any?
 
-        goprivate = options.fetch(:goprivate, "*")
+        goprivate = T.cast(options.fetch(:goprivate, "*"), T.nilable(String))
         ENV["GOPRIVATE"] = goprivate if goprivate
+      end
+
+      # GONOPROXY explicitly controls which module paths skip the proxy.
+      # Setting this overrides GOPRIVATE's default for proxy decisions, letting
+      # us keep GOPRIVATE=* (to skip sumdb for unknown enterprise orgs) while
+      # still routing public modules through proxy.golang.org. The literal
+      # value "none" matches no module paths — see Go's mod_gonoproxy.txt test.
+      sig { void }
+      def set_gonoproxy_variable
+        return if go_env_includes_any?(%w(GONOPROXY GOPRIVATE GOPROXY))
+        return if goproxy_credentials.any?
+
+        gonoproxy = T.cast(options.fetch(:gonoproxy, nil), T.nilable(String))
+        ENV["GONOPROXY"] = gonoproxy if gonoproxy
+      end
+
+      # GONOSUMDB explicitly controls which module paths skip checksum DB
+      # verification. Setting this overrides GOPRIVATE's default for sumdb,
+      # letting us narrow the scope independently of proxy routing.
+      sig { void }
+      def set_gonosumdb_variable
+        return if go_env_includes_any?(%w(GONOSUMDB GOPRIVATE))
+
+        gonosumdb = T.cast(options.fetch(:gonosumdb, nil), T.nilable(String))
+        ENV["GONOSUMDB"] = gonosumdb if gonosumdb
+      end
+
+      sig { params(keys: T::Array[String]).returns(T::Boolean) }
+      def go_env_includes_any?(keys)
+        content = go_env&.content
+        return false unless content
+
+        keys.any? { |key| content.index(key) }
       end
 
       sig { void }
@@ -190,37 +249,126 @@ module Dependabot
         @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { override.void }
-      def check_required_files
-        raise "No go.mod!" unless go_mod
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def all_go_mods
+        @all_go_mods ||= T.let(
+          if go_work
+            workspace_mod_names = GoWorkParser.use_paths(T.must(T.must(go_work).content)).map do |path|
+              path == "." ? "go.mod" : "#{path}/go.mod"
+            end
+            dependency_files.select { |f| workspace_mod_names.include?(f.name) }
+          else
+            dependency_files.select { |f| f.name.end_with?("go.mod") }
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
+      def parse_workspace_dependencies(dependency_set)
+        all_go_mods.each do |mod_file|
+          parse_single_module(mod_file).each do |dep|
+            dependency_set << dep
+          end
+        end
+      end
+
+      sig { params(mod_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_single_module(mod_file)
+        SharedHelpers.in_a_temporary_directory do |path|
+          File.write("go.mod", mod_file.content)
+
+          command = "go mod edit -json"
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr, file_path: mod_file.path) unless status.success?
+
+          parsed = GoModManifest.from_json(stdout, file_path: mod_file.path)
+
+          parsed.requirements.filter_map do |entry|
+            next if skip_dependency_in_manifest?(entry, parsed)
+
+            source = { type: "default", source: entry.path }
+            version = entry.version&.sub(/^v?/, "")
+
+            reqs = [{
+              requirement: entry.version,
+              file: mod_file.name,
+              source: source,
+              groups: []
+            }]
+
+            Dependency.new(
+              name: entry.path,
+              version: version,
+              requirements: entry.indirect ? [] : reqs,
+              package_manager: "go_modules"
+            )
+          end
+        end
+      end
+
+      sig { params(dep: GoModManifest::RequirementEntry, mod_manifest: GoModManifest).returns(T::Boolean) }
+      def skip_dependency_in_manifest?(dep, mod_manifest)
+        return true if dependency_is_replaced_in?(dep, mod_manifest)
+
+        path_uri = URI.parse("https://#{dep.path}")
+        !path_uri.host&.include?(".")
+      rescue URI::InvalidURIError
+        false
+      end
+
+      sig { params(details: GoModManifest::RequirementEntry, mod_manifest: GoModManifest).returns(T::Boolean) }
+      def dependency_is_replaced_in?(details, mod_manifest)
+        mod_manifest.replacements.any? do |replacement|
+          replacement.old.path == details.path &&
+            (replacement.old.version.nil? || replacement.old.version == details.version)
+        end
+      end
+
+      sig { override.void }
+      def check_required_files
+        raise "No go.mod or go.work!" unless go_mod || go_work
+      end
+
+      sig { params(details: GoModManifest::RequirementEntry).returns(Dependabot::Dependency) }
       def dependency_from_details(details)
-        source = { type: "default", source: details["Path"] }
-        version = details["Version"]&.sub(/^v?/, "")
+        source = { type: "default", source: details.path }
+        version = details.version&.sub(/^v?/, "")
 
         reqs = [{
-          requirement: details["Version"],
+          requirement: details.version,
           file: go_mod&.name,
           source: source,
           groups: []
         }]
 
         Dependency.new(
-          name: details["Path"],
+          name: details.path,
           version: version,
-          requirements: details["Indirect"] ? [] : reqs,
+          requirements: details.indirect ? [] : reqs,
           package_manager: "go_modules"
         )
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[GoModManifest::RequirementEntry]) }
       def required_packages
         @required_packages ||=
           T.let(
-            JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
-            T.nilable(T::Array[T::Hash[String, T.untyped]])
+            GoModManifest.from_json(
+              run_in_parsed_context("go mod edit -json"),
+              file_path: T.must(go_mod).path
+            ).requirements,
+            T.nilable(T::Array[GoModManifest::RequirementEntry])
           )
       end
 
@@ -237,7 +385,7 @@ module Dependabot
           )
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(GoModManifest) }
       def manifest
         @manifest ||=
           T.let(
@@ -251,9 +399,9 @@ module Dependabot
               stdout, stderr, status = Open3.capture3(command)
               handle_parser_error(path, stderr) unless status.success?
 
-              JSON.parse(stdout)
+              GoModManifest.from_json(stdout, file_path: T.must(go_mod).path)
             end,
-            T.nilable(T::Hash[String, T.untyped])
+            T.nilable(GoModManifest)
           )
       end
 
@@ -264,24 +412,25 @@ module Dependabot
         end
       end
 
-      sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
-      def handle_parser_error(path, stderr)
+      sig { params(path: T.any(Pathname, String), stderr: String, file_path: T.nilable(String)).returns(T.noreturn) }
+      def handle_parser_error(path, stderr, file_path: nil)
         msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
+        resolved_path = file_path || go_mod&.path || go_work&.path || "go.mod"
+        raise Dependabot::DependencyFileNotParseable.new(resolved_path, msg)
       end
 
-      sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(dep: GoModManifest::RequirementEntry).returns(T::Boolean) }
       def skip_dependency?(dep)
         # Updating replaced dependencies is not supported
         return true if dependency_is_replaced(dep)
 
-        path_uri = URI.parse("https://#{dep['Path']}")
+        path_uri = URI.parse("https://#{dep.path}")
         !path_uri.host&.include?(".")
       rescue URI::InvalidURIError
         false
       end
 
-      sig { params(details: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(details: GoModManifest::RequirementEntry).returns(T::Boolean) }
       def dependency_is_replaced(details)
         # Mark dependency as replaced if the requested dependency has a
         # "replace" directive and that either has the same version, or no
@@ -289,15 +438,7 @@ module Dependabot
         # prevents that we change dependency versions without any impact since
         # the actual version that is being imported is defined by the replace
         # directive.
-        if manifest["Replace"]
-          dep_replace = manifest["Replace"].find do |replace|
-            replace["Old"]["Path"] == details["Path"] &&
-              (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
-          end
-
-          return true if dep_replace
-        end
-        false
+        dependency_is_replaced_in?(details, manifest)
       end
     end
   end

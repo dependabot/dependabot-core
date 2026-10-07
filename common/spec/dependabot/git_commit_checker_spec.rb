@@ -143,6 +143,20 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#dependency_source_details" do
+    subject(:source_details) { checker.dependency_source_details }
+
+    it "returns typed source details" do
+      expect(source_details).to be_a(described_class::SourceDetails)
+      expect(source_details).to have_attributes(
+        type: "git",
+        url: "https://github.com/gocardless/business",
+        branch: "master",
+        ref: "master"
+      )
+    end
+  end
+
   describe "#branch_or_ref_in_release?" do
     subject(:branch_or_ref_in_release?) { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
 
@@ -356,6 +370,47 @@ RSpec.describe Dependabot::GitCommitChecker do
           end
 
           it { is_expected.to be(true) }
+        end
+
+        context "when the source is GitLab" do
+          let(:source_url) { "https://gitlab.com/gocardless/business" }
+          let(:service_pack_url) do
+            "https://gitlab.com/gocardless/business.git/info/refs" \
+              "?service=git-upload-pack"
+          end
+          let(:comparison_commits) { [{}] }
+          let(:compare_same_ref) { false }
+          let(:comparison) do
+            Gitlab::ObjectifiedHash.new(
+              commits: comparison_commits,
+              compare_same_ref: compare_same_ref
+            )
+          end
+          let(:gitlab_client) do
+            double("GitlabWithRetries", compare: comparison)
+          end
+
+          before do
+            allow(Dependabot::Clients::GitlabWithRetries)
+              .to receive(:for_gitlab_dot_com)
+              .and_return(gitlab_client)
+          end
+
+          context "when the reference is behind the release" do
+            let(:comparison_commits) { [] }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when the reference is identical to the release" do
+            let(:compare_same_ref) { true }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when the reference is ahead of the release" do
+            it { is_expected.to be(false) }
+          end
         end
       end
     end
@@ -806,6 +861,19 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to be(true) }
       end
+
+      context "when the source reference uses compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20260408"
+          }
+        end
+
+        it { is_expected.to be(true) }
+      end
     end
 
     context "with a non-version pin" do
@@ -819,6 +887,19 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it { is_expected.to be(false) }
+
+      context "when the pin looks like invalid compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20261399"
+          }
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
 
     context "with no ref" do
@@ -1031,6 +1112,16 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           end
 
+          before do
+            stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: [].to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
           its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
         end
 
@@ -1110,6 +1201,221 @@ RSpec.describe Dependabot::GitCommitChecker do
           end
 
           its([:tag]) { is_expected.to eq("tags/v1.13.0") }
+        end
+      end
+
+      # Repos with mixed version schemes (semver and date-based tags) should only
+      # match tags with the same versioning scheme.
+      context "when repo has mixed version schemes (semver and date-based tags)" do
+        let(:repo_url) { "https://github.com/norwoodj/helm-docs.git" }
+        let(:upload_pack_fixture) { "helm-docs" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/norwoodj/helm-docs",
+            branch: "master",
+            ref: "v1.14.2"
+          }
+        end
+
+        it "only considers tags with matching prefix (excludes date-based tags)" do
+          expect(local_tag_for_latest_version[:tag]).to eq("v1.14.2")
+        end
+      end
+    end
+  end
+
+  describe "#allowed_version_tags_with_release_dates" do
+    subject(:releases) { checker.allowed_version_tags_with_release_dates }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:upload_pack_fixture) { "business" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+
+      allow(checker).to receive(:refs_for_tag_with_detail).and_return(
+        [
+          Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+          Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+        ]
+      )
+    end
+
+    it "returns a PackageRelease for each allowed version tag, paired with its release date" do
+      latest = releases.max_by(&:version)
+
+      expect(latest.tag).to eq("v1.13.0")
+      expect(latest.version).to eq(Dependabot::Version.new("1.13.0"))
+      expect(latest.released_at).to eq(Time.parse("2018-03-04"))
+    end
+
+    it "leaves released_at nil for tags without a known release date" do
+      release = releases.find { |r| r.tag == "v1.0.0" }
+
+      expect(release.released_at).to be_nil
+    end
+  end
+
+  describe "#local_tag_for_pinned_version_ref" do
+    subject(:local_tag_for_pinned_version_ref) { checker.local_tag_for_pinned_version_ref }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:upload_pack_fixture) { "business" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "when the dependency is pinned to a ref that looks like a version" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v1.0.0"
+        }
+      end
+
+      it "returns the latest version tag" do
+        expect(local_tag_for_pinned_version_ref[:tag]).to eq("v1.13.0")
+      end
+    end
+
+    context "when the dependency is not pinned to a version (e.g. branch-pinned)" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it "returns nil without resolving a tag" do
+        expect(local_tag_for_pinned_version_ref).to be_nil
+      end
+    end
+  end
+
+  describe "#local_tag_for_latest_version with cooldown options" do
+    subject(:latest_tag) { checker.local_tag_for_latest_version(cooldown_options) }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:upload_pack_fixture) { "business" }
+    let(:cooldown_options) { nil }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+    end
+
+    context "when no cooldown options are configured (e.g. security updates)" do
+      let(:cooldown_options) { nil }
+
+      it "returns the latest version tag without consulting release dates" do
+        expect(checker).not_to receive(:refs_for_tag_with_detail)
+        expect(latest_tag[:tag]).to eq("v1.13.0")
+      end
+    end
+
+    context "when cooldown options are configured" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+      end
+
+      before do
+        allow(checker).to receive(:refs_for_tag_with_detail).and_return(refs_with_detail)
+      end
+
+      context "when the latest tag is still within its cooldown window" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: Time.now.strftime("%Y-%m-%d"))
+          ]
+        end
+
+        it "skips the cooled-down tag and returns the next newest allowed tag" do
+          expect(latest_tag[:tag]).to eq("v1.11.1")
+        end
+      end
+
+      context "when all candidate tags are within their cooldown window" do
+        let(:refs_with_detail) do
+          checker.allowed_version_tags.map do |tag|
+            Dependabot::GitTagWithDetail.new(tag: tag.name, release_date: Time.now.strftime("%Y-%m-%d"))
+          end
+        end
+
+        it "returns nil so no update is made" do
+          expect(latest_tag).to be_nil
+        end
+      end
+
+      context "when no tags are within their cooldown window" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+          ]
+        end
+
+        it "returns the latest version tag" do
+          expect(latest_tag[:tag]).to eq("v1.13.0")
+        end
+      end
+
+      context "when a GitHub Release publish date is available" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+          ]
+        end
+
+        before do
+          github_release = Struct.new(:tag_name, :published_at)
+                                 .new("v1.13.0", Time.now)
+          allow(checker).to receive(:cached_github_releases).and_return([github_release])
+        end
+
+        it "prefers the release publish date over the tag creation date" do
+          expect(latest_tag[:tag]).to eq("v1.11.1")
+        end
+      end
+
+      context "when the dependency is excluded from cooldown" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90, exclude: ["business"])
+        end
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: Time.now.strftime("%Y-%m-%d"))
+          ]
+        end
+
+        it "ignores cooldown and returns the latest version tag" do
+          expect(latest_tag[:tag]).to eq("v1.13.0")
         end
       end
     end
@@ -1242,6 +1548,67 @@ RSpec.describe Dependabot::GitCommitChecker do
         it { is_expected.to be_nil }
       end
     end
+
+    context "with compact CalVer tags pinned to compact CalVer" do
+      let(:upload_pack_fixture) { "no_tags" }
+      let(:version) { "20260408" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: version
+        }
+      end
+
+      let(:compact_calver_refs) do
+        [
+          Dependabot::GitRef.new(
+            name: "20260408",
+            ref_sha: "a" * 40,
+            commit_sha: "a" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "20260409",
+            ref_sha: "b" * 40,
+            commit_sha: "b" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "20260410",
+            ref_sha: "c" * 40,
+            commit_sha: "c" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "2026.04.11",
+            ref_sha: "d" * 40,
+            commit_sha: "d" * 40,
+            ref_type: Dependabot::RefType::Tag
+          )
+        ]
+      end
+
+      let(:latest_compact_calver) do
+        {
+          commit_sha: "c" * 40,
+          tag: "20260410",
+          tag_sha: "c" * 40,
+          version: anything
+        }
+      end
+
+      before do
+        allow(checker).to receive_messages(
+          local_tag_for_pinned_sha: nil,
+          local_refs: compact_calver_refs
+        )
+      end
+
+      it { is_expected.to match(latest_compact_calver) }
+    end
   end
 
   describe "#local_ref_for_latest_version_lower_precision" do
@@ -1373,6 +1740,105 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#all_version_tags" do
+    subject(:all_version_tags) { checker.all_version_tags }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:upload_pack_fixture) { "gatsby" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:releases_url) { "https://api.github.com/repos/gocardless/business/releases?per_page=100" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+      stub_request(:get, releases_url)
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: [].to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    context "when pinned to a commit SHA in a monorepo with multiple tag prefixes" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      end
+
+      it "returns all version tags without prefix filtering" do
+        tag_names = all_version_tags.map(&:name)
+        # Should include tags from ALL prefixes since it doesn't filter by prefix
+        expect(tag_names).to include("0.2.0")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.40")
+        expect(WebMock).to have_requested(:get, releases_url)
+          .with(headers: { "Authorization" => "token token" })
+          .once
+      end
+
+      it "includes more tags than allowed_version_tags when SHA doesn't match a tag" do
+        # allowed_version_tags would filter by prefix based on local_tag_for_pinned_sha
+        # which returns nil for an unknown SHA, allowing all tags or filtering by wrong prefix
+        # all_version_tags should consistently return all version tags
+        expect(all_version_tags.length).to be >= checker.allowed_version_tags.length
+      end
+    end
+
+    context "when pinned to a version-looking ref in a monorepo" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "gatsby-transformer-sqip@2.0.39"
+        }
+      end
+
+      it "returns all version tags without prefix filtering" do
+        tag_names = all_version_tags.map(&:name)
+        expect(tag_names).to include("0.2.0")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.40")
+      end
+
+      it "returns more tags than allowed_version_tags (which filters by prefix)" do
+        expect(all_version_tags.length).to be > checker.allowed_version_tags.length
+      end
+    end
+
+    context "with ignored versions" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      end
+      let(:ignored_versions) { [">= 2.0.40"] }
+
+      it "excludes ignored versions but keeps all prefixes" do
+        tag_names = all_version_tags.map(&:name)
+        # Should still include tags from all prefixes
+        expect(tag_names).to include("0.2.0")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
+        # But filter out ignored versions
+        expect(tag_names).not_to include("gatsby-transformer-sqip@2.0.40")
+      end
+    end
+  end
+
   describe "#local_tag_for_pinned_sha" do
     subject { checker.local_tag_for_pinned_sha }
 
@@ -1404,7 +1870,10 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "when the source commit is a tag" do
         let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
 
-        it { is_expected.to eq("v2.3.3") }
+        it "caches the matching tag" do
+          expect(checker.local_tag_for_pinned_sha).to eq("v2.3.3")
+          expect(checker.local_tag_for_pinned_sha).to eq("v2.3.3")
+        end
       end
 
       context "when the source commit is not a tag" do
@@ -1429,6 +1898,39 @@ RSpec.describe Dependabot::GitCommitChecker do
         let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
 
         it { is_expected.to eq("v2.3.4") }
+      end
+    end
+
+    context "when the source commit has no matching tag" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          branch: "main",
+          ref: "25a956c84d5dd820d28caab9f86b8d183aeeff3d"
+        }
+      end
+      let(:git_metadata_fetcher) do
+        instance_double(
+          Dependabot::GitMetadataFetcher,
+          head_commit_for_ref: nil,
+          tags_for_upload_pack: []
+        )
+      end
+      let(:checker_with_metadata_fetcher) do
+        described_class.new(
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          git_metadata_fetcher: git_metadata_fetcher
+        )
+      end
+
+      it "caches the missing tag" do
+        expect(checker_with_metadata_fetcher.local_tag_for_pinned_sha).to be_nil
+        expect(checker_with_metadata_fetcher.local_tag_for_pinned_sha).to be_nil
+        expect(git_metadata_fetcher).to have_received(:tags_for_upload_pack).once
       end
     end
   end
@@ -1574,6 +2076,396 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       it "raises a GitDependenciesNotReachable error" do
         expect { checker.refs_for_tag_with_detail }.to raise_error(Dependabot::GitDependenciesNotReachable)
+      end
+    end
+  end
+
+  describe "#tag_is_prerelease?" do
+    subject { checker.send(:tag_is_prerelease?, tag) }
+
+    let(:tag) { Dependabot::GitRef.new(name: "v1.2.3", commit_sha: "abc123") }
+
+    context "when tag has prerelease suffix" do
+      let(:tag) { Dependabot::GitRef.new(name: "v1.2.3-beta", commit_sha: "abc123") }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when tag has no prerelease suffix but is marked as prerelease on GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: true,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when tag has no prerelease suffix and is not marked as prerelease on GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: false,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when tag is not found on GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is not from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://gitlab.com/some/repo",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#github_release_prerelease?" do
+    subject { checker.send(:github_release_prerelease?, tag_name) }
+
+    let(:tag_name) { "v1.2.3" }
+
+    context "when dependency is from GitHub and release is marked as prerelease" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: true,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when dependency is from GitHub and release is not marked as prerelease" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: false,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is from GitHub but release is not found" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.0.0",
+                prerelease: false,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is from GitHub and release is a draft" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: false,
+                draft: true
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is not from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://gitlab.com/some/repo",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when GitHub API returns an error" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 500, body: "Internal Server Error")
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when GitHub API rate limit is exceeded" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 403,
+            body: { message: "API rate limit exceeded" }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#github_releases" do
+    subject { checker.send(:github_releases) }
+
+    context "when dependency is from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      context "when API call succeeds" do
+        before do
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: [
+                { tag_name: "v1.0.0", prerelease: false, draft: false },
+                { tag_name: "v2.0.0-beta", prerelease: true, draft: false }
+              ].to_json,
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "returns the releases" do
+          releases = checker.send(:github_releases)
+          expect(releases.length).to eq(2)
+          expect(releases.first).to have_attributes(tag_name: "v1.0.0", prerelease: false)
+          expect(releases.last).to have_attributes(tag_name: "v2.0.0-beta", prerelease: true)
+        end
+
+        it "caches the result" do
+          # First call
+          checker.send(:github_releases)
+          # Second call should not trigger another API request
+          checker.send(:github_releases)
+
+          expect(WebMock).to have_requested(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+            .with(headers: { "Authorization" => "token token" })
+            .once
+        end
+      end
+
+      context "when API call fails" do
+        before do
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404, body: { message: "Not Found" }.to_json)
+        end
+
+        it "returns an empty array" do
+          expect(checker.send(:github_releases)).to eq([])
+        end
+      end
+
+      context "when Octokit raises an error" do
+        before do
+          mock_client = double("GithubWithRetries")
+          allow(Dependabot::Clients::GithubWithRetries)
+            .to receive(:for_source)
+            .and_return(mock_client)
+          allow(mock_client)
+            .to receive(:releases)
+            .and_raise(Octokit::Forbidden.new)
+        end
+
+        it "returns an empty array" do
+          expect(checker.send(:github_releases)).to eq([])
+        end
+      end
+    end
+
+    context "when dependency is not from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://gitlab.com/some/repo",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        allow(checker).to receive(:listing_source_url).and_return("https://gitlab.com/some/repo")
+      end
+
+      it "returns an empty array" do
+        expect(checker.send(:github_releases)).to eq([])
+      end
+    end
+
+    context "when dependency has no source" do
+      let(:source) { nil }
+
+      before do
+        allow(checker).to receive(:listing_source_url).and_return(nil)
+      end
+
+      it "returns an empty array" do
+        expect(checker.send(:github_releases)).to eq([])
       end
     end
   end

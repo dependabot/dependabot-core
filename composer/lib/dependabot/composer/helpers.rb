@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "dependabot/composer/version"
+require "dependabot/composer/manifest_document"
+require "dependabot/composer/lockfile_document"
 require "sorbet-runtime"
 
 module Dependabot
@@ -9,57 +11,55 @@ module Dependabot
     module Helpers
       extend T::Sig
 
-      V1 = T.let("1", String)
-      V2 = T.let("2", String)
+      V1 = "1"
+      V2 = "2"
+
       # If we are updating a project with no lock file then the default should be the newest version
       DEFAULT = T.let(V2, String)
 
       # From composers json-schema: https://getcomposer.org/schema.json
-      COMPOSER_V2_NAME_REGEX = T.let(
-        %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$},
-        Regexp
-      )
+      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$}
 
       # From https://github.com/composer/composer/blob/b7d770659b4e3ef21423bd67ade935572913a4c1/src/Composer/Repository/PlatformRepository.php#L33
-      PLATFORM_PACKAGE_REGEX = T.let(
-        /
+      PLATFORM_PACKAGE_REGEX = /
         ^(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*
         |composer-(?:plugin|runtime)-api)$
-        /x,
-        Regexp
-      )
+        /x
 
-      FAILED_GIT_CLONE_WITH_MIRROR = T.let(
-        /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/,
-        Regexp
-      )
-      FAILED_GIT_CLONE = T.let(/^Failed to clone (?<url>.*?)/, Regexp)
+      FAILED_GIT_CLONE_WITH_MIRROR = /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/
+      FAILED_GIT_CLONE = /^Failed to clone (?<url>.*?)/
 
-      GIT_REPO_URL = T.let(
-        %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?},
-        Regexp
-      )
+      GIT_REPO_URL = %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?}
 
       sig do
         params(
-          composer_json: T::Hash[String, T.untyped],
-          parsed_lockfile: T.nilable(T::Hash[String, T.untyped])
+          composer_json: ManifestDocument,
+          parsed_lockfile: T.nilable(LockfileDocument)
         )
           .returns(String)
       end
       def self.composer_version(composer_json, parsed_lockfile = nil)
-        # If the parsed lockfile has a plugin API version, we return either V1 or V2
-        # based on the major version of the lockfile.
-        if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
-          version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY])
+        # If the parsed lockfile has a plugin API version, always use V2.
+        # V1 helpers have been removed, so we run with Composer V2 regardless.
+        plugin_api_version = parsed_lockfile&.plugin_api_version
+        if plugin_api_version
+          version = Composer::Version.new(plugin_api_version)
           major_version = version.canonical_segments.first
 
-          return major_version.nil? || major_version > 1 ? V2 : V1
+          if major_version && major_version <= 1
+            Dependabot.logger.warn(
+              "Composer V1 lockfile detected (plugin-api-version: #{plugin_api_version}). " \
+              "Dependabot no longer supports Composer V1. Running with Composer V2."
+            )
+          end
+
+          return V2
         end
 
         # Check if the composer name does not follow the Composer V2 naming conventions.
         # This happens if "name" is present in composer.json but doesn't match the required pattern.
-        composer_name_invalid = composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
+        composer_name = composer_json.name
+        composer_name_invalid = composer_name && composer_name !~ COMPOSER_V2_NAME_REGEX
 
         # If the name is invalid returns the fallback version.
         return V2 if composer_name_invalid
@@ -144,34 +144,32 @@ module Dependabot
       end
 
       # Capture the platform PHP version from composer.json
-      sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      sig { params(parsed_composer_json: ManifestDocument).returns(T.nilable(String)) }
       def self.capture_platform_php(parsed_composer_json)
         capture_platform(parsed_composer_json, Language::NAME)
       end
 
       # Capture the platform extension from composer.json
-      sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
+      sig { params(parsed_composer_json: ManifestDocument, name: String).returns(T.nilable(String)) }
       def self.capture_platform(parsed_composer_json, name)
-        parsed_composer_json.dig(PackageManager::CONFIG_KEY, PackageManager::PLATFORM_KEY, name)
+        parsed_composer_json.platform(name)
       end
 
       # Capture PHP version constraint from composer.json
-      sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      sig { params(parsed_composer_json: ManifestDocument).returns(T.nilable(String)) }
       def self.php_constraint(parsed_composer_json)
         dependency_constraint(parsed_composer_json, Language::NAME)
       end
 
       # Capture extension version constraint from composer.json
-      sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
+      sig { params(parsed_composer_json: ManifestDocument, name: String).returns(T.nilable(String)) }
       def self.dependency_constraint(parsed_composer_json, name)
-        parsed_composer_json.dig(PackageManager::REQUIRE_KEY, name)
+        parsed_composer_json.dependency_constraint(name)
       end
 
-      sig { params(composer_json: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(composer_json: ManifestDocument).returns(T::Boolean) }
       def self.invalid_v2_requirement?(composer_json)
-        return false unless composer_json.key?(PackageManager::REQUIRE_KEY)
-
-        composer_json[PackageManager::REQUIRE_KEY].keys.any? do |key|
+        composer_json.required_dependency_names.any? do |key|
           key !~ PLATFORM_PACKAGE_REGEX && key !~ COMPOSER_V2_NAME_REGEX
         end
       end

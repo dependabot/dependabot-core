@@ -21,6 +21,5 @@ Gem::Specification.new do |spec|
   }
 
   spec.version = "0.95.1"
-  # Since a placeholder gem, no need to keep `required_ruby_version` up to date with `.ruby-version`
-  spec.required_ruby_version = ">= 3" # rubocop:disable Gemspec/RequiredRubyVersion
+  spec.required_ruby_version = ">= 3.3.0"
 end

@@ -1,0 +1,24 @@
+[
+  {
+    "name": "pyproject.toml",
+    "path": "pyproject.toml",
+    "sha": "abc123",
+    "size": 500,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/pyproject.toml?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/pyproject.toml",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/pyproject.toml",
+    "type": "file"
+  },
+  {
+    "name": "src",
+    "path": "src",
+    "sha": "def456",
+    "size": 0,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/src?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/tree/sha/src",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/def456",
+    "download_url": null,
+    "type": "dir"
+  }
+]

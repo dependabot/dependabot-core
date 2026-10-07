@@ -11,18 +11,18 @@ internal static class IHttpFetcherExtensions
 {
     public static async Task<JsonElement?> GetJsonElementAsync(this IHttpFetcher fetcher, string url)
     {
-        var jsonString = await fetcher.GetStringAsync(url);
-        if (jsonString is null)
-        {
-            return null;
-        }
-
         try
         {
+            var jsonString = await fetcher.GetStringAsync(url);
+            if (jsonString is null)
+            {
+                return null;
+            }
+
             var json = JsonSerializer.Deserialize<JsonElement>(jsonString);
             return json;
         }
-        catch (JsonException)
+        catch (Exception)
         {
             return null;
         }

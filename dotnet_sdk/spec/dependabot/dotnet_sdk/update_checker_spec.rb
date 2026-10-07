@@ -100,4 +100,41 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker do
       it { is_expected.to eq(Dependabot::Version.new("8.0.300")) }
     end
   end
+
+  describe "#updated_dependencies" do
+    subject(:updated_dependency) do
+      checker.updated_dependencies(requirements_to_unlock: :own).first
+    end
+
+    include_context "when the config is in root"
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "dotnet-sdk",
+        version: "11.0.100-preview.5.26302.115",
+        requirements: [{
+          requirement: "11.0.100-preview.5.26302.115",
+          file: "global.json",
+          groups: nil,
+          source: nil
+        }],
+        package_manager: "dotnet_sdk",
+        metadata: { allow_prerelease: true }
+      )
+    end
+    let(:target_version) do
+      Dependabot::DotnetSdk::Version.new("11.0.100-preview.6.26359.118")
+    end
+
+    before do
+      allow(Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder)
+        .to receive(:new).and_return(latest_version_finder)
+      allow(latest_version_finder).to receive(:latest_version).and_return(target_version)
+    end
+
+    it "preserves the preview version" do
+      expect(updated_dependency.version).to eq("11.0.100-preview.6.26359.118")
+      expect(updated_dependency.requirements.first[:requirement]).to eq("11.0.100-preview.6.26359.118")
+    end
+  end
 end

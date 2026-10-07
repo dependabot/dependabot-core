@@ -2,9 +2,10 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/error_details"
 require "dependabot/utils"
 
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module Dependabot
   extend T::Sig
 
@@ -23,7 +24,7 @@ module Dependabot
 
   # rubocop:disable Metrics/MethodLength
   # rubocop:disable Metrics/CyclomaticComplexity
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(Dependabot::ErrorDetails)) }
   def self.fetcher_error_details(error)
     case error
     when Dependabot::ToolVersionNotSupported
@@ -49,6 +50,13 @@ module Dependabot
         "error-type": "branch_not_found",
         "error-detail": {
           "branch-name": error.branch_name,
+          message: error.message
+        }
+      }
+    when Dependabot::RefNamespaceConflictError
+      {
+        "error-type": "file_fetcher_error",
+        "error-detail": {
           message: error.message
         }
       }
@@ -90,6 +98,11 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateRegistryConfigNotFound
+      {
+        "error-type": "private_registry_config_not_found",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
@@ -104,6 +117,11 @@ module Dependabot
       {
         "error-type": "dependency_not_found",
         "error-detail": { source: error.source }
+      }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
       }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
@@ -126,11 +144,12 @@ module Dependabot
           "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
-    end
+    end => details
+    Dependabot::ErrorDetails.from_hash(details) if details
   end
   # rubocop:enable Metrics/CyclomaticComplexity
 
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(Dependabot::ErrorDetails)) }
   def self.parser_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -196,6 +215,11 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
+      }
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
@@ -208,13 +232,14 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
-    end
+    end => details
+    Dependabot::ErrorDetails.from_hash(details) if details
   end
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
   # rubocop:disable Metrics/AbcSize
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(Dependabot::ErrorDetails)) }
   def self.updater_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -230,6 +255,21 @@ module Dependabot
       {
         "error-type": "dependency_file_not_resolvable",
         "error-detail": { message: error.message }
+      }
+    when Dependabot::BranchNameFormattingError
+      {
+        "error-type": "branch_name_formatting_error",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::BlockedDependencyVersion
+      {
+        "error-type": "blocked_dependency_version",
+        "error-detail": {
+          "dependency-name": error.dependency_name,
+          "blocked-version": error.blocked_version,
+          "version-requirement": error.version_requirement,
+          reason: error.reason
+        }.compact
       }
     when Dependabot::DependencyFileNotEvaluatable
       {
@@ -353,7 +393,8 @@ module Dependabot
       }
     when
       IncompatibleCPU,
-      NetworkUnsafeHTTP
+      NetworkUnsafeHTTP,
+      SnapshotsUnavailableGraphError
       error.detail
 
     when Dependabot::NotImplemented
@@ -377,13 +418,26 @@ module Dependabot
           "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
-    end
+    end => details
+    Dependabot::ErrorDetails.from_hash(details) if details
   end
 
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
   # rubocop:enable Metrics/AbcSize
+
+  # Interface for error classes that provide Sentry context (e.g. fingerprint).
+  # Include this module in any error class that defines #sentry_context.
+  module HasSentryContext
+    extend T::Sig
+    extend T::Helpers
+
+    interface!
+
+    sig { abstract.returns(T::Hash[Symbol, T.anything]) }
+    def sentry_context; end
+  end
 
   class DependabotError < StandardError
     extend T::Sig
@@ -444,12 +498,12 @@ module Dependabot
 
     sig { params(error_type: String, message: T.any(T.nilable(String), MatchData)).void }
     def initialize(error_type, message = nil)
-      @error_type = T.let(error_type, String)
+      @error_type = error_type
 
       super(message || error_type)
     end
 
-    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.anything])).returns(T::Hash[Symbol, T.anything]) }
     def detail(hash = nil)
       {
         "error-type": error_type,
@@ -467,6 +521,10 @@ module Dependabot
   class NotImplemented < DependabotError; end
 
   class InvalidGitAuthToken < DependabotError; end
+
+  class RefNamespaceConflictError < DependabotError; end
+
+  class BranchNameFormattingError < DependabotError; end
 
   #####################
   # Repo level errors #
@@ -532,7 +590,10 @@ module Dependabot
     end
     def initialize(tool_name, tool_message)
       @tool_name = tool_name
-      @tool_message = tool_message
+      # Sanitize here as well as via `super`: the raw `tool_message` attribute is read
+      # directly during error serialization (see `updater_error_details`), so it must not
+      # carry credentials (e.g. basic-auth URLs) that the base message sanitization strips.
+      @tool_message = T.let(filter_sensitive_data(tool_message), String)
 
       msg = "Dependabot detected that #{tool_name} is misconfigured in this repository. " \
             "Running `#{tool_name.downcase}` results in the following error: #{tool_message}"
@@ -665,6 +726,22 @@ module Dependabot
   # Source level errors #
   #######################
 
+  class PrivateRegistryConfigNotFound < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: String).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(source), String)
+      msg = "Private npm registries require either a .npmrc file in your repository, " \
+            "or explicit `scope`/`replaces-base` configuration in dependabot.yml. " \
+            "Registry: #{@source}"
+      super(msg)
+    end
+  end
+
   class PrivateSourceAuthenticationFailure < DependabotError
     extend T::Sig
 
@@ -687,10 +764,10 @@ module Dependabot
     sig { returns(String) }
     attr_reader :source
 
-    sig { params(source: T.nilable(String)).void }
-    def initialize(source)
+    sig { params(source: T.nilable(String), error_message: T.nilable(String)).void }
+    def initialize(source, error_message = nil)
       @source = T.let(sanitize_source(T.must(source)), String)
-      msg = "Bad response error while accessing source: #{@source}"
+      msg = error_message ? sanitize_source(error_message) : "Bad response error while accessing source: #{@source}"
       super(msg)
     end
   end
@@ -879,6 +956,46 @@ module Dependabot
   # Raised by UpdateChecker if all candidate updates are ignored
   class AllVersionsIgnored < DependabotError; end
 
+  # Raised when regenerating a lockfile would introduce or change a transitive
+  # (indirect) dependency to a version that matches a configured blocked version.
+  # The offending change is rejected so the blocked version is never shipped,
+  # while other dependencies are still allowed to update.
+  class BlockedDependencyVersion < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :dependency_name
+
+    sig { returns(String) }
+    attr_reader :blocked_version
+
+    sig { returns(String) }
+    attr_reader :version_requirement
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason
+
+    sig do
+      params(
+        dependency_name: String,
+        blocked_version: String,
+        version_requirement: String,
+        reason: T.nilable(String)
+      ).void
+    end
+    def initialize(dependency_name:, blocked_version:, version_requirement:, reason: nil)
+      @dependency_name = dependency_name
+      @blocked_version = blocked_version
+      @version_requirement = version_requirement
+      @reason = reason
+
+      msg = "Update blocked: transitive dependency #{dependency_name} #{blocked_version} " \
+            "matches blocked version requirement '#{version_requirement}'"
+      msg += " (reason: #{reason})" if reason && !reason.empty?
+      super(msg)
+    end
+  end
+
   # Raised by FileParser if processing may execute external code in the update context
   class UnexpectedExternalCode < DependabotError; end
 
@@ -895,5 +1012,11 @@ module Dependabot
       super("network_unsafe_http", message)
     end
   end
+
+  class SnapshotsUnavailableGraphError < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("snapshots_unavailable_graph_error", message)
+    end
+  end
 end
-# rubocop:enable Metrics/ModuleLength

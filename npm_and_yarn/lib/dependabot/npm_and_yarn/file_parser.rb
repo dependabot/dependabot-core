@@ -3,7 +3,10 @@
 
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
+require "cgi/escape"
 require "dependabot/dependency"
+require "dependabot/package/npm_lockfile_details"
+require "dependabot/package/npm_package_json"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -26,7 +29,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/lockfile_parser"
 
-      DEPENDENCY_TYPES = T.let(%w(dependencies devDependencies optionalDependencies).freeze, T::Array[String])
+      DEPENDENCY_TYPES = %w(dependencies devDependencies optionalDependencies).freeze
       GIT_URL_REGEX = %r{
         (?<git_prefix>^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
         (?<username>[a-z0-9-]+)/
@@ -67,27 +70,36 @@ module Dependabot
           reqs = dep.requirements
 
           # Ignore dependencies defined in support files, since we don't want PRs for those
-          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r[:file] } }
+          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r.file } }
           next true if support_reqs.any?
 
           # TODO: Currently, Dependabot can't handle dependencies that have both
           # a git source *and* a non-git source. Fix that!
-          git_reqs = reqs.select { |r| r.dig(:source, :type) == "git" }
+          git_reqs = reqs.select { |r| r.source_string("type") == "git" }
           next false if git_reqs.none?
-          next true if git_reqs.map { |r| r.fetch(:source) }.uniq.count > 1
+          next true if git_reqs.map(&:source).uniq.count > 1
 
-          dep.requirements.any? { |r| r.dig(:source, :type) != "git" }
+          dep.requirements.any? { |r| r.source_string("type") != "git" }
         end
       end
 
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            package_manager: package_manager_helper.package_manager,
-            language: package_manager_helper.language
-          ),
+          begin
+            package_manager = package_manager_helper.package_manager
+            npm_selector = if package_manager.name == NpmPackageManager::NAME
+                             package_manager_helper.setup(package_manager.name)
+                             Helpers.npm_version_selector
+                           end
+            Helpers.register_npm_version_selector(package_json.directory, npm_selector)
+
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              package_manager: package_manager,
+              language: package_manager_helper.language
+            )
+          end,
           T.nilable(Ecosystem)
         )
       end
@@ -98,7 +110,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            parsed_package_json,
+            package_json_document.package_manager_config,
             lockfiles,
             registry_config_files,
             credentials
@@ -112,8 +124,7 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock,
-          bun: bun_lock
+          pnpm: pnpm_lock
         }
       end
 
@@ -126,9 +137,9 @@ module Dependabot
         }
       end
 
-      sig { returns(T.untyped) }
-      def parsed_package_json
-        JSON.parse(T.must(package_json.content))
+      sig { returns(Dependabot::Package::NpmPackageJson) }
+      def package_json_document
+        Dependabot::Package::NpmPackageJson.from_file(package_json)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
       end
@@ -193,16 +204,6 @@ module Dependabot
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def bun_lock
-        @bun_lock ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
-          end,
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def npmrc
         @npmrc ||= T.let(
           dependency_files.find do |f|
@@ -237,20 +238,21 @@ module Dependabot
         dependency_set = DependencySet.new
 
         package_files.each do |file|
-          json = JSON.parse(T.must(file.content))
+          manifest = Dependabot::Package::NpmPackageJson.from_file(file)
 
           # TODO: Currently, Dependabot can't handle flat dependency files
           # (and will error at the FileUpdater stage, because the
           # UpdateChecker doesn't take account of flat resolution).
-          next if json["flat"]
+          next if manifest.flat?
 
-          self.class.each_dependency(json) do |name, requirement, type|
-            next unless requirement.is_a?(String)
-
+          manifest.each_dependency do |name, requirement, type|
             # Skip dependencies using Yarn workspace cross-references as requirements
             next if requirement.start_with?("workspace:", "catalog:")
 
             requirement = "*" if requirement == ""
+
+            name, requirement = dealias_package(name, requirement) if dealias_packages?
+
             dep = build_dependency(
               file: file, type: type, name: name, requirement: requirement
             )
@@ -289,7 +291,8 @@ module Dependabot
       def lockfile_parser
         @lockfile_parser ||= T.let(
           LockfileParser.new(
-            dependency_files: dependency_files
+            dependency_files: dependency_files,
+            dealias_packages: dealias_packages?
           ),
           T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser)
         )
@@ -301,7 +304,7 @@ module Dependabot
       end
 
       sig do
-        params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
+        params(file: DependencyFile, type: String, name: String, requirement: String)
           .returns(T.nilable(Dependency))
       end
       def build_dependency(file:, type:, name:, requirement:)
@@ -398,18 +401,76 @@ module Dependabot
         name.include?("@#{NpmPackageManager::NAME}:")
       end
 
+      sig { returns(T::Boolean) }
+      def dealias_packages?
+        options.fetch(:dealias_packages, false) ? true : false
+      end
+
+      # Resolves an aliased manifest entry to its real package name and requirement.
+      # Yarn-style: "my-fetch-factory@npm:fetch-factory": "0.0.2"
+      # npm-style: "my-fetch-factory": "npm:fetch-factory@0.0.2"
+      sig { params(name: String, requirement: String).returns([String, String]) }
+      def dealias_package(name, requirement)
+        if aliased_package_name?(name)
+          real_name = extract_real_name_from_alias_key(name)
+          name = real_name if real_name
+        elsif alias_package?(requirement)
+          parsed = parse_alias_package_requirement(requirement)
+          if parsed
+            name = T.must(parsed[:name])
+            requirement = T.must(parsed[:requirement])
+          end
+        end
+
+        [name, requirement]
+      end
+
+      # npm-style: "npm:fetch-factory@0.0.2" → { name: "fetch-factory", requirement: "0.0.2" }
+      # npm-style: "npm:@scope/pkg@^1.0.0" → { name: "@scope/pkg", requirement: "^1.0.0" }
+      sig { params(requirement: String).returns(T.nilable(T::Hash[Symbol, String])) }
+      def parse_alias_package_requirement(requirement)
+        return nil unless requirement.start_with?("#{NpmPackageManager::NAME}:")
+
+        rest = requirement.delete_prefix("#{NpmPackageManager::NAME}:")
+
+        if rest.start_with?("@")
+          second_at = rest.index("@", 1)
+          if second_at
+            { name: rest[0...second_at], requirement: rest[(second_at + 1)..] }
+          else
+            { name: rest, requirement: "*" }
+          end
+        else
+          at_index = rest.index("@")
+          if at_index
+            { name: rest[0...at_index], requirement: rest[(at_index + 1)..] }
+          else
+            { name: rest, requirement: "*" }
+          end
+        end
+      end
+
+      # Yarn-style: "my-fetch-factory@npm:fetch-factory" → "fetch-factory"
+      sig { params(name: String).returns(T.nilable(String)) }
+      def extract_real_name_from_alias_key(name)
+        match = name.match(/@#{NpmPackageManager::NAME}:(.+)$/o)
+        return nil unless match
+
+        match[1]
+      end
+
       sig { returns(T::Array[String]) }
       def workspace_package_names
         @workspace_package_names ||= T.let(
           package_files.filter_map do |f|
-            JSON.parse(T.must(f.content))["name"]
+            Dependabot::Package::NpmPackageJson.from_file(f).name
           end,
           T.nilable(T::Array[String])
         )
       end
 
       sig do
-        params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(requirement: String, lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def version_for(requirement, lockfile_details)
@@ -431,10 +492,10 @@ module Dependabot
         end
       end
 
-      sig { params(lockfile_details: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(String)) }
+      sig { params(lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails)).returns(T.nilable(String)) }
       def git_revision_for(lockfile_details)
-        version = T.cast(lockfile_details&.fetch("version", nil), T.nilable(String))
-        resolved = T.cast(lockfile_details&.fetch("resolved", nil), T.nilable(String))
+        version = lockfile_details&.version
+        resolved = lockfile_details&.resolved
         [
           version&.split("#")&.last,
           resolved&.split("#")&.last,
@@ -474,11 +535,11 @@ module Dependabot
       end
 
       sig do
-        params(lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def lockfile_version_for(lockfile_details)
-        semver_version_for(lockfile_details&.fetch("version", ""))
+        semver_version_for(lockfile_details&.version)
       end
 
       sig { params(version: T.nilable(String)).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
@@ -497,17 +558,18 @@ module Dependabot
       end
 
       sig do
-        params(name: String, requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+        params(name: String, requirement: String, lockfile_details: T.nilable(Dependabot::Package::NpmLockfileDetails))
           .returns(T.nilable(T::Hash[Symbol, T.untyped]))
       end
       def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
+        return jsr_registry_source if requirement.start_with?("jsr:")
 
-        resolved_url = lockfile_details&.fetch("resolved", nil)
+        resolved_url = lockfile_details&.resolved
 
-        resolution = lockfile_details&.fetch("resolution", nil)
-        package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
-        resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
+        resolution = lockfile_details&.resolution
+        package_url = resolution&.[](/__archiveUrl=(.+)/, 1)
+        resolved_url = CGI.unescape(package_url) if package_url
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")
@@ -549,6 +611,11 @@ module Dependabot
           branch: nil,
           ref: details["ref"]
         }
+      end
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      def jsr_registry_source
+        { type: "registry", url: NpmAndYarn::Requirement::JSR_REGISTRY }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

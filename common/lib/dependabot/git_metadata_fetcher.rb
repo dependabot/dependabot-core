@@ -3,7 +3,6 @@
 
 require "excon"
 require "open3"
-require "ostruct"
 require "sorbet-runtime"
 require "tmpdir"
 require "dependabot/errors"
@@ -15,7 +14,24 @@ module Dependabot
   class GitMetadataFetcher
     extend T::Sig
 
+    class GitResponse
+      extend T::Sig
+
+      sig { returns(String) }
+      attr_reader :body
+
+      sig { returns(Integer) }
+      attr_reader :status
+
+      sig { params(body: String, status: Integer).void }
+      def initialize(body:, status:)
+        @body = body
+        @status = status
+      end
+    end
+
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
+    MAX_COMMITS_PER_PAGE = 100
 
     sig do
       params(
@@ -131,12 +147,6 @@ module Dependabot
         raise "Unexpected response: #{response_with_git.status} - #{response_with_git.body}"
       end
 
-      if uri.match?(/github\.com/i)
-        response = response_with_git.data
-        response[:response_headers] = response[:headers] unless response.nil?
-        raise Octokit::Error.from_response(response)
-      end
-
       raise "Server error at #{uri}: #{response_with_git.body}" if response_with_git.status >= 500
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
@@ -197,7 +207,7 @@ module Dependabot
       )
     end
 
-    sig { params(uri: String).returns(T.untyped) }
+    sig { params(uri: String).returns(GitResponse) }
     def fetch_raw_upload_pack_with_git_for(uri)
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
@@ -210,12 +220,12 @@ module Dependabot
         stdout, stderr, process = Open3.capture3(env, command)
         # package the command response like a HTTP response so error handling remains unchanged
       rescue Errno::ENOENT => e # thrown when `git` isn't installed...
-        OpenStruct.new(body: e.message, status: 500)
+        GitResponse.new(body: e.message, status: 500)
       else
         if process.success?
-          OpenStruct.new(body: stdout, status: 200)
+          GitResponse.new(body: stdout, status: 200)
         else
-          OpenStruct.new(body: stderr, status: 500)
+          GitResponse.new(body: stderr, status: 500)
         end
       end
     end
@@ -313,7 +323,7 @@ module Dependabot
       T.must(line.split.first).chars.last(40).join
     end
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
       SharedHelpers.excon_defaults(read_timeout: 20)
@@ -328,7 +338,7 @@ module Dependabot
 
     # Added method to fetch tags with their creation dates from a git repository. In case
     # private registry is used, it will clone the repository and fetch tags with their creation dates.
-    sig { params(uri: String).returns(T.untyped) }
+    sig { params(uri: String).returns(GitResponse) }
     def fetch_tags_with_detail_from_git_for(uri)
       uri_ending_with_git = uri
       uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)
@@ -340,7 +350,7 @@ module Dependabot
         clone_command = SharedHelpers.escape_command(clone_command)
 
         _stdout, stderr, process = Open3.capture3(env, clone_command)
-        return OpenStruct.new(body: stderr, status: 500) unless process.success?
+        return GitResponse.new(body: stderr, status: 500) unless process.success?
 
         # Change to the cloned repository directory
         Dir.chdir(dir) do
@@ -348,7 +358,7 @@ module Dependabot
           tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
           tags_stdout, stderr, process = Open3.capture3(env, tags_command)
 
-          return OpenStruct.new(body: stderr, status: 500) unless process.success?
+          return GitResponse.new(body: stderr, status: 500) unless process.success?
 
           # Parse and sort tags by creation date
           tags = tags_stdout.lines.map do |line|
@@ -359,11 +369,11 @@ module Dependabot
 
           # Format the output as a string
           formatted_output = sorted_tags.map { |tag| "#{tag[:tag]} #{tag[:date]}" }.join("\n")
-          return OpenStruct.new(body: formatted_output, status: 200)
+          return GitResponse.new(body: formatted_output, status: 200)
         end
       end
     rescue Errno::ENOENT => e # Thrown when `git` isn't installed
-      OpenStruct.new(body: e.message, status: 500)
+      GitResponse.new(body: e.message, status: 500)
     end
 
     sig do
@@ -376,7 +386,7 @@ module Dependabot
         github: provider_url.gsub("github.com", "api.github.com/repos")
       }.freeze
 
-      "#{api_url[:github]}/commits?per_page=100&sha=#{ref}"
+      "#{api_url[:github]}/commits?per_page=#{MAX_COMMITS_PER_PAGE}&sha=#{ref}"
     end
   end
 end

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE project [
+  <!ENTITY sample "<dependencyManagement/>">
+  <!ENTITY closing "</project>">
+]>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>transitive-pinning</artifactId>
+  <version>1.0.0</version>
+  <!-- Keep <dependencyManagement/> and </project> as documentation. -->
+  <description><![CDATA[Keep <dependencyManagement/> and </project> here too.]]></description>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.example</groupId>
+        <artifactId>configuration-example</artifactId>
+        <version>1.0.0</version>
+        <configuration>
+          <dependencyManagement/>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>integration</id>
+      <?tool closing </profiles> ?>
+      <dependencyManagement/>
+    </profile>
+  </profiles>
+  <dependencyManagement/>
+</project >
+<!-- Trailing documentation: </project> -->
+<?tool trailing </project> ?>

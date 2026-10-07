@@ -1,14 +1,15 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # See https://github.com/hashicorp/terraform/releases or https://releases.hashicorp.com/terraform/
-ARG TERRAFORM_VERSION=1.13.3
+ARG TERRAFORM_VERSION=1.16.4
 
 # curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
-ARG TERRAFORM_AMD64_CHECKSUM=71fc43d92ea09907be5d416d2405a6a9c2d1ceaed633f5e175c0af26e8c4b365
+ARG TERRAFORM_AMD64_CHECKSUM=dc94af0eef1147718ad7c8daea792ed199e3e0492eec180d0adafa2a65a879df
 
 # curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_arm64.zip"
-ARG TERRAFORM_ARM64_CHECKSUM=fa82fb1b08354573467557f33e6a15e7f9e1bba74eb15492f151ca27525d2acc
+ARG TERRAFORM_ARM64_CHECKSUM=8263f301cb1a24489a4adeed147bf28504053f77237b3ea97a0ef2972659de30
 
 RUN cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
@@ -20,6 +21,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
 
-COPY --chown=dependabot:dependabot terraform $DEPENDABOT_HOME/terraform
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents terraform common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

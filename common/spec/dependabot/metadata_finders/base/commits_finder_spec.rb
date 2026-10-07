@@ -844,6 +844,32 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
       it { is_expected.to be_nil }
     end
+
+    context "when no tags satisfy the previous requirements" do
+      let(:dependency_name) { "business" }
+      let(:dependency_version) { "2.0.0" }
+      let(:dependency_previous_version) { nil }
+      let(:dependency_requirements) do
+        [{ file: "package.json", requirement: ">= 2.0.0", groups: [], source: nil }]
+      end
+      let(:dependency_previous_requirements) do
+        [{ file: "package.json", requirement: ">= 3.0.0", groups: [], source: nil }]
+      end
+
+      before do
+        allow(builder)
+          .to receive_messages(
+            fetch_dependency_tags: %w(v2.0.0 v0.9.0 v0.8.0),
+            reliable_source_directory?: false
+          )
+      end
+
+      it "returns a fallback URL without crashing" do
+        expect(commits_url).to eq(
+          "https://github.com/gocardless/business/commits/v2.0.0"
+        )
+      end
+    end
   end
 
   describe "#commits" do
@@ -943,6 +969,25 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it { is_expected.to eq([]) }
+        end
+
+        context "when the commit response is malformed" do
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/gocardless/business/commits?" \
+              "sha=v1.3.0"
+            ).to_return(
+              status: 200,
+              body: JSON.dump([{ sha: 1 }]),
+              headers: { "Content-Type" => "application/json" }
+            )
+          end
+
+          it "raises a bad response error" do
+            expect { commits }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed GitHub commit response/)
+          end
         end
 
         context "when dealing with a monorepo" do
@@ -1123,6 +1168,23 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           )
         end
 
+        context "when the commit response is malformed" do
+          let(:azure_compare) do
+            JSON.dump(
+              value: [{
+                "comment" => "Malformed commit",
+                "commitId" => 1,
+                "remoteUrl" => "https://example.com/commit"
+              }]
+            )
+          end
+
+          it "raises a bad response error" do
+            expect { commits }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed Azure commit response/)
+          end
+        end
+
         context "with a dependency that has a git source" do
           let(:dependency_previous_requirements) do
             [{
@@ -1233,6 +1295,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                         "e718899ddcdc666311d08497401199e126428163"
             }
           )
+        end
+
+        context "when the commit response is malformed" do
+          let(:gitlab_compare) { JSON.dump("commits" => {}) }
+
+          it "raises a bad response error" do
+            expect { commits }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed GitLab commit response/)
+          end
         end
 
         context "with a dependency that has a git source" do

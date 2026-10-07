@@ -125,6 +125,15 @@ RSpec.describe Dependabot::Bundler::PackageManager do
         expect(package_manager.unsupported?).to be true
       end
     end
+
+    context "when detected_version is bundler major 4" do
+      let(:detected_version) { "4" }
+      let(:raw_version) { "4.0.11" }
+
+      it "returns false" do
+        expect(package_manager.unsupported?).to be false
+      end
+    end
   end
 
   describe "#raise_if_unsupported!" do

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "MODULE.bazel",
+    "path": "MODULE.bazel",
+    "type": "file",
+    "sha": "abc123"
+  },
+  {
+    "name": "maven_install.json",
+    "path": "maven_install.json",
+    "type": "file",
+    "sha": "def456"
+  }
+]

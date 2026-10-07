@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
@@ -14,8 +14,8 @@ module Dependabot
         sig do
           params(
             content: String,
-            old_requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            new_requirements: T::Array[T::Hash[Symbol, T.untyped]]
+            old_requirements: T::Array[Dependabot::DependencyRequirement],
+            new_requirements: T::Array[Dependabot::DependencyRequirement]
           )
             .void
         end
@@ -30,11 +30,12 @@ module Dependabot
           updated_content = content
 
           old_requirements.zip(new_requirements).each do |old, new|
+            new_requirement = T.must(new)
             updated_content = RequirementReplacer.new(
               content: updated_content,
-              declaration: old[:metadata][:declaration_string],
-              old_requirement: old[:metadata][:requirement_string],
-              new_requirement: T.must(new)[:metadata][:requirement_string]
+              declaration: T.must(old.metadata_string("declaration_string")),
+              old_requirement: T.must(old.metadata_string("requirement_string")),
+              new_requirement: T.must(new_requirement.metadata_string("requirement_string"))
             ).updated_content
           end
 
@@ -46,10 +47,10 @@ module Dependabot
         sig { returns(String) }
         attr_reader :content
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :old_requirements
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :new_requirements
       end
     end

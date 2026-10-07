@@ -1,0 +1,13 @@
+{
+  "name": "Gemfile.lock",
+  "path": "Gemfile.lock",
+  "sha": "0000000000000000000000000000000000000000",
+  "size": 239,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile.lock",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/0000000000000000000000000000000000000000",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile.lock",
+  "type": "file",
+  "content": "UEFUSAogIHJlbW90ZTogLi4vLi4vLi4vLi4vdmVuZG9yL2J1bXAtY29yZQog\nIHNwZWNzOgogICAgYnVtcC1jb3JlICgwLjYuNikKICAgICAgZXhjb24gKH4+\nIDAuNTUpCgpHRU0KICByZW1vdGU6IGh0dHBzOi8vcnVieWdlbXMub3JnLwog\nIHNwZWNzOgogICAgZXhjb24gKDAuNTcuMSkKClBMQVRGT1JNUwogIHJ1YnkK\nCkRFUEVOREVOQ0lFUwogIGJ1bXAtY29yZSEKICBleGNvbgoKQlVORExFRCBX\nSVRICiAgIDEuMTUuMQo=\n",
+  "encoding": "base64"
+}

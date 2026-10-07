@@ -19,7 +19,10 @@ module Dependabot
             includes_security_fixes: T::Boolean,
             separator: String,
             prefix: String,
-            max_length: T.nilable(Integer)
+            max_length: T.nilable(Integer),
+            word_separator: T.nilable(String),
+            branch_name_case: T.nilable(String),
+            template: T.nilable(String)
           )
             .void
         end
@@ -31,7 +34,10 @@ module Dependabot
           includes_security_fixes:,
           separator: "/",
           prefix: "dependabot",
-          max_length: nil
+          max_length: nil,
+          word_separator: nil,
+          branch_name_case: nil,
+          template: nil
         )
           super(
             dependencies: dependencies,
@@ -40,6 +46,9 @@ module Dependabot
             separator: separator,
             prefix: prefix,
             max_length: max_length,
+            word_separator: word_separator,
+            branch_name_case: branch_name_case,
+            template: template,
           )
 
           @dependency_group = dependency_group
@@ -48,6 +57,14 @@ module Dependabot
 
         sig { override.returns(String) }
         def new_branch_name
+          if template
+            return render_from_template(
+              vars: template_vars,
+              strategy: :group,
+              digest: dependency_digest
+            )
+          end
+
           sanitize_branch_name(File.join(prefixes, group_name_with_dependency_digest))
         end
 
@@ -55,6 +72,24 @@ module Dependabot
 
         sig { returns(Dependabot::DependencyGroup) }
         attr_reader :dependency_group
+
+        sig { returns(T::Hash[String, String]) }
+        def template_vars
+          directory_part = (directory || "/").sub(%r{^/}, "")
+          directory_part = "root" if directory_part.empty?
+
+          group_name = sanitize_ref(dependency_group.name.tr(" ", "-"))
+
+          vars = {
+            "prefix" => prefix,
+            "package_manager" => package_manager,
+            "directory" => directory_part,
+            "group_name" => group_name,
+            "name" => group_name,
+            "target_branch" => target_branch || ""
+          }
+          vars
+        end
 
         sig { returns(T::Array[String]) }
         def prefixes

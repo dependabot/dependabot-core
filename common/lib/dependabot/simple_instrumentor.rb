@@ -9,14 +9,14 @@ module Dependabot
       extend T::Sig
       extend T::Generic
 
-      sig { returns(T.nilable(T::Array[T.proc.params(name: String, params: T::Hash[Symbol, T.untyped]).void])) }
+      sig { returns(T.nilable(T::Array[T.proc.params(name: String, params: T::Hash[Symbol, T.anything]).void])) }
       attr_accessor :subscribers
 
-      sig { params(block: T.proc.params(name: String, params: T::Hash[Symbol, T.untyped]).void).void }
+      sig { params(block: T.proc.params(name: String, params: T::Hash[Symbol, T.anything]).void).void }
       def subscribe(&block)
         @subscribers ||= T.let(
           [],
-          T.nilable(T::Array[T.proc.params(name: String, params: T::Hash[Symbol, T.untyped]).void])
+          T.nilable(T::Array[T.proc.params(name: String, params: T::Hash[Symbol, T.anything]).void])
         )
         @subscribers << block
       end
@@ -25,7 +25,7 @@ module Dependabot
         type_parameters(:T)
           .params(
             name: String,
-            params: T::Hash[Symbol, T.untyped],
+            params: T::Hash[Symbol, T.anything],
             block: T.proc.returns(T.type_parameter(:T))
           )
           .returns(T.nilable(T.type_parameter(:T)))

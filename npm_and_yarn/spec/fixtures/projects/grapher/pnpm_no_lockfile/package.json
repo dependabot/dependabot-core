@@ -1,0 +1,9 @@
+{
+  "name": "grapher-pnpm-no-lockfile",
+  "version": "1.0.0",
+  "description": "Test project for pnpm grapher without lockfile",
+  "packageManager": "pnpm@8.6.0",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}

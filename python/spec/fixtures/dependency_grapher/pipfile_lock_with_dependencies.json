@@ -1,0 +1,72 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.10"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "certifi": {
+            "hashes": [
+                "sha256:fake3",
+                "sha256:fake4"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==2024.2.2"
+        },
+        "charset-normalizer": {
+            "hashes": [
+                "sha256:fake7",
+                "sha256:fake8"
+            ],
+            "markers": "python_full_version >= '3.7.0'",
+            "version": "==3.3.2"
+        },
+        "idna": {
+            "hashes": [
+                "sha256:fake9",
+                "sha256:fake10"
+            ],
+            "markers": "python_version >= '3.5'",
+            "version": "==3.6"
+        },
+        "requests": {
+            "hashes": [
+                "sha256:fake1",
+                "sha256:fake2"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.8'",
+            "version": "==2.32.5"
+        },
+        "urllib3": {
+            "hashes": [
+                "sha256:fake11",
+                "sha256:fake12"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==2.2.1"
+        }
+    },
+    "develop": {
+        "ruff": {
+            "hashes": [
+                "sha256:fake5",
+                "sha256:fake6"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==0.15.4"
+        }
+    }
+}

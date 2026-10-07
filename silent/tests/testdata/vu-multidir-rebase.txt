@@ -34,6 +34,8 @@ pr-created backend/expected.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
 #     - "/frontend" It's important that the API doesn't send unrelated directories.

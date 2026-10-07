@@ -296,6 +296,18 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   end
 
   context "with a path dependency" do
+    let(:ignored_update_config) do
+      Dependabot::Config::UpdateConfig.new(
+        ignore_conditions: [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "bump-core"
+          )
+        ]
+      )
+    end
+    let(:path_dependency_directory) { "plugins/bump-core" }
+    let(:path_dependency_gemspec) { "#{path_dependency_directory}/bump-core.gemspec" }
+
     before do
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
@@ -320,6 +332,68 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
           body: fixture("github", "gemfile_lock_with_path_content.json"),
           headers: { "content-type" => "application/json" }
         )
+    end
+
+    # `Bundler::Source::Path` re-relativises a lockfile `remote:` against `Bundler.root`, and
+    # `..` segments escaping the filesystem root are dropped. Anything reaching further up than
+    # `Bundler.root` is deep therefore resolved to a shallower directory than the lockfile named.
+    # `Bundler.root` has to be stubbed for this to be exercised at all: in a checkout it sits far
+    # enough down that no realistic `remote:` reaches past it.
+    context "when the path escapes further up than Bundler.root is deep" do
+      let(:directory) { "/a/b/c/d" }
+      let(:url) { github_url + "repos/gocardless/bump/contents/a/b/c/d/" }
+
+      before do
+        allow(Bundler).to receive(:root)
+          .and_return(Pathname.new("/home/dependabot/dependabot-updater"))
+
+        stub_request(:get, github_url + "repos/gocardless/bump/contents/a/b/c/d?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "Gemfile?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemfile_with_escaping_path_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "Gemfile.lock?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemfile_lock_with_escaping_path_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # The only directory stubbed is the one the lockfile actually names. A request for the
+        # re-relativised path (`a/vendor/bump-core`) is left unstubbed on purpose, so the wrong
+        # target fails loudly rather than 404ing into `PathDependenciesNotReachable`.
+        stub_request(:get, github_url + "repos/gocardless/bump/contents/vendor/bump-core?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          github_url + "repos/gocardless/bump/contents/vendor/bump-core/bump-core.gemspec?ref=sha"
+        ).with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemspec_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the gemspec from the directory the lockfile names" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to include("../../../../vendor/bump-core/bump-core.gemspec")
+      end
     end
 
     context "when there is a fetchable path" do
@@ -527,7 +601,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
 
     context "when that has an unfetchable directory path" do
       before do
-        stub_request(:get, url + "plugins/bump-core?ref=sha")
+        stub_request(:get, url + "#{path_dependency_directory}?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
         stub_request(:get, url + "plugins?ref=sha")
@@ -542,6 +616,54 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
             "The following path based dependencies could not be retrieved: " \
             "bump-core"
           )
+      end
+
+      context "when the path dependency is in the ignore list" do
+        let(:file_fetcher_instance) do
+          described_class.new(
+            source: source,
+            credentials: credentials,
+            update_config: ignored_update_config
+          )
+        end
+
+        it "skips the ignored path dependency without raising an error" do
+          filenames = file_fetcher_instance.files.map(&:name)
+          expect(filenames)
+            .not_to include(path_dependency_gemspec)
+        end
+      end
+    end
+
+    context "when the path dependency is reachable and ignored" do
+      before do
+        stub_request(:get, url + "#{path_dependency_directory}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "#{path_dependency_gemspec}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemspec_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      let(:file_fetcher_instance) do
+        described_class.new(
+          source: source,
+          credentials: credentials,
+          update_config: ignored_update_config
+        )
+      end
+
+      it "still fetches required gemspec files for the ignored path dependency" do
+        filenames = file_fetcher_instance.files.map(&:name)
+        expect(filenames).to include(path_dependency_gemspec)
       end
     end
 

@@ -1,0 +1,5 @@
+# Basic requirements file
+requests>=2.13.0,<3.0
+urllib3==1.26.0
+Flask[async]>=2.0
+boto3  # AWS SDK

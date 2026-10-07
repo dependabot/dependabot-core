@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -43,7 +43,7 @@ module Dependabot
           options: {}
         )
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
-          @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @latest_version_details = T.let(nil, T.nilable(VersionDetails))
           @releases_from_dependency_source = T.let(nil, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
           super
         end
@@ -57,11 +57,15 @@ module Dependabot
           ).fetch
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(VersionDetails)) }
         def latest_version_details
           @latest_version_details ||= begin
             latest_version = fetch_latest_version(language_version: nil)
-            latest_version ? { version: latest_version } : nil
+            if latest_version
+              raise TypeError, "expected a Bundler version" unless latest_version.is_a?(Dependabot::Bundler::Version)
+
+              VersionDetails.new(version: latest_version)
+            end
           end
         end
 
@@ -72,12 +76,17 @@ module Dependabot
 
         sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def available_versions
-          return nil if package_details&.releases.nil?
+          releases = package_details&.releases
+          return nil if releases.nil?
 
           source_versions = releases_from_dependency_source
           return [] if source_versions.empty?
 
-          T.must(package_details).releases.select do |release|
+          # Some private registries don't support the versions API that we use for fetching release dates for cooldown.
+          # In that case, skip cooldown and just return all versions.
+          return source_versions if releases.empty?
+
+          releases.select do |release|
             source_versions.any? { |v| v.to_s == release.version.to_s }
           end
         end
@@ -123,7 +132,7 @@ module Dependabot
             begin
               current_version = dependency.numeric_version
               current_version&.prerelease? || dependency.requirements.any? do |req|
-                req[:requirement].match?(/[a-z]/i)
+                T.must(req.requirement_string).match?(/[a-z]/i)
               end
             end,
             T.nilable(T::Boolean)

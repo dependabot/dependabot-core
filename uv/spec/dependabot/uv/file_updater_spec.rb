@@ -1,8 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-require "ostruct"
-
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -99,15 +97,16 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
 
       it "delegates to CompileFileUpdater" do
+        stub_file = Data.define(:name).new("updated files")
         dummy_updater =
           instance_double(described_class::CompileFileUpdater)
         allow(described_class::CompileFileUpdater).to receive(:new)
           .and_return(dummy_updater)
         allow(dummy_updater)
           .to receive(:updated_dependency_files)
-          .and_return([OpenStruct.new(name: "updated files")])
+          .and_return([stub_file])
         expect(updater.updated_dependency_files)
-          .to eq([OpenStruct.new(name: "updated files")])
+          .to eq([stub_file])
       end
 
       context "when a requirements.txt that specifies a subdependency" do
@@ -129,15 +128,16 @@ RSpec.describe Dependabot::Uv::FileUpdater do
         end
 
         it "delegates to CompileFileUpdater" do
+          stub_file = Data.define(:name).new("updated files")
           dummy_updater =
             instance_double(described_class::CompileFileUpdater)
           allow(described_class::CompileFileUpdater).to receive(:new)
             .and_return(dummy_updater)
           allow(dummy_updater)
             .to receive(:updated_dependency_files)
-            .and_return([OpenStruct.new(name: "updated files")])
+            .and_return([stub_file])
           expect(updater.updated_dependency_files)
-            .to eq([OpenStruct.new(name: "updated files")])
+            .to eq([stub_file])
         end
       end
     end
@@ -150,6 +150,44 @@ RSpec.describe Dependabot::Uv::FileUpdater do
           .to receive(:new).and_call_original
         expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         expect(updated_files).to all(be_a(Dependabot::DependencyFile))
+      end
+    end
+
+    context "when compile and lock updaters both return the same manifest file" do
+      let(:dependency_files) { [requirements] }
+      let(:manifest_from_compile_updater) do
+        Dependabot::DependencyFile.new(
+          name: "libs/testing_tools/pyproject.toml",
+          content: "compile updater content"
+        )
+      end
+      let(:manifest_from_lock_updater) do
+        Dependabot::DependencyFile.new(
+          name: "libs/testing_tools/pyproject.toml",
+          content: "lock updater content"
+        )
+      end
+      let(:lockfile_from_lock_updater) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: "updated lock content"
+        )
+      end
+
+      it "deduplicates files by name and keeps the lock updater version" do
+        compile_updater = instance_double(described_class::CompileFileUpdater)
+        lock_updater = instance_double(described_class::LockFileUpdater)
+
+        allow(described_class::CompileFileUpdater).to receive(:new).and_return(compile_updater)
+        allow(described_class::LockFileUpdater).to receive(:new).and_return(lock_updater)
+        allow(compile_updater).to receive(:updated_dependency_files).and_return([manifest_from_compile_updater])
+        allow(lock_updater).to receive(:updated_dependency_files).and_return(
+          [manifest_from_lock_updater, lockfile_from_lock_updater]
+        )
+
+        expect(updated_files.map(&:name)).to contain_exactly("libs/testing_tools/pyproject.toml", "uv.lock")
+        expect(updated_files.find { |file| file.name == "libs/testing_tools/pyproject.toml" }&.content)
+          .to eq("lock updater content")
       end
     end
 

@@ -19,7 +19,7 @@ module Dependabot
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           raise_on_ignored: T::Boolean,
-          cooldown_config: T.nilable(T::Hash[Symbol, T.untyped]),
+          cooldown_config: T.nilable(T::Hash[Symbol, Object]),
           custom_registries: T::Array[T::Hash[Symbol, String]]
         ).void
       end
@@ -45,7 +45,21 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def latest_version
-        @latest_version ||= T.let(fetch_latest_version, T.nilable(Gem::Version))
+        @latest_version ||= T.let(available_versions.max, T.nilable(Gem::Version))
+      end
+
+      # All selectable versions after cooldown, ignored-version and
+      # vulnerability filtering, in ascending order.
+      sig { returns(T::Array[Gem::Version]) }
+      def available_versions
+        @available_versions ||= T.let(fetch_available_versions, T.nilable(T::Array[Gem::Version]))
+      end
+
+      # Lowest non-vulnerable version above the current one. Like
+      # Package::PackageLatestVersionFinder, security fixes skip the cooldown.
+      sig { returns(T.nilable(Gem::Version)) }
+      def lowest_security_fix_version
+        @lowest_security_fix_version ||= T.let(fetch_lowest_security_fix_version, T.nilable(Gem::Version))
       end
 
       private
@@ -68,47 +82,65 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :raise_on_ignored
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       attr_reader :cooldown_config
 
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
       attr_reader :custom_registries
 
-      sig { returns(T.nilable(Gem::Version)) }
-      def fetch_latest_version
-        # Fetch all package releases using the PackageDetailsFetcher
-        package_fetcher = Julia::Package::PackageDetailsFetcher.new(
-          dependency: dependency,
-          credentials: credentials,
-          custom_registries: custom_registries
+      sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+      def package_releases
+        @package_releases ||= T.let(
+          Julia::Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            credentials: credentials,
+            custom_registries: custom_registries
+          ).fetch_package_releases,
+          T.nilable(T::Array[Dependabot::Package::PackageRelease])
         )
+      end
 
-        releases = package_fetcher.fetch_package_releases
-        return nil if releases.empty?
+      sig { returns(T.nilable(Gem::Version)) }
+      def fetch_lowest_security_fix_version
+        versions = filter_prerelease_versions(package_releases.map(&:version).sort)
+        versions = filter_ignored_versions(versions)
+        versions = filter_lower_versions(versions)
+        Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories).min
+      end
+
+      sig { returns(T::Array[Gem::Version]) }
+      def fetch_available_versions
+        releases = package_releases
+        return [] if releases.empty?
 
         # Filter releases based on cooldown
         if cooldown_config
           releases = filter_releases_by_cooldown(releases)
-          return nil if releases.empty?
+          return [] if releases.empty?
         end
 
         # Convert to versions for further filtering
         versions = releases.map(&:version).sort
 
+        # Filter out prereleases unless the dependency is already on one
+        versions = filter_prerelease_versions(versions)
+        return [] if versions.empty?
+
         # Filter out ignored versions
-        versions = versions.reject do |version|
-          ignored_versions.any?(version.to_s)
-        end
+        versions = filter_ignored_versions(versions)
+        return [] if versions.empty?
+
+        # Filter out lower versions, keeping the current release so that an
+        # up-to-date dependency reports it as the latest: the base class takes
+        # a nil latest_version as out of date and goes on to look for unlocks
+        versions = filter_lower_versions(versions, keep_current: true)
+        return [] if versions.empty?
 
         # Filter out vulnerable versions
-        filtered_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+        Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
           versions,
           security_advisories
         )
-
-        raise Dependabot::AllVersionsIgnored if filtered_versions.empty? && raise_on_ignored
-
-        filtered_versions.max
       end
 
       sig do
@@ -125,10 +157,60 @@ module Dependabot
         end
       end
 
+      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
+      def filter_prerelease_versions(versions)
+        return versions if wants_prerelease?
+
+        versions.reject(&:prerelease?)
+      end
+
+      sig { returns(T::Boolean) }
+      def wants_prerelease?
+        version = dependency.version
+        return false unless version
+
+        Dependabot::Julia::Version.new(version).prerelease?
+      end
+
+      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
+      def filter_ignored_versions(versions)
+        filtered = versions.reject do |version|
+          ignore_requirements.any? { |req| req.satisfied_by?(version) }
+        end
+
+        if versions.count > filtered.count
+          Dependabot.logger.info("Filtered out #{versions.count - filtered.count} ignored versions")
+        end
+
+        if raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          raise Dependabot::AllVersionsIgnored
+        end
+
+        filtered
+      end
+
+      sig { params(versions: T::Array[Gem::Version], keep_current: T::Boolean).returns(T::Array[Gem::Version]) }
+      def filter_lower_versions(versions, keep_current: false)
+        return versions unless dependency.version
+
+        current_version = Dependabot::Julia::Version.new(dependency.version)
+        versions.select { |v| v > current_version || (keep_current && v == current_version) }
+      end
+
+      sig { returns(T::Array[Dependabot::Requirement]) }
+      def ignore_requirements
+        ignored_versions.flat_map do |req_string|
+          Dependabot::Julia::Requirement.requirements_array(req_string)
+        end
+      end
+
       sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
       def cooldown_active_for_release?(release)
         cooldown_days = determine_cooldown_days(release.version)
         return false unless cooldown_days&.positive?
+        # A General release too new to have a published date is at most about a day old
+        return true if release.details[Julia::Package::PackageDetailsFetcher::RELEASE_DATE_PENDING]
         return false unless release.released_at
 
         # Check if enough time has passed since release
@@ -146,20 +228,31 @@ module Dependabot
         excludes = T.cast(config[:exclude], T.nilable(T::Array[String]))
 
         # Check exclusions first
-        return false if excludes&.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) }
+        return false if excludes&.any? { |pattern| dependency.name.match?(cooldown_pattern_regex(pattern)) }
 
         # Check inclusions (if specified, dependency must match)
-        return includes.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) } if includes&.any?
+        return includes.any? { |pattern| dependency.name.match?(cooldown_pattern_regex(pattern)) } if includes&.any?
 
         true # Include by default if no include patterns specified
+      end
+
+      # Cooldown include/exclude entries are shell-style globs where only "*"
+      # is a wildcard; everything else matches literally and the whole name
+      # must match (so "JSON" doesn't also cover "JSON3" or "LazyJSON").
+      sig { params(pattern: String).returns(Regexp) }
+      def cooldown_pattern_regex(pattern)
+        Regexp.new("\\A#{pattern.split('*', -1).map { |part| Regexp.escape(part) }.join('.*')}\\z")
       end
 
       sig { params(version: Gem::Version).returns(T.nilable(Integer)) }
       def determine_cooldown_days(version)
         return nil unless cooldown_config
 
-        current_version = dependency.version ? Gem::Version.new(dependency.version) : nil
-        return nil unless current_version
+        current_version = dependency.version ? Dependabot::Julia::Version.new(dependency.version) : nil
+        # Without a Manifest there is no version to measure a bump from; like
+        # CooldownCalculation.cooldown_days_for, fall back to default_days
+        # rather than skipping the cooldown
+        return cooldown_days_for_bump_type(:default) unless current_version
 
         version_bump_type = determine_version_bump_type(version, current_version)
         cooldown_days_for_bump_type(version_bump_type)

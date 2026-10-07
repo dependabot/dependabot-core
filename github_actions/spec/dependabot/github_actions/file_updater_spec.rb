@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/github_actions/file_updater"
 require "dependabot/github_actions/version"
+require "yaml"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GithubActions::FileUpdater do
@@ -20,24 +21,24 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         groups: [],
         file: ".github/workflows/workflow.yml",
         source: {
-          type: "git",
-          url: "https://github.com/actions/setup-node",
-          ref: "v1.1.0",
-          branch: nil
+          "type" => "git",
+          "url" => "https://github.com/actions/setup-node",
+          "ref" => "v1.1.0",
+          "branch" => nil
         },
-        metadata: { declaration_string: "actions/setup-node@master" }
+        metadata: { "declaration_string" => "actions/setup-node@master" }
       }],
       previous_requirements: [{
         requirement: nil,
         groups: [],
         file: ".github/workflows/workflow.yml",
         source: {
-          type: "git",
-          url: "https://github.com/actions/setup-node",
-          ref: "master",
-          branch: nil
+          "type" => "git",
+          "url" => "https://github.com/actions/setup-node",
+          "ref" => "master",
+          "branch" => nil
         },
-        metadata: { declaration_string: "actions/setup-node@master" }
+        metadata: { "declaration_string" => "actions/setup-node@master" }
       }],
       package_manager: "github_actions"
     )
@@ -64,6 +65,24 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       dependencies: [dependency],
       credentials: credentials
     )
+  end
+
+  def flow_requirement(name, ref, path)
+    {
+      requirement: nil,
+      groups: [],
+      file: ".github/workflows/workflow.yml",
+      source: {
+        type: "git",
+        url: "https://github.com/#{name}",
+        ref: ref,
+        branch: nil
+      },
+      metadata: {
+        declaration_string: "#{name}@#{ref}",
+        yaml_source: { path: path }
+      }
+    }
   end
 
   it_behaves_like "a dependency file updater"
@@ -98,6 +117,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       end
 
       its(:content) { is_expected.to include "actions/checkout@master\n" }
+
+      context "with multiple matching declarations on one line" do
+        let(:workflow_file_body) { fixture("workflow_files", "multiple_uses_same_line.yml") }
+
+        it "updates every uses value without changing unrelated matching text" do
+          expect(updated_workflow_file.content).to include(
+            "steps: [{ uses: actions/setup-node@v1.1.0 }, " \
+            "{ uses: actions/setup-node@v1.1.0, with: { source: actions/setup-node@master } }]"
+          )
+        end
+      end
 
       context "with a path" do
         let(:workflow_file_body) do
@@ -474,11 +504,136 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
           it "doesn't update version comments" do
             allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
-            allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return true
-            allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return("v2.1.0", nil, nil)
+            allow(git_checker).to receive_messages(
+              ref_looks_like_commit_sha?: true,
+              most_specific_version_tags_for_sha: ["v2.1.0"]
+            )
+            allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return(nil, nil)
             old_version = dependency.previous_requirements[1].dig(:source, :ref)
             expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
           end
+        end
+      end
+
+      context "with pinned SHA where shorter tag version is a suffix of comment version" do
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "pinned_source_multiple_tags_substring_versions.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "advanced-security/filter-sarif",
+            version: "1.1",
+            package_manager: "github_actions",
+            previous_version: "1.0.1",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/advanced-security/filter-sarif",
+                ref: "f3b8118a9349d88f7b1c0c488476411145b6270d",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d"
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/advanced-security/filter-sarif",
+                ref: "2da736ff05ef065cb2894ac6892e47b5eac2c3c0",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0"
+              }
+            }]
+          )
+        end
+
+        it "uses the most specific matching tag to avoid partial gsub replacements" do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          # The old SHA has multiple tags where "1" (from v1) is a suffix of "1.0.1"
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha)
+            .with("f3b8118a9349d88f7b1c0c488476411145b6270d")
+            .and_return(["v1", "v1.0", "v1.0.1"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha)
+            .with("2da736ff05ef065cb2894ac6892e47b5eac2c3c0")
+            .and_return("v1.1")
+
+          expect(updated_workflow_file.content).to include(
+            "advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1"
+          )
+          # Must NOT contain the buggy result where gsub("1", "1.1") mangled the comment
+          expect(updated_workflow_file.content).not_to include("v1.1.0.1.1")
+        end
+      end
+
+      context "with pinned SHA hash matching multiple tags and version in comment different from latest matching tag" do
+        let(:service_pack_url) do
+          "https://github.com/github/codeql-action.git/info/refs" \
+            "?service=git-upload-pack"
+        end
+        let(:workflow_file_body) do
+          fixture("workflow_files", "pinned_sources_version_comments.yml")
+        end
+        let(:previous_version) { "3.29.5" }
+        let(:new_ref) { "2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "github/codeql-action",
+            version: "3.30.0",
+            package_manager: "github_actions",
+            previous_version: previous_version,
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/github/codeql-action",
+                ref: "51f77329afa6477de8c49fc9c7046c15b9a4e79d",
+                branch: nil
+              },
+              metadata: { declaration_string: "github/codeql-action@51f77329afa6477de8c49fc9c7046c15b9a4e79d" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/github/codeql-action",
+                ref: new_ref,
+                branch: nil
+              },
+              metadata: { declaration_string: "github/codeql-action@#{new_ref}" }
+            }]
+          )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "codeql-action"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
+        it "updates SHA and comment" do
+          expect(updated_workflow_file.content).to match(/@#{new_ref}\s+#.*#{dependency.version}/)
         end
       end
 
@@ -562,6 +717,1643 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
 
         its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/second/exec@exec/2.0.0\n" }
+      end
+
+      context "with multiple path based actions pinned to distinct shas" do
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_monorepo_path_based_sha_comments.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "grafana/shared-workflows",
+            version: "0.2.2",
+            previous_version: "0.2.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "ae92934a14a48b94494dbc06d74a81d47fe08a40",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/create-github-app-token@ae92934a14a48b94494dbc06d74a81d47fe08a40"
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "f1614b210386ac420af6807a997ac7f6d96e477a",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "eb02241ed0a92aff205feab8ac3afcdf51c757c8",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/create-github-app-token@eb02241ed0a92aff205feab8ac3afcdf51c757c8"
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "9f37f656e063f0ad0b0bfc38d49894b57d363936",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936"
+              }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha) do |ref|
+            case ref
+            when "eb02241ed0a92aff205feab8ac3afcdf51c757c8"
+              ["create-github-app-token/v0.2.0"]
+            when "9f37f656e063f0ad0b0bfc38d49894b57d363936"
+              ["get-vault-secrets/v1.2.1"]
+            else
+              []
+            end
+          end
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            case ref
+            when "ae92934a14a48b94494dbc06d74a81d47fe08a40"
+              "create-github-app-token/v0.2.2"
+            when "f1614b210386ac420af6807a997ac7f6d96e477a"
+              "get-vault-secrets/v1.3.1"
+            end
+          end
+        end
+
+        it "updates each declaration independently" do
+          expect(updated_workflow_file.content).to include(
+            "grafana/shared-workflows/actions/create-github-app-token@ae92934a14a48b94494dbc06d74a81d47fe08a40"
+          )
+          expect(updated_workflow_file.content).to include(
+            "# create-github-app-token/v0.2.2"
+          )
+          expect(updated_workflow_file.content).to include(
+            "grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a"
+          )
+          expect(updated_workflow_file.content).to include(
+            "# get-vault-secrets/v1.3.1"
+          )
+          expect(updated_workflow_file.content).not_to include("# get-vault-secrets/v0.2.2")
+        end
+      end
+
+      context "when transitioning from a version tag to a SHA pin" do
+        let(:service_pack_url) do
+          "https://github.com/actions/checkout.git/info/refs" \
+            "?service=git-upload-pack"
+        end
+        let(:workflow_file_body) { fixture("workflow_files", "pin_to_sha.yml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.1.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/checkout@v2.1.0" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "aabbfeb2ce60b5bd82389903509092c4648a9713",
+                branch: nil
+              },
+              metadata: {
+                declaration_string: "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713"
+              }
+            }]
+          )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "checkout"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_call_original
+        end
+
+        it "adds the concrete version after block-style declarations" do
+          expect(updated_workflow_file.content).to include(
+            "uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 # v2.2.0"
+          )
+          expect(updated_workflow_file.content).to include(
+            'uses: "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713" # v2.2.0'
+          )
+          expect(updated_workflow_file.content).to include(
+            "uses: 'actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713' # v2.2.0"
+          )
+        end
+
+        it "updates an existing version comment without duplicating it" do
+          expect(updated_workflow_file.content).not_to include("# v2.1.0")
+          expect(updated_workflow_file.content).not_to include("# v2.1.0 # v2.2.0")
+        end
+
+        it "preserves custom comments without appending a version" do
+          expect(updated_workflow_file.content).to include(
+            "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 # keep this custom note"
+          )
+          expect(updated_workflow_file.content).not_to include("# keep this custom note # v2.2.0")
+        end
+
+        it "places comments after flow-style mappings" do
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 } # v2.2.0"
+          )
+          expect(updated_workflow_file.content).to include(
+            '- { name: Checkout, uses: "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713" } # v2.2.0'
+          )
+        end
+
+        it "ignores hashes inside quoted flow-style values when detecting comments" do
+          expect(updated_workflow_file.content).to include(
+            '- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, name: "Checkout #1" } # v2.2.0'
+          )
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            'name: "Checkout \"#1\"" } # v2.2.0'
+          )
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            "name: 'Checkout #1' } # v2.2.0"
+          )
+        end
+
+        it "only rewrites the matched declaration in a flow-style mapping" do
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            "with: { source: actions/checkout@v2.1.0 } } # v2.2.0"
+          )
+        end
+
+        it "updates every uses declaration on a flow-style line" do
+          expect(updated_workflow_file.content).to include(
+            "steps: [{ uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 }, " \
+            "{ uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            "with: { source: actions/checkout@v2.1.0 } }] # v2.2.0"
+          )
+        end
+
+        it "keeps the rewritten workflow valid YAML" do
+          expect { YAML.safe_load(T.must(updated_workflow_file.content), aliases: true) }.not_to raise_error
+        end
+
+        it "reuses one git checker for all declarations" do
+          updated_workflow_file
+
+          expect(Dependabot::GitCommitChecker).to have_received(:new).once
+        end
+
+        context "when the old ref is a floating tag" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "actions/checkout",
+              version: "3.5.2",
+              previous_version: "2",
+              package_manager: "github_actions",
+              previous_requirements: [{
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                source: {
+                  type: "git",
+                  url: "https://github.com/actions/checkout",
+                  ref: "v2",
+                  branch: nil
+                },
+                metadata: { declaration_string: "actions/checkout@v2" }
+              }],
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                source: {
+                  type: "git",
+                  url: "https://github.com/actions/checkout",
+                  ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+                  branch: nil
+                },
+                metadata: {
+                  declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab"
+                }
+              }]
+            )
+          end
+
+          it "replaces the concrete version represented by the floating tag" do
+            expect(updated_workflow_file.content).to include(
+              "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2"
+            )
+            expect(updated_workflow_file.content).not_to include("# v2.7.0")
+          end
+        end
+
+        context "when the new SHA has no matching version tag" do
+          let(:workflow_file_body) do
+            <<~YAML
+              on: [push]
+              jobs:
+                pin:
+                  runs-on: ubuntu-latest
+                  steps:
+                    - uses: actions/checkout@v2.1.0
+            YAML
+          end
+          let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+          before do
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+            allow(git_checker).to receive_messages(
+              ref_looks_like_commit_sha?: true,
+              most_specific_version_tag_for_sha: nil
+            )
+          end
+
+          it "updates the ref without inventing a comment" do
+            expect(updated_workflow_file.content).to include(
+              "uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713\n"
+            )
+          end
+        end
+      end
+
+      context "with aliases and block scalars" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_source_forms.yml").gsub("\n", "\r\n")
+        end
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          previous_requirements = [
+            ["jobs", "alias", "steps", 0, "uses"],
+            ["jobs", "block", "steps", 0, "uses"],
+            ["jobs", "literal", "steps", 0, "uses"],
+            ["jobs", "escaped", "steps", 0, "uses"]
+          ].map do |path|
+            declaration = path[1] == "literal" ? "actions/checkout@v2.1.0\n" : "actions/checkout@v2.1.0"
+            {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.1.0",
+                branch: nil
+              },
+              metadata: {
+                declaration_string: declaration,
+                yaml_source: { path: path }
+              }
+            }
+          end
+          requirements = previous_requirements.map do |requirement|
+            requirement.merge(source: requirement.fetch(:source).merge(ref: sha))
+          end
+
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: previous_requirements,
+            requirements: requirements
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "updates the original scalar or anchor and comments each uses entry" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("CHECKOUT_ACTION: &checkout \"actions/checkout@#{sha}\"")
+          expect(content).to include("- uses: *checkout # v2.2.0")
+          expect(content).to include("- uses: >- # v2.2.0")
+          expect(content).to include("- uses: | # v2.2.0")
+          expect(content).to include("- uses: \"actions/checkout@#{sha}\" # v2.2.0")
+          expect(content).to include("    actions/checkout@#{sha}")
+          expect(content).to include("\r\n")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with different actions in one flow sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_multiple_actions_flow.yml") }
+        let(:checkout_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:setup_node_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 1, "uses"]),
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 2, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", checkout_sha, ["jobs", "inline", "steps", 1, "uses"]),
+              flow_requirement("actions/checkout", checkout_sha, ["jobs", "inline", "steps", 2, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) do |ref|
+            [checkout_sha, setup_node_sha].include?(ref)
+          end
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            ref == checkout_sha ? "v2.2.0" : "v3.1.0"
+          end
+        end
+
+        it "gives each action its own version comment across successive updates" do
+          first_content = T.must(updated_workflow_file.content)
+
+          expect(first_content).to include(
+            "steps: &shared [\n" \
+            "      { name: \"🚀\", run: echo, env: { ACTION: &checkout actions/checkout@#{checkout_sha}, " \
+            "SECOND: &checkout2 actions/checkout@#{checkout_sha} } },\n" \
+            "      { uses: *checkout }, # v2.2.0\n" \
+            "      { uses: *checkout2 }, # v2.2.0\n" \
+            "      { name: \"Node 🚀\", uses: actions/setup-node@v3.0.0 }\n" \
+            "    ]"
+          )
+          expect(first_content).not_to include("# v2.1.0")
+
+          second_file = Dependabot::DependencyFile.new(
+            content: first_content,
+            name: ".github/workflows/workflow.yml"
+          )
+          second_dependency = Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/setup-node", "v3.0.0", ["jobs", "inline", "steps", 3, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/setup-node", setup_node_sha, ["jobs", "inline", "steps", 3, "uses"])
+            ]
+          )
+          second_updater = described_class.new(
+            dependency_files: [second_file],
+            dependencies: [second_dependency],
+            credentials: credentials
+          )
+          second_content = T.must(second_updater.updated_dependency_files.first.content)
+
+          expect(second_content).to include(
+            "{ uses: *checkout }, # v2.2.0"
+          )
+          expect(second_content).to include(
+            "{ uses: *checkout2 }, # v2.2.0"
+          )
+          expect(second_content).to include(
+            "{ name: \"Node 🚀\", uses: actions/setup-node@#{setup_node_sha} } # v3.1.0"
+          )
+          expect { YAML.safe_load(second_content, aliases: true) }.not_to raise_error
+        end
+
+        context "when the new SHA has no version tag" do
+          before do
+            allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(checkout_sha).and_return(nil)
+          end
+
+          it "removes the stale sequence comment" do
+            content = T.must(updated_workflow_file.content)
+
+            expect(content).to include("actions/checkout@#{checkout_sha}")
+            expect(content).not_to include("# v2.1.0")
+            expect(content).not_to include("# v2.2.0")
+          end
+        end
+      end
+
+      context "with actions sharing a line in a multiline flow sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_multiline_flow_collision.yml") }
+        let(:checkout_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:setup_node_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", checkout_sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) do |ref|
+            [checkout_sha, setup_node_sha].include?(ref)
+          end
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            ref == checkout_sha ? "v2.2.0" : "v3.1.0"
+          end
+        end
+
+        it "expands the sequence and preserves comments across successive updates" do
+          first_content = T.must(updated_workflow_file.content)
+
+          expect(first_content).to include(
+            "steps: [\n" \
+            "      { uses: actions/checkout@#{checkout_sha} }, # v2.2.0\n" \
+            "      { uses: actions/setup-node@v3.0.0 },\n" \
+            "      { run: echo done }\n" \
+            "    ]"
+          )
+
+          second_file = Dependabot::DependencyFile.new(
+            content: first_content,
+            name: ".github/workflows/workflow.yml"
+          )
+          second_dependency = Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/setup-node", "v3.0.0", ["jobs", "inline", "steps", 1, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/setup-node", setup_node_sha, ["jobs", "inline", "steps", 1, "uses"])
+            ]
+          )
+          second_updater = described_class.new(
+            dependency_files: [second_file],
+            dependencies: [second_dependency],
+            credentials: credentials
+          )
+          second_content = T.must(second_updater.updated_dependency_files.first.content)
+
+          expect(second_content).to include(
+            "{ uses: actions/checkout@#{checkout_sha} }, # v2.2.0"
+          )
+          expect(second_content).to include(
+            "{ uses: actions/setup-node@#{setup_node_sha} }, # v3.1.0"
+          )
+          expect { YAML.safe_load(second_content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with actions on separate lines in a multiline flow sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_multiline_flow_separate.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "keeps the existing multiline flow layout" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include(
+            "steps: [\n" \
+            "      { uses: actions/checkout@#{sha} }, # v2.2.0\n" \
+            "      { uses: actions/setup-node@v3.0.0 }\n" \
+            "    ]"
+          )
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with comments between flow sequence items" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_flow_trivia.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:setup_node_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) do |ref|
+            [sha, setup_node_sha].include?(ref)
+          end
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            ref == sha ? "v2.2.0" : "v3.1.0"
+          end
+        end
+
+        it "preserves custom, standalone, and final-item comments" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include(
+            "steps: [\n" \
+            "      # keep this leading note\n" \
+            "      { uses: actions/checkout@#{sha} }, # v2.2.0\n" \
+            "      { uses: actions/setup-node@v3.0.0 }, # keep this note\n" \
+            "      # keep this standalone note\n" \
+            "      { run: echo done } # keep this final note\n" \
+            "      # keep this closing note\n" \
+            "    ]"
+          )
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+
+          second_file = Dependabot::DependencyFile.new(
+            content: content,
+            name: ".github/workflows/workflow.yml"
+          )
+          second_dependency = Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/setup-node", "v3.0.0", ["jobs", "inline", "steps", 1, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/setup-node", setup_node_sha, ["jobs", "inline", "steps", 1, "uses"])
+            ]
+          )
+          second_updater = described_class.new(
+            dependency_files: [second_file],
+            dependencies: [second_dependency],
+            credentials: credentials
+          )
+          second_content = T.must(second_updater.updated_dependency_files.first.content)
+
+          expect(second_content).to include(
+            "{ uses: actions/setup-node@#{setup_node_sha} }, # keep this note"
+          )
+          expect(second_content).not_to include("# v3.1.0")
+        end
+      end
+
+      context "with an existing version comment between flow sequence items" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_flow_version_comment.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"]),
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 1, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 0, "uses"]),
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 1, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "updates the existing comment without adding a duplicate" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content.scan("# v2.2.0").length).to eq(2)
+          expect(content).not_to include("# v2.1.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+
+        context "when the new SHA has no version tag" do
+          before do
+            allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return(nil)
+          end
+
+          it "removes the stale version comment" do
+            content = T.must(updated_workflow_file.content)
+
+            expect(content).not_to include("# v2.1.0")
+            expect(content).not_to include("# v2.2.0")
+          end
+        end
+      end
+
+      context "when a flow sequence is updated from SHA to SHA without a comment" do
+        let(:old_sha) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+        let(:new_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_multiline_flow_collision.yml")
+            .sub("actions/checkout@v2.1.0", "actions/checkout@#{old_sha}")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", old_sha, ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", new_sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha).with(old_sha).and_return(["v2.1.0"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(new_sha).and_return("v2.2.0")
+        end
+
+        it "does not invent a version comment" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("actions/checkout@#{new_sha}")
+          expect(content).not_to include("# v2.2.0")
+        end
+
+        context "with an existing sequence-level version comment" do
+          let(:workflow_file_body) do
+            super().sub("    ]\n", "    ] # v2.1.0\n")
+          end
+
+          it "moves and updates the existing comment" do
+            content = T.must(updated_workflow_file.content)
+
+            expect(content).to include("actions/checkout@#{new_sha} }, # v2.2.0")
+            expect(content).not_to include("# v2.1.0")
+          end
+        end
+      end
+
+      context "with a sequence-level comment and no declaration collision" do
+        let(:old_sha) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+        let(:new_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_noncolliding_sequence_comment.yml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", old_sha, ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", new_sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha).with(old_sha).and_return(["v2.1.0"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(new_sha).and_return("v2.2.0")
+        end
+
+        it "moves the updated comment beside the matching action" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("actions/checkout@#{new_sha} }, # v2.2.0")
+          expect(content).not_to include("] # v2.1.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "when an alias is updated from SHA to SHA without a comment" do
+        let(:old_sha) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+        let(:new_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_source_forms.yml")
+            .gsub("actions\\x2Fcheckout@v2.1.0", "actions\\x2Fcheckout@#{old_sha}")
+            .gsub("actions/checkout@v2.1.0", "actions/checkout@#{old_sha}")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: old_sha,
+                branch: nil
+              },
+              metadata: {
+                declaration_string: "actions/checkout@#{old_sha}",
+                yaml_source: { path: ["jobs", "alias", "steps", 0, "uses"] }
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: new_sha,
+                branch: nil
+              },
+              metadata: {
+                declaration_string: "actions/checkout@#{old_sha}",
+                yaml_source: { path: ["jobs", "alias", "steps", 0, "uses"] }
+              }
+            }]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha).with(old_sha).and_return(["v2.1.0"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(new_sha).and_return("v2.2.0")
+        end
+
+        it "does not invent a version comment" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("CHECKOUT_ACTION: &checkout \"actions/checkout@#{new_sha}\"")
+          expect(content).not_to include("*checkout # v2.2.0")
+        end
+
+        context "with an existing alias version comment" do
+          let(:workflow_file_body) do
+            super().sub("- uses: *checkout", "- uses: *checkout # v2.1.0")
+          end
+
+          it "updates the existing comment" do
+            content = T.must(updated_workflow_file.content)
+
+            expect(content).to include("*checkout # v2.2.0")
+            expect(content).not_to include("# v2.1.0")
+          end
+        end
+      end
+
+      context "when a block scalar SHA pin has an existing version comment" do
+        let(:old_sha) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+        let(:new_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_source_forms.yml")
+            .gsub("actions/checkout@v2.1.0", "actions/checkout@#{old_sha}")
+            .sub("- uses: >-", "- uses: >- # v2.1.0")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: old_sha,
+                branch: nil
+              },
+              metadata: {
+                declaration_string: "actions/checkout@#{old_sha}",
+                yaml_source: { path: ["jobs", "block", "steps", 0, "uses"] }
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: new_sha,
+                branch: nil
+              },
+              metadata: {
+                declaration_string: "actions/checkout@#{old_sha}",
+                yaml_source: { path: ["jobs", "block", "steps", 0, "uses"] }
+              }
+            }]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha).with(old_sha).and_return(["v2.1.0"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(new_sha).and_return("v2.2.0")
+        end
+
+        it "updates the scalar and its header comment" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("- uses: >- # v2.2.0")
+          expect(content).to include("actions/checkout@#{new_sha}")
+          expect(content).not_to include("# v2.1.0")
+        end
+      end
+
+      context "with separate flow sequences sharing one line" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_cross_sequence_collision.yml") }
+        let(:checkout_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:setup_node_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "first", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", checkout_sha, ["jobs", "first", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) do |ref|
+            [checkout_sha, setup_node_sha].include?(ref)
+          end
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            ref == checkout_sha ? "v2.2.0" : "v3.1.0"
+          end
+        end
+
+        it "expands every colliding sequence and keeps comments separate across updates" do
+          first_content = T.must(updated_workflow_file.content)
+
+          expect(first_content.scan("steps: [\n").length).to eq(2)
+          expect(first_content).to include("# keep this sequence note")
+          expect(first_content).to include("actions/checkout@#{checkout_sha} } # v2.2.0")
+
+          second_file = Dependabot::DependencyFile.new(
+            content: first_content,
+            name: ".github/workflows/workflow.yml"
+          )
+          second_dependency = Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/setup-node", "v3.0.0", ["jobs", "second", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/setup-node", setup_node_sha, ["jobs", "second", "steps", 0, "uses"])
+            ]
+          )
+          second_updater = described_class.new(
+            dependency_files: [second_file],
+            dependencies: [second_dependency],
+            credentials: credentials
+          )
+          second_content = T.must(second_updater.updated_dependency_files.first.content)
+
+          expect(second_content).to include("actions/checkout@#{checkout_sha} } # v2.2.0")
+          expect(second_content).to include("actions/setup-node@#{setup_node_sha} } # v3.1.0")
+          expect { YAML.safe_load(second_content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with a comment inside a later colliding sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_cross_sequence_comment.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "first", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "first", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "does not overlap the later sequence replacement" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("actions/checkout@#{sha} } # v2.2.0")
+          expect(content).to include("actions/setup-node@v3.0.0 }, # v2.1.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with a prior line-end comment after colliding sequences" do
+        let(:old_sha) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+        let(:new_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_cross_sequence_collision.yml")
+            .sub("actions/checkout@v2.1.0", "actions/checkout@#{old_sha}")
+            .sub(" } }\n", " } } # v2.1.0\n")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", old_sha, ["jobs", "first", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", new_sha, ["jobs", "first", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha).with(old_sha).and_return(["v2.1.0"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(new_sha).and_return("v2.2.0")
+        end
+
+        it "moves and updates the prior line-end comment" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("actions/checkout@#{new_sha} } # v2.2.0")
+          expect(content).not_to include("# v2.1.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with a reusable workflow sharing a line with a step sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_reusable_collision.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout/.github/workflows/test.yml",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement(
+                "actions/checkout/.github/workflows/test.yml",
+                "v2.1.0",
+                %w(jobs reusable uses)
+              )
+            ],
+            requirements: [
+              flow_requirement(
+                "actions/checkout/.github/workflows/test.yml",
+                sha,
+                %w(jobs reusable uses)
+              )
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "keeps the version comment beside the reusable workflow" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include(
+            "reusable: { uses: actions/checkout/.github/workflows/test.yml@#{sha} } # v2.2.0\n"
+          )
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with an action followed by a commented run step on one line" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_action_run_collision.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "build", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "build", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "expands the sequence without appending to the run comment" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("actions/checkout@#{sha} }, # v2.2.0")
+          expect(content).to include("{ run: echo done } # keep run note")
+          expect(content).not_to include("# keep run note # v2.2.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with a reusable workflow followed by run-only flow sequences" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_reusable_run_collision.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout/.github/workflows/test.yml",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement(
+                "actions/checkout/.github/workflows/test.yml",
+                "v2.1.0",
+                %w(jobs reusable uses)
+              )
+            ],
+            requirements: [
+              flow_requirement(
+                "actions/checkout/.github/workflows/test.yml",
+                sha,
+                %w(jobs reusable uses)
+              )
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "uses the same collision predicate for expansion and comment relocation" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include(
+            "reusable: { uses: actions/checkout/.github/workflows/test.yml@#{sha} } # v2.2.0\n"
+          )
+          expect(content).to include("# keep second note")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with a reused anchor name" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_reused_anchors.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "first", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "first", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "updates the anchor that precedes the matching alias" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("ACTION: &pin actions/checkout@#{sha}")
+          expect(content).to include("ACTION: &pin actions/setup-node@v3.0.0")
+          expect(content).to include("steps: [{ uses: *pin }] # v2.2.0")
+        end
+      end
+
+      context "with one anchor shared across flow sequences" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_shared_anchor_sequences.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "first", "steps", 0, "uses"]),
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "second", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "first", "steps", 0, "uses"]),
+              flow_requirement("actions/checkout", sha, ["jobs", "second", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "updates the anchor once and comments both aliases" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include("{ uses: &pin actions/checkout@#{sha} }, # v2.2.0")
+          expect(content).to include("{ uses: *pin }, # v2.2.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "when pinning the same action across workflow files" do
+        let(:workflow_file_body) do
+          <<~YAML
+            on: [push]
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v2.1.0
+          YAML
+        end
+        let(:second_workflow_file) do
+          Dependabot::DependencyFile.new(
+            content: workflow_file_body,
+            name: ".github/workflows/second.yml"
+          )
+        end
+        let(:files) { [workflow_file, second_workflow_file] }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          previous_requirements = [workflow_file.name, second_workflow_file.name].map do |file_name|
+            {
+              requirement: nil,
+              groups: [],
+              file: file_name,
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.1.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/checkout@v2.1.0" }
+            }
+          end
+          requirements = previous_requirements.map do |requirement|
+            requirement.merge(source: requirement.fetch(:source).merge(ref: sha))
+          end
+
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: previous_requirements,
+            requirements: requirements
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "reuses one git checker" do
+          expect(updated_files.length).to eq(2)
+          expect(Dependabot::GitCommitChecker).to have_received(:new).once
+        end
+      end
+    end
+
+    # Stub the CLI boundary so the wiring stays hermetic. When an actions.lock
+    # onboards a changed workflow, the
+    # engine is fed the *rewritten* workflow content and its re-pinned lock is emitted
+    # as an additional file; the workflow YAML still comes from the regex path. The
+    # canned relock result mirrors what the binary writes (asserted in cli_engine_spec).
+    describe "relock through the lockfile engine" do
+      let(:relocked_lock_content) do
+        <<~LOCK
+          version: v0.0.2
+          workflows:
+            ".github/workflows/workflow.yml":
+              - "actions/setup-node@v1.1.0"
+          dependencies:
+            "actions/setup-node@v1.1.0":
+              ref: v1.1.0
+              commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
+              owner_id: 44036562
+              repo_id: 167274481
+        LOCK
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: ".github/workflows/actions.lock",
+          content: <<~LOCK
+            version: v0.0.2
+            workflows:
+              ".github/workflows/workflow.yml":
+                - "actions/setup-node@master"
+            dependencies:
+              "actions/setup-node@master":
+                ref: master
+                commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
+                owner_id: 44036562
+                repo_id: 167274481
+          LOCK
+        )
+      end
+      let(:files) { [workflow_file, lockfile] }
+      let(:fake_engine) do
+        instance_double(
+          Dependabot::GithubActions::Lockfile::CliEngine,
+          relock: relocked_lock_content
+        )
+      end
+
+      before do
+        allow(Dependabot::GithubActions::Lockfile::CliEngine).to receive(:new).and_return(fake_engine)
+      end
+
+      it "emits the re-pinned lockfile alongside the rewritten workflow" do
+        expect(updated_files.map(&:name)).to contain_exactly(
+          ".github/workflows/workflow.yml",
+          ".github/workflows/actions.lock"
+        )
+      end
+
+      it "re-pins the lock to the bumped ref read back from the workflow" do
+        lock = updated_files.find { |f| f.name == ".github/workflows/actions.lock" }
+        expect(lock.content).to include("actions/setup-node@v1.1.0")
+        expect(lock.content).not_to include("actions/setup-node@master")
+      end
+
+      it "still rewrites the workflow YAML via the regex path, not the engine" do
+        workflow = updated_files.find { |f| f.name == ".github/workflows/workflow.yml" }
+        expect(workflow.content).to include("actions/setup-node@v1.1.0")
+      end
+
+      it "targets only the changed workflow" do
+        updated_files
+
+        expect(fake_engine).to have_received(:relock).with(
+          workflow_files: anything,
+          lockfile: lockfile,
+          workflow_paths: [".github/workflows/workflow.yml"]
+        )
+      end
+
+      it "reuses the rewritten workflow when relocking" do
+        workflow = updated_files.find { |file| file.name == ".github/workflows/workflow.yml" }
+
+        expect(fake_engine).to have_received(:relock) do |workflow_files:, **|
+          expect(workflow_files.find { |file| file.name == workflow.name }).to equal(workflow)
+        end
+      end
+
+      context "when the workflow is converted from a tag to a SHA" do
+        let(:sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:workflow_file_body) do
+          <<~YAML
+            on: [push]
+            jobs:
+              pin:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/setup-node@v1
+          YAML
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "1.1.0",
+            previous_version: "1",
+            package_manager: "github_actions",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/setup-node",
+                ref: "v1",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/setup-node@v1" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/setup-node",
+                ref: sha,
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/setup-node@#{sha}" }
+            }]
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: <<~LOCK
+              version: v0.0.2
+              workflows:
+                ".github/workflows/workflow.yml":
+                  - "actions/setup-node@v1"
+              dependencies:
+                "actions/setup-node@v1":
+                  ref: v1
+                  commit: sha1-#{sha}
+                  owner_id: 44036562
+                  repo_id: 167274481
+            LOCK
+          )
+        end
+        let(:relocked_lock_content) do
+          <<~LOCK
+            version: v0.0.2
+            workflows:
+              ".github/workflows/workflow.yml":
+                - "actions/setup-node@#{sha}"
+            dependencies:
+              "actions/setup-node@#{sha}":
+                ref: #{sha}
+                commit: sha1-#{sha}
+                owner_id: 44036562
+                repo_id: 167274481
+          LOCK
+        end
+
+        before do
+          stub_request(
+            :get,
+            "https://github.com/actions/setup-node.git/info/refs?service=git-upload-pack"
+          ).to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "setup-node"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+        end
+
+        it "passes the SHA-rewritten workflow to the relock engine" do
+          updated_files
+
+          expect(fake_engine).to have_received(:relock) do |workflow_files:, **|
+            workflow = workflow_files.find { |file| file.name == ".github/workflows/workflow.yml" }
+            expect(workflow.content).to include("actions/setup-node@#{sha} # v1.1.0")
+          end
+        end
+      end
+
+      context "when relocking fails" do
+        before do
+          allow(fake_engine).to receive(:relock)
+            .and_raise(Dependabot::GithubActions::Lockfile::EngineError, "Bad credentials")
+        end
+
+        it "does not return a workflow-only update" do
+          expect { updated_files }
+            .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, "Bad credentials")
+        end
+      end
+
+      context "when updating a root composite action with an invalid workflow lockfile" do
+        let(:workflow_file) do
+          Dependabot::DependencyFile.new(name: "action.yml", content: workflow_file_body)
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: "version: ["
+          )
+        end
+
+        before do
+          dependency.requirements.first[:file] = "action.yml"
+          T.must(dependency.previous_requirements).first[:file] = "action.yml"
+        end
+
+        it "keeps the legacy workflow-only update path" do
+          expect(updated_files.map(&:name)).to eq(["action.yml"])
+          expect(fake_engine).not_to have_received(:relock)
+        end
+      end
+
+      context "when an onboarded dependency entry is malformed" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: super().content.sub("    owner_id: 44036562\n", "")
+          )
+        end
+
+        it "raises instead of silently relocking" do
+          expect { updated_files }
+            .to raise_error(Dependabot::DependencyFileNotParseable, /missing required field.*owner_id/)
+        end
+      end
+
+      context "when the onboarded lockfile version is unsupported" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: super().content.sub("version: v0.0.2", "version: v9.0.0")
+          )
+        end
+
+        it "raises UnsupportedLockfileVersion" do
+          expect { updated_files }
+            .to raise_error(Dependabot::GithubActions::Lockfile::UnsupportedLockfileVersion)
+        end
+      end
+
+      context "when the lock does not onboard the changed workflow" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: <<~LOCK
+              version: v0.0.2
+              workflows:
+                ".github/workflows/other.yml":
+                  - "actions/checkout@v4"
+              dependencies:
+                "actions/checkout@v4":
+                  ref: v4
+                  commit: sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0
+                  owner_id: 44036562
+                  repo_id: 197814280
+            LOCK
+          )
+        end
+
+        it "stays on the regex-only path and never emits the lock" do
+          expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+        end
+
+        context "when the untouched lock entry is malformed" do
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: ".github/workflows/actions.lock",
+              content: super().content.sub("    owner_id: 44036562\n", "")
+            )
+          end
+
+          it "stays on the regex-only path" do
+            expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+          end
+        end
+
+        context "when the untouched lockfile version is unsupported" do
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: ".github/workflows/actions.lock",
+              content: super().content.sub("version: v0.0.2", "version: v9.0.0")
+            )
+          end
+
+          it "stays on the regex-only path" do
+            expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+          end
+        end
       end
     end
   end

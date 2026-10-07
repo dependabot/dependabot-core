@@ -3,7 +3,7 @@
 
 require_relative "support/helpers"
 
-# rubocop:disable Metrics/BlockLength
+# rubocop:disable-next Metrics/BlockLength
 namespace :gems do
   task build: :clean do
     root_path = Dir.getwd
@@ -39,7 +39,7 @@ namespace :gems do
           attempts += 1
           begin
             if ENV["GITHUB_ACTIONS"] == "true"
-              sh "gem exec sigstore-cli sign #{gem_path} --bundle #{gem_attestation_path}"
+              sh "gem exec sigstore-cli:0.2.2 sign #{gem_path} --bundle #{gem_attestation_path}"
               sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
             else
               puts "- Skipping sigstore signing (not in GitHub Actions environment, so no OIDC token available)"
@@ -61,4 +61,3 @@ namespace :gems do
     FileUtils.rm(Dir["pkg/*.gem", "pkg/*.sigstore.json"])
   end
 end
-# rubocop:enable Metrics/BlockLength

@@ -1,0 +1,31 @@
+---
+http_interactions:
+  - request:
+      method: get
+      uri: https://terraform.example.org/.well-known/terraform.json
+    response:
+      status:
+        code: 200
+        message: OK
+      headers:
+        Content-Type:
+          - application/json
+      body:
+        encoding: UTF-8
+        string: '{"modules.v1":"/v1/modules/","providers.v1":"/v1/providers/"}'
+    recorded_at: Fri, 28 May 2021 22:53:39 GMT
+  - request:
+      method: get
+      uri: https://api.opentofu.org/registry/docs/providers/hashicorp/ciscoasa/v1.2.0/index.json
+    response:
+      status:
+        code: 200
+        message: OK
+      headers:
+        Content-Type:
+          - application/json
+      body:
+        encoding: UTF-8
+        string: '{"id":"hashicorp/ciscoasa/1.2.0","owner":"hashicorp","namespace":"hashicorp","name":"ciscoasa","alias":"ciscoasa","version":"1.2.0","tag":"v1.2.0","description":"terraform-provider-ciscoasa","source":"https://github.com/hashicorp/terraform-provider-ciscoasa","published_at":"2019-06-11T19:06:48Z","downloads":6072,"tier":"official","logo_url":"/images/providers/cisco.svg?3","docs":{"index":{"edit_link":"https://github.com/hashicorp/terraform-provider-ciscoasa/edit/master/website/docs/index.html.markdown"}}}'
+    recorded_at: Fri, 28 May 2021 22:53:39 GMT
+recorded_with: VCR 6.0.0

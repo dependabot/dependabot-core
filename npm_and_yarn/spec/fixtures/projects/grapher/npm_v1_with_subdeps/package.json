@@ -1,0 +1,8 @@
+{
+  "name": "grapher-npm-v1-with-subdeps",
+  "version": "1.0.0",
+  "description": "Test project for npm v1 lockfile grapher with subdependencies",
+  "dependencies": {
+    "to-regex-range": "^5.0.1"
+  }
+}

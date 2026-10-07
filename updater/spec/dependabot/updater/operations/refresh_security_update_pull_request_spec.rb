@@ -158,18 +158,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       .and_return(stub_dependency_change)
 
     allow(mock_service).to receive(:close_pull_request)
-
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_exclude_paths_subdirectory_manifest_files)
-      .and_return(true)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
   end
 
   describe "#perform" do
@@ -201,12 +189,93 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         perform
       end
     end
+
+    context "when a `directories`-only refresh job also declares dependency groups" do
+      # DependencySnapshot only backfills job.source.directory for a security job
+      # when the config declares no dependency groups, so a grouped config leaves
+      # this individual refresh with a nil directory.
+      let(:job_definition) do
+        definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
+        definition["job"]["dependencies"] = ["dummy-pkg-a"]
+        definition["job"]["security-updates-only"] = true
+        definition["job"]["updating-a-pull-request"] = true
+        definition["job"]["dependency-groups"] = [
+          {
+            "name" => "all-security-updates",
+            "applies-to" => "security-updates",
+            "rules" => { "patterns" => ["*"] }
+          }
+        ]
+        definition["job"]["source"].delete("directory")
+        definition["job"]["source"]["directories"] = ["/."]
+        definition
+      end
+
+      before do
+        allow(refresh_security_update_pull_request).to receive(:check_and_update_pull_request)
+      end
+
+      it "normalizes the lone directory onto the job source" do
+        perform
+
+        expect(job.source.directory).to eq("/")
+      end
+    end
   end
 
   describe "#check_and_update_pull_request" do
     before do
       allow(dependency).to receive(:all_versions).and_return(["4.0.0", "4.1.0", "4.2.0"])
       allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when the lead dependency has an active GitHub Security block" do
+      before do
+        allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+        allow(job).to receive(:blocked_versions_for?).and_return(true)
+      end
+
+      it "increments the blocked versions ignored metric tagged with refresh_security_update" do
+        refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        expect(mock_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            operation: "refresh_security_update",
+            package_manager: "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the lead dependency has no active GitHub Security block" do
+      before do
+        allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+        allow(job).to receive(:blocked_versions_for?).and_return(false)
+      end
+
+      it "does not increment the blocked versions ignored metric" do
+        refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
     end
 
     context "when the update is not allowed" do
@@ -221,6 +290,33 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       end
     end
 
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still
+      # raise AllVersionsIgnored. A security refresh must surface it to halt the run
+      # rather than silently closing the pull request.
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          latest_version: Dependabot::Version.new("4.0.1"),
+          requirements_unlocked_or_can_be?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+      end
+
+      it "surfaces AllVersionsIgnored to halt the run" do
+        expect do
+          refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+        end.to raise_error(Dependabot::AllVersionsIgnored)
+      end
+    end
+
     context "when the update is allowed" do
       before do
         allow(stub_update_checker).to receive_messages(
@@ -231,7 +327,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         allow(job).to receive_messages(
           allowed_update?: true,
           dependencies: ["dummy-pkg-a"],
-          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
         )
       end
 
@@ -306,7 +404,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
         allow(job).to receive_messages(
           allowed_update?: true,
-          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
         )
       end
 
@@ -336,7 +436,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
         allow(job).to receive_messages(
           allowed_update?: true,
-          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
         )
       end
 
@@ -366,7 +468,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
         allow(job).to receive_messages(
           allowed_update?: true,
-          security_advisories: [{ "dependency-name" => "Dummy-Pkg-A" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "Dummy-Pkg-A" })
+          ]
         )
       end
 

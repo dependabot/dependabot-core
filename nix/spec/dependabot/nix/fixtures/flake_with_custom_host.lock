@@ -1,0 +1,28 @@
+{
+  "nodes": {
+    "internal-lib": {
+      "locked": {
+        "lastModified": 1710000000,
+        "narHash": "sha256-selfhosted123=",
+        "owner": "myteam",
+        "repo": "internal-lib",
+        "rev": "ffff0000aaaa1111bbbb2222cccc3333dddd4444",
+        "type": "github",
+        "host": "github.corp.example.com"
+      },
+      "original": {
+        "owner": "myteam",
+        "repo": "internal-lib",
+        "type": "github",
+        "host": "github.corp.example.com"
+      }
+    },
+    "root": {
+      "inputs": {
+        "internal-lib": "internal-lib"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

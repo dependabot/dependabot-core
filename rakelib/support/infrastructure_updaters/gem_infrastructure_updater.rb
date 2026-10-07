@@ -136,15 +136,15 @@ class GemInfrastructureUpdater < BaseUpdater
     gemspecs_end = -1
 
     lines.each_with_index do |line, idx|
-      gemspecs_start = idx if line.include?("GEMSPECS = T.let(")
-      if gemspecs_start >= 0 && line.include?(").freeze,")
+      gemspecs_start = idx if line.match?(/^\s*GEMSPECS = %w\($/)
+      if gemspecs_start >= 0 && line.strip == ").freeze"
         gemspecs_end = idx
         break
       end
     end
 
     if gemspecs_start >= 0 && gemspecs_end >= 0
-      new_line = "      #{ecosystem_name}/dependabot-#{ecosystem_name}.gemspec\n"
+      new_line = "    #{ecosystem_name}/dependabot-#{ecosystem_name}.gemspec\n"
 
       insert_index = gemspecs_end
       ((gemspecs_start + 1)...gemspecs_end).each do |idx|

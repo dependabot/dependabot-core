@@ -1,8 +1,11 @@
 # Julia Registry Client with DependabotHelper.jl integration
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "time"
+require "uri"
+require "fileutils"
+require "toml-rb"
 require "dependabot/credential"
 require "dependabot/julia/version"
 require "dependabot/shared_helpers"
@@ -12,6 +15,8 @@ module Dependabot
   module Julia
     class RegistryClient
       extend T::Sig
+
+      require_relative "registry_client/result"
 
       sig do
         params(credentials: T::Array[Dependabot::Credential], custom_registries: T::Array[T::Hash[Symbol, String]]).void
@@ -33,20 +38,17 @@ module Dependabot
           function: "get_latest_version",
           args: args
         )
+        parsed_result = Result::Version.from_object(result, context: "latest version result")
 
         # Check if the result itself contains an error (package not found)
-        return nil if result["error"]
+        if parsed_result.is_a?(Result::Failure)
+          Dependabot.logger.warn(
+            "Failed to fetch latest version for #{package_name}: #{parsed_result.message}"
+          )
+          return nil
+        end
 
-        # Extract version from the result structure
-        # The Julia helper returns version directly in the result
-        return nil unless result["version"]
-
-        Gem::Version.new(result["version"])
-      rescue StandardError => e
-        Dependabot.logger.warn(
-          "Failed to fetch latest version for #{package_name}: #{e.message}"
-        )
-        nil
+        Gem::Version.new(parsed_result.version)
       end
 
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T.nilable(Gem::Version)) }
@@ -61,72 +63,79 @@ module Dependabot
           function: "get_latest_version_with_custom_registries",
           args: args
         )
+        parsed_result = Result::Version.from_object(result, context: "custom registry latest version result")
 
         # Check if the result itself contains an error (package not found)
-        return nil if result["error"]
+        if parsed_result.is_a?(Result::Failure)
+          Dependabot.logger.warn(
+            "Failed to fetch latest version with custom registries for #{package_name}: #{parsed_result.message}"
+          )
+          return nil
+        end
 
-        # Extract version from the result structure
-        return nil unless result["version"]
-
-        Gem::Version.new(result["version"])
-      rescue StandardError => e
-        Dependabot.logger.warn(
-          "Failed to fetch latest version with custom registries for #{package_name}: #{e.message}"
-        )
-        nil
+        Gem::Version.new(parsed_result.version)
       end
 
-      sig { params(package_name: String, package_uuid: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig do
+        params(package_name: String, package_uuid: String)
+          .returns(T.any(Result::PackageMetadata, Result::Failure))
+      end
       def fetch_package_metadata(package_name, package_uuid)
-        call_julia_helper(
-          function: "get_package_metadata",
-          args: { package_name: package_name, package_uuid: package_uuid }
+        Result::PackageMetadata.from_object(
+          call_julia_helper(
+            function: "get_package_metadata",
+            args: { package_name: package_name, package_uuid: package_uuid }
+          ),
+          context: "package metadata result"
         )
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch metadata for #{package_name}: #{e.message}")
-        nil
       end
 
       sig do
         params(
           project_path: String,
           manifest_path: T.nilable(String)
-        ).returns(T::Hash[String, T.untyped])
+        ).returns(T.any(Result::Project, Result::Failure))
       end
       def parse_project(project_path:, manifest_path: nil)
         args = { project_path: project_path }
         args[:manifest_path] = manifest_path if manifest_path
 
-        call_julia_helper(
-          function: "parse_project",
-          args: args
+        Result::Project.from_object(
+          call_julia_helper(
+            function: "parse_project",
+            args: args
+          )
         )
       end
 
-      sig { params(manifest_path: String).returns(T::Hash[String, T.untyped]) }
+      sig { params(manifest_path: String).returns(T.any(Result::Manifest, Result::Failure)) }
       def parse_manifest(manifest_path)
-        call_julia_helper(
-          function: "parse_manifest",
-          args: { manifest_path: manifest_path }
+        Result::Manifest.from_object(
+          call_julia_helper(
+            function: "parse_manifest",
+            args: { manifest_path: manifest_path }
+          )
         )
       end
 
-      sig { params(directory: String).returns(T::Hash[String, String]) }
+      sig { params(directory: String).returns(T.any(Result::EnvironmentFiles, Result::Failure)) }
       def find_environment_files(directory)
-        result = call_julia_helper(
-          function: "find_environment_files",
-          args: { directory: directory }
+        Result::EnvironmentFiles.from_object(
+          call_julia_helper(
+            function: "find_environment_files",
+            args: { directory: directory }
+          )
         )
+      end
 
-        return {} if result["error"]
-
-        {
-          "project_file" => result["project_file"],
-          "manifest_file" => result["manifest_file"]
-        }
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to find environment files in #{directory}: #{e.message}")
-        {}
+      sig { params(directory: String).returns(T.any(Result::WorkspaceFiles, Result::Failure)) }
+      def find_workspace_project_files(directory)
+        Result::WorkspaceFiles.from_object(
+          call_julia_helper(
+            function: "find_workspace_project_files",
+            args: { directory: directory }
+          )
+        )
       end
 
       sig do
@@ -145,34 +154,44 @@ module Dependabot
             uuid: uuid
           }
         )
+        parsed_result = Result::Version.from_object(result, context: "manifest version result")
 
-        result["version"] unless result["error"]
+        parsed_result.version unless parsed_result.is_a?(Result::Failure)
       end
 
-      sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Hash[String, T.untyped]) }
+      sig do
+        params(package_name: String, package_uuid: T.nilable(String))
+          .returns(T.any(Result::Source, Result::Failure))
+      end
       def find_package_source_url(package_name, package_uuid = nil)
         args = { package_name: package_name }
         args[:package_uuid] = package_uuid if package_uuid
 
-        call_julia_helper(
-          function: "find_package_source_url",
-          args: args
+        Result::Source.from_object(
+          call_julia_helper(
+            function: "find_package_source_url",
+            args: args
+          )
         )
       end
 
       sig do
         params(
           project_path: String,
-          updates: T::Hash[String, String]
-        ).returns(T::Hash[String, T.untyped])
+          updates: T::Hash[String, T::Hash[String, String]],
+          manifest_path: T.nilable(String)
+        ).returns(T.any(Result::ManifestUpdate, Result::Failure))
       end
-      def update_manifest(project_path:, updates:)
-        call_julia_helper(
-          function: "update_manifest",
-          args: {
-            project_path: project_path,
-            updates: updates
-          }
+      def update_manifest(project_path:, updates:, manifest_path: nil)
+        Result::ManifestUpdate.from_object(
+          call_julia_helper(
+            function: "update_manifest",
+            args: {
+              project_path: project_path,
+              manifest_path: manifest_path,
+              updates: updates
+            }
+          )
         )
       end
 
@@ -186,16 +205,18 @@ module Dependabot
             package_uuid: package_uuid
           }
         )
+        parsed_result = Result::ReleaseDate.from_object(result, context: "version release date result")
 
         # Check if the result contains an error
-        return nil if result["error"]
+        return nil if parsed_result.is_a?(Result::Failure)
 
         # Parse the release date if available
-        return nil unless result["release_date"]
+        release_date = parsed_result.release_date
+        return nil unless release_date
 
-        Time.parse(result["release_date"])
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch release date for #{package_name} v#{version}: #{e.message}")
+        Time.parse(release_date)
+      rescue ArgumentError => e
+        Dependabot.logger.warn("Failed to parse release date for #{package_name} v#{version}: #{e.message}")
         nil
       end
 
@@ -211,18 +232,17 @@ module Dependabot
           function: "get_available_versions",
           args: args
         )
+        parsed_result = Result::AvailableVersions.from_object(result, context: "available versions result")
 
         # Check if the result contains an error
-        return [] if result["error"]
+        if parsed_result.is_a?(Result::Failure)
+          Dependabot.logger.warn(
+            "Failed to fetch available versions for #{package_name}: #{parsed_result.message}"
+          )
+          return []
+        end
 
-        # Extract versions array from the result
-        versions = result["versions"]
-        return [] unless versions.is_a?(Array)
-
-        versions.map(&:to_s)
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch available versions for #{package_name}: #{e.message}")
-        []
+        parsed_result.versions
       end
 
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Array[String]) }
@@ -237,82 +257,84 @@ module Dependabot
           function: "get_available_versions_with_custom_registries",
           args: args
         )
+        parsed_result = Result::AvailableVersions.from_object(
+          result,
+          context: "custom registry available versions result"
+        )
 
         # Check if the result contains an error
-        return [] if result["error"]
+        if parsed_result.is_a?(Result::Failure)
+          Dependabot.logger.warn(
+            "Failed to fetch available versions with custom registries for #{package_name}: #{parsed_result.message}"
+          )
+          return []
+        end
 
-        # Extract versions array from the result
-        versions = result["versions"]
-        return [] unless versions.is_a?(Array)
-
-        versions.map(&:to_s)
-      rescue StandardError => e
-        Dependabot.logger.warn(
-          "Failed to fetch available versions with custom registries for #{package_name}: #{e.message}"
-        )
-        []
+        parsed_result.versions
       end
 
       # ============================================================================
       # BATCH OPERATIONS
       # ============================================================================
 
-      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+      sig do
+        params(dependencies: T::Array[Dependabot::Dependency])
+          .returns(T.any(Result::PackageInfoBatch, Result::Failure))
+      end
       def batch_fetch_package_info(dependencies)
+        return Result::PackageInfoBatch.new(packages: {}) if dependencies.empty?
+
         packages = dependencies.map do |dep|
           {
             name: dep.name,
-            uuid: dep.metadata[:julia_uuid] || ""
+            uuid: T.cast(dep.metadata[:julia_uuid], T.nilable(String)) || ""
           }
         end
 
-        call_julia_helper(
-          function: "batch_get_package_info",
-          args: { packages: packages }
+        Result::PackageInfoBatch.from_object(
+          call_julia_helper(
+            function: "batch_get_package_info",
+            args: { packages: packages }
+          )
         )
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to batch fetch package info: #{e.message}")
-        {}
       end
 
       sig do
         params(
-          packages_versions: T::Array[T::Hash[Symbol, T.untyped]]
-        ).returns(T::Hash[String, T::Hash[String, T.nilable(String)]])
+          packages_versions: T::Array[Result::PackageVersionsRequest]
+        ).returns(T.any(Result::ReleaseDatesBatch, Result::Failure))
       end
       def batch_fetch_version_release_dates(packages_versions)
-        result = call_julia_helper(
-          function: "batch_get_version_release_dates",
-          args: { packages_versions: packages_versions }
+        return Result::ReleaseDatesBatch.new(packages: {}) if packages_versions.empty?
+
+        Result::ReleaseDatesBatch.from_object(
+          call_julia_helper(
+            function: "batch_get_version_release_dates",
+            args: { packages_versions: packages_versions.map(&:to_h) }
+          )
         )
-
-        # Convert the result to a more Ruby-friendly format
-        result.transform_values do |dates|
-          next dates if dates.is_a?(Hash) && dates["error"]
-
-          dates.is_a?(Hash) ? dates : {}
-        end
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to batch fetch version release dates: #{e.message}")
-        {}
       end
 
-      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+      sig do
+        params(dependencies: T::Array[Dependabot::Dependency])
+          .returns(T.any(Result::AvailableVersionsBatch, Result::Failure))
+      end
       def batch_fetch_available_versions(dependencies)
+        return Result::AvailableVersionsBatch.new(packages: {}) if dependencies.empty?
+
         packages = dependencies.map do |dep|
           {
             name: dep.name,
-            uuid: dep.metadata[:julia_uuid] || ""
+            uuid: T.cast(dep.metadata[:julia_uuid], T.nilable(String)) || ""
           }
         end
 
-        call_julia_helper(
-          function: "batch_get_available_versions",
-          args: { packages: packages }
+        Result::AvailableVersionsBatch.from_object(
+          call_julia_helper(
+            function: "batch_get_available_versions",
+            args: { packages: packages }
+          )
         )
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to batch fetch available versions: #{e.message}")
-        {}
       end
 
       private
@@ -331,8 +353,8 @@ module Dependabot
       sig do
         params(
           function: String,
-          args: T::Hash[Symbol, T.untyped]
-        ).returns(T::Hash[String, T.untyped])
+          args: Object
+        ).returns(Object)
       end
       def call_julia_helper(function:, args:)
         # Use the main julia helpers directory as project (contains Project.toml with DependabotHelper in [sources])
@@ -366,20 +388,59 @@ module Dependabot
 
         if ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
           # In production/CI, use the shared depot where packages were precompiled
-          user_depot = File.join(ENV.fetch("HOME", "/home/dependabot"), ".julia")
           # Trailing : is intentional. It automatically includes the bundled stdlibs
-          env["JULIA_DEPOT_PATH"] = "#{user_depot}:"
+          env["JULIA_DEPOT_PATH"] = "#{julia_user_depot}:"
         end
         # In development use the default Julia depot
 
-        # Add Julia-specific environment variables for registry authentication
-        julia_credentials = credentials.select { |c| c["type"] == "julia_registry" }
-        julia_credentials.each_with_index do |cred, index|
-          env["JULIA_PKG_SERVER_REGISTRY_PREFERENCE_#{index}"] = cred.fetch("url")
-          env["JULIA_PKG_SERVER_#{index}_TOKEN"] = cred.fetch("token") if cred["token"]
+        # Pkg supports a single package server via JULIA_PKG_SERVER;
+        # authentication uses an auth.toml in the depot, not env vars.
+        pkg_server = pkg_server_credential
+        if pkg_server
+          env["JULIA_PKG_SERVER"] = pkg_server.fetch("url")
+          configure_pkg_server_auth(pkg_server)
         end
 
         env
+      end
+
+      sig { returns(T.nilable(Dependabot::Credential)) }
+      def pkg_server_credential
+        julia_credentials = credentials.select { |c| c["type"] == "julia_registry" && c["url"] }
+        if julia_credentials.length > 1
+          Dependabot.logger.warn(
+            "Multiple julia_registry credentials configured; Julia's Pkg supports a single " \
+            "package server, using the first"
+          )
+        end
+        julia_credentials.first
+      end
+
+      # Write the package server token where Pkg actually reads it:
+      # <depot>/servers/<host>/auth.toml
+      sig { params(credential: Dependabot::Credential).void }
+      def configure_pkg_server_auth(credential)
+        token = credential["token"]
+        return unless token
+
+        host = URI.parse(T.cast(credential.fetch("url"), String)).host
+        return unless host
+
+        auth_dir = File.join(julia_user_depot, "servers", host)
+        FileUtils.mkdir_p(auth_dir)
+        auth_toml = T.cast(TomlRB.dump({ "access_token" => token }), String)
+        File.write(File.join(auth_dir, "auth.toml"), auth_toml)
+      rescue URI::InvalidURIError => e
+        Dependabot.logger.warn("Invalid julia_registry URL: #{e.message}")
+      end
+
+      sig { returns(String) }
+      def julia_user_depot
+        if ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
+          File.join(ENV.fetch("HOME", "/home/dependabot"), ".julia")
+        else
+          File.join(Dir.home, ".julia")
+        end
       end
     end
   end

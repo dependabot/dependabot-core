@@ -715,5 +715,492 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         expect(branch_namer.new_branch_name).to eq("dependabot/multi_ecosystem")
       end
     end
+
+    context "with a word separator" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          word_separator: "-"
+        )
+      end
+
+      context "when the package manager has underscores" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "lodash",
+            version: "4.17.21",
+            previous_version: "4.17.20",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^4.17.21",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^4.17.20",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        it "replaces underscores with the word separator" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot/npm-and-yarn/lodash-4.17.21")
+        end
+      end
+
+      context "when the dependency name has underscores" do
+        let(:dependency_name) { "my_gem" }
+
+        it "replaces underscores in dependency names too" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot/dummy/my-gem-1.5.0")
+        end
+      end
+
+      context "when word_separator is nil (default)" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "lodash",
+            version: "4.17.21",
+            previous_version: "4.17.20",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^4.17.21",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^4.17.20",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        it "preserves underscores" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot/npm_and_yarn/lodash-4.17.21")
+        end
+      end
+
+      context "when combined with a custom separator" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            separator: "-",
+            word_separator: "-"
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "lodash",
+            version: "4.17.21",
+            previous_version: "4.17.20",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^4.17.21",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^4.17.20",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        it "replaces both slashes and underscores" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot-npm-and-yarn-lodash-4.17.21")
+        end
+      end
+    end
+
+    context "with branch_name_case set to lowercase" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          branch_name_case: "lowercase"
+        )
+      end
+
+      context "when the dependency name has uppercase characters" do
+        let(:dependency_name) { "MyPackage" }
+
+        it "downcases content after the prefix" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot/dummy/mypackage-1.5.0")
+        end
+      end
+
+      context "when the prefix has uppercase" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            prefix: "MyProject",
+            branch_name_case: "lowercase"
+          )
+        end
+        let(:dependency_name) { "MyPackage" }
+
+        it "preserves prefix casing but downcases content" do
+          expect(namer.new_branch_name)
+            .to eq("MyProject/dummy/mypackage-1.5.0")
+        end
+      end
+    end
+
+    context "with branch_name_case set to uppercase" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          branch_name_case: "uppercase"
+        )
+      end
+
+      context "when the dependency name has lowercase characters" do
+        let(:dependency_name) { "business" }
+
+        it "upcases content after the prefix" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot/DUMMY/BUSINESS-1.5.0")
+        end
+      end
+
+      context "when the prefix has lowercase" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            prefix: "myPrefix",
+            branch_name_case: "uppercase"
+          )
+        end
+        let(:dependency_name) { "business" }
+
+        it "preserves prefix casing but upcases content" do
+          expect(namer.new_branch_name)
+            .to eq("myPrefix/DUMMY/BUSINESS-1.5.0")
+        end
+      end
+    end
+
+    context "with branch_name_case nil (default)" do
+      let(:dependency_name) { "MyPackage" }
+
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch
+        )
+      end
+
+      it "preserves original casing" do
+        expect(namer.new_branch_name)
+          .to eq("dependabot/dummy/MyPackage-1.5.0")
+      end
+    end
+
+    context "with word_separator, branch_name_case, and custom separator combined" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          separator: "-",
+          word_separator: "-",
+          branch_name_case: "lowercase"
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "MyPackage",
+          version: "4.17.21",
+          previous_version: "4.17.20",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^4.17.21",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^4.17.20",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it "applies all transformations (ACR-compliant)" do
+        expect(namer.new_branch_name)
+          .to eq("dependabot-npm-and-yarn-mypackage-4.17.21")
+      end
+
+      context "with a custom prefix" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            separator: "-",
+            word_separator: "-",
+            branch_name_case: "lowercase",
+            prefix: "MyProject-Deps"
+          )
+        end
+
+        it "preserves the prefix as-is" do
+          expect(namer.new_branch_name)
+            .to eq("MyProject-Deps-npm-and-yarn-mypackage-4.17.21")
+        end
+      end
+
+      context "with max_length truncation" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            separator: "-",
+            word_separator: "-",
+            branch_name_case: "lowercase",
+            max_length: 30
+          )
+        end
+
+        it "truncates with SHA after applying transformations" do
+          branch_name = namer.new_branch_name
+          expect(branch_name.length).to eq(30)
+        end
+      end
+    end
+
+    context "with template" do
+      context "with solo strategy" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "renders the template with placeholder values" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/business-1.5.0")
+        end
+      end
+
+      context "with solo strategy and custom prefix" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            prefix: "deps",
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "uses the custom prefix in the template" do
+          expect(namer.new_branch_name).to eq("deps/dummy/business-1.5.0")
+        end
+      end
+
+      context "with solo strategy and separator post-processing" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            separator: "-",
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "replaces slashes with the configured separator" do
+          expect(namer.new_branch_name).to eq("dependabot-dummy-business-1.5.0")
+        end
+      end
+
+      context "with solo strategy and word_separator and case" do
+        let(:dependency_name) { "my_package" }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            word_separator: "-",
+            branch_name_case: "lowercase",
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "applies word_separator and case after template rendering" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/my-package-1.5.0")
+        end
+      end
+
+      context "with solo strategy and target_branch" do
+        let(:target_branch) { "develop" }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{target_branch}/{dependency}-{version}"
+          )
+        end
+
+        it "includes the target branch" do
+          expect(namer.new_branch_name).to eq("dependabot/develop/business-1.5.0")
+        end
+      end
+
+      context "with solo strategy and directory" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("ruby", "gemfiles", "Gemfile"),
+            directory: "/backend"
+          )
+        end
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{package_manager}/{directory}/{dependency}-{version}"
+          )
+        end
+
+        it "sanitizes directory (strips leading slash)" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/backend/business-1.5.0")
+        end
+      end
+
+      context "with solo strategy and root directory" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{package_manager}/{directory}/{dependency}-{version}"
+          )
+        end
+
+        it "uses 'root' for the root directory" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/root/business-1.5.0")
+        end
+      end
+
+      context "with group strategy" do
+        let(:dependency_group) { double("DependencyGroup", name: "frontend-deps") }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            dependency_group: dependency_group,
+            template: "{prefix}/{package_manager}/{group_name}"
+          )
+        end
+
+        it "renders template and auto-appends digest" do
+          branch_name = namer.new_branch_name
+          expect(branch_name).to match(%r{^dependabot/dummy/frontend-deps-[a-f0-9]{10}$})
+        end
+      end
+
+      context "with group strategy and separator" do
+        let(:dependency_group) { double("DependencyGroup", name: "frontend-deps") }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            dependency_group: dependency_group,
+            separator: "-",
+            template: "{prefix}/{package_manager}/{group_name}"
+          )
+        end
+
+        it "applies separator after template rendering" do
+          branch_name = namer.new_branch_name
+          expect(branch_name).to match(/^dependabot-dummy-frontend-deps-[a-f0-9]{10}$/)
+        end
+      end
+
+      context "with multi_ecosystem strategy" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            multi_ecosystem_name: "all-security",
+            template: "{prefix}/security/{group_name}"
+          )
+        end
+
+        it "renders template and auto-appends digest" do
+          branch_name = namer.new_branch_name
+          expect(branch_name).to match(%r{^dependabot/security/all-security-[a-f0-9]{10}$})
+        end
+      end
+
+      context "with solo strategy and max_length" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            max_length: 30,
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "truncates to max_length" do
+          expect(namer.new_branch_name.length).to eq(30)
+        end
+      end
+    end
   end
 end

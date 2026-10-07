@@ -6,6 +6,7 @@ require "logger"
 require "rspec/sorbet"
 require "vcr"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "yaml"
 
 # Load common spec helpers for build_tmp_repo

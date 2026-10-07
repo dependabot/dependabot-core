@@ -47,10 +47,45 @@ RSpec.describe Dependabot::PullRequestUpdater do
             credentials: credentials,
             pull_request_number: pull_request_number,
             author_details: nil,
-            signature_key: nil
+            signature_key: nil,
+            commit_message: nil
           ).and_return(dummy_updater)
         expect(dummy_updater).to receive(:update)
         updater.update
+      end
+
+      context "with a custom commit message" do
+        subject(:updater) do
+          described_class.new(
+            source: source,
+            base_commit: base_commit,
+            old_commit: old_commit,
+            files: files,
+            credentials: credentials,
+            pull_request_number: pull_request_number,
+            provider_metadata: provider_metadata,
+            author_details: author_details,
+            commit_message: "Custom commit message"
+          )
+        end
+
+        it "passes commit_message to PullRequestUpdater::Github" do
+          expect(described_class::Github)
+            .to receive(:new)
+            .with(
+              source: source,
+              base_commit: base_commit,
+              old_commit: old_commit,
+              files: files,
+              credentials: credentials,
+              pull_request_number: pull_request_number,
+              author_details: nil,
+              signature_key: nil,
+              commit_message: "Custom commit message"
+            ).and_return(dummy_updater)
+          expect(dummy_updater).to receive(:update)
+          updater.update
+        end
       end
     end
 

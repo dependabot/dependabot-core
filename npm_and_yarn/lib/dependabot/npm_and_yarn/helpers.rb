@@ -5,6 +5,8 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/experiments"
 require "sorbet-runtime"
 
 module Dependabot
@@ -12,14 +14,76 @@ module Dependabot
     module Helpers # rubocop:disable Metrics/ModuleLength
       extend T::Sig
 
+      # Thread-local storage for dependency files and credentials
+      # This allows automatic env variable injection without passing parameters everywhere
+      class << self
+        extend T::Sig
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def dependency_files=(files)
+          Thread.current[:npm_and_yarn_dependency_files] = files
+        end
+
+        sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+        def dependency_files
+          T.cast(Thread.current[:npm_and_yarn_dependency_files], T.nilable(T::Array[Dependabot::DependencyFile]))
+        end
+
+        sig { params(creds: T::Array[Dependabot::Credential]).void }
+        def credentials=(creds)
+          Thread.current[:npm_and_yarn_credentials] = creds
+        end
+
+        sig { returns(T.nilable(T::Array[Dependabot::Credential])) }
+        def credentials
+          T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
+        end
+
+        sig { params(version: T.nilable(String)).void }
+        def npm_version_selector=(version)
+          Thread.current[:npm_and_yarn_npm_version_selector] = version
+        end
+
+        sig { returns(T.nilable(String)) }
+        def npm_version_selector
+          T.cast(Thread.current[:npm_and_yarn_npm_version_selector], T.nilable(String))
+        end
+
+        sig { params(directory: String, version: T.nilable(String)).void }
+        def register_npm_version_selector(directory, version)
+          npm_version_selectors[directory] = version
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def activate_npm_version_selector(files)
+          manifest = files.find { |file| file.name == "package.json" && !file.support_file }
+          self.npm_version_selector = manifest && npm_version_selectors[manifest.directory]
+        end
+
+        private
+
+        sig { returns(T::Hash[String, T.nilable(String)]) }
+        def npm_version_selectors
+          Thread.current[:npm_and_yarn_npm_version_selectors] ||= {}
+          T.cast(
+            Thread.current[:npm_and_yarn_npm_version_selectors],
+            T::Hash[String, T.nilable(String)]
+          )
+        end
+      end
+
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V10
+      NPM_DEFAULT_VERSION = NPM_V11
+
+      # Minimum npm version that supports the `--min-release-age` CLI flag.
+      NPM_MINIMUM_RELEASE_AGE_VERSION = "11.10.0"
 
       # PNPM Version Constants
       PNPM_V10 = 10
@@ -30,10 +94,6 @@ module Dependabot
       PNPM_DEFAULT_VERSION = PNPM_V10
       PNPM_FALLBACK_VERSION = PNPM_V6
 
-      # BUN Version Constants
-      BUN_V1 = 1
-      BUN_DEFAULT_VERSION = BUN_V1
-
       # YARN Version Constants
       YARN_V3 = 3
       YARN_V2 = 2
@@ -43,6 +103,92 @@ module Dependabot
 
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
+      COREPACK_SIGNATURE_METADATA_ERROR = "No compatible signature found in package metadata"
+
+      # pnpm's `minimumReleaseAge` and yarn's `npmMinimalAgeGate` are expressed in
+      # minutes, whereas dependabot.yml cooldown and npm's `min-release-age` use
+      # days. Used to convert a cooldown floor (days) into the minutes those gates
+      # expect.
+      MINUTES_PER_DAY = 1440
+
+      # Resolves the release-age gate value a lockfile updater should enforce for a
+      # regular update, applying "highest precedence wins" between the Dependabot
+      # cooldown floor and any explicit native gate the user configured (both given
+      # in the same package-manager unit). Returns the value to pass on the CLI/env
+      # (overriding the user's config) when the cooldown is longer, or nil to leave
+      # the user's own (equal-or-longer) gate — or the absence of one — untouched.
+      # A non-numeric user gate should be passed as Float::INFINITY so it is never
+      # overridden. Security updates handle their own `=0` bypass and must not use
+      # this method.
+      sig do
+        params(cooldown: T.nilable(Integer), user_gate: T.nilable(T.any(Integer, Float))).returns(T.nilable(Integer))
+      end
+      def self.higher_release_age_gate(cooldown, user_gate)
+        return nil if cooldown.nil? || !cooldown.positive?
+        return nil if user_gate && cooldown <= user_gate
+
+        cooldown
+      end
+
+      # Describes where a native release-age gate can be configured: the file it
+      # may appear in, the setting key, and the separator between key and value
+      # ("=" for npmrc/ini-style files, ":" for YAML). Passed to
+      # `max_configured_release_age` so each ecosystem parses its user-configured
+      # gate through the same logic.
+      class ReleaseAgeGateSetting < T::Struct
+        const :filename, String
+        const :key, String
+        const :separator, String
+      end
+
+      # The largest explicitly-configured native release-age gate across the repo's
+      # dependency files, or nil when none is set. Each file whose basename matches
+      # one of `settings` is parsed for a bare integer value; a present-but-non-
+      # numeric value is reported as Float::INFINITY so an explicit user gate is
+      # never overridden by the cooldown floor (see `higher_release_age_gate`).
+      sig do
+        params(
+          dependency_files: T::Array[DependencyFile],
+          settings: T::Array[ReleaseAgeGateSetting]
+        ).returns(T.nilable(T.any(Integer, Float)))
+      end
+      def self.max_configured_release_age(dependency_files, settings)
+        values = dependency_files.filter_map do |file|
+          setting = settings.find { |candidate| candidate.filename == File.basename(file.name) }
+          next unless setting
+
+          configured_release_age(file.content.to_s, setting)
+        end
+        values.max
+      end
+
+      # Resolves the effective release-age value a single file sets for `setting`,
+      # or nil when the key is absent. npmrc/INI and YAML both let the *last*
+      # occurrence of a key win, so we read the last matching line rather than the
+      # first (e.g. `min-release-age=30` then `min-release-age=3` resolves to 3). A
+      # present-but-non-numeric value is reported as Float::INFINITY.
+      sig { params(content: String, setting: ReleaseAgeGateSetting).returns(T.nilable(T.any(Integer, Float))) }
+      def self.configured_release_age(content, setting)
+        key = Regexp.escape(setting.key)
+        separator = Regexp.escape(setting.separator)
+        # Match an optionally quoted key (`"minimumReleaseAge":`) so a valid quoted
+        # YAML key is not treated as absent.
+        quoted_key = /["']?#{key}["']?/
+        presence = /^\s*#{quoted_key}\s*#{separator}/
+        # Allow an optionally quoted value and an optional trailing comment
+        # (e.g. `minimumReleaseAge: "4320" # 3 days`). npmrc/INI treats both `#` and
+        # `;` as comment delimiters; YAML uses `#` only. Otherwise a quoted or
+        # commented value is treated as non-numeric (Float::INFINITY).
+        comment_chars = setting.separator == "=" ? "#;" : "#"
+        value = /^\s*#{quoted_key}\s*#{separator}\s*["']?(\d+)["']?\s*(?:[#{comment_chars}].*)?$/
+
+        last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
+        return unless last_line
+
+        match = last_line.match(value)
+        match ? T.must(match[1]).to_i : Float::INFINITY
+      end
+      private_class_method :configured_release_age
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
@@ -69,7 +215,7 @@ module Dependabot
         lockfile_version = lockfile_version_str.to_i
 
         # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V10 if lockfile_version >= 3
+        return NPM_V11 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
@@ -115,9 +261,70 @@ module Dependabot
         PNPM_FALLBACK_VERSION
       end
 
-      sig { params(_bun_lock: T.nilable(DependencyFile)).returns(Integer) }
-      def self.bun_version_numeric(_bun_lock)
-        BUN_DEFAULT_VERSION
+      # pnpm 11.23+ refuses `update <name>@<version>` when <name> is not a direct
+      # dependency of any selected project. Older pnpm ignored the version for such
+      # packages and updated them to whatever a fresh install resolves.
+      PNPM_INDIRECT_DEP_VERSION_ERROR = /ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP/
+      PNPM_INDIRECT_DEP_NAME = /"(?<name>[^"]+)" \(requested "[^"]+"\)/
+
+      # Names of the packages pnpm refused to pin because they are not direct
+      # dependencies, or an empty array when the error is something else.
+      sig { params(error_message: String).returns(T::Array[String]) }
+      def self.pnpm_indirect_dependency_names(error_message)
+        return [] unless error_message.match?(PNPM_INDIRECT_DEP_VERSION_ERROR)
+
+        error_message.scan(PNPM_INDIRECT_DEP_NAME).flatten
+      end
+
+      # The concrete pnpm version that will run for this update. Returns nil when
+      # the version can't be determined. Used to gate version-specific config such as
+      # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
+      # (added in pnpm 11.0), which older pnpm versions silently ignore.
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def self.pnpm_version
+        raw = local_package_manager_version(PNPMPackageManager::NAME)
+        Version.new(raw)
+      rescue StandardError => e
+        Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
+        nil
+      end
+
+      # The concrete npm version that will run. Returns nil when it can't be determined.
+      # Used to gate `--min-release-age`, added in npm 11.10.
+      #
+      # Mirrors run_npm_command's own branching: without a selector, update commands
+      # run the local `npm` binary directly (bypassing Corepack), which can differ
+      # from Corepack's unqualified default. Only route through Corepack once a
+      # selector is active, so this reflects the npm version that will actually run.
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def self.npm_version
+        raw = if npm_version_selector
+                package_manager_version(npm_package_manager_name, env: merge_corepack_env(nil))
+              else
+                local_package_manager_version(NpmPackageManager::NAME)
+              end
+        Version.new(raw)
+      rescue StandardError => e
+        Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
+        nil
+      end
+
+      # True when the running npm supports `--min-release-age` (npm 11.10+).
+      sig { returns(T::Boolean) }
+      def self.npm_supports_min_release_age?
+        version = npm_version
+        return false if version.nil?
+
+        supported = version >= Version.new(NPM_MINIMUM_RELEASE_AGE_VERSION)
+        if supported
+          Dependabot.logger.info("npm #{version} supports --min-release-age.")
+        else
+          Dependabot.logger.info(
+            "npm #{version} does not support --min-release-age (requires 11.10.0+); the release-age " \
+            "cooldown gate will not be applied to transitive dependencies."
+          )
+        end
+        supported
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -228,6 +435,29 @@ module Dependabot
         yarn_major_version >= 4
       end
 
+      sig { returns(T::Boolean) }
+      def self.yarn_berry_supports_minimal_age_gate?
+        version = Version.new(run_single_yarn_command("--version"))
+        supported = version >= Version.new("4.10.0")
+        if supported
+          Dependabot.logger.info("Yarn #{version} supports npmMinimalAgeGate.")
+        else
+          Dependabot.logger.info(
+            "Yarn #{version} does not support npmMinimalAgeGate (requires 4.10.0+). " \
+            "YARN_NPM_MINIMAL_AGE_GATE will not be set."
+          )
+        end
+        supported
+      rescue StandardError => e
+        Dependabot.logger.warn(
+          "Could not determine Yarn version to check npmMinimalAgeGate support: #{e.message}. " \
+          "Assuming unsupported (returning false). YARN_NPM_MINIMAL_AGE_GATE will not be set, so the " \
+          "security-update `=0` bypass cannot be applied — any release-age gate configured in " \
+          ".yarnrc.yml (npmMinimalAgeGate) or enforced by the registry may still block security updates."
+        )
+        false
+      end
+
       sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
@@ -255,19 +485,15 @@ module Dependabot
       # set to false. Yarn commands should _not_ be ran outside of this helper
       # to ensure that postinstall scripts are never executed, as they could
       # contain malicious code.
-      sig { params(commands: T::Array[String]).void }
-      def self.run_yarn_commands(*commands)
+      sig { params(commands: T::Array[String], env: T.nilable(T::Hash[String, String])).void }
+      def self.run_yarn_commands(*commands, env: nil)
         setup_yarn_berry
         commands.each do |cmd, fingerprint|
-          run_single_yarn_command(cmd, fingerprint: fingerprint) if cmd
+          run_single_yarn_command(cmd, fingerprint: fingerprint, env: env) if cmd
         end
       end
 
       # Run single npm command returning stdout/stderr.
-      #
-      # NOTE: Needs to be explicitly run through corepack to respect the
-      # `packageManager` setting in `package.json`, because corepack does not
-      # add shims for NPM.
       sig do
         params(
           command: String,
@@ -276,22 +502,30 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(
-            NpmPackageManager::NAME,
-            command,
-            fingerprint: fingerprint,
+        unless npm_version_selector
+          return Dependabot::SharedHelpers.run_shell_command(
+            "#{NpmPackageManager::NAME} #{command}",
+            fingerprint: "#{NpmPackageManager::NAME} #{fingerprint || command}",
             output_observer: ->(output) { command_observer(output) },
             env: env
           )
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "npm #{command}",
-            fingerprint: "npm #{fingerprint}",
-            output_observer: ->(output) { command_observer(output) }
-          )
         end
+
+        package_manager_run_command(
+          npm_package_manager_name,
+          command,
+          fingerprint: fingerprint,
+          output_observer: ->(output) { command_observer(output) },
+          env: merge_corepack_env(env)
+        )
       end
+
+      sig { returns(String) }
+      def self.npm_package_manager_name
+        selector = npm_version_selector
+        selector ? "#{NpmPackageManager::NAME}@#{selector}" : NpmPackageManager::NAME
+      end
+      private_class_method :npm_package_manager_name
 
       sig do
         params(output: String)
@@ -313,7 +547,9 @@ module Dependabot
 
         # Validate the output format (e.g., "v20.18.1" or "20.18.1")
         if version.match?(/^v?\d+(\.\d+){2}$/)
-          version.strip.delete_prefix("v") # Remove the "v" prefix if present
+          parsed_version = version.strip.delete_prefix("v") # Remove the "v" prefix if present
+          Dependabot.logger.info("Using node version: #{parsed_version}")
+          parsed_version
         end
       rescue StandardError => e
         Dependabot.logger.error("Error retrieving Node.js version: #{e.message}")
@@ -338,69 +574,52 @@ module Dependabot
         raise
       end
 
-      sig { returns(T.nilable(String)) }
-      def self.bun_version
-        version = run_bun_command("--version", fingerprint: "--version").strip
-        if version.include?("+")
-          version.split("+").first # Remove build info, if present
-        end
-      rescue StandardError => e
-        Dependabot.logger.error("Error retrieving Bun version: #{e.message}")
-        nil
-      end
-
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_bun_command(command, fingerprint: nil)
-        full_command = "bun #{command}"
-
-        Dependabot.logger.info("Running bun command: #{full_command}")
-
-        result = Dependabot::SharedHelpers.run_shell_command(
-          full_command,
-          fingerprint: "bun #{fingerprint || command}"
-        )
-
-        Dependabot.logger.info("Command executed successfully: #{full_command}")
-        result
-      rescue StandardError => e
-        Dependabot.logger.error("Error running bun command: #{full_command}, Error: #{e.message}")
-        raise
-      end
-
       # Setup yarn and run a single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_yarn_command(command, fingerprint: nil, env: nil)
         setup_yarn_berry
-        run_single_yarn_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint, env: env)
       end
 
       # Run single pnpm command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_pnpm_command(command, fingerprint: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "pnpm #{command}",
-            fingerprint: "pnpm #{fingerprint || command}"
-          )
-        end
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_pnpm_command(command, fingerprint: nil, env: nil)
+        Dependabot::SharedHelpers.run_shell_command(
+          "pnpm #{command}",
+          fingerprint: "pnpm #{fingerprint || command}",
+          env: env
+        )
       end
 
       # Run single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_single_yarn_command(command, fingerprint: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "yarn #{command}",
-            fingerprint: "yarn #{fingerprint || command}"
-          )
-        end
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
+        Dependabot::SharedHelpers.run_shell_command(
+          "yarn #{command}",
+          fingerprint: "yarn #{fingerprint || command}",
+          env: env
+        )
       end
 
-      # Install the package manager for specified version by using corepack
+      # Activate the package manager for specified version by using corepack
       sig do
         params(
           name: String,
@@ -413,34 +632,32 @@ module Dependabot
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
-          # Try to install the specified version
-          output = package_manager_install(name, version, env: env)
+          # Try to activate the specified version
+          output = package_manager_activate(name, version, env: env)
 
           # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/)
+          if output.include?("immediate activation...")
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
 
             Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
-            package_manager_activate(name, version)
-
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name)
+            fallback_to_local_version(name, env: env)
           end
         rescue StandardError => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
-          fallback_to_local_version(name)
+          Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
+          fallback_to_local_version(name, env: env)
         end
 
         # Verify the installed version
-        installed_version = package_manager_version(name)
+        installed_version = package_manager_version(name, env: env)
 
         installed_version
       end
 
       # Attempt to activate the local version of the package manager
-      sig { params(name: String).void }
-      def self.fallback_to_local_version(name)
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.fallback_to_local_version(name, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
@@ -450,7 +667,7 @@ module Dependabot
         Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
 
         # Prepare the existing version
-        package_manager_activate(name, current_version)
+        package_manager_activate(name, current_version, env: env)
       end
 
       # Install the package manager for specified version by using corepack
@@ -465,22 +682,23 @@ module Dependabot
       def self.package_manager_install(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
-        Dependabot::SharedHelpers.run_shell_command(
+        run_corepack_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
           env: env
-        ).strip
+        )
       end
 
       # Prepare the package manager for use by using corepack
-      sig { params(name: String, version: String).returns(String) }
-      def self.package_manager_activate(name, version)
+      sig { params(name: String, version: String, env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.package_manager_activate(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
-        Dependabot::SharedHelpers.run_shell_command(
+        run_corepack_command(
           "corepack prepare #{name}@#{version} --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
-        ).strip
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env
+        )
       end
 
       # Fetch the currently installed version of the package manager directly
@@ -494,11 +712,11 @@ module Dependabot
       end
 
       # Get the version of the package manager by using corepack
-      sig { params(name: String).returns(String) }
-      def self.package_manager_version(name)
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.package_manager_version(name, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        version = package_manager_run_command(name, "-v").strip
+        version = package_manager_run_command(name, "-v", env: env).strip
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 
@@ -525,11 +743,95 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
+        run_corepack_command(
+          "corepack #{name} #{command}",
+          fingerprint: "corepack #{name} #{fingerprint || command}",
+          output_observer: output_observer,
+          env: env
+        )
+      end
 
-        full_command = "corepack #{name} #{command}"
-        fingerprint =  "corepack #{name} #{fingerprint || command}"
+      # Run a corepack shell command, retrying once with signature verification
+      # disabled when a configured private registry strips `dist.signatures`
+      # from its version endpoint (a known Artifactory behaviour that otherwise
+      # aborts the run with COREPACK_SIGNATURE_METADATA_ERROR).
+      # Corepack >=0.36 first checks package-root metadata; this retry still
+      # applies when that endpoint also omits signatures.
+      sig do
+        params(
+          full_command: String,
+          fingerprint: String,
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_corepack_command(full_command, fingerprint:, output_observer: nil, env: nil)
+        run_corepack_shell_command(
+          full_command,
+          fingerprint: fingerprint,
+          output_observer: output_observer,
+          env: env
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
 
+        raise_registry_error_if_not_found(e)
+
+        if retry_without_signature_verification?(error: e, env: env)
+          retry_env = T.must(env).merge(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV => "")
+          Dependabot.logger.warn(
+            "Corepack signature verification failed against the configured private registry. " \
+            "Retrying once with COREPACK_INTEGRITY_KEYS disabled for this command only."
+          )
+
+          return run_corepack_shell_command(
+            full_command,
+            fingerprint: fingerprint,
+            output_observer: output_observer,
+            env: retry_env
+          )
+        end
+
+        raise
+      end
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+      def self.merge_corepack_env(env)
+        corepack_env = build_corepack_env_variables
+        return env if corepack_env.nil? || corepack_env.empty?
+        return corepack_env if env.nil?
+
+        corepack_env.merge(env)
+      end
+
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      def self.build_corepack_env_variables
+        return nil if dependency_files.nil? || credentials.nil?
+
+        files = T.must(dependency_files)
+        creds = T.must(credentials)
+
+        registry_helper = RegistryHelper.new(
+          {
+            npmrc: files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc: files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
+            yarnrc_yml: files.find { |f| f.name.end_with?(".yarnrc.yml") }
+          },
+          creds
+        )
+
+        registry_helper.find_corepack_env_variables
+      end
+
+      sig do
+        params(
+          full_command: String,
+          fingerprint: String,
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_corepack_shell_command(full_command, fingerprint:, output_observer:, env: nil)
         if output_observer
           return Dependabot::SharedHelpers.run_shell_command(
             full_command,
@@ -537,17 +839,45 @@ module Dependabot
             output_observer: output_observer,
             env: env
           ).strip
-        else
-          Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint)
-        end.strip
-      rescue StandardError => e
-        Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
-        if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
-           e.message.include?("The remote server failed to provide the requested resource")
-          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
         end
 
-        raise
+        Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: fingerprint,
+          env: env
+        ).strip
+      end
+
+      sig { params(error: StandardError).void }
+      def self.raise_registry_error_if_not_found(error)
+        if error.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
+           error.message.include?("The remote server failed to provide the requested resource")
+          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+        end
+      end
+
+      sig { params(error: StandardError, env: T.nilable(T::Hash[String, String])).returns(T::Boolean) }
+      def self.retry_without_signature_verification?(error:, env:)
+        return false unless env
+
+        registry = env[RegistryHelper::COREPACK_NPM_REGISTRY_ENV]
+        return false unless registry
+        return false if default_npm_registry?(registry)
+        return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
+
+        # Retry (disabling verification) only when no integrity keys are
+        # configured. When a replaces-base registry's merged npm + registry keys
+        # were fetched and set, a remaining signature failure is a genuine
+        # integrity problem, so we fail closed rather than silently disabling
+        # verification. If the keys could not be fetched they are left unset, and
+        # this signature-stripping retry still applies as before.
+        !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
+      end
+
+      sig { params(registry: String).returns(T::Boolean) }
+      def self.default_npm_registry?(registry)
+        normalized_registry = RegistryHelper.normalize_registry_url(registry)
+        normalized_registry == RegistryHelper::DEFAULT_NPM_REGISTRY
       end
 
       private_class_method :run_single_yarn_command
@@ -571,6 +901,11 @@ module Dependabot
       sig { params(name: String).returns(T::Boolean) }
       def self.corepack_supported_package_manager?(name)
         SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
+      end
+
+      sig { params(scope: String).returns(String) }
+      def self.normalize_npm_scope(scope)
+        scope.start_with?("@") ? scope : "@#{scope}"
       end
     end
   end

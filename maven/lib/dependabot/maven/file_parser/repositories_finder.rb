@@ -24,6 +24,7 @@ module Dependabot
 
         REPOSITORY_SELECTOR = "repositories > repository, " \
                               "pluginRepositories > pluginRepository"
+        RepositoryEntry = T.type_alias { T::Hash[Symbol, T.nilable(T.any(String, T::Boolean))] }
 
         sig do
           params(
@@ -44,7 +45,7 @@ module Dependabot
           @evaluate_properties = evaluate_properties
           # Aggregates URLs seen in POMs to avoid short term memory loss.
           # For instance a repository in a child POM might apply to the parent too.
-          @known_urls = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          @known_urls = T.let([], T::Array[RepositoryEntry])
           @property_value_finder = T.let(nil, T.nilable(PropertyValueFinder))
         end
 
@@ -75,7 +76,7 @@ module Dependabot
           @known_urls = @known_urls.uniq
 
           urls = urls_from_credentials + @known_urls.reject { |entry| exclude_snapshots && entry[:snapshots] }
-                                                    .map { |entry| entry[:url] }
+                                                    .map { |entry| T.must(entry[:url]).to_s }
           urls += [central_repo_url] unless @known_urls.any? { |entry| entry[:id] == super_pom[:id] }
           urls.uniq
         end
@@ -92,7 +93,7 @@ module Dependabot
           { url: central_repo_url, id: "central" }
         end
 
-        sig { params(entry: Nokogiri::XML::Element).returns(T::Hash[Symbol, T.nilable(String)]) }
+        sig { params(entry: Nokogiri::XML::Node).returns(T::Hash[Symbol, T.nilable(String)]) }
         def serialize_mvn_repo(entry)
           {
             url: entry.at_css("url").content.strip,
@@ -102,21 +103,26 @@ module Dependabot
           }
         end
 
-        sig { params(entry: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        sig { params(entry: RepositoryEntry).returns(T::Boolean) }
+        def disabled_repo?(entry)
+          entry[:releases] == "false" && entry[:snapshots] == "false"
+        end
+
+        sig { params(entry: RepositoryEntry).returns(T::Boolean) }
         def snapshot_repo(entry)
           entry[:releases] == "false" && (entry[:snapshots].nil? || entry[:snapshots] == "true")
         end
 
         sig do
           params(
-            entry: T::Hash[Symbol, T.untyped],
+            entry: RepositoryEntry,
             pom: Dependabot::DependencyFile
           )
-            .returns(T::Hash[Symbol, T.untyped])
+            .returns(RepositoryEntry)
         end
         def serialize_urls(entry, pom)
           {
-            url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""),
+            url: evaluated_value(T.must(entry[:url]).to_s, pom).gsub(%r{/$}, ""),
             id: entry[:id],
             snapshots: snapshot_repo(entry)
           }
@@ -127,25 +133,105 @@ module Dependabot
             pom: Dependabot::DependencyFile,
             exclude_inherited: T::Boolean
           )
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T::Array[RepositoryEntry])
         end
         def gather_repository_urls(pom:, exclude_inherited: false)
-          repos_in_pom =
-            Nokogiri::XML(pom.content)
-                    .css(REPOSITORY_SELECTOR)
-                    .map { |node| serialize_mvn_repo(node) }
-                    .reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }
-                    .select { |entry| entry[:url].start_with?("http") }
-                    .map { |entry| serialize_urls(entry, pom) }
+          repos = repositories_from_pom(pom)
+          return repos if exclude_inherited
 
-          return repos_in_pom if exclude_inherited
+          parent = parent_with_repositories(pom, repos)
+          return repos unless parent
 
-          urls_in_pom = repos_in_pom.map { |repo| repo[:url] }
-          unless (parent = parent_pom(pom, urls_in_pom))
-            return repos_in_pom
+          repos + gather_repository_urls(pom: parent)
+        end
+
+        sig do
+          params(
+            pom: Dependabot::DependencyFile
+          ).returns(
+            T::Array[RepositoryEntry]
+          )
+        end
+        def repositories_from_pom(pom)
+          doc = Nokogiri::XML(pom.content)
+          doc.remove_namespaces!
+
+          repository_nodes(doc)
+            .filter_map { |node| build_repo_entry(node, pom) }
+        end
+
+        sig do
+          params(
+            node: Nokogiri::XML::Node,
+            pom: Dependabot::DependencyFile
+          ).returns(T.nilable(RepositoryEntry))
+        end
+        def build_repo_entry(node, pom)
+          url = node.at_css("url")&.text&.strip.to_s
+          return if url.empty?
+
+          entry = serialize_mvn_repo(node)
+
+          return if property_blocked?(entry)
+          return unless http_url?(entry)
+          return if disabled_repo?(entry)
+
+          serialize_urls(entry, pom)
+        end
+
+        sig { params(entry: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+        def property_blocked?(entry)
+          contains_property?(T.must(entry.fetch(:url))) && !evaluate_properties?
+        end
+
+        sig { params(entry: RepositoryEntry).returns(T::Boolean) }
+        def http_url?(entry)
+          url = entry.fetch(:url)
+          url.is_a?(String) && url.start_with?("http")
+        end
+
+        sig do
+          params(
+            pom: Dependabot::DependencyFile,
+            repos: T::Array[RepositoryEntry]
+          ).returns(T.nilable(Dependabot::DependencyFile))
+        end
+        def parent_with_repositories(pom, repos)
+          urls = repos.map { |r| T.must(r[:url]).to_s }
+          parent_pom(pom, urls)
+        end
+
+        # Returns the repository XML nodes that should be considered when resolving artifacts.
+        #
+        # Selection rules:
+        # - Always includes repositories declared at the project level.
+        # - Repositories declared inside <profiles> are included only activated explicitly
+        #
+        # @example With active profile
+        #   <profile>
+        #     <activation><activeByDefault>true</activeByDefault></activation>
+        #     <repositories>...</repositories>
+        #   </profile>
+        #
+        sig { params(doc: Nokogiri::XML::Document).returns(T::Array[Nokogiri::XML::Node]) }
+        def repository_nodes(doc)
+          doc.css(REPOSITORY_SELECTOR).select do |repo_node|
+            profile = repo_node.ancestors("profile").first
+
+            # Not in a profile => always include
+            next true unless profile
+
+            # In a profile => only include when activeByDefault=true
+            active_by_default_profile?(profile)
           end
+        end
 
-          repos_in_pom + gather_repository_urls(pom: parent)
+        sig { params(profile: Nokogiri::XML::Element).returns(T::Boolean) }
+        def active_by_default_profile?(profile)
+          node = profile.at_xpath("./activation/activeByDefault")
+          return false unless node
+
+          node.text.strip.casecmp?("true")
         end
 
         sig { returns(T::Boolean) }
@@ -156,10 +242,10 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         sig do
           params(
-            pom: T.untyped,
+            pom: Dependabot::DependencyFile,
             repo_urls: T::Array[String]
           )
-            .returns(T.untyped)
+            .returns(T.nilable(Dependabot::DependencyFile))
         end
         def parent_pom(pom, repo_urls)
           doc = Nokogiri::XML(pom.content)
@@ -196,13 +282,13 @@ module Dependabot
           value.match?(property_regex)
         end
 
-        sig { params(value: String, pom: Dependabot::DependencyFile).returns(T.untyped) }
+        sig { params(value: String, pom: Dependabot::DependencyFile).returns(String) }
         def evaluated_value(value, pom)
           return value unless contains_property?(value)
 
           match_data = value.match(property_regex)
-          property_name = T.must(match_data).named_captures.fetch("property")
-          property_value = value_for_property(T.cast(property_name, String), pom)
+          property_name = T.must(T.must(match_data).named_captures.fetch("property"))
+          property_value = value_for_property(property_name, pom)
 
           value.gsub(property_regex, property_value)
         end
@@ -216,7 +302,7 @@ module Dependabot
               callsite_pom: pom
             )&.fetch(:value)
 
-          return value if value
+          return value if value.is_a?(String)
 
           msg = "Property not found: #{property_name}"
           raise DependencyFileNotEvaluatable, msg

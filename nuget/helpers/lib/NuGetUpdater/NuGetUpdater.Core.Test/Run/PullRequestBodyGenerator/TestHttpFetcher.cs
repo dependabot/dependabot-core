@@ -4,11 +4,11 @@ namespace NuGetUpdater.Core.Test.Run.PullRequestBodyGenerator;
 
 internal class TestHttpFetcher : IHttpFetcher
 {
-    private readonly Dictionary<string, string> _responses;
+    private readonly Func<string, string?> _responseHandler;
 
-    public TestHttpFetcher(Dictionary<string, string> responses)
+    public TestHttpFetcher(Func<string, string?> responseHandler)
     {
-        _responses = responses;
+        _responseHandler = responseHandler;
     }
 
     public void Dispose()
@@ -17,7 +17,7 @@ internal class TestHttpFetcher : IHttpFetcher
 
     public Task<string?> GetStringAsync(string url)
     {
-        _responses.TryGetValue(url, out var response);
+        var response = _responseHandler(url);
         return Task.FromResult(response);
     }
 }

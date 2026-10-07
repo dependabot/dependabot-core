@@ -9,8 +9,8 @@ internal static class PackagesConfigDiscovery
     public static async Task<PackagesConfigDiscoveryResult?> Discover(string repoRootPath, string workspacePath, string projectPath, ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
-        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath, ProjectHelper.PathFormat.Full);
-        var packagesConfigPath = additionalFiles.FirstOrDefault(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.Ordinal));
+        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(repoRootPath, projectPath, ProjectHelper.PathFormat.Full);
+        var packagesConfigPath = additionalFiles.FirstOrDefault(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase));
 
         if (packagesConfigPath is null)
         {

@@ -35,6 +35,18 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
+    context "with a malformed requirement" do
+      let(:latest_resolvable_version) { "1.5.0" }
+      let(:composer_json_req) do
+        { file: "composer.json", requirement: 123, groups: [], source: nil }
+      end
+
+      it "raises a type error" do
+        expect { updater.updated_requirements }
+          .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
 

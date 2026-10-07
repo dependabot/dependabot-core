@@ -20,7 +20,7 @@ internal class AzurePackageDetailFinder : IPackageDetailFinder
         return "commits";
     }
 
-    public Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, NuGetVersion oldVersion, NuGetVersion newVersion)
+    public Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, string dependencyName, NuGetVersion oldVersion, NuGetVersion newVersion)
     {
         // azure devops doesn't support direct tag listing
         return Task.FromResult(new Dictionary<NuGetVersion, (string TagName, string? Details)>());

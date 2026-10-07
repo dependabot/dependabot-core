@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
@@ -16,7 +17,7 @@ require "dependabot/python/authed_url_builder"
 module Dependabot
   module Python
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
 
@@ -24,18 +25,18 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
 
-        UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          /not supported between instances of 'InstallationCandidate'.*\z/m,
-          Regexp
+        UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        INCOMPATIBLE_VERSIONS_REGEX = Regexp.new(
+          "(?:not supported between instances of 'InstallationCandidate'" \
+          "|There are incompatible versions in the resolved dependencies).*\\z",
+          Regexp::MULTILINE
         )
-        WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
-        UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
-        RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
-        NATIVE_COMPILATION_ERROR = T.let(
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
-          String
-        )
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        UNSAFE_PACKAGE_OPTION_REGEX = /--unsafe-package(?:=|\s+)(?<name>[^\s\\]+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -54,10 +55,10 @@ module Dependabot
             index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil) # rubocop:disable Metrics/AbcSize
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @index_urls = index_urls
           @build_isolation = T.let(true, T::Boolean)
           @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @requirement_map = T.let(nil, T.nilable(T::Hash[String, T::Array[String]]))
@@ -67,7 +68,7 @@ module Dependabot
           @setup_cfg_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @pip_compile_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @compiled_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @credentials = credentials
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
@@ -108,7 +109,12 @@ module Dependabot
             language_version_manager.install_required_python
 
             filenames_to_compile.each do |filename|
-              compile_file(filename)
+              # Compile the file for each of its output files
+              # A single .in file may generate multiple .txt files with different --output-file options
+              output_files = compiled_files_for_filename(filename)
+              # When no output files are found, compile with nil to use default pip-compile behavior
+              output_files = [nil] if output_files.empty?
+              output_files.each { |output_file| compile_file(filename, output_file) }
             end
 
             # Remove any .python-version file before parsing the reqs
@@ -128,11 +134,11 @@ module Dependabot
           end
         end
 
-        sig { params(filename: String).void }
-        def compile_file(filename)
+        sig { params(filename: String, output_file: T.nilable(Dependabot::DependencyFile)).void }
+        def compile_file(filename, output_file)
           # Shell out to pip-compile, generate a new set of requirements.
           # This is slow, as pip-compile needs to do installs.
-          options = pip_compile_options(filename)
+          options = pip_compile_options(filename, output_file)
           options_fingerprint = pip_compile_options_fingerprint(options)
 
           name_part = "pyenv exec pip-compile " \
@@ -188,22 +194,29 @@ module Dependabot
         def update_uncompiled_files(updated_files)
           updated_filenames = updated_files.map(&:name)
           old_reqs = T.must(T.must(dependency).previous_requirements)
-                      .reject { |r| updated_filenames.include?(r[:file]) }
+                      .reject { |r| updated_filenames.include?(r.file) }
           new_reqs = T.must(dependency).requirements
-                      .reject { |r| updated_filenames.include?(r[:file]) }
+                      .reject { |r| updated_filenames.include?(r.file) }
 
           return [] if new_reqs.none?
 
           files = dependency_files
                   .reject { |file| updated_filenames.include?(file.name) }
 
-          args = dependency.to_h
-          args = args.keys.to_h { |k| [k.to_sym, args[k]] }
-          args[:requirements] = new_reqs
-          args[:previous_requirements] = old_reqs
+          dep = T.must(dependency)
 
           RequirementFileUpdater.new(
-            dependencies: [Dependency.new(**T.unsafe(args))],
+            dependencies: [Dependency.new(
+              name: dep.name,
+              version: dep.version,
+              requirements: new_reqs,
+              package_manager: dep.package_manager,
+              previous_version: dep.previous_version,
+              previous_requirements: old_reqs,
+              directory: dep.directory,
+              subdependency_metadata: dep.subdependency_metadata,
+              removed: dep.removed?
+            )],
             dependency_files: files,
             credentials: credentials
           ).updated_dependency_files
@@ -311,15 +324,15 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
-                     .find { |r| r[:file] == file.name }
+                     .find { |r| r.file == file.name }
 
           return file.content unless old_req
-          return file.content if old_req == "==#{T.must(dependency).version}"
+          return file.content if old_req.requirement_string == "==#{T.must(dependency).version}"
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
+            old_requirement: old_req.requirement_string,
             new_requirement: "==#{T.must(dependency).version}",
             index_urls: @index_urls
           ).updated_content
@@ -330,17 +343,17 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
-                     .find { |r| r[:file] == file.name }
+                     .find { |r| r.file == file.name }
           new_req = T.must(dependency).requirements
-                     .find { |r| r[:file] == file.name }
-          return file.content unless old_req&.fetch(:requirement)
+                     .find { |r| r.file == file.name }
+          return file.content unless old_req&.requirement_string
           return file.content if old_req == new_req
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
-            new_requirement: T.must(new_req)[:requirement],
+            old_requirement: old_req.requirement_string,
+            new_requirement: T.must(T.must(new_req).requirement_string),
             index_urls: @index_urls
           ).updated_content
         end
@@ -350,7 +363,17 @@ module Dependabot
           content = replace_header_with_original(updated_content, T.must(file.content))
           content = remove_new_warnings(content, T.must(file.content))
           content = update_hashes_if_required(content, T.must(file.content))
+          content = scrub_index_url_credentials(content)
           replace_absolute_file_paths(content, T.must(file.content))
+        end
+
+        # Index URLs are passed to pip-compile with credentials embedded so the
+        # private index can be fetched, and pip-tools emits those URLs verbatim
+        # into the compiled file when index-url emission is active. Strip any
+        # userinfo so tokens are never written into the regenerated file.
+        sig { params(content: String).returns(String) }
+        def scrub_index_url_credentials(content)
+          content.gsub(%r{^(--(?:extra-)?index-url[= ]https?://)[^/\s]+@}, "\\1")
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
@@ -453,21 +476,29 @@ module Dependabot
         end
 
         sig { params(name: String, version: String, algorithm: String).returns(T::Array[String]) }
+        # rubocop:disable-next Metrics/PerceivedComplexity
         def package_hashes_for(name:, version:, algorithm:)
           index_urls = @index_urls || [nil]
           hashes = []
 
           index_urls.each do |index_url|
+            index_url = "https://pypi.org" if index_url && !index_url.start_with?("http://", "https://")
+
             args = [name, version, algorithm]
             args << index_url if index_url
 
             begin
+              helper_result = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              )
+
+              # Skip this index if helper returned nil (can happen with unavailable registries)
+              next if helper_result.nil?
+
               native_helper_hashes = T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-                  function: "get_dependency_hash",
-                  args: args
-                ),
+                helper_result,
                 T::Array[T::Hash[String, String]]
               ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
 
@@ -479,9 +510,10 @@ module Dependabot
             end
           end
 
+          raise DependencyFileNotResolvable, "Unable to find hashes for package #{name}" if hashes.empty?
+
           hashes
         end
-
         sig { params(requirement_string: String).returns(T.nilable(String)) }
         def hash_separator(requirement_string)
           hash_regex = RequirementParser::HASH
@@ -514,45 +546,46 @@ module Dependabot
           )
         end
 
-        sig { params(filename: String).returns(String) }
-        def pip_compile_options(filename)
+        sig { params(filename: String, output_file: T.nilable(Dependabot::DependencyFile)).returns(String) }
+        def pip_compile_options(filename, output_file = nil)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
 
-          if (requirements_file = compiled_file_for_filename(filename))
-            options += pip_compile_options_from_compiled_file(requirements_file)
-          end
+          # Use the explicit output file if provided, otherwise fall back to finding one
+          requirements_file = output_file || compiled_file_for_filename(filename)
+          options += pip_compile_options_from_compiled_file(requirements_file) if requirements_file
+          options = merge_pip_tools_config_options(options)
 
           options.join(" ")
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(requirements_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
         def pip_compile_options_from_compiled_file(requirements_file)
+          content = T.must(T.must(requirements_file).content)
           options = ["--output-file=#{T.must(requirements_file).name}"]
 
-          options << "--no-emit-index-url" unless T.must(T.must(requirements_file).content).include?("index-url http")
+          options << "--no-emit-index-url" unless content.include?("index-url http")
 
-          options << "--generate-hashes" if T.must(T.must(requirements_file).content).include?("--hash=sha")
+          options << "--generate-hashes" if content.include?("--hash=sha")
 
-          options << "--allow-unsafe" if includes_unsafe_packages?(T.must(T.must(requirements_file).content))
+          options << "--allow-unsafe" if includes_unsafe_packages?(content)
+          options.concat(unsafe_package_options_from_compiled_file(content))
 
-          options << "--no-annotate" unless T.must(T.must(requirements_file).content).include?("# via ")
+          options << "--no-annotate" unless content.include?("# via ")
 
-          options << "--no-header" unless T.must(T.must(requirements_file).content).include?("autogenerated by pip-c")
+          options << "--no-header" unless content.include?("autogenerated by pip-c")
 
-          options << "--pre" if T.must(T.must(requirements_file).content).include?("--pre")
+          options << "--pre" if content.include?("--pre")
 
-          options << "--strip-extras" if T.must(T.must(requirements_file).content).include?("--strip-extras")
+          options << "--strip-extras" if content.include?("--strip-extras")
 
-          if (resolver = RESOLVER_REGEX.match(T.must(requirements_file).content))
+          if (resolver = RESOLVER_REGEX.match(content))
             options << "--resolver=#{resolver}"
           end
 
           options
         end
 
-        # rubocop:enable Metrics/AbcSize
         sig { returns(T::Array[String]) }
         def pip_compile_index_options
           credentials
@@ -573,17 +606,99 @@ module Dependabot
           UNSAFE_PACKAGES.any? { |n| content.match?(/^#{Regexp.quote(n)}==/) }
         end
 
+        sig { params(content: String).returns(T::Array[String]) }
+        def unsafe_package_options_from_compiled_file(content)
+          header = content.lines.take_while { |line| line.start_with?("#") }.join(" ")
+          header
+            .scan(UNSAFE_PACKAGE_OPTION_REGEX)
+            .flatten
+            .uniq
+            .map { |name| "--unsafe-package=#{name}" }
+        end
+
+        sig { params(options: T::Array[String]).returns(T::Array[String]) }
+        def merge_pip_tools_config_options(options)
+          merged_options = options.dup
+          pip_tools_config_options.each do |option|
+            next if option_already_present?(merged_options, option)
+
+            merged_options << option
+          end
+
+          merged_options
+        end
+
+        sig { returns(T::Array[String]) }
+        def pip_tools_config_options
+          return [] unless pip_tools_config_file&.content
+
+          config = parse_pip_tools_config
+          return [] unless config
+
+          options = []
+          options << "--allow-unsafe" if config["allow-unsafe"] == true
+          options << "--strip-extras" if config["strip-extras"] == true
+
+          options.concat(resolver_option_from_config(config))
+          options.concat(unsafe_package_options_from_config(config))
+
+          options
+        end
+
+        sig { params(existing_options: T::Array[String], option: String).returns(T::Boolean) }
+        def option_already_present?(existing_options, option)
+          return existing_options.include?("--allow-unsafe") if option == "--allow-unsafe"
+          return existing_options.include?("--strip-extras") if option == "--strip-extras"
+          return existing_options.any? { |opt| opt.start_with?("--resolver=") } if option.start_with?("--resolver=")
+          return existing_options.include?(option) if option.start_with?("--unsafe-package=")
+
+          false
+        end
+
+        sig { params(config: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+        def resolver_option_from_config(config)
+          resolver = config["resolver"]
+          return [] unless resolver.is_a?(String)
+          return [] if resolver.empty?
+
+          ["--resolver=#{resolver}"]
+        end
+
+        sig { params(config: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+        def unsafe_package_options_from_config(config)
+          Array(config["unsafe-package"])
+            .select { |package_name| package_name.is_a?(String) && !package_name.empty? }
+            .map { |package_name| "--unsafe-package=#{package_name}" }
+        end
+
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+        def parse_pip_tools_config
+          parsed = T.let(TomlRB.parse(T.must(pip_tools_config_file).content), T::Hash[String, T.untyped])
+          pip_tools_config = parsed["pip-tools"]
+          return unless pip_tools_config.is_a?(Hash)
+
+          pip_tools_config
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          nil
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def pip_tools_config_file
+          dependency_files.find { |file| file.name.end_with?(".pip-tools.toml") }
+        end
+
         sig { returns(T::Array[String]) }
         def filenames_to_compile
           files_from_reqs =
             T.must(dependency).requirements
-             .map { |r| r[:file] }
+             .filter_map(&:file)
              .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
-              compiled_file = compiled_file_for_filename(fn)
-              compiled_file_includes_dependency?(compiled_file)
+              compiled_files_for_filename(fn).any? do |compiled_file|
+                compiled_file_includes_dependency?(compiled_file)
+              end
             end
 
           filenames = [*files_from_reqs, *files_from_compiled_files].uniq
@@ -591,17 +706,27 @@ module Dependabot
           order_filenames_for_compilation(filenames)
         end
 
+        # Returns the first compiled file for a given source filename
+        # Used for backward compatibility in places where only one file is needed
         sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
         def compiled_file_for_filename(filename)
-          compiled_file =
-            compiled_files
-            .find { |f| T.must(f.content).match?(output_file_regex(filename)) }
+          compiled_files_for_filename(filename).first
+        end
 
-          compiled_file ||=
-            compiled_files
-            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+        # Returns all compiled files (.txt) that were generated from the given source file (.in)
+        # A single .in file may generate multiple .txt files with different --output-file options
+        sig { params(filename: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def compiled_files_for_filename(filename)
+          # First, find all files that have an --output-file header referencing this input file
+          files_with_output_header = compiled_files.select do |f|
+            T.must(f.content).match?(output_file_regex(filename))
+          end
 
-          compiled_file
+          return files_with_output_header if files_with_output_header.any?
+
+          # Fall back to convention-based matching (input.in -> input.txt)
+          default_output = compiled_files.find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+          default_output ? [default_output] : []
         end
 
         sig { params(filename: T.any(String, Symbol)).returns(String) }
@@ -645,7 +770,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Python::FileFetcher::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||=
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = T.must(file.content).scan(child_req_regex).flatten
@@ -699,7 +824,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

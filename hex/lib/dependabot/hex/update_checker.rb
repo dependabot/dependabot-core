@@ -57,7 +57,7 @@ module Dependabot
           end
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -90,8 +90,8 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_latest_version
-          return T.must(new_tag).fetch(:commit_sha)
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          return T.must(new_tag).commit_sha
         end
 
         # If the dependency is pinned then there's nothing we can do.
@@ -125,8 +125,8 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
-          return latest_tag&.fetch(:commit_sha) || dependency.version
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          return latest_tag&.commit_sha || dependency.version
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -140,14 +140,14 @@ module Dependabot
 
         @latest_git_tag_is_resolvable_checked = T.let(true, T.nilable(T::Boolean))
 
-        return false if git_commit_checker.local_tag_for_latest_version.nil?
+        return false if git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
 
-        replacement_tag = git_commit_checker.local_tag_for_latest_version
+        replacement_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
 
         prepared_files = FilePreparer.new(
           dependency: dependency,
           dependency_files: dependency_files,
-          replacement_git_pin: T.must(replacement_tag).fetch(:tag)
+          replacement_git_pin: T.must(replacement_tag).tag
         ).prepared_dependency_files
 
         resolver_result = VersionResolver.new(
@@ -167,7 +167,7 @@ module Dependabot
         false
       end
 
-      sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -175,17 +175,41 @@ module Dependabot
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_latest_version
-          return T.must(dependency_source_details).merge(ref: T.must(new_tag).fetch(:tag))
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          return source_with_ref(
+            T.must(dependency_source_details),
+            T.must(new_tag).tag
+          )
         end
 
         # Otherwise return the original source
         dependency_source_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def dependency_source_details
         dependency.source_details
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          ref: String
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_ref(source, ref)
+        updated_source = source.dup
+        key = if source.key?(:ref)
+                :ref
+              elsif source.key?("ref")
+                "ref"
+              elsif source.keys.any?(Symbol)
+                :ref
+              else
+                "ref"
+              end
+        updated_source[key] = ref
+        updated_source
       end
 
       sig do

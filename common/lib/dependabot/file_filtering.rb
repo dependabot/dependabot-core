@@ -90,8 +90,6 @@ module Dependabot
       ).returns(T::Boolean)
     end
     def self.should_exclude_path?(path, context, exclude_paths)
-      return false unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
-
       return false if exclude_paths.nil? || exclude_paths.empty?
 
       should_exclude = exclude_path?(path, exclude_paths)

@@ -36,6 +36,40 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
 
     its(:content) { is_expected.to include "prettier: ^3.3.3" }
 
+    context "with an unfixable requirement" do
+      let(:dependency) do
+        create_dependency(
+          file: "pnpm-workspace.yaml",
+          name: "prettier",
+          version: "3.3.0",
+          required_version: :unfixable,
+          previous_required_version: "^3.3.0"
+        )
+      end
+
+      it "rejects the non-string replacement" do
+        expect { updated_package_json }
+          .to raise_error(TypeError, "pnpm workspace requirement must be a string")
+      end
+    end
+
+    context "with a registry source" do
+      let(:dependencies) do
+        [
+          create_dependency(
+            file: "pnpm-workspace.yaml",
+            name: "prettier",
+            version: "3.3.0",
+            required_version: "^3.3.3",
+            previous_required_version: "^3.3.0",
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          )
+        ]
+      end
+
+      its(:content) { is_expected.to include "prettier: ^3.3.3" }
+    end
+
     context("with multiple dependencies") do
       let(:project_name) { "pnpm/catalog_multiple" }
       let(:dependencies) do
@@ -126,6 +160,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
 
       its(:content) { is_expected.to include "react: ^16.2.3" }
       its(:content) { is_expected.to include "react-dom: ^16.2.3" }
+    end
+
+    context("with a scoped package in catalog") do
+      let(:project_name) { "pnpm/catalog_monorepo" }
+      let(:dependencies) do
+        [
+          create_dependency(
+            file: "pnpm-workspace.yaml",
+            name: "@tanstack/react-query",
+            version: "5.59.15",
+            required_version: "^5.62.0",
+            previous_required_version: "^5.59.15"
+          )
+        ]
+      end
+
+      its(:content) { is_expected.to include '"@tanstack/react-query": ^5.62.0' }
+    end
+
+    context("with multiple scoped packages in catalog") do
+      let(:project_name) { "pnpm/catalog_monorepo" }
+      let(:dependencies) do
+        [
+          create_dependency(
+            file: "pnpm-workspace.yaml",
+            name: "@tanstack/react-query",
+            version: "5.59.15",
+            required_version: "^5.62.0",
+            previous_required_version: "^5.59.15"
+          ),
+          create_dependency(
+            file: "pnpm-workspace.yaml",
+            name: "@trpc/client",
+            version: "11.0.0-rc.477",
+            required_version: "^11.0.0-rc.500",
+            previous_required_version: "^11.0.0-rc.477"
+          )
+        ]
+      end
+
+      its(:content) { is_expected.to include '"@tanstack/react-query": ^5.62.0' }
+      its(:content) { is_expected.to include '"@trpc/client": ^11.0.0-rc.500' }
     end
 
     context("with catalog and catalog groups with valid yaml") do

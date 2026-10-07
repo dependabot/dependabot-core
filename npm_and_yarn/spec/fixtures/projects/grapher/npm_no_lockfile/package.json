@@ -1,0 +1,12 @@
+{
+  "name": "grapher-npm-no-lockfile",
+  "version": "1.0.0",
+  "description": "Test project for npm grapher without lockfile",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

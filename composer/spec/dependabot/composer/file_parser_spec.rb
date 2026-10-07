@@ -63,14 +63,6 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with the local package as dependency" do
-      before do
-        Dependabot::Experiments.register(:exclude_local_composer_packages, true)
-      end
-
-      after do
-        Dependabot::Experiments.register(:exclude_local_composer_packages, false)
-      end
-
       let(:project_name) { "local_package_as_dep" }
 
       its(:length) { is_expected.to eq(4) }
@@ -79,6 +71,50 @@ RSpec.describe Dependabot::Composer::FileParser do
         subject { dependencies.select(&:top_level?) }
 
         its(:length) { is_expected.to eq(2) }
+      end
+    end
+
+    context "with selectively consumed fields" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "composer.json", content: manifest_data.to_json),
+          Dependabot::DependencyFile.new(name: "composer.lock", content: lock_data.to_json)
+        ]
+      end
+      let(:manifest_data) do
+        { "require" => { "php" => false, "vendor/package" => "^1", "vendor/absent" => false } }
+      end
+      let(:lock_data) do
+        {
+          "packages" => [
+            { "name" => "ignored", "source" => false },
+            { "name" => "vendor/package", "version" => 123, "source" => { "type" => "git", "url" => false } },
+            { "name" => "vendor/transitive", "version" => "2", "source" => false }
+          ]
+        }
+      end
+
+      it "retains source metadata and ignores fields that parsing does not consume" do
+        expect(dependencies.map(&:name)).to eq(%w(vendor/package vendor/transitive))
+        expect(dependencies.first.version).to eq("123")
+        expect(dependencies.first.requirements.first.source).to eq(type: "git", url: false)
+      end
+
+      context "with a consumed malformed requirement" do
+        let(:manifest_data) { { "require" => { "vendor/package" => false } } }
+
+        it "rejects the requirement instead of hiding the dependency" do
+          expect { dependencies }.to raise_error(TypeError)
+        end
+      end
+
+      context "with non-object requirement sections and non-array package sections" do
+        let(:manifest_data) { { "require" => false, "require-dev" => [] } }
+        let(:lock_data) { { "packages" => false, "packages-dev" => {} } }
+
+        it "retains the enumeration skips" do
+          expect(dependencies).to eq([])
+        end
       end
     end
 
@@ -411,7 +447,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
-      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.8.10"))
+      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.10.3"))
     end
 
     it "returns language with version" do

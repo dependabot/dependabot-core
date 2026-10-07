@@ -15,6 +15,202 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class MiscellaneousTests
 {
+    [Fact]
+    public void ResolveDependencyGroupToRefreshPrefersExactConfiguredName()
+    {
+        var job = new Job()
+        {
+            Source = new() { Provider = "github", Repo = "some/repo" },
+            Dependencies = ["some.package"],
+            DependencyGroupToRefresh = "PARENT/some.package",
+            DependencyGroups = [
+                new()
+                {
+                    Name = "parent",
+                    Rules = new() { ["group-by"] = "dependency-name" },
+                },
+                new() { Name = "parent/Some.Package" },
+            ],
+        };
+
+        var group = job.ResolveDependencyGroupToRefresh();
+
+        Assert.NotNull(group);
+        Assert.Equal("parent/Some.Package", group.Name);
+        Assert.False(group.IsGroupedByDependencyName);
+    }
+
+    [Fact]
+    public void ResolveDependencyGroupToRefreshCreatesDynamicSubgroup()
+    {
+        var job = new Job()
+        {
+            Source = new() { Provider = "github", Repo = "some/repo" },
+            Dependencies = ["some.package"],
+            DependencyGroupToRefresh = "parent/Some.Package",
+            DependencyGroups = [
+                new()
+                {
+                    Name = "parent",
+                    Rules = new()
+                    {
+                        ["patterns"] = new[] { "*" },
+                        ["group-by"] = "dependency-name",
+                        ["update-types"] = new[] { "minor", "patch" },
+                    },
+                },
+            ],
+        };
+
+        var group = job.ResolveDependencyGroupToRefresh();
+
+        Assert.NotNull(group);
+        Assert.Equal("parent/Some.Package", group.Name);
+        Assert.True(group.IsGroupedByDependencyName);
+        Assert.True(group.GetGroupMatcher().IsMatch("some.package"));
+        Assert.False(group.GetGroupMatcher().IsMatch("Some.Other.Package"));
+        Assert.True(group.GetGroupMatcher().IsAllowedByVersion(
+            NuGetVersion.Parse("1.0.0"),
+            NuGetVersion.Parse("1.1.0")));
+        Assert.False(group.GetGroupMatcher().IsAllowedByVersion(
+            NuGetVersion.Parse("1.0.0"),
+            NuGetVersion.Parse("2.0.0")));
+    }
+
+    [Fact]
+    public void ResolveDependencyGroupToRefreshDoesNotReturnDynamicParent()
+    {
+        var job = new Job()
+        {
+            Source = new() { Provider = "github", Repo = "some/repo" },
+            Dependencies = ["Some.Package"],
+            DependencyGroupToRefresh = "parent",
+            DependencyGroups = [
+                new()
+                {
+                    Name = "parent",
+                    Rules = new() { ["group-by"] = "dependency-name" },
+                },
+            ],
+        };
+
+        Assert.Null(job.ResolveDependencyGroupToRefresh());
+    }
+
+    [Fact]
+    public void ResolveDependencyGroupToRefreshDoesNotTreatSlashAsDynamic()
+    {
+        var job = new Job()
+        {
+            Source = new() { Provider = "github", Repo = "some/repo" },
+            Dependencies = ["Some.Package"],
+            DependencyGroupToRefresh = "parent/Some.Package",
+            DependencyGroups = [new() { Name = "parent" }],
+        };
+
+        Assert.Null(job.ResolveDependencyGroupToRefresh());
+    }
+
+    [Fact]
+    public void ResolveDependencyGroupToRefreshUsesLongestDynamicParentName()
+    {
+        var job = new Job()
+        {
+            Source = new() { Provider = "github", Repo = "some/repo" },
+            Dependencies = ["Some.Package"],
+            DependencyGroupToRefresh = "parent/nested/Some.Package",
+            DependencyGroups = [
+                new()
+                {
+                    Name = "parent",
+                    Rules = new() { ["group-by"] = "dependency-name" },
+                },
+                new()
+                {
+                    Name = "parent/nested",
+                    Rules = new() { ["group-by"] = "dependency-name" },
+                },
+            ],
+        };
+
+        var group = job.ResolveDependencyGroupToRefresh();
+
+        Assert.NotNull(group);
+        Assert.Equal("parent/nested/Some.Package", group.Name);
+        Assert.Equal("Some.Package", group.DependencyNameGroupTarget);
+        Assert.True(group.GetGroupMatcher().IsMatch("Some.Package"));
+    }
+
+    [Fact]
+    public void DynamicSubgroupStopsMatchingWhenDependencyLeavesParent()
+    {
+        var parent = new DependencyGroup()
+        {
+            Name = "parent",
+            Rules = new()
+            {
+                ["patterns"] = new[] { "Other.*" },
+                ["group-by"] = "dependency-name",
+            },
+        };
+
+        var subgroup = parent.CreateDependencyNameSubgroup("Some.Package");
+
+        Assert.False(subgroup.GetGroupMatcher().IsMatch("Some.Package"));
+    }
+
+    [Fact]
+    public void GetMatchingDynamicGroupPullRequestRequiresGroupIdentity()
+    {
+        var job = new Job()
+        {
+            Source = new() { Provider = "github", Repo = "some/repo" },
+            ExistingGroupPullRequests = [
+                new()
+                {
+                    DependencyGroupName = "other/Some.Package",
+                    Dependencies = [
+                        new()
+                        {
+                            DependencyName = "Some.Package",
+                            DependencyVersion = NuGetVersion.Parse("2.0.0"),
+                        },
+                    ],
+                },
+                new()
+                {
+                    DependencyGroupName = "parent/Some.Package",
+                    Dependencies = [
+                        new()
+                        {
+                            DependencyName = "Some.Package",
+                            DependencyVersion = NuGetVersion.Parse("2.0.0"),
+                        },
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory()
+            {
+                Name = "some.package",
+                Version = "2.0.0",
+                Requirements = [],
+                Directory = "/",
+            },
+        };
+
+        var existingPr = job.GetExistingGroupPullRequestForDependencies(
+            dependencies,
+            considerVersions: true,
+            dependencyGroupName: "PARENT/some.package"
+        );
+
+        Assert.NotNull(existingPr);
+        Assert.Equal("parent/Some.Package", existingPr.Item1);
+    }
+
     [Theory]
     [MemberData(nameof(IsDependencyIgnoredByNameOnlyTestData))]
     public void IsDependencyIgnoredByNameOnly(Condition[] ignoreConditions, string dependencyName, bool expectedIgnored)
@@ -66,6 +262,79 @@ public class MiscellaneousTests
                 {
                     DependencyName = "Some.Dependency",
                     VersionRequirement = Requirement.Parse("> 2.0.0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
+        ];
+
+        // matching wildcard with normalized unconditional requirement
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.*",
+                    VersionRequirement = Requirement.Parse(">= 0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            true,
+        ];
+
+        // non-matching wildcard with normalized unconditional requirement
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Different.*",
+                    VersionRequirement = Requirement.Parse(">= 0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
+        ];
+
+        // matching name with a non-sentinel requirement
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.Dependency",
+                    VersionRequirement = Requirement.Parse("> 0"),
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
+        ];
+
+        // normalized unconditional requirement with update type restrictions
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.Dependency",
+                    VersionRequirement = Requirement.Parse(">= 0"),
+                    UpdateTypes = [ConditionUpdateType.SemVerMajor],
                 }
             },
             // dependencyName
@@ -129,14 +398,15 @@ public class MiscellaneousTests
     }
 
     [Fact]
-    public void DeserializeDependencyGroup()
+    public void DeserializeDependencyGroup_SpecificValues()
     {
         var json = """
             {
               "name": "test-group",
               "rules": {
                 "patterns": ["Test.*"],
-                "exclude-patterns": ["Dependency.*"]
+                "exclude-patterns": ["Dependency.*"],
+                "update-types": ["minor", "patch"]
               }
             }
             """;
@@ -146,6 +416,24 @@ public class MiscellaneousTests
         var matcher = group.GetGroupMatcher();
         Assert.Equal(["Test.*"], matcher.Patterns);
         Assert.Equal(["Dependency.*"], matcher.ExcludePatterns);
+        Assert.Equal([GroupUpdateType.Minor, GroupUpdateType.Patch], matcher.UpdateTypes);
+    }
+
+    [Fact]
+    public void DeserializeDependencyGroup_DefaultValues()
+    {
+        var json = """
+            {
+              "name": "test-group"
+            }
+            """;
+        var group = JsonSerializer.Deserialize<DependencyGroup>(json, RunWorker.SerializerOptions);
+        Assert.NotNull(group);
+        Assert.Equal("test-group", group.Name);
+        var matcher = group.GetGroupMatcher();
+        Assert.Equal(["*"], matcher.Patterns);
+        Assert.Equal([], matcher.ExcludePatterns);
+        Assert.Equal([GroupUpdateType.Major, GroupUpdateType.Minor, GroupUpdateType.Patch], matcher.UpdateTypes);
     }
 
     [Fact]
@@ -156,7 +444,8 @@ public class MiscellaneousTests
               "name": "test-group",
               "rules": {
                 "patterns": { "unexpected": 1 },
-                "exclude-patterns": { "unexpected": 2 }
+                "exclude-patterns": { "unexpected": 2 },
+                "update-types": { "unexpected": 3 }
               }
             }
             """;
@@ -166,6 +455,7 @@ public class MiscellaneousTests
         var matcher = group.GetGroupMatcher();
         Assert.Equal([], matcher.Patterns);
         Assert.Equal([], matcher.ExcludePatterns);
+        Assert.Equal([], matcher.UpdateTypes);
     }
 
     [Theory]
@@ -245,10 +535,65 @@ public class MiscellaneousTests
     }
 
     [Theory]
+    [MemberData(nameof(GroupMatcher_IsAllowedByVersionTestData))]
+    public void GroupMatcher_IsAllowedByVersion(string[]? updateTypes, string oldVersion, string newVersion, bool expectedAllowed)
+    {
+        var rules = new Dictionary<string, object>();
+        if (updateTypes is not null)
+        {
+            rules["update-types"] = updateTypes;
+        }
+
+        var group = new DependencyGroup()
+        {
+            Name = "TestGroup",
+            Rules = rules,
+        };
+
+        var matcher = group.GetGroupMatcher();
+        var actualAllowed = matcher.IsAllowedByVersion(NuGetVersion.Parse(oldVersion), NuGetVersion.Parse(newVersion));
+        Assert.Equal(expectedAllowed, actualAllowed);
+    }
+
+    public static IEnumerable<object?[]> GroupMatcher_IsAllowedByVersionTestData()
+    {
+        // defaults to major, minor, and patch
+        yield return [null, "1.0.0", "2.0.0", true];
+        yield return [null, "1.0.0", "1.1.0", true];
+        yield return [null, "1.0.0", "1.0.1", true];
+
+        // constrained update type behavior
+        yield return [new[] { "major" }, "1.0.0", "2.0.0", true];
+        yield return [new[] { "major" }, "1.0.0", "1.1.0", false];
+        yield return [new[] { "minor", "patch" }, "1.0.0", "2.0.0", false];
+
+        // revision-only and prerelease-only updates should be patch-equivalent, but only for upgrades
+        yield return [null, "1.0.0.1", "1.0.0.3", true];
+        yield return [null, "1.0.0.1", "1.0.0.1", false];
+        yield return [null, "1.0.0.3", "1.0.0.1", false];
+        yield return [new[] { "patch" }, "1.0.0.1", "1.0.0.3", true];
+        yield return [new[] { "patch" }, "1.0.0.1", "1.0.0.1", false];
+        yield return [new[] { "patch" }, "1.0.0.3", "1.0.0.1", false];
+        yield return [null, "1.0.0-alpha", "1.0.0-beta", true];
+        yield return [null, "1.0.0-alpha", "1.0.0-alpha", false];
+        yield return [null, "1.0.0-beta", "1.0.0-alpha", false];
+        yield return [new[] { "patch" }, "1.0.0-alpha", "1.0.0-beta", true];
+        yield return [new[] { "patch" }, "1.0.0-alpha", "1.0.0-alpha", false];
+        yield return [new[] { "patch" }, "1.0.0-beta", "1.0.0-alpha", false];
+    }
+
+    [Theory]
     [MemberData(nameof(GetMatchingPullRequestTestData))]
     public void GetMatchingPullRequest(Job job, IEnumerable<Dependency> dependencies, bool considerVersions, string? expectedGroupPrName, string[]? expectedPrDependencyNames)
     {
-        var existingPr = job.GetExistingPullRequestForDependencies(dependencies, considerVersions);
+        var reportedDependencies = dependencies.Select(d => new ReportedDependencyWithDirectory()
+        {
+            Name = d.Name,
+            Version = d.Version,
+            Requirements = [],
+            Directory = "/current",
+        });
+        var existingPr = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions);
 
         if (expectedPrDependencyNames is null)
         {
@@ -267,6 +612,49 @@ public class MiscellaneousTests
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         AssertEx.Equal(expectedPrDependencyNames, actualPrDependencyNames);
+    }
+
+    [Theory]
+    [InlineData("/current", true)]
+    [InlineData("/other", false)]
+    [InlineData(null, true)]
+    public void GetMatchingPullRequestConsidersDirectory(string? existingPullRequestDirectory, bool expectMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+            },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency()
+                        {
+                            DependencyName = "Dependency.A",
+                            DependencyVersion = NuGetVersion.Parse("1.0.0"),
+                            Directory = existingPullRequestDirectory,
+                        },
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory()
+            {
+                Name = "Dependency.A",
+                Version = "1.0.0",
+                Requirements = [],
+                Directory = "/current",
+            },
+        };
+
+        var existingPr = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true);
+
+        Assert.Equal(expectMatch, existingPr is not null);
     }
 
     public static IEnumerable<object?[]> GetMatchingPullRequestTestData()
@@ -515,9 +903,9 @@ public class MiscellaneousTests
 
     [Theory]
     [MemberData(nameof(DependencyInfoFromJobData))]
-    public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
+    public void DependencyInfoFromJob(Job job, Dependency dependency, GroupMatcher? groupMatcher, DependencyInfo expectedDependencyInfo)
     {
-        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatcher is null ? [] : [groupMatcher], allowCooldown: true);
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
@@ -604,7 +992,7 @@ public class MiscellaneousTests
         ];
     }
 
-    public static IEnumerable<object[]> DependencyInfoFromJobData()
+    public static IEnumerable<object?[]> DependencyInfoFromJobData()
     {
         // with security advisory
         yield return
@@ -634,6 +1022,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -679,6 +1069,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -712,6 +1104,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -753,6 +1147,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -795,6 +1191,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -808,6 +1206,44 @@ public class MiscellaneousTests
             },
         ];
 
-
+        // with limited group update types; major is explicitly ignored, only patch is explicitly allowed => major and minor are ignored
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo"
+                },
+                IgnoreConditions = [
+                    new Condition()
+                    {
+                        DependencyName = "Some.*",
+                        UpdateTypes = [ConditionUpdateType.SemVerMajor],
+                    },
+                ],
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            new GroupMatcher()
+            {
+                Patterns = ["Some.*"],
+                ExcludePatterns = [],
+                UpdateTypes = [GroupUpdateType.Patch],
+            },
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor],
+            },
+        ];
     }
 }

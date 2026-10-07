@@ -1,0 +1,18 @@
+# This fixture doesn't include the `language` field in the local config.
+# The language should be fetched from the hook source repository.
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        additional_dependencies:
+          - black[d]>=23.0.0
+          - click>=8.1.0,<8.2.0
+          - platformdirs>=3.0.0,<4.0.0
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.56.0
+    hooks:
+      - id: eslint
+        additional_dependencies:
+          - eslint@8.56.0
+          - typescript@5.3.0

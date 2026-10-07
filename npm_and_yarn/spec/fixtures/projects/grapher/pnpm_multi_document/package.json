@@ -1,0 +1,9 @@
+{
+  "name": "grapher-pnpm-multi-document",
+  "version": "1.0.0",
+  "description": "Test project for pnpm grapher with a two-document lockfile",
+  "packageManager": "pnpm@12.0.0",
+  "dependencies": {
+    "to-regex-range": "5.0.1"
+  }
+}

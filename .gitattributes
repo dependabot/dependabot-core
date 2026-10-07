@@ -1,4 +1,5 @@
 * text=auto eof=lf
+python/spec/fixtures/pyproject_files/*_crlf.toml text eof=crlf
 Dockerfile.development linguist-language=Dockerfile
 Dockerfile.updater-core linguist-language=Dockerfile
 bundler/spec/fixtures/rubygems_responses/*.rz binary linguist-generated

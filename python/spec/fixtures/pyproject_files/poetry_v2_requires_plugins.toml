@@ -1,0 +1,22 @@
+[project]
+name = "requires-plugins-project"
+version = "0.1.0"
+description = "A project requiring Poetry plugins including poetry-plugin-export"
+authors = [
+    {name = "Dependabot Support", email = "support@dependabot.com"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28.0",
+    "flask>=2.3.0",
+]
+
+[tool.poetry]
+requires-poetry = ">=2.0"
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

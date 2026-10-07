@@ -1,0 +1,7 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+
+dependencies = [
+    "requests>=2.13.0; python_version >= '3.8'",
+]

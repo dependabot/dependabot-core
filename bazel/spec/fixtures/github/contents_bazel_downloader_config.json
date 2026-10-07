@@ -1,0 +1,13 @@
+{
+  "name": "downloader.cfg",
+  "path": "downloader.cfg",
+  "sha": "ghi789",
+  "size": 890,
+  "url": "https://api.github.com/repos/example/repo/contents/downloader.cfg?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/downloader.cfg",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/ghi789",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/downloader.cfg",
+  "type": "file",
+  "content": "IyBEb3dubG9hZGVyIGNvbmZpZ3VyYXRpb24gZm9yIGN1c3RvbSBtaXJyb3Jz\nCiMgRm9ybWF0OiBvcmlnaW5hbF91cmwgbWlycm9yX3VybDEgbWlycm9yX3Vy\nbDIgLi4uCgpodHRwczovL3JlcG8xLm1hdmVuLm9yZy9tYXZlbjIgaHR0cHM6\nLy9taXJyb3IuZXhhbXBsZS5jb20vbWF2ZW4yIGh0dHBzOi8vYmFja3VwLW1p\ncnJvci5leGFtcGxlLmNvbS9tYXZlbjIKaHR0cHM6Ly9kbC5nb29nbGUuY29t\nL2FuZHJvaWQgaHR0cHM6Ly9taXJyb3IuZXhhbXBsZS5jb20vYW5kcm9pZAo=\n",
+  "encoding": "base64"
+}

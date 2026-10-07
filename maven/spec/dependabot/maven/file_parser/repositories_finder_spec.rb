@@ -348,5 +348,21 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         end
       end
     end
+
+    context "when there are repository declarations in profiles" do
+      let(:base_pom_fixture_name) { "custom_repositories_pom_with_profiles.xml" }
+
+      it "does not include repositories from profiles that are not activated by default" do
+        expect(repository_urls).to eq(
+          %w(
+            https://repo.jenkins-ci.org/public
+            https://repo.jenkins-ci.org/incrementals-activated
+            https://repo.jenkins-ci.org/incrementals-activated-2
+            https://repo.jenkins-ci.org/another-activated
+            https://repo.maven.apache.org/maven2
+          )
+        )
+      end
+    end
   end
 end

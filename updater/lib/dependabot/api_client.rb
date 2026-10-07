@@ -1,7 +1,7 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "http"
+require "excon"
 require "dependabot/job"
 require "dependabot/opentelemetry"
 require "sorbet-runtime"
@@ -22,6 +22,8 @@ module Dependabot
   class ApiClient # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
+    ErrorDetails = T.type_alias { Dependabot::ErrorDetails::Detail }
+
     MAX_REQUEST_RETRIES = 3
     INVALID_REQUEST_MSG = /The request contains invalid or unauthorized changes/
 
@@ -40,16 +42,15 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
+        api_url = "#{api_path}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
-        response = http_client.post(api_url, json: { data: data })
-
-        if response.code >= 400 && dependency_file_not_supported_error?(response.body.to_s)
+        response = post(path: api_url, body: { data: data }.to_json)
+        if response.status >= 400 && dependency_file_not_supported_error?(response.body.to_s)
           raise Dependabot::DependencyFileNotSupported, response.body.to_s
-        elsif response.code >= 400
+        elsif response.status >= 400
           raise ApiError, response.body
         end
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -60,7 +61,6 @@ module Dependabot
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
-    # TODO: Determine if we should regenerate the PR message within core for updates
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("update_pull_request", kind: :internal) do |span|
@@ -68,17 +68,18 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
-        body = {
-          data: {
-            "dependency-names": dependency_change.updated_dependencies.map(&:name),
-            "updated-dependency-files": dependency_change.updated_dependency_files_hash,
-            "base-commit-sha": base_commit_sha
-          }
+        api_url = "#{api_path}/update_jobs/#{job_id}/update_pull_request"
+        data = {
+          "dependency-names": dependency_change.updated_dependencies.map(&:name),
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
+          "base-commit-sha": base_commit_sha,
+          "commit-message": dependency_change.pr_message.commit_message,
+          "pr-title": dependency_change.pr_message.pr_name,
+          "pr-body": dependency_change.pr_message.pr_message
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: { data: data }.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -94,11 +95,11 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::PR_CLOSE_REASON, reason.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
+        api_url = "#{api_path}/update_jobs/#{job_id}/close_pull_request"
         body = { data: { "dependency-names": dependency_names, reason: reason } }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -108,7 +109,7 @@ module Dependabot
       end
     end
 
-    sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(ErrorDetails)).void }
     def record_update_job_error(error_type:, error_details:)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_error", kind: :internal) do |_span|
         ::Dependabot::OpenTelemetry.record_update_job_error(
@@ -116,16 +117,16 @@ module Dependabot
           error_type: error_type,
           error_details: error_details
         )
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
+        api_url = "#{api_path}/update_jobs/#{job_id}/record_update_job_error"
         body = {
           data: {
             "error-type": error_type,
             "error-details": error_details
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -150,7 +151,7 @@ module Dependabot
           warn_title: warn_title,
           warn_description: warn_description
         )
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_warning"
+        api_url = "#{api_path}/update_jobs/#{job_id}/record_update_job_warning"
         body = {
           data: {
             "warn-type": warn_type,
@@ -158,9 +159,9 @@ module Dependabot
             "warn-description": warn_description
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -170,7 +171,7 @@ module Dependabot
       end
     end
 
-    sig { params(error_type: T.any(Symbol, String), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig { params(error_type: T.any(Symbol, String), error_details: T.nilable(ErrorDetails)).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
       ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_unknown_error", kind: :internal) do |_span|
@@ -180,16 +181,16 @@ module Dependabot
           error_details: error_details
         )
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
+        api_url = "#{api_path}/update_jobs/#{job_id}/record_update_job_unknown_error"
         body = {
           data: {
             "error-type": error_type,
             "error-details": error_details
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -199,17 +200,17 @@ module Dependabot
       end
     end
 
-    sig { params(base_commit_sha: String).void }
+    sig { params(base_commit_sha: T.nilable(String)).void }
     def mark_job_as_processed(base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("mark_job_as_processed", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
+        api_url = "#{api_path}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
-        response = http_client.patch(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = patch(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -219,21 +220,21 @@ module Dependabot
       end
     end
 
-    sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[String]).void }
+    sig { params(dependencies: T::Array[T::Hash[Symbol, Object]], dependency_files: T::Array[String]).void }
     def update_dependency_list(dependencies, dependency_files)
       ::Dependabot::OpenTelemetry.tracer.in_span("update_dependency_list", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
+        api_url = "#{api_path}/update_jobs/#{job_id}/update_dependency_list"
         body = {
           data: {
             dependencies: dependencies,
             dependency_files: dependency_files
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -243,18 +244,18 @@ module Dependabot
       end
     end
 
-    sig { params(dependency_submission: T::Hash[Symbol, T.untyped]).void }
+    sig { params(dependency_submission: T::Hash[Symbol, Object]).void }
     def create_dependency_submission(dependency_submission)
       ::Dependabot::OpenTelemetry.tracer.in_span("create_dependency_submission", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/create_dependency_submission"
+        api_url = "#{api_path}/update_jobs/#{job_id}/create_dependency_submission"
         body = {
           data: dependency_submission
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -264,16 +265,16 @@ module Dependabot
       end
     end
 
-    sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
+    sig { params(ecosystem_versions: T::Hash[Symbol, Object]).void }
     def record_ecosystem_versions(ecosystem_versions)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_versions", kind: :internal) do |_span|
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_versions"
+        api_url = "#{api_path}/update_jobs/#{job_id}/record_ecosystem_versions"
         body = {
           data: { ecosystem_versions: ecosystem_versions }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -283,7 +284,7 @@ module Dependabot
       end
     end
 
-    sig { params(metric: String, tags: T::Hash[String, String]).void }
+    sig { params(metric: String, tags: T::Hash[Symbol, Object]).void }
     def increment_metric(metric, tags:)
       ::Dependabot::OpenTelemetry.tracer.in_span("increment_metric", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID.to_s, job_id.to_s)
@@ -292,87 +293,73 @@ module Dependabot
           span.set_attribute(key.to_s, value.to_s)
         end
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
+        api_url = "#{api_path}/update_jobs/#{job_id}/increment_metric"
         body = {
           data: {
             metric: metric,
             tags: tags
           }
         }
-        response = http_client.post(api_url, json: body)
+        response = post(path: api_url, body: body.to_json)
         # We treat metrics as fire-and-forget, so just warn if they fail.
-        Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         Dependabot.logger.debug("Unable to report metric '#{metric}'.")
       end
     end
 
     sig { params(ecosystem: T.nilable(Ecosystem)).void }
     def record_ecosystem_meta(ecosystem)
-      return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
-
       return if ecosystem.nil?
 
-      begin
-        ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
-          api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_meta"
+      ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
+        api_url = "#{api_path}/update_jobs/#{job_id}/record_ecosystem_meta"
 
-          body = {
-            data: [
-              {
-                ecosystem: {
-                  name: ecosystem.name,
-                  package_manager: version_manager_json(ecosystem.package_manager),
-                  language: version_manager_json(ecosystem.language)
-                }
+        body = {
+          data: [
+            {
+              ecosystem: {
+                name: ecosystem.name,
+                package_manager: version_manager_json(ecosystem.package_manager),
+                language: version_manager_json(ecosystem.language)
               }
-            ]
-          }
+            }
+          ]
+        }
 
-          retry_count = 0
-
-          begin
-            response = http_client.post(api_url, json: body)
-            raise ApiError, response.body if response.code >= 400
-          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
-            retry_count += 1
-            if retry_count <= MAX_REQUEST_RETRIES
-              sleep(rand(3.0..10.0))
-              retry
-            else
-              Dependabot.logger.error(
-                "Failed to record ecosystem meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
-              )
-            end
-          end
+        response = post(path: api_url, body: body.to_json)
+        if response.status >= 400
+          Dependabot.logger.error(
+            "Failed to record ecosystem meta. Status: #{response.status}, body: #{response.body}"
+          )
         end
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
       end
+    rescue StandardError => e
+      Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
     end
 
     # rubocop:disable Metrics/MethodLength
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
-      return if job&.cooldown.nil?
+      # The CLI's local API does not implement this hosted-service telemetry endpoint.
+      return if job.nil? || job_id == "cli"
 
-      cooldown = T.must(job).cooldown
+      cooldown = job.cooldown
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
-          api_url = "#{base_url}/update_jobs/#{job_id}/record_cooldown_meta"
+          api_url = "#{api_path}/update_jobs/#{job_id}/record_cooldown_meta"
 
           body = {
             data: [
               {
                 cooldown: {
-                  ecosystem_name: T.must(job).package_manager,
-                  config:
-                  {
-                    default_days: T.must(cooldown).default_days,
-                    semver_major_days: T.must(cooldown).semver_major_days,
-                    semver_minor_days: T.must(cooldown).semver_minor_days,
-                    semver_patch_days: T.must(cooldown).semver_patch_days
+                  ecosystem_name: job.package_manager,
+                  config: {
+                    default_days: cooldown.default_days,
+                    semver_major_days: cooldown.semver_major_days,
+                    semver_minor_days: cooldown.semver_minor_days,
+                    semver_patch_days: cooldown.semver_patch_days
                   }
                 }
               }
@@ -382,9 +369,15 @@ module Dependabot
           retry_count = 0
 
           begin
-            response = http_client.post(api_url, json: body)
-            raise ApiError, response.body if response.code >= 400
-          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            response = post(path: api_url, body: body.to_json)
+
+            # Not every host implements this telemetry endpoint, so a client error won't clear on retry.
+            if response.status >= 500
+              raise ApiError, response.body
+            elsif response.status >= 400
+              Dependabot.logger.debug("Unable to record cooldown meta: #{response.status} #{response.body}")
+            end
+          rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
             retry_count += 1
             if retry_count <= MAX_REQUEST_RETRIES
               sleep(rand(3.0..10.0))
@@ -402,12 +395,102 @@ module Dependabot
     end
     # rubocop:enable Metrics/MethodLength
 
+    sig { params(package_manager: String).returns(T::Array[T::Hash[String, Object]]) }
+    def fetch_blocked_versions(package_manager)
+      ::Dependabot::OpenTelemetry.tracer.in_span("fetch_blocked_versions", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
+
+        api_url = "#{api_path}/update_jobs/#{job_id}/blocked_versions"
+        response = get(path: api_url, query: { "package-manager" => package_manager })
+
+        if response.status >= 400
+          Dependabot.logger.warn("Failed to fetch blocked versions (HTTP #{response.status}), continuing without them")
+          return []
+        end
+
+        parse_blocked_versions_response(response.body.to_s)
+      rescue JSON::ParserError, TypeError => e
+        raise ApiError, "Malformed blocked versions response: #{e.message}"
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
+        Dependabot.logger.warn("Failed to fetch blocked versions: #{e.message}, continuing without them")
+        []
+      end
+    end
+
     private
+
+    sig { params(path: String, body: String).returns(Excon::Response) }
+    def post(path:, body:)
+      T.cast(http_client.post(path: path, body: body), Excon::Response)
+    end
+
+    sig { params(path: String, body: String).returns(Excon::Response) }
+    def patch(path:, body:)
+      T.cast(http_client.patch(path: path, body: body), Excon::Response)
+    end
+
+    sig { params(path: String, query: T::Hash[String, String]).returns(Excon::Response) }
+    def get(path:, query:)
+      T.cast(http_client.get(path: path, query: query), Excon::Response)
+    end
+
+    sig { params(body: String).returns(T::Array[T::Hash[String, Object]]) }
+    def parse_blocked_versions_response(body)
+      parsed = T.cast(JSON.parse(body), Object)
+      raise TypeError, "expected an object" unless parsed.is_a?(Hash)
+
+      data = T.cast(parsed["data"], Object)
+      raise TypeError, "data must be an array" unless data.is_a?(Array)
+
+      data.map do |entry|
+        blocked_version = string_hash(T.cast(entry, Object), "blocked version")
+        required_string(blocked_version, "dependency-name")
+        required_string(blocked_version, "version-requirement")
+        optional_string(blocked_version["reason"], "reason")
+        blocked_version
+      end
+    end
+
+    sig { params(value: Object, name: String).returns(T::Hash[String, Object]) }
+    def string_hash(value, name)
+      raise TypeError, "#{name} must be an object" unless value.is_a?(Hash)
+
+      result = T.let({}, T::Hash[String, Object])
+      value.each do |raw_key, raw_value|
+        key = T.cast(raw_key, Object)
+        raise TypeError, "#{name} keys must be strings" unless key.is_a?(String)
+
+        result[key] = T.cast(raw_value, Object)
+      end
+      result
+    end
+
+    sig { params(hash: T::Hash[String, Object], key: String).returns(String) }
+    def required_string(hash, key)
+      value = hash.fetch(key)
+      raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+      value
+    end
+
+    sig { params(value: T.nilable(Object), key: String).returns(T.nilable(String)) }
+    def optional_string(value, key)
+      return if value.nil?
+      raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+      value
+    end
+
+    sig { returns(String) }
+    def api_path
+      params = T.cast(http_client.params, T::Hash[Symbol, Object])
+      T.cast(params[:path], String)
+    end
 
     # Update return type to allow returning a Hash or nil
     sig do
       params(version_manager: T.nilable(Dependabot::Ecosystem::VersionManager))
-        .returns(T.nilable(T::Hash[String, T.untyped]))
+        .returns(T.nilable(T::Hash[Symbol, Object]))
     end
     def version_manager_json(version_manager)
       return nil unless version_manager
@@ -426,7 +509,7 @@ module Dependabot
     # Update return type to allow returning a Hash or nil
     sig do
       params(version_manager: Dependabot::Ecosystem::VersionManager)
-        .returns(T.nilable(T::Hash[String, T.untyped]))
+        .returns(T.nilable(T::Hash[Symbol, String]))
     end
     def version_manager_requirement_json(version_manager)
       requirement = version_manager.requirement
@@ -450,50 +533,67 @@ module Dependabot
     sig { returns(String) }
     attr_reader :job_token
 
-    sig { returns(T.untyped) }
+    sig { returns(Excon::Connection) }
     def http_client
-      client = HTTP::Client.new.auth(job_token)
-      proxy = ENV["HTTPS_PROXY"] ? URI(T.must(ENV["HTTPS_PROXY"])) : URI(base_url).find_proxy
-      unless proxy.nil?
-        args = T.unsafe([proxy.host, proxy.port, proxy.user, proxy.password].compact)
-        client = client.via(*args)
-      end
-      client
+      proxy =
+        if ENV.key?("HTTPS_PROXY")
+          ENV.fetch("HTTPS_PROXY")
+        else
+          proxy_uri = T.cast(URI(base_url).find_proxy, T.nilable(URI::Generic))
+          proxy_uri&.to_s
+        end
+
+      T.cast(
+        Excon.new(
+          base_url,
+          proxy: proxy,
+          **Dependabot::SharedHelpers.excon_defaults(
+            headers: {
+              "Authorization" => job_token,
+              "Content-Type" => "application/json"
+            }
+          )
+        ),
+        Excon::Connection
+      )
     end
 
-    sig { params(dependency_change: Dependabot::DependencyChange).returns(T::Hash[String, T.untyped]) }
+    sig { params(dependency_change: Dependabot::DependencyChange).returns(T::Hash[String, Object]) }
     def dependency_group_hash(dependency_change)
       return {} unless dependency_change.grouped_update?
 
       # FIXME: We currently assumpt that _an attempt_ to send a DependencyGroup#id should
       # result in the `grouped-update` flag being set, regardless of whether the
       # DependencyGroup actually exists.
-      { "dependency-group": dependency_change.dependency_group.to_h }.compact
+      { "dependency-group" => dependency_change.dependency_group.to_h }.compact
     end
 
     sig do
       params(
         dependency_change: Dependabot::DependencyChange,
         base_commit_sha: String
-      ).returns(T::Hash[String, T.untyped])
+      ).returns(T::Hash[String, Object])
     end
     def create_pull_request_data(dependency_change, base_commit_sha)
-      data = {
-        dependencies: dependency_change.updated_dependencies.map do |dep|
-          {
-            name: dep.name,
-            "previous-version": dep.previous_version,
-            requirements: dep.requirements,
-            "previous-requirements": dep.previous_requirements,
-            directory: dep.directory
-          }.merge({
-            version: dep.version,
-            removed: dep.removed? || nil
-          }.compact)
-        end,
-        "updated-dependency-files": dependency_change.updated_dependency_files_hash,
-        "base-commit-sha": base_commit_sha
-      }.merge(dependency_group_hash(dependency_change))
+      data = T.let(
+        {
+          "dependencies" => dependency_change.updated_dependencies.map do |dep|
+            {
+              "name" => dep.name,
+              "previous-version" => dep.previous_version,
+              "requirements" => dep.requirements,
+              "previous-requirements" => dep.previous_requirements,
+              "directory" => dep.directory
+            }.merge({
+              "version" => dep.version,
+              "removed" => dep.removed? || nil
+            }.compact)
+          end,
+          "updated-dependency-files" => dependency_change.updated_dependency_files_hash,
+          "base-commit-sha" => base_commit_sha
+        }.merge(dependency_group_hash(dependency_change)),
+        T::Hash[String, Object]
+      )
 
       data["commit-message"] = dependency_change.pr_message.commit_message
       data["pr-title"] = dependency_change.pr_message.pr_name
@@ -503,12 +603,22 @@ module Dependabot
 
     sig { params(response: String).returns(T::Boolean) }
     def dependency_file_not_supported_error?(response)
-      body = JSON.parse(response)
-
+      body = T.cast(JSON.parse(response), Object)
       return false unless body.is_a?(Hash)
-      return false unless body["errors"]
 
-      INVALID_REQUEST_MSG.match? body["errors"].first["detail"]
+      errors = T.cast(body["errors"], Object)
+      return false if errors.nil?
+      raise TypeError, "errors must be an array" unless errors.is_a?(Array)
+
+      first_error = T.cast(errors.first, Object)
+      raise TypeError, "errors must contain objects" unless first_error.is_a?(Hash)
+
+      detail = T.cast(first_error["detail"], Object)
+      raise TypeError, "error detail must be a string" unless detail.is_a?(String)
+
+      INVALID_REQUEST_MSG.match?(detail)
+    rescue JSON::ParserError, TypeError => e
+      raise ApiError, "Malformed API error response: #{e.message}"
     end
   end
 end

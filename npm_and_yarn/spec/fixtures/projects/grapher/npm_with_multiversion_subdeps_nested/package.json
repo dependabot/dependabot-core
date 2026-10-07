@@ -1,0 +1,8 @@
+{
+  "name": "multiversion-real-subdeps",
+  "version": "1.0.0",
+  "dependencies": {
+    "kind-of": "^6.0.0",
+    "is-number": "3.0.0"
+  }
+}

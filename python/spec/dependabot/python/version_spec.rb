@@ -128,6 +128,12 @@ RSpec.describe Dependabot::Python::Version do
 
       it { is_expected.to eq "1.0.0+gc.1" }
     end
+
+    context "with leading and trailing whitespace" do
+      let(:version_string) { "\n        2.20.0   \n" }
+
+      it { is_expected.to eq "2.20.0" }
+    end
   end
 
   describe "#<=>" do

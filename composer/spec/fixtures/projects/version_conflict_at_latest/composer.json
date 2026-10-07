@@ -2,5 +2,10 @@
     "require": {
         "doctrine/common": "2.1.3",
         "doctrine/dbal": "2.1.5"
+    },
+    "config": {
+        "audit": {
+            "block-insecure": false
+        }
     }
 }

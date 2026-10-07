@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 USER root
@@ -9,11 +10,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 USER dependabot
 
-# Install Julia
-RUN curl -fsSL https://install.julialang.org | sh -s -- -y \
+# Install Julia, pinned to the 1.13 release channel rather than juliaup's default
+# `release` channel so a new minor Julia release cannot change the image under us.
+RUN curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel 1.13 \
     && . ~/.bashrc
 
 ENV PATH="/home/dependabot/.juliaup/bin:$PATH"
+
+# Use the eager registry flavor for more up-to-date package information
+# See: https://pkgdocs.julialang.org/v1/registries/#Registry-flavors
+ENV JULIA_PKG_SERVER_REGISTRY_PREFERENCE="eager"
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot julia/helpers /opt/julia/helpers
@@ -22,6 +28,5 @@ RUN bash /opt/julia/helpers/build
 # The Julia depot (~/.julia) is already in place from the build step above
 # It contains precompiled packages, registries, and artifacts for fast startup
 
-COPY --chown=dependabot:dependabot julia $DEPENDABOT_HOME/julia
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents julia common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

@@ -78,6 +78,139 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch }
 
+    context "with a private index" do
+      let(:registry_base) { "https://registry.example.com/simple" }
+      let(:json_url) { "https://registry.example.com/pypi/#{dependency_name}/json" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "--index-url #{registry_base}/\nrequests==2.4.1\n"
+        )]
+      end
+      let(:simple_api_accept) do
+        "application/vnd.pypi.simple.v1+json, " \
+          "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+      end
+
+      context "when the index returns PEP 691 JSON" do
+        let(:api_version) { "1.1" }
+        let(:registry_request_url) { registry_url }
+        let(:simple_api_response) do
+          JSON.dump(
+            "meta" => { "api-version" => api_version },
+            "name" => dependency_name,
+            "files" => [
+              {
+                "filename" => "requests-2.32.3-py3-none-any.whl",
+                "url" => "../files/requests-2.32.3-py3-none-any.whl",
+                "requires-python" => ">=3.8",
+                "yanked" => false,
+                "upload-time" => "2026-08-24T12:34:56Z"
+              }
+            ]
+          )
+        end
+
+        before do
+          stub_request(:get, registry_request_url)
+            .with(headers: { "Accept" => simple_api_accept })
+            .to_return(
+              status: 200,
+              headers: { "Content-Type" => "Application/Vnd.Pypi.Simple.V1+Json ; charset=utf-8" },
+              body: simple_api_response
+            )
+        end
+
+        it "uses the negotiated JSON response without requesting the legacy JSON API" do
+          result = fetch
+
+          expect(result.releases.map { |release| release.version.to_s }).to eq(["2.32.3"])
+          expect(result.releases.first.released_at).to eq(Time.utc(2026, 8, 24, 12, 34, 56))
+          expect(result.releases.first.url)
+            .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
+          expect(a_request(:get, registry_url)).to have_been_made.once
+          expect(a_request(:get, json_url)).not_to have_been_made
+        end
+
+        context "when the project endpoint redirects" do
+          let(:redirect_response) do
+            Excon::Response.new(
+              status: 200,
+              headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+              body: simple_api_response,
+              scheme: "https",
+              host: "cdn.example.com",
+              port: 443,
+              path: "/packages/requests/",
+              query: nil,
+              omit_default_port: true
+            )
+          end
+
+          before do
+            allow(Dependabot::RegistryClient).to receive(:get).and_return(redirect_response)
+          end
+
+          it "resolves relative file URLs against the redirect target" do
+            expect(fetch.releases.first.url)
+              .to eq("https://cdn.example.com/packages/files/requests-2.32.3-py3-none-any.whl")
+          end
+        end
+
+        context "with an authenticated index" do
+          let(:registry_base) { "https://user:pass@registry.example.com/simple" }
+          let(:registry_request_url) { "https://registry.example.com/simple/#{dependency_name}/" }
+
+          it "does not expose credentials in the release URL" do
+            expect(fetch.releases.first.url)
+              .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
+          end
+        end
+
+        context "with an unsupported API major version" do
+          let(:api_version) { "2.0" }
+
+          it "rejects the response" do
+            expect { fetch }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: 2.0")
+          end
+        end
+      end
+
+      context "when the request times out" do
+        before do
+          stub_request(:get, registry_url).to_raise(Excon::Error::Timeout)
+        end
+
+        it "preserves the error without retrying as HTML" do
+          expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut)
+          expect(
+            a_request(:get, registry_url).with(headers: { "Accept" => "text/html" })
+          ).not_to have_been_made
+        end
+      end
+
+      context "when the index returns HTML" do
+        before do
+          stub_request(:get, registry_url)
+            .with(headers: { "Accept" => simple_api_accept })
+            .to_return(
+              status: 200,
+              headers: { "Content-Type" => "text/html" },
+              body: fixture("releases_api", "simple", "simple_index.html")
+            )
+        end
+
+        it "parses the negotiated HTML response without requesting the legacy JSON API" do
+          result = fetch
+
+          expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
+          expect(a_request(:get, registry_url)).to have_been_made.once
+          expect(a_request(:get, json_url)).not_to have_been_made
+        end
+      end
+    end
+
     context "with a valid JSON response" do
       before do
         stub_request(:get, json_url).to_return(
@@ -98,6 +231,43 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         expect(a_request(:get, registry_url)).not_to have_been_made
 
         expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
+      end
+
+      context "with credentials for PyPI" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.org/simple/",
+              "token" => "user:pass",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "retains the legacy JSON-first strategy" do
+          fetch
+
+          expect(a_request(:get, json_url)).to have_been_made.once
+          expect(a_request(:get, registry_url)).not_to have_been_made
+        end
+      end
+
+      ["https://PYPI.org/simple/", "https://pypi.org:443/simple/"].each do |equivalent_index_url|
+        context "with the equivalent index URL #{equivalent_index_url}" do
+          let(:dependency_files) do
+            [Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: "--index-url #{equivalent_index_url}\nrequests==2.4.1\n"
+            )]
+          end
+
+          it "retains the legacy JSON-first strategy" do
+            fetch
+
+            expect(a_request(:get, json_url)).to have_been_made.once
+          end
+        end
       end
     end
 
@@ -166,6 +336,180 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         expect(fetcher.send(:remove_optional, "pyvista[io]")).to eq("pyvista")
         expect(fetcher.send(:remove_optional, "pyvista[example]")).to eq("pyvista")
         expect(fetcher.send(:remove_optional, "pyvista-example")).to eq("pyvista-example")
+      end
+    end
+
+    context "with distribution metadata boundaries" do
+      let(:distribution) do
+        { "url" => "https://files.example.test/last.whl", "requires_python" => ">=3.9",
+          "upload_time" => "2024-01-02T00:00:00Z", "yanked" => true, "yanked_reason" => "Last file",
+          "downloads" => 0, "python_version" => "py3", "packagetype" => "bdist_wheel" }
+      end
+      let(:json_body) do
+        JSON.generate(
+          "releases" => { "1.0.0" => [
+            { "url" => "https://files.example.test/first.tar.gz", "requires_python" => ">=3.8", "yanked" => false },
+            distribution
+          ] }
+        )
+      end
+      let(:html_body) do
+        '<a href="../files/first.tar.gz" data-requires-python="&gt;=3.8">requests-1.0.0.tar.gz</a>' \
+          '<a href="../files/last.whl#sha256=abc" data-requires-python="&gt;=3.9" ' \
+          'data-yanked="Last file">requests-1.0.0-py3-none-any.whl</a>'
+      end
+
+      before do
+        stub_request(:get, json_url).to_return(status: 200, body: json_body)
+        stub_request(:get, registry_url).to_return(status: 200, body: html_body)
+      end
+
+      it "retains the last PyPI distribution and all of its metadata" do
+        result = fetch.releases
+        expect(result.length).to eq(1)
+        expect(result.first).to have_attributes(
+          url: "https://files.example.test/last.whl",
+          released_at: Time.utc(2024, 1, 2),
+          yanked: true,
+          yanked_reason: "Last file",
+          downloads: 0,
+          package_type: "bdist_wheel"
+        )
+        expect(result.first.language.requirement.to_s).to eq(">= 3.9")
+        expect(a_request(:get, registry_url)).not_to have_been_made
+      end
+
+      ["not JSON", "null", '{"releases":{"1.0.0":[{"downloads":false},{}]}}',
+       '{"releases":{"1.0.0":[{"upload_time":"bad time"}]}}'].each do |body|
+        context "with malformed successful PyPI output #{body}" do
+          let(:json_body) { body }
+
+          it "propagates the data error rather than falling back to HTML" do
+            expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable)
+            expect(a_request(:get, registry_url)).not_to have_been_made
+          end
+        end
+      end
+
+      context "with an empty PyPI result" do
+        let(:json_body) { '{"releases":{}}' }
+
+        it "retains the last HTML file but returns real download metadata" do
+          result = fetch.releases
+          expect(result.length).to eq(1)
+          expect(result.first).to have_attributes(
+            url: "https://pypi.org/simple/files/last.whl#sha256=abc",
+            yanked: true,
+            yanked_reason: "Last file",
+            released_at: nil,
+            downloads: -1
+          )
+          expect(result.first.language.requirement.to_s).to eq(">= 3.9")
+        end
+
+        context "with a redirected HTML page" do
+          before do
+            response = Excon::Response.new(
+              status: 200,
+              body: html_body,
+              scheme: "https",
+              host: "cdn.example.test",
+              port: 443,
+              path: "/projects/requests/",
+              query: nil,
+              omit_default_port: true
+            )
+            allow(Dependabot::RegistryClient).to receive(:get).and_call_original
+            allow(Dependabot::RegistryClient).to receive(:get)
+              .with(url: registry_url, headers: { "Accept" => "text/html" }).and_return(response)
+          end
+
+          it "resolves HTML href values against the final page URL" do
+            expect(fetch.releases.first.url).to eq("https://cdn.example.test/projects/files/last.whl#sha256=abc")
+          end
+        end
+
+        context "with a marker in an unrelated HTML attribute" do
+          let(:html_body) { '<a href="demo.whl" title="data-yanked">requests-1.0.0.whl</a>' }
+
+          it "does not withdraw the file" do
+            expect(fetch.releases.first).to have_attributes(yanked: false, yanked_reason: nil)
+          end
+        end
+      end
+
+      context "with a non-200 PyPI response" do
+        before { stub_request(:get, json_url).to_return(status: 404, body: "not JSON") }
+
+        it "keeps the HTTP fallback" do
+          expect(fetch.releases.length).to eq(1)
+          expect(a_request(:get, registry_url)).to have_been_made.once
+        end
+      end
+    end
+
+    context "with strict private Simple API responses" do
+      let(:registry_base) { "https://registry.example.test/simple" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "requirements.txt", content: "--index-url #{registry_base}/\nrequests==2.4.1\n"
+        )]
+      end
+      let(:body) do
+        JSON.generate(
+          "meta" => { "api-version" => "1.1" },
+          "files" => [
+            { "filename" => "requests-1.0.0.tar.gz", "url" => "first.tar.gz", "requires-python" => ">=3.8" },
+            { "filename" => "requests-1.0.0.whl", "url" => "second.whl", "requires-python" => ">=3.9",
+              "yanked" => "Broken wheel" }
+          ]
+        )
+      end
+
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200, headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" }, body: body
+        )
+      end
+
+      it "preserves metadata for both distributions of one version" do
+        releases = fetch.releases
+        expect(releases.length).to eq(2)
+        expect(releases.map(&:url)).to contain_exactly(
+          "#{registry_url}first.tar.gz", "#{registry_url}second.whl"
+        )
+        expect(releases.map(&:yanked)).to contain_exactly(false, true)
+        expect(releases.map { |release| release.language.requirement.to_s }).to contain_exactly(">= 3.8", ">= 3.9")
+      end
+
+      ["not JSON", '{"files":[{"filename":"requests-1.0.0.whl","upload-time":false}]}'].each do |value|
+        context "with malformed private JSON #{value}" do
+          let(:body) { value }
+
+          it "raises instead of returning empty releases or trying HTML" do
+            expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable)
+            expect(a_request(:get, registry_url)).to have_been_made.once
+          end
+        end
+      end
+
+      context "with a malformed eligible HTML link before the selected file" do
+        before do
+          stub_request(:get, json_url).to_return(status: 200, body: '{"releases":{}}')
+          stub_request(:get, registry_url).to_return(
+            status: 200,
+            body: '<a href="do-not-echo-this/invalid path">requests-1.0.0.tar.gz</a>' \
+                  '<a href="valid.whl">requests-1.0.0.whl</a>'
+          )
+        end
+
+        it "rejects the earlier invalid URL before selecting the last distribution" do
+          expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("HTML index", "links[0].href")
+            expect(error.message).not_to include("do-not-echo-this")
+            expect(error.cause).to be_nil
+          end
+        end
       end
     end
   end

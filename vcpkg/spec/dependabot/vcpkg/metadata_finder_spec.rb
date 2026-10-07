@@ -67,6 +67,44 @@ RSpec.describe Dependabot::Vcpkg::MetadataFinder do
       it "returns the custom repository URL" do
         expect(finder.source_url).to eq("https://github.com/example/custom-package")
       end
+
+      context "with string-keyed source details" do
+        before do
+          dependency.requirements.first[:source] =
+            dependency.requirements.first.source_hash.transform_keys(&:to_s)
+        end
+
+        it "returns the custom repository URL" do
+          expect(finder.source_url).to eq("https://github.com/example/custom-package")
+        end
+      end
+
+      context "when an earlier requirement has no source" do
+        let(:requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            },
+            {
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/example/custom-package.git",
+                ref: "main"
+              },
+              file: "vcpkg-configuration.json"
+            }
+          ]
+        end
+
+        it "returns the custom repository URL" do
+          expect(finder.source_url).to eq("https://github.com/example/custom-package")
+        end
+      end
     end
   end
 

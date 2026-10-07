@@ -1,0 +1,22 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A1B2C3D4E5F60001 /* XCRemoteSwiftPackageReference "swift-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-nio.git";
+			requirement = {
+				kind = revision;
+				revision = 6213ba7a06febe8fef60563a4a7d26a4085783cf;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+	};
+	rootObject = A1B2C3D4E5F60000 /* Project object */;
+}

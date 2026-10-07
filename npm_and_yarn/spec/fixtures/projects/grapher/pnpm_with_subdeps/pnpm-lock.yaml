@@ -1,0 +1,20 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  to-regex-range:
+    specifier: 5.0.1
+    version: 5.0.1
+
+packages:
+
+  /is-number@7.0.0:
+    resolution: {integrity: sha512-41Cifbd2qBWR5GqFQ+nbq/RqNh6cMo0tMGt2Mms/XP/4e0Nbkr09RkdSyORSvKFHxDBIF26BAhOqfWtQd0jFg==}
+    engines: {node: '>=0.12.0'}
+    dev: false
+
+  /to-regex-range@5.0.1:
+    resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
+    engines: {node: '>=8.0'}
+    dependencies:
+      is-number: 7.0.0
+    dev: false

@@ -1,0 +1,9 @@
+{
+  "name": "grapher-pnpm-v9-with-subdeps",
+  "version": "1.0.0",
+  "description": "Test project for pnpm v9 grapher with subdependencies",
+  "packageManager": "pnpm@9.0.0",
+  "dependencies": {
+    "to-regex-range": "5.0.1"
+  }
+}

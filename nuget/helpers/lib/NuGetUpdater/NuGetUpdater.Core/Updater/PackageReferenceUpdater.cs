@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
-using System.Text.Json;
 
-using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Updater;
@@ -22,13 +20,11 @@ namespace NuGetUpdater.Core;
 /// </remarks>
 internal static class PackageReferenceUpdater
 {
-    internal static async Task<IEnumerable<UpdateOperationBase>> ComputeUpdateOperations(
-        string repoRoot,
-        string projectPath,
-        string targetFramework,
+    internal static IEnumerable<UpdateOperationBase> ComputeUpdateOperations(
         ImmutableArray<Dependency> topLevelDependencies,
         ImmutableArray<Dependency> requestedUpdates,
         ImmutableArray<Dependency> resolvedDependencies,
+        ImmutableDictionary<string, ImmutableArray<string>> dependencyGraph,
         ILogger logger
     )
     {
@@ -40,7 +36,7 @@ internal static class PackageReferenceUpdater
             .Where(d => d.Item2)
             .ToDictionary(d => d.Item1, d => d.Item3!, StringComparer.OrdinalIgnoreCase);
 
-        var (packageParents, packageVersions) = await GetPackageGraphForDependencies(repoRoot, projectPath, targetFramework, resolvedDependencies, logger);
+        var packageParents = BuildReverseGraph(dependencyGraph, logger);
         var updateOperations = new List<UpdateOperationBase>();
         foreach (var (requestedDependencyName, requestedDependencyVersion) in requestedVersions)
         {
@@ -94,7 +90,7 @@ internal static class PackageReferenceUpdater
                                 NewVersion = requestedVersions[requestedDependencyName],
                                 UpdatedFiles = [],
                                 ParentDependencyName = rootPackageName,
-                                ParentNewVersion = packageVersions[rootPackageName],
+                                ParentNewVersion = rootPackageVersion,
                             });
                         }
                     }
@@ -108,60 +104,41 @@ internal static class PackageReferenceUpdater
         return [.. updateOperations];
     }
 
-    private static async Task<(Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions)> GetPackageGraphForDependencies(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> topLevelDependencies, ILogger logger)
+    /// <summary>
+    /// Converts a forward dependency graph (keyed as "Name/Version" -> children as "Name/Version") into a reverse
+    /// graph of package parents, suitable for walking transitive dependency chains upward.
+    /// </summary>
+    internal static Dictionary<string, HashSet<string>> BuildReverseGraph(
+        ImmutableDictionary<string, ImmutableArray<string>> dependencyGraph, ILogger logger)
     {
         var packageParents = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-        var packageVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
-        var tempDir = Directory.CreateTempSubdirectory("_package_graph_for_dependencies_");
-        try
-        {
-            // generate project.assets.json
-            var parsedTargetFramework = NuGetFramework.Parse(targetFramework);
-            var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, logger, importDependencyTargets: false);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["build", tempProject, "/t:_ReportDependencies"], tempDir.FullName);
-            var assetsJsonPath = Path.Join(tempDir.FullName, "obj", "project.assets.json");
-            var assetsJsonContent = await File.ReadAllTextAsync(assetsJsonPath);
 
-            // build reverse dependency graph
-            var assets = JsonDocument.Parse(assetsJsonContent).RootElement;
-            foreach (var tfmObject in assets.GetProperty("targets").EnumerateObject())
+        foreach (var (key, children) in dependencyGraph)
+        {
+            var parts = key.Split('/');
+            if (parts.Length != 2)
             {
-                var reportedTargetFramework = NuGetFramework.Parse(tfmObject.Name);
-                if (reportedTargetFramework != parsedTargetFramework)
+                logger.Error($"Expected dependency graph key in 'Name/Version' format but got '{key}'.");
+                continue;
+            }
+
+            var parentName = parts[0];
+
+            foreach (var child in children)
+            {
+                var childParts = child.Split('/');
+                if (childParts.Length != 2)
                 {
-                    // not interested in this target framework
+                    logger.Error($"Expected dependency graph entry in 'Name/Version' format but got '{child}'.");
                     continue;
                 }
 
-                foreach (var parentObject in tfmObject.Value.EnumerateObject())
-                {
-                    var parts = parentObject.Name.Split('/');
-                    var parentName = parts[0];
-                    var parentVersion = parts[1];
-                    packageVersions[parentName] = NuGetVersion.Parse(parentVersion);
-
-                    if (parentObject.Value.TryGetProperty("dependencies", out var dependencies))
-                    {
-                        foreach (var childObject in dependencies.EnumerateObject())
-                        {
-                            var childName = childObject.Name;
-                            var parentSet = packageParents.GetOrAdd(childName, () => new(StringComparer.OrdinalIgnoreCase));
-                            parentSet.Add(parentName);
-                        }
-                    }
-                }
+                var childName = childParts[0];
+                var parentSet = packageParents.GetOrAdd(childName, () => new(StringComparer.OrdinalIgnoreCase));
+                parentSet.Add(parentName);
             }
+        }
 
-            return (packageParents, packageVersions);
-        }
-        catch (Exception ex)
-        {
-            logger.Error($"Error while generating package graph: {ex.Message}");
-            throw;
-        }
-        finally
-        {
-            tempDir.Delete(recursive: true);
-        }
+        return packageParents;
     }
 }

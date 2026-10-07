@@ -1,10 +1,11 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
 require "dependabot/shared_helpers"
@@ -13,6 +14,8 @@ module Dependabot
   module Terraform
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
+
+      require_relative "file_updater/provider_cli_config_builder"
 
       include FileSelector
 
@@ -46,6 +49,8 @@ module Dependabot
         raise "No files changed!" if updated_files.none?
 
         updated_files
+      ensure
+        cleanup_terraform_cli_config
       end
 
       private
@@ -72,7 +77,7 @@ module Dependabot
           (dependency.requirements - T.must(dependency.previous_requirements)) |
           (T.must(dependency.previous_requirements) - dependency.requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |requirement| requirement.file == file.name }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
@@ -84,17 +89,17 @@ module Dependabot
 
         # Loop through each changed requirement and update the files and lockfile
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == old_req&.fetch(:file)
-          next unless new_req.fetch(:file) == file.name
+          raise "Bad req match" unless new_req.file == old_req&.file
+          next unless new_req.file == file.name
 
-          case new_req[:source][:type]
+          source_type = T.must(new_req.source_string("type"))
+          case source_type
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
             update_registry_declaration(new_req, old_req, content)
           else
-            raise "Don't know how to update a #{new_req[:source][:type]} " \
-                  "declaration!"
+            raise "Don't know how to update a #{source_type} declaration!"
           end
         end
 
@@ -103,50 +108,55 @@ module Dependabot
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
           updated_content: String,
           filename: String
         )
           .void
       end
       def update_git_declaration(new_req, old_req, updated_content, filename)
-        url = old_req&.dig(:source, :url)&.gsub(%r{^https://}, "")
-        tag = old_req&.dig(:source, :ref)
+        url = T.must(old_req&.source_string("url")).gsub(%r{^https://}, "")
+        old_ref = T.must(old_req&.source_string("ref"))
+        new_ref = T.must(new_req.source_string("ref"))
+        tag = old_ref
         url_regex = /#{Regexp.quote(url)}.*ref=#{Regexp.quote(tag)}/
 
         declaration_regex = git_declaration_regex(filename)
 
         updated_content.sub!(declaration_regex) do |regex_match|
           regex_match.sub(url_regex) do |url_match|
-            url_match.sub(old_req&.dig(:source, :ref), new_req[:source][:ref])
+            url_match.sub(old_ref, new_ref)
           end
         end
       end
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
           updated_content: String
         )
           .void
       end
       def update_registry_declaration(new_req, old_req, updated_content)
-        regex = if new_req[:source][:type] == "provider"
+        regex = if new_req.source_string("type") == "provider"
                   provider_declaration_regex(updated_content)
                 else
                   registry_declaration_regex
                 end
 
+        old_requirement = T.must(old_req&.requirement_string)
+        new_requirement = T.must(new_req.requirement_string)
+
         # Define and break down the version regex for better clarity
         version_key_pattern = /^\s*version\s*=\s*/
-        version_value_pattern = /["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"]/
+        version_value_pattern = /["'].*#{Regexp.escape(old_requirement)}.*['"]/
         version_regex = /#{version_key_pattern}#{version_value_pattern}/
 
         updated_content.gsub!(regex) do |regex_match|
           regex_match.sub(version_regex) do |req_line_match|
-            req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
+            req_line_match.sub!(old_requirement, new_requirement)
           end
         end
       end
@@ -167,13 +177,15 @@ module Dependabot
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped]
+          new_req: Dependabot::DependencyRequirement
         )
           .returns([String, String, Regexp])
       end
       def lockfile_details(new_req)
         content = T.must(lockfile).content.dup
-        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+        registry_hostname = T.must(new_req.source_string("registry_hostname"))
+        module_identifier = T.must(new_req.source_string("module_identifier"))
+        provider_source = "#{registry_hostname}/#{module_identifier}"
         declaration_regex = lockfile_declaration_regex(provider_source)
 
         [T.must(content), provider_source, declaration_regex]
@@ -184,7 +196,7 @@ module Dependabot
         new_req = T.must(dependency.requirements.first)
 
         # NOTE: Only providers are included in the lockfile, modules are not
-        return unless new_req[:source][:type] == "provider"
+        return unless new_req.source_string("type") == "provider"
 
         architectures = []
         content, provider_source, declaration_regex = lockfile_details(new_req)
@@ -215,7 +227,8 @@ module Dependabot
 
             SharedHelpers.run_shell_command(
               "terraform providers lock -platform=#{arch} #{provider_source} -no-color",
-              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color"
+              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color",
+              env: terraform_env
             )
 
             updated_lockfile = File.read(".terraform.lock.hcl")
@@ -265,7 +278,7 @@ module Dependabot
 
         new_req = T.must(dependency.requirements.first)
         # NOTE: Only providers are included in the lockfile, modules are not
-        return unless new_req[:source][:type] == "provider"
+        return unless new_req.source_string("type") == "provider"
 
         content, provider_source, declaration_regex = lockfile_details(new_req)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
@@ -282,7 +295,8 @@ module Dependabot
 
           SharedHelpers.run_shell_command(
             "terraform providers lock #{platforms} #{provider_source}",
-            fingerprint: "terraform providers lock <platforms> <provider_source>"
+            fingerprint: "terraform providers lock <platforms> <provider_source>",
+            env: terraform_env
           )
 
           updated_lockfile = File.read(".terraform.lock.hcl")
@@ -319,7 +333,10 @@ module Dependabot
           # -backend=false option used to ignore any backend configuration, as these won't be accessible
           # -input=false option used to immediately fail if it needs user input
           # -no-color option used to prevent any color characters being printed in the output
-          SharedHelpers.run_shell_command("terraform init -backend=false -input=false -no-color")
+          SharedHelpers.run_shell_command(
+            "terraform init -backend=false -input=false -no-color",
+            env: terraform_env
+          )
         rescue SharedHelpers::HelperSubprocessFailed => e
           output = e.message
 
@@ -344,7 +361,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def files_with_requirement
-        filenames = dependency.requirements.map { |r| r[:file] }
+        filenames = dependency.requirements.map(&:file)
         dependency_files.select { |file| filenames.include?(file.name) }
       end
 
@@ -372,11 +389,11 @@ module Dependabot
         regex_version_preceeds = %r{
           (((?<!required_)version\s=\s*["'].*["'])
           (\s*source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*))
-        }mx
+        }mxi
         regex_source_preceeds = %r{
           ((source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
           (?:(?!^\}).)+)
-        }mx
+        }mxi
 
         if updated_content.match(regex_version_preceeds)
           regex_version_preceeds
@@ -396,7 +413,7 @@ module Dependabot
             (//modules/\S+)?
             ["']
           (?:(?!^\}).)*
-        }mx
+        }mxi
       end
 
       sig { params(filename: String).returns(Regexp) }
@@ -416,8 +433,7 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def registry_host_for(dependency)
-        source = dependency.requirements.filter_map { |r| r[:source] }.first
-        source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
+        dependency.requirements.first&.source_string("registry_hostname") || "registry.terraform.io"
       end
 
       sig { params(provider_source: String).returns(Regexp) }
@@ -427,6 +443,30 @@ module Dependabot
           provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
           (?:(?!^\}).)*}
         /mix
+      end
+
+      sig { returns(T::Hash[String, String]) }
+      def terraform_env
+        @terraform_env ||= T.let(
+          provider_cli_config_builder.env,
+          T.nilable(T::Hash[String, String])
+        )
+      end
+
+      sig { void }
+      def cleanup_terraform_cli_config
+        provider_cli_config_builder.cleanup
+      end
+
+      sig { returns(ProviderCliConfigBuilder) }
+      def provider_cli_config_builder
+        @provider_cli_config_builder ||= T.let(
+          ProviderCliConfigBuilder.new(
+            dependency: dependency,
+            terraform_files: terraform_files
+          ),
+          T.nilable(ProviderCliConfigBuilder)
+        )
       end
     end
 

@@ -1,0 +1,137 @@
+import { parseLockfile } from "../../lib/pnpm/index.js";
+import fs from "fs";
+import os from "os";
+import path from "path";
+
+describe("generates an updated pnpm lock for the original file", () => {
+  let tempDir: string;
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
+  });
+  afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
+
+  function copyDependencies(
+    sourceDir: string,
+    destDir: string,
+    transform: (content: string) => string = (content) => content
+  ) {
+    const srcPnpmYaml = path.join(
+      __dirname,
+      `fixtures/parser/${sourceDir}/pnpm-lock.yaml`
+    );
+    const content = fs.readFileSync(srcPnpmYaml, "utf8");
+    fs.writeFileSync(`${destDir}/pnpm-lock.yaml`, transform(content), "utf8");
+  }
+
+  it("that contains duplicate dependencies", async () => {
+    copyDependencies("no_lockfile_change", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result.length).toEqual(398);
+  });
+
+  it("that contains only dev dependencies but no (prod) dependencies", async () => {
+    copyDependencies("only_dev_dependencies", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result).toEqual([
+      {
+        name: "etag",
+        version: "1.8.0",
+        resolved: undefined,
+        dev: true,
+        specifiers: ["^1.0.0"],
+        aliased: false,
+      },
+    ]);
+  });
+
+  it("that contains dependencies which locked to versions with peer disambiguation suffix", async () => {
+    copyDependencies("peer_disambiguation", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result.length).toEqual(122);
+  });
+
+  it("that contains an environment lockfile document", async () => {
+    copyDependencies("multi_document", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result).toEqual([
+      {
+        name: "etag",
+        version: "1.8.0",
+        resolved: undefined,
+        dev: false,
+        specifiers: ["^1.0.0"],
+        aliased: false,
+      },
+    ]);
+  });
+
+  it.each([
+    ["a byte order mark", (content: string) => `\uFEFF${content}`],
+    ["CRLF line endings", (content: string) => content.replace(/\n/g, "\r\n")],
+  ])(
+    "that contains an environment lockfile document with %s",
+    async (_description, transform) => {
+      copyDependencies("multi_document", tempDir, transform);
+      const result = await parseLockfile(tempDir);
+
+      expect(result).toEqual([
+        {
+          name: "etag",
+          version: "1.8.0",
+          resolved: undefined,
+          dev: false,
+          specifiers: ["^1.0.0"],
+          aliased: false,
+        },
+      ]);
+    }
+  );
+
+  // A catalogued dependency's importer specifier is the literal "catalog:", so the
+  // version range it resolves to is only recoverable from the lockfile's own
+  // `catalogs` block. Without it a consumer matching on the range cannot tell the
+  // catalogued resolution apart from an older transitive one of the same name.
+  it("that contains a catalogued dependency with a second transitive version", async () => {
+    copyDependencies("catalog_duplicate_versions", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result).toEqual([
+      {
+        name: "@eslint/eslintrc",
+        version: "3.3.6",
+        resolved: undefined,
+        dev: false,
+        specifiers: ["^3.3.6"],
+        aliased: false,
+      },
+      {
+        name: "globals",
+        version: "14.0.0",
+        resolved: undefined,
+        dev: false,
+        specifiers: [],
+        aliased: false,
+      },
+      {
+        name: "globals",
+        version: "17.11.0",
+        resolved: undefined,
+        dev: false,
+        specifiers: ["catalog:", "^17.11.0"],
+        aliased: false,
+      },
+    ]);
+  });
+
+  // Should have the version in the lock file.
+  it("that contains dependencies with an empty version", async () => {
+    copyDependencies("empty_version", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result.length).toEqual(9);
+  });
+});

@@ -1,8 +1,9 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/vcpkg"
 
 module Dependabot
   module Vcpkg
@@ -29,14 +30,8 @@ module Dependabot
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         # Check if this is a Git dependency with a specific source
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-
-        url =
-          if info.nil?
-            VCPKG_DEFAULT_BASELINE_URL
-          else
-            info[:url] || info.fetch("url", VCPKG_DEFAULT_BASELINE_URL)
-          end
+        requirement = dependency.requirements.find(&:source_hash)
+        url = requirement&.source_string("url") || VCPKG_DEFAULT_BASELINE_URL
         Source.from_url(url)
       end
 

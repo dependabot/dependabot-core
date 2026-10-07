@@ -32,6 +32,60 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
   end
 
+  describe "#fetch_commit" do
+    subject(:fetch_commit) { client.fetch_commit(repo, branch) }
+
+    let(:branch_url) { "#{api_base_url}#{repo}/refs/branches/#{branch}" }
+
+    context "when the branch response is valid" do
+      before do
+        stub_request(:get, branch_url)
+          .to_return(status: 200, body: fixture("bitbucket", "other_branch.json"))
+      end
+
+      it { is_expected.to eq("4c2ea65f2eb932c438557cb6ec29b984794c6108") }
+    end
+
+    context "when the branch response has a malformed target" do
+      before do
+        stub_request(:get, branch_url)
+          .to_return(status: 200, body: '{"target":[]}')
+      end
+
+      it "raises a bad response error" do
+        expect { fetch_commit }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed Bitbucket response for branch/)
+      end
+    end
+  end
+
+  describe "#compare" do
+    subject(:compare) { client.compare(repo, "v1.0.0", "v2.0.0") }
+
+    let(:compare_url) { "#{api_base_url}#{repo}/commits/?include=v2.0.0&exclude=v1.0.0" }
+
+    context "when the comparison response is valid" do
+      before do
+        stub_request(:get, compare_url)
+          .to_return(status: 200, body: fixture("bitbucket", "business_compare_commits.json"))
+      end
+
+      it { is_expected.not_to be_empty }
+    end
+
+    context "when a comparison commit is malformed" do
+      before do
+        stub_request(:get, compare_url)
+          .to_return(status: 200, body: '{"values":[{"hash":"abc"}]}')
+      end
+
+      it "raises a bad response error" do
+        expect { compare }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed Bitbucket response for commit comparison/)
+      end
+    end
+  end
+
   describe "#default_reviewers" do
     subject(:default_reviewers) do
       client.default_reviewers(repo)

@@ -26,6 +26,8 @@ stdout -count=1 create_pull_request
 -- input-1.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:
@@ -47,6 +49,8 @@ job:
 -- input-2.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:

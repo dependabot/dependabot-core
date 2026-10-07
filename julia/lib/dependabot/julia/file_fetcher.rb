@@ -22,9 +22,6 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files
-        # Julia is currently in beta - only fetch files if beta ecosystems are enabled
-        return [] unless allow_beta_ecosystems?
-
         # Clone the repository temporarily to let Julia helper identify the correct files
         SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do |temp_dir|
           fetch_files_using_julia_helper(temp_dir)
@@ -35,33 +32,74 @@ module Dependabot
 
       sig { params(temp_dir: T.any(Pathname, String)).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files_using_julia_helper(temp_dir)
-        # Use Julia helper to identify the correct environment files
-        env_files = registry_client.find_environment_files(temp_dir.to_s)
-
-        if env_files.empty? || !env_files["project_file"]
-          raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."
+        workspace_info = registry_client.find_workspace_project_files(temp_dir.to_s)
+        if workspace_info.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+          raise_workspace_failure(workspace_info, temp_dir.to_s)
         end
 
-        fetched_files = []
+        project_files = workspace_info.project_files
+        manifest_paths = workspace_info.manifest_files
+        manifest_paths = [workspace_info.manifest_file] if manifest_paths.empty?
 
-        # Fetch the project file identified by Julia helper
-        project_path = T.must(env_files["project_file"])
-        project_filename = File.basename(project_path)
-        fetched_files << fetch_file_from_host(project_filename)
+        fetched_files = fetch_all_project_files(project_files, temp_dir.to_s)
+        raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found." if fetched_files.empty?
 
-        # Fetch the manifest file if Julia helper found one
-        manifest_path = env_files["manifest_file"]
-        if manifest_path && !manifest_path.empty?
-          # Calculate relative path from project to manifest
-          project_dir = File.dirname(project_path)
-          manifest_relative = Pathname.new(manifest_path).relative_path_from(Pathname.new(project_dir)).to_s
-
-          # Fetch manifest (handles workspace cases where manifest is in parent directory)
-          manifest_file = fetch_file_if_present(manifest_relative)
-          fetched_files << manifest_file if manifest_file
+        manifest_paths.each do |manifest_path|
+          fetch_manifest_file(fetched_files, manifest_path, project_files, temp_dir.to_s)
         end
-
         fetched_files
+      end
+
+      # Pkg refuses a project it cannot read (a [compat] entry for a package
+      # in no dependency section, say), so report its reason against the
+      # project file rather than claiming there is none
+      sig do
+        params(failure: Dependabot::Julia::RegistryClient::Result::Failure, temp_dir: String).returns(T.noreturn)
+      end
+      def raise_workspace_failure(failure, temp_dir)
+        project_name = %w(JuliaProject.toml Project.toml).find { |name| File.exist?(File.join(temp_dir, name)) }
+        raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found." unless project_name
+
+        raise Dependabot::DependencyFileNotParseable.new(
+          File.join(directory, project_name),
+          relative_to(failure.message, temp_dir)
+        )
+      end
+
+      # Pkg may report the temporary directory by its realpath
+      # ("/private/tmp/..." on macOS); strip that first so the shorter form
+      # cannot match inside it
+      sig { params(message: String, dir: String).returns(String) }
+      def relative_to(message, dir)
+        prefixes = [File.exist?(dir) ? File.realpath(dir) : dir, dir].uniq.map { |prefix| File.join(prefix, "") }
+        prefixes.reduce(message) { |text, prefix| text.gsub(prefix, "") }
+      end
+
+      sig { params(project_files: T::Array[String], base_dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def fetch_all_project_files(project_files, base_dir)
+        project_files.filter_map do |project_path|
+          project_relative = Pathname.new(project_path).relative_path_from(Pathname.new(base_dir)).to_s
+          fetch_file_if_present(project_relative)
+        end
+      end
+
+      sig do
+        params(
+          fetched_files: T::Array[Dependabot::DependencyFile],
+          manifest_path: String,
+          project_files: T::Array[String],
+          base_dir: String
+        ).void
+      end
+      def fetch_manifest_file(fetched_files, manifest_path, project_files, base_dir)
+        return if manifest_path.empty? || !File.exist?(manifest_path)
+
+        primary_project_path = project_files.find { |p| File.dirname(p) == base_dir } || project_files.first
+        primary_project_dir = File.dirname(T.must(primary_project_path))
+        manifest_relative = Pathname.new(manifest_path).relative_path_from(Pathname.new(primary_project_dir)).to_s
+
+        manifest_file = fetch_file_if_present(manifest_relative)
+        fetched_files << manifest_file if manifest_file
       end
 
       sig { returns(Dependabot::Julia::RegistryClient) }

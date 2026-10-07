@@ -7,6 +7,9 @@
     "config": {
         "platform": {
             "ext-redis": "1.0.0"
+        },
+        "audit": {
+            "block-insecure": false
         }
     }
 }

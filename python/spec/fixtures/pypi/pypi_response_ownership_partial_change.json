@@ -1,0 +1,20 @@
+{
+  "info": {
+    "name": "luigi",
+    "version": "2.1.0"
+  },
+  "ownership": {
+    "organization": null,
+    "roles": [
+      {
+        "role": "Owner",
+        "user": "spotify"
+      },
+      {
+        "role": "Maintainer",
+        "user": "new_maintainer"
+      }
+    ]
+  },
+  "urls": []
+}

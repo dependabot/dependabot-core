@@ -5,6 +5,7 @@ on: # yamllint disable-line rule:truthy
     # bumping the Gem version, RubyGems will reject it with an error that the
     # version is already live.
     types: [published]
+permissions: {}
 
 jobs:
   release-gems:
@@ -16,8 +17,10 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
         with:
           bundler-cache: true
 
@@ -31,12 +34,7 @@ jobs:
           SORBET_RUNTIME_VERSION=$(grep 'sorbet-runtime (' Gemfile.lock | grep -v '~>' | grep -v '=' | head -n 1 | sed 's/.*(\(.*\))/\1/')
           gem install sorbet-runtime -v $SORBET_RUNTIME_VERSION
 
-      - uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
-
-      - name: Install patched sigstore gem (temporary workaround)
-        run: |
-          gem install specific_install
-          gem specific_install https://github.com/sigstore/sigstore-ruby.git -r 8d5b49629ddcda7d61b328a37a42fb10291d96ad
+      - uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
 
       # We can't use the https://github.com/rubygems/release-gem workflow because it calls `rake release` rather than `rake gems:release`.
       # `rake release` causes problems because it tries to push a git tag, but we've already manually tagged the release as part of the `gems-bump-version` workflow.

@@ -158,6 +158,34 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "RUN apt-get update" }
     end
 
+    context "when nested source keys are strings" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { "tag" => "17.10" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { "tag" => "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      it "updates the image tag" do
+        expect(updated_files.find { |f| f.name == "Dockerfile" }&.content)
+          .to include("FROM ubuntu:17.10\n")
+      end
+    end
+
     context "when the old tag is a prefix of the new tag" do
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -398,6 +426,48 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) { is_expected.to include "ENV PIP_NO_CACHE_DIR=off \\\n" }
+      end
+    end
+
+    context "when adding a digest to a tag-only image (digest pinning)" do
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              tag: "17.10",
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                      "ca97eba880ebf600d68608"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) do
+          is_expected.to include "FROM ubuntu:17.10@sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                                 "ca97eba880ebf600d68608\n"
+        end
+
+        its(:content) { is_expected.to include "FROM python:3.6.3\n" }
+        its(:content) { is_expected.to include "RUN apt-get update" }
       end
     end
 
@@ -1202,6 +1272,177 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when the same image is referenced multiple times in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.26.1
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            # Docker::FileParser normalizes the "docker.io" registry to nil,
+            # even though the manifest keeps the explicit prefix in its text.
+            source: { tag: "v3.32.2" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.26.1" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image: docker.io/calico/cni:v3.32.2" }
+        its(:content) { is_expected.to include "- name: upgrade-ipam" }
+        its(:content) { is_expected.to include "- name: install-cni" }
+
+        it "updates every occurrence and leaves none on the old version" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(2)
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when the same image is referenced three times in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.26.1
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+              containers:
+                - name: calico-node
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.32.2" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.26.1" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        it "updates all three occurrences" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(3)
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
+    context "when the same image name has different old tags in one manifest" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: <<~YAML,
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              initContainers:
+                - name: upgrade-ipam
+                  image: docker.io/calico/cni:v3.25.0
+                - name: install-cni
+                  image: docker.io/calico/cni:v3.26.1
+          YAML
+          name: "calico.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "calico/cni",
+          version: "v3.32.2",
+          previous_version: "v3.26.1",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "calico.yaml",
+            source: { tag: "v3.32.2" }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "calico.yaml",
+              source: { tag: "v3.25.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "calico.yaml",
+              source: { tag: "v3.26.1" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "calico.yaml" }
+        end
+
+        it "updates both differently-tagged occurrences to the new tag" do
+          expect(updated_podfile.content.scan("docker.io/calico/cni:v3.32.2").length).to eq(2)
+          expect(updated_podfile.content).not_to include("v3.25.0")
+          expect(updated_podfile.content).not_to include("v3.26.1")
+        end
+      end
+    end
+
     context "when multiple yaml to be updated" do
       let(:yaml_files) { [podfile, podfile2] }
       let(:podfile2) do
@@ -1318,6 +1559,53 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa"
           end
         end
+      end
+    end
+
+    context "when adding a digest to a tag-only YAML image (digest pinning)" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: podfile_body,
+          name: "multiple.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.yaml",
+            source: {
+              tag: "17.10",
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                      "ca97eba880ebf600d68608"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.yaml",
+            source: { tag: "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "multiple.yaml" }
+        end
+
+        its(:content) do
+          is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                                 "ca97eba880ebf600d68608\n"
+        end
+
+        its(:content) { is_expected.to include "image: nginx:1.14.2\n" }
+        its(:content) { is_expected.to include "kind: Pod" }
       end
     end
   end

@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org", cooldown: 14
+
+gem "business", "~> 1.4.0"
+gem "statesman", "~> 1.2.0"

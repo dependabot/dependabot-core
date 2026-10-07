@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -89,6 +90,7 @@ internal static partial class MSBuildHelper
 
     internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ILogger logger)
     {
+        var projectPathDir = Path.GetDirectoryName(projectPath)!;
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
 
@@ -112,7 +114,7 @@ internal static partial class MSBuildHelper
             .Select(package => new PackageToUpdate
             {
                 PackageName = package.Name,
-                NewVersion = package.Version.ToString()
+                NewVersion = package.Version!.ToString()
             })
             .ToList();
 
@@ -148,12 +150,12 @@ internal static partial class MSBuildHelper
                 packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, projectPathDir, logger);
 
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, projectPathDir, logger);
                 }
             }
 
@@ -164,12 +166,12 @@ internal static partial class MSBuildHelper
                 packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, projectPathDir, logger);
 
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, projectPathDir, logger);
                 }
             }
 
@@ -196,10 +198,7 @@ internal static partial class MSBuildHelper
                 DependencyType.Unknown,
                 null,
                 null,
-                false,
-                false,
-                false,
-                false,
+                true,
                 false
             ))
             .ToList();
@@ -257,7 +256,7 @@ internal static partial class MSBuildHelper
     {
         try
         {
-            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath)!;
             var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
             var packageSourceProvider = new PackageSourceProvider(settings);
             return packageSourceProvider.LoadPackageSources();
@@ -348,7 +347,7 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{GetExactVersionConstraint(p.Version!)}\" />"));
 
         var dependencyTargetsImport = importDependencyTargets
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
@@ -402,15 +401,37 @@ internal static partial class MSBuildHelper
         return tempProjectPath;
     }
 
+    /// <summary>
+    /// Returns a NuGet version constraint string suitable for use in a temporary project file.
+    /// If the version is a single version (e.g., "1.0.0"), it is wrapped in square brackets to
+    /// pin to that exact version (e.g., "[1.0.0]").
+    /// If the version is already a valid version range (e.g., "[1.0.0,2.0.0)" or "1.*"), it is
+    /// returned as-is.
+    /// Throws if the string is neither a valid version nor a valid version range.
+    /// </summary>
+    internal static string GetExactVersionConstraint(string version)
+    {
+        if (NuGetVersion.TryParse(version, out _))
+        {
+            return $"[{version}]";
+        }
+
+        if (VersionRange.TryParse(version, out _))
+        {
+            return version;
+        }
+
+        throw new ArgumentException($"Invalid NuGet version or version range: '{version}'", nameof(version));
+    }
+
     internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var (exitCode, stdOut, stdErr) = await HandleGlobalJsonAsync(projectDirectory, repoRoot, async () =>
         {
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(
                 [
-                    "msbuild",
                     projectPath,
                     "/t:ReportTargetFramework",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
@@ -493,7 +514,8 @@ internal static partial class MSBuildHelper
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false);
 
-            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, logger);
+            var experimentsManager = new ExperimentsManager();
+            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, solutionDir: null, logger);
             var allDependencies = projectDiscovery
                 .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
                 .FirstOrDefault()
@@ -510,6 +532,242 @@ internal static partial class MSBuildHelper
             catch
             {
             }
+        }
+    }
+
+    public static async Task<HashSet<string>> GetProjectTargetsAsync(string projectPath, ILogger logger)
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify targets, so we can skip the process invocation
+            return [];
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var args = new[]
+        {
+            projectPath,
+            "-targets"
+        };
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+        if (exitCode != 0)
+        {
+            logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return [];
+        }
+
+        var targets = stdOut.Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => !string.IsNullOrEmpty(l))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return targets;
+    }
+
+    internal static async Task<ImmutableDictionary<string, string>?> GetProjectPropertiesAsync(
+        string projectPath,
+        IReadOnlyCollection<string> propertyNames,
+        ILogger logger
+    )
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify properties, so we can skip the process invocation
+            return null;
+        }
+
+        var requestedPropertyNames = propertyNames
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray();
+        if (requestedPropertyNames.Length == 0)
+        {
+            return ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (requestedPropertyNames.Length == 1)
+        {
+            var propertyName = requestedPropertyNames[0];
+            var propertyValue = await GetProjectPropertyAsync(projectPath, propertyName, logger);
+            return propertyValue is null
+                ? null
+                : ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase).Add(propertyName, propertyValue);
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var tempDir = Directory.CreateTempSubdirectory("__get_msbuild_properties_");
+        try
+        {
+            var resultOutputPath = Path.Combine(tempDir.FullName, "result.json");
+            var args = new[]
+            {
+                projectPath,
+                $"-getProperty:{string.Join(",", requestedPropertyNames)}",
+                $"-getResultOutputFile:{resultOutputPath}",
+            };
+
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+            if (exitCode != 0)
+            {
+                if (IsGetPropertyUnsupported(stdOut, stdErr))
+                {
+                    var fallbackProperties = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var propertyName in requestedPropertyNames)
+                    {
+                        var propertyValue = await GetProjectPropertyUsingCompatibilityTargetAsync(projectPath, propertyName, logger);
+                        if (propertyValue is null)
+                        {
+                            return null;
+                        }
+
+                        fallbackProperties[propertyName] = propertyValue;
+                    }
+
+                    return fallbackProperties.ToImmutable();
+                }
+
+                logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+                return null;
+            }
+
+            if (!File.Exists(resultOutputPath))
+            {
+                logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]: MSBuild did not produce a result output file.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+                return null;
+            }
+
+            var resultOutput = await File.ReadAllTextAsync(resultOutputPath);
+            try
+            {
+                using var resultDocument = JsonDocument.Parse(resultOutput);
+                var root = resultDocument.RootElement;
+                if (root.ValueKind != JsonValueKind.Object ||
+                    !root.TryGetProperty("Properties", out var propertiesElement) ||
+                    propertiesElement.ValueKind != JsonValueKind.Object)
+                {
+                    logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]: MSBuild result output did not contain a properties object.");
+                    return null;
+                }
+
+                var properties = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var propertyName in requestedPropertyNames)
+                {
+                    if (!propertiesElement.TryGetProperty(propertyName, out var propertyElement) ||
+                        propertyElement.ValueKind != JsonValueKind.String ||
+                        propertyElement.GetString() is not string propertyValue)
+                    {
+                        logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]: MSBuild result output did not contain a string value for the property.");
+                        return null;
+                    }
+
+                    properties[propertyName] = propertyValue;
+                }
+
+                return properties.ToImmutable();
+            }
+            catch (JsonException ex)
+            {
+                logger.Warn($"Unable to determine properties '{string.Join("', '", requestedPropertyNames)}' for project [{projectPath}]: MSBuild produced invalid JSON result output: {ex.Message}");
+                return null;
+            }
+        }
+        finally
+        {
+            tempDir.Delete(recursive: true);
+        }
+    }
+
+    internal static async Task<string?> GetProjectPropertyAsync(string projectPath, string propertyName, ILogger logger)
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify properties, so we can skip the process invocation
+            return null;
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var args = new[]
+        {
+            projectPath,
+            $"-getProperty:{propertyName}"
+        };
+
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+        if (exitCode != 0)
+        {
+            if (IsGetPropertyUnsupported(stdOut, stdErr))
+            {
+                return await GetProjectPropertyUsingCompatibilityTargetAsync(projectPath, propertyName, logger);
+            }
+
+            logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return null;
+        }
+
+        return stdOut.Trim();
+    }
+
+    internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
+    {
+        var rawValue = await GetProjectPropertyAsync(projectPath, "TargetFrameworks", logger);
+        return ParseProjectTargetFrameworks(rawValue);
+    }
+
+    internal static ImmutableArray<string> ParseProjectTargetFrameworks(string? rawValue)
+    {
+        if (rawValue is null)
+        {
+            return [];
+        }
+
+        var tfms = Regex.Replace(rawValue, "@[\r\n\t ]", "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .OrderBy(t => t)
+            .ToImmutableArray();
+        return tfms;
+    }
+
+    private static bool IsGetPropertyUnsupported(string stdOut, string stdErr)
+    {
+        return stdOut.Contains("error MSB1001: Unknown switch.", StringComparison.Ordinal) ||
+            stdErr.Contains("error MSB1001: Unknown switch.", StringComparison.Ordinal);
+    }
+
+    private static async Task<string?> GetProjectPropertyUsingCompatibilityTargetAsync(string projectPath, string propertyName, ILogger logger)
+    {
+        // Older versions of MSBuild don't allow `-getProperty`, so import a custom target that reports the property.
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var tempDir = Directory.CreateTempSubdirectory("__get_msbuild_property_");
+        try
+        {
+            var targetsTemplateContents = await File.ReadAllTextAsync(GetFileFromRuntimeDirectory("GetProperty.targets"));
+            var targetContents = targetsTemplateContents.Replace("%RequestedPropertyName%", $"$({propertyName})");
+            var tempTargetsPath = Path.Combine(tempDir.FullName, $"GetProperty_{propertyName}.targets");
+            await File.WriteAllTextAsync(tempTargetsPath, targetContents);
+
+            var args = new[]
+            {
+                projectPath,
+                $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
+                "/t:_Dependabot_GetProperty",
+            };
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+            if (exitCode == 0)
+            {
+                var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);
+                if (match.Success)
+                {
+                    return match.Groups["PropertyValue"].Value.Trim();
+                }
+            }
+
+            logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return null;
+        }
+        finally
+        {
+            tempDir.Delete(recursive: true);
         }
     }
 
@@ -538,7 +796,11 @@ internal static partial class MSBuildHelper
         ThrowOnRateLimitExceeded(output);
         ThrowOnTimeout(output);
         ThrowOnBadResponse(output);
+        ThrowOnNotFoundResponse(output);
         ThrowOnUnparseableFile(output);
+        ThrowOnMultipleProjectsForPackagesConfig(output);
+        ThrowOnCircularDependency(output);
+        ThrowOnInvalidIcuPackage(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -593,10 +855,30 @@ internal static partial class MSBuildHelper
             new Regex(@"The file is not a valid nupkg"),
             new Regex(@"The response ended prematurely\. \(ResponseEnded\)"),
             new Regex(@"The content at '.*' is not valid XML\."),
+            new Regex(@"End of Central Directory record could not be found\."),
         };
         if (patterns.Any(p => p.IsMatch(stdout)))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.InternalServerError);
+        }
+    }
+
+    private static void ThrowOnNotFoundResponse(string stdout)
+    {
+        // These commonly occur when a feed is misconfigured (e.g., a bad credential or URL); they're a user
+        // configuration error rather than an updater failure.  In each case a URI is extracted from the
+        // message and passed through to the reported error.
+        var patterns = new[]
+        {
+            // V2 feed 404; the URI is the portion before the `/FindPackagesById` path
+            new Regex(@"Failed to fetch results from V2 feed at '(?<Uri>.+?)/FindPackagesById.*Response status code does not indicate success: 404"),
+            // feed returned content that couldn't be parsed as a valid JSON object
+            new Regex(@"The content at '(?<Uri>[^']*)' is not a valid JSON object\."),
+        };
+        var match = patterns.Select(p => p.Match(stdout)).FirstOrDefault(m => m.Success);
+        if (match is not null)
+        {
+            throw new BadResponseException(stdout, uri: match.Groups["Uri"].Value);
         }
     }
 
@@ -664,11 +946,37 @@ internal static partial class MSBuildHelper
         {
             new Regex(@"\nAn error occurred while reading file '(?<FilePath>[^']+)': (?<Message>[^\n]*)\n"),
             new Regex(@"NuGet\.Config is not valid XML\. Path: '(?<FilePath>[^']+)'\.\n\s*(?<Message>[^\n]*)(\n|$)"),
+            new Regex(@"Error parsing packages\.config file at (?<FilePath>[^:]+): (?<Message>[^\n]*)\n"),
         };
         var match = patterns.Select(p => p.Match(output)).Where(m => m.Success).FirstOrDefault();
         if (match is not null)
         {
             throw new UnparseableFileException(match.Groups["Message"].Value, match.Groups["FilePath"].Value);
+        }
+    }
+
+    private static void ThrowOnMultipleProjectsForPackagesConfig(string output)
+    {
+        if (output.Contains("Found multiple project files for "))
+        {
+            throw new Exception("Multiple project files found for single packages.config");
+        }
+    }
+
+    private static void ThrowOnCircularDependency(string output)
+    {
+        var pattern = new Regex(@"Circular dependency detected '.*'");
+        if (pattern.IsMatch(output))
+        {
+            throw new Exception("Circular dependency detected");
+        }
+    }
+
+    private static void ThrowOnInvalidIcuPackage(string output)
+    {
+        if (output.Contains("Couldn't find a valid ICU package installed on the system."))
+        {
+            throw new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK.");
         }
     }
 

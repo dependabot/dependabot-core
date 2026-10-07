@@ -1,9 +1,10 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/maven/update_checker/property_updater"
+require "dependabot/maven/file_updater"
 
 RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
   let(:updater) do
@@ -120,6 +121,27 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       it { is_expected.to be(false) }
     end
 
+    context "when a dependency sharing the property has no locatable inline version" do
+      let(:pom_body) { fixture("poms", "property_pom_unlocatable_declaration.xml") }
+      let(:dependency_name) { "io.grpc:protoc-gen-grpc-java" }
+      let(:dependency_version) { "1.81.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.81.0",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "grpc.version",
+            property_source: "pom.xml",
+            packaging_type: "jar"
+          }
+        }]
+      end
+
+      it { is_expected.to be(false) }
+    end
+
     context "when one dependency isn't listed" do
       before do
         stub_request(:get, maven_central_metadata_url_context)
@@ -127,6 +149,113 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       end
 
       it { is_expected.to be(true) }
+    end
+
+    context "with merged declarations from different POMs" do
+      let(:pom_body) do
+        fixture("poms", "writable_versions.xml")
+          .sub("<shared.version>1.0</shared.version>", "<shared.version>[1.0,3.0)</shared.version>")
+      end
+      let(:other_pom_body) { fixture("poms", "shared_property_other_declarations.xml") }
+      let(:other_pom) { Dependabot::DependencyFile.new(name: "other/pom.xml", content: other_pom_body) }
+      let(:dependency_files) { [pom, other_pom] }
+      let(:dependency_name) { "com.example:shared-one" }
+      let(:dependency_version) { "1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "[1.0,3.0)",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "shared.version",
+            property_source: "pom.xml",
+            packaging_type: "jar"
+          }
+        }]
+      end
+      let(:target_version_details) do
+        { version: version_class.new("3.0"), source_url: "https://repo.maven.apache.org/maven2" }
+      end
+
+      before do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/example/parent/1.0/parent-1.0.pom")
+          .to_return(body: "<project/>")
+        stub_request(:get, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/example/shared-(one|two)/maven-metadata\.xml\z})
+          .to_return(body: "<metadata><versioning><versions><version>3.0</version></versions></versioning></metadata>")
+      end
+
+      it "rejects changes to exact declarations that leave the shared range untouched" do
+        expect(updater.update_possible?).to be(false)
+        expect { updater.updated_dependencies }.to raise_error("Update not possible!")
+      end
+
+      context "with the same property name from a different source" do
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${shared.version}</version>")
+        end
+
+        it "does not count changes to the other property source" do
+          expect(updater.update_possible?).to be(false)
+          expect { updater.updated_dependencies }.to raise_error("Update not possible!")
+        end
+      end
+
+      context "with a different property name" do
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${other.version}</version>")
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the selected property is already at the target version" do
+        let(:pom_body) { super().sub("[1.0,3.0)", "3.0") }
+        let(:dependency_version) { "3.0" }
+        let(:dependency_requirements) { super().map { |req| req.merge(requirement: "3.0") } }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when the selected property has a writable exact version" do
+        let(:pom_body) { super().sub("[1.0,3.0)", "1.0") }
+        let(:dependency_requirements) { super().map { |req| req.merge(requirement: "1.0") } }
+        let(:other_pom_body) do
+          super().gsub("      <version>1.0</version>", "      <version>${other.version}</version>")
+        end
+
+        shared_examples "an isolated property update" do
+          it "updates the selected property without touching unrelated properties" do
+            expect(updater.update_possible?).to be(true)
+            updates = updater.updated_dependencies
+            expect(updates.map(&:name)).to contain_exactly("com.example:shared-one", "com.example:shared-two")
+            expect(updates.map(&:version)).to eq(["3.0", "3.0"])
+
+            files = Dependabot::Maven::FileUpdater.new(
+              dependencies: updates,
+              dependency_files: dependency_files,
+              credentials: []
+            ).updated_dependency_files
+
+            expect(files.map(&:name)).to eq(["pom.xml"])
+            expect(files.first.content).to eq(
+              pom_body.sub("<shared.version>1.0</shared.version>", "<shared.version>3.0</shared.version>")
+            )
+            updates.each do |update|
+              expect(update.requirements.select { |req| req.file == "other/pom.xml" })
+                .to eq(update.previous_requirements.select { |req| req.file == "other/pom.xml" })
+            end
+          end
+        end
+
+        it_behaves_like "an isolated property update"
+
+        context "with the same property name in another POM" do
+          let(:other_pom_body) { super().gsub("${other.version}", "${shared.version}") }
+
+          it_behaves_like "an isolated property update"
+        end
+      end
     end
   end
 
@@ -202,6 +331,163 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       )
     end
 
+    context "when parsed dependency versions are stale for a property dependency" do
+      let(:stale_dependencies_using_property) do
+        %w(
+          org.springframework:spring-beans
+          org.springframework:spring-context
+        ).map do |name|
+          Dependabot::Dependency.new(
+            name: name,
+            version: "4.3.11.RELEASE",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "4.3.12.RELEASE",
+              groups: [],
+              source: nil,
+              metadata: {
+                property_name: "springframework.version",
+                property_source: "pom.xml",
+                packaging_type: "jar"
+              }
+            }],
+            package_manager: "maven"
+          )
+        end
+      end
+
+      before do
+        allow(Dependabot::Maven::FileParser)
+          .to receive(:new)
+          .and_return(instance_double(Dependabot::Maven::FileParser, parse: stale_dependencies_using_property))
+      end
+
+      it "uses the current property value as the previous version" do
+        expect(updated_dependencies.map(&:previous_version)).to eq(
+          ["4.3.12.RELEASE", "4.3.12.RELEASE"]
+        )
+      end
+
+      context "when the same property name is declared in another POM" do
+        let(:dependency_files) { [pom, other_pom] }
+        let(:other_pom) do
+          Dependabot::DependencyFile.new(
+            name: "other.xml",
+            content: fixture("poms", "property_pom.xml").gsub("4.3.12.RELEASE", "4.3.10.RELEASE")
+          )
+        end
+        let(:stale_dependencies_using_property) do
+          %w(
+            org.springframework:spring-beans
+            org.springframework:spring-context
+          ).map do |name|
+            Dependabot::Dependency.new(
+              name: name,
+              version: "4.3.11.RELEASE",
+              requirements: [
+                {
+                  file: "other.xml",
+                  requirement: "4.3.10.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "other.xml",
+                    packaging_type: "jar"
+                  }
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }
+              ],
+              package_manager: "maven"
+            )
+          end
+        end
+
+        it "uses the property value from the matching property source" do
+          expect(updated_dependencies.map(&:previous_version)).to eq(
+            ["4.3.12.RELEASE", "4.3.12.RELEASE"]
+          )
+        end
+      end
+    end
+
+    context "when the same dependency uses different properties in a parent and child POM" do
+      let(:group_id) { "com.flutter.product.catalogue.market.domain.contract" }
+      let(:dependency_name) { "#{group_id}:product-catalogue-market-domain-contract-proto" }
+      let(:ignored_versions) { [">= 2.a0", ">= 1.1.a0, < 2.a0"] }
+      let(:dependency_files) { [pom, docker_pom] }
+      let(:pom_body) { fixture("poms", "prefix_overlapping_property_names.xml") }
+      let(:docker_pom) do
+        Dependabot::DependencyFile.new(
+          name: "docker/pom.xml",
+          content: fixture("poms", "prefix_overlapping_property_names_docker.xml")
+                   .gsub(">1.0.7<", ">#{property_version}<")
+        )
+      end
+      let(:property_version) { "1.0.7" }
+      let(:parsed_dependencies) do
+        Dependabot::Maven::FileParser.new(dependency_files: dependency_files, source: nil).parse
+      end
+      let(:dependency) do
+        T.must(parsed_dependencies.find { |parsed_dependency| parsed_dependency.name == dependency_name })
+      end
+      let(:target_version_details) do
+        {
+          version: version_class.new("1.0.11"),
+          source_url: "https://repo.maven.apache.org/maven2"
+        }
+      end
+      let(:version_finder) do
+        instance_double(Dependabot::Maven::UpdateChecker::VersionFinder, releases: [])
+      end
+
+      before do
+        allow(Dependabot::Maven::UpdateChecker::VersionFinder).to receive(:new).and_return(version_finder)
+      end
+
+      it "updates the matching property in the patch-production group" do
+        expect(updated_dependencies).to contain_exactly(
+          have_attributes(
+            name: dependency_name,
+            version: "1.0.11",
+            previous_version: "1.0.7"
+          )
+        )
+
+        updated_requirements = updated_dependencies.first.requirements.to_h do |requirement|
+          [requirement.metadata_string("property_name"), requirement.requirement_string]
+        end
+        expect(updated_requirements).to include(
+          "product-catalogue-market-domain-contract.version" => "2.9.9",
+          "product-catalogue-market-domain-contract-proto-prod.version" => "1.0.11"
+        )
+      end
+
+      context "when the matching property uses an exact version range" do
+        let(:property_version) { "[1.0.7]" }
+
+        it "updates the matching property" do
+          expect(updated_dependencies).to contain_exactly(
+            have_attributes(
+              name: dependency_name,
+              version: "1.0.11",
+              previous_version: "[1.0.7]"
+            )
+          )
+        end
+      end
+    end
+
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
@@ -268,13 +554,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               requirements: [{
                 file: "pom.xml",
                 requirement: nil,
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }, {
                 file: "pom.xml",
                 requirement: "23.6-jre",
-                groups: ["test"],
+                groups: ["plugin"],
                 source: {
                   type: "maven_repo",
                   url: "https://repo.maven.apache.org/maven2"
@@ -287,7 +573,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "another.version",
@@ -298,13 +584,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: nil,
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0-M2",
-                groups: ["test"],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "junit-platform.version",
@@ -314,7 +600,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "another.version",

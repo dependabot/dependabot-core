@@ -24,6 +24,9 @@ There are some notable differences:
 - **Lockfile Updates**: Dependabot updates both `Project.toml` and tries to update any `Manifest.toml` files, whereas CompatHelper.jl only updates `Project.toml`.
 - **Workspace Support**: Dependabot handles Julia workspaces where multiple packages share a common manifest file in a parent directory.
 - **Conflict Notifications**: When manifest updates fail due to dependency conflicts (common in workspaces), Dependabot adds warning notices to pull requests explaining the issue.
+- **Standard Libraries**: Dependabot derives the compat entry of a package that ships with Julia from the versions bundled across the project's supported Julia releases, whereas CompatHelper.jl treats its registry releases like any other package (see [Standard Libraries](#standard-libraries)).
+
+`[extras]` dependencies are included when they already have a `[compat]` entry, matching CompatHelper.jl's default `IfExistingCompatExtras()` policy.
 
 Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
 
@@ -35,6 +38,10 @@ For more information about Julia package management, see:
 - [Pkg.jl Documentation](https://pkgdocs.julialang.org/v1/)
 - [Project.toml and Manifest.toml format](https://pkgdocs.julialang.org/v1/toml-files/)
 - [Julia semantic versioning](https://pkgdocs.julialang.org/v1/compatibility/)
+
+## Manifest Julia Version
+
+A manifest is resolved by the Julia version that wrote it, its `julia_version`, which juliaup installs and launches. Every manifest of an environment is updated this way, so `Manifest.toml` and a version-specific `Manifest-v1.12.toml` are each resolved by their own Julia; a dependency's current version is the oldest across them, so a manifest that lags behind still gets updated. Resolving under the updater's own Julia would rewrite `julia_version` and the stdlib entries, leaving a manifest the project's Julia may not load. A manifest without a `julia_version`, or one written by a prerelease build, is resolved with the updater's Julia.
 
 ## Error Handling and User Notifications
 
@@ -71,6 +78,20 @@ Julia workspaces are fully supported. In workspace configurations:
 - The workspace root contains a manifest file (e.g., `Manifest.toml`) shared by all workspace packages
 - When updating workspace packages, Dependabot will attempt to update both the individual `Project.toml` and the shared manifest
 - If manifest updates fail due to conflicting requirements between workspace siblings, a warning notice is added to the pull request explaining the conflict
+
+### Standard Libraries
+
+Some standard libraries also have releases in the General registry: legacy bridge packages for Julia versions that predate the stdlib (`Artifacts` 1.3.0 for Julia 1.0-1.5) and "upgradable" stdlibs that can be updated from the registry (`Statistics` 1.11.x). Pkg pins a stdlib to the version bundled with the running Julia, so a compat entry derived from those registry releases can make a project uninstallable on part of the Julia range its own `julia` compat entry admits.
+
+Dependabot therefore never treats the registry's latest release as the target for a package that ships as a standard library in any Julia release admitted by the project's `julia` compat entry (a project without a `julia` entry is assumed to support every release). Instead the helper computes the versions the compat entry has to admit across that range:
+
+- the bundled version where the package is a pinned stdlib (the Julia version itself for stdlibs that were unversioned before Julia 1.11, which is how Pkg resolves them),
+- the newest installable registry release where it is upgradable or not yet a stdlib,
+- and `0.0.0` while the range reaches releases before Julia 1.10, whose `Pkg.test()` sandbox pinned stdlibs to that version.
+
+Reduced to the lowest version per caret line, this becomes the compat entry: `Statistics = "1.10"` for `julia = "1.10"`, `Statistics = "<0.0.1, 1"` for `julia = "1"`, `SHA = "0.7, 1"` for `julia = "1.10"`. A missing entry is added, and an existing entry that fails to admit one of those versions is widened, regardless of the configured update strategy; entries are never narrowed and no manifest updates are proposed for stdlibs. Which packages are stdlibs in which release, and at what version, comes from [HistoricalStdlibVersions.jl](https://github.com/JuliaPackaging/HistoricalStdlibVersions.jl), the same data Pkg uses to resolve for a `julia_version` other than the running one. For example, `Artifacts` is only a registry package when the `julia` compat is capped below 1.6, and `StyledStrings` when it is capped below 1.11.
+
+The General registry's AutoMerge guidelines currently exempt stdlibs from the compat requirement; the entries above follow the [stdlib compat PSA](https://discourse.julialang.org/t/psa-compat-requirements-in-the-general-registry-are-changing/104958).
 
 ### Terminology: Julia vs Dependabot
 
@@ -162,3 +183,29 @@ julia/helpers/DependabotHelper.jl/
 ```
 
 The `run_dependabot_helper.jl` script acts as the JSON-RPC server, receiving function calls from Ruby and dispatching them to the appropriate Julia functions.
+
+## Testing with Real Repositories
+
+For integration testing against real Julia package structures, use the [Julia-DependabotTest](https://github.com/IanButterworth/Julia-DependabotTest) repository, which contains various package configurations to validate Dependabot's behavior.
+
+### GitHub Actions Testing
+
+The Julia-DependabotTest repository includes a workflow to test custom dependabot-core branches or PRs:
+
+1. Go to [Actions → Test Dependabot Julia](https://github.com/IanButterworth/Julia-DependabotTest/actions/workflows/test-dependabot.yml)
+2. Click "Run workflow"
+3. Enter a branch name (e.g., `ib/julia_workspaces_fixes`) or PR number (e.g., `13889`)
+4. Select a test configuration
+5. Results are uploaded as artifacts (`results.yaml`, `dependabot.log`)
+
+### Local Testing
+
+```bash
+# From the dependabot-core repository root
+docker build --no-cache -f Dockerfile.updater-core -t ghcr.io/dependabot/dependabot-updater-core .
+docker build --no-cache -f julia/Dockerfile -t ghcr.io/dependabot/dependabot-updater-julia .
+
+# Run against a test configuration
+script/dependabot update -f /path/to/Julia-DependabotTest/dependabot-test-workspace.yaml -o results.yaml
+```
+
