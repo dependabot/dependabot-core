@@ -1202,11 +1202,10 @@ RSpec.describe Dependabot::Maven::FileParser do
           .with(:maven_transitive_dependencies).and_return(true)
       end
 
-      it "merges direct and transitive dependencies" do
+      it "merges direct and transitive dependencies without the project itself" do
         expect(dependencies.map(&:name))
           .to match_array(
             %w(
-              com.dependabot:basic-pom
               com.google.guava:guava
               org.apache.httpcomponents:httpclient
               io.mockk:mockk
@@ -1216,49 +1215,264 @@ RSpec.describe Dependabot::Maven::FileParser do
           )
       end
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies[0] }
+      it "keeps the declared requirement and adds the scanned metadata" do
+        dependency = dependencies.find { |dep| dep.name == "com.google.guava:guava" }
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.dependabot:basic-pom")
-          expect(dependency.version).to eq("0.0.1-RELEASE")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "0.0.1-RELEASE",
-              file: nil,
-              groups: [],
-              source: nil,
-              metadata: {
-                packaging_type: "jar",
-                classifier: "",
-                pom_file: "pom.xml"
-              }
-            }]
-          )
+        expect(dependency.version).to eq("23.3-jre")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "23.3-jre",
+            file: "pom.xml",
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+      end
+
+      it "keeps today's requirement shape for transitive dependencies" do
+        dependency = dependencies.find { |dep| dep.name == "org.apache.httpcomponents:httpcore" }
+
+        expect(dependency.version).to eq("4.4.6")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "4.4.6",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+      end
+
+      context "when the transitive experiment is off" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(false)
+        end
+
+        it "does not scan and returns only the declared dependencies" do
+          expect(dependencies.map(&:name)).not_to include("org.apache.httpcomponents:httpcore")
+          expect(dependencies.flat_map(&:requirements).map { |req| req[:file] }).to all(be_a(String))
+          expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
         end
       end
 
-      describe "the second dependency" do
-        subject(:dependency) { dependencies[1] }
+      context "when the parser is asked to skip the dependency tree" do
+        let(:parser) do
+          described_class.new(dependency_files: files, source: source, options: { skip_dependency_tree: true })
+        end
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.google.guava:guava")
-          expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "23.3-jre",
-              file: "pom.xml",
-              groups: [],
-              source: nil,
-              metadata: {
-                packaging_type: "jar",
-                classifier: "",
-                pom_file: "pom.xml"
-              }
-            }]
+        it "does not scan and matches the flag-off result" do
+          flag_off = described_class.new(dependency_files: files, source: source)
+                                    .send(:parse_standard_dependencies)
+
+          expect(dependencies).to eq(flag_off)
+          expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
+        end
+      end
+    end
+
+    context "with the transitive experiment on" do
+      let(:flag_off_dependencies) do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(false)
+        described_class.new(dependency_files: files, source: source).parse
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(true)
+      end
+
+      context "when the scan fails" do
+        let(:files) { [pom, targetfile] }
+        let(:targetfile) do
+          Dependabot::DependencyFile.new(
+            name: "releng/myproject.target", content: fixture("target-files", "example.target")
           )
+        end
+
+        before do
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
+          )
+        end
+
+        it "returns the flag-off result" do
+          expect(dependencies).to eq(flag_off_dependencies)
+          expect(dependencies.map(&:name)).to include("commons-io:commons-io")
+        end
+      end
+
+      context "with a .target file" do
+        let(:files) { [pom, targetfile] }
+        let(:targetfile) do
+          Dependabot::DependencyFile.new(
+            name: "releng/myproject.target", content: fixture("target-files", "example.target")
+          )
+        end
+
+        before do
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+            .and_return(Dependabot::FileParsers::Base::DependencySet.new)
+        end
+
+        it "keeps the .target dependencies" do
+          dependency = dependencies.find { |dep| dep.name == "commons-io:commons-io" }
+
+          expect(dependency.requirements.map(&:file)).to eq(["releng/myproject.target"])
+        end
+      end
+
+      context "with a declared dependency whose version comes from a remote parent" do
+        let(:pom_body) do
+          <<~XML
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>3.1.0</version>
+                <relativePath/>
+              </parent>
+              <groupId>com.example</groupId>
+              <artifactId>boot-app</artifactId>
+              <version>1.0.0</version>
+              <dependencies>
+                <dependency>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-web</artifactId>
+                </dependency>
+              </dependencies>
+            </project>
+          XML
+        end
+
+        before do
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin) do |output_file, **|
+            File.write(
+              output_file,
+              {
+                groupId: "com.example", artifactId: "boot-app", version: "1.0.0", type: "jar", scope: "",
+                children: [{
+                  groupId: "org.springframework.boot", artifactId: "spring-boot-starter-web", version: "3.1.0",
+                  type: "jar", scope: "compile",
+                  children: [{
+                    groupId: "org.springframework", artifactId: "spring-web", version: "6.0.9",
+                    type: "jar", scope: "compile"
+                  }]
+                }]
+              }.to_json
+            )
+          end
+        end
+
+        it "uses the resolved version and keeps the nil requirement" do
+          dependency = dependencies.find { |dep| dep.name == "org.springframework.boot:spring-boot-starter-web" }
+
+          expect(dependency.version).to eq("3.1.0")
+          expect(dependency.requirements.map { |req| [req[:requirement], req[:file]] }).to eq([[nil, "pom.xml"]])
+          expect(dependency.requirements.first[:metadata]).to include(scope: "compile", pom_file: "pom.xml")
+        end
+
+        it "records what pulled a transitive dependency in" do
+          dependency = dependencies.find { |dep| dep.name == "org.springframework:spring-web" }
+
+          expect(dependency.requirements.first[:metadata][:pulled_in_by])
+            .to eq("org.springframework.boot:spring-boot-starter-web")
+        end
+      end
+
+      context "with a multi-module project" do
+        let(:files) { [root_pom, api_pom, model_pom] }
+        let(:root_pom) do
+          Dependabot::DependencyFile.new(name: "pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>root</artifactId>
+              <version>1.0</version>
+              <packaging>pom</packaging>
+              <modules><module>api</module><module>model</module></modules>
+            </project>
+          XML
+        end
+        let(:api_pom) do
+          Dependabot::DependencyFile.new(name: "api/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent><groupId>com.example</groupId><artifactId>root</artifactId><version>1.0</version></parent>
+              <artifactId>api</artifactId>
+              <dependencies>
+                <dependency><groupId>com.example</groupId><artifactId>model</artifactId><version>1.0</version></dependency>
+                <dependency>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-tomcat</artifactId>
+                  <version>1.2.6.RELEASE</version>
+                </dependency>
+              </dependencies>
+            </project>
+          XML
+        end
+        let(:model_pom) do
+          Dependabot::DependencyFile.new(name: "model/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent><groupId>com.example</groupId><artifactId>root</artifactId><version>1.0</version></parent>
+              <artifactId>model</artifactId>
+              <dependencies>
+                <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>23.0</version></dependency>
+              </dependencies>
+            </project>
+          XML
+        end
+
+        def node(name, version, children = [])
+          group_id, artifact_id = name.split(":")
+          { groupId: group_id, artifactId: artifact_id, version: version, type: "jar", scope: "compile",
+            children: children }
+        end
+
+        before do
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin) do |output_file, **|
+            guava = node("com.google.guava:guava", "23.0")
+            tomcat_core = node("org.apache.tomcat.embed:tomcat-embed-core", "8.0.26")
+            tomcat = node("org.springframework.boot:spring-boot-starter-tomcat", "1.2.6.RELEASE", [tomcat_core])
+            model = node("com.example:model", "1.0", [guava])
+
+            File.write(output_file, node("com.example:root", "1.0").to_json)
+            File.write(File.join("model", output_file), model.to_json)
+            File.write(File.join("api", output_file), node("com.example:api", "1.0", [model, tomcat]).to_json)
+          end
+        end
+
+        it "finds transitive dependencies for each module without the modules themselves" do
+          expect(dependencies.map(&:name)).to contain_exactly(
+            "com.google.guava:guava",
+            "org.springframework.boot:spring-boot-starter-tomcat",
+            "org.apache.tomcat.embed:tomcat-embed-core"
+          )
+
+          tomcat = dependencies.find { |dep| dep.name == "org.apache.tomcat.embed:tomcat-embed-core" }
+          expect(tomcat.requirements.map { |req| req[:metadata].slice(:pom_file, :pulled_in_by) }).to eq(
+            [{ pom_file: "api/pom.xml", pulled_in_by: "org.springframework.boot:spring-boot-starter-tomcat" }]
+          )
+
+          guava = dependencies.find { |dep| dep.name == "com.google.guava:guava" }
+          expect(guava.requirements.map { |req| [req[:file], req[:metadata][:pom_file]] }).to eq(
+            [["model/pom.xml", "model/pom.xml"], [nil, "api/pom.xml"]]
+          )
+          expect(guava.requirements.last[:metadata][:pulled_in_by]).to eq("com.example:model")
         end
       end
     end
@@ -1274,7 +1488,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       let(:files) { [pom, wrapper_file] }
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:maven_wrapper_updater).and_return(true)
       end
