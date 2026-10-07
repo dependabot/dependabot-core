@@ -381,6 +381,8 @@ This will be automatically picked up by the dry-run script and give you higher r
 
 Add smoke tests to the [dependabot/smoke-tests](https://github.com/dependabot/smoke-tests) repository. See the repository documentation for detailed instructions on creating and running smoke tests for your ecosystem.
 
+The CI Smoke workflow uses its read-only `GITHUB_TOKEN` to discover tests. GitHub API or suite-generation errors fail discovery instead of reporting success with an empty test matrix.
+
 ## Phase 4: Coordination with Dependabot Team
 
 Since ecosystem support requires changes to Dependabot's API and deployment infrastructure, you'll need to coordinate with the Dependabot team:
