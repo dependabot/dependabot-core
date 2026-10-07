@@ -947,7 +947,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       it "returns the updated lockfile" do
-        expect(updated_pnpm_lock_content).to include("/acorn@6.7.3:")
+        expect(updated_pnpm_lock_content).to include("acorn@6.7.3:")
       end
     end
 
@@ -984,7 +984,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       it "returns the updated lockfile" do
-        expect(updated_pnpm_lock_content).to include("/acorn@6.7.3:").and include("/acorn@6.0.0:")
+        expect(updated_pnpm_lock_content).to include("acorn@6.7.3:").and include("acorn@6.0.0:")
       end
     end
 
@@ -993,9 +993,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     # onto `extra` when given.
     def rewrite_lockfile_acorn(version, extra: nil)
       content = File.read("pnpm-lock.yaml")
-      block = content[%r{^  /acorn@5\.2\.1:\n(?:    .*\n)+}]
-      content = content.sub("/acorn@5.2.1:", "/acorn@#{version}:")
-      content += block.gsub("5.2.1", extra) if extra
+      block = content[/^  acorn@5\.2\.1:\n(?:    .*\n)+/].sub("5.2.1", version)
+      content = content.gsub("acorn@5.2.1:", "acorn@#{version}:")
+      if extra
+        content = content.sub(block, "#{block}\n#{block.sub(version, extra)}")
+        content = content.sub("  acorn@#{version}: {}\n", "  acorn@#{version}: {}\n\n  acorn@#{extra}: {}\n")
+      end
       edges = [version, extra].compact
       edge = -1
       content = content.gsub("acorn: 5.2.1") { "acorn: #{edges[[edge += 1, edges.size - 1].min]}" }
