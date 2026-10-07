@@ -67,6 +67,8 @@ module Dependabot
         @library = T.let(nil, T.nilable(T::Boolean))
         @package_json = T.let(nil, T.nilable(Dependabot::DependencyFile))
         @git_commit_checker = T.let(nil, T.nilable(Dependabot::GitCommitChecker))
+        # Native resolution must use the same job policy as the file updater.
+        @native_update_cooldown = update_cooldown
         super
         Helpers.dependency_files = dependency_files
         Helpers.credentials = credentials
@@ -488,7 +490,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version,
             repo_contents_path: repo_contents_path,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            update_cooldown: @native_update_cooldown
           )
       end
 

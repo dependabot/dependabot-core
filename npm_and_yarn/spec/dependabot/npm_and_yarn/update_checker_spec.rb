@@ -3,6 +3,7 @@
 
 require "spec_helper"
 
+require "webrick"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/npm_and_yarn/metadata_finder"
@@ -668,40 +669,179 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
 
-    context "when dealing with a sub-dependency" do
-      let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
-      let(:target_version) { "1.0.1" }
-
+    context "when resolving npm transitive dependencies with cooldown" do
+      let(:dependency_name) { "cooldown-child" }
+      let(:target_version) { "1.2.0" }
+      let(:credentials) { [] }
+      let(:native_age) { nil }
+      let(:parent_requirement) { "^1.0.0" }
+      let(:release_ages) { { "1.0.0" => 60, "1.1.0" => 10, "1.2.0" => 2 } }
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: dependency_name,
-          version: "1.0.0",
-          requirements: [],
-          package_manager: "npm_and_yarn"
+          name: dependency_name, version: "1.0.0", requirements: [], package_manager: "npm_and_yarn"
         )
       end
+      let(:registry) do
+        WEBrick::HTTPServer.new(
+          BindAddress: "127.0.0.1", Port: 0, AccessLog: [], Logger: WEBrick::Log.new(File::NULL, 7)
+        )
+      end
+      let(:registry_base) { "http://127.0.0.1:#{registry[:Port]}" }
+      let(:registry_listing_url) { "#{registry_base.sub('http:', 'https:')}/#{dependency_name}" }
+      let(:registry_response) do
+        versions = release_ages.keys
+        {
+          "name" => dependency_name,
+          "dist-tags" => { "latest" => target_version },
+          "time" => release_ages.transform_values { |days| (Time.now.utc - (days * 86_400)).iso8601 },
+          "versions" => versions.to_h do |version|
+            [version, {
+              "name" => dependency_name, "version" => version,
+              "dist" => { "tarball" => "#{registry_base}/#{dependency_name}/-/#{dependency_name}-#{version}.tgz" }
+            }]
+          end
+        }.to_json
+      end
+      let(:dependency_files) do
+        manifest = { "name" => "cooldown-test", "version" => "1.0.0",
+                     "dependencies" => { "cooldown-parent" => "1.0.0" } }
+        lockfile = {
+          "name" => "cooldown-test", "version" => "1.0.0", "lockfileVersion" => 3, "requires" => true,
+          "packages" => {
+            "" => manifest,
+            "node_modules/cooldown-parent" => {
+              "version" => "1.0.0", "dependencies" => { dependency_name => parent_requirement },
+              "resolved" => "#{registry_base}/cooldown-parent/-/cooldown-parent-1.0.0.tgz"
+            },
+            "node_modules/#{dependency_name}" => {
+              "version" => "1.0.0", "resolved" => "#{registry_base}/#{dependency_name}/-/#{dependency_name}-1.0.0.tgz"
+            }
+          }
+        }
+        npmrc = "registry=#{registry_base}\ncache=#{Dir.pwd}/npm-cache\n" \
+                "audit=false\nfund=false\nupdate-notifier=false\n"
+        npmrc += "min-release-age=#{native_age}\n" if native_age
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest.to_json),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: lockfile.to_json),
+          Dependabot::DependencyFile.new(name: ".npmrc", content: npmrc)
+        ]
+      end
 
-      it "delegates to SubdependencyVersionResolver" do
-        dummy_version_resolver =
-          instance_double(described_class::SubdependencyVersionResolver)
+      around do |example|
+        response_body = registry_response
+        registry.mount_proc("/") do |request, response|
+          response["Content-Type"] = "application/json"
+          response.status = request.path == "/#{dependency_name}" ? 200 : 404
+          response.body = response.status == 200 ? response_body : "{}"
+        end
+        thread = Thread.new { registry.start }
+        Dependabot::SharedHelpers.in_a_temporary_directory { example.run }
+      ensure
+        registry.shutdown
+        thread&.join
+      end
 
-        expect(described_class::SubdependencyVersionResolver)
-          .to receive(:new)
-          .with(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil,
-            security_advisories: security_advisories
-          ).and_return(dummy_version_resolver)
-        expect(dummy_version_resolver)
-          .to receive(:latest_resolvable_version)
-          .and_return(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        stub_request(:head, %r{https?://127\.0\.0\.1:#{registry[:Port]}/#{dependency_name}/-/})
+          .to_return(status: 200)
+        JSON.parse(registry_response).fetch("versions").each do |version, details|
+          stub_request(:get, "#{registry_listing_url}/#{version}").to_return(status: 200, body: details.to_json)
+        end
+      end
 
-        expect(checker.latest_resolvable_version)
-          .to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+      it "resolves the mature release rather than a version the lockfile writer will reject" do
+        expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.1.0"))
+      end
+
+      context "with a stronger native policy" do
+        let(:native_age) { 30 }
+        let(:release_ages) { { "1.0.0" => 60, "1.1.0" => 40, "1.2.0" => 10 } }
+
+        context "when a later native setting lowers the gate" do
+          let(:native_age) { "30\nmin-release-age=1" }
+
+          it "uses the original job cooldown and npm's effective setting, like the writer" do
+            expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.2.0"))
+          end
+        end
+
+        it "keeps the native gate instead of replacing it with the shorter cooldown" do
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.1.0"))
+        end
+      end
+
+      context "with a shorter minor-update window" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, semver_minor_days: 1)
+        end
+
+        it "does not reject a version approved under the shorter window" do
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.2.0"))
+        end
+      end
+
+      context "when the parent only permits a patch" do
+        let(:parent_requirement) { "<1.1.0" }
+        let(:target_version) { "1.1.0" }
+        let(:release_ages) { { "1.0.0" => 60, "1.0.1" => 2, "1.1.0" => 10 } }
+
+        context "with a longer patch window" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, semver_minor_days: 1)
+          end
+
+          it "does not apply the shorter minor window to the constrained patch" do
+            expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.0.0"))
+          end
+        end
+
+        context "with a shorter patch window" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, semver_patch_days: 1)
+          end
+
+          it "does not block the constrained patch with the registry latest's minor window" do
+            expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.0.1"))
+          end
+        end
+      end
+
+      context "when native gates cannot reproduce a policy-compliant candidate" do
+        let(:target_version) { "1.1.0" }
+        let(:release_ages) { { "1.0.0" => 60, "1.0.1" => 10, "1.1.0" => 2 } }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7, semver_patch_days: 1)
+        end
+
+        it "does not report a patch whose writer gate would instead install the cooling minor" do
+          expect(checker.latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "when excluded from cooldown" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3, exclude: [dependency_name])
+        end
+
+        it "allows the fresh release" do
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.2.0"))
+        end
+      end
+
+      context "with a security fix" do
+        let(:native_age) { 30 }
+        let(:security_advisories) do
+          [Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name, package_manager: "npm_and_yarn", vulnerable_versions: ["< 1.2.0"]
+          )]
+        end
+
+        it "allows the fix despite both configured age gates" do
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("1.2.0"))
+        end
       end
     end
   end
@@ -725,51 +865,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:target_version) { "1.2.1" }
 
       it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.2.1")) }
-
-      context "when dealing with a sub-dependency" do
-        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
-        let(:target_version) { "1.0.1" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: dependency_name,
-            version: "1.0.0",
-            requirements: [],
-            package_manager: "npm_and_yarn"
-          )
-        end
-        let(:security_advisories) do
-          [
-            Dependabot::SecurityAdvisory.new(
-              dependency_name: "rails",
-              package_manager: "npm_and_yarn",
-              vulnerable_versions: ["<= 1.0.0"]
-            )
-          ]
-        end
-
-        it "delegates to SubdependencyVersionResolver" do
-          dummy_version_resolver =
-            instance_double(described_class::SubdependencyVersionResolver)
-
-          expect(described_class::SubdependencyVersionResolver)
-            .to receive(:new)
-            .with(
-              dependency: dependency,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              ignored_versions: ignored_versions,
-              latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-              repo_contents_path: nil,
-              security_advisories: security_advisories
-            ).and_return(dummy_version_resolver)
-          expect(dummy_version_resolver)
-            .to receive(:latest_resolvable_version)
-            .and_return(Dependabot::NpmAndYarn::Version.new("1.0.1"))
-
-          expect(checker.preferred_resolvable_version)
-            .to eq(Dependabot::NpmAndYarn::Version.new("1.0.1"))
-        end
-      end
     end
   end
 
@@ -901,42 +996,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         expect(checker.latest_resolvable_version_with_no_unlock)
           .to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
-      end
-    end
-
-    context "when dealing with a sub-dependency" do
-      let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
-      let(:target_version) { "1.0.1" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: "1.0.0",
-          requirements: [],
-          package_manager: "npm_and_yarn"
-        )
-      end
-
-      it "delegates to SubdependencyVersionResolver" do
-        dummy_version_resolver =
-          instance_double(described_class::SubdependencyVersionResolver)
-
-        expect(described_class::SubdependencyVersionResolver)
-          .to receive(:new)
-          .with(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil,
-            security_advisories: security_advisories
-          ).and_return(dummy_version_resolver)
-        expect(dummy_version_resolver)
-          .to receive(:latest_resolvable_version)
-          .and_return(Dependabot::NpmAndYarn::Version.new("1.0.0"))
-
-        expect(checker.latest_resolvable_version_with_no_unlock)
-          .to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
       end
     end
 

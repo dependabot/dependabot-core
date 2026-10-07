@@ -451,12 +451,9 @@ module Dependabot
         def effective_min_release_age_arg
           return nil unless npm_supports_min_release_age?
 
-          return "--min-release-age=0" if security_updates_only?
-
-          effective = Helpers.higher_release_age_gate(@release_age_days, npmrc_min_release_age)
-          return nil unless effective
-
-          "--min-release-age=#{effective}"
+          Helpers.npm_min_release_age_arg(
+            @release_age_days, dependency_files, security_updates_only: security_updates_only?
+          )
         end
 
         # Whether the npm that will run supports `--min-release-age` (npm 11.10+).
@@ -474,18 +471,6 @@ module Dependabot
         sig { params(arg: String).returns(String) }
         def fingerprint_min_release_age_arg(arg)
           arg == "--min-release-age=0" ? arg : "--min-release-age=<days>"
-        end
-
-        # The `min-release-age` (in days) configured across the repo's `.npmrc`
-        # files, or nil when unset. A value we cannot parse as a bare integer is
-        # reported as Float::INFINITY so an explicit-but-non-numeric user gate is
-        # never overridden by the cooldown floor.
-        sig { returns(T.nilable(T.any(Integer, Float))) }
-        def npmrc_min_release_age
-          Helpers.max_configured_release_age(
-            dependency_files,
-            [Helpers::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")]
-          )
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
