@@ -90,7 +90,7 @@ module Dependabot
       def lockstep_check_applies?
         Dependabot::Experiments.enabled?(:uv_lockstep_full_unlock) &&
           uv_lock.any? &&
-          %i(requirements lock_file).include?(resolver_type) &&
+          resolver_type == :requirements &&
           lockstep_resolver.neighbours_in_lockfile?
       end
 
