@@ -1955,6 +1955,37 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
 
+    context "when another package name starts with the dependency name" do
+      let(:content) do
+        <<~TOML
+          [project]
+          name = "myproject"
+          dependencies = [
+              "boto3-stubs[s3]>=1.34.0",
+              "boto3>=1.34.0",
+          ]
+        TOML
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "boto3",
+          version: "1.35.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.35.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: ">=1.30.0", groups: [], source: nil }],
+          previous_version: "1.34.0",
+          package_manager: "uv"
+        )
+      end
+      let(:new_req) { { requirement: "==1.35.0" } }
+      let(:old_req) { { requirement: ">=1.30.0" } }
+
+      it "leaves the longer name alone" do
+        result = replace_dep
+        expect(result).to include('"boto3-stubs[s3]>=1.34.0"')
+        expect(result).to include('"boto3==1.35.0"')
+      end
+    end
+
     context "with package names containing dots, underscores, or hyphens (PyPI name normalization)" do
       let(:dependency) do
         Dependabot::Dependency.new(
