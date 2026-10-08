@@ -230,13 +230,21 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
     # (https://github.com/gradle/gradle/issues/36172): comments, ordering, custom keys and
     # user-customized values are all lost, recognized keys reset to defaults.
     before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, **|
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:, **|
+        distribution_url =
+          if command.include?("--gradle-distribution-url")
+            dependency.requirements.first.dig(:source, :url)
+          else
+            "https://services.gradle.org/distributions/gradle-#{dependency.version}-bin.zip"
+          end
+        escaped_distribution_url = distribution_url.gsub("\\") { "\\\\" }.gsub(":", "\\:")
+
         File.write(
           File.join(cwd, "gradle/wrapper/gradle-wrapper.properties"),
           <<~DEFAULTS
             distributionBase=GRADLE_USER_HOME
             distributionPath=wrapper/dists
-            distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip
+            distributionUrl=#{escaped_distribution_url}
             networkTimeout=10000
             retries=0
             retryBackOffMs=500
@@ -273,6 +281,70 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
       expect(updated_properties.index("networkTimeout"))
         .to be < updated_properties.index("validateDistributionUrl")
       expect(updated_properties.index("# Keep my settings")).to eq(0)
+    end
+
+    context "with a custom distribution URL" do
+      let(:original_properties) do
+        <<~PROPS
+          distributionUrl=https\\://jfrog.example.com/artifactory/gradle/distributions/gradle-9.4.1-bin.zip
+        PROPS
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gradle-wrapper",
+          version: "9.6.0",
+          requirements: [{
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            requirement: "9.6.0",
+            groups: [],
+            source: {
+              type: "gradle-distribution",
+              url: "https://jfrog.example.com/artifactory/gradle/distributions/gradle-9.6.0-bin.zip",
+              property: "distributionUrl"
+            }
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      it "preserves the custom distribution URL" do
+        expect(updated_properties).to include(
+          "distributionUrl=https\\://jfrog.example.com/artifactory/gradle/distributions/gradle-9.6.0-bin.zip"
+        )
+      end
+    end
+
+    context "with a backslash in the custom distribution URL" do
+      let(:original_properties) do
+        <<~PROPS
+          distributionUrl=https\\://mirror.example.com/gradle-9.4.1-bin.zip?path=folder\\\\artifact
+        PROPS
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gradle-wrapper",
+          version: "9.6.0",
+          requirements: [{
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            requirement: "9.6.0",
+            groups: [],
+            source: {
+              type: "gradle-distribution",
+              url: "https://mirror.example.com/gradle-9.6.0-bin.zip?path=folder\\artifact",
+              property: "distributionUrl"
+            }
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      it "escapes the backslash in the regenerated properties" do
+        expect(updated_properties).to include(
+          "distributionUrl=https\\://mirror.example.com/gradle-9.6.0-bin.zip?path=folder\\\\artifact"
+        )
+      end
     end
   end
 

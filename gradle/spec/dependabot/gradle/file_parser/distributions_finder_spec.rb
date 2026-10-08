@@ -84,5 +84,24 @@ RSpec.describe Dependabot::Gradle::FileParser::DistributionsFinder do
                     "9.0.0",
                     "bin",
                     "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
+
+    context "with escaped separators in a custom URL" do
+      let(:properties_file) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/wrapper/gradle-wrapper.properties",
+          content: <<~PROPERTIES
+            distributionUrl=https\\://jfrog.example.com/gradle-9.0.0-bin.zip?download\\=true
+          PROPERTIES
+        )
+      end
+
+      it "stores an unescaped source URL" do
+        dependency = described_class.resolve_dependency(properties_file)
+
+        expect(dependency&.requirements&.first&.dig(:source, :url)).to eq(
+          "https://jfrog.example.com/gradle-9.0.0-bin.zip?download=true"
+        )
+      end
+    end
   end
 end
