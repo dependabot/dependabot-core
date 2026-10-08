@@ -1164,4 +1164,106 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       end
     end
   end
+
+  describe "lockstep-pinned dependencies" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "lockstep_pinned.toml")
+        ),
+        Dependabot::DependencyFile.new(name: "uv.lock", content: fixture("uv_locks", "lockstep_pinned.lock"))
+      ]
+    end
+    let(:dependency_name) { "opentelemetry-api" }
+    let(:dependency_version) { "1.25.0" }
+    let(:dependency_requirements) do
+      [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }]
+    end
+    let(:pypi_url) { "https://pypi.org/simple/opentelemetry-api/" }
+    let(:pypi_response) do
+      <<~HTML
+        <html><body>
+        <a href="https://files.pythonhosted.org/packages/a/opentelemetry_api-1.25.0-py3-none-any.whl">opentelemetry_api-1.25.0-py3-none-any.whl</a><br/>
+        <a href="https://files.pythonhosted.org/packages/b/opentelemetry_api-1.26.0-py3-none-any.whl">opentelemetry_api-1.26.0-py3-none-any.whl</a><br/>
+        </body></html>
+      HTML
+    end
+    let(:lockstep_resolver) do
+      instance_double(
+        Dependabot::Uv::UpdateChecker::LockstepResolver,
+        neighbours_in_lockfile?: true,
+        rejected_version: Dependabot::Uv::Version.new("1.26.0")
+      )
+    end
+    let(:both_bumped) do
+      %w(opentelemetry-api opentelemetry-sdk).map do |name|
+        Dependabot::Dependency.new(
+          name: name,
+          version: "1.26.0",
+          previous_version: "1.25.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }],
+          package_manager: "uv"
+        )
+      end
+    end
+
+    before do
+      stub_request(:get, "https://pypi.org/pypi/lockstep/json/").to_return(status: 404)
+      allow(Dependabot::Uv::UpdateChecker::LockstepResolver).to receive(:new).and_return(lockstep_resolver)
+      allow(lockstep_resolver).to receive_messages(
+        own_update_resolvable?: false,
+        updated_dependencies_after_full_unlock: both_bumped
+      )
+    end
+
+    context "when the experiment is off" do
+      it "behaves as before" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(Dependabot::Uv::UpdateChecker::LockstepResolver).not_to have_received(:new)
+      end
+    end
+
+    context "when the experiment is on" do
+      before { Dependabot::Experiments.register(:uv_lockstep_full_unlock, true) }
+
+      it "can't update on its own" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+
+      it "updates both with a full unlock, dependency first" do
+        expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
+        expect(checker.updated_dependencies(requirements_to_unlock: :all).map(&:name))
+          .to eq(%w(opentelemetry-api opentelemetry-sdk))
+      end
+
+      context "when uv resolves the dependency on its own" do
+        before { allow(lockstep_resolver).to receive(:own_update_resolvable?).and_return(true) }
+
+        it "keeps the own update and bumps nothing else" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          expect(checker.updated_dependencies(requirements_to_unlock: :own).map(&:name))
+            .to eq(%w(opentelemetry-api))
+        end
+      end
+
+      context "when no other top-level dependency is linked to it" do
+        before { allow(lockstep_resolver).to receive(:neighbours_in_lockfile?).and_return(false) }
+
+        it "doesn't probe with uv" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          expect(lockstep_resolver).not_to have_received(:own_update_resolvable?)
+        end
+      end
+
+      context "when the peers can't be moved either" do
+        before { allow(lockstep_resolver).to receive(:updated_dependencies_after_full_unlock).and_return(nil) }
+
+        it "can't update" do
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(false)
+        end
+      end
+    end
+  end
 end
