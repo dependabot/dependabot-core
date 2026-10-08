@@ -3,6 +3,7 @@
 
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
@@ -167,8 +168,19 @@ module Dependabot
         ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON/
 
         # Directory related error codes
-        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
-        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
+        # pnpm 12 prints these two without their ERR_PNPM_* code, so they are matched on the message as well
+        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /Could not install from "(?<dir>[^"]*)" as it does not exist/
+        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = T.let(
+          Regexp.union(
+            /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/,
+            /is in the dependencies but no package named ".*" is present in the workspace/
+          ),
+          Regexp
+        )
+
+        # pnpm 12 only reads lockfileVersion 9.x
+        INCOMPATIBLE_LOCKFILE_VERSION =
+          /lockfileVersion of (?<found>[\d.]+) is incompatible.*supports lockfileVersion (?<supported>[\w.]+)/m
 
         # Unparsable package.json file
         ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
@@ -760,7 +772,7 @@ module Dependabot
             .returns(T.noreturn)
         end
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
-          error_message = error.message
+          error_message = PnpmErrorMessage.normalize(error.message)
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
             raise_resolvability_error(error_message, pnpm_lock)
@@ -812,6 +824,13 @@ module Dependabot
             msg = "No package named \"#{dependency_names}\" present in workspace."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (match = error_message.match(INCOMPATIBLE_LOCKFILE_VERSION))
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotSupported,
+                  "#{pnpm_lock.path} has lockfileVersion #{match[:found]}, but the pnpm version Dependabot runs " \
+                  "only supports lockfileVersion #{match[:supported]}."
           end
 
           if error_message.match?(ERR_PNPM_BROKEN_METADATA_JSON)
@@ -1096,14 +1115,16 @@ module Dependabot
       # Handles errors with specific to yarn error codes
       sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
       def handle_pnpm_error(error)
-        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS) ||
-           error.message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
+        message = PnpmErrorMessage.normalize(error.message)
+
+        if message.match?(DUPLICATE_PACKAGE) || message.match?(ERR_PNPM_NO_VERSIONS) ||
+           message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
 
           raise DependencyFileNotResolvable, "Error resolving dependency"
         end
 
         ## Clean error message from ANSI escape codes
-        return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
+        return unless message.match?(ECONNRESET_ERROR) || message.match?(SOCKET_HANG_UP)
 
         raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
       end

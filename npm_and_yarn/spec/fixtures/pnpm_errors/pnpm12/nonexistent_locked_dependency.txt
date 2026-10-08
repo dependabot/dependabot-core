@@ -1,0 +1,13 @@
+Error: ERR_PNPM_FETCH_404
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: GET https://registry.npmjs.org/
+  │   @tiptap-pro%2Fextension-mathematics: Not Found - 404
+  │   
+  │   Failed to resolve @tiptap-pro/extension-mathematics@latest
+  ╰─▶ GET https://registry.npmjs.org/@tiptap-pro%2Fextension-mathematics: Not
+      Found - 404
+  help: @tiptap-pro/extension-mathematics is not in the npm registry, or you
+        have no permission to fetch it.
+        
+        No authorization header was set for the request.

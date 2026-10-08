@@ -5,6 +5,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/experiments"
 require "sorbet-runtime"
@@ -271,9 +272,11 @@ module Dependabot
       # dependencies, or an empty array when the error is something else.
       sig { params(error_message: String).returns(T::Array[String]) }
       def self.pnpm_indirect_dependency_names(error_message)
-        return [] unless error_message.match?(PNPM_INDIRECT_DEP_VERSION_ERROR)
+        # pnpm 12 hard-wraps long lines, which can split `"<name>" (requested "<version>")` across lines
+        message = PnpmErrorMessage.normalize(error_message)
+        return [] unless message.match?(PNPM_INDIRECT_DEP_VERSION_ERROR)
 
-        error_message.scan(PNPM_INDIRECT_DEP_NAME).flatten
+        message.scan(PNPM_INDIRECT_DEP_NAME).flatten
       end
 
       # The concrete pnpm version that will run for this update. Returns nil when
