@@ -34,8 +34,9 @@ module Dependabot
     LOCKFILE_NAME = "actions.lock"
     # The repo-relative path to the Actions lockfile
     LOCKFILE_PATH = T.let("#{WORKFLOW_DIRECTORY}/#{LOCKFILE_NAME}".freeze, String)
-    # The only lockfile schema version this ecosystem understands.
-    SUPPORTED_LOCKFILE_VERSION = "v0.0.2"
+    # Lockfile schema versions this ecosystem understands. gh-actions-lock migrates
+    # v0.0.2 input and always writes v0.0.3.
+    SUPPORTED_LOCKFILE_VERSIONS = %w(v0.0.2 v0.0.3).freeze
 
     OWNER_KEY = "owner"
     REPO_KEY = "repo"

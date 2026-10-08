@@ -2145,6 +2145,24 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "with a ghe.com home host" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: [dependency],
+            credentials: credentials,
+            options: { source_hostname: "tenant.ghe.com" }
+          )
+        end
+
+        it "relocks against the home host" do
+          updated_files
+
+          expect(Dependabot::GithubActions::Lockfile::CliEngine)
+            .to have_received(:new).with(credentials, hostname: "tenant.ghe.com")
+        end
+      end
+
       context "when the workflow is converted from a tag to a SHA" do
         let(:sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
         let(:workflow_file_body) do
