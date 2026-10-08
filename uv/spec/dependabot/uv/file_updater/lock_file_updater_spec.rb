@@ -14,7 +14,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       dependency_files: dependency_files,
       credentials: credentials,
       index_urls: index_urls,
-      target_requirement: target_requirement
+      target_requirement: target_requirement,
+      upgrade_package_names: upgrade_package_names
     )
   end
 
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
   let(:index_urls) { [] }
   let(:target_requirement) { nil }
+  let(:upgrade_package_names) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -1434,6 +1436,76 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           fingerprint: anything,
           env: {}
         )
+      end
+    end
+
+    context "with several dependencies" do
+      let(:peer) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "2.2.3",
+          requirements: [{ file: "pyproject.toml", requirement: "==2.2.3", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==2.2.2", groups: [], source: nil }],
+          previous_version: "2.2.2",
+          package_manager: "uv"
+        )
+      end
+      let(:dependencies) { [dependency, peer] }
+
+      it "upgrades all of them in a single lock" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
+                           "--upgrade-package urllib3==2.2.3 " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+
+      context "when only some of them should be upgraded" do
+        let(:upgrade_package_names) { ["requests"] }
+
+        it "only passes --upgrade-package for those" do
+          expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
+                             "--index https://token@example.com/simple " \
+                             "--default-index https://another_token@another.com/simple"
+
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(expected_command, fingerprint: anything, env: {})
+        end
+      end
+
+      context "when two of them are the same package with different extras" do
+        let(:peer) do
+          Dependabot::Dependency.new(
+            name: "requests[socks]",
+            version: "2.23.0",
+            requirements: [{ file: "pyproject.toml", requirement: "==2.23.0", groups: [], source: nil }],
+            previous_requirements: [{ file: "pyproject.toml", requirement: "==2.22.0", groups: [], source: nil }],
+            previous_version: "2.22.0",
+            package_manager: "uv"
+          )
+        end
+
+        it "passes the package once" do
+          expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
+                             "--index https://token@example.com/simple " \
+                             "--default-index https://another_token@another.com/simple"
+
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(expected_command, fingerprint: anything, env: {})
+        end
       end
     end
 
