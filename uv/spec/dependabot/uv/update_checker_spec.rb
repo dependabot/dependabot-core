@@ -1306,6 +1306,82 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         end
       end
 
+      context "with the real resolver and lock file updater, and only uv stubbed" do
+        let(:uv_commands) { [] }
+        let(:probed_pyprojects) { [] }
+        let(:uv_conflict) do
+          <<~ERROR
+            × No solution found when resolving dependencies for split (markers:
+            │ python_full_version >= '3.12'):
+            ╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0
+                and your project depends on opentelemetry-api==1.26.0, we can conclude
+                that your project and opentelemetry-sdk==1.25.0 are incompatible.
+                And because your project depends on opentelemetry-sdk==1.25.0, we can
+                conclude that your project's requirements are unsatisfiable.
+          ERROR
+        end
+
+        before do
+          allow(Dependabot::Uv::UpdateChecker::LockstepResolver).to receive(:new).and_call_original
+          allow(Dependabot::Uv::FileUpdater::LockFileUpdater).to receive(:new).and_call_original
+          allow(Dependabot::Uv::LanguageVersionManager).to receive(:new).and_return(
+            instance_double(
+              Dependabot::Uv::LanguageVersionManager,
+              install_required_python: nil,
+              python_version: "3.11.0",
+              python_major_minor: "3.11"
+            )
+          )
+          allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+            next "" if command.start_with?("pyenv local ")
+
+            uv_commands << command
+            pyproject = File.read("pyproject.toml")
+            probed_pyprojects << pyproject
+            unless pyproject.include?("opentelemetry-sdk>=1.25.0")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: uv_conflict, error_context: {})
+            end
+
+            File.write("uv.lock", File.read("uv.lock").gsub('version = "1.25.0"', 'version = "1.26.0"'))
+            ""
+          end
+        end
+
+        it "moves the peer only through its relaxed pin, in two uv runs" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
+
+          updated = checker.updated_dependencies(requirements_to_unlock: :all)
+          expect(updated.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+          expect(updated.map(&:version)).to eq(%w(1.26.0 1.26.0))
+          expect(updated.map { |dep| dep.requirements.first[:requirement] }).to eq(%w(==1.26.0 ==1.26.0))
+
+          expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).twice
+          expect(probed_pyprojects).to all(include('"opentelemetry-api==1.26.0"'))
+          expect(probed_pyprojects.last).to include('"opentelemetry-sdk>=1.25.0"')
+          expect(uv_commands).to all(include("uv lock --upgrade-package opentelemetry-api==1.26.0 "))
+          expect(uv_commands.grep(/--upgrade-package opentelemetry-sdk/)).to be_empty
+        end
+
+        context "when uv fails for a reason that names no other direct dependency" do
+          let(:uv_conflict) do
+            <<~ERROR
+              × No solution found when resolving dependencies:
+              ╰─▶ Because the current Python version (3.10.12) does not satisfy Python>=3.12 and
+                  opentelemetry-api==1.26.0 depends on Python>=3.12, we can conclude that
+                  opentelemetry-api==1.26.0 cannot be used.
+                  And because your project depends on opentelemetry-api==1.26.0, we can conclude
+                  that your project's requirements are unsatisfiable.
+            ERROR
+          end
+
+          it "keeps the own update, so the file updater reports the error as before" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          end
+        end
+      end
+
       context "when asked about the peer instead" do
         let(:dependency_name) { "opentelemetry-sdk" }
         let(:pypi_url) { "https://pypi.org/simple/opentelemetry-sdk/" }
