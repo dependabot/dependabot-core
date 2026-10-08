@@ -13,7 +13,6 @@ module Dependabot
       extend T::Sig
 
       MANIFEST_FILENAME = "apm.yml"
-      LOCKFILE_FILENAME = "apm.lock.yaml"
 
       # A single ref-bump edit, located by an absolute [start_offset, end_offset)
       # character range in the original manifest content.
@@ -52,7 +51,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
-        dependency_files.select { |f| f.name.end_with?(MANIFEST_FILENAME) && !f.name.end_with?(LOCKFILE_FILENAME) }
+        dependency_files.select { |f| File.basename(f.name) == MANIFEST_FILENAME }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }

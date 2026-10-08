@@ -90,6 +90,34 @@ RSpec.describe Dependabot::Apm::FileUpdater do
       expect(updated_files.first.content).to include("microsoft/edge-ai-extras#v1.0.0")
     end
 
+    context "when the repo contains a lockfile and a similarly named file" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: "lockfile_version: '1'\napm_version: 0.33.0\n",
+          support_file: true
+        )
+      end
+      let(:decoy) do
+        Dependabot::DependencyFile.new(name: "legacy-apm.yml", content: manifest_body)
+      end
+      let(:updater) do
+        described_class.new(
+          dependency_files: [manifest, lockfile, decoy],
+          dependencies: [dependency],
+          credentials: []
+        )
+      end
+
+      it "selects only the manifest, by exact basename" do
+        expect(updater.send(:manifest_files).map(&:name)).to eq(["apm.yml"])
+      end
+
+      it "still updates only apm.yml" do
+        expect(updated_files.map(&:name)).to eq(["apm.yml"])
+      end
+    end
+
     context "when the manifest quotes the entry" do
       let(:manifest_body) do
         <<~YAML
