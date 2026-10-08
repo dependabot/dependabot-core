@@ -189,6 +189,30 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
           expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
         end
       end
+
+      context "with a ghe.com source" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "tenant.ghe.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        end
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "gocardless/bump",
+            directory: directory,
+            hostname: "tenant.ghe.com",
+            api_endpoint: github_url
+          )
+        end
+
+        it "fetches the lockfile" do
+          expect(file_fetcher_instance.files.map(&:name)).to include(".github/workflows/actions.lock")
+        end
+      end
     end
 
     context "when it has an invalid encoding" do
