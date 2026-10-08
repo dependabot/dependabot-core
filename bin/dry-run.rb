@@ -420,6 +420,20 @@ $package_manager, $repo_name = ARGV
 begin
   $package_manager, $repo_name = ARGV
 
+  # Known errors are printed as "handled" and skipped; collect them so the run doesn't report success.
+  $handled_errors = []
+
+  def finish_dry_run
+    if $handled_errors.empty?
+      puts "Dry-run completed successfully."
+      exit 0
+    end
+
+    puts "Dry-run completed with #{$handled_errors.size} handled error(s):"
+    $handled_errors.each { |error| puts "  - #{error}" }
+    exit 1
+  end
+
   def show_diff(original_file, updated_file)
     return unless original_file
 
@@ -572,6 +586,7 @@ begin
 
     puts " => handled error whilst fetching dependencies: #{error_details.error_type} " \
          "#{error_details.error_detail}"
+    $handled_errors << "fetching dependencies: #{error_details.error_type}"
 
     []
   end
@@ -584,6 +599,7 @@ begin
 
     puts " => handled error whilst parsing dependencies: #{error_details.error_type} " \
          "#{error_details.error_detail}"
+    $handled_errors << "parsing dependencies: #{error_details.error_type}"
 
     []
   end
@@ -660,7 +676,7 @@ begin
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
-  return if $files.empty?
+  finish_dry_run if $files.empty?
 
   ecosystem_versions = fetcher.ecosystem_versions
   puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
@@ -950,6 +966,7 @@ begin
 
     puts " => handled error whilst updating #{dep.name}: #{error_details.error_type} " \
          "#{error_details.error_detail}"
+    $handled_errors << "updating #{dep.name}: #{error_details.error_type}"
   end
 
   StackProf.stop if $options[:profile]
@@ -965,6 +982,4 @@ rescue StandardError => e
   exit 1
 end
 
-# Ensure the script exits successfully if no errors occur
-puts "Dry-run completed successfully."
-exit 0
+finish_dry_run
