@@ -83,6 +83,19 @@ bin/test --workdir updater {ecosystem} rspec spec/path/to/spec.rb
 bin/test common spec/path/to/spec.rb
 ```
 
+## Static typing of Ruby specs
+
+Sorbet checks admitted spec trees incrementally using experimental RSpec support. Prefer `typed: strict` and signature-bearing helpers and memoized values. Preserve assertions and intentional invalid-input cases when migrating.
+
+For an unsupported construct, document a specific reason and follow-up within the first ten lines:
+
+```ruby
+# typed: false
+# sorbet-rspec: Child-only fixture methods are not resolved. https://srb.help/7003
+```
+
+The spec ratchet compares effective compiler inputs/levels against the PR's immediate base, including stacked PRs. Run `bundle exec ruby script/sorbet-spec-ratchet` from a complete checkout inside Docker, setting `BASE_REF` to the parent ref. Existing ignored suites remain outside the gate until enrolled; misleading higher sigils there do not count as coverage.
+
 ## Test Coverage Requirements
 
 - All changes must be covered by tests to prevent regressions.

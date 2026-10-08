@@ -1,0 +1,226 @@
+#!/usr/bin/env ruby
+# typed: strict
+# frozen_string_literal: true
+
+require "json"
+require "open3"
+require "shellwords"
+require "tmpdir"
+require "sorbet-runtime"
+
+module SorbetSpecRatchet
+  class Error < StandardError; end
+
+  class Entry < T::Struct
+    const :level, String
+    const :untyped_sends, Integer
+  end
+
+  extend T::Sig
+
+  LEVELS = T.let(
+    { "Ignore" => 0, "False" => 1, "True" => 2, "Strict" => 3, "Strong" => 4 }.freeze,
+    T::Hash[String, Integer]
+  )
+  EXPLANATION = /^# sorbet-rspec: .+\S/
+  REFERENCE = %r{https://\S+|(?:[\w.-]+/[\w.-]+)?#\d+}
+
+  sig { params(args: T::Array[String], input: String, directory: String).returns(String) }
+  def self.command(args, input: "", directory: Dir.pwd)
+    stdout, stderr, status = Open3.capture3(Shellwords.join(args), stdin_data: input, chdir: directory)
+    raise Error, "#{args.join(' ')} failed:\n#{stderr}" unless status.success?
+
+    stdout
+  end
+
+  sig { params(path: String).returns(T::Boolean) }
+  def self.spec_file?(path)
+    parts = path.split("/")
+    path.end_with?(".rb") && parts.include?("spec") && !parts.include?("fixtures")
+  end
+
+  sig { params(content: String).returns(T::Hash[String, Entry]) }
+  def self.parse_table(content)
+    data = JSON.parse(content)
+    raise Error, "Sorbet file table must contain a files array" unless data.is_a?(Hash) && data["files"].is_a?(Array)
+
+    entries = T.let({}, T::Hash[String, Entry])
+    data["files"].each do |row|
+      raise Error, "Invalid Sorbet file table entry" unless row.is_a?(Hash) && row["path"].is_a?(String)
+
+      path = row["path"].delete_prefix("./")
+      next unless spec_file?(path)
+
+      entries[path] = parse_entry(row, path)
+    end
+    entries
+  end
+
+  sig { params(row: T::Hash[Object, Object], path: String).returns(Entry) }
+  def self.parse_entry(row, path)
+    level = row["strict"]
+    count = row.fetch("untyped_usages", 0)
+    unless level.is_a?(String) && LEVELS.key?(level) && count.is_a?(Integer) && count >= 0
+      raise Error, "Missing or invalid effective strictness/usage for #{path}"
+    end
+
+    Entry.new(level: level, untyped_sends: count)
+  end
+
+  sig { params(directory: String).returns(T::Hash[String, Entry]) }
+  def self.file_table(directory)
+    parse_table(
+      command(
+        ["bundle", "exec", "srb", "tc", "--stop-after=parser", "--print=file-table-json"],
+        directory: directory
+      )
+    )
+  end
+
+  sig { params(revision: String).returns(T::Array[String]) }
+  def self.paths_at(revision)
+    command(["git", "ls-tree", "-r", "--name-only", "-z", revision]).split("\0")
+  end
+
+  sig do
+    params(revision: String, paths: T::Array[String])
+      .returns([T::Hash[String, Entry], T::Hash[String, String]])
+  end
+  def self.base_snapshot(revision, paths)
+    raise Error, "Comparison base has no sorbet/config" unless paths.include?("sorbet/config")
+
+    inputs = ["sorbet"]
+    inputs << "*.rb" if paths.any? { |path| path.end_with?(".rb") }
+    inputs << "*.rbi" if paths.any? { |path| path.end_with?(".rbi") }
+    inputs << "script" if paths.any? { |path| path.start_with?("script/") }
+    archive = command(["git", "archive", "--format=tar", revision] + inputs)
+    Dir.mktmpdir("sorbet-spec-base") do |directory|
+      command(
+        ["tar", "--extract", "--file=-", "--directory", directory, "--no-same-owner", "--no-same-permissions"],
+        input: archive
+      )
+      contents = paths.select { |path| spec_file?(path) }.to_h do |path|
+        [path, File.binread(File.join(directory, path))]
+      end
+      # Let the pinned compiler apply input selection and strictness overrides.
+      [file_table(directory), contents]
+    end
+  end
+
+  sig { params(content: String).returns(T::Boolean) }
+  def self.documented_exception?(content)
+    content.lines.first(10).any? { |line| EXPLANATION.match?(line) && REFERENCE.match?(line) }
+  end
+
+  sig do
+    params(
+      paths: T::Array[String],
+      base: T::Hash[String, Entry],
+      contents: T::Hash[String, String],
+      head: T::Hash[String, Entry]
+    ).returns(T::Array[String])
+  end
+  def self.regressions(paths, base, contents, head)
+    paths.select { |path| spec_file?(path) }.filter_map do |path|
+      before = base[path]
+      after = head[path]
+      error = downgrade(path, before, after)
+      next error if error
+      next if after.nil?
+
+      explanation_error(path, before, after, contents[path])
+    end
+  end
+
+  sig { params(path: String, before: T.nilable(Entry), after: T.nilable(Entry)).returns(T.nilable(String)) }
+  def self.downgrade(path, before, after)
+    return unless before && LEVELS.fetch(before.level) >= LEVELS.fetch("True")
+    return "#{path}: checked spec was excluded" if after.nil?
+    return unless LEVELS.fetch(after.level) < LEVELS.fetch(before.level)
+
+    "#{path}: effective strictness fell from #{before.level.downcase} to #{after.level.downcase}"
+  end
+
+  sig do
+    params(path: String, before: T.nilable(Entry), after: Entry, old_source: T.nilable(String))
+      .returns(T.nilable(String))
+  end
+  def self.explanation_error(path, before, after, old_source)
+    source = File.binread(path)
+    needs_reason =
+      if old_source.nil?
+        LEVELS.fetch(after.level) < LEVELS.fetch("Strict")
+      else
+        LEVELS.fetch(after.level) < LEVELS.fetch("True") &&
+          (before.nil? || before.level == "Ignore" || old_source != source)
+      end
+    return unless needs_reason
+    return if documented_exception?(source)
+
+    "#{path}: use strict typing or document a sorbet-rspec explanation and reference"
+  end
+
+  sig { params(paths: T::Array[String], entries: T::Hash[String, Entry], usage: T::Boolean).void }
+  def self.report(paths, entries, usage:)
+    files = paths.select { |path| spec_file?(path) }
+    checked = files.count { |path| (entry = entries[path]) && LEVELS.fetch(entry.level) >= LEVELS.fetch("True") }
+    unchecked = files.count { |path| entries[path]&.level == "False" }
+    ignored = files.length - checked - unchecked
+    summary = "Sorbet specs: checked=#{checked} false=#{unchecked} ignored=#{ignored}"
+    summary += " untyped_sends=#{files.sum { |path| entries[path]&.untyped_sends || 0 }}" if usage
+    puts summary
+  end
+
+  sig { params(base_ref: String).returns(Integer) }
+  def self.check(base_ref)
+    revision = command(["git", "rev-parse", "--verify", "--end-of-options", "#{base_ref}^{commit}"]).strip
+    base, contents = base_snapshot(revision, paths_at(revision))
+    paths = command(["git", "ls-files", "-z"]).split("\0")
+    head = file_table(Dir.pwd)
+    errors = regressions(paths, base, contents, head)
+    report(paths, head, usage: false)
+    if errors.empty?
+      puts "sorbet-spec-ratchet: OK"
+      0
+    else
+      warn "sorbet-spec-ratchet: FAILED\n#{errors.join("\n")}"
+      1
+    end
+  end
+
+  sig { params(args: T::Array[String]).returns(Integer) }
+  def self.main(args)
+    if args.empty?
+      check(ENV.fetch("BASE_REF", "origin/main"))
+    elsif args.length == 2 && args.first == "--report"
+      report(
+        command(["git", "ls-files", "-z"]).split("\0"),
+        parse_table(File.read(T.must(args[1]))),
+        usage: true
+      )
+      0
+    else
+      warn "usage: sorbet-spec-ratchet [--report FILE_TABLE_JSON]"
+      1
+    end
+  rescue Error, JSON::ParserError, Errno::ENOENT => e
+    warn "sorbet-spec-ratchet: FAILED\n#{e.message}"
+    1
+  end
+
+  private_class_method :command,
+                       :spec_file?,
+                       :parse_table,
+                       :parse_entry,
+                       :file_table,
+                       :paths_at,
+                       :base_snapshot,
+                       :documented_exception?,
+                       :regressions,
+                       :downgrade,
+                       :explanation_error,
+                       :report,
+                       :check
+end
+
+exit SorbetSpecRatchet.main(ARGV) if $PROGRAM_NAME == __FILE__
