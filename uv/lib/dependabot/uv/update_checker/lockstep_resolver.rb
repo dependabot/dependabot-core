@@ -26,8 +26,6 @@ module Dependabot
         extend T::Sig
 
         MAX_UNLOCK_ROUNDS = 3
-        # Matched as plain text because uv >= 0.12 prints `error: No solution found ...` / `cause: ...` where
-        # earlier releases printed `× No solution found ...` / `╰─▶ ...`, which UV_UNRESOLVABLE_REGEX still requires.
         UV_NO_SOLUTION_ERROR = "No solution found when resolving dependencies"
 
         class Probe < T::ImmutableStruct

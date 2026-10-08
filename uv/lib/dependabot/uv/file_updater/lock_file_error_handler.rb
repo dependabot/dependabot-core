@@ -15,15 +15,8 @@ module Dependabot
         UV_UNRESOLVABLE_REGEX = /× No solution found when resolving dependencies.*[\s\S]*$/
         UV_BUILD_FAILED_REGEX = /× Failed to build.*[\s\S]*$/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
-        # A requirement such as `foo==1.0` or `foo[bar]>=2`, with a PEP 508 name (alphanumeric at both ends). It is
-        # matched against one whitespace-separated token at a time, anchored at the start, so the scan stays linear
-        # on arbitrary uv output. The operator must follow the name directly, which keeps marker expressions like
-        # `python_full_version >= '3.12'` out, and the leading non-alphanumerics skip the punctuation uv's tree
-        # drawing glues to a token (`(`, `╰─▶`).
         UV_REQUIREMENT_TOKEN_REGEX =
           /\A[^A-Za-z0-9]*([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)(?:\[[^\]]*\])?(?:===|==|~=|!=|>=|<=|<|>)/
-        # uv prints a package forked by a marker as `name{sys_platform != 'emscripten'}`. The marker holds spaces
-        # that would split the token, so it is removed first.
         UV_FORK_MARKER_REGEX = /\{[^{}]*\}/
 
         GIT_DEPENDENCY_UNREACHABLE_REGEX = %r{git clone.*(?<url>https?://[^\s]+)}
