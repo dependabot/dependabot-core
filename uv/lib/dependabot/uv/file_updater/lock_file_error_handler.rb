@@ -11,8 +11,9 @@ module Dependabot
       class LockFileErrorHandler
         extend T::Sig
 
-        UV_UNRESOLVABLE_REGEX = /× No solution found when resolving dependencies.*[\s\S]*$/
-        UV_BUILD_FAILED_REGEX = /× Failed to build.*[\s\S]*$/
+        # uv >= 0.12.14 prints `error:` / `cause:` where older versions printed `×` / `╰─▶`
+        UV_UNRESOLVABLE_REGEX = /(?:×|error:) No solution found when resolving dependencies.*[\s\S]*$/
+        UV_BUILD_FAILED_REGEX = /(?:×|error:) Failed to build.*[\s\S]*$/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
 
         GIT_DEPENDENCY_UNREACHABLE_REGEX = %r{git clone.*(?<url>https?://[^\s]+)}

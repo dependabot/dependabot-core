@@ -139,4 +139,61 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipCompileVersionResolver do
       end
     end
   end
+
+  describe "#latest_resolvable_version" do
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: "==1.26.0") }
+
+    let(:dependency_name) { "opentelemetry-api" }
+    let(:dependency_version) { "1.25.0" }
+
+    before do
+      allow(resolver).to receive(:language_version_manager).and_return(
+        instance_double(
+          Dependabot::Uv::LanguageVersionManager,
+          install_required_python: nil,
+          python_major_minor: "3.12"
+        )
+      )
+      allow(resolver).to receive(:run_pip_compile_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: uv_output, error_context: {})
+      )
+    end
+
+    context "when uv < 0.12.14 reports a version conflict" do
+      let(:uv_output) do
+        "DEBUG Solving with target Python version: >=3.12\n" \
+          "  × No solution found when resolving dependencies:\n" \
+          "  ╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and you require " \
+          "opentelemetry-api==1.26.0, we can conclude that your requirements and opentelemetry-sdk==1.25.0 " \
+          "are incompatible.\n" \
+          "      And because you require opentelemetry-sdk==1.25.0, we can conclude that your requirements " \
+          "are unsatisfiable.\n"
+      end
+
+      it "raises DependencyFileNotResolvable with the resolution error" do
+        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to start_with("× No solution found when resolving dependencies")
+          expect(error.message).to include("you require opentelemetry-api==1.26.0")
+        end
+      end
+    end
+
+    context "when uv >= 0.12.14 reports a version conflict" do
+      let(:uv_output) do
+        <<~OUTPUT
+          DEBUG Solving with target Python version: >=3.12
+          error: No solution found when resolving dependencies
+            cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and you require opentelemetry-api==1.26.0, we can conclude that your requirements and opentelemetry-sdk==1.25.0 are incompatible.
+                   And because you require opentelemetry-sdk==1.25.0, we can conclude that your requirements are unsatisfiable.
+        OUTPUT
+      end
+
+      it "raises DependencyFileNotResolvable with the resolution error" do
+        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to start_with("error: No solution found when resolving dependencies")
+          expect(error.message).to include("you require opentelemetry-api==1.26.0")
+        end
+      end
+    end
+  end
 end

@@ -38,7 +38,8 @@ module Dependabot
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
-        UV_UNRESOLVABLE_REGEX = / × No solution found when resolving dependencies:[\s\S]*$/
+        # uv >= 0.12.14 prints `error:` (and no trailing colon) where older versions printed ` ×`
+        UV_UNRESOLVABLE_REGEX = /(?: ×|error:) No solution found when resolving dependencies[\s\S]*$/
         PYTHON_VERSION_REGEX = /--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/
 
         sig { returns(Dependabot::Dependency) }

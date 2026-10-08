@@ -455,6 +455,90 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when uv >= 0.12.14 reports conflicting dependency versions" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: conflicting_deps_error,
+          error_context: {}
+        )
+      end
+
+      let(:conflicting_deps_error) do
+        <<~ERROR
+          Using CPython 3.14.7 interpreter at: /usr/local/.pyenv/versions/3.14.7/bin/python3
+          error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.12')
+            cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your project depends on opentelemetry-api==1.26.0, we can conclude that your project and opentelemetry-sdk{python_full_version >= '3.12'}==1.25.0 are incompatible.
+                   And because your project depends on opentelemetry-sdk{python_full_version >= '3.12'}==1.25.0, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "raises UpdateNotPossible with the conflicting dependencies" do
+        expect { handle_uv_error }.to raise_error(Dependabot::UpdateNotPossible) do |raised_error|
+          expect(raised_error.dependencies).to eq(%w(opentelemetry-sdk opentelemetry-api))
+        end
+      end
+    end
+
+    context "when uv >= 0.12.14 reports an unresolvable conflict without a pinned pair" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: unresolvable_error,
+          error_context: {}
+        )
+      end
+
+      let(:unresolvable_error) do
+        <<~ERROR
+          Using CPython 3.14.7 interpreter at: /usr/local/.pyenv/versions/3.14.7/bin/python3
+          error: No solution found when resolving dependencies
+            cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your project depends on opentelemetry-api<1.20, we can conclude that your project and opentelemetry-sdk==1.25.0 are incompatible.
+                   And because your project depends on opentelemetry-sdk==1.25.0, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable with the resolution error only" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to start_with("error: No solution found when resolving dependencies")
+          expect(raised_error.message).to include("your project depends on opentelemetry-api<1.20")
+          expect(raised_error.message).not_to include("Using CPython")
+        end
+      end
+    end
+
+    context "when uv >= 0.12.14 fails to build a package" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: failed_build_error,
+          error_context: {}
+        )
+      end
+
+      let(:failed_build_error) do
+        <<~ERROR
+          Using CPython 3.14.7 interpreter at: /usr/local/.pyenv/versions/3.14.7/bin/python3
+          error: Failed to build `broken @ file:///tmp/broken`
+            cause: The build backend returned an error
+            cause: Call to `setuptools.build_meta.get_requires_for_build_wheel` failed (exit status: 1)
+
+                   [stderr]
+                   Traceback (most recent call last):
+                     File "<string>", line 1, in <module>
+                       import sys
+                   RuntimeError: boom from setup.py
+
+          hint: Build failures usually indicate a problem with the package or the build environment
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable with the build error only" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to start_with("error: Failed to build `broken @ file:///tmp/broken`")
+          expect(raised_error.message).to include("RuntimeError: boom from setup.py")
+          expect(raised_error.message).not_to include("Using CPython")
+        end
+      end
+    end
+
     context "when error contains a CLI argument conflict (e.g. --default-index used multiple times)" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
