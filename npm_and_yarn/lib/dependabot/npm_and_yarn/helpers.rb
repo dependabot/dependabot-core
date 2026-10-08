@@ -290,8 +290,7 @@ module Dependabot
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
-        raw = run_selected_pnpm("-v", fingerprint: "-v").strip
-        Version.new(raw)
+        Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
         nil
@@ -786,14 +785,20 @@ module Dependabot
         ).strip
       end
 
+      # The version a `-v` command printed. The launcher can print a download message (pnpm 12 fetching its native
+      # binary) or a warning before it, so take the last version-like line.
+      sig { params(output: String).returns(String) }
+      def self.version_from_output(output)
+        lines = output.lines.map(&:strip)
+        lines.reverse.find { |line| line.match?(/\A\d+\.\d+\.\d+\S*\z/) } || output.strip
+      end
+
       # Get the version of the package manager by using corepack
       sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
       def self.package_manager_version(name, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        output = package_manager_run_command(name, "-v", env: env).strip
-        # Corepack may print download progress (e.g. "Downloading the pnpm 12.10.1 binary...") before the version
-        version = output.lines.map(&:strip).reverse.find { |line| line.match?(/\A\d+\.\d+\.\d+\S*\z/) } || output
+        version = version_from_output(package_manager_run_command(name, "-v", env: env))
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 

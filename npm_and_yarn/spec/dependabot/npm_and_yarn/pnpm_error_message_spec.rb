@@ -1,13 +1,16 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 
 RSpec.describe Dependabot::NpmAndYarn::PnpmErrorMessage do
+  extend T::Sig
+
   describe ".normalize" do
     subject(:normalized) { described_class.normalize(message) }
 
+    sig { params(version: String, name: String).returns(String) }
     def pnpm_error(version, name)
       fixture("pnpm_errors", version, "#{name}.txt")
     end
@@ -76,6 +79,16 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmErrorMessage do
           "which supports lockfileVersion 9.x (1:18)"
         )
         expect(normalized).to start_with("[ERR_PNPM_BROKEN_LOCKFILE] The lockfile at ")
+      end
+    end
+
+    context "with a token longer than a line, which pnpm cuts at the line width" do
+      let(:message) { pnpm_error("pnpm12", "long_unbreakable_name") }
+
+      it "rejoins the token without inserting a space" do
+        expect(normalized).to include(
+          "https://registry.npmjs.org/#{'a' * 110}: HTTP status client error (404 Not Found)"
+        )
       end
     end
 

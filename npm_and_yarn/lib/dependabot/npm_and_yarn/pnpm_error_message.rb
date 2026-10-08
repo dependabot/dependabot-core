@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -21,12 +21,14 @@ module Dependabot
     module PnpmErrorMessage
       extend T::Sig
 
-      HEADER = /^Error:[ \t]*(?<code>ERR_PNPM_[A-Z0-9_]+)?[ \t]*(?<rest>.*)$/
+      HEADER = /^Error:[ \t]*+(?:(?<code>ERR_PNPM_[A-Z0-9_]+)[ \t]*+)?(?<rest>.*)$/
       HEADLINE = /\A\s*×/
       MARKER = /\A\s*(?:├─▶|╰─▶|help:)[ \t]?(?<text>.*)\z/
       GUTTER = /\A\s*│[ \t]?(?<text>.*)\z/
       # pnpm wraps after a hyphen or slash without adding a space, and at a space by dropping it
       JOINS_WITHOUT_SPACE = %r{\S[-/]\z}
+      # A token longer than a line is cut at the line width (72 characters of text) wherever it falls
+      HARD_WRAP_WIDTH = 72
 
       sig { params(message: String).returns(String) }
       def self.normalize(message)
@@ -45,21 +47,25 @@ module Dependabot
       def self.unwrap(lines)
         logical = T.let([], T::Array[String])
         continuing = T.let(false, T::Boolean)
+        previous_chunk = T.let("", String)
 
         lines.each do |line|
           if HEADLINE.match?(line)
             continuing = false
           elsif (marker = MARKER.match(line))
-            logical << marker[:text].to_s.strip
+            previous_chunk = marker[:text].to_s.strip
+            logical << previous_chunk
             continuing = true
           else
             chunk = ((gutter = GUTTER.match(line)) ? gutter[:text] : line).to_s.strip
             if chunk.empty?
               continuing = false
             elsif continuing
-              logical[-1] = join_wrapped(T.must(logical.last), chunk)
+              logical[-1] = join_wrapped(T.must(logical.last), previous_chunk, chunk)
+              previous_chunk = chunk
             else
               logical << chunk
+              previous_chunk = chunk
               continuing = true
             end
           end
@@ -69,9 +75,12 @@ module Dependabot
       end
       private_class_method :unwrap
 
-      sig { params(previous: String, chunk: String).returns(String) }
-      def self.join_wrapped(previous, chunk)
-        previous.match?(JOINS_WITHOUT_SPACE) ? "#{previous}#{chunk}" : "#{previous} #{chunk}"
+      sig { params(previous: String, previous_chunk: String, chunk: String).returns(String) }
+      def self.join_wrapped(previous, previous_chunk, chunk)
+        cut_inside_token = previous.match?(JOINS_WITHOUT_SPACE) ||
+                           (previous_chunk.length >= HARD_WRAP_WIDTH && previous_chunk.match?(/\A\S+\z/))
+
+        cut_inside_token ? "#{previous}#{chunk}" : "#{previous} #{chunk}"
       end
       private_class_method :join_wrapped
     end
