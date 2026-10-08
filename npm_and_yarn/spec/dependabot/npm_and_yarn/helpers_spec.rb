@@ -523,6 +523,16 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.package_manager_version("npm")).to eq("7.0.0-alpha")
     end
 
+    it "ignores corepack download progress printed before the version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack pnpm -v",
+        fingerprint: "corepack pnpm -v",
+        env: nil
+      ).and_return("Downloading the pnpm 12.10.1 binary for linux-x64...\n12.10.1\n")
+
+      expect(described_class.package_manager_version("pnpm")).to eq("12.10.1")
+    end
+
     it "passes env through to the corepack version command" do
       env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
 
