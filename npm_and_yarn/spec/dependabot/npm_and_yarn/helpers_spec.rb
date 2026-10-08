@@ -149,6 +149,40 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::pnpm_indirect_dependency_names" do
+    it "reads the package from pnpm 11's single-line error" do
+      message = "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"accepts\" (requested \"1.3.5\") is not a direct dependency"
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq(["accepts"])
+    end
+
+    it "reads the package from pnpm 12's bordered error" do
+      message = fixture("pnpm_errors", "pnpm12", "update_version_on_indirect_dep.txt")
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq(["accepts"])
+    end
+
+    it "reads a package whose request pnpm 12 wrapped onto the next line" do
+      message = <<~MSG
+        Error: ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP
+
+          × updating dependencies
+          ╰─▶ "@some-scope/a-package-with-a-very-long-name-that-forces-a-wrap-here"
+              (requested "1.3.5") is not a direct dependency, so the requested
+              version cannot be recorded.
+      MSG
+
+      expect(described_class.pnpm_indirect_dependency_names(message))
+        .to eq(["@some-scope/a-package-with-a-very-long-name-that-forces-a-wrap-here"])
+    end
+
+    it "returns an empty array for any other error" do
+      message = "Error: ERR_PNPM_FETCH_401\n\n  × installing dependencies\n  ╰─▶ Unauthorized"
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq([])
+    end
+  end
+
   describe "::pnpm_version" do
     it "returns the local pnpm version" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)

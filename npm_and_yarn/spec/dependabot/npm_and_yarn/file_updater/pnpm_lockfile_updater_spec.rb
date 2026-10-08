@@ -78,6 +78,63 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "errors" do
+    # pnpm 12 prints errors as a bordered, hard-wrapped block. These are real outputs, captured by running the
+    # same fixtures through pnpm 12.10.1, and must be classified the way the pnpm 11 output is.
+    context "with pnpm 12 error output" do
+      {
+        "private_tarball_urls" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_registry_ghpr" => Dependabot::PrivateSourceAuthenticationFailure,
+        "nonexistent_dependency_yanked_version" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_package_access" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_package_access_with_package_name" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_repo_no_access" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_repo_with_server_error" => Dependabot::PrivateSourceAuthenticationFailure,
+        "nonexistent_locked_dependency" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_registry_no_config" => Dependabot::DependencyNotFound,
+        "private_dep_access_with_no_package_name" => Dependabot::DependencyNotFound,
+        "missing_workspace_package" => Dependabot::DependencyFileNotResolvable,
+        "missing_workspace_dir_package" => Dependabot::DependencyFileNotResolvable,
+        "tarball_integrity" => Dependabot::DependencyFileNotResolvable
+      }.each do |scenario, error_class|
+        context "with #{scenario}" do
+          let(:project_name) { "pnpm/#{scenario}" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", "pnpm12", "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises #{error_class}" do
+            expect { updated_pnpm_lock_content }.to raise_error(error_class)
+          end
+        end
+      end
+
+      context "when the lockfile version is one pnpm 12 can't read" do
+        let(:project_name) { "pnpm/simple" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "old_lockfile_v6.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "raises DependencyFileNotSupported naming both lockfile versions" do
+          expect { updated_pnpm_lock_content }.to raise_error(
+            Dependabot::DependencyFileNotSupported,
+            /pnpm-lock\.yaml has lockfileVersion 6\.0, .* only supports lockfileVersion 9\.x/
+          )
+        end
+      end
+    end
+
     context "with a dependency version that can't be found" do
       let(:project_name) { "pnpm/yanked_version" }
 
