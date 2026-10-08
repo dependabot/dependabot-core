@@ -791,7 +791,9 @@ module Dependabot
       def self.package_manager_version(name, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        version = package_manager_run_command(name, "-v", env: env).strip
+        output = package_manager_run_command(name, "-v", env: env).strip
+        # Corepack may print download progress (e.g. "Downloading the pnpm 12.10.1 binary...") before the version
+        version = output.lines.map(&:strip).reverse.find { |line| line.match?(/\A\d+\.\d+\.\d+\S*\z/) } || output
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 

@@ -6,7 +6,7 @@ ARG COREPACK_VERSION=0.36.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
-ARG PNPM_VERSION=11.25.0
+ARG PNPM_VERSION=12.10.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
@@ -49,6 +49,8 @@ RUN <<EOF
   corepack install npm@$NPM_VERSION --global
   # Pre-cache popular older versions of npm for on-demand activation
   corepack install -g --cache-only npm@10 npm@9 npm@8
+  # pnpm 12's package is a launcher that downloads its native binary on first run; run it once to cache it in the image
+  pnpm --version
 EOF
 
 # Configure Node to use our custom CA bundle
