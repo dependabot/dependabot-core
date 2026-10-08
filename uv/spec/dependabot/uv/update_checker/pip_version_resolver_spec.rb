@@ -6,6 +6,9 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/uv/update_checker/pip_version_resolver"
 
+python_gem_dir = Gem::Specification.find_by_name("dependabot-python").gem_dir
+require "#{python_gem_dir}/spec/dependabot/python/update_checker/shared_examples_for_pip_pyproject_reads"
+
 RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
@@ -67,6 +70,8 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
       source: nil
     }]
   end
+
+  it_behaves_like "a pip resolver reading pyproject constraints"
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }

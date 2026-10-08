@@ -107,11 +107,18 @@ module Dependabot
           ).returns(String)
         end
         def updated_requirement_or_setup_file_content(content, new_req, old_req)
+          # A version specifier is optional in Python packaging (PEP 508, pip
+          # requirements format, PEP 621 / [tool.uv.sources]). When the new
+          # requirement carries none there is nothing to rewrite, so leave the
+          # file untouched rather than forcing nil through the replacer.
+          new_requirement = new_req.requirement_string
+          return content unless new_requirement
+
           RequirementReplacer.new(
             content: content,
             dependency_name: dependency.name,
             old_requirement: old_req&.requirement_string,
-            new_requirement: T.must(new_req.requirement_string),
+            new_requirement: new_requirement,
             new_hash_version: dependency.version,
             index_urls: @index_urls
           ).updated_content

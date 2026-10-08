@@ -51,6 +51,23 @@ module Dependabot
             optional_string_value(hash[key], "#{context} #{key}")
           end
 
+          sig { params(hash: ObjectHash, key: String, context: String).returns(T::Boolean) }
+          def self.optional_boolean(hash, key, context)
+            case hash[key]
+            when nil, false then false
+            when true then true
+            else raise TypeError, "#{context} #{key} must be a boolean or nil"
+            end
+          end
+
+          sig { params(hash: ObjectHash, key: String, context: String).returns(T::Array[String]) }
+          def self.optional_string_array(hash, key, context)
+            value = hash[key]
+            return [] if value.nil?
+
+            string_array(value, "#{context} #{key}")
+          end
+
           sig { params(value: Object, context: String).returns(String) }
           def self.string_value(value, context)
             return value if value.is_a?(String)
@@ -165,6 +182,13 @@ module Dependabot
           const :name, String
           const :uuid, String
           const :requirement, T.nilable(String), default: nil
+          # Ships with at least one Julia release admitted by the project's
+          # julia compat entry
+          const :stdlib, T::Boolean, default: false
+          # For a stdlib, the versions its compat entry has to admit across
+          # that Julia range (lowest per caret line, sorted); see the helper's
+          # stdlib_versions_for_julia_compat
+          const :stdlib_versions, T::Array[String], default: []
 
           sig { params(value: Object).returns(ProjectDependency) }
           def self.from_object(value)
@@ -174,7 +198,9 @@ module Dependabot
             new(
               name: ValueParser.string(hash, "name", context),
               uuid: ValueParser.string(hash, "uuid", context),
-              requirement: ValueParser.optional_string(hash, "requirement", context)
+              requirement: ValueParser.optional_string(hash, "requirement", context),
+              stdlib: ValueParser.optional_boolean(hash, "stdlib", context),
+              stdlib_versions: ValueParser.optional_string_array(hash, "stdlib_versions", context)
             )
           end
         end
@@ -188,6 +214,7 @@ module Dependabot
           const :julia_version, String
           const :dependencies, T::Array[ProjectDependency]
           const :weak_dependencies, T::Array[ProjectDependency]
+          const :extra_dependencies, T::Array[ProjectDependency]
           const :project_path, String
 
           sig { params(value: Object).returns(T.any(Project, Failure)) }
@@ -204,6 +231,7 @@ module Dependabot
               julia_version: ValueParser.string(hash, "julia_version", context),
               dependencies: parse_dependencies(hash, "dependencies", context),
               weak_dependencies: parse_dependencies(hash, "weak_dependencies", context),
+              extra_dependencies: parse_dependencies(hash, "extra_dependencies", context),
               project_path: ValueParser.string(hash, "project_path", context)
             )
           end
@@ -310,6 +338,8 @@ module Dependabot
 
           const :project_files, T::Array[String]
           const :manifest_file, String
+          # Every manifest of the environment, including version-specific ones
+          const :manifest_files, T::Array[String], default: []
           const :workspace_root, String
 
           sig { params(value: Object).returns(T.any(WorkspaceFiles, Failure)) }
@@ -325,6 +355,7 @@ module Dependabot
                 "#{context} project_files"
               ),
               manifest_file: ValueParser.string(hash, "manifest_file", context),
+              manifest_files: ValueParser.optional_string_array(hash, "manifest_files", context),
               workspace_root: ValueParser.string(hash, "workspace_root", context)
             )
           end
@@ -403,6 +434,8 @@ module Dependabot
           extend T::Sig
 
           const :release_date, T.nilable(String)
+          # Registered in General after the last GeneralMetadata.jl build, so no date is published yet
+          const :pending, T::Boolean, default: false
 
           sig { params(value: Object, context: String).returns(T.any(ReleaseDate, Failure)) }
           def self.from_object(value, context:)
@@ -410,7 +443,10 @@ module Dependabot
             failure = Result.failure_from(hash, context)
             return failure if failure
 
-            new(release_date: ValueParser.nilable_string(hash, "release_date", context))
+            new(
+              release_date: ValueParser.nilable_string(hash, "release_date", context),
+              pending: ValueParser.optional_boolean(hash, "release_date_pending", context)
+            )
           end
 
           sig { params(value: Object, context: String).returns(T.any(ReleaseDate, Failure)) }

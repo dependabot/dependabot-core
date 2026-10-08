@@ -411,6 +411,94 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when the release date is unavailable" do
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Composer::Version.new("3.2.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details) do
+        Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Composer::Package::PackageDetailsFetcher,
+          fetch_releases: [release]
+        )
+      end
+
+      before do
+        allow(Dependabot::Composer::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(finder.latest_version).to eq(Dependabot::Composer::Version.new("3.2.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+  end
+
+  describe "selection with minified registry metadata" do
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:entries) do
+      [
+        { "version" => "3.0.0", "time" => "2026-09-30T00:00:00Z",
+          "dist" => { "url" => "https://example.test/archive.zip" } },
+        { "version" => "2.0.0" },
+        { "version" => "1.5.0", "time" => "2026-09-01T00:00:00Z" }
+      ]
+    end
+    let(:packagist_response) do
+      JSON.generate("minified" => "composer/2.0", "packages" => { dependency_name => entries })
+    end
+
+    before { allow(Time).to receive(:now).and_return(Time.utc(2026, 10, 2)) }
+
+    it "uses inherited dates instead of treating compressed entries as undated" do
+      expect(finder.latest_version).to eq(Dependabot::Composer::Version.new("1.5.0"))
+      expect(dependency.metadata[:cooldown_date_unavailable]).not_to be(true)
+    end
+
+    it "selects the same version from equivalent expanded metadata" do
+      compressed_version = finder.latest_version
+      expanded_entries = [
+        entries.first,
+        entries.first.merge(entries[1]),
+        entries.first.merge(entries[2])
+      ]
+      stub_request(:get, packagist_url)
+        .to_return(status: 200, body: JSON.generate("packages" => { dependency_name => expanded_entries }))
+      expanded_finder = described_class.new(
+        dependency: dependency,
+        dependency_files: files,
+        credentials: credentials,
+        ignored_versions: ignored_versions,
+        security_advisories: security_advisories,
+        cooldown_options: cooldown_options,
+        raise_on_ignored: raise_on_ignored
+      )
+
+      expect(expanded_finder.latest_version).to eq(compressed_version)
+    end
+
+    context "with a security advisory" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "composer",
+            vulnerable_versions: ["< 2.0.0"]
+          )
+        ]
+      end
+
+      it "retains minimum security-fix selection without applying cooldown" do
+        expect(finder.lowest_security_fix_version).to eq(Dependabot::Composer::Version.new("2.0.0"))
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do

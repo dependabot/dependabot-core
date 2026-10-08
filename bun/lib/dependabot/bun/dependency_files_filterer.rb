@@ -1,7 +1,8 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/package/npm_package_json"
 require "dependabot/bun/file_parser/lockfile_parser"
 require "sorbet-runtime"
 
@@ -87,7 +88,7 @@ module Dependabot
       def workspaces_lockfile?(lockfile)
         return false unless ["yarn.lock", "package-lock.json", "pnpm-lock.yaml", "bun.lock"].include?(lockfile.name)
 
-        return false unless parsed_root_package_json["workspaces"] || dependency_files.any? do |file|
+        return false unless root_package_json_document.workspaces? || dependency_files.any? do |file|
           file.name.end_with?("pnpm-workspace.yaml") && File.dirname(file.name) == File.dirname(lockfile.name)
         end
 
@@ -114,14 +115,14 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_root_package_json
-        @parsed_root_package_json ||= T.let(
+      sig { returns(Dependabot::Package::NpmPackageJson) }
+      def root_package_json_document
+        @root_package_json_document ||= T.let(
           begin
             package = T.must(dependency_files.find { |f| f.name == "package.json" })
-            JSON.parse(T.must(package.content))
+            Dependabot::Package::NpmPackageJson.from_file(package)
           end,
-          T.nilable(T::Hash[String, T.untyped])
+          T.nilable(Dependabot::Package::NpmPackageJson)
         )
       end
 

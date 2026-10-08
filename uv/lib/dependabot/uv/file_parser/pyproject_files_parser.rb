@@ -89,10 +89,16 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
+          unresolvable_sources = PyprojectDocument.from_file(pyproject_file)
+                                                  .unresolvable_uv_source_names
+                                                  .map { |name| normalise(name) }
+
           parse_pep621_pep735_dependencies(pyproject_file).each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
             next if dep.markers&.include?("<")
+
+            next if unresolvable_sources.include?(normalise(dep.name))
 
             # In uv no constraint means any version is acceptable
             requirement_value = dep.requirement == "" ? "*" : dep.requirement

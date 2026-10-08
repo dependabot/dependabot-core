@@ -6,6 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/go_modules/file_parser"
+require "dependabot/go_modules/go_mod_manifest"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
@@ -540,6 +541,84 @@ RSpec.describe Dependabot::GoModules::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
+    context "with typed command output" do
+      let(:command_status) { instance_double(Process::Status, success?: true) }
+      let(:required) { { "Path" => "example.com/module", "Version" => "v1.2.3" } }
+      let(:manifest_json) { JSON.generate("Require" => [required]) }
+
+      before do
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3)
+          .with("go mod edit -json").and_return([manifest_json, "", command_status])
+      end
+
+      it "preserves dependency details from the command" do
+        expect(dependencies.first).to have_attributes(name: "example.com/module", version: "1.2.3")
+        expect(dependencies.first.requirements.first).to have_attributes(requirement: "v1.2.3", file: "go.mod")
+      end
+
+      context "when the original manifest contains a malformed later entry" do
+        let(:manifest_json) { JSON.generate("Require" => [required, nil]) }
+
+        it "does not return a partially parsed dependency list" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: Require[1] must be an object"
+          )
+        end
+      end
+
+      context "when the prepared manifest contains malformed JSON" do
+        before do
+          allow(Open3).to receive(:capture3)
+            .with("go mod edit -json")
+            .and_return([manifest_json, "", command_status], ['{"do-not-echo-this":', "", command_status])
+        end
+
+        it "reports the original path for the prepared command result" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: result must be valid JSON"
+          )
+        end
+      end
+
+      context "when a matching replacement precedes malformed data" do
+        let(:manifest_json) do
+          JSON.generate(
+            "Require" => [required],
+            "Replace" => [{ "Old" => { "Path" => required.fetch("Path") }, "New" => { "Path" => "../local" } }, nil]
+          )
+        end
+
+        it "does not hide the later replacement behind a match" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: Replace[1] must be an object"
+          )
+        end
+      end
+
+      [nil, "v1.2.3", "v9.0.0", ""].each do |old_version|
+        context "with replacement version #{old_version.inspect}" do
+          let(:manifest_json) do
+            JSON.generate(
+              "Require" => [required],
+              "Replace" => [{
+                "Old" => { "Path" => required.fetch("Path"), "Version" => old_version },
+                "New" => { "Path" => "example.com/replacement", "Version" => "v1.0.0" }
+              }]
+            )
+          end
+
+          it "skips only replacements for this dependency version" do
+            expected_names = old_version.nil? || old_version == "v1.2.3" ? [] : ["example.com/module"]
+            expect(dependencies.map(&:name)).to eq(expected_names)
+          end
+        end
+      end
+    end
+
     context "when using a monorepo" do
       let(:project_name) { "monorepo" }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
@@ -641,6 +720,22 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect(top_level_names).to include("rsc.io/quote")
         expect(top_level_names).to include("golang.org/x/tools")
       end
+
+      context "when a workspace module returns malformed output" do
+        before do
+          status = instance_double(Process::Status, success?: true)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3)
+            .with("go mod edit -json").and_return(['{"Require":[]}', "", status], ['{"Require":[null]}', "", status])
+        end
+
+        it "identifies the workspace manifest rather than the temporary path" do
+          expect { dependencies }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /libs/go.mod: Require[0] must be an object"
+          )
+        end
+      end
     end
   end
 
@@ -736,7 +831,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "go_modules"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.26.6"
+        expect(package_manager.version.to_s).to eq "1.27.0"
       end
     end
 

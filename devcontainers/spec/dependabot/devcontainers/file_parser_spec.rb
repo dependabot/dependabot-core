@@ -282,6 +282,15 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
     end
   end
 
+  context "with features referenced without a version tag" do
+    let(:project_name) { "untagged" }
+    let(:directory) { "/" }
+
+    it "ignores them" do
+      expect(dependencies).to be_empty
+    end
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 

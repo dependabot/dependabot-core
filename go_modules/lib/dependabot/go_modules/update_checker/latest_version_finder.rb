@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -9,6 +9,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
+require "dependabot/go_modules/module_info"
 require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/package/package_details_fetcher"
 require "dependabot/go_modules/azure_devops_path_normalizer"
@@ -210,9 +211,10 @@ module Dependabot
             return false
           end
 
-          release.instance_variable_set(
-            :@released_at, JSON.parse(release_info)["Time"] ? Time.parse(JSON.parse(release_info)["Time"]) : nil
-          )
+          release.released_at = ModuleInfo.from_json(
+            release_info,
+            command: "go list -m -json <dependency_name>"
+          ).released_at
 
           return false unless release.released_at
 

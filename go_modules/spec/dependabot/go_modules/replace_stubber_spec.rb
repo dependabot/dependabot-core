@@ -12,7 +12,7 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
 
   let(:manifest) do
     Dir.chdir("#{repo_contents_path}#{directory}") do
-      JSON.parse(`go mod edit -json`)
+      Dependabot::GoModules::GoModManifest.from_json(`go mod edit -json`, file_path: File.join(directory, "go.mod"))
     end
   end
 

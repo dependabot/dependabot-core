@@ -202,6 +202,34 @@ module Dependabot
           PyprojectValueParser.string_array(value, "project.dynamic")
         end
 
+        # Pip resolution ignores malformed containers and non-string entries in these fields.
+        sig { returns(T::Array[String]) }
+        def pip_dependencies
+          project = @data["project"]
+          return [] unless project.is_a?(Hash)
+
+          dependencies = T.cast(project["dependencies"], Object)
+          return [] unless dependencies.is_a?(Array)
+
+          dependencies.grep(String)
+        end
+
+        sig { returns(T::Array[String]) }
+        def pip_constraint_paths
+          tool = @data["tool"]
+          return [] unless tool.is_a?(Hash)
+
+          pip = T.cast(tool["pip"], Object)
+          return [] unless pip.is_a?(Hash)
+
+          constraints = T.cast(pip["constraints"], Object)
+          case constraints
+          when String then [constraints]
+          when Array then constraints.grep(String)
+          else []
+          end
+        end
+
         sig { params(name: String).returns(T::Boolean) }
         def optional_dependency_group?(name)
           project = section(@data, "project", "project")
@@ -214,6 +242,37 @@ module Dependabot
         sig { params(name: String).returns(T.nilable(PoetrySource)) }
         def poetry_source(name)
           poetry_sources.find { |source| source.name == name }
+        end
+
+        # A name pinned to one of these says nothing about what a package index holds. A git source
+        # carrying a tag is left alone: the tag gives an ordering, so such a pin can be updated from
+        # the remote instead of being skipped.
+        UNRESOLVABLE_UV_SOURCE_KEYS = %w(git url).freeze
+
+        sig { returns(T::Array[String]) }
+        def unresolvable_uv_source_names
+          tool = section(@data, "tool", "tool")
+          uv = tool && section(tool, "uv", "tool.uv")
+          sources = uv && section(uv, "sources", "tool.uv.sources")
+          return [] unless sources
+
+          sources.filter_map do |name, config|
+            # uv accepts either a single source or a list of them, each with its own markers.
+            entries = T.let(config.is_a?(Array) ? config : [config], T::Array[Object])
+            next unless entries.any? { |entry| unresolvable_uv_source_entry?(entry) }
+
+            name
+          end
+        end
+
+        sig { params(entry: Object).returns(T::Boolean) }
+        def unresolvable_uv_source_entry?(entry)
+          return false unless entry.is_a?(Hash)
+
+          keys = entry.keys
+          return false unless keys.intersect?(UNRESOLVABLE_UV_SOURCE_KEYS)
+
+          !(keys.include?("git") && keys.include?("tag"))
         end
 
         sig { params(key: String).returns(T::Array[String]) }

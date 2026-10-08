@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 USER dependabot
 
-# Install Julia
-RUN curl -fsSL https://install.julialang.org | sh -s -- -y \
+# Install Julia, pinned to the 1.13 release channel rather than juliaup's default
+# `release` channel so a new minor Julia release cannot change the image under us.
+RUN curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel 1.13 \
     && . ~/.bashrc
 
 ENV PATH="/home/dependabot/.juliaup/bin:$PATH"
