@@ -6,6 +6,8 @@
 --disable-watchman
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 --enable-experimental-rspec
+# Shared example modules inherit matcher/mock methods through ExampleGroup.
+--enable-experimental-requires-ancestor
 script/sorbet-spec-ratchet
 
 # Sorbet's RSpec support is experimental, so common specs are checked incrementally
