@@ -559,4 +559,42 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
   end
+
+  describe "#conflict_package_names" do
+    subject(:names) { error_handler.conflict_package_names(message) }
+
+    context "when the bumped package needs a newer peer" do
+      let(:message) do
+        <<~ERROR
+          × No solution found when resolving dependencies for split (markers:
+          │ python_full_version >= '3.12'):
+          ╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0
+              and your project depends on opentelemetry-api==1.26.0, we can conclude
+              that your project and opentelemetry-sdk==1.25.0 are incompatible.
+              And because your project depends on opentelemetry-sdk==1.25.0, we can
+              conclude that your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "returns every package named in the conflict, without markers" do
+        expect(names).to eq(%w(opentelemetry-sdk opentelemetry-api))
+      end
+    end
+
+    context "when a requirement has extras and mixed case" do
+      let(:message) do
+        "Because Foo_Bar[extra]>=2.0 depends on baz<1 and your project depends on baz==1.2, ..."
+      end
+
+      it "normalises the names" do
+        expect(names).to eq(%w(foo-bar baz))
+      end
+    end
+
+    context "when no requirement is named" do
+      let(:message) { "× No solution found when resolving dependencies" }
+
+      it { is_expected.to eq([]) }
+    end
+  end
 end

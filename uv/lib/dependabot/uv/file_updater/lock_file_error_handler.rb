@@ -4,6 +4,7 @@
 require "dependabot/errors"
 require "dependabot/utils"
 require "dependabot/uv/file_updater"
+require "dependabot/uv/name_normaliser"
 
 module Dependabot
   module Uv
@@ -14,6 +15,10 @@ module Dependabot
         UV_UNRESOLVABLE_REGEX = /× No solution found when resolving dependencies.*[\s\S]*$/
         UV_BUILD_FAILED_REGEX = /× Failed to build.*[\s\S]*$/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
+        # A requirement such as `foo==1.0` or `foo[bar]>=2`. The operator must follow the name directly,
+        # which keeps marker expressions like `python_full_version >= '3.12'` out.
+        UV_REQUIREMENT_TOKEN_REGEX =
+          /(?<![\w.\-\[])([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]\s]*\])?(?:===|==|~=|!=|>=|<=|<|>)/
 
         GIT_DEPENDENCY_UNREACHABLE_REGEX = %r{git clone.*(?<url>https?://[^\s]+)}
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"']+)'/m
@@ -78,6 +83,15 @@ module Dependabot
           handle_uv_fallback_error(message)
 
           raise error
+        end
+
+        sig { params(message: String).returns(T::Array[String]) }
+        def conflict_package_names(message)
+          message
+            .scan(UV_REQUIREMENT_TOKEN_REGEX)
+            .flatten
+            .map { |name| NameNormaliser.normalise(name) }
+            .uniq
         end
 
         private
