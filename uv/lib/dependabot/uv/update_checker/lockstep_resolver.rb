@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 require "dependabot/uv/file_parser"
 require "dependabot/uv/file_updater/lock_file_error_handler"
 require "dependabot/uv/file_updater/lock_file_updater"
@@ -175,11 +176,22 @@ module Dependabot
         rescue Dependabot::DependencyFileContentNotChanged
           Probe.new(resolved: true, locked_versions: original_locked_versions)
         rescue Dependabot::UpdateNotPossible => e
-          Probe.new(resolved: false, conflict_names: e.dependencies.map { |name| normalise(name) })
+          Probe.new(resolved: false, conflict_names: update_not_possible_names(e))
         rescue Dependabot::DependencyFileNotResolvable => e
           raise unless resolution_conflict?(e.message)
 
           Probe.new(resolved: false, conflict_names: error_handler.conflict_package_names(e.message))
+        end
+
+        # UpdateNotPossible only names the first two packages of uv's derivation, so a peer further down
+        # (e.g. an sdk depending on the api through a third package) is read from the original uv output.
+        sig { params(error: Dependabot::UpdateNotPossible).returns(T::Array[String]) }
+        def update_not_possible_names(error)
+          names = error.dependencies.map { |name| normalise(name) }
+          cause = error.cause
+          return names unless cause.is_a?(SharedHelpers::HelperSubprocessFailed)
+
+          (error_handler.conflict_package_names(cause.message) + names).uniq
         end
 
         sig { params(message: String).returns(T::Boolean) }

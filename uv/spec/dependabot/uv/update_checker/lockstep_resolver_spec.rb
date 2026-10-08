@@ -144,6 +144,69 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
       expect(relaxed.version).to be_nil
     end
 
+    context "when the peer only appears further down uv's derivation" do
+      let(:message) do
+        <<~ERROR
+          × No solution found when resolving dependencies:
+          ╰─▶ Because opentelemetry-semantic-conventions==0.46b0 depends on opentelemetry-api==1.25.0 and your
+              project depends on opentelemetry-api==1.26.0, we can conclude that
+              opentelemetry-semantic-conventions==0.46b0 cannot be used.
+              And because opentelemetry-sdk==1.25.0 depends on opentelemetry-semantic-conventions==0.46b0 and
+              your project depends on opentelemetry-sdk==1.25.0, we can conclude that your project's
+              requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "reads the peer from the uv output behind the conflict" do
+        relaxed = nil
+        calls = 0
+        allow(Dependabot::Uv::FileUpdater::LockFileUpdater).to receive(:new) do |args|
+          relaxed ||= args[:dependencies].find { |dep| dep.name == "opentelemetry-sdk" }
+          lock_updater
+        end
+        allow(lock_updater).to receive(:updated_dependency_files) do
+          calls += 1
+          if calls == 1
+            begin
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+            rescue StandardError
+              raise Dependabot::UpdateNotPossible, %w(opentelemetry-semantic-conventions opentelemetry-api)
+            end
+          end
+
+          [resolved_lockfile]
+        end
+
+        expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+        expect(relaxed.requirements.first[:requirement]).to eq(">=1.25.0")
+      end
+    end
+
+    it "relaxes the peers named in an unresolvable uv conflict" do
+      calls = 0
+      allow(lock_updater).to receive(:updated_dependency_files) do
+        calls += 1
+        if calls == 1
+          raise Dependabot::DependencyFileNotResolvable,
+                "× No solution found when resolving dependencies:\n" \
+                "╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your project " \
+                "depends on opentelemetry-api==1.26.0, we can conclude that your project's requirements are " \
+                "unsatisfiable."
+        end
+
+        [resolved_lockfile]
+      end
+
+      expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+    end
+
+    it "lets unresolvable errors that aren't conflicts through" do
+      allow(lock_updater).to receive(:updated_dependency_files)
+        .and_raise(Dependabot::DependencyFileNotResolvable.new("Failed to build foo"))
+
+      expect { updates }.to raise_error(Dependabot::DependencyFileNotResolvable, "Failed to build foo")
+    end
+
     it "gives up when the conflict names no new peer" do
       allow(lock_updater).to receive(:updated_dependency_files).and_raise(
         Dependabot::UpdateNotPossible.new(%w(opentelemetry-api))
