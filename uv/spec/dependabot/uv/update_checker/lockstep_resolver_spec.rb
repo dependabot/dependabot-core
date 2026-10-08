@@ -4,20 +4,23 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/requirements_update_strategy"
 require "dependabot/uv/update_checker/lockstep_resolver"
 
 RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
   let(:resolver) do
     described_class.new(
-      dependency: api,
+      dependency: dependency,
       dependency_files: dependency_files,
       credentials: [],
       repo_contents_path: nil,
       requirements_update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
-      update_cooldown: nil
+      update_cooldown: update_cooldown
     )
   end
+  let(:dependency) { api }
+  let(:update_cooldown) { nil }
 
   let(:pyproject) do
     Dependabot::DependencyFile.new(name: "pyproject.toml", content: fixture("pyproject_files", "lockstep_pinned.toml"))
@@ -262,6 +265,105 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
       end
 
       expect(updates).to be_nil
+    end
+
+    context "when uv forks the peer onto several versions" do
+      let(:forked_lockfile) do
+        content = bumped_lock(%w(opentelemetry-api opentelemetry-sdk))
+        sdk_block = content[/\[\[package\]\]\nname = "opentelemetry-sdk".*?(?=\n\[\[package\]\])/m]
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: content + "\n" + sdk_block.sub('version = "1.26.0"', 'version = "1.25.0"') + "\n"
+        )
+      end
+
+      it "gives up, since a single pin can't express it" do
+        stub_uv do |names|
+          raise conflict unless names.include?("opentelemetry-sdk")
+
+          [forked_lockfile]
+        end
+
+        expect(updates).to be_nil
+      end
+    end
+
+    context "when the dependency is the one depending on its peer" do
+      let(:dependency) { sdk }
+
+      it "moves the peer it depends on, dependency first" do
+        stub_uv do |names|
+          raise Dependabot::UpdateNotPossible, %w(opentelemetry-sdk opentelemetry-api) unless
+            names.include?("opentelemetry-api")
+
+          [resolved_lockfile]
+        end
+
+        expect(updates.map(&:name)).to eq(%w(opentelemetry-sdk opentelemetry-api))
+        expect(updates.map(&:version)).to eq(%w(1.26.0 1.26.0))
+      end
+    end
+
+    context "when each round's conflict names another peer" do
+      let(:semantic_conventions) { pinned("opentelemetry-semantic-conventions", "0.46b0") }
+      let(:top_level) { [api, sdk, semantic_conventions] }
+      let(:all_bumped) do
+        content = bumped_lock(%w(opentelemetry-api opentelemetry-sdk)).sub(
+          "name = \"opentelemetry-semantic-conventions\"\nversion = \"0.46b0\"",
+          "name = \"opentelemetry-semantic-conventions\"\nversion = \"0.47b0\""
+        )
+        Dependabot::DependencyFile.new(name: "uv.lock", content: content)
+      end
+
+      it "relaxes them all and returns every moved peer, sorted by name" do
+        rounds = []
+        stub_uv do |names|
+          rounds << names
+          case names.length
+          when 1 then raise Dependabot::UpdateNotPossible, %w(opentelemetry-semantic-conventions opentelemetry-api)
+          when 2 then raise Dependabot::UpdateNotPossible, %w(opentelemetry-sdk opentelemetry-api)
+          else [all_bumped]
+          end
+        end
+
+        expect(updates.map(&:name))
+          .to eq(%w(opentelemetry-api opentelemetry-sdk opentelemetry-semantic-conventions))
+        expect(updates.map(&:version)).to eq(%w(1.26.0 1.26.0 0.47b0))
+        expect(rounds.last).to eq(%w(opentelemetry-api opentelemetry-semantic-conventions opentelemetry-sdk))
+      end
+    end
+
+    context "with a cooldown" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:latest_version_finder) do
+        instance_double(Dependabot::Uv::UpdateChecker::LatestVersionFinder, latest_version: latest_allowed)
+      end
+
+      before do
+        allow(Dependabot::Uv::UpdateChecker::LatestVersionFinder).to receive(:new).and_return(latest_version_finder)
+        stub_uv do |names|
+          raise conflict unless names.include?("opentelemetry-sdk")
+
+          [resolved_lockfile]
+        end
+      end
+
+      context "when the peer's new version is still cooling down" do
+        let(:latest_allowed) { Dependabot::Uv::Version.new("1.25.0") }
+
+        it { expect(updates).to be_nil }
+      end
+
+      context "when the peer's new version is out of the cooldown window" do
+        let(:latest_allowed) { Dependabot::Uv::Version.new("1.26.0") }
+
+        it "moves the peer" do
+          expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+          expect(Dependabot::Uv::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+            hash_including(cooldown_options: update_cooldown, ignored_versions: [])
+          ) { |args| expect(args[:dependency].name).to eq("opentelemetry-sdk") }
+        end
+      end
     end
 
     context "when the peer is locked at several versions" do
