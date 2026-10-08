@@ -1284,10 +1284,24 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           HTML
         end
 
-        it "probes the lowest fixed version, not the latest" do
+        before do
+          rejected = nil
+          allow(lockstep_resolver).to receive(:own_update_resolvable?) do |version|
+            rejected = version
+            false
+          end
+          allow(lockstep_resolver).to receive(:rejected_version) { rejected }
+        end
+
+        it "probes and fully unlocks to the lowest fixed version, not the latest" do
           checker.can_update?(requirements_to_unlock: :own)
+          checker.can_update?(requirements_to_unlock: :all)
 
           expect(lockstep_resolver).to have_received(:own_update_resolvable?)
+            .with(Dependabot::Uv::Version.new("1.26.0"))
+          expect(lockstep_resolver).not_to have_received(:own_update_resolvable?)
+            .with(Dependabot::Uv::Version.new("1.27.0"))
+          expect(lockstep_resolver).to have_received(:updated_dependencies_after_full_unlock)
             .with(Dependabot::Uv::Version.new("1.26.0"))
         end
       end

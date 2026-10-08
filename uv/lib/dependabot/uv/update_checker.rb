@@ -66,6 +66,7 @@ module Dependabot
         T.must(lockstep_updates)
       end
 
+      # Relies on `:own` having been asked first: that probe records `rejected_version`, without which this is nil.
       sig { returns(T.nilable(T::Array[Dependabot::Dependency])) }
       def lockstep_updates
         return unless lockstep_check_applies?
