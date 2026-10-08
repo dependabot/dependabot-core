@@ -55,6 +55,15 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
     end
   end
 
+  # Stands in for uv: the block gets the names passed to the lock updater and returns its files or raises
+  def stub_uv
+    allow(Dependabot::Uv::FileUpdater::LockFileUpdater).to receive(:new) do |args|
+      updater = instance_double(Dependabot::Uv::FileUpdater::LockFileUpdater)
+      allow(updater).to receive(:updated_dependency_files) { yield(args[:dependencies].map(&:name)) }
+      updater
+    end
+  end
+
   before do
     allow(Dependabot::Uv::FileParser).to receive(:new)
       .and_return(instance_double(Dependabot::Uv::FileParser, parse: top_level))
@@ -114,6 +123,20 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
 
       expect { resolver.lockstep_conflict?(target) }
         .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+
+    it "reuses its uv run as the first round of the full unlock" do
+      stub_uv do |names|
+        raise conflict unless names.include?("opentelemetry-sdk")
+
+        [resolved_lockfile]
+      end
+
+      resolver.lockstep_conflict?(target)
+      updates = resolver.updated_dependencies_after_full_unlock(target)
+
+      expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+      expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).twice
     end
   end
 

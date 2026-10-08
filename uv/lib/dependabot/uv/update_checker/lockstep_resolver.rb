@@ -117,7 +117,8 @@ module Dependabot
           peers = T.let([], T::Array[Dependabot::Dependency])
 
           MAX_UNLOCK_ROUNDS.times do
-            result = probe(version, peers)
+            # The first round is the uv run `lockstep_conflict?` already made
+            result = peers.empty? ? own_probe(version) : probe(version, peers)
             return updates_from(version, peers, result) if result.resolved
 
             new_peers = eligible_peers(result.conflict_names).reject do |peer|
