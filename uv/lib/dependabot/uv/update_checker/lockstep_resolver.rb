@@ -74,8 +74,9 @@ module Dependabot
           @neighbours_in_lockfile
         end
 
-        # Only a conflict that names another direct dependency counts. Any other failure (e.g. a release that
-        # needs a newer Python) is left for the file updater to report, as it does without this check.
+        # Only a resolution conflict that names another direct dependency counts. Other resolution failures
+        # (e.g. a release that needs a newer Python) return false so the file updater still reports them;
+        # errors that aren't resolution failures are raised here.
         sig { params(version: Gem::Version).returns(T::Boolean) }
         def lockstep_conflict?(version)
           result = own_probe(version)
@@ -117,7 +118,7 @@ module Dependabot
           peers = T.let([], T::Array[Dependabot::Dependency])
 
           MAX_UNLOCK_ROUNDS.times do
-            # The first round is the uv run `lockstep_conflict?` already made
+            # Round 1 has no peers: reuse the cached own probe so :own then :all runs uv once for it
             result = peers.empty? ? own_probe(version) : probe(version, peers)
             return updates_from(version, peers, result) if result.resolved
 
@@ -240,7 +241,8 @@ module Dependabot
           )
         end
 
-        # Lets uv move the peer only as far as the bumped dependency forces it to.
+        # `>=` the locked version without --upgrade-package: uv keeps the peer unless the bump forces it
+        # to move, then picks the highest version that fits.
         sig { params(peer: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def relaxed_dependency(peer)
           Dependabot::Dependency.new(
