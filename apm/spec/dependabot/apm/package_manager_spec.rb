@@ -76,4 +76,41 @@ RSpec.describe Dependabot::Apm::PackageManager do
       expect(package_manager.version).to be_a(Dependabot::Version)
     end
   end
+
+  describe ".version_from_lockfile" do
+    it "returns nil when there is no lockfile content" do
+      expect(described_class.version_from_lockfile(nil)).to be_nil
+    end
+
+    it "returns nil when the lockfile does not record an apm_version" do
+      expect(described_class.version_from_lockfile("lockfile_version: '1'\n")).to be_nil
+    end
+
+    it "reads an unquoted version" do
+      content = "lockfile_version: '1'\napm_version: 0.33.0\n"
+      expect(described_class.version_from_lockfile(content)).to eq("0.33.0")
+    end
+
+    ["'", '"'].each do |quote|
+      it "reads a version quoted with #{quote}" do
+        content = "apm_version: #{quote}0.33.0#{quote}\n"
+        expect(described_class.version_from_lockfile(content)).to eq("0.33.0")
+      end
+    end
+
+    it "tolerates trailing whitespace" do
+      expect(described_class.version_from_lockfile("apm_version: 0.33.0   \n")).to eq("0.33.0")
+    end
+
+    it "ignores indented per-dependency version keys" do
+      content = <<~LOCK
+        lockfile_version: '1'
+        apm_version: 0.33.0
+        dependencies:
+        - repo_url: https://github.com/microsoft/apm
+          version: 0.10.0
+      LOCK
+      expect(described_class.version_from_lockfile(content)).to eq("0.33.0")
+    end
+  end
 end

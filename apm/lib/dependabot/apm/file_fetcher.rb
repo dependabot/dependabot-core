@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/apm/package_manager"
 
 module Dependabot
   module Apm
@@ -84,11 +85,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def parsed_lockfile_apm_version
-        content = lockfile&.content
-        return unless content
-
-        match = content.match(/^apm_version:\s*['"]?(?<version>[^'"\s]+)['"]?\s*$/)
-        match && match[:version]
+        PackageManager.version_from_lockfile(lockfile&.content)
       end
     end
   end

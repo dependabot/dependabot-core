@@ -20,6 +20,12 @@ module Dependabot
     class PackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
+      # Matches the top-level `apm_version` key the lockfile records for the apm
+      # CLI that wrote it. The value may be plain or quoted, so optional quotes
+      # are stripped. Nested `version:` keys under `dependencies:` are indented
+      # and so never match this line-anchored pattern.
+      LOCKFILE_VERSION_REGEX = /^apm_version:\s*['"]?(?<version>[^'"\s]+)['"]?\s*$/
+
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
@@ -28,6 +34,16 @@ module Dependabot
           deprecated_versions: DEPRECATED_APM_VERSIONS,
           supported_versions: SUPPORTED_APM_VERSIONS
         )
+      end
+
+      # The apm CLI version recorded in the lockfile (`apm_version`), or nil when
+      # there is no lockfile or it does not record one. Read straight from the
+      # raw content rather than by parsing the YAML: the lockfile is a support
+      # file we never rewrite, and a malformed one should degrade to the default
+      # version rather than raise while parsing the project.
+      sig { params(lockfile_content: T.nilable(String)).returns(T.nilable(String)) }
+      def self.version_from_lockfile(lockfile_content)
+        lockfile_content&.match(LOCKFILE_VERSION_REGEX)&.[](:version)
       end
 
       # The apm CLI version recorded in the lockfile (`apm_version`) is written

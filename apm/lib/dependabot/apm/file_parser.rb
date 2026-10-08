@@ -303,9 +303,7 @@ module Dependabot
 
       sig { returns(String) }
       def apm_version
-        content = lockfile&.content
-        version = content&.match(/^apm_version:\s*['"]?(?<version>[^'"\s]+)['"]?\s*$/)&.[](:version)
-        version || DEFAULT_PACKAGE_MANAGER_VERSION
+        PackageManager.version_from_lockfile(lockfile&.content) || DEFAULT_PACKAGE_MANAGER_VERSION
       end
     end
   end
