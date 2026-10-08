@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/update_checker"
 require "dependabot/requirements_update_strategy"
+require "dependabot/security_advisory"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Uv::UpdateChecker do
@@ -1262,6 +1263,50 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
 
         it "can't update" do
           expect(checker.can_update?(requirements_to_unlock: :all)).to be(false)
+        end
+      end
+
+      context "when the dependency is vulnerable" do
+        let(:security_advisories) do
+          [Dependabot::SecurityAdvisory.new(
+            dependency_name: "opentelemetry-api",
+            package_manager: "uv",
+            vulnerable_versions: ["<1.26.0"]
+          )]
+        end
+        let(:pypi_response) do
+          <<~HTML
+            <html><body>
+            <a href="https://files.pythonhosted.org/packages/a/opentelemetry_api-1.25.0-py3-none-any.whl">opentelemetry_api-1.25.0-py3-none-any.whl</a><br/>
+            <a href="https://files.pythonhosted.org/packages/b/opentelemetry_api-1.26.0-py3-none-any.whl">opentelemetry_api-1.26.0-py3-none-any.whl</a><br/>
+            <a href="https://files.pythonhosted.org/packages/c/opentelemetry_api-1.27.0-py3-none-any.whl">opentelemetry_api-1.27.0-py3-none-any.whl</a><br/>
+            </body></html>
+          HTML
+        end
+
+        it "probes the lowest fixed version, not the latest" do
+          checker.can_update?(requirements_to_unlock: :own)
+
+          expect(lockstep_resolver).to have_received(:own_update_resolvable?)
+            .with(Dependabot::Uv::Version.new("1.26.0"))
+        end
+      end
+
+      context "when asked about the peer instead" do
+        let(:dependency_name) { "opentelemetry-sdk" }
+        let(:pypi_url) { "https://pypi.org/simple/opentelemetry-sdk/" }
+        let(:pypi_response) do
+          <<~HTML
+            <html><body>
+            <a href="https://files.pythonhosted.org/packages/a/opentelemetry_sdk-1.25.0-py3-none-any.whl">opentelemetry_sdk-1.25.0-py3-none-any.whl</a><br/>
+            <a href="https://files.pythonhosted.org/packages/b/opentelemetry_sdk-1.26.0-py3-none-any.whl">opentelemetry_sdk-1.26.0-py3-none-any.whl</a><br/>
+            </body></html>
+          HTML
+        end
+
+        it "also reports that it can't move on its own" do
+          # update_all_versions#peer_dependency_should_update_instead? relies on this
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
         end
       end
     end
