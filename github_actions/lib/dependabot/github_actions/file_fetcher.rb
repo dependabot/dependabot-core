@@ -81,7 +81,7 @@ module Dependabot
       sig { returns(T.nilable(DependencyFile)) }
       def actions_lockfile
         return unless Dependabot::Experiments.enabled?(:github_actions_lockfile)
-        return unless source.hostname == GITHUB_COM
+        return unless source.hostname == GITHUB_COM || source.hostname.end_with?(".ghe.com")
         return fetch_file_if_present(LOCKFILE_PATH) if directory == "/"
 
         fetch_file_if_present(LOCKFILE_NAME) if directory.delete_prefix("/") == WORKFLOW_DIRECTORY
