@@ -591,6 +591,45 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when uv prints forked-resolution markers after the names" do
+      let(:message) do
+        <<~ERROR
+          × No solution found when resolving dependencies for split (sys_platform != 'emscripten'):
+          ╰─▶ Because httpx2{sys_platform != 'emscripten'}==2.13.0 depends on httpcore2{sys_platform != 'emscripten'}==2.13.0
+              and your project depends on httpcore2{sys_platform != 'emscripten'}==2.10.0, we can conclude that
+              httpx2{sys_platform != 'emscripten'}==2.13.0 and your project are incompatible.
+        ERROR
+      end
+
+      it "reads the names around the markers" do
+        expect(names).to eq(%w(httpx2 httpcore2))
+      end
+    end
+
+    context "when a requirement has extras and a marker" do
+      let(:message) { "Because foo[bar]{python_full_version >= '3.12'}>=1 depends on ..." }
+
+      it "returns the name only" do
+        expect(names).to eq(["foo"])
+      end
+    end
+
+    context "when a name ends in a non-alphanumeric character" do
+      let(:message) { "Because foo-==1 is odd" }
+
+      it "returns no name" do
+        expect(names).to eq([])
+      end
+    end
+
+    context "when a name is a single character" do
+      let(:message) { "Because a==1 is short" }
+
+      it "returns the name" do
+        expect(names).to eq(["a"])
+      end
+    end
+
     context "when the message is a long run of digits or brackets" do
       %w(0 0[).each do |unit|
         it "returns no names for #{unit.inspect} repeated" do
