@@ -266,8 +266,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when there is a unsupported engine response (pnpm) from registry" do
+    # pnpm 12 does not enforce engines.pnpm and succeeds here, but a repository pinned to pnpm 10 or 11 still gets
+    # this error from pnpm, so the pnpm 11 output is replayed.
+    context "when pnpm 11 reports an unsupported engine for pnpm" do
       let(:project_name) { "pnpm/unsupported_engine_pnpm" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm11", "unsupported_engine_pnpm.txt"),
+            error_context: {}
+          )
+        )
+      end
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -496,6 +507,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       let(:project_name) { "pnpm/github_dependency_private" }
+
+      # pnpm 12 reuses the commit in the lockfile and makes no request, so it succeeds here, but a repository
+      # pinned to pnpm 10 or 11 still re-resolves the dependency and gets this error, which is replayed.
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm11", "github_dependency_private.txt"),
+            error_context: {}
+          )
+        )
+      end
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -873,8 +895,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
-              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              "-r --include-workspace-root update prettier --depth 9999 --lockfile-only",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth 9999 --lockfile-only" }
             )
             .ordered
             .and_return("")
@@ -1111,7 +1133,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "routes the deep-update fallback through the release-age gate" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).to include("--depth Infinity")
+          expect(cmd).to include("--depth 9999")
+          expect(cmd).not_to include("Infinity")
           expect(cmd).to include("--config.minimum-release-age=10080")
           ""
         end.at_least(:once)

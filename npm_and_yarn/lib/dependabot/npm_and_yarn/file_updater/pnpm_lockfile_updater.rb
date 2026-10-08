@@ -691,7 +691,7 @@ module Dependabot
           !version.nil? && version < Version.new(PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION)
         end
 
-        # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
+        # Tries a deep `pnpm update <dep>` (see NativeHelpers::PNPM_DEEP_UPDATE_DEPTH) for each dependency as a
         # first-tier fallback when the regular update is a no-op (typically
         # transitive deps not listed in any package.json), without relying on
         # audit fixes that may modify manifests on older pnpm versions. It is
@@ -707,7 +707,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed
           Dependabot.logger.info(
-            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
+            "pnpm deep update failed or partially fixed — continuing with any changes made"
           )
         end
 
