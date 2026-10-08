@@ -570,6 +570,38 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/sqlalchemy@2.0.43")
         end
       end
+
+      context "with a satisfied python_full_version" do
+        let(:requirements_txt) do
+          requirements_txt_with_marker('python_full_version >= "3.9.0"')
+        end
+
+        before do
+          # Satisfies "python_full_version >= 3.9.0".
+          allow(parser).to receive(:python_raw_version).and_return("3.11.2")
+        end
+
+        it "resolves the dependency's version" do
+          expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/greenlet@3.5.4")
+          expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/sqlalchemy@2.0.43")
+        end
+      end
+
+      context "with an unsatisfied python_full_version" do
+        let(:requirements_txt) do
+          requirements_txt_with_marker('python_full_version >= "3.9.0"')
+        end
+
+        before do
+          # Does not satisfy "python_full_version >= 3.9.0".
+          allow(parser).to receive(:python_raw_version).and_return("3.8.5")
+        end
+
+        it "discards the dependency" do
+          expect(grapher.resolved_dependencies.keys).not_to include("pkg:pypi/greenlet@3.5.4")
+          expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/sqlalchemy@2.0.43")
+        end
+      end
     end
 
     context "when a poetry project has a bystander .txt file" do
