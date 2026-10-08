@@ -331,8 +331,9 @@ module Dependabot
           specs.values
         end
 
-        # Include the target version to respect ignore conditions and avoid upgrading
-        # to the absolute latest version (which may be blocked by ignore rules)
+        # Pin each package to its target so ignore conditions are respected and uv
+        # doesn't jump to the latest version. target_requirement is a single
+        # constraint, so it only applies to the first dependency.
         sig { params(dep: Dependency, base_name: String, first: T::Boolean).returns(String) }
         def upgrade_package_spec(dep, base_name, first:)
           if first && target_requirement

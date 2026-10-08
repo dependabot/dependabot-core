@@ -1471,8 +1471,23 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
 
+      context "with a target requirement" do
+        let(:target_requirement) { ">=2.19.0,<=2.20.0" }
+
+        it "applies the target requirement to the first dependency only" do
+          expected_command = "pyenv exec uv lock --upgrade-package requests>=2.19.0,<=2.20.0 " \
+                             "--upgrade-package urllib3==2.2.3 " \
+                             "--index https://token@example.com/simple " \
+                             "--default-index https://another_token@another.com/simple"
+
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(expected_command, fingerprint: anything, env: {})
+        end
+      end
+
       context "when only some of them should be upgraded" do
-        let(:upgrade_package_names) { ["requests"] }
+        let(:upgrade_package_names) { ["Requests"] }
 
         it "only passes --upgrade-package for those" do
           expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
@@ -1489,16 +1504,17 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         let(:peer) do
           Dependabot::Dependency.new(
             name: "requests[socks]",
-            version: "2.23.0",
-            requirements: [{ file: "pyproject.toml", requirement: "==2.23.0", groups: [], source: nil }],
+            version: "2.24.0",
+            requirements: [{ file: "pyproject.toml", requirement: "==2.24.0", groups: [], source: nil }],
             previous_requirements: [{ file: "pyproject.toml", requirement: "==2.22.0", groups: [], source: nil }],
             previous_version: "2.22.0",
             package_manager: "uv"
           )
         end
+        let(:target_requirement) { ">=2.19.0,<=2.20.0" }
 
         it "passes the package once" do
-          expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
+          expected_command = "pyenv exec uv lock --upgrade-package requests>=2.19.0,<=2.20.0 " \
                              "--index https://token@example.com/simple " \
                              "--default-index https://another_token@another.com/simple"
 
@@ -1767,8 +1783,40 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(content).to include('"opentelemetry-sdk>=1.25.0"')
     end
 
-    it "is not build-system only when one of them is a regular dependency" do
-      expect(updater.send(:build_system_only_dependency?)).to be(false)
+    context "when only one of them is a build-system requirement" do
+      let(:peer) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.26.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "1.25.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "is not build-system only" do
+        expect(updater.send(:build_system_only_dependency?)).to be(false)
+      end
+    end
+
+    context "when only the first of them is a build-system requirement" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.26.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "1.25.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "is not build-system only" do
+        expect(updater.send(:build_system_only_dependency?)).to be(false)
+      end
     end
 
     context "when all of them are build-system requirements" do
@@ -1783,7 +1831,17 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           package_manager: "uv"
         )
       end
-      let(:dependencies) { [dependency] }
+      let(:peer) do
+        Dependabot::Dependency.new(
+          name: "setuptools",
+          version: "75.0.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==75.0.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==74.0.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "74.0.0",
+          package_manager: "uv"
+        )
+      end
 
       it "is build-system only" do
         expect(updater.send(:build_system_only_dependency?)).to be(true)
