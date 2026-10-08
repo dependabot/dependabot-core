@@ -604,6 +604,13 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
       context "with a dependency from a dependency set" do
         let(:buildfile_fixture_name) { "dependency_set.gradle" }
+        let(:buildfile_name) { "build.gradle" }
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: buildfile_name,
+            content: fixture("buildfiles", buildfile_fixture_name)
+          )
+        end
         let(:dependencies) do
           %w(
             com.google.protobuf:protoc
@@ -615,7 +622,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               version: "23.6-jre",
               previous_version: "3.6.1",
               requirements: [{
-                file: "build.gradle",
+                file: buildfile_name,
                 requirement: "23.6-jre",
                 groups: [],
                 source: {
@@ -630,7 +637,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                 }
               }],
               previous_requirements: [{
-                file: "build.gradle",
+                file: buildfile_name,
                 requirement: "3.6.1",
                 groups: [],
                 source: nil,
@@ -654,6 +661,75 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           expect(updated_files.first.content)
             .to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
+        end
+
+        context "with a Kotlin DSL build file" do
+          let(:buildfile_fixture_name) { "dependency_set.gradle.kts" }
+          let(:buildfile_name) { "build.gradle.kts" }
+
+          it "updates the version in the dependency set declaration" do
+            expect(updated_files.map(&:name)).to eq(["build.gradle.kts"])
+            expect(updated_files.first.content)
+              .to include('dependencySet("com.google.protobuf:23.6-jre") {')
+            expect(updated_files.first.content)
+              .to include('dependency("org.apache.kafka:kafka-clients:3.6.1")')
+          end
+        end
+      end
+
+      context "with a dependency from a Kotlin DSL dependency set whose version is a property" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "build.gradle.kts",
+            content: fixture("buildfiles", "dependency_set.gradle.kts")
+          )
+        end
+        let(:dependencies) do
+          %w(
+            org.slf4j:slf4j-api
+            org.slf4j:slf4j-simple
+          ).map do |dep_name|
+            Dependabot::Dependency.new(
+              name: dep_name,
+              version: "2.0.7",
+              previous_version: "1.7.25",
+              requirements: [{
+                file: "build.gradle.kts",
+                requirement: "2.0.7",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "slf4jVersion",
+                  dependency_set: {
+                    group: "org.slf4j",
+                    version: "$slf4jVersion"
+                  }
+                }
+              }],
+              previous_requirements: [{
+                file: "build.gradle.kts",
+                requirement: "1.7.25",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "slf4jVersion",
+                  dependency_set: {
+                    group: "org.slf4j",
+                    version: "$slf4jVersion"
+                  }
+                }
+              }],
+              package_manager: "gradle"
+            )
+          end
+        end
+
+        it "updates the property rather than the dependency set declaration" do
+          expect(updated_files.map(&:name)).to eq(["build.gradle.kts"])
+          expect(updated_files.first.content).to include('val slf4jVersion = "2.0.7"')
+          expect(updated_files.first.content)
+            .to include('dependencySet("org.slf4j:$slf4jVersion") {')
+          expect(updated_files.first.content).to include('extra["nettyVersion"] = "4.1.30.Final"')
         end
       end
     end
