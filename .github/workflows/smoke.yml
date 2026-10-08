@@ -40,6 +40,8 @@ jobs:
       - name: Generate suites to run
         id: suites
         shell: bash
+        env:
+          SMOKE_TEST_REPO: ${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}
         run: |
           # Write the changes.json file which is an array of paths
           echo "${{ toJson(steps.changes.outputs.changes) }}" > changes.json
@@ -50,7 +52,7 @@ jobs:
           cat filtered.json
 
           # Fetch the smoke-test directory using the job's read-only GitHub token.
-          gh api "repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}" > tests.json
+          gh api "repos/${SMOKE_TEST_REPO}/contents/tests?ref=${SMOKE_TEST_BRANCH}" > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
           # We end up with, for example: [{core: "bundler", ecosystem: "rubygems", name: "smoke-bundler.yaml"}]
