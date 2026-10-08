@@ -127,8 +127,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_bun_command(
-                "update #{dependency.name} --save-text-lockfile --ignore-scripts",
-                fingerprint: "update <dependency_name> --save-text-lockfile --ignore-scripts"
+                "update #{dependency.name} --save-text-lockfile --ignore-scripts --lockfile-only",
+                fingerprint: "update <dependency_name> --save-text-lockfile --ignore-scripts --lockfile-only"
               )
               { lockfile_name => File.read(lockfile_name) }
             end
