@@ -124,6 +124,64 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when a stdlib compat entry gains a <0.0.1 bound" do
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "TestProject"
+            uuid = "1234e567-e89b-12d3-a456-789012345678"
+
+            [deps]
+            Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+            [compat]
+            Statistics = "#{previous_requirement}"
+            julia = "1.6"
+          TOML
+        )
+      end
+      let(:dependency_files) { [project_file] }
+      let(:previous_requirement) { "1" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Statistics",
+          version: nil,
+          package_manager: "julia",
+          requirements: [{ requirement: "<0.0.1, 1", file: "Project.toml", groups: ["deps"], source: nil }],
+          previous_requirements: [
+            { requirement: previous_requirement, file: "Project.toml", groups: ["deps"], source: nil }
+          ],
+          metadata: {
+            julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2",
+            julia_stdlib_versions: { "Project.toml" => ["0.0.0", "1.6.0"] }
+          }
+        )
+      end
+
+      it "explains the bound in a notice" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.first.content).to include('Statistics = "<0.0.1, 1"')
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.type).to eq("julia_stdlib_zero_version_bound")
+        expect(notice.show_in_pr).to be true
+        expect(notice.description).to include("`Statistics` is a standard library")
+        expect(Dependabot::Notice.markdown_from_description(notice)).to start_with("> [!NOTE]\n")
+      end
+
+      context "when the entry already had it" do
+        let(:previous_requirement) { "< 0.0.1" }
+
+        it "adds no notice" do
+          updater.updated_dependency_files
+
+          expect(updater.notices).to be_empty
+        end
+      end
+    end
+
     context "when preserving UUID in [deps] section" do
       let(:project_file_content) do
         <<~TOML
@@ -255,10 +313,10 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "manifest_content" => updated_manifest_content,
-            "manifest_path" => "Manifest.toml"
-          }
+          Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+            manifest_content: updated_manifest_content,
+            manifest_path: "Manifest.toml"
+          )
         )
       end
 
@@ -303,10 +361,10 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "manifest_content" => updated_manifest_content,
-            "manifest_path" => "../Manifest.toml"
-          }
+          Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+            manifest_content: updated_manifest_content,
+            manifest_path: "../Manifest.toml"
+          )
         )
       end
 
@@ -337,10 +395,10 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "manifest_content" => updated_manifest_content,
-            "manifest_path" => "Manifest-v1.12.toml"
-          }
+          Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+            manifest_content: updated_manifest_content,
+            manifest_path: "Manifest-v1.12.toml"
+          )
         )
       end
 
@@ -353,12 +411,49 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when there is a manifest per Julia release" do
+      let(:versioned_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.10.toml",
+          content: fixture("projects", "basic", "Manifest.toml").sub(
+            'julia_version = "1.12.1"',
+            'julia_version = "1.10.0"'
+          )
+        )
+      end
+      let(:dependency_files) { [project_file, manifest_file, versioned_manifest_file] }
+
+      before do
+        allow(registry_client_double).to receive(:update_manifest) do |manifest_path:, **|
+          if manifest_path.end_with?("Manifest-v1.10.toml")
+            Dependabot::Julia::RegistryClient::Result::Failure.new(
+              message: "Pkg resolver error: Unsatisfiable requirements detected for package JSON"
+            )
+          else
+            Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+              manifest_content: "[[deps.JSON]]\nversion = \"1.2.0\"\n",
+              manifest_path: "Manifest.toml"
+            )
+          end
+        end
+      end
+
+      it "resolves each manifest and reports the one that could not be updated" do
+        updated_files = updater.updated_dependency_files
+
+        expect(registry_client_double).to have_received(:update_manifest).twice
+        expect(updated_files.map(&:name)).to contain_exactly("Project.toml", "Manifest.toml")
+        expect(updater.notices.length).to eq(1)
+        expect(updater.notices.first.description).to include("Manifest-v1.10.toml")
+      end
+    end
+
     context "when Julia helper returns a resolver error" do
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "error" => "Unsatisfiable requirements detected for package JSON"
-          }
+          Dependabot::Julia::RegistryClient::Result::Failure.new(
+            message: "Unsatisfiable requirements detected for package JSON"
+          )
         )
       end
 
@@ -377,6 +472,25 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(notice.show_in_pr).to be true
         expect(notice.description).to include("Manifest.toml")
         expect(notice.description).to include("Unsatisfiable requirements")
+      end
+
+      context "when the compat entry already admits the new version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Example",
+            version: "0.4.1",
+            previous_version: "0.4.0",
+            package_manager: "julia",
+            requirements: [{ requirement: "0.4", file: "Project.toml", groups: ["deps"], source: nil }],
+            previous_requirements: [{ requirement: "0.4", file: "Project.toml", groups: ["deps"], source: nil }],
+            metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+          )
+        end
+
+        it "returns no files and keeps the notice" do
+          expect(updater.updated_dependency_files).to eq([])
+          expect(updater.notices.length).to eq(1)
+        end
       end
     end
 

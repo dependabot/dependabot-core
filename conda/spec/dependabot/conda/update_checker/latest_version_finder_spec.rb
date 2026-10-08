@@ -132,6 +132,17 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "with cooldown configured" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+        end
+
+        it "allows the release and marks the dependency when its date is unavailable" do
+          expect(finder.latest_version.to_s).to eq("1.23.0")
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+
       context "when package does not exist in Conda API" do
         before do
           # Stub all channels that will be tried during fallback

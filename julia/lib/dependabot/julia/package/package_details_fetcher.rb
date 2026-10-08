@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "time"
@@ -14,6 +14,7 @@ module Dependabot
         extend T::Sig
 
         PACKAGE_LANGUAGE = "julia"
+        RELEASE_DATE_PENDING = "release_date_pending"
 
         sig do
           params(
@@ -73,9 +74,14 @@ module Dependabot
 
           available_versions.map do |version_string|
             version = Julia::Version.new(version_string)
-            release_date = release_dates[version_string]
+            date_result = release_dates[version_string]
+            date_result = nil if date_result.is_a?(RegistryClient::Result::Failure)
 
-            create_package_release(version, release_date)
+            create_package_release(
+              version,
+              convert_single_date(date_result&.release_date),
+              release_date_pending: date_result&.pending || false
+            )
           end
         end
 
@@ -84,40 +90,35 @@ module Dependabot
             registry_client: RegistryClient,
             available_versions: T::Array[String],
             uuid: T.nilable(String)
-          ).returns(T::Hash[String, T.nilable(Time)])
+          ).returns(
+            T::Hash[String, T.any(RegistryClient::Result::ReleaseDate, RegistryClient::Result::Failure)]
+          )
         end
         def fetch_release_dates_batch(registry_client, available_versions, uuid)
           return {} if available_versions.empty?
 
-          packages_versions = [{
-            name: dependency.name,
-            uuid: uuid || "",
-            versions: available_versions
-          }]
+          packages_versions = [
+            RegistryClient::Result::PackageVersionsRequest.new(
+              name: dependency.name,
+              uuid: uuid || "",
+              versions: available_versions
+            )
+          ]
 
           result = registry_client.batch_fetch_version_release_dates(packages_versions)
-          dates_for_package = result[dependency.name] || {}
+          return {} if result.is_a?(RegistryClient::Result::Failure)
 
-          convert_dates_to_time_objects(dates_for_package)
+          dates_for_package = result.packages[dependency.name]
+          return {} unless dates_for_package.is_a?(RegistryClient::Result::ReleaseDates)
+
+          dates_for_package.dates
         end
 
-        sig do
-          params(
-            dates_hash: T::Hash[String, T.untyped]
-          ).returns(T::Hash[String, T.nilable(Time)])
-        end
-        def convert_dates_to_time_objects(dates_hash)
-          dates_hash.transform_values do |date_value|
-            convert_single_date(date_value)
-          end
-        end
-
-        sig { params(date_value: T.untyped).returns(T.nilable(Time)) }
+        sig { params(date_value: T.nilable(String)).returns(T.nilable(Time)) }
         def convert_single_date(date_value)
           return nil if date_value.nil?
-          return nil if date_value.is_a?(Hash) && date_value["error"]
 
-          Time.parse(date_value.to_s)
+          Time.parse(date_value)
         rescue ArgumentError, TypeError
           nil
         end
@@ -125,16 +126,18 @@ module Dependabot
         sig do
           params(
             version: Julia::Version,
-            release_date: T.nilable(Time)
+            release_date: T.nilable(Time),
+            release_date_pending: T::Boolean
           ).returns(Dependabot::Package::PackageRelease)
         end
-        def create_package_release(version, release_date)
+        def create_package_release(version, release_date, release_date_pending:)
           Dependabot::Package::PackageRelease.new(
             version: version,
             released_at: release_date,
             latest: false, # Will be determined later
             yanked: false, # Yanked versions are filtered out by the Julia registry helper
-            language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE)
+            language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE),
+            details: release_date_pending ? { RELEASE_DATE_PENDING => true } : {}
           )
         end
 

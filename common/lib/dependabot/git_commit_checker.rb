@@ -265,6 +265,7 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def local_tag_for_pinned_sha
+      return @local_tag_for_pinned_sha if defined?(@local_tag_for_pinned_sha)
       return unless pinned_ref_looks_like_commit_sha?
 
       @local_tag_for_pinned_sha = T.let(

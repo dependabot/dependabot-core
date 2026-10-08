@@ -228,11 +228,11 @@ module Dependabot
         requirement_files.any? { |f| f.end_with?("requirements.txt") }
       end
 
-      sig { override.returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { override.returns(T.nilable(PyprojectDocument::ProjectMetadata)) }
       def library_details
         @library_details ||= T.let(
-          standard_details || build_system_details,
-          T.nilable(T::Hash[String, T.untyped])
+          pyproject_document.project_metadata || pyproject_document.build_system_metadata,
+          T.nilable(PyprojectDocument::ProjectMetadata)
         )
       end
 

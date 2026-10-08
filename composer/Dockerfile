@@ -1,6 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG COMPOSER_V2_VERSION=2.10.2
+ARG COMPOSER_V2_VERSION=2.10.3
 ARG PHP_VERSION=8.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN <<EOF

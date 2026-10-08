@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           .to_return(status: 200, body: rubygems_response)
       end
 
-      its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+      its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
       it "hits Rubygems twice" do
         finder.latest_version_details
@@ -87,6 +87,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         before do
           stub_request(:get, rubygems_url + "versions/business.json")
             .to_return(status: 404, body: "This rubygem could not be found.")
+          stub_request(:get, "https://rubygems.org/info/business")
+            .to_return(status: 404, body: "Not Found")
         end
 
         it { is_expected.to be_nil }
@@ -95,7 +97,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "with a gems.rb setup" do
         let(:dependency_files) { bundler_project_dependency_files("gems_rb") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "when the gem is Bundler" do
@@ -108,12 +110,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             .to_return(status: 200, body: rubygems_response)
         end
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
         context "when wrapped in a source block" do
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified_in_source_bundler_specified") }
 
-          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+          its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
         end
       end
 
@@ -128,7 +130,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "when the user is on the latest version" do
         let(:current_version) { "1.5.0" }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
@@ -166,7 +168,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "when the user has ignored all later versions" do
         let(:ignored_versions) { ["> 1.3.0"] }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.3.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.3.0")) }
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
@@ -180,7 +182,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.5.0.a, < 1.6"] }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.4.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.4.0")) }
       end
 
       context "when the user has ignored all versions" do
@@ -209,31 +211,31 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             .to_return(status: 200, body: rubygems_response)
         end
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.6.0.beta")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.6.0.beta")) }
       end
 
       context "with a Ruby version specified" do
         let(:dependency_files) { bundler_project_dependency_files("explicit_ruby") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "when given a Gemfile that loads a .ruby-version file" do
         let(:dependency_files) { bundler_project_dependency_files("ruby_version_file") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "when the Gemfile loads a .tool-versions file" do
         let(:dependency_files) { bundler_project_dependency_files("tool_versions_file") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "with a gemspec and a Gemfile" do
         let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
         context "with a dependency that only appears in the gemspec" do
           let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
@@ -245,12 +247,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
               .to_return(status: 200, body: response)
           end
 
-          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+          its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
           context "when there is no default source" do
             let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_default_source_no_lockfile") }
 
-            its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+            its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
           end
         end
       end
@@ -258,13 +260,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "with only a gemspec" do
         let(:dependency_files) { bundler_project_dependency_files("gemspec_small_example_no_lockfile") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "with only a Gemfile" do
         let(:dependency_files) { bundler_project_dependency_files("no_lockfile") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
     end
 
@@ -286,9 +288,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         subject(:result) { finder.latest_version_details }
 
         it "fetches the latest version details" do
-          expect(result).to be_a(Hash)
-          expect(result).not_to be_empty
-          expect(result[:version]).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+          expect(result).to be_a(Dependabot::Bundler::UpdateChecker::VersionDetails)
+          expect(result.version).to eq(Dependabot::Bundler::Version.new("1.4.0"))
           expect(a_request(:get, rubygems_url + "versions/business.json")).to have_been_made.twice
         end
       end
@@ -306,6 +307,31 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         it "fetches the latest version" do
           expect(result).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+        end
+      end
+
+      context "when the release date is unavailable" do
+        let(:release) do
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Bundler::Version.new("1.5.0"),
+            released_at: nil
+          )
+        end
+        let(:package_details) do
+          Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+        end
+        let(:package_details_fetcher) do
+          instance_double(Dependabot::Bundler::Package::PackageDetailsFetcher, fetch: package_details)
+        end
+
+        before do
+          allow(Dependabot::Bundler::Package::PackageDetailsFetcher)
+            .to receive(:new).and_return(package_details_fetcher)
+        end
+
+        it "allows the release and marks the dependency" do
+          expect(finder.latest_version).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
       end
     end
@@ -351,9 +377,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         subject(:result) { finder.latest_version_details }
 
         it "fetches the latest version details" do
-          expect(result).to be_a(Hash)
-          expect(result).not_to be_empty
-          expect(result[:version]).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+          expect(result).to be_a(Dependabot::Bundler::UpdateChecker::VersionDetails)
+          expect(result.version).to eq(Dependabot::Bundler::Version.new("1.4.0"))
         end
       end
 
@@ -395,10 +420,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       let(:private_versions_url) do
         "https://gems.private-registry.example.com/api/v1/versions/business.json"
       end
+      let(:compact_index_url) { "https://gems.private-registry.example.com/info/business" }
       let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
 
       before do
         stub_request(:get, private_versions_url)
+          .to_return(status: 404, body: "Not Found")
+        stub_request(:get, compact_index_url)
           .to_return(status: 404, body: "Not Found")
 
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
@@ -412,9 +440,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         subject(:result) { finder.latest_version_details }
 
         it "falls back to bundler versions and resolves latest version" do
-          expect(result).to be_a(Hash)
-          expect(result).not_to be_empty
-          expect(result[:version]).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+          expect(result).to be_a(Dependabot::Bundler::UpdateChecker::VersionDetails)
+          expect(result.version).to eq(Dependabot::Bundler::Version.new("1.5.0"))
         end
       end
 
@@ -423,6 +450,36 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         it "resolves the latest version" do
           expect(result).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+        end
+      end
+
+      context "when Compact Index v2 provides publication dates" do
+        let(:compact_index_response) do
+          <<~INDEX
+            ---
+            1.4.0 |checksum:abc,created_at:2015-01-01T12:00:00Z
+            1.5.0 |checksum:def,created_at:2015-06-01T12:00:00Z
+          INDEX
+        end
+
+        before do
+          stub_request(:get, compact_index_url)
+            .to_return(status: 200, body: compact_index_response)
+          allow(Time).to receive(:now).and_return(Time.iso8601("2015-06-03T17:30:00Z"))
+        end
+
+        it "excludes recent releases without reporting unavailable publication dates" do
+          expect(finder.latest_version).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).not_to be(true)
+        end
+
+        context "when the registry still serves Compact Index v1" do
+          let(:compact_index_response) { "---\n1.4.0 |checksum:abc\n1.5.0 |checksum:def\n" }
+
+          it "allows undated releases and reports the missing publication date" do
+            expect(finder.latest_version).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
         end
       end
     end
@@ -471,18 +528,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           .to_return(status: 200, body: rubygems_response)
       end
 
-      its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+      its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
       context "when specified as the default source" do
         let(:dependency_files) { bundler_project_dependency_files("specified_default_source") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.9.0.a, < 2.0"] }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "when we have bad authentication details" do
@@ -708,7 +765,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         it "fetches the latest SHA-1 hash" do
           skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
-          commit_sha = finder.latest_version_details[:commit_sha]
+          commit_sha = finder.latest_version_details.commit_sha
           expect(commit_sha).to match(/^[0-9a-f]{40}$/)
           expect(commit_sha).not_to eq(current_version)
         end
@@ -746,12 +803,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             )
         end
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+        its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
         context "when that is private" do
           let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
 
-          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+          its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
         end
       end
     end
@@ -769,7 +826,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:dependency_files) { bundler_project_dependency_files("path_source") }
 
         context "when that is not the gem we're checking" do
-          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+          its(:version) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
         end
 
         context "when that is the gem we're checking" do

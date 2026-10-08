@@ -91,15 +91,10 @@ module Dependabot
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
-        files += convention_plugin_source_files(files, root_dir) if fetch_plugin_sources_for_lockfiles?
+        files += convention_plugin_source_files(files, root_dir)
 
         files + included_builds(root_dir)
                 .flat_map { |dir| all_buildfiles_in_build(dir) }
-      end
-
-      sig { returns(T::Boolean) }
-      def fetch_plugin_sources_for_lockfiles?
-        Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
       end
 
       # Only fetch source trees for *nested* project directories (e.g. "build-logic/convention"

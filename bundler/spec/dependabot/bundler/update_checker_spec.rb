@@ -397,7 +397,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         # Mock the LatestVersionFinder to verify it receives cooldown_options
         latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
         allow(latest_version_finder)
-          .to receive(:latest_version_details).and_return({ version: Dependabot::Bundler::Version.new("1.5.0") })
+          .to receive(:latest_version_details).and_return(
+            described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("1.5.0"))
+          )
         allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
           .to receive(:new).and_return(latest_version_finder)
       end
@@ -610,6 +612,303 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           expect(lowest_security_fix_version).to eq(Dependabot::Bundler::Version.new("1.4.0"))
         end
       end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version cached probes" do
+    let(:target_version) { Dependabot::Bundler::Version.new("1.5.0") }
+    let(:latest_finder) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::LatestVersionFinder,
+        lowest_security_fix_version: target_version
+      )
+    end
+    let(:force_updater) { instance_double(Dependabot::Bundler::UpdateChecker::ForceUpdater, updated_dependencies: []) }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["<= 1.4.0"]
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to receive(:new).and_return(latest_finder)
+      allow(Dependabot::Bundler::UpdateChecker::ForceUpdater).to receive(:new).and_return(force_updater)
+    end
+
+    it "reuses a successful probe" do
+      2.times { expect(checker.lowest_resolvable_security_fix_version).to eq(target_version) }
+
+      expect(force_updater).to have_received(:updated_dependencies).once
+    end
+
+    it "uses version equality for cache keys" do
+      allow(latest_finder).to receive(:lowest_security_fix_version)
+        .and_return(target_version, Dependabot::Bundler::Version.new("1.5.0"))
+
+      2.times { expect(checker.lowest_resolvable_security_fix_version).to eq(target_version) }
+
+      expect(force_updater).to have_received(:updated_dependencies).once
+    end
+
+    it "caches distinct versions independently" do
+      other_version = Dependabot::Bundler::Version.new("1.6.0")
+      allow(latest_finder).to receive(:lowest_security_fix_version).and_return(
+        target_version,
+        other_version,
+        target_version
+      )
+
+      expect(checker.lowest_resolvable_security_fix_version).to eq(target_version)
+      expect(checker.lowest_resolvable_security_fix_version).to eq(other_version)
+      expect(checker.lowest_resolvable_security_fix_version).to eq(target_version)
+      expect(force_updater).to have_received(:updated_dependencies).twice
+    end
+
+    context "when the version is not resolvable" do
+      before do
+        allow(force_updater).to receive(:updated_dependencies)
+          .and_raise(Dependabot::DependencyFileNotResolvable, "conflicting requirement")
+      end
+
+      it "reuses the failed probe rather than retrying it" do
+        2.times { expect(checker.lowest_resolvable_security_fix_version).to be_nil }
+
+        expect(force_updater).to have_received(:updated_dependencies).once
+      end
+    end
+
+    it "propagates unrelated errors without caching a result" do
+      allow(force_updater).to receive(:updated_dependencies).and_raise(RuntimeError, "unexpected failure")
+      expect { checker.lowest_resolvable_security_fix_version }.to raise_error(RuntimeError, "unexpected failure")
+
+      allow(force_updater).to receive(:updated_dependencies).and_return([])
+      2.times { expect(checker.lowest_resolvable_security_fix_version).to eq(target_version) }
+
+      expect(force_updater).to have_received(:updated_dependencies).twice
+    end
+  end
+
+  describe "#latest_resolvable_version cached tag probes" do
+    let(:current_version) { "a" * 40 }
+    let(:tag) { Dependabot::GitTagDetails.new(tag: "v1.5.0", tag_sha: "b" * 40) }
+    let(:resolution_result) do
+      described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("1.5.0"))
+    end
+    let(:resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: resolution_result
+      )
+    end
+    let(:git_checker) do
+      instance_double(
+        Dependabot::GitCommitChecker,
+        git_dependency?: true,
+        pinned?: true,
+        local_tag_for_pinned_version_ref: tag
+      )
+    end
+
+    before do
+      allow(checker).to receive(:latest_version).and_return(current_version)
+      allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new).and_return(resolver)
+    end
+
+    it "reuses a successful tag probe" do
+      2.times { expect(checker.latest_resolvable_version).to eq(tag.tag_sha) }
+
+      expect(resolver).to have_received(:latest_resolvable_version_details).once
+    end
+
+    context "when the resolver returns nil without raising" do
+      let(:resolution_result) { nil }
+
+      it "still caches the probe as successful" do
+        2.times { expect(checker.latest_resolvable_version).to eq(tag.tag_sha) }
+
+        expect(resolver).to have_received(:latest_resolvable_version_details).once
+      end
+    end
+
+    it "caches distinct tags independently" do
+      expect(checker.latest_resolvable_version).to eq(tag.tag_sha)
+      other_tag = Dependabot::GitTagDetails.new(tag: "v1.6.0", tag_sha: "c" * 40)
+      allow(git_checker).to receive(:local_tag_for_pinned_version_ref).and_return(other_tag)
+      expect(checker.latest_resolvable_version).to eq(other_tag.tag_sha)
+
+      allow(git_checker).to receive(:local_tag_for_pinned_version_ref).and_return(tag)
+      expect(checker.latest_resolvable_version).to eq(tag.tag_sha)
+      expect(resolver).to have_received(:latest_resolvable_version_details).twice
+    end
+
+    context "when the tag is not resolvable" do
+      before do
+        allow(resolver).to receive(:latest_resolvable_version_details)
+          .and_raise(Dependabot::DependencyFileNotResolvable, "conflicting requirement")
+      end
+
+      it "reuses the failed probe and leaves the current version unchanged" do
+        2.times { expect(checker.latest_resolvable_version).to eq(current_version) }
+
+        expect(resolver).to have_received(:latest_resolvable_version_details).once
+      end
+    end
+
+    it "propagates unrelated errors without caching a result" do
+      allow(resolver).to receive(:latest_resolvable_version_details).and_raise(RuntimeError, "unexpected failure")
+      expect { checker.latest_resolvable_version }.to raise_error(RuntimeError, "unexpected failure")
+
+      allow(resolver).to receive(:latest_resolvable_version_details).and_return(resolution_result)
+      2.times { expect(checker.latest_resolvable_version).to eq(tag.tag_sha) }
+
+      expect(resolver).to have_received(:latest_resolvable_version_details).twice
+    end
+  end
+
+  describe "#latest_resolvable_version_with_no_unlock typed results" do
+    let(:current_version) { "a" * 40 }
+    let(:commit_sha) { "b" * 40 }
+    let(:resolution_result) do
+      described_class::VersionDetails.new(
+        version: Dependabot::Bundler::Version.new("1.5.0"),
+        commit_sha: commit_sha
+      )
+    end
+    let(:resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: resolution_result
+      )
+    end
+    let(:git_checker) do
+      instance_double(Dependabot::GitCommitChecker, git_dependency?: true, pinned?: false)
+    end
+
+    before do
+      allow(checker).to receive(:latest_version).and_return(current_version)
+      allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new).and_return(resolver)
+    end
+
+    it "returns the SHA from the cached record" do
+      2.times { expect(checker.latest_resolvable_version_with_no_unlock).to eq(commit_sha) }
+
+      expect(resolver).to have_received(:latest_resolvable_version_details).once
+    end
+
+    context "without a SHA" do
+      let(:commit_sha) { nil }
+
+      it "returns nil while retaining the successful details" do
+        2.times { expect(checker.latest_resolvable_version_with_no_unlock).to be_nil }
+
+        expect(resolver).to have_received(:latest_resolvable_version_details).once
+      end
+    end
+
+    context "without a result" do
+      let(:resolution_result) { nil }
+
+      it "does not negatively cache nil results" do
+        2.times { expect(checker.latest_resolvable_version_with_no_unlock).to be_nil }
+
+        expect(resolver).to have_received(:latest_resolvable_version_details).twice
+      end
+    end
+
+    context "when the helper response is malformed" do
+      before do
+        allow(resolver).to receive(:latest_resolvable_version_details)
+          .and_raise(described_class::VersionDetails::InvalidResult.new(
+                       message: "resolve_version result.version must be a string",
+                       error_class: "TypeError",
+                       error_context: { function: "resolve_version" }
+                     ))
+      end
+
+      it "propagates the failure without caching it" do
+        2.times do
+          expect { checker.latest_resolvable_version_with_no_unlock }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+        expect(resolver).to have_received(:latest_resolvable_version_details).twice
+      end
+    end
+  end
+
+  describe "typed resolution caches" do
+    let(:unlocked_version) { Dependabot::Bundler::Version.new("1.6.0") }
+    let(:locked_version) { Dependabot::Bundler::Version.new("1.5.0") }
+    let(:unlocked_resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: described_class::VersionDetails.new(version: unlocked_version)
+      )
+    end
+    let(:locked_resolver) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::VersionResolver,
+        latest_resolvable_version_details: described_class::VersionDetails.new(version: locked_version)
+      )
+    end
+
+    before do
+      allow(checker).to receive(:latest_version).and_return(unlocked_version)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new)
+        .with(hash_including(unlock_requirement: true)).and_return(unlocked_resolver)
+      allow(Dependabot::Bundler::UpdateChecker::VersionResolver).to receive(:new)
+        .with(hash_including(unlock_requirement: false)).and_return(locked_resolver)
+    end
+
+    it "keeps locked and unlocked resolver results separate" do
+      2.times do
+        expect(checker.latest_resolvable_version).to eq(unlocked_version)
+        expect(checker.latest_resolvable_version_with_no_unlock).to eq(locked_version)
+      end
+
+      expect(unlocked_resolver).to have_received(:latest_resolvable_version_details).once
+      expect(locked_resolver).to have_received(:latest_resolvable_version_details).once
+      expect(Dependabot::Bundler::UpdateChecker::VersionResolver).to have_received(:new).twice
+    end
+  end
+
+  describe "#updated_requirements without a security fix" do
+    let(:latest_finder) do
+      instance_double(
+        Dependabot::Bundler::UpdateChecker::LatestVersionFinder,
+        latest_version_details: described_class::VersionDetails.new(
+          version: Dependabot::Bundler::Version.new("1.5.0")
+        ),
+        lowest_security_fix_version: nil
+      )
+    end
+    let(:requirements_updater) do
+      instance_double(Dependabot::Bundler::UpdateChecker::RequirementsUpdater, updated_requirements: [])
+    end
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["<= 1.4.0"]
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to receive(:new).and_return(latest_finder)
+      allow(Dependabot::Bundler::UpdateChecker::RequirementsUpdater).to receive(:new).and_return(requirements_updater)
+    end
+
+    it "passes a nil resolvable version to the requirements updater" do
+      expect(checker.updated_requirements).to eq([])
+      expect(Dependabot::Bundler::UpdateChecker::RequirementsUpdater).to have_received(:new)
+        .with(hash_including(latest_version: "1.5.0", latest_resolvable_version: nil))
     end
   end
 
@@ -1415,7 +1714,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow(checker)
               .to receive(:latest_resolvable_version_details)
               .with(remove_git_source: true)
-              .and_return(version: Dependabot::Bundler::Version.new("2.0.0"))
+              .and_return(described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("2.0.0")))
           end
 
           it "raises a helpful error" do
@@ -1465,7 +1764,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow(checker)
               .to receive(:latest_resolvable_version_details)
               .with(remove_git_source: true)
-              .and_return(version: Dependabot::Bundler::Version.new("2.0.0"))
+              .and_return(described_class::VersionDetails.new(version: Dependabot::Bundler::Version.new("2.0.0")))
           end
 
           it { is_expected.to be_nil }
@@ -1635,7 +1934,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           .and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_version_details)
-          .and_return(version: dummy_version)
+          .and_return(described_class::VersionDetails.new(version: dummy_version))
         expect(checker.latest_resolvable_version).to eq(dummy_version)
       end
     end

@@ -11,16 +11,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
     described_class.new(gemfile: gemfile)
   end
 
-  let(:dependency) do
-    dep = ::Bundler::Dependency.new(
-      dependency_name,
-      dependency_requirement_sting
-    )
-    {
-      "name" => dep.name,
-      "requirement" => dep.requirement.to_s
-    }
-  end
+  let(:fallback_requirement) { Gem::Requirement.new(dependency_requirement_sting).to_s }
   let(:dependency_name) { "business" }
   let(:dependency_requirement_sting) { "~> 1" }
 
@@ -28,7 +19,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
 
   describe "#gemfile_includes_dependency?" do
     subject(:gemfile_includes_dependency) do
-      checker.gemfile_includes_dependency?(dependency)
+      checker.gemfile_includes_dependency?(dependency_name)
     end
 
     context "when the file does not include the dependency" do
@@ -67,7 +58,13 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
   end
 
   describe "#enhanced_req_string" do
-    subject(:enhanced_req_string) { checker.enhanced_req_string(dependency) }
+    subject(:enhanced_req_string) { checker.enhanced_req_string(dependency_name, fallback_requirement) }
+
+    it "does not cache the fallback requirement by name" do
+      expect(checker.enhanced_req_string(dependency_name, "~> 1.4.0")).to eq("~> 1.4.0")
+      expect(checker.enhanced_req_string(dependency_name, "~> 2.0")).to eq("~> 2.0")
+      expect(checker.enhanced_req_string(dependency_name, "~> 1.4.0")).to eq("~> 1.4.0")
+    end
 
     context "when the file does not include the dependency" do
       let(:dependency_name) { "dependabot-core" }

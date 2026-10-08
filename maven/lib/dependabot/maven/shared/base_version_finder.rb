@@ -80,15 +80,19 @@ module Dependabot
           return possible_releases_reverse.find { |r| released?(r.version) } unless cooldown_options
 
           cooldown_filtered_releases = 0
-          latest_release = possible_releases_reverse.find do |release|
-            if in_cooldown_period?(release)
-              Dependabot.logger.info("Filtered out (cooldown) : #{release}")
-              cooldown_filtered_releases += 1
-              next false
-            end
+          latest_releases = cooldown_tracker.filter_prefiltered do
+            latest_release = possible_releases_reverse.find do |release|
+              if in_cooldown_period?(release)
+                Dependabot.logger.info("Filtered out (cooldown) : #{release}")
+                cooldown_filtered_releases += 1
+                next false
+              end
 
-            released?(release.version)
+              released?(release.version)
+            end
+            latest_release ? [latest_release] : []
           end
+          latest_release = latest_releases.first
 
           if cooldown_filtered_releases.positive?
             Dependabot.logger.info(

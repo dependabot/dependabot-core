@@ -189,6 +189,38 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         perform
       end
     end
+
+    context "when a `directories`-only refresh job also declares dependency groups" do
+      # DependencySnapshot only backfills job.source.directory for a security job
+      # when the config declares no dependency groups, so a grouped config leaves
+      # this individual refresh with a nil directory.
+      let(:job_definition) do
+        definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
+        definition["job"]["dependencies"] = ["dummy-pkg-a"]
+        definition["job"]["security-updates-only"] = true
+        definition["job"]["updating-a-pull-request"] = true
+        definition["job"]["dependency-groups"] = [
+          {
+            "name" => "all-security-updates",
+            "applies-to" => "security-updates",
+            "rules" => { "patterns" => ["*"] }
+          }
+        ]
+        definition["job"]["source"].delete("directory")
+        definition["job"]["source"]["directories"] = ["/."]
+        definition
+      end
+
+      before do
+        allow(refresh_security_update_pull_request).to receive(:check_and_update_pull_request)
+      end
+
+      it "normalizes the lone directory onto the job source" do
+        perform
+
+        expect(job.source.directory).to eq("/")
+      end
+    end
   end
 
   describe "#check_and_update_pull_request" do
@@ -255,6 +287,33 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       it "does not create a pull request" do
         expect(refresh_security_update_pull_request).not_to receive(:create_pull_request)
         refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+      end
+    end
+
+    context "when all versions are ignored only on updated_dependencies" do
+      # Regression: even after `can_update?` succeeds, `updated_dependencies` can still
+      # raise AllVersionsIgnored. A security refresh must surface it to halt the run
+      # rather than silently closing the pull request.
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          latest_version: Dependabot::Version.new("4.0.1"),
+          requirements_unlocked_or_can_be?: true
+        )
+        allow(stub_update_checker).to receive(:updated_dependencies).and_raise(Dependabot::AllVersionsIgnored)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+      end
+
+      it "surfaces AllVersionsIgnored to halt the run" do
+        expect do
+          refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+        end.to raise_error(Dependabot::AllVersionsIgnored)
       end
     end
 

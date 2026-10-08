@@ -195,5 +195,174 @@ RSpec.describe Dependabot::Uv::FileUpdater::VersionConfigParser do
         expect(config.write_paths).to contain_exactly("src/new/_version.py", "src/old/_version.py")
       end
     end
+
+    context "with both fallback version sources" do
+      let(:fallback_version) { "1.2.3" }
+      let(:pyproject_content) do
+        <<~TOML
+          [tool.setuptools_scm]
+          fallback_version = #{fallback_version.to_json}
+
+          [tool.hatch.version.raw-options]
+          fallback_version = "9.0.0"
+        TOML
+      end
+
+      it "prefers the setuptools-scm fallback" do
+        expect(config.fallback_version).to eq("1.2.3")
+      end
+
+      context "when the setuptools-scm fallback is empty" do
+        let(:fallback_version) { "" }
+
+        it "keeps the empty fallback" do
+          expect(config.fallback_version).to eq("")
+        end
+      end
+
+      context "when the setuptools-scm fallback is not a string" do
+        let(:fallback_version) { 123 }
+
+        it "uses the Hatch fallback" do
+          expect(config.fallback_version).to eq("9.0.0")
+        end
+      end
+    end
+
+    context "with non-string optional values" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = 123
+
+          [tool.setuptools_scm]
+          version_file = 123
+          write_to = false
+          fallback_version = ["1.0.0"]
+
+          [tool.hatch.build.hooks.vcs]
+          version-file = ["_version.py"]
+
+          [tool.hatch.version]
+          path = 123
+
+          [tool.hatch.version.raw-options]
+          fallback_version = 456
+        TOML
+      end
+
+      it "ignores the invalid optional values" do
+        expect(config).to have_attributes(
+          write_paths: [],
+          source_paths: [],
+          fallback_version: nil,
+          package_name: nil
+        )
+      end
+    end
+
+    context "with a non-table setuptools-scm configuration" do
+      let(:pyproject_content) do
+        <<~TOML
+          [tool]
+          setuptools_scm = false
+
+          [tool.hatch.version.raw-options]
+          fallback_version = "9.0.0"
+        TOML
+      end
+
+      it "ignores that section without dropping other configuration" do
+        expect(config.write_paths).to be_empty
+        expect(config.fallback_version).to eq("9.0.0")
+      end
+    end
+
+    context "with duplicate paths across build backends" do
+      let(:pyproject_content) do
+        <<~TOML
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+          write_to = "src/_version.py"
+
+          [tool.hatch.build.hooks.vcs]
+          version-file = "src/hatch_version.py"
+
+          [tool.hatch.version]
+          path = ".release-manifest.json"
+        TOML
+      end
+
+      it "keeps the first occurrence of each output path in order" do
+        expect(config.write_paths).to eq(["src/_version.py", "src/hatch_version.py"])
+        expect(config.source_paths).to eq([".release-manifest.json"])
+      end
+    end
+
+    context "with an empty document" do
+      let(:pyproject_content) { "" }
+
+      it "returns an empty configuration" do
+        expect(config).to have_attributes(
+          write_paths: [],
+          source_paths: [],
+          fallback_version: nil,
+          package_name: nil
+        )
+      end
+    end
+
+    context "with unrelated configuration" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "example"
+
+          [tool.unrelated]
+          options = [1, false, { key = "value" }]
+        TOML
+      end
+
+      it "ignores unknown sections" do
+        expect(config.package_name).to eq("example")
+        expect(config).not_to be_dynamic_version
+      end
+
+      it "parses the TOML only once" do
+        allow(TomlRB).to receive(:parse).and_call_original
+
+        parser.parse
+        parser.parse
+
+        expect(TomlRB).to have_received(:parse).with(pyproject_content).once
+      end
+    end
+
+    context "with duplicate TOML keys" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "one"
+          name = "two"
+        TOML
+      end
+
+      it "returns an empty configuration" do
+        expect(config).to have_attributes(
+          write_paths: [],
+          source_paths: [],
+          fallback_version: nil,
+          package_name: nil
+        )
+      end
+    end
+
+    context "with a non-table intermediate section" do
+      let(:pyproject_content) { 'tool = "invalid"' }
+
+      it "raises instead of treating the document as empty" do
+        expect { config }.to raise_error(TypeError)
+      end
+    end
   end
 end

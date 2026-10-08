@@ -4,6 +4,7 @@
 require "aws-sdk-codecommit"
 require "octokit"
 require "fileutils"
+require "open3"
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/source"
@@ -68,6 +69,69 @@ RSpec.describe Dependabot::FileFetchers::Base do
     allow_any_instance_of(
       Dependabot::Clients::CodeCommit
     ).to receive(:cc_client).and_return(stubbed_cc_client)
+  end
+
+  def create_git_repository(path, files)
+    FileUtils.mkdir_p(path)
+    run_git("init", "--initial-branch=main", ".", chdir: path)
+    commit_git_files(path, files, message: "Initial commit")
+  end
+
+  def commit_git_files(path, files, message:)
+    files.each do |name, contents|
+      file_path = File.join(path, name)
+      FileUtils.mkdir_p(File.dirname(file_path))
+      File.write(file_path, contents)
+    end
+
+    run_git("add", "--all", chdir: path)
+    run_git("commit", "--message", message, chdir: path)
+    run_git("rev-parse", "HEAD", chdir: path)
+  end
+
+  def run_git(*arguments, chdir:)
+    git_environment = {
+      "GIT_AUTHOR_EMAIL" => "dependabot@example.com",
+      "GIT_AUTHOR_NAME" => "Dependabot",
+      "GIT_COMMITTER_EMAIL" => "dependabot@example.com",
+      "GIT_COMMITTER_NAME" => "Dependabot"
+    }
+    stdout, stderr, status = Open3.capture3(git_environment, "git", *arguments, chdir: chdir)
+    raise stderr unless status.success?
+
+    stdout.strip
+  end
+
+  def with_file_git_protocol
+    previous_value = ENV.fetch("GIT_ALLOW_PROTOCOL", nil)
+    ENV["GIT_ALLOW_PROTOCOL"] = "file"
+    yield
+  ensure
+    ENV["GIT_ALLOW_PROTOCOL"] = previous_value
+  end
+
+  def create_repositories_with_submodule(source_path:, submodule_path:)
+    submodule_commit = create_git_repository(
+      submodule_path,
+      "go.mod" => "module example.com/examplelib\n\ngo 1.21\n"
+    )
+    run_git("switch", "--create", "latest", chdir: submodule_path)
+    latest_submodule_commit = commit_git_files(
+      submodule_path,
+      { "version.txt" => "latest\n" },
+      message: "Update submodule"
+    )
+    run_git("switch", "main", chdir: submodule_path)
+
+    create_git_repository(source_path, "README" => "Local submodule fixture\n")
+    run_git("submodule", "add", "../examplelib", "examplelib", chdir: source_path)
+    source_commit = commit_git_files(source_path, {}, message: "Add submodule")
+    checked_out_submodule_path = File.join(source_path, "examplelib")
+    run_git("fetch", "origin", "latest", chdir: checked_out_submodule_path)
+    run_git("checkout", latest_submodule_commit, chdir: checked_out_submodule_path)
+    commit_git_files(source_path, {}, message: "Update submodule reference")
+
+    { source: source_commit, submodule: submodule_commit }
   end
 
   describe "#commit" do
@@ -1728,30 +1792,50 @@ RSpec.describe Dependabot::FileFetchers::Base do
         file_fetcher_instance.clone_repo_contents
       end
 
-      let(:repo) do
-        "dependabot-fixtures/go-modules-app"
+      let(:repo) { "local/repository" }
+      let(:local_repositories_path) { Dir.mktmpdir("base-spec-git-repositories") }
+      let(:source_repository_path) { File.join(local_repositories_path, "source") }
+      let(:source_url) { "file://#{source_repository_path}" }
+      let(:shell_metacharacter_branch) { "\"$(time)\"" }
+
+      around do |example|
+        repositories_path = local_repositories_path
+        example.run
+      ensure
+        FileUtils.rm_rf(repositories_path)
       end
 
-      it "clones the repo" do
+      before do
+        create_git_repository(source_repository_path, "README" => "Local clone fixture\n")
+        run_git("switch", "--create", shell_metacharacter_branch, chdir: source_repository_path)
+        commit_git_files(
+          source_repository_path,
+          { "time.md" => "Shell metacharacters are treated literally.\n" },
+          message: "Add shell metacharacter branch"
+        )
+        run_git("switch", "main", chdir: source_repository_path)
+        allow(source).to receive(:url).and_return(source_url)
+      end
+
+      it "shallow clones the repo" do
         clone_repo_contents
-        expect(`ls #{repo_contents_path}`).to include("README")
+
+        expect(Dir.children(repo_contents_path)).to include("README")
+        expect(run_git("rev-parse", "--is-shallow-repository", chdir: repo_contents_path)).to eq("true")
       end
 
       context "with a branch name including bash command" do
-        let(:branch) do
-          "\"$(time)\""
-        end
+        let(:branch) { shell_metacharacter_branch }
 
         it "clones the repo with branch checked out" do
           clone_repo_contents
-          expect(`ls #{repo_contents_path}`).to include("time.md")
+
+          expect(Dir.children(repo_contents_path)).to include("time.md")
         end
       end
 
       context "when the repo can't be found" do
-        let(:repo) do
-          "dependabot-fixtures/not-found"
-        end
+        let(:source_url) { "file://#{File.join(local_repositories_path, 'not-found')}" }
 
         it "raises a not found error" do
           expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
@@ -1769,16 +1853,33 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "when the submodule can't be reached" do
-        let(:repo) do
-          "dependabot-fixtures/go-modules-app-with-inaccessible-submodules"
+        let(:branch) { "with-git-urls" }
+        let(:inaccessible_submodule_path) do
+          File.join(local_repositories_path, "inaccessible-submodule")
         end
-        let(:branch) do
-          "with-git-urls"
+
+        around do |example|
+          with_file_git_protocol { example.run }
+        end
+
+        before do
+          create_git_repository(inaccessible_submodule_path, "go.mod" => "module example.com/inaccessible\n")
+          run_git("switch", "--create", branch, chdir: source_repository_path)
+          run_git(
+            "submodule",
+            "add",
+            "../inaccessible-submodule",
+            "inaccessible-submodule",
+            chdir: source_repository_path
+          )
+          commit_git_files(source_repository_path, {}, message: "Add inaccessible submodule")
+          FileUtils.rm_rf(inaccessible_submodule_path)
         end
 
         it "does not raise an error" do
           clone_repo_contents
-          expect(`ls #{repo_contents_path}`).to include("README")
+
+          expect(Dir.children(repo_contents_path)).to include("README")
         end
       end
 
@@ -1863,26 +1964,55 @@ RSpec.describe Dependabot::FileFetchers::Base do
   end
 
   context "with submodules" do
-    let(:repo) { "dependabot-fixtures/go-modules-app-with-git-submodules" }
+    let(:repo) { "local/repository-with-submodule" }
     let(:repo_contents_path) { Dir.mktmpdir }
     let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
+    let(:local_repositories_path) { Dir.mktmpdir("base-spec-submodule-repositories") }
+    let(:source_repository_path) { File.join(local_repositories_path, "source") }
+    let(:submodule_repository_path) { File.join(local_repositories_path, "examplelib") }
+    let(:source_url) { "file://#{source_repository_path}" }
+    let(:historical_commits) do
+      create_repositories_with_submodule(
+        source_path: source_repository_path,
+        submodule_path: submodule_repository_path
+      )
+    end
+    let(:historical_source_commit) { historical_commits.fetch(:source) }
+    let(:historical_submodule_commit) { historical_commits.fetch(:submodule) }
 
     after { FileUtils.rm_rf(repo_contents_path) }
+
+    around do |example|
+      previous_value = ENV.fetch("GIT_ALLOW_PROTOCOL", nil)
+      repositories_path = local_repositories_path
+      ENV["GIT_ALLOW_PROTOCOL"] = "file"
+      example.run
+    ensure
+      ENV["GIT_ALLOW_PROTOCOL"] = previous_value
+      FileUtils.rm_rf(repositories_path)
+    end
+
+    before do
+      historical_commits
+      allow(source).to receive(:url).and_return(source_url)
+    end
 
     describe "#clone_repo_contents" do
       it "clones submodules by default" do
         file_fetcher_instance.clone_repo_contents
 
-        expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+        expect(Dir.children(submodule_contents_path)).to include("go.mod")
       end
 
       context "with a source commit" do
-        let(:source_commit) { "5c7e92a4860382fd31336872f0fe79a848669c4d" }
+        let(:source_commit) { historical_source_commit }
 
         it "fetches/reset submodules by default" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+          expect(Dir.children(submodule_contents_path)).to include("go.mod")
+          expect(run_git("rev-parse", "HEAD", chdir: repo_contents_path)).to eq(source_commit)
+          expect(run_git("rev-parse", "HEAD", chdir: submodule_contents_path)).to eq(historical_submodule_commit)
         end
       end
 
@@ -1908,16 +2038,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "clones submodules" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+          expect(Dir.children(submodule_contents_path)).to include("go.mod")
         end
 
         context "with a source commit" do
-          let(:source_commit) { "5c7e92a4860382fd31336872f0fe79a848669c4d" }
+          let(:source_commit) { historical_source_commit }
 
           it "fetches/resets submodules if necessary" do
             file_fetcher_instance.clone_repo_contents
 
-            expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+            expect(Dir.children(submodule_contents_path)).to include("go.mod")
+            expect(run_git("rev-parse", "HEAD", chdir: repo_contents_path)).to eq(source_commit)
+            expect(run_git("rev-parse", "HEAD", chdir: submodule_contents_path)).to eq(historical_submodule_commit)
           end
         end
       end

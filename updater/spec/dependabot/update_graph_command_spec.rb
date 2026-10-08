@@ -210,6 +210,34 @@ RSpec.describe Dependabot::UpdateGraphCommand do
         perform_job
         Dependabot::Experiments.reset!
       end
+
+      context "with an EOF socket error" do
+        let(:error) do
+          Excon::Error::Socket.new(EOFError.new).tap do |socket_error|
+            socket_error.set_backtrace(
+              [
+                "/home/dependabot/common/lib/dependabot/registry_client.rb:32:in 'get'",
+                "/home/dependabot/bundler/lib/dependabot/bundler/file_parser.rb:100:in 'parse'"
+              ]
+            )
+          end
+        end
+
+        it "records the call-site fingerprint with the duplicate unknown error" do
+          expect(service).to receive(:record_update_job_unknown_error).with(
+            error_type: "unknown_update_graph_error",
+            error_details: hash_including(
+              Dependabot::ErrorAttributes::FINGERPRINT => [
+                "excon-eof",
+                "bundler",
+                "bundler/lib/dependabot/bundler/file_parser.rb:parse"
+              ]
+            )
+          )
+
+          perform_job
+        end
+      end
     end
 
     context "with an update graph error (ghes)" do

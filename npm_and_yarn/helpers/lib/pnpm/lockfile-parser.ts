@@ -9,6 +9,7 @@
 
 import {
   readWantedLockfile,
+  type CatalogSnapshots,
   type PackageSnapshot,
   type ProjectSnapshot,
 } from "@pnpm/lockfile-file";
@@ -45,7 +46,8 @@ export async function parse(directory: string): Promise<PnpmDependency[]> {
       nameVerDevFromPkgSnapshot(
         depPath,
         pkgSnapshot,
-        Object.values(lockfile.importers)
+        Object.values(lockfile.importers),
+        lockfile.catalogs
       )
     );
 }
@@ -111,7 +113,8 @@ function extractMainDocument(content: string): string | null {
 function nameVerDevFromPkgSnapshot(
   depPath: string,
   pkgSnapshot: PackageSnapshot,
-  projectSnapshots: ProjectSnapshot[]
+  projectSnapshots: ProjectSnapshot[],
+  catalogs: CatalogSnapshots | undefined
 ): PnpmDependency {
   let name: string;
   let version: string;
@@ -163,6 +166,22 @@ function nameVerDevFromPkgSnapshot(
 
     return true;
   });
+
+  // An importer that takes a dependency from a catalog records its specifier as
+  // the literal "catalog:" (or "catalog:<name>"), never the version range the
+  // catalog resolves to. That range lives in the lockfile's own `catalogs` block,
+  // and it is also the form a pnpm-workspace.yaml catalog entry is read as, so
+  // collect it here too. Without it a catalogued package is only ever matched by
+  // a caller that already knows to ask for "catalog:".
+  if (!aliased) {
+    for (const catalog of Object.values(catalogs ?? {})) {
+      const entry = catalog[name];
+
+      if (entry?.version === version && !specifiers.includes(entry.specifier)) {
+        specifiers.push(entry.specifier);
+      }
+    }
+  }
 
   return {
     name: name,

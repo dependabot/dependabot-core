@@ -33,30 +33,46 @@ module Dependabot
       sig { params(temp_dir: T.any(Pathname, String)).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files_using_julia_helper(temp_dir)
         workspace_info = registry_client.find_workspace_project_files(temp_dir.to_s)
-        validate_workspace_info!(workspace_info)
+        if workspace_info.is_a?(Dependabot::Julia::RegistryClient::Result::Failure)
+          raise_workspace_failure(workspace_info, temp_dir.to_s)
+        end
 
-        project_files = T.cast(workspace_info["project_files"], T::Array[String])
-        manifest_path = T.cast(workspace_info["manifest_file"], String)
+        project_files = workspace_info.project_files
+        manifest_paths = workspace_info.manifest_files
+        manifest_paths = [workspace_info.manifest_file] if manifest_paths.empty?
 
         fetched_files = fetch_all_project_files(project_files, temp_dir.to_s)
         raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found." if fetched_files.empty?
 
-        fetch_manifest_file(fetched_files, manifest_path, project_files, temp_dir.to_s)
+        manifest_paths.each do |manifest_path|
+          fetch_manifest_file(fetched_files, manifest_path, project_files, temp_dir.to_s)
+        end
         fetched_files
       end
 
-      sig { params(workspace_info: T::Hash[String, Object]).void }
-      def validate_workspace_info!(workspace_info)
-        # Only domain errors ("no project file found") reach here; helper
-        # crashes raise from RegistryClient rather than being misreported as
-        # a missing Project.toml.
-        error_value = T.cast(workspace_info["error"], T.nilable(String))
-        has_error = !error_value.nil?
-        project_files = T.cast(workspace_info["project_files"], T.nilable(T::Array[String]))
-        no_projects = project_files.nil? || project_files.empty?
-        return unless has_error || no_projects
+      # Pkg refuses a project it cannot read (a [compat] entry for a package
+      # in no dependency section, say), so report its reason against the
+      # project file rather than claiming there is none
+      sig do
+        params(failure: Dependabot::Julia::RegistryClient::Result::Failure, temp_dir: String).returns(T.noreturn)
+      end
+      def raise_workspace_failure(failure, temp_dir)
+        project_name = %w(JuliaProject.toml Project.toml).find { |name| File.exist?(File.join(temp_dir, name)) }
+        raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found." unless project_name
 
-        raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."
+        raise Dependabot::DependencyFileNotParseable.new(
+          File.join(directory, project_name),
+          relative_to(failure.message, temp_dir)
+        )
+      end
+
+      # Pkg may report the temporary directory by its realpath
+      # ("/private/tmp/..." on macOS); strip that first so the shorter form
+      # cannot match inside it
+      sig { params(message: String, dir: String).returns(String) }
+      def relative_to(message, dir)
+        prefixes = [File.exist?(dir) ? File.realpath(dir) : dir, dir].uniq.map { |prefix| File.join(prefix, "") }
+        prefixes.reduce(message) { |text, prefix| text.gsub(prefix, "") }
       end
 
       sig { params(project_files: T::Array[String], base_dir: String).returns(T::Array[Dependabot::DependencyFile]) }

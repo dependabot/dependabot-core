@@ -14,7 +14,7 @@ module Dependabot
 
       # Section : Update instructions
       # With every major release update
-      # - Add new PNPM_Vx , i.e. PNPM_V11 = "11"
+      # - Add new PNPM_Vx , i.e. PNPM_V13 = "13"
       # - Add to SUPPORTED_VERSIONS
 
       PNPM_V7 = "7"
@@ -22,6 +22,7 @@ module Dependabot
       PNPM_V9 = "9"
       PNPM_V10 = "10"
       PNPM_V11 = "11"
+      PNPM_V12 = "12"
 
       SUPPORTED_VERSIONS = T.let(
         [
@@ -29,7 +30,8 @@ module Dependabot
           Version.new(PNPM_V8),
           Version.new(PNPM_V9),
           Version.new(PNPM_V10),
-          Version.new(PNPM_V11)
+          Version.new(PNPM_V11),
+          Version.new(PNPM_V12)
         ].freeze,
         T::Array[Dependabot::Version]
       )

@@ -368,6 +368,32 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with a pnpm two-document lockfile (env document before the project document)" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_multi_document") }
+
+      it "reads the project graph from the last document" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+      end
+
+      it "does not report pnpm's own binaries from the env document" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).not_to include(
+          "pkg:npm/pnpm@12.0.0",
+          "pkg:npm/%40pnpm/exe@12.0.0"
+        )
+      end
+    end
+
     context "with multiple versions of the same transitive dependency" do
       let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_subdeps") }
 
@@ -850,6 +876,65 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
           grapher.resolved_dependencies
           expect(grapher.relevant_dependency_file.name).to eq("package.json")
         end
+      end
+    end
+
+    context "with engines.npm constraints across multiple directories" do
+      def grapher_for(directory, npm_engine_constraint)
+        package_json = Dependabot::DependencyFile.new(
+          name: "package.json",
+          directory: directory,
+          content: {
+            "name" => "pkg", "version" => "1.0.0",
+            "dependencies" => { "lodash" => "^4.17.21" },
+            "engines" => { "npm" => npm_engine_constraint }
+          }.to_json
+        )
+        directory_source = Dependabot::Source.new(
+          provider: "github", repo: "test/npm-project", directory: directory, branch: "main"
+        )
+        directory_parser = Dependabot::FileParsers.for_package_manager("npm_and_yarn").new(
+          dependency_files: [package_json],
+          repo_contents_path: nil,
+          source: directory_source,
+          credentials: credentials
+        )
+        Dependabot::DependencyGraphers.for_package_manager("npm_and_yarn").new(file_parser: directory_parser)
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          node_version: "20.0.0",
+          package_manager_version: "11.17.0"
+        )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:register_npm_version_selector).and_call_original
+
+        # Simulate a selector left behind by some unrelated, previously processed
+        # directory to prove it doesn't leak into either directory below.
+        Dependabot::NpmAndYarn::Helpers.npm_version_selector = "99"
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "activates each directory's own npm engine selector before generating its ephemeral lockfile" do
+        selectors_seen = []
+        allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator).to receive(:new) do |**kwargs|
+          selectors_seen << Dependabot::NpmAndYarn::Helpers.npm_version_selector
+          instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
+            generate: Dependabot::DependencyFile.new(
+              name: "package-lock.json",
+              directory: kwargs[:dependency_files].first.directory,
+              content: { "lockfileVersion" => 3, "packages" => {} }.to_json
+            )
+          )
+        end
+
+        grapher_for("/a", "^10").resolved_dependencies
+        grapher_for("/b", "^11").resolved_dependencies
+
+        expect(selectors_seen).to eq(%w(10 11))
       end
     end
   end

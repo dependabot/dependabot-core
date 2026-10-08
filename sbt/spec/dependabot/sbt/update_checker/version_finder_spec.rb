@@ -196,6 +196,36 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("33.2.0-jre")) }
     end
 
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: version_class.new("33.4.0-jre"),
+          released_at: nil
+        )
+      end
+      let(:package_details) do
+        Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Sbt::Package::PackageDetailsFetcher,
+          fetch: package_details,
+          released?: true
+        )
+      end
+
+      before do
+        allow(Dependabot::Sbt::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version_details[:version]).to eq(version_class.new("33.4.0-jre"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "with custom repositories" do
       let(:build_sbt) do
         Dependabot::DependencyFile.new(

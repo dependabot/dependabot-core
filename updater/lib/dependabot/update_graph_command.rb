@@ -83,6 +83,11 @@ module Dependabot
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
             ErrorAttributes::FINGERPRINT => (if error.respond_to?(:sentry_context)
                                                T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint]
+                                             else
+                                               Dependabot::Sentry::ErrorFingerprint.for(
+                                                 error: error,
+                                                 package_manager: job.package_manager
+                                               )
                                              end),
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,

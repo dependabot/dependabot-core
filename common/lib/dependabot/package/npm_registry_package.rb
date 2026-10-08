@@ -83,6 +83,17 @@ module Dependabot
       end
 
       sig do
+        params(details: T::Hash[String, T.anything], package_name: String, version: String)
+          .returns(T::Hash[String, String])
+      end
+      def self.peer_dependencies(details:, package_name:, version:)
+        value = T.cast(details["peerDependencies"], Object)
+        return {} if value.nil? || value == false
+
+        string_map(value, "#{package_name} version #{version} peerDependencies")
+      end
+
+      sig do
         params(
           version: String,
           details: Object,
@@ -132,8 +143,17 @@ module Dependabot
             type: type,
             git: type == "git"
           )
+        when Array
+          repositories = T.let([], T::Array[Repository])
+          value.each do |raw_repository|
+            repository_value = T.cast(raw_repository, Object)
+            parsed_repository = parse_repository(repository_value, version)
+            repositories << parsed_repository if parsed_repository
+          end
+
+          repositories.find(&:git?) || repositories.first
         else
-          raise TypeError, "version #{version} repository must be a string or object"
+          raise TypeError, "version #{version} repository must be a string, object, or array"
         end
       end
       private_class_method :parse_repository

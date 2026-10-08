@@ -53,7 +53,13 @@ module Dependabot
 
           @update_possible ||= T.let(
             dependencies_using_property.all? do |dep|
+              # Skip the property update when a dependency sharing the property has no
+              # locatable inline version to rewrite (e.g. a version managed by an
+              # imported BOM), since the update cannot be applied to it.
+              next false if version_string(dep).nil?
+
               next false if includes_property_reference?(updated_version(dep))
+              next false unless writable_requirements?(dep)
 
               releases = VersionFinder.new(
                 dependency: dep,
@@ -119,13 +125,10 @@ module Dependabot
           @dependencies_using_property ||= T.let(
             Maven::FileParser.new(
               dependency_files: dependency_files,
-              source: nil
+              source: nil,
+              options: { skip_dependency_tree: true }
             ).parse.select do |dep|
-              dep.requirements.any? do |r|
-                next unless r.metadata_string("property_name") == property_name
-
-                r.metadata_string("property_source") == property_source
-              end
+              dep.requirements.any? { |requirement| uses_property?(requirement) }
             end,
             T.nilable(T::Array[Dependabot::Dependency])
           )
@@ -134,9 +137,7 @@ module Dependabot
         sig { returns(String) }
         def property_name
           @property_name ||= T.let(
-            dependency.requirements
-                      .find { |r| r.metadata_string("property_name") }
-                      &.metadata_string("property_name"),
+            property_requirement.metadata_string("property_name"),
             T.nilable(String)
           )
 
@@ -148,11 +149,31 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def property_source
           @property_source ||= T.let(
-            dependency.requirements
-                      .find { |r| r.metadata_string("property_name") == property_name }
-                      &.metadata_string("property_source"),
+            property_requirement.metadata_string("property_source"),
             T.nilable(String)
           )
+        end
+
+        sig { returns(Dependabot::DependencyRequirement) }
+        def property_requirement
+          property_requirements = dependency.requirements.select { |r| r.metadata_string("property_name") }
+          matching_requirement = property_requirements.find do |requirement|
+            normalized_requirement_version(requirement) == dependency.version
+          end
+          requirement = matching_requirement || property_requirements.first
+
+          raise "No requirement with a property name!" unless requirement
+
+          requirement
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def normalized_requirement_version(requirement)
+          requirement_string = requirement.requirement_string
+          return unless requirement_string
+          return if requirement_string.include?(",")
+
+          requirement_string.gsub(/[\(\)\[\]]/, "").strip
         end
 
         sig { params(string: String).returns(T::Boolean) }
@@ -210,17 +231,18 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(Dependabot::DependencyRequirement) }
         def declaring_property_requirement(dep)
-          declaring_requirement =
-            dep.requirements.find do |r|
-              next false unless r.metadata_string("property_name") == property_name
-
-              r.metadata_string("property_source") == property_source
-            end
+          declaring_requirement = dep.requirements.find { |requirement| uses_property?(requirement) }
 
           return declaring_requirement if declaring_requirement
 
           raise DependencyFileNotEvaluatable,
                 "Requirement not found for property #{property_name} from #{property_source || 'unknown source'}"
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def uses_property?(requirement)
+          requirement.metadata_string("property_name") == property_name &&
+            requirement.metadata_string("property_source") == property_source
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -232,7 +254,25 @@ module Dependabot
               latest_version: updated_version(dep),
               source_url: source_url,
               properties_to_update: [property_name]
-            ).updated_requirements
+            ).updated_requirements.map.with_index do |requirement, index|
+              next requirement unless requirement.metadata_string("property_name")
+
+              uses_property?(requirement) ? requirement : dep.requirements.fetch(index)
+            end
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+        def writable_requirements?(dep)
+          updated = updated_requirements(dep)
+          writable = dep.requirements.each_with_index.any? do |requirement, index|
+            uses_property?(requirement) && updated.fetch(index).requirement != requirement.requirement
+          end
+          return true if writable
+
+          Dependabot.logger.info(
+            "Cannot update shared property #{property_name}: no writable requirement changes for #{dep.name}"
+          )
+          false
         end
 
         sig { returns(Dependabot::Maven::FileParser::PropertyValueFinder) }
