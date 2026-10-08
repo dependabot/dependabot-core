@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -1025,6 +1025,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
         stub_request(:get, tags_url)
           .and_return(status: 200, body: registry_tags)
+
+        allow(Dependabot.logger).to receive(:warn)
       end
 
       it { is_expected.to eq("2.4.2") }
@@ -1094,11 +1096,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           expect(checker.latest_version).to eq("2.4.2")
           expect(WebMock).to have_requested(:get, tags_url + "?n=100")
           expect(WebMock).to have_requested(:get, next_page_url)
+          expect(Dependabot.logger).not_to have_received(:warn)
         end
       end
 
       context "when the tag list request keeps returning a 504" do
-        let(:tags_url) { "https://registry.hub.docker.com/v2/moj/ruby/tags/list" }
+        let(:dependency_name) { "hexpm/elixir" }
+        let(:version) { "1.18.2-erlang-27.2.4-alpine-3.21.3" }
+        let(:registry) { "registry.hub.docker.com" }
+        let(:source) { { tag: version, registry: registry } }
+        let(:tags_url) { "https://#{registry}/v2/#{dependency_name}/tags/list" }
 
         before do
           stub_request(:get, tags_url)
@@ -1111,7 +1118,30 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           expect { checker.latest_version }
             .to raise_error(Dependabot::RegistryError) do |error|
               expect(error.status).to eq(504)
+              expect(error.message).to eq("Registry request failed with status 504")
             end
+        end
+
+        it "warns that Docker Hub failed rather than dependency file parsing" do
+          expect { checker.latest_version }.to raise_error(Dependabot::RegistryError)
+
+          expect(Dependabot.logger).to have_received(:warn).with(
+            "Docker Hub timed out (HTTP 504) while listing tags for hexpm/elixir. " \
+            "Dependabot could not check this image for updates. This is a registry-side timeout, " \
+            "not a dependency file parsing error. Retry later; if it persists, contact Docker Hub support."
+          ).once
+        end
+
+        context "when using another registry" do
+          let(:registry) { "registry.example.com" }
+
+          it "preserves the error without blaming Docker Hub" do
+            expect { checker.latest_version }
+              .to raise_error(Dependabot::RegistryError) do |error|
+                expect(error.status).to eq(504)
+              end
+            expect(Dependabot.logger).not_to have_received(:warn)
+          end
         end
       end
 
@@ -1128,6 +1158,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             .to raise_error(Dependabot::RegistryError) do |error|
               expect(error.status).to eq(504)
             end
+          expect(Dependabot.logger).not_to have_received(:warn)
         end
       end
 
@@ -1147,6 +1178,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             .to raise_error(Dependabot::RegistryError) do |error|
               expect(error.status).to eq(503)
             end
+          expect(Dependabot.logger).not_to have_received(:warn)
         end
       end
 
