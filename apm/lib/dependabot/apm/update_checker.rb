@@ -8,7 +8,6 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/git_tag_details"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/update_checkers/version_filters"
 require "dependabot/apm/git_commit_checker"
 require "dependabot/apm/requirement"
 require "dependabot/apm/version"
@@ -40,32 +39,21 @@ module Dependabot
         dependency.version
       end
 
+      # APM packages have no GitHub Advisory Database coverage, so Dependabot
+      # never supplies security advisories for them and the security-update flow
+      # (gated on `vulnerable?`, which is false without advisories) never runs.
+      # We have no visibility into whether APM security updates will be offered
+      # in the future; if they are, this needs a real implementation. The base
+      # declares it abstract, so it is stubbed to nil to satisfy the contract
+      # rather than carrying unreachable resolution logic.
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
-        @lowest_security_fix_version ||= T.let(
-          fetch_lowest_security_fix_version,
-          T.nilable(Gem::Version)
-        )
+        nil
       end
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_resolvable_security_fix_version
-        # Resolvability isn't a concern for APM, so the lowest resolvable fix is
-        # simply the lowest fix.
         lowest_security_fix_version
-      end
-
-      # Base `vulnerable?` only inspects the merged dependency's single version,
-      # which DependencySet collapses to the LOWEST pinned ref. A merged APM
-      # dependency can pin several refs, and an advisory may affect only a higher
-      # one (e.g. declarations `v1.0.0` and `v2.0.0` with an advisory on
-      # `>= 2.0.0, < 2.1.0`): base would see `v1.0.0`, report not-vulnerable, and
-      # the security update would be skipped upstream, leaving the vulnerable
-      # `v2.0.0` declaration unfixed. So also treat the dependency as vulnerable
-      # when ANY requirement's own ref version is affected.
-      sig { returns(T::Boolean) }
-      def vulnerable?
-        super || pinned_versions(dependency.requirements).any? { |version| ref_vulnerable?(version) }
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -88,7 +76,7 @@ module Dependabot
           # requirement independently -- within its own family and above its own
           # pinned version -- so a declaration is only ever bumped within its own
           # family, and a higher declaration is never rewritten down to a lower
-          # family's tag or a lower requirement's security fix.
+          # family's tag.
           new_tag = resolved_tag_for_requirement(source, ref_version)&.tag
           next req unless new_tag
 
@@ -125,31 +113,12 @@ module Dependabot
       def updated_dependency_with_own_req_unlock
         new_requirements = updated_requirements
         new_version = pinned_versions(new_requirements).min
-        previous_version = dependency.version
-
-        # A merged dependency reports its LOWEST pin as both `version` and
-        # `previous_version`. When a security update only fixes a HIGHER
-        # declaration (e.g. pins `v1.0.0` and `v2.0.0` with an advisory on the
-        # latter), that lowest pin is the unaffected one, so Job#security_fix? ->
-        # SecurityAdvisory#fixed_by? -- which requires `previous_version` to be
-        # vulnerable and `version` safe -- would reject the rewrite as
-        # `security_update_not_possible` even though `updated_requirements` fixes
-        # the vulnerable pin. Represent a vulnerable pin and its fix so the
-        # security-update path recognises the merged update as a security fix.
-        if security_advisories.any?
-          affected = pinned_versions(dependency.requirements).select { |v| ref_vulnerable?(v) }.min
-          fix = lowest_security_fix_version
-          if affected && fix
-            previous_version = affected.to_s
-            new_version = fix.to_s
-          end
-        end
 
         Dependabot::Dependency.new(
           name: dependency.name,
           version: new_version || dependency.version,
           requirements: new_requirements,
-          previous_version: previous_version,
+          previous_version: dependency.version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager,
           metadata: dependency.metadata,
@@ -177,31 +146,11 @@ module Dependabot
         end.max || dependency.version
       end
 
-      sig { returns(T.nilable(Gem::Version)) }
-      def fetch_lowest_security_fix_version
-        return unless git_commit_checker.git_dependency?
-        return unless git_commit_checker.pinned_ref_looks_like_version?
-
-        # Lowest security fix across the requirement families that are ACTUALLY
-        # vulnerable, each filtered above its OWN pinned version so a higher
-        # declaration's fix (e.g. the `v2.1.0` for a `v2.0.0` pin) isn't masked
-        # by a lower family's `v1.1.0`, and a declaration that isn't itself
-        # affected never contributes a spurious fix.
-        semver_requirement_checkers.filter_map do |ref_version, checker|
-          parsed = Version.new(ref_version)
-          next unless ref_vulnerable?(parsed)
-
-          lowest_security_fix_tag(checker, parsed)&.version
-        end.min
-      end
-
-      # The tag a single requirement should move to: resolved within that
-      # requirement's own ref family (via a checker scoped to its ref) and, for
-      # security fixes, filtered strictly above that requirement's own pinned
-      # version. Returns nil when there is no strictly-higher tag, so a
-      # requirement is never downgraded -- a lower selected tag (a security fix,
-      # or a latest capped by an ignore rule) must leave an already-higher
-      # declaration untouched.
+      # The tag a single requirement should move to: the latest tag resolved
+      # within that requirement's own ref family (via a checker scoped to its
+      # ref). Returns nil when there is no strictly-higher tag, so a requirement
+      # is never downgraded -- a latest capped by an ignore rule must leave an
+      # already-higher declaration untouched.
       sig do
         params(source: Dependabot::DependencyRequirement::ObjectHash, ref_version: String)
           .returns(T.nilable(Dependabot::GitTagDetails))
@@ -211,19 +160,7 @@ module Dependabot
         return unless checker.pinned_ref_looks_like_version?
 
         parsed = Version.new(ref_version)
-        tag =
-          if ref_vulnerable?(parsed)
-            # This declaration is itself vulnerable: move it to the lowest fix
-            # strictly above its OWN pinned version.
-            lowest_security_fix_tag(checker, parsed)
-          elsif security_advisories.any?
-            # A security update is in progress but this declaration isn't
-            # affected -- leave it untouched even when a sibling declaration is
-            # being fixed, so security updates stay minimal.
-            return
-          else
-            latest_version_tag(checker)
-          end
+        tag = latest_version_tag(checker)
         tag_version = tag&.version
         return unless tag_version
         return if parsed >= tag_version
@@ -233,8 +170,8 @@ module Dependabot
 
       # Each git-semver-pinned requirement paired with a checker scoped to its
       # own ref (all sharing one remote fetch via shared_git_metadata_fetcher).
-      # Drives both the per-requirement rewriting in updated_requirements and the
-      # cross-family latest/security-fix version reporting that gates can_update?.
+      # Drives the cross-family latest-version reporting that gates can_update?,
+      # so the gate still fires when only a non-first family has a newer tag.
       sig { returns(T::Array[[String, Dependabot::GitCommitChecker]]) }
       def semver_requirement_checkers
         dependency.requirements.filter_map do |req|
@@ -249,9 +186,8 @@ module Dependabot
 
       # The parsed SemVer core of every requirement pinned to a version tag
       # (plain or package-scoped, e.g. `review--v1.0.0`). Branch- and SHA-pinned
-      # requirements carry no comparable version and are skipped. Used both to
-      # test each pre-update declaration against the advisories and to derive the
-      # merged post-update version (its lowest pin).
+      # requirements carry no comparable version and are skipped. Used to derive
+      # the merged post-update version (its lowest pin).
       sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T::Array[Dependabot::Version]) }
       def pinned_versions(requirements)
         requirements.filter_map do |req|
@@ -261,51 +197,12 @@ module Dependabot
         end
       end
 
-      sig { params(version: Gem::Version).returns(T::Boolean) }
-      def ref_vulnerable?(version)
-        security_advisories.any? { |advisory| advisory.vulnerable?(version) }
-      end
-
       sig { params(checker: Dependabot::GitCommitChecker).returns(T.nilable(Dependabot::GitTagDetails)) }
       def latest_version_tag(checker = git_commit_checker)
         return unless checker.git_dependency?
         return unless checker.pinned_ref_looks_like_version?
 
         checker.local_tag_for_latest_version(update_cooldown)
-      end
-
-      sig do
-        params(checker: Dependabot::GitCommitChecker, min_version: T.nilable(Gem::Version))
-          .returns(T.nilable(Dependabot::GitTagDetails))
-      end
-      def lowest_security_fix_tag(checker = git_commit_checker, min_version = current_version)
-        return unless checker.git_dependency?
-        return unless checker.pinned_ref_looks_like_version?
-
-        allowed_tags = checker.local_tags_for_allowed_versions
-        fixed_tags = Dependabot::UpdateCheckers::VersionFilters
-                     .filter_vulnerable_versions(allowed_tags, security_advisories)
-        # Never downgrade: an advisory that only affects the current line (e.g.
-        # ">= 2.0.0, < 2.0.1" while on 2.0.0) must not resolve to an older,
-        # unaffected tag. For a merged dependency, filter relative to the
-        # requirement's own pinned version (min_version) so each declaration gets
-        # the lowest fix above ITS OWN version -- a `v2.0.0` pin must reach its
-        # `v2.1.0` fix rather than the dependency-wide lowest `v1.1.0`.
-        higher_than(fixed_tags, min_version).min_by { |t| T.must(t.version) }
-      end
-
-      # Keeps only tags that carry a version and sit strictly above the given
-      # version (a requirement's own pinned version, or the dependency's current
-      # version when resolving a single declaration).
-      sig do
-        params(tags: T::Array[Dependabot::GitTagDetails], version: T.nilable(Gem::Version))
-          .returns(T::Array[Dependabot::GitTagDetails])
-      end
-      def higher_than(tags, version)
-        versioned = tags.select(&:version)
-        return versioned unless version
-
-        versioned.select { |t| T.must(t.version) > version }
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
