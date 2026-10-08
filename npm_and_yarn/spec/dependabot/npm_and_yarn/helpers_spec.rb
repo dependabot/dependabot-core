@@ -261,6 +261,32 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::version_from_output" do
+    it "returns the version when it is the only output" do
+      expect(described_class.version_from_output("12.10.1\n")).to eq("12.10.1")
+    end
+
+    it "skips a download message and warnings printed before the version" do
+      output = "Downloading the pnpm 12.10.1 binary for linux-x64...\n[WARN] A warning\n12.10.1\n"
+
+      expect(described_class.version_from_output(output)).to eq("12.10.1")
+    end
+
+    it "keeps a pre-release suffix" do
+      expect(described_class.version_from_output("12.0.0-rc.1\n")).to eq("12.0.0-rc.1")
+    end
+
+    it "does not take a version mentioned inside a notice printed after the version" do
+      output = "12.10.1\nUpdate available: 12.11.0 (run `corepack install -g pnpm@12.11.0`)\n"
+
+      expect(described_class.version_from_output(output)).to eq("12.10.1")
+    end
+
+    it "returns the trimmed output when no line is a version" do
+      expect(described_class.version_from_output(" something else \n")).to eq("something else")
+    end
+  end
+
   describe "::pnpm_version" do
     after { described_class.dependency_files = [] }
 
@@ -283,6 +309,15 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         .and_return("8.15.9\n")
 
       expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("8.15.9"))
+    end
+
+    it "ignores output printed before the version" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v", env: nil)
+        .and_return("Downloading the pnpm 12.10.1 binary for linux-x64...\n[WARN] A warning\n12.10.1\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
     end
 
     it "returns nil when the pnpm version cannot be determined" do
