@@ -15,10 +15,12 @@ module Dependabot
         UV_UNRESOLVABLE_REGEX = /× No solution found when resolving dependencies.*[\s\S]*$/
         UV_BUILD_FAILED_REGEX = /× Failed to build.*[\s\S]*$/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
-        # A requirement such as `foo==1.0` or `foo[bar]>=2`. The operator must follow the name directly,
-        # which keeps marker expressions like `python_full_version >= '3.12'` out.
+        # A requirement such as `foo==1.0` or `foo[bar]>=2`. It is matched against one whitespace-separated token
+        # at a time, anchored at the start, so the scan stays linear on arbitrary uv output. The operator must
+        # follow the name directly, which keeps marker expressions like `python_full_version >= '3.12'` out, and
+        # the leading non-alphanumerics skip the punctuation uv's tree drawing glues to a token (`(`, `╰─▶`).
         UV_REQUIREMENT_TOKEN_REGEX =
-          /(?<![\w.\-\[])([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]\s]*\])?(?:===|==|~=|!=|>=|<=|<|>)/
+          /\A[^A-Za-z0-9]*([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]]*\])?(?:===|==|~=|!=|>=|<=|<|>)/
 
         GIT_DEPENDENCY_UNREACHABLE_REGEX = %r{git clone.*(?<url>https?://[^\s]+)}
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"']+)'/m
@@ -88,8 +90,8 @@ module Dependabot
         sig { params(message: String).returns(T::Array[String]) }
         def conflict_package_names(message)
           message
-            .scan(UV_REQUIREMENT_TOKEN_REGEX)
-            .flatten
+            .split
+            .filter_map { |token| token.match(UV_REQUIREMENT_TOKEN_REGEX)&.captures&.first }
             .map { |name| NameNormaliser.normalise(name) }
             .uniq
         end

@@ -590,5 +590,13 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
         expect(names).to eq(%w(foo-bar baz))
       end
     end
+
+    context "when the message is a long run of digits or brackets" do
+      %w(0 0[).each do |unit|
+        it "returns no names for #{unit.inspect} repeated" do
+          expect(error_handler.conflict_package_names(unit * 100_000)).to eq([])
+        end
+      end
+    end
   end
 end
