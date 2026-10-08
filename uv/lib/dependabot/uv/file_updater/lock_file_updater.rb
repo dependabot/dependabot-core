@@ -47,6 +47,9 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :target_requirement
 
+        sig { returns(T.nilable(T::Array[String])) }
+        attr_reader :upgrade_package_names
+
         sig do
           params(
             dependencies: T::Array[Dependency],
@@ -54,7 +57,8 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             index_urls: T.nilable(T::Array[T.nilable(String)]),
             repo_contents_path: T.nilable(String),
-            target_requirement: T.nilable(String)
+            target_requirement: T.nilable(String),
+            upgrade_package_names: T.nilable(T::Array[String])
           ).void
         end
         def initialize(
@@ -63,7 +67,8 @@ module Dependabot
           credentials:,
           index_urls: nil,
           repo_contents_path: nil,
-          target_requirement: nil
+          target_requirement: nil,
+          upgrade_package_names: nil
         )
           @dependencies = dependencies
           @dependency_files = dependency_files
@@ -71,6 +76,7 @@ module Dependabot
           @index_urls = index_urls
           @repo_contents_path = repo_contents_path
           @target_requirement = target_requirement
+          @upgrade_package_names = upgrade_package_names
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -86,20 +92,14 @@ module Dependabot
 
         private
 
-        sig { returns(T.nilable(Dependabot::Dependency)) }
-        def dependency
-          # For now, we'll only ever be updating a single dependency
-          T.must(dependencies.first)
-        end
-
         sig { returns(T::Boolean) }
         def build_system_only_dependency?
-          return false unless dependency
+          return false if dependencies.empty?
 
-          groups = T.must(dependency).requirements.flat_map { |req| req.groups || [] }.compact.uniq
-          return false if groups.empty?
-
-          groups.all?("build-system")
+          dependencies.all? do |dep|
+            groups = dep.requirements.flat_map { |req| req.groups || [] }.compact.uniq
+            !groups.empty? && groups.all?("build-system")
+          end
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -146,10 +146,15 @@ module Dependabot
 
           updated_content = content.dup
 
-          T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
-            next unless new_r.file == file.name && T.must(old_r).file == file.name
+          dependencies.each do |dep|
+            previous_requirements = dep.previous_requirements
+            next unless previous_requirements
 
-            updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
+            dep.requirements.zip(previous_requirements).each do |new_r, old_r|
+              next unless old_r && new_r.file == file.name && old_r.file == file.name
+
+              updated_content = replace_dep(dep, updated_content, new_r, old_r)
+            end
           end
 
           raise DependencyFileContentNotChanged, "Content did not change!" if content == updated_content
@@ -170,7 +175,7 @@ module Dependabot
           old_req = old_r.requirement_string
           escaped_name = escape_package_name(dep.name)
 
-          regex = /(["']#{escaped_name})([^"']+)(["'])/x
+          regex = /(["']#{escaped_name})(?![A-Za-z0-9._-])([^"']+)(["'])/x
 
           replaced = T.let(false, T::Boolean)
 
@@ -296,30 +301,48 @@ module Dependabot
         def run_update_command
           options = lock_options
           options_fingerprint = lock_options_fingerprint(options)
+          package_specs = upgrade_package_specs
 
           # Use pyenv exec to ensure we're using the correct Python environment
-          # Include the target version to respect ignore conditions and avoid upgrading
-          # to the absolute latest version (which may be blocked by ignore rules)
-          dep_name = T.must(dependency).name
-          dep_version = T.must(dependency).version
-          # Strip extras from the package name for the uv lock command
-          # uv lock --upgrade-package expects the base package name without extras
-          base_dep_name = normalise(dep_name)
-          package_spec =
-            if target_requirement
-              "#{base_dep_name}#{target_requirement}"
-            elsif dep_version
-              "#{base_dep_name}==#{dep_version}"
-            else
-              base_dep_name
-            end
-
-          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
-          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
+          upgrade_flags = package_specs.map { |spec| "--upgrade-package #{spec}" }.join(" ")
+          fingerprint_flags = package_specs.map { "--upgrade-package <dependency_name>" }.join(" ")
+          command = "pyenv exec uv lock #{upgrade_flags} #{options}"
+          fingerprint = "pyenv exec uv lock #{fingerprint_flags} #{options_fingerprint}"
 
           env_vars = pyproject_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
 
           run_command(command, fingerprint: fingerprint, env: env_vars)
+        end
+
+        sig { returns(T::Array[String]) }
+        def upgrade_package_specs
+          names_to_upgrade = upgrade_package_names&.map { |name| normalise(name) }
+          specs = T.let({}, T::Hash[String, String])
+
+          dependencies.each_with_index do |dep, index|
+            # uv lock --upgrade-package expects the base package name without extras
+            base_name = normalise(dep.name)
+            next if specs.key?(base_name)
+            next if names_to_upgrade && !names_to_upgrade.include?(base_name)
+
+            specs[base_name] = upgrade_package_spec(dep, base_name, first: index.zero?)
+          end
+
+          specs.values
+        end
+
+        # Pin each package to its target so ignore conditions are respected and uv
+        # doesn't jump to the latest version. target_requirement is a single
+        # constraint, so it only applies to the first dependency.
+        sig { params(dep: Dependency, base_name: String, first: T::Boolean).returns(String) }
+        def upgrade_package_spec(dep, base_name, first:)
+          if first && target_requirement
+            "#{base_name}#{target_requirement}"
+          elsif dep.version
+            "#{base_name}==#{dep.version}"
+          else
+            base_name
+          end
         end
 
         sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
@@ -738,9 +761,11 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
-          return true if lockfile && T.must(dependency).requirements.empty?
+          dependencies.any? do |dep|
+            next true if lockfile && dep.requirements.empty?
 
-          T.must(dependency).requirements.any? { |req| req.file&.end_with?(*REQUIRED_FILES) }
+            dep.requirements.any? { |req| req.file&.end_with?(*REQUIRED_FILES) }
+          end
         end
 
         sig { returns(T::Hash[String, String]) }
