@@ -226,8 +226,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
       end
 
-      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
-
       it "activates the cached latest version for that major" do
         expect(helper.setup("npm")).to eq("10")
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)

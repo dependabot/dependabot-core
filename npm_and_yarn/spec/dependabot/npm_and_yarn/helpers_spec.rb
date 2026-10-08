@@ -16,8 +16,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/modern")]
     end
 
-    after { described_class.npm_version_selector = nil }
-
     it "restores the selector registered for each manifest directory" do
       described_class.register_npm_version_selector("/legacy", "9")
       described_class.register_npm_version_selector("/modern", "10")
@@ -31,8 +29,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::run_npm_command" do
-    after { described_class.npm_version_selector = nil }
-
     context "when an npm selector is configured" do
       before { described_class.npm_version_selector = "10" }
 
@@ -116,7 +112,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::npm_version" do
     before { described_class.npm_version_selector = "10" }
-    after { described_class.npm_version_selector = nil }
 
     it "returns the Corepack-managed npm version" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)

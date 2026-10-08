@@ -28,4 +28,8 @@ candidate requires native npm support for per-package constraints.
    [dependabot-core-dev] ~ $ cd npm_and_yarn && rspec
    ```
 
+The npm spec helper clears the active npm version selector and per-directory
+registrations after each example. Configure required selectors within each
+example so randomized runs remain independent.
+
 [core-repo]: https://github.com/dependabot/dependabot-core
