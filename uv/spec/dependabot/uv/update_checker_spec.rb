@@ -1214,7 +1214,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       stub_request(:get, "https://pypi.org/pypi/lockstep/json/").to_return(status: 404)
       allow(Dependabot::Uv::UpdateChecker::LockstepResolver).to receive(:new).and_return(lockstep_resolver)
       allow(lockstep_resolver).to receive_messages(
-        own_update_resolvable?: false,
+        lockstep_conflict?: true,
         updated_dependencies_after_full_unlock: both_bumped
       )
     end
@@ -1239,8 +1239,8 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           .to eq(%w(opentelemetry-api opentelemetry-sdk))
       end
 
-      context "when uv resolves the dependency on its own" do
-        before { allow(lockstep_resolver).to receive(:own_update_resolvable?).and_return(true) }
+      context "when uv finds no lockstep conflict" do
+        before { allow(lockstep_resolver).to receive(:lockstep_conflict?).and_return(false) }
 
         it "keeps the own update and bumps nothing else" do
           expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
@@ -1254,7 +1254,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
 
         it "doesn't probe with uv" do
           expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-          expect(lockstep_resolver).not_to have_received(:own_update_resolvable?)
+          expect(lockstep_resolver).not_to have_received(:lockstep_conflict?)
         end
       end
 
@@ -1286,9 +1286,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
 
         before do
           rejected = nil
-          allow(lockstep_resolver).to receive(:own_update_resolvable?) do |version|
+          allow(lockstep_resolver).to receive(:lockstep_conflict?) do |version|
             rejected = version
-            false
+            true
           end
           allow(lockstep_resolver).to receive(:rejected_version) { rejected }
         end
@@ -1297,9 +1297,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           checker.can_update?(requirements_to_unlock: :own)
           checker.can_update?(requirements_to_unlock: :all)
 
-          expect(lockstep_resolver).to have_received(:own_update_resolvable?)
+          expect(lockstep_resolver).to have_received(:lockstep_conflict?)
             .with(Dependabot::Uv::Version.new("1.26.0"))
-          expect(lockstep_resolver).not_to have_received(:own_update_resolvable?)
+          expect(lockstep_resolver).not_to have_received(:lockstep_conflict?)
             .with(Dependabot::Uv::Version.new("1.27.0"))
           expect(lockstep_resolver).to have_received(:updated_dependencies_after_full_unlock)
             .with(Dependabot::Uv::Version.new("1.26.0"))

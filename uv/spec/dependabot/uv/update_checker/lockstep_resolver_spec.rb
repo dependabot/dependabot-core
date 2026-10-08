@@ -73,11 +73,11 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
     end
   end
 
-  describe "#own_update_resolvable?" do
+  describe "#lockstep_conflict?" do
     it "rewrites only the dependency's pin and upgrades only it" do
       allow(lock_updater).to receive(:updated_dependency_files).and_return([resolved_lockfile])
 
-      expect(resolver.own_update_resolvable?(target)).to be(true)
+      expect(resolver.lockstep_conflict?(target)).to be(false)
       expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).with(
         hash_including(upgrade_package_names: ["opentelemetry-api"])
       ) do |args|
@@ -87,18 +87,32 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
       expect(resolver.rejected_version).to be_nil
     end
 
-    it "records the version when uv reports a conflict" do
+    it "records the version when uv's conflict names another direct dependency" do
       allow(lock_updater).to receive(:updated_dependency_files).and_raise(conflict)
 
-      expect(resolver.own_update_resolvable?(target)).to be(false)
+      expect(resolver.lockstep_conflict?(target)).to be(true)
       expect(resolver.rejected_version).to eq(target)
+    end
+
+    it "doesn't count a conflict that names no other direct dependency" do
+      allow(lock_updater).to receive(:updated_dependency_files).and_raise(
+        Dependabot::DependencyFileNotResolvable,
+        "× No solution found when resolving dependencies:\n" \
+        "╰─▶ Because the current Python version (3.10.12) does not satisfy Python>=3.12 and " \
+        "opentelemetry-api==1.26.0 depends on Python>=3.12, we can conclude that opentelemetry-api==1.26.0 " \
+        "cannot be used. And because your project depends on opentelemetry-api==1.26.0, we can conclude " \
+        "that your project's requirements are unsatisfiable."
+      )
+
+      expect(resolver.lockstep_conflict?(target)).to be(false)
+      expect(resolver.rejected_version).to be_nil
     end
 
     it "lets other errors through" do
       allow(lock_updater).to receive(:updated_dependency_files)
         .and_raise(Dependabot::PrivateSourceAuthenticationFailure.new("example.com"))
 
-      expect { resolver.own_update_resolvable?(target) }
+      expect { resolver.lockstep_conflict?(target) }
         .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
     end
   end

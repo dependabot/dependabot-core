@@ -61,7 +61,7 @@ module Dependabot
           @requirements_update_strategy = requirements_update_strategy
           @update_cooldown = update_cooldown
           @rejected_version = T.let(nil, T.nilable(Gem::Version))
-          @own_update_resolvable = T.let({}, T::Hash[String, T::Boolean])
+          @own_probes = T.let({}, T::Hash[String, Probe])
           @full_unlock_updates = T.let({}, T::Hash[String, T.nilable(T::Array[Dependabot::Dependency])])
           @neighbours_in_lockfile = T.let(nil, T.nilable(T::Boolean))
           @top_level_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
@@ -74,14 +74,14 @@ module Dependabot
           @neighbours_in_lockfile
         end
 
+        # Only a conflict that names another direct dependency counts. Any other failure (e.g. a release that
+        # needs a newer Python) is left for the file updater to report, as it does without this check.
         sig { params(version: Gem::Version).returns(T::Boolean) }
-        def own_update_resolvable?(version)
-          key = version.to_s
-          return T.must(@own_update_resolvable[key]) if @own_update_resolvable.key?(key)
-
-          resolvable = probe(version, []).resolved
-          @rejected_version = version unless resolvable
-          @own_update_resolvable[key] = resolvable
+        def lockstep_conflict?(version)
+          result = own_probe(version)
+          conflict = !result.resolved && eligible_peers(result.conflict_names).any?
+          @rejected_version = version if conflict
+          conflict
         end
 
         sig { params(version: Gem::Version).returns(T.nilable(T::Array[Dependabot::Dependency])) }
@@ -156,6 +156,11 @@ module Dependabot
           return nil if moved.empty?
 
           [updated_dependency(dependency, version.to_s), *moved.sort_by(&:name)]
+        end
+
+        sig { params(version: Gem::Version).returns(Probe) }
+        def own_probe(version)
+          @own_probes[version.to_s] ||= probe(version, [])
         end
 
         sig { params(version: Gem::Version, peers: T::Array[Dependabot::Dependency]).returns(Probe) }

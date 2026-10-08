@@ -83,7 +83,7 @@ module Dependabot
       def lockstep_checked(candidate)
         return candidate if candidate.nil? || !lockstep_check_applies?
 
-        lockstep_resolver.own_update_resolvable?(candidate) ? candidate : nil
+        lockstep_resolver.lockstep_conflict?(candidate) ? nil : candidate
       end
 
       sig { returns(T::Boolean) }
