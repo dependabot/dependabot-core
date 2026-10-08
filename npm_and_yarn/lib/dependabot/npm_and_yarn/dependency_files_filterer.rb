@@ -4,6 +4,7 @@
 require "dependabot/utils"
 require "dependabot/package/npm_package_json"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
+require "dependabot/npm_and_yarn/pnpm_package_manager"
 require "sorbet-runtime"
 
 # Used in the version resolver and file updater to only run yarn/npm helpers on
@@ -80,8 +81,33 @@ module Dependabot
         return false unless lockfile?(lockfile)
 
         package_files_requiring_update.any? do |package_file|
-          File.dirname(package_file.name) == File.dirname(lockfile.name)
+          File.dirname(package_file.name) == File.dirname(lockfile.name) ||
+            pnpm_workspace_covers?(package_file, lockfile)
         end
+      end
+
+      sig { params(package_file: DependencyFile, lockfile: DependencyFile).returns(T::Boolean) }
+      def pnpm_workspace_covers?(package_file, lockfile)
+        return false unless File.basename(package_file.name) == PNPMPackageManager::PNPM_WS_YML_FILENAME
+        return false unless File.basename(lockfile.name) == PNPMPackageManager::LOCKFILE_NAME
+        # A lockfile above the job directory is left alone: the updater reads and
+        # writes relative to that directory.
+        return false if lockfile.name.start_with?("..")
+
+        # Compared as repository paths rather than as names. Where the job targets
+        # a member, the catalog it updates is named `../pnpm-workspace.yaml` while
+        # the member's own lockfile keeps the bare name, so the two names share no
+        # prefix even though the lockfile sits beneath the workspace root.
+        return false unless beneath?(File.dirname(lockfile.path), File.dirname(package_file.path))
+
+        updated_dependencies_in_lockfile?(lockfile)
+      end
+
+      sig { params(dir: String, root: String).returns(T::Boolean) }
+      def beneath?(dir, root)
+        return true if dir == root
+
+        dir.start_with?(root.end_with?("/") ? root : "#{root}/")
       end
 
       sig { params(lockfile: DependencyFile).returns(T::Boolean) }

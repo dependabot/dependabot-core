@@ -29,9 +29,26 @@ module Dependabot
 
       sig { params(content: String).void }
       def initialize(content)
+        @content = content
         # pnpm 11+ can write an env document ahead of the project one.
         document = YAML.safe_load_stream(content).last
         @document = T.let(document.is_a?(Hash) ? document : {}, T::Hash[String, Object])
+      end
+
+      # The importer paths the lockfile records, as written.
+      #
+      # Read off the parse tree rather than the loaded document, because these
+      # keys are directory names and Psych loads on the YAML 1.1 schema: a project
+      # directory called `no`, `on`, `yes` or `10` arrives as a boolean or an
+      # integer, and no spelling of those matches the directory the project sits
+      # in. A lockfile that cannot be parsed at all raises on construction, as it
+      # does for every other reader on this class.
+      sig { returns(T::Array[String]) }
+      def importers
+        entries = value_for(root_mapping, "importers")
+        return [] unless entries.is_a?(Psych::Nodes::Mapping)
+
+        pairs(entries).filter_map { |key, _value| key.value if key.is_a?(Psych::Nodes::Scalar) }
       end
 
       # `dependent => version` for every edge to `name`.
@@ -55,6 +72,29 @@ module Dependabot
       end
 
       private
+
+      # The last document's root mapping, for the same reason the loaded document
+      # is taken from the end of the stream.
+      sig { returns(T.nilable(Psych::Nodes::Mapping)) }
+      def root_mapping
+        roots = Psych.parse_stream(@content).children.filter_map(&:root)
+        roots.reverse.find { |node| node.is_a?(Psych::Nodes::Mapping) }
+      end
+
+      sig { params(mapping: T.nilable(Psych::Nodes::Mapping), key: String).returns(T.nilable(Psych::Nodes::Node)) }
+      def value_for(mapping, key)
+        return nil unless mapping
+
+        pairs(mapping).each do |name, value|
+          return value if name.is_a?(Psych::Nodes::Scalar) && name.value == key
+        end
+        nil
+      end
+
+      sig { params(mapping: Psych::Nodes::Mapping).returns(T::Array[T::Array[Psych::Nodes::Node]]) }
+      def pairs(mapping)
+        mapping.children.each_slice(2).to_a
+      end
 
       sig do
         params(edges: T::Hash[String, String], section: String, dependent: String, entry: Object, name: String).void

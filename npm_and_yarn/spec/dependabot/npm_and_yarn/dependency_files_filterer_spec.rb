@@ -300,6 +300,121 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
         )
       end
     end
+
+    context "when a pnpm workspace catalog is updated and each project keeps its own lockfile" do
+      let(:project_name) { "pnpm/catalog_separate_lockfiles" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "1.3.1",
+          requirements: [{
+            file: "pnpm-workspace.yaml",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "keeps every workspace project's lockfile alongside the catalog" do
+        expect(files_requiring_update).to contain_exactly(
+          project_dependency_file("pnpm-workspace.yaml"),
+          project_dependency_file("pnpm-lock.yaml"),
+          project_dependency_file("packages/package1/pnpm-lock.yaml"),
+          project_dependency_file("packages/package2/pnpm-lock.yaml")
+        )
+      end
+
+      it "leaves out a project whose lockfile holds nothing the catalog entry covers" do
+        expect(files_requiring_update)
+          .not_to include(project_dependency_file("packages/package3/pnpm-lock.yaml"))
+      end
+    end
+
+    # A catalog update run from a member names its requirement file
+    # `../pnpm-workspace.yaml`, while the member's own lockfile keeps the bare
+    # name. Those two names share no prefix, so only the repository path shows
+    # that the lockfile sits beneath the workspace root.
+    context "when the job targets a member and updates a catalog above it" do
+      let(:job_dir) { "/packages/app" }
+      let(:workspace_yaml) { at("../pnpm-workspace.yaml", "catalog:\n  lodash: 1.3.1\n") }
+      let(:own_lockfile) { at("pnpm-lock.yaml", "lockfileVersion: '9.0'\n") }
+      let(:parent_lockfile) { at("../pnpm-lock.yaml", "lockfileVersion: '9.0'\n") }
+      let(:dependency_files) { [workspace_yaml, own_lockfile, parent_lockfile] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "1.3.1",
+          requirements: [{
+            file: workspace_yaml.name,
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      def at(name, content)
+        Dependabot::DependencyFile.new(name: name, content: content, directory: job_dir)
+      end
+
+      before do
+        lockfile_parser = instance_double(Dependabot::NpmAndYarn::FileParser::LockfileParser, parse: [dependency])
+        allow(Dependabot::NpmAndYarn::FileParser::LockfileParser).to receive(:new).and_return(lockfile_parser)
+      end
+
+      it "keeps the member's own lockfile, which the catalog entry feeds" do
+        expect(files_requiring_update).to include(own_lockfile)
+      end
+    end
+
+    context "when the pnpm workspace is not at the repository root" do
+      let(:workspace_yaml) do
+        Dependabot::DependencyFile.new(name: "apps/web/pnpm-workspace.yaml", content: "packages:\n  - 'packages/*'\n")
+      end
+      let(:nested_lockfile) do
+        Dependabot::DependencyFile.new(name: "apps/web/packages/p1/pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n")
+      end
+      let(:sibling_lockfile) do
+        Dependabot::DependencyFile.new(name: "apps/api/pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n")
+      end
+      let(:prefix_lockfile) do
+        Dependabot::DependencyFile.new(name: "apps/web-admin/pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n")
+      end
+      let(:dependency_files) { [workspace_yaml, nested_lockfile, sibling_lockfile, prefix_lockfile] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "1.3.1",
+          requirements: [{
+            file: workspace_yaml.name,
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        lockfile_parser = instance_double(Dependabot::NpmAndYarn::FileParser::LockfileParser, parse: [dependency])
+        allow(Dependabot::NpmAndYarn::FileParser::LockfileParser).to receive(:new).and_return(lockfile_parser)
+      end
+
+      it "keeps a lockfile beneath the workspace" do
+        expect(files_requiring_update).to include(nested_lockfile)
+      end
+
+      it "leaves out a lockfile in a sibling directory" do
+        expect(files_requiring_update).not_to include(sibling_lockfile)
+      end
+
+      it "leaves out a sibling whose path merely starts with the workspace directory" do
+        expect(files_requiring_update).not_to include(prefix_lockfile)
+      end
+    end
   end
 
   describe ".paths_requiring_update_check" do

@@ -123,16 +123,17 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def update_pnpm_locks
-        updated_files = []
-        pnpm_locks.each do |pnpm_lock|
-          next unless pnpm_lock_changed?(pnpm_lock)
+        updated_contents = pnpm_lockfile_updater.updated_pnpm_lock_contents(
+          pnpm_locks,
+          updated_pnpm_workspace_content: @updated_pnpm_workspace_content
+        )
 
-          updated_files << updated_file(
-            file: pnpm_lock,
-            content: updated_pnpm_lock_content(pnpm_lock)
-          )
+        pnpm_locks.filter_map do |pnpm_lock|
+          new_content = updated_contents[pnpm_lock.name]
+          next if new_content.nil? || new_content == pnpm_lock.content
+
+          updated_file(file: pnpm_lock, content: new_content)
         end
-        updated_files
       end
 
       sig { params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
@@ -333,11 +334,6 @@ module Dependabot
         yarn_lock.content != updated_yarn_lock_content(yarn_lock)
       end
 
-      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(T::Boolean) }
-      def pnpm_lock_changed?(pnpm_lock)
-        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock)
-      end
-
       sig { params(package_lock: Dependabot::DependencyFile).returns(T::Boolean) }
       def package_lock_changed?(package_lock)
         package_lock.content != updated_lockfile_content(package_lock)
@@ -364,7 +360,14 @@ module Dependabot
           updated_content = updated_pnpm_workspace_content(file)
           next if updated_content == file.content
 
+          # A catalog this update edited is the change, not context for it. One
+          # that sits above the job directory is fetched as a support file, and
+          # `DependencyChangeBuilder` drops support files as soon as the update
+          # also touched a file that is not one — here the member's own lockfile,
+          # resolved against the new catalog. Shipping that lockfile without the
+          # catalog it resolved against is a pull request that cannot install.
           updated_file(file: file, content: T.must(updated_content))
+            .tap { |updated| updated.support_file = false }
         end
       end
 
@@ -427,16 +430,6 @@ module Dependabot
         @updated_yarn_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_yarn_lock_content[yarn_lock.name] ||=
           yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
-      end
-
-      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
-      def updated_pnpm_lock_content(pnpm_lock)
-        @updated_pnpm_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_pnpm_lock_content[pnpm_lock.name] ||=
-          pnpm_lockfile_updater.updated_pnpm_lock_content(
-            pnpm_lock,
-            updated_pnpm_workspace_content: @updated_pnpm_workspace_content
-          )
       end
 
       # The number of days from the dependabot.yml `cooldown` config to apply as

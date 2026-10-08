@@ -118,8 +118,8 @@ module Dependabot
         # `-r --include-workspace-root` is required for workspace repos so the
         # update is applied across all packages.
         flags = recursive ? "-r --include-workspace-root " : ""
-        cmd = "#{flags}update #{dependency_name} --depth Infinity --lockfile-only"
-        fingerprint = "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        cmd = "#{flags}update #{dependency_name} --depth Infinity --lockfile-only --no-save"
+        fingerprint = "#{flags}update <dependency_name> --depth Infinity --lockfile-only --no-save"
         [cmd, fingerprint]
       end
 

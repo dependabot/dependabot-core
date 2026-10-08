@@ -3933,6 +3933,111 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "with workspaces that do not share a lockfile" do
+        let(:project_name) { "pnpm/workspaces_separate_lockfiles" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          %w(package1 package2).map do |package|
+            {
+              file: "packages/#{package}/package.json",
+              requirement: "1.3.1",
+              groups: ["dependencies"],
+              source: nil
+            }
+          end
+        end
+        let(:previous_requirements) do
+          %w(package1 package2).map do |package|
+            {
+              file: "packages/#{package}/package.json",
+              requirement: "1.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }
+          end
+        end
+
+        it "updates each workspace project's own lockfile" do
+          expect(updated_files.map(&:name))
+            .to contain_exactly(
+              "packages/package1/package.json",
+              "packages/package1/pnpm-lock.yaml",
+              "packages/package2/package.json",
+              "packages/package2/pnpm-lock.yaml"
+            )
+        end
+
+        it "records the new version in each workspace project's lockfile" do
+          %w(package1 package2).each do |package|
+            lockfile = updated_files.find { |f| f.name == "packages/#{package}/pnpm-lock.yaml" }
+
+            expect(lockfile.content).to include("lodash@1.3.1")
+            expect(lockfile.content).not_to include("lodash@1.2.0")
+          end
+        end
+
+        it "leaves the empty root lockfile alone" do
+          expect(updated_files.map(&:name)).not_to include("pnpm-lock.yaml")
+        end
+
+        it "resolves the workspace once, not once per lockfile" do
+          resolutions = 0
+          allow(Dependabot::SharedHelpers)
+            .to receive(:in_a_temporary_repo_directory).and_wrap_original do |original, *args, &block|
+              resolutions += 1
+              original.call(*args, &block)
+            end
+
+          expect(updated_files.map(&:name))
+            .to include("packages/package1/pnpm-lock.yaml", "packages/package2/pnpm-lock.yaml")
+          expect(resolutions).to eq(1)
+        end
+
+        it "writes one .npmrc covering every project being updated" do
+          builders = []
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder)
+            .to receive(:new).and_wrap_original do |original, **kwargs|
+              builders << kwargs[:dependencies].map(&:name)
+              original.call(**kwargs)
+            end
+
+          updated_files
+
+          expect(builders.size).to eq(1)
+          expect(builders.first).to include("lodash")
+        end
+
+        context "when only one workspace project is updated" do
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "1.3.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "1.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "only updates that project's lockfile" do
+            expect(updated_files.map(&:name))
+              .to contain_exactly(
+                "packages/package1/package.json",
+                "packages/package1/pnpm-lock.yaml"
+              )
+          end
+        end
+      end
+
       context "with a sub-dependency" do
         let(:project_name) { "pnpm/no_lockfile_change" }
 
@@ -4110,6 +4215,79 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           it "updates the scoped package in the workspace" do
             expect(updated_files.map(&:name)).to include("pnpm-workspace.yaml")
             expect(updated_pnpm_workspace.content).to include('"@tanstack/react-query": ^5.62.0')
+          end
+        end
+
+        context "when the workspace projects keep their own lockfiles" do
+          let(:project_name) { "pnpm/catalog_separate_lockfiles" }
+          let(:dependency_name) { "lodash" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "lodash",
+                version: "1.3.1",
+                required_version: "1.3.1",
+                previous_required_version: "1.2.0"
+              )
+            ]
+          end
+
+          it "updates the catalog and every workspace project's own lockfile" do
+            expect(updated_files.map(&:name))
+              .to contain_exactly(
+                "pnpm-workspace.yaml",
+                "packages/package1/pnpm-lock.yaml",
+                "packages/package2/pnpm-lock.yaml"
+              )
+            expect(updated_pnpm_workspace.content).to include("lodash: 1.3.1")
+          end
+
+          it "records the new catalog version in each workspace project's lockfile" do
+            %w(package1 package2).each do |package|
+              lockfile = updated_files.find { |f| f.name == "packages/#{package}/pnpm-lock.yaml" }
+
+              expect(lockfile.content).to include("lodash@1.3.1")
+              expect(lockfile.content).not_to include("lodash@1.2.0")
+            end
+          end
+        end
+
+        # A job inside a member reaches the catalog above it, which is fetched as a
+        # support file. `DependencyChangeBuilder` drops support files whenever the
+        # update also touched one that is not — here the member's own lockfile —
+        # so leaving the flag on ships the lockfile without the catalog it was
+        # resolved against.
+        context "when the catalog sits above the job directory" do
+          let(:project_name) { "pnpm/catalog_separate_lockfiles" }
+          let(:dependency_name) { "lodash" }
+          let(:files) do
+            project_dependency_files(project_name, directory: "/packages/package1") +
+              [Dependabot::DependencyFile.new(
+                name: "../../pnpm-workspace.yaml",
+                content: fixture("projects", project_name, "pnpm-workspace.yaml"),
+                directory: "/packages/package1",
+                support_file: true
+              )]
+          end
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "../../pnpm-workspace.yaml",
+                name: "lodash",
+                version: "1.3.1",
+                required_version: "1.3.1",
+                previous_required_version: "1.2.0"
+              )
+            ]
+          end
+
+          it "ships the catalog as part of the update rather than as context" do
+            catalog = updated_files.find { |f| f.name == "../../pnpm-workspace.yaml" }
+
+            expect(catalog).not_to be_nil
+            expect(catalog.support_file?).to be(false)
+            expect(catalog.content).to include("lodash: 1.3.1")
           end
         end
 

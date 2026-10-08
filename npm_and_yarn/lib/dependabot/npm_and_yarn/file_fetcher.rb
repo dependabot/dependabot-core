@@ -11,6 +11,7 @@ require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/npm_and_yarn/pnpm_workspace_config"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
@@ -22,6 +23,8 @@ module Dependabot
       extend T::Helpers
 
       require_relative "file_fetcher/path_dependency_builder"
+
+      # pnpm 11 stopped reading non-registry settings from `.npmrc`.
 
       # Npm always prefixes file paths in the lockfile "version" with "file:"
       # even when a naked path is used (e.g. "../dep")
@@ -141,6 +144,7 @@ module Dependabot
         fetched_pnpm_files << pnpm_lock if pnpm_lock && !skip_pnpm_lock?
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
+        fetched_pnpm_files += pnpm_workspace_locks unless skip_pnpm_lock?
         fetched_pnpm_files
       end
 
@@ -481,6 +485,11 @@ module Dependabot
         @pnpm_workspace_package_jsons ||= T.let(fetch_pnpm_workspace_package_jsons, T.nilable(T::Array[DependencyFile]))
       end
 
+      sig { returns(T::Array[DependencyFile]) }
+      def pnpm_workspace_locks
+        @pnpm_workspace_locks ||= T.let(fetch_pnpm_workspace_locks, T.nilable(T::Array[DependencyFile]))
+      end
+
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/MethodLength
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
@@ -662,6 +671,54 @@ module Dependabot
         workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
           fetch_package_json_if_present(workspace)
         end
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def fetch_pnpm_workspace_locks
+        return [] unless lockfile_per_project?
+
+        pnpm_workspace_package_jsons.filter_map do |package_json|
+          workspace = File.dirname(package_json.name)
+          next if workspace == "."
+
+          fetch_pnpm_lock_if_present(workspace)
+        end
+      end
+
+      # Only the repository's own files are consulted. pnpm takes the setting
+      # from an environment variable and the command line too, but neither
+      # reaches the install we run, so a workspace configured that way would
+      # resolve here into the lockfile at its root however many we fetched.
+      #
+      # Which files decide it, and whether the running pnpm still reads `.npmrc`,
+      # are `PnpmWorkspaceConfig`'s to answer: the updater asks the same question
+      # of the same files, and the two must not be able to differ.
+      sig { returns(T::Boolean) }
+      def lockfile_per_project?
+        PnpmWorkspaceConfig.lockfile_per_project?(
+          [pnpm_workspace_yaml, forwarded_npmrc, package_json].compact
+        )
+      end
+
+      # The committed `.npmrc` only counts where it reaches the files the update
+      # is handed. Credential generation withholds it, and `NpmrcBuilder` writes a
+      # replacement from credentials alone, so the install resolves without it:
+      # a layout declared only there is not one we could reproduce, and fetching
+      # member lockfiles for it would leave them untouched on every run. Asking
+      # the same question of the same files is what keeps this decision and the
+      # updater's from drifting apart.
+      sig { returns(T.nilable(DependencyFile)) }
+      def forwarded_npmrc
+        return nil if scope_overrides_npmrc?
+
+        npmrc
+      end
+
+      sig { params(workspace: String).returns(T.nilable(DependencyFile)) }
+      def fetch_pnpm_lock_if_present(workspace)
+        fetch_file_from_host(File.join(workspace, PNPMPackageManager::LOCKFILE_NAME))
+      rescue Dependabot::DependencyFileNotFound
+        nil
       end
 
       sig { params(path: String).returns(T::Array[T.nilable(DependencyFile)]) }
