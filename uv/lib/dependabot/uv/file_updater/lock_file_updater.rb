@@ -92,20 +92,14 @@ module Dependabot
 
         private
 
-        sig { returns(T.nilable(Dependabot::Dependency)) }
-        def dependency
-          # For now, we'll only ever be updating a single dependency
-          T.must(dependencies.first)
-        end
-
         sig { returns(T::Boolean) }
         def build_system_only_dependency?
-          return false unless dependency
+          return false if dependencies.empty?
 
-          groups = T.must(dependency).requirements.flat_map { |req| req.groups || [] }.compact.uniq
-          return false if groups.empty?
-
-          groups.all?("build-system")
+          dependencies.all? do |dep|
+            groups = dep.requirements.flat_map { |req| req.groups || [] }.compact.uniq
+            !groups.empty? && groups.all?("build-system")
+          end
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -152,10 +146,15 @@ module Dependabot
 
           updated_content = content.dup
 
-          T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
-            next unless new_r.file == file.name && T.must(old_r).file == file.name
+          dependencies.each do |dep|
+            previous_requirements = dep.previous_requirements
+            next unless previous_requirements
 
-            updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
+            dep.requirements.zip(previous_requirements).each do |new_r, old_r|
+              next unless old_r && new_r.file == file.name && old_r.file == file.name
+
+              updated_content = replace_dep(dep, updated_content, new_r, old_r)
+            end
           end
 
           raise DependencyFileContentNotChanged, "Content did not change!" if content == updated_content
@@ -761,9 +760,11 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
-          return true if lockfile && T.must(dependency).requirements.empty?
+          dependencies.any? do |dep|
+            next true if lockfile && dep.requirements.empty?
 
-          T.must(dependency).requirements.any? { |req| req.file&.end_with?(*REQUIRED_FILES) }
+            dep.requirements.any? { |req| req.file&.end_with?(*REQUIRED_FILES) }
+          end
         end
 
         sig { returns(T::Hash[String, String]) }

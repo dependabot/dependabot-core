@@ -1726,6 +1726,88 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "with several dependencies to update" do
+    let(:pyproject_content) do
+      <<~TOML
+        [project]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = [
+            "opentelemetry-api==1.25.0",
+            "opentelemetry-sdk==1.25.0",
+        ]
+      TOML
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "opentelemetry-api",
+        version: "1.26.0",
+        requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: [], source: nil }],
+        previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }],
+        previous_version: "1.25.0",
+        package_manager: "uv"
+      )
+    end
+    let(:peer) do
+      Dependabot::Dependency.new(
+        name: "opentelemetry-sdk",
+        version: nil,
+        requirements: [{ file: "pyproject.toml", requirement: ">=1.25.0", groups: [], source: nil }],
+        previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }],
+        previous_version: "1.25.0",
+        package_manager: "uv"
+      )
+    end
+    let(:dependencies) { [dependency, peer] }
+
+    it "rewrites the requirement of each of them" do
+      content = updater.send(:updated_pyproject_content_for, pyproject_file)
+
+      expect(content).to include('"opentelemetry-api==1.26.0"')
+      expect(content).to include('"opentelemetry-sdk>=1.25.0"')
+    end
+
+    it "is not build-system only when one of them is a regular dependency" do
+      expect(updater.send(:build_system_only_dependency?)).to be(false)
+    end
+
+    context "when all of them are build-system requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.26.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "1.25.0",
+          package_manager: "uv"
+        )
+      end
+      let(:dependencies) { [dependency] }
+
+      it "is build-system only" do
+        expect(updater.send(:build_system_only_dependency?)).to be(true)
+      end
+    end
+
+    context "when only a later dependency is declared in pyproject.toml" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.23.0",
+          requirements: [{ file: "requirements.txt", requirement: "==2.23.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "requirements.txt", requirement: "==2.22.0", groups: [], source: nil }],
+          previous_version: "2.22.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "still updates the lock file" do
+        expect(updater.send(:create_or_update_lock_file?)).to be(true)
+      end
+    end
+  end
+
   describe "#replace_dep" do
     subject(:replace_dep) do
       updater.send(
