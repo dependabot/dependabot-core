@@ -53,12 +53,34 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_manifest_content(file)
-        # Use workspace updater for root workspace manifests
         if workspace_root_manifest?(file)
-          WorkspaceManifestUpdater.new(
+          # First update workspace-level dependency declarations
+          content = WorkspaceManifestUpdater.new(
             dependencies: dependencies,
             manifest: file
           ).updated_manifest_content
+
+          # Also update package-level (non-workspace) dependency declarations.
+          # A workspace root manifest may also contain a [package] section with
+          # its own [dependencies], [dev-dependencies], and [build-dependencies].
+          # WorkspaceManifestUpdater only handles [workspace.dependencies], so we
+          # need ManifestUpdater to handle the package-level entries.
+          package_level_deps = dependencies.select do |dep|
+            prev_reqs = dep.previous_requirements || []
+            changed_reqs = dep.requirements - prev_reqs
+            changed_reqs.any? { |r| !r[:groups]&.include?("workspace.dependencies") && r[:file] == file.name }
+          end
+
+          if package_level_deps.any?
+            intermediate_file = file.dup
+            intermediate_file.content = content
+            content = ManifestUpdater.new(
+              dependencies: package_level_deps,
+              manifest: intermediate_file
+            ).updated_manifest_content
+          end
+
+          content
         else
           ManifestUpdater.new(
             dependencies: dependencies,
