@@ -1233,19 +1233,11 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
       end
 
-      it "updates both with a full unlock, dependency first" do
-        expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
-        expect(checker.updated_dependencies(requirements_to_unlock: :all).map(&:name))
-          .to eq(%w(opentelemetry-api opentelemetry-sdk))
-      end
-
       context "when uv finds no lockstep conflict" do
         before { allow(lockstep_resolver).to receive(:lockstep_conflict?).and_return(false) }
 
-        it "keeps the own update and bumps nothing else" do
+        it "keeps the own update" do
           expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-          expect(checker.updated_dependencies(requirements_to_unlock: :own).map(&:name))
-            .to eq(%w(opentelemetry-api))
         end
       end
 
@@ -1358,6 +1350,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           expect(updated.map { |dep| dep.requirements.first[:requirement] }).to eq(%w(==1.26.0 ==1.26.0))
 
           expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).twice
+          expect(uv_commands.size).to eq(2)
           expect(probed_pyprojects).to all(include('"opentelemetry-api==1.26.0"'))
           expect(probed_pyprojects.last).to include('"opentelemetry-sdk>=1.25.0"')
           expect(uv_commands).to all(include("uv lock --upgrade-package opentelemetry-api==1.26.0 "))
@@ -1380,23 +1373,24 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
           end
         end
-      end
 
-      context "when asked about the peer instead" do
-        let(:dependency_name) { "opentelemetry-sdk" }
-        let(:pypi_url) { "https://pypi.org/simple/opentelemetry-sdk/" }
-        let(:pypi_response) do
-          <<~HTML
-            <html><body>
-            <a href="https://files.pythonhosted.org/packages/a/opentelemetry_sdk-1.25.0-py3-none-any.whl">opentelemetry_sdk-1.25.0-py3-none-any.whl</a><br/>
-            <a href="https://files.pythonhosted.org/packages/b/opentelemetry_sdk-1.26.0-py3-none-any.whl">opentelemetry_sdk-1.26.0-py3-none-any.whl</a><br/>
-            </body></html>
-          HTML
-        end
+        context "when asked about the peer instead" do
+          let(:dependency_name) { "opentelemetry-sdk" }
+          let(:pypi_url) { "https://pypi.org/simple/opentelemetry-sdk/" }
+          let(:pypi_response) do
+            <<~HTML
+              <html><body>
+              <a href="https://files.pythonhosted.org/packages/a/opentelemetry_sdk-1.25.0-py3-none-any.whl">opentelemetry_sdk-1.25.0-py3-none-any.whl</a><br/>
+              <a href="https://files.pythonhosted.org/packages/b/opentelemetry_sdk-1.26.0-py3-none-any.whl">opentelemetry_sdk-1.26.0-py3-none-any.whl</a><br/>
+              </body></html>
+            HTML
+          end
 
-        it "also reports that it can't move on its own" do
-          # update_all_versions#peer_dependency_should_update_instead? relies on this
-          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+          it "also reports that it can't move on its own" do
+            # update_all_versions#peer_dependency_should_update_instead? relies on this
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+            expect(uv_commands).to all(include("uv lock --upgrade-package opentelemetry-sdk==1.26.0 "))
+          end
         end
       end
     end

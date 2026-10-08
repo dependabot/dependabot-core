@@ -83,6 +83,12 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
 
       it { expect(resolver.neighbours_in_lockfile?).to be(false) }
     end
+
+    context "when the dependency itself depends on another top-level dependency" do
+      let(:dependency) { sdk }
+
+      it { expect(resolver.neighbours_in_lockfile?).to be(true) }
+    end
   end
 
   describe "#lockstep_conflict?" do
@@ -118,6 +124,48 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
 
       expect(resolver.lockstep_conflict?(target)).to be(false)
       expect(resolver.rejected_version).to be_nil
+    end
+
+    context "when the only other dependency named is not a peer" do
+      before { allow(lock_updater).to receive(:updated_dependency_files).and_raise(conflict) }
+
+      context "when it is only a build-system requirement" do
+        let(:sdk) do
+          Dependabot::Dependency.new(
+            name: "opentelemetry-sdk",
+            version: "1.25.0",
+            requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"], source: nil }],
+            package_manager: "uv"
+          )
+        end
+
+        it { expect(resolver.lockstep_conflict?(target)).to be(false) }
+      end
+
+      context "when it is a local package" do
+        let(:lockfile) do
+          content = fixture("uv_locks", "lockstep_pinned.lock").sub(
+            "name = \"opentelemetry-sdk\"\nversion = \"1.25.0\"\nsource = { registry = \"https://pypi.org/simple\" }",
+            "name = \"opentelemetry-sdk\"\nversion = \"1.25.0\"\nsource = { editable = \"sdk\" }"
+          )
+          Dependabot::DependencyFile.new(name: "uv.lock", content: content)
+        end
+
+        it { expect(resolver.lockstep_conflict?(target)).to be(false) }
+      end
+
+      context "when it has no version" do
+        let(:sdk) do
+          Dependabot::Dependency.new(
+            name: "opentelemetry-sdk",
+            version: nil,
+            requirements: [{ file: "pyproject.toml", requirement: ">=1.25.0", groups: [], source: nil }],
+            package_manager: "uv"
+          )
+        end
+
+        it { expect(resolver.lockstep_conflict?(target)).to be(false) }
+      end
     end
 
     it "lets other errors through" do
@@ -248,11 +296,14 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
     end
 
     it "gives up when the conflict names no new peer" do
-      allow(lock_updater).to receive(:updated_dependency_files).and_raise(
-        Dependabot::UpdateNotPossible.new(%w(opentelemetry-api))
-      )
+      stub_uv do |names|
+        raise conflict unless names.include?("opentelemetry-sdk")
+
+        raise Dependabot::UpdateNotPossible, %w(opentelemetry-sdk opentelemetry-api)
+      end
 
       expect(updates).to be_nil
+      expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).twice
     end
 
     it "gives up when no peer moved" do
@@ -377,9 +428,14 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
       end
 
       it "does not treat it as a peer" do
-        allow(lock_updater).to receive(:updated_dependency_files).and_raise(conflict)
+        stub_uv do |names|
+          raise conflict unless names.include?("opentelemetry-sdk")
+
+          [resolved_lockfile]
+        end
 
         expect(updates).to be_nil
+        expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).once
       end
     end
 

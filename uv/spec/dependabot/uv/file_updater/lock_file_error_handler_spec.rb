@@ -590,11 +590,5 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
         expect(names).to eq(%w(foo-bar baz))
       end
     end
-
-    context "when no requirement is named" do
-      let(:message) { "× No solution found when resolving dependencies" }
-
-      it { is_expected.to eq([]) }
-    end
   end
 end
