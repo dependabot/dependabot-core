@@ -12,10 +12,11 @@ require "support/dummy_package_manager/dummy"
 require "dependabot/bundler"
 
 RSpec.describe Dependabot::FileFetcherCommand do
-  subject(:job) { described_class.new }
+  subject(:job) { described_class.new(record_ecosystem_versions:) }
 
   let(:api_client) { double(Dependabot::ApiClient) }
   let(:job_id) { "123123" }
+  let(:record_ecosystem_versions) { true }
 
   before do
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
@@ -60,6 +61,76 @@ RSpec.describe Dependabot::FileFetcherCommand do
         "dependabot-test-ruby-package.gemspec"
       )
       expect(dependency_file.content_encoding).to eq("utf-8")
+    end
+
+    context "when ecosystem version recording is disabled" do
+      let(:record_ecosystem_versions) { false }
+
+      it "fetches files without recording ecosystem versions",
+         vcr: { cassette_name: "Dependabot_FileFetcherCommand/_perform_job/fetches_the_files" } do
+        expect(api_client).not_to receive(:record_ecosystem_versions)
+
+        perform_job
+
+        expect(job.files.dependency_files).not_to be_empty
+      end
+    end
+
+    context "when only a local checkout may be used" do
+      let(:repo_contents_path) { Dir.mktmpdir }
+
+      before do
+        allow(Dependabot::Environment).to receive_messages(
+          repo_contents_path: repo_contents_path
+        )
+        stub_const("ENV", ENV.to_h.merge("DEPENDABOT_LOCAL_CHECKOUT_ONLY" => "true"))
+      end
+
+      after { FileUtils.rm_rf(repo_contents_path) unless repo_contents_path.to_s.empty? }
+
+      it "reports an error instead of fetching the repository when the checkout is missing" do
+        expect(Dependabot::Bundler::FileFetcher).not_to receive(:new)
+        expect(api_client).to receive(:record_update_job_error).with(
+          hash_including(
+            error_type: "file_fetcher_error",
+            error_details: hash_including(
+              Dependabot::ErrorAttributes::MESSAGE => "Local repository checkout not found at #{repo_contents_path}"
+            )
+          )
+        )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Local repository checkout not found/).to_stdout_from_any_process
+      end
+
+      shared_examples "a missing repository contents path" do
+        it "reports that the repository contents path is not set" do
+          expect(Dependabot::Bundler::FileFetcher).not_to receive(:new)
+          expect(api_client).to receive(:record_update_job_error).with(
+            hash_including(
+              error_type: "file_fetcher_error",
+              error_details: hash_including(
+                Dependabot::ErrorAttributes::MESSAGE => "DEPENDABOT_REPO_CONTENTS_PATH is not set"
+              )
+            )
+          )
+          expect(api_client).to receive(:mark_job_as_processed)
+
+          expect { perform_job }.to output(/DEPENDABOT_REPO_CONTENTS_PATH is not set/).to_stdout_from_any_process
+        end
+      end
+
+      context "when the repository contents path is nil" do
+        let(:repo_contents_path) { nil }
+
+        it_behaves_like "a missing repository contents path"
+      end
+
+      context "when the repository contents path is empty" do
+        let(:repo_contents_path) { "" }
+
+        it_behaves_like "a missing repository contents path"
+      end
     end
 
     context "when empty directories are specified" do
