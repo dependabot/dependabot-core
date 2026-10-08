@@ -1357,8 +1357,8 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           expect(uv_commands.grep(/--upgrade-package opentelemetry-sdk/)).to be_empty
         end
 
-        context "when uv prints the conflict in its 0.12 format" do
-          # generated with uv 0.12.20; the error handler can't read it, so it arrives as DependencyFileNotResolvable
+        context "when uv >= 0.12.14 prints the conflict" do
+          # generated with uv 0.12.20; the error handler only knows the `×` form, so it arrives as DependencyFileNotResolvable
           let(:uv_conflict) do
             <<~ERROR
               error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.12')

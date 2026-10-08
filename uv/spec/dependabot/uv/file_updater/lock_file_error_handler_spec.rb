@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
 
       # generated with uv 0.12.20 (same project as above)
-      it "reads uv 0.12's `cause:` output for the same conflict" do
+      it "reads uv >= 0.12.14's `cause:` output for the same conflict" do
         message = <<~ERROR
           error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.12')
             cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your project depends on opentelemetry-api==1.26.0, we can conclude that your project and opentelemetry-sdk==1.25.0 are incompatible.

@@ -288,7 +288,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
       expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
     end
 
-    it "relaxes the peers named in an unresolvable conflict printed by uv 0.12" do
+    it "relaxes the peers named in an unresolvable conflict printed by uv >= 0.12.14" do
       calls = 0
       allow(lock_updater).to receive(:updated_dependency_files) do
         calls += 1
