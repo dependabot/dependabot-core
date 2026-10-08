@@ -812,6 +812,51 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         operation: Dependabot::DependencyFile::Operation::UPDATE
       )
     end
+
+    context "when both directories update the same dependency in a group-by-name group" do
+      let(:group) do
+        Dependabot::DependencyGroup.new(
+          name: "test-group",
+          rules: { "patterns" => ["dep1"], "group-by" => "dependency-name" }
+        )
+      end
+
+      def change_for(directory)
+        Dependabot::DependencyChange.new(
+          job: job,
+          updated_dependencies: [
+            Dependabot::Dependency.new(
+              name: "dep1",
+              version: "1.1.0",
+              previous_version: "1.0.0",
+              requirements: [{ file: "Gemfile", requirement: "~> 1.1.0", groups: [], source: nil }],
+              previous_requirements: [{ file: "Gemfile", requirement: "~> 1.0.0", groups: [], source: nil }],
+              package_manager: "bundler"
+            )
+          ],
+          updated_dependency_files: [
+            Dependabot::DependencyFile.new(name: "Gemfile", content: "updated", directory: directory)
+          ],
+          dependency_group: group
+        )
+      end
+
+      before do
+        allow(dependency_snapshot).to receive(:ecosystem).and_return(nil)
+        allow(test_instance).to receive(:compile_all_dependency_changes_for)
+          .and_return(change_for("/dir1"), change_for("/dir2"))
+      end
+
+      it "merges the per-directory changes into one deduplicated grouped change" do
+        change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+        expect(change.updated_dependencies.map(&:name)).to eq(["dep1"])
+        expect(change.updated_dependencies.first.metadata[:updated_directories]).to eq(["/dir1", "/dir2"])
+        # The group must survive the merge, or the PR is reported as an ungrouped one.
+        expect(change.dependency_group).to eq(group)
+        expect(change.updated_dependency_files.map(&:path)).to contain_exactly("/dir1/Gemfile", "/dir2/Gemfile")
+      end
+    end
   end
 
   describe "#compile_updates_for blocked versions ignored metric" do
