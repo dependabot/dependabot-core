@@ -3,7 +3,6 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/security_advisory"
 require "dependabot/apm/update_checker"
 require "dependabot/apm/version"
 require "dependabot/git_metadata_fetcher"
@@ -372,174 +371,6 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(refs).to eq(%w(review--v1.5.0 review-v1.4.0))
       end
     end
-
-    context "when a merged dependency needs per-line security fixes" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: "1.0.0",
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "apm.yml",
-              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
-              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
-            },
-            {
-              requirement: nil,
-              groups: [],
-              file: "apm.yml",
-              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
-              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
-            }
-          ],
-          package_manager: "apm"
-        )
-      end
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "apm",
-            vulnerable_versions: ["< 1.1.0", ">= 2.0.0, < 2.1.0"]
-          )
-        ]
-      end
-
-      before do
-        stub_request(:get, service_pack_url)
-          .to_return(
-            status: 200,
-            body: fixture("git", "upload_packs", "apm-package-two-lines"),
-            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
-          )
-      end
-
-      # Filtering security fixes against each requirement's own version keeps the
-      # v2.0.0 pin from being handed the v1.x fix (and then skipped by the
-      # downgrade guard, leaving it vulnerable); it reaches its own v2.1.0 fix.
-      it "moves each vulnerable declaration to the fix in its own version line" do
-        refs = updated_requirements.map { |req| req[:source][:ref] }
-        expect(refs).to eq(%w(v1.1.0 v2.1.0))
-      end
-    end
-
-    context "when only the higher merged declaration is vulnerable" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: "1.0.0",
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "apm.yml",
-              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
-              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
-            },
-            {
-              requirement: nil,
-              groups: [],
-              file: "apm.yml",
-              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
-              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
-            }
-          ],
-          package_manager: "apm"
-        )
-      end
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "apm",
-            vulnerable_versions: [">= 2.0.0, < 2.1.0"]
-          )
-        ]
-      end
-
-      before do
-        stub_request(:get, service_pack_url)
-          .to_return(
-            status: 200,
-            body: fixture("git", "upload_packs", "apm-package-two-lines"),
-            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
-          )
-      end
-
-      # The merged (lowest) version v1.0.0 is not affected, so base vulnerable?
-      # would skip the whole dependency. Only the affected v2.0.0 line is moved
-      # to its own fix; the unaffected v1.0.0 line is left untouched.
-      it "fixes only the affected declaration and leaves the safe one untouched" do
-        refs = updated_requirements.map { |req| req[:source][:ref] }
-        expect(refs).to eq(%w(v1.0.0 v2.1.0))
-      end
-    end
-  end
-
-  describe "#vulnerable?" do
-    subject(:vulnerable) { checker.vulnerable? }
-
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: dependency_name,
-        version: "1.0.0",
-        requirements: [
-          {
-            requirement: nil,
-            groups: [],
-            file: "apm.yml",
-            source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
-            metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
-          },
-          {
-            requirement: nil,
-            groups: [],
-            file: "apm.yml",
-            source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
-            metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
-          }
-        ],
-        package_manager: "apm"
-      )
-    end
-
-    context "when an advisory affects only the higher merged declaration" do
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "apm",
-            vulnerable_versions: [">= 2.0.0, < 2.1.0"]
-          )
-        ]
-      end
-
-      # The merged dependency's single version is the lowest ref (v1.0.0), which
-      # base vulnerable? reports as safe -- the higher, genuinely vulnerable
-      # v2.0.0 declaration must still mark the dependency vulnerable so the
-      # security update is not skipped upstream.
-      it "reports the dependency as vulnerable" do
-        expect(vulnerable).to be(true)
-      end
-    end
-
-    context "when no declared version is affected" do
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "apm",
-            vulnerable_versions: [">= 3.0.0"]
-          )
-        ]
-      end
-
-      it "reports the dependency as not vulnerable" do
-        expect(vulnerable).to be(false)
-      end
-    end
   end
 
   describe "#updated_dependencies" do
@@ -598,99 +429,14 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(refs).to eq(%w(review-v1.4.0 review--v1.5.0))
       end
     end
-
-    context "when only a higher merged declaration is vulnerable" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: "1.0.0",
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "apm.yml",
-              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v1.0.0", branch: nil },
-              metadata: { declaration_string: "#{dependency_name}#v1.0.0" }
-            },
-            {
-              requirement: nil,
-              groups: [],
-              file: "apm.yml",
-              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.0.0", branch: nil },
-              metadata: { declaration_string: "#{dependency_name}#v2.0.0" }
-            }
-          ],
-          package_manager: "apm"
-        )
-      end
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "apm",
-            vulnerable_versions: [">= 2.0.0, < 2.1.0"]
-          )
-        ]
-      end
-
-      before do
-        stub_request(:get, service_pack_url)
-          .to_return(
-            status: 200,
-            body: fixture("git", "upload_packs", "apm-package-two-lines"),
-            headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
-          )
-      end
-
-      # DependencySet collapses the merged dependency to its LOWEST (here
-      # unaffected) v1.0.0 for both version and previous_version. Unless the
-      # update surfaces the vulnerable pin, SecurityAdvisory#fixed_by? -- which
-      # needs previous_version vulnerable and version safe -- rejects it and the
-      # security update is reported as not possible even though the vulnerable
-      # declaration is being fixed.
-      it "reports the vulnerable pin as previous_version and its fix as version" do
-        expect(updated_dependency.previous_version).to eq("2.0.0")
-        expect(updated_dependency.version).to eq("2.1.0")
-      end
-
-      it "satisfies the security advisory fixed_by? gate" do
-        expect(security_advisories.first.fixed_by?(updated_dependency)).to be(true)
-      end
-    end
   end
 
   describe "#lowest_security_fix_version" do
-    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
-
-    let(:security_advisories) do
-      [
-        Dependabot::SecurityAdvisory.new(
-          dependency_name: dependency_name,
-          package_manager: "apm",
-          vulnerable_versions: ["< 1.1.0"]
-        )
-      ]
-    end
-
-    it "returns the lowest non-vulnerable tag" do
-      expect(lowest_security_fix_version).to eq(Dependabot::Apm::Version.new("1.1.0"))
-    end
-
-    context "when only the current version line is vulnerable" do
-      let(:reference) { "v1.1.0" }
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "apm",
-            vulnerable_versions: [">= 1.1.0, < 1.2.0"]
-          )
-        ]
-      end
-
-      it "upgrades to the fix rather than downgrading to an older unaffected tag" do
-        expect(lowest_security_fix_version).to eq(Dependabot::Apm::Version.new("1.2.0"))
-      end
+    # APM packages have no advisory-database coverage, so Dependabot never runs
+    # security updates for them; the method is a nil stub satisfying the base
+    # contract rather than carrying unreachable resolution logic.
+    it "returns nil because APM has no security updates" do
+      expect(checker.lowest_security_fix_version).to be_nil
     end
   end
 end
