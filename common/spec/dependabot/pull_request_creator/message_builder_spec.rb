@@ -1569,6 +1569,41 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "when marked as a security fix without advisory details" do
+        let(:vulnerabilities_fixed) { {} }
+        let(:builder) do
+          described_class.new(
+            source: source,
+            dependencies: dependencies,
+            files: files,
+            credentials: credentials,
+            pr_message_header: pr_message_header,
+            pr_message_footer: pr_message_footer,
+            commit_message_options: commit_message_options,
+            vulnerabilities_fixed: vulnerabilities_fixed,
+            github_redirection_service: github_redirection_service,
+            dependency_group: dependency_group,
+            ignore_conditions: ignore_conditions,
+            notices: notices,
+            security_fix: true
+          )
+        end
+
+        before do
+          allow(Dependabot::PullRequestCreator::PrNamePrefixer)
+            .to receive(:new).and_return(pr_name_prefixer)
+        end
+
+        it "notes the security fix without disclosing version ranges" do
+          expect(pr_message)
+            .to start_with(
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "from 1.4.0 to 1.5.0. **This update includes a security fix.**\n"
+            )
+          expect(pr_message).not_to include("Vulnerabilities fixed")
+        end
+      end
+
       context "when transitive security vulnerabilities are fixed" do
         let(:dependencies) { [transitive_dependency, dependency] }
         let(:transitive_dependency) do
