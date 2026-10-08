@@ -26,6 +26,9 @@ module Dependabot
         extend T::Sig
 
         MAX_UNLOCK_ROUNDS = 3
+        # Matched as plain text because uv >= 0.12 prints `error: No solution found ...` / `cause: ...` where
+        # earlier releases printed `× No solution found ...` / `╰─▶ ...`, which UV_UNRESOLVABLE_REGEX still requires.
+        UV_NO_SOLUTION_ERROR = "No solution found when resolving dependencies"
 
         class Probe < T::ImmutableStruct
           const :resolved, T::Boolean
@@ -203,7 +206,7 @@ module Dependabot
 
         sig { params(message: String).returns(T::Boolean) }
         def resolution_conflict?(message)
-          message.match?(FileUpdater::LockFileErrorHandler::UV_UNRESOLVABLE_REGEX) ||
+          message.include?(UV_NO_SOLUTION_ERROR) ||
             message.include?(FileUpdater::LockFileErrorHandler::RESOLUTION_IMPOSSIBLE_ERROR)
         end
 

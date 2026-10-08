@@ -288,6 +288,25 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockstepResolver do
       expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
     end
 
+    it "relaxes the peers named in an unresolvable conflict printed by uv 0.12" do
+      calls = 0
+      allow(lock_updater).to receive(:updated_dependency_files) do
+        calls += 1
+        if calls == 1
+          raise Dependabot::DependencyFileNotResolvable,
+                "error: No solution found when resolving dependencies for split (markers: " \
+                "python_full_version >= '3.12')\n" \
+                "  cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your " \
+                "project depends on opentelemetry-api==1.26.0, we can conclude that your project and " \
+                "opentelemetry-sdk==1.25.0 are incompatible."
+        end
+
+        [resolved_lockfile]
+      end
+
+      expect(updates.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+    end
+
     it "lets unresolvable errors that aren't conflicts through" do
       allow(lock_updater).to receive(:updated_dependency_files)
         .and_raise(Dependabot::DependencyFileNotResolvable.new("Failed to build foo"))

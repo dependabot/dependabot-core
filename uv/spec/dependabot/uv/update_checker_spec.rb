@@ -1357,6 +1357,26 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           expect(uv_commands.grep(/--upgrade-package opentelemetry-sdk/)).to be_empty
         end
 
+        context "when uv prints the conflict in its 0.12 format" do
+          # generated with uv 0.12.20; the error handler can't read it, so it arrives as DependencyFileNotResolvable
+          let(:uv_conflict) do
+            <<~ERROR
+              error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.12')
+                cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your project depends on opentelemetry-api==1.26.0, we can conclude that your project and opentelemetry-sdk==1.25.0 are incompatible.
+                       And because your project depends on opentelemetry-sdk==1.25.0, we can conclude that your project's requirements are unsatisfiable.
+            ERROR
+          end
+
+          it "still moves the peer with it" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+            expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
+
+            updated = checker.updated_dependencies(requirements_to_unlock: :all)
+            expect(updated.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+            expect(updated.map(&:version)).to eq(%w(1.26.0 1.26.0))
+          end
+        end
+
         context "when uv fails for a reason that names no other direct dependency" do
           let(:uv_conflict) do
             <<~ERROR
