@@ -135,6 +135,67 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
+    context "when the lockfile sits above the job's directory" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+          Dependabot::DependencyFile.new(
+            name: "../../pnpm-lock.yaml",
+            content: "lockfileVersion: '#{lockfile_version}'\n"
+          )
+        ]
+      end
+
+      it "runs the pnpm that wrote the ancestor lockfile" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("corepack pnpm@8 install", fingerprint: "corepack pnpm@8 install", env: env)
+      end
+
+      context "when the job's own package.json pins pnpm" do
+        let(:manifest) { { "name" => "example", "packageManager" => "pnpm@8.15.9" } }
+
+        it "leaves the pinned version to Corepack" do
+          described_class.run_pnpm_command("install", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with("pnpm install", fingerprint: "pnpm install", env: env)
+        end
+      end
+
+      context "when a nearer lockfile is one the default pnpm reads" do
+        let(:files) do
+          super() + [
+            Dependabot::DependencyFile.new(name: "../pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n")
+          ]
+        end
+
+        it "uses the nearest lockfile, so the default pnpm runs" do
+          described_class.run_pnpm_command("install", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with("pnpm install", fingerprint: "pnpm install", env: env)
+        end
+      end
+    end
+
+    context "when the only old lockfile is in a sub-directory" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+          Dependabot::DependencyFile.new(name: "packages/a/pnpm-lock.yaml", content: "lockfileVersion: '6.0'\n")
+        ]
+      end
+
+      it "runs the default pnpm, since a command run from here does not use that lockfile" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
     ["9.0", "5.3"].each do |version|
       context "when the lockfile is version #{version}" do
         let(:lockfile_version) { version }
