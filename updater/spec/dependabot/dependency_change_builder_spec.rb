@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tmpdir"
+require "fileutils"
 require "dependabot/dependency_change_builder"
 require "dependabot/dependency_file"
 require "dependabot/job"
@@ -127,6 +129,55 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
     def dependency_group_source
       Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
+    end
+
+    context "when the repo declares line endings via .gitattributes" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:repo) { Dir.mktmpdir }
+
+      before do
+        Dir.chdir(repo) do
+          system("git", "init", "--quiet", exception: true)
+          File.write(".gitattributes", "*.bat text eol=crlf\n")
+        end
+        allow(job).to receive(:repo_contents_path).and_return(repo)
+        stub_file_updater(
+          updated_dependency_files: [
+            Dependabot::DependencyFile.new(
+              name: "gradlew.bat", content: "@echo\r\noff\r\n", directory: "/", support_file: false
+            )
+          ]
+        )
+      end
+
+      after { FileUtils.remove_entry(repo) }
+
+      it "commits gradlew.bat in the LF index form its .gitattributes declares" do
+        file = create_change.updated_dependency_files.find { |f| f.name == "gradlew.bat" }
+        expect(file.content).to eq("@echo\noff\n")
+      end
+
+      context "without a cloned repo" do
+        before { allow(job).to receive(:repo_contents_path).and_return(nil) }
+
+        it "leaves the content untouched" do
+          file = create_change.updated_dependency_files.find { |f| f.name == "gradlew.bat" }
+          expect(file.content).to eq("@echo\r\noff\r\n")
+        end
+      end
+
+      context "when reconciliation fails" do
+        before do
+          allow(Dependabot::GitAttributes).to receive(:reconcile_line_endings!)
+            .and_raise(StandardError, "git check-attr failed")
+        end
+
+        it "logs a warning and creates the change with the content as produced" do
+          expect(Dependabot.logger).to receive(:warn).with("Skipping line-ending reconciliation: StandardError")
+          file = create_change.updated_dependency_files.find { |f| f.name == "gradlew.bat" }
+          expect(file.content).to eq("@echo\r\noff\r\n")
+        end
+      end
     end
 
     context "when the job is a security update" do
