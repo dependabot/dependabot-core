@@ -135,6 +135,43 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
+    context "when the lockfile sits above the job's directory" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+          Dependabot::DependencyFile.new(
+            name: "../../pnpm-lock.yaml",
+            content: "lockfileVersion: '#{lockfile_version}'\n"
+          )
+        ]
+      end
+
+      # A `packageManager` pin in that ancestor's package.json is honored by Corepack but is not fetched, so
+      # choosing a pnpm for its lockfile could override a pin that cannot be seen.
+      it "runs the default pnpm and leaves the choice to Corepack" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
+    context "when the only old lockfile is in a sub-directory" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+          Dependabot::DependencyFile.new(name: "packages/a/pnpm-lock.yaml", content: "lockfileVersion: '6.0'\n")
+        ]
+      end
+
+      it "runs the default pnpm, since a command run from here does not use that lockfile" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
     ["9.0", "5.3"].each do |version|
       context "when the lockfile is version #{version}" do
         let(:lockfile_version) { version }
@@ -320,11 +357,34 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
     end
 
+    it "tries again when the first attempt fails" do
+      described_class.dependency_files = []
+      calls = 0
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do
+        calls += 1
+        raise "pnpm is not ready yet" if calls == 1
+
+        "12.10.1\n"
+      end
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+      expect(calls).to eq(2)
+    end
+
+    it "raises the error of the last attempt from pnpm_version!" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "download failed")
+
+      expect { described_class.pnpm_version! }.to raise_error(StandardError, "download failed")
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+    end
+
     it "returns nil when the pnpm version cannot be determined" do
       described_class.dependency_files = []
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing pnpm")
 
       expect(described_class.pnpm_version).to be_nil
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
     end
   end
 

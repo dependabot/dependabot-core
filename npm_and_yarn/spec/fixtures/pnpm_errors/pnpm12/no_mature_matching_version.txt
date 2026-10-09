@@ -1,0 +1,13 @@
+Downloading the pnpm 12.10.1 binary for linux-arm64...
+? Verifying lockfile against supply-chain policies (1 entry)...
+✓ Lockfile passes supply-chain policies (1 entry in 159ms)
+Error: ERR_PNPM_NO_MATURE_MATCHING_VERSION
+
+  × updating dependencies
+  ╰─▶ 1 version does not meet the minimumReleaseAge constraint:
+        @types/node@24.19.1 was published at 2026-10-01T22:38:02.894Z, within
+      the minimumReleaseAge cutoff (2026-09-30T13:17:22.178Z)
+  help: Run the install interactively to approve these picks, add them to
+        minimumReleaseAgeExclude in pnpm-workspace.yaml, or wait for the
+        packages to mature.
+

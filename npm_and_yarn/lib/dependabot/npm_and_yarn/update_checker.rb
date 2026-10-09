@@ -4,6 +4,8 @@
 require "dependabot/git_commit_checker"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
@@ -14,6 +16,10 @@ module Dependabot
 
       Audit = Dependabot::UpdateCheckers::VulnerabilityAudit
       FixUpdate = Dependabot::UpdateCheckers::VulnerabilityAudit::FixUpdate
+
+      PNPM_MINIMUM_RELEASE_AGE_SETTING = Helpers::ReleaseAgeGateSetting.new(
+        filename: PNPMPackageManager::PNPM_WS_YML_FILENAME, key: "minimumReleaseAge", separator: ":"
+      )
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/library_detector"
@@ -72,6 +78,7 @@ module Dependabot
         Helpers.credentials = credentials
         Helpers.activate_npm_version_selector(dependency_files)
         apply_npmrc_min_release_age
+        apply_pnpm_minimum_release_age
       end
 
       sig { returns(T::Boolean) }
@@ -603,6 +610,42 @@ module Dependabot
           log_npmrc_cooldown_conflicts(existing, npmrc_days)
           @update_cooldown = merge_cooldown_with_npmrc_floor(existing, npmrc_days)
         end
+      end
+
+      # Applies a repo's own pnpm `minimumReleaseAge` (minutes, in pnpm-workspace.yaml) as a floor for every
+      # cooldown field, so Dependabot does not pick a version that pnpm's own gate then refuses (strict mode
+      # fails the update) or admits only by adding it to `minimumReleaseAgeExclude` (non-strict mode). Like the
+      # npm floor, it is not applied to security updates, and a window that is not a plain number is left to pnpm.
+      sig { void }
+      def apply_pnpm_minimum_release_age
+        return if security_update?
+
+        minutes = Helpers.max_configured_release_age(dependency_files, [PNPM_MINIMUM_RELEASE_AGE_SETTING])
+        return unless minutes.is_a?(Integer) && minutes.positive?
+
+        # Cooldown fields are whole days, so round up rather than admit a version younger than the window
+        days = (minutes.to_f / Helpers::MINUTES_PER_DAY).ceil
+        existing = @update_cooldown
+        if existing.nil?
+          @update_cooldown = Dependabot::Package::ReleaseCooldownOptions.new(default_days: days)
+          return
+        end
+
+        log_pnpm_cooldown_floor(existing, minutes, days)
+        @update_cooldown = merge_cooldown_with_npmrc_floor(existing, days)
+      end
+
+      sig { params(existing: Dependabot::Package::ReleaseCooldownOptions, minutes: Integer, days: Integer).void }
+      def log_pnpm_cooldown_floor(existing, minutes, days)
+        all_days = [existing.default_days, existing.semver_major_days,
+                    existing.semver_minor_days, existing.semver_patch_days]
+        return unless all_days.any? { |configured| configured < days } || existing.include.any? || existing.exclude.any?
+
+        Dependabot.logger.warn(
+          "pnpm-workspace.yaml minimumReleaseAge (#{minutes} minutes, #{days} days) acts as a minimum floor for " \
+          "every dependabot.yml update_cooldown value, and its include/exclude patterns are dropped, because " \
+          "pnpm applies the window to every package."
+        )
       end
 
       sig do

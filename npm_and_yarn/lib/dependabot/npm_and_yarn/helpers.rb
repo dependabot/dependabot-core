@@ -284,16 +284,39 @@ module Dependabot
         message.scan(PNPM_INDIRECT_DEP_NAME).flatten
       end
 
+      # A one-off failure of `pnpm -v` (for example while Corepack fetches the binary) should not leave the version
+      # unknown, so the probe is tried this many times.
+      PNPM_VERSION_PROBE_ATTEMPTS = 2
+
       # The concrete pnpm version that will run for this update. Returns nil when
       # the version can't be determined. Used to gate version-specific config such as
       # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
-        Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
+        pnpm_version!
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
         nil
+      end
+
+      # Like pnpm_version, but raises the error of the last attempt, so a caller that cannot go on without the
+      # version can report why it is unknown.
+      sig { returns(Dependabot::Version) }
+      def self.pnpm_version!
+        last_error = T.let(nil, T.nilable(StandardError))
+
+        PNPM_VERSION_PROBE_ATTEMPTS.times do |attempt|
+          return Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
+        rescue StandardError => e
+          last_error = e
+          Dependabot.logger.warn(
+            "Could not determine pnpm version (attempt #{attempt + 1} of #{PNPM_VERSION_PROBE_ATTEMPTS}): " \
+            "#{e.message}"
+          )
+        end
+
+        raise T.must(last_error)
       end
 
       # The concrete npm version that will run. Returns nil when it can't be determined.
@@ -653,6 +676,10 @@ module Dependabot
         PNPM_V7.to_s if version >= 5.4
       end
 
+      # The pnpm major for the repository's lockfile (see matching_pnpm_major). Only a lockfile in the job's own
+      # directory is used. A lockfile in an ancestor directory (a workspace root above the job) is not: Corepack
+      # honors a `packageManager` pin in that ancestor's package.json, which the file fetcher does not fetch, so
+      # choosing a pnpm here could override a pin that is not visible.
       sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T.nilable(String)) }
       def self.matching_pnpm_major_for_files(files)
         return unless files
@@ -662,12 +689,13 @@ module Dependabot
 
         matching_pnpm_major(
           lockfile_version: pnpm_lockfile_version(lockfile),
-          package_manager_pin: root_package_manager_pin(files)
+          package_manager_pin: package_manager_pin(files)
         )
       end
 
+      # The `packageManager` of the job's own package.json.
       sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
-      def self.root_package_manager_pin(files)
+      def self.package_manager_pin(files)
         manifest = files.find { |file| file.name == "package.json" }
         return unless manifest&.content
 

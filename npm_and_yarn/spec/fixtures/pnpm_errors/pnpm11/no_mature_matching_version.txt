@@ -1,0 +1,12 @@
+
+   ╭──────────────────────────────────────────────────────────────────────╮
+   │                                                                      │
+   │                 Update available! 11.25.0 → 12.10.1.                 │
+   │                 Changelog: https://pnpm.io/v/12.10.1                 │
+   │   To update, run: curl -fsSL https://get.pnpm.io/install.sh | sh -   │
+   │                                                                      │
+   ╰──────────────────────────────────────────────────────────────────────╯
+
+Progress: resolved 1, reused 0, downloaded 0, added 0
+[ERR_PNPM_NO_MATURE_MATCHING_VERSION] 1 version does not meet the minimumReleaseAge constraint:
+  @types/node@24.19.1 was published at 2026-10-01T22:38:02.894Z, within the minimumReleaseAge cutoff (2026-09-09T19:09:27.103Z)

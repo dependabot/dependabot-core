@@ -175,6 +175,66 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      %w(pnpm10 pnpm11 pnpm12).each do |version_dir|
+        context "with a release-age window no version meets (#{version_dir} output)" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", version_dir, "no_mature_matching_version.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises UpdateNotPossible naming the dependencies being updated when pnpm rejected another package" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+              expect(error.dependencies).to eq([dependency_name])
+            end
+          end
+
+          context "when the package pnpm rejected is one of several being updated" do
+            let(:dependencies) do
+              [
+                dependency,
+                Dependabot::Dependency.new(
+                  name: "@types/node",
+                  version: "24.19.1",
+                  previous_version: "24.0.0",
+                  requirements: requirements,
+                  previous_requirements: previous_requirements,
+                  package_manager: "npm_and_yarn"
+                )
+              ]
+            end
+
+            it "names only that one" do
+              expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+                expect(error.dependencies).to eq(["@types/node"])
+              end
+            end
+          end
+        end
+      end
+
+      context "with lockfile entries the repo's own release-age policy rejects (pnpm 11 output)" do
+        let(:project_name) { "pnpm/simple" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm11", "release_age_violation.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "is not reported as an update that is not possible, since it is not about the update" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+      end
+
       context "with an unrecognized pnpm-workspace.yaml setting" do
         let(:project_name) { "pnpm/simple" }
 
@@ -1723,14 +1783,71 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version).and_return(nil)
         end
 
-        it "skips the gate rather than guessing" do
-          allow(Dependabot.logger).to receive(:warn)
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimumReleaseAge")
-            ""
-          end.at_least(:once)
+        context "when the probe ran but printed no version" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version!)
+              .and_raise(ArgumentError, "Malformed version number string nonsense")
+          end
 
-          updater.send(:run_pnpm_update_packages)
+          it "stops with MisconfiguredTooling rather than dropping the cooldown" do
+            expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+
+            expect { updater.send(:run_pnpm_update_packages) }
+              .to raise_error(Dependabot::MisconfiguredTooling, /Malformed version number.*cooldown cannot be applied/)
+          end
+        end
+
+        context "when the probe command itself fails" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version!).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "Could not download the pnpm 12.9.1 binary: fetch failed",
+                error_context: {}
+              )
+            )
+          end
+
+          it "reports the real error, not a configuration problem" do
+            expect { updater.send(:run_pnpm_update_packages) }
+              .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Could not download the pnpm/)
+          end
+        end
+
+        context "when the version can be read on the second look" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version!)
+              .and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+          end
+
+          it "uses it and applies the cooldown" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).to include("--config.minimum-release-age=10080")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
+        end
+      end
+
+      context "when the pnpm version can't be determined and no cooldown is configured" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version).and_return(nil)
+        end
+
+        it "carries on, since there is no cooldown to apply" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("").at_least(:once)
+
+          expect { updater.send(:run_pnpm_update_packages) }.not_to raise_error
         end
       end
 
