@@ -72,16 +72,22 @@ module Dependabot
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
-          dir: String
+          dir: String,
+          visited: T::Set[String]
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
-      def local_path_module_files(files, dir: ".")
+      def local_path_module_files(files, dir: ".", visited: Set[directory])
         terraform_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         files.each do |file|
           terraform_file_local_module_details(file).each do |path|
             base_path = Pathname.new(File.join(dir, path)).cleanpath.to_path
+            # Read each module directory once, keyed on its path from the repository root
+            # (`../../modules/foo` and `.` can be the same directory): a module can refer back
+            # to one already read, through a cycle or in a commented-out usage example.
+            module_dir = Pathname.new(File.join(directory, base_path)).cleanpath.to_path
+            next unless visited.add?(module_dir)
 
             # Skip excluded local module paths
             if Dependabot::FileFiltering.should_exclude_path?(base_path, "local path module directory", @exclude_paths)
@@ -93,7 +99,7 @@ module Dependabot
               .select { |f| f.type == "file" && f.name.end_with?(".tf") }
               .map { |f| fetch_file_from_host(File.join(base_path, f.name)) }
             terraform_files += nested_terraform_files
-            terraform_files += local_path_module_files(nested_terraform_files, dir: path)
+            terraform_files += local_path_module_files(nested_terraform_files, dir: base_path, visited: visited)
           end
         end
 

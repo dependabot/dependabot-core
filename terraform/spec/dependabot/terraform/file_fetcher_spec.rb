@@ -93,4 +93,64 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
         )
     end
   end
+
+  context "when a local path module refers to its own directory in a comment" do
+    let(:project_name) { "local_path_module_comment_loop" }
+
+    context "when fetching the directory that uses the module" do
+      let(:directory) { "/environments/dev" }
+
+      it "fetches the module once" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(main.tf ../../modules/foo/main.tf))
+      end
+    end
+
+    context "when fetching the module's own directory" do
+      let(:directory) { "/modules/foo" }
+
+      it "fetches only the module's own files" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(main.tf))
+      end
+    end
+  end
+
+  context "when local path modules form a cycle" do
+    let(:project_name) { "local_path_module_cycles" }
+    let(:directory) { "/modules/a" }
+
+    it "fetches each module once" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(main.tf ../b/main.tf))
+    end
+
+    context "when a module calls its own directory" do
+      let(:directory) { "/modules/self" }
+
+      it "fetches only the module's own files" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(main.tf))
+      end
+    end
+  end
+
+  context "when two local path modules share a module" do
+    let(:project_name) { "local_path_module_diamond" }
+
+    it "fetches the shared module once" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(main.tf modules/a/main.tf modules/b/main.tf modules/c/main.tf))
+    end
+  end
+
+  context "when nested local path modules use paths relative to their own directory" do
+    let(:project_name) { "local_path_module_sibling_chain" }
+    let(:directory) { "/environments/prod" }
+
+    it "resolves each path against the directory of the module that uses it" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(main.tf ../../modules/a/main.tf ../../modules/b/main.tf ../../modules/c/main.tf))
+    end
+  end
 end
