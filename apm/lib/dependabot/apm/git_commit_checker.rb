@@ -49,7 +49,53 @@ module Dependabot
         to_local_tag(max_version_tag)
       end
 
+      # The release a commit-SHA pin should move to, following `apm update`:
+      # the highest non-prerelease version tag in any of APM's tag forms
+      # (plain or package-scoped), considering only annotated tags. Lightweight
+      # tags and branches are never used, since they are not deliberate
+      # releases. Ignore conditions and cooldown apply as for tag pins.
+      #
+      # APM moves a SHA pin to that release even when the pinned commit is
+      # newer. When the pinned commit is itself a tagged release, Dependabot
+      # additionally requires a strictly higher version so it never proposes a
+      # downgrade.
+      sig do
+        params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          .returns(T.nilable(Dependabot::GitTagDetails))
+      end
+      def latest_annotated_release_tag(cooldown_options = nil)
+        candidates = allowed_versions(local_tags, filter_by_prefix: false).select { |tag| annotated_release?(tag) }
+        pinned_version = pinned_commit_version
+        candidates = candidates.select { |tag| version_from_tag(tag) > pinned_version } if pinned_version
+
+        filtered = apply_cooldown(candidates, cooldown_options)
+        return if filtered.nil?
+
+        max_local_tag(filtered)
+      end
+
       private
+
+      # An annotated tag is advertised as a tag object whose peeled (`^{}`)
+      # commit differs from it; a lightweight tag points at the commit directly.
+      sig { params(tag: Dependabot::GitRef).returns(T::Boolean) }
+      def annotated_release?(tag)
+        return false if tag.ref_sha.nil? || tag.ref_sha == tag.commit_sha
+
+        !version_from_tag(tag).prerelease?
+      end
+
+      # The highest version tagged on the pinned commit, if any.
+      sig { returns(T.nilable(Gem::Version)) }
+      def pinned_commit_version
+        pinned_sha = ref&.downcase
+        return unless pinned_sha
+
+        local_tags
+          .select { |tag| tag.commit_sha == pinned_sha && version_tag?(tag.name) }
+          .map { |tag| version_from_tag(tag) }
+          .max
+      end
 
       # Recognise a tag as a version only when it is a valid APM SemVer ref
       # (optionally package-scoped), so non-SemVer tags (e.g. `v1.2.3.4`) are

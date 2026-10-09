@@ -439,4 +439,94 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
       expect(checker.lowest_security_fix_version).to be_nil
     end
   end
+
+  context "with a full SHA pin" do
+    let(:reference) { "a" * 40 }
+    let(:dependency_version) { reference }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", "apm-package-annotated-tags"),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+    end
+
+    it "moves to the commit of the latest annotated, non-prerelease release" do
+      expect(checker.latest_version).to eq("c" * 40)
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    it "rewrites the SHA and records the release tag" do
+      expect(checker.updated_requirements.first.source_string("ref")).to eq("c" * 40)
+      expect(checker.updated_requirements.first.metadata_string("release_tag")).to eq("v1.2.0")
+    end
+
+    it "reports the release commit as the new version" do
+      updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+      expect(updated.version).to eq("c" * 40)
+      expect(updated.previous_version).to eq("a" * 40)
+    end
+
+    context "when the SHA is pinned in upper case" do
+      let(:reference) { "C" * 40 }
+      let(:dependency_version) { reference.downcase }
+
+      it "treats the release commit as already pinned" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+
+    context "when the pinned commit is a newer tagged release" do
+      let(:reference) { "e" * 40 }
+
+      it "does not downgrade to the latest annotated release" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+
+    context "when the pinned commit is untagged" do
+      let(:reference) { "9" * 40 }
+
+      it "moves to the latest annotated release, as apm update does" do
+        expect(checker.latest_version).to eq("c" * 40)
+      end
+    end
+  end
+
+  context "with a branch pin" do
+    let(:reference) { "main" }
+    let(:dependency_version) { "0" * 40 }
+    let(:dependency_source) do
+      { type: "git", url: "https://github.com/#{dependency_name}", ref: "main", branch: "main" }
+    end
+
+    it "moves to the branch's head commit without changing the manifest requirement" do
+      expect(checker.latest_version).to eq("1" * 40)
+      expect(checker.latest_resolvable_version_with_no_unlock).to eq("1" * 40)
+      expect(checker.updated_requirements).to eq(dependency.requirements)
+      expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+    end
+
+    context "when the branch is already at its head commit" do
+      let(:dependency_version) { "1" * 40 }
+
+      it "is up to date" do
+        expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+      end
+    end
+
+    context "when the branch no longer exists" do
+      let(:dependency_source) do
+        { type: "git", url: "https://github.com/#{dependency_name}", ref: "gone", branch: "gone" }
+      end
+
+      it "raises a GitDependencyReferenceNotFound error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::GitDependencyReferenceNotFound)
+      end
+    end
+  end
 end
