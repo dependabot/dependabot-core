@@ -326,6 +326,21 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
         .to have_received(:new).with(hash_including(target_requirement: "==2.34.0"))
     end
 
+    context "when uv >= 0.12.14 reports a version conflict" do
+      before do
+        updater = instance_double(Dependabot::Uv::FileUpdater::LockFileUpdater)
+        allow(updater).to receive(:updated_dependency_files).and_raise(
+          Dependabot::DependencyFileNotResolvable,
+          "error: No solution found when resolving dependencies"
+        )
+        allow(Dependabot::Uv::FileUpdater::LockFileUpdater).to receive(:new).and_return(updater)
+      end
+
+      it "returns false" do
+        expect(resolver.resolvable?(version: Dependabot::Uv::Version.new("2.34.0"))).to be(false)
+      end
+    end
+
     context "with mixed lockfile records" do
       let(:dependency_files) do
         [Dependabot::DependencyFile.new(name: "uv.lock", content: lockfile_content)]
