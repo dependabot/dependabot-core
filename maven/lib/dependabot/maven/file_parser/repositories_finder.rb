@@ -24,6 +24,9 @@ module Dependabot
 
         REPOSITORY_SELECTOR = "repositories > repository, " \
                               "pluginRepositories > pluginRepository"
+        CREDENTIAL_TYPE = "maven_repository"
+        CENTRAL_REPO_ID = "central"
+        CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         RepositoryEntry = T.type_alias { T::Hash[Symbol, T.nilable(T.any(String, T::Boolean))] }
 
         sig do
@@ -51,8 +54,22 @@ module Dependabot
 
         sig { returns(String) }
         def central_repo_url
-          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred.replaces_base? }
-          base ? T.must(base["url"]) : "https://repo.maven.apache.org/maven2"
+          replaces_base_url || CENTRAL_REPO_URL
+        end
+
+        # The URL of the credential registry that replaces Maven Central, if any.
+        sig { returns(T.nilable(String)) }
+        def replaces_base_url
+          base = @credentials.find { |cred| cred["type"] == CREDENTIAL_TYPE && cred.replaces_base? }
+          base && base["url"]
+        end
+
+        # The URLs of all `maven_repository` credentials, without trailing slashes.
+        sig { returns(T::Array[String]) }
+        def urls_from_credentials
+          @credentials
+            .select { |cred| cred["type"] == CREDENTIAL_TYPE }
+            .filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
         end
 
         # Collect all repository URLs from this POM and its parents
@@ -90,7 +107,7 @@ module Dependabot
         # always inherited from.
         sig { returns(T::Hash[Symbol, String]) }
         def super_pom
-          { url: central_repo_url, id: "central" }
+          { url: central_repo_url, id: CENTRAL_REPO_ID }
         end
 
         sig { params(entry: Nokogiri::XML::Node).returns(T::Hash[Symbol, T.nilable(String)]) }
@@ -269,13 +286,6 @@ module Dependabot
           T.must(@pom_fetcher).fetch_remote_parent_pom(group_id, artifact_id, version, urls)
         end
         # rubocop:enable Metrics/PerceivedComplexity
-
-        sig { returns(T::Array[String]) }
-        def urls_from_credentials
-          @credentials
-            .select { |cred| cred["type"] == "maven_repository" }
-            .filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
-        end
 
         sig { params(value: String).returns(T::Boolean) }
         def contains_property?(value)

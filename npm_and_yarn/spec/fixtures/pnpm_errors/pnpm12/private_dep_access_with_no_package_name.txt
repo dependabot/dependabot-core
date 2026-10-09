@@ -1,0 +1,7 @@
+Error: ERR_PNPM_INVALID_DEPENDENCY_NAME
+
+  × installing dependencies
+  ╰─▶ Failed to resolve dependency tree: The current package contains a
+      dependency with an invalid name: "npm:rollup". Dependency names must be
+      a single package name or "@scope/name" — they cannot contain path-
+      separator segments such as "..".

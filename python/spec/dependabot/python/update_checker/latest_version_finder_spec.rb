@@ -92,6 +92,61 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     }]
   end
 
+  describe "selection from typed distribution metadata" do
+    let(:dependency_name) { "demo" }
+    let(:dependency_version) { "1.0.0" }
+    let(:credentials) { [] }
+    let(:pypi_url) { "https://registry.example.test/simple/demo/" }
+    let(:dependency_files) do
+      [Dependabot::DependencyFile.new(
+        name: "requirements.txt", content: "--index-url https://registry.example.test/simple/\ndemo==1.0.0\n"
+      )]
+    end
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:pypi_response) do
+      JSON.generate(
+        "files" => [
+          { "filename" => "demo-3.0.0.whl", "requires-python" => ">=3.8", "upload-time" => "2024-06-14T00:00:00Z" },
+          { "filename" => "demo-2.0.0.whl", "requires-python" => ">=3.10",
+            "upload-time" => "2024-05-01T00:00:00Z" },
+          { "filename" => "demo-2.0.0.tar.gz", "requires-python" => ">=3.8", "upload-time" => "2024-05-01T00:00:00Z",
+            "yanked" => "Broken source archive" },
+          { "filename" => "demo-1.5.0.whl", "requires-python" => ">=3.8",
+            "upload-time" => "2024-05-01T00:00:00Z" }
+        ]
+      )
+    end
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.utc(2024, 6, 15))
+      stub_request(:get, pypi_url)
+        .with(headers: { "Accept" => registry_accept })
+        .to_return(
+          status: 200,
+          headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+          body: pypi_response
+        )
+    end
+
+    it "uses each file's language requirements, withdrawal status, and publication date" do
+      expect(finder.eligible_releases(language_version: "3.9").map { |release| release.version.to_s }).to eq(["1.5.0"])
+      expect(finder.latest_version(language_version: "3.9")).to eq(Dependabot::Python::Version.new("1.5.0"))
+    end
+
+    context "with a security advisory" do
+      let(:security_advisories) do
+        [Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name, package_manager: "pip", vulnerable_versions: ["< 1.5.0"]
+        )]
+      end
+
+      it "retains the minimum eligible security fix" do
+        expect(finder.lowest_security_fix_version(language_version: "3.9"))
+          .to eq(Dependabot::Python::Version.new("1.5.0"))
+      end
+    end
+  end
+
   describe "#latest_version" do
     subject(:latest_version) { finder.latest_version }
 

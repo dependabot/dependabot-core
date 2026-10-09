@@ -1,0 +1,8 @@
+Error: ERR_PNPM_RESOLVING_NPM_RESOLVER_NETWORK_ERROR
+
+  × adding a new package
+  ╰─▶ Failed to fetch metadata from https://registry.npmjs.org/
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: HTTP status client error (404
+      Not Found)
+

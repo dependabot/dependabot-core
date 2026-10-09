@@ -414,12 +414,14 @@ module Dependabot
         return T.must(@installed_versions[name]) if @installed_versions.key?(name)
 
         # Attempt to get the installed version through the package manager version command
-        @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
+        @installed_versions[name] =
+          Helpers.package_manager_version(runnable_package_manager_name(name), env: corepack_env)
 
         # If we can't get the installed version, we need to install the package manager and get the version
         unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
           setup(name)
-          @installed_versions[name] = Helpers.package_manager_version(name, env: corepack_env)
+          @installed_versions[name] =
+            Helpers.package_manager_version(runnable_package_manager_name(name), env: corepack_env)
         end
 
         # If we can't get the installed version or the version is invalid, we need to get inferred version
@@ -431,6 +433,20 @@ module Dependabot
       end
 
       private
+
+      # The name Corepack is asked to run. An unpinned pnpm with a lockfile older than the default pnpm reads runs
+      # as the pnpm major that wrote it, so the reported version matches the one that updates the lockfile.
+      sig { params(name: String).returns(String) }
+      def runnable_package_manager_name(name)
+        return name unless name == PNPMPackageManager::NAME
+
+        lockfile = @lockfiles[name.to_sym]
+        matching_major = Helpers.matching_pnpm_major(
+          lockfile_version: lockfile&.content && Helpers.pnpm_lockfile_version(lockfile),
+          package_manager_pin: @manifest_package_manager
+        )
+        matching_major ? "#{name}@#{matching_major}" : name
+      end
 
       sig { params(name: String).void }
       def reset_npm_version_selector(name)

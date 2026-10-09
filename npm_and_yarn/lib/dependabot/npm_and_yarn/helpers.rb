@@ -1,10 +1,12 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/experiments"
 require "sorbet-runtime"
@@ -93,6 +95,10 @@ module Dependabot
       PNPM_V6 = 6
       PNPM_DEFAULT_VERSION = PNPM_V10
       PNPM_FALLBACK_VERSION = PNPM_V6
+
+      # pnpm 12 only reads lockfileVersion 9.x, and pnpm 11 silently discards an older lockfile and re-resolves the
+      # whole tree. When pnpm isn't pinned, a lockfile older than this is updated by the pnpm major that wrote it.
+      PNPM_MIN_DEFAULT_LOCKFILE_VERSION = 9.0
 
       # YARN Version Constants
       YARN_V3 = 3
@@ -271,9 +277,11 @@ module Dependabot
       # dependencies, or an empty array when the error is something else.
       sig { params(error_message: String).returns(T::Array[String]) }
       def self.pnpm_indirect_dependency_names(error_message)
-        return [] unless error_message.match?(PNPM_INDIRECT_DEP_VERSION_ERROR)
+        # pnpm 12 hard-wraps long lines, which can split `"<name>" (requested "<version>")` across lines
+        message = PnpmErrorMessage.normalize(error_message)
+        return [] unless message.match?(PNPM_INDIRECT_DEP_VERSION_ERROR)
 
-        error_message.scan(PNPM_INDIRECT_DEP_NAME).flatten
+        message.scan(PNPM_INDIRECT_DEP_NAME).flatten
       end
 
       # The concrete pnpm version that will run for this update. Returns nil when
@@ -282,8 +290,7 @@ module Dependabot
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
-        raw = local_package_manager_version(PNPMPackageManager::NAME)
-        Version.new(raw)
+        Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
         nil
@@ -596,11 +603,78 @@ module Dependabot
         ).returns(String)
       end
       def self.run_pnpm_command(command, fingerprint: nil, env: nil)
+        run_selected_pnpm(command, fingerprint: fingerprint, env: env)
+      end
+
+      # Runs pnpm as the version the repository needs: the default, or the major that wrote an older lockfile.
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_selected_pnpm(command, fingerprint: nil, env: nil)
+        matching_major = matching_pnpm_major_for_files(dependency_files)
+
+        if matching_major
+          return package_manager_run_command(
+            "#{PNPMPackageManager::NAME}@#{matching_major}",
+            command,
+            fingerprint: fingerprint,
+            env: merge_corepack_env(env)
+          )
+        end
+
         Dependabot::SharedHelpers.run_shell_command(
           "pnpm #{command}",
           fingerprint: "pnpm #{fingerprint || command}",
           env: env
         )
+      end
+
+      # The pnpm major to run for a repository whose lockfile is older than the default pnpm reads (5.4 is pnpm 7,
+      # 6.x is pnpm 8). Nil when the default should run: the lockfile is readable, unknown, or too old for any
+      # supported pnpm, or pnpm is pinned, in which case Corepack already runs the pinned version.
+      sig do
+        params(
+          lockfile_version: T.nilable(String),
+          package_manager_pin: T.nilable(String)
+        ).returns(T.nilable(String))
+      end
+      def self.matching_pnpm_major(lockfile_version:, package_manager_pin:)
+        return if lockfile_version.nil?
+        return if package_manager_pin&.start_with?("#{PNPMPackageManager::NAME}@")
+
+        version = lockfile_version.to_f
+        return if version >= PNPM_MIN_DEFAULT_LOCKFILE_VERSION
+        return PNPM_V8.to_s if version >= 6.0
+
+        PNPM_V7.to_s if version >= 5.4
+      end
+
+      sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T.nilable(String)) }
+      def self.matching_pnpm_major_for_files(files)
+        return unless files
+
+        lockfile = files.find { |file| file.name == PNPMPackageManager::LOCKFILE_NAME }
+        return unless lockfile&.content
+
+        matching_pnpm_major(
+          lockfile_version: pnpm_lockfile_version(lockfile),
+          package_manager_pin: root_package_manager_pin(files)
+        )
+      end
+
+      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
+      def self.root_package_manager_pin(files)
+        manifest = files.find { |file| file.name == "package.json" }
+        return unless manifest&.content
+
+        pin = JSON.parse(T.must(manifest.content))["packageManager"]
+        pin.is_a?(String) ? pin : nil
+      rescue JSON::ParserError
+        nil
       end
 
       # Run single yarn command returning stdout/stderr
@@ -711,12 +785,20 @@ module Dependabot
         ).strip
       end
 
+      # The version a `-v` command printed. The launcher can print a download message (pnpm 12 fetching its native
+      # binary) or a warning before it, so take the last version-like line.
+      sig { params(output: String).returns(String) }
+      def self.version_from_output(output)
+        lines = output.lines.map(&:strip)
+        lines.reverse.find { |line| line.match?(/\A\d+\.\d+\.\d+\S*\z/) } || output.strip
+      end
+
       # Get the version of the package manager by using corepack
       sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
       def self.package_manager_version(name, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        version = package_manager_run_command(name, "-v", env: env).strip
+        version = version_from_output(package_manager_run_command(name, "-v", env: env))
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 
