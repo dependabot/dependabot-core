@@ -13,6 +13,8 @@ their package identity and a valid version.
 The resolver rejects versions above its allowable version or inside an ignore
 range; the writer raises `UpdateNotPossible` if npm exceeds the requested version.
 Existing unchanged effective versions are preserved.
+An allowed root version does not make an update safe if another changed occurrence
+exceeds the bound.
 
 An out-of-policy native result is rejected, not relabelled as a lower version.
 Dependabot does not add manifest overrides to force an older candidate, since

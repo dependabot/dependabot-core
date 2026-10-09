@@ -457,9 +457,17 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      # NOTE: The latest vision is 6.0.2, but we can't reach it as other
-      # dependencies constrain us
-      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+      it "rejects a native update that moves a nested occurrence beyond the allowable version" do
+        expect(latest_resolvable_version).to be_nil
+      end
+
+      context "when all changed occurrences are within the allowable version" do
+        let(:latest_allowable_version) { "6.4.2" }
+
+        it "returns the version permitted by the root occurrence's parent constraints" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+        end
+      end
     end
 
     context "when sub-dependency is bundled" do
@@ -497,7 +505,9 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+      it "rejects a native update that moves a nested occurrence beyond the allowable version" do
+        expect(latest_resolvable_version).to be_nil
+      end
     end
 
     context "when updating a sub-dependency across both yarn and npm lockfiles" do
