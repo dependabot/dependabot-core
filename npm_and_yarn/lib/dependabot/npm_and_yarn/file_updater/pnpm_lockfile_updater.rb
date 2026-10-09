@@ -3,6 +3,7 @@
 
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
@@ -125,6 +126,9 @@ module Dependabot
         TRUST_LOCKFILE_ON = "--config.trust-lockfile=true"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
+        # pnpm 11 and 12 name the dependency's specifier, not the repository URL
+        ERR_PNPM_GIT_RESOLVE_FAILED = /ERR_PNPM_GIT_RESOLVE_FAILED/
+        GIT_RESOLVE_FAILED_SPECIFIER = /Failed to resolve git dependency "(?<specifier>[^"]+)"/
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
         FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print]]+GET (?<dependency_url>.*): Forbidden - 403/
         MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print]]+GET (?<dependency_url>.*): (?:Not Found)? - 404/
@@ -145,7 +149,9 @@ module Dependabot
 
         ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
 
-        ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
+        # pnpm 11 and 12 report a patch that does not apply as PATCH_FAILED, and pnpm 12 reports one it cannot
+        # parse as INVALID_PATCH
+        ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_(?:NOT_APPLIED|FAILED)|ERR_PNPM_INVALID_PATCH/
 
         # this intermittent issue is related with Node v20
         ERR_INVALID_THIS = /ERR_INVALID_THIS/
@@ -163,12 +169,32 @@ module Dependabot
         INVALID_PACKAGE_SPEC = /Invalid package manager specification/
 
         # Metadata inconsistent error codes
-        ERR_PNPM_META_FETCH_FAIL = /ERR_PNPM_META_FETCH_FAIL/
-        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON/
+        # pnpm 12 reports a registry request that fails as RESOLVING_NPM_RESOLVER_NETWORK_ERROR and metadata it
+        # cannot decode as RESOLVING_NPM_RESOLVER_DECODE_ERROR
+        ERR_PNPM_META_FETCH_FAIL = /ERR_PNPM_META_FETCH_FAIL|ERR_PNPM_RESOLVING_NPM_RESOLVER_NETWORK_ERROR/
+        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON|ERR_PNPM_RESOLVING_NPM_RESOLVER_DECODE_ERROR/
 
         # Directory related error codes
-        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
-        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
+        # pnpm 12 prints these two without their ERR_PNPM_* code, so they are matched on the message as well
+        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /Could not install from "(?<dir>[^"]*)" as it does not exist/
+        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = T.let(
+          Regexp.union(
+            /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/,
+            /is in the dependencies but no package named ".*" is present in the workspace/
+          ),
+          Regexp
+        )
+
+        # pnpm 12 only reads lockfileVersion 9.x
+        INCOMPATIBLE_LOCKFILE_VERSION =
+          /lockfileVersion of (?<found>[\d.]+) is incompatible.*supports lockfileVersion (?<supported>[\w.]+)/m
+
+        # pnpm-workspace.yaml has a setting this pnpm does not know (a typo, or one from another major version).
+        # pnpm only fails on it when the project pins pnpm; otherwise it warns and ignores the setting.
+        ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS = /ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS/
+        UNRECOGNIZED_SETTINGS_LIST = /not recognized by this version of pnpm: (?<settings>[^\n]*)/
+        # Quoted names, not the `"<name>"?` suggestions that follow "did you mean"
+        UNRECOGNIZED_SETTING_NAME = /"(?<name>[^"]+)"(?=\s*(?:\(did you mean|,|\.|$))/
 
         # Unparsable package.json file
         ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
@@ -679,7 +705,7 @@ module Dependabot
           !version.nil? && version < Version.new(PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION)
         end
 
-        # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
+        # Tries a deep `pnpm update <dep>` (see NativeHelpers::PNPM_DEEP_UPDATE_DEPTH) for each dependency as a
         # first-tier fallback when the regular update is a no-op (typically
         # transitive deps not listed in any package.json), without relying on
         # audit fixes that may modify manifests on older pnpm versions. It is
@@ -695,7 +721,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed
           Dependabot.logger.info(
-            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
+            "pnpm deep update failed or partially fixed — continuing with any changes made"
           )
         end
 
@@ -760,7 +786,7 @@ module Dependabot
             .returns(T.noreturn)
         end
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
-          error_message = error.message
+          error_message = PnpmErrorMessage.normalize(error.message)
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
             raise_resolvability_error(error_message, pnpm_lock)
@@ -770,6 +796,11 @@ module Dependabot
             url = error_message.match(UNREACHABLE_GIT)&.named_captures&.fetch("url")&.gsub("git+ssh://git@", "https://")&.delete_suffix(".git")
 
             raise Dependabot::GitDependenciesNotReachable, T.must(url)
+          end
+
+          if error_message.match?(ERR_PNPM_GIT_RESOLVE_FAILED) &&
+             (match = error_message.match(GIT_RESOLVE_FAILED_SPECIFIER))
+            raise Dependabot::GitDependenciesNotReachable, git_dependency_url(T.must(match[:specifier]))
           end
 
           if error_message.match?(UNREACHABLE_GIT_V8)
@@ -812,6 +843,18 @@ module Dependabot
             msg = "No package named \"#{dependency_names}\" present in workspace."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS)
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, unrecognized_workspace_settings_message(error_message)
+          end
+
+          if (match = error_message.match(INCOMPATIBLE_LOCKFILE_VERSION))
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotSupported,
+                  "#{pnpm_lock.path} has lockfileVersion #{match[:found]}, but the pnpm version Dependabot runs " \
+                  "only supports lockfileVersion #{match[:supported]}."
           end
 
           if error_message.match?(ERR_PNPM_BROKEN_METADATA_JSON)
@@ -884,6 +927,33 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
+
+        # The repository URL for a git dependency's specifier, which can be `github:owner/repo#ref`, `owner/repo`,
+        # or an ssh or https URL.
+        sig { params(specifier: String).returns(String) }
+        def git_dependency_url(specifier)
+          source = specifier.sub(/#.*\z/m, "")
+
+          case source
+          when %r{\Agithub:(?<repo>[^/]+/[^/]+)\z}, %r{\A(?<repo>[\w.-]+/[\w.-]+)\z}
+            "https://github.com/#{T.must(Regexp.last_match)[:repo]}".delete_suffix(".git")
+          else
+            # ssh URLs and scp-style `git@host:owner/repo` specifiers separate the host from the path with ":" or "/"
+            source.delete_prefix("git+")
+                  .sub(%r{\A(?:ssh://)?git@(?<host>[^:/]+)[:/]}, 'https://\k<host>/')
+                  .delete_suffix(".git")
+          end
+        end
+
+        sig { params(error_message: String).returns(String) }
+        def unrecognized_workspace_settings_message(error_message)
+          settings = error_message.match(UNRECOGNIZED_SETTINGS_LIST)&.[](:settings).to_s
+          names = settings.scan(UNRECOGNIZED_SETTING_NAME).flatten
+          listed = names.empty? ? "settings" : names.map { |name| "\"#{name}\"" }.join(", ")
+
+          "pnpm-workspace.yaml has #{listed} that this version of pnpm does not recognize. " \
+            "Fix the spelling or remove them."
+        end
 
         sig { params(error_message: String, pnpm_lock: Dependabot::DependencyFile).returns(T.noreturn) }
         def raise_resolvability_error(error_message, pnpm_lock)
@@ -1096,14 +1166,16 @@ module Dependabot
       # Handles errors with specific to yarn error codes
       sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
       def handle_pnpm_error(error)
-        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS) ||
-           error.message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
+        message = PnpmErrorMessage.normalize(error.message)
+
+        if message.match?(DUPLICATE_PACKAGE) || message.match?(ERR_PNPM_NO_VERSIONS) ||
+           message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
 
           raise DependencyFileNotResolvable, "Error resolving dependency"
         end
 
         ## Clean error message from ANSI escape codes
-        return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
+        return unless message.match?(ECONNRESET_ERROR) || message.match?(SOCKET_HANG_UP)
 
         raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
       end

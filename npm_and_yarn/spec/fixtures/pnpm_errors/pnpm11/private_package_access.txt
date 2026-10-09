@@ -1,0 +1,7 @@
+[ERR_PNPM_FETCH_404] GET https://npm.pkg.github.com/@private-pkg%2Finner-source-top-secret-npm-2: Not Found - 404
+
+This error happened while installing a direct dependency of /tmp/w
+
+@private-pkg/inner-source-top-secret-npm-2 is not in the npm registry, or you have no permission to fetch it.
+
+No authorization header was set for the request.
