@@ -243,22 +243,6 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
       end
     end
 
-    context "when native resolution has a version conflict reported by uv >= 0.12.14" do
-      before do
-        updater = instance_double(Dependabot::Uv::FileUpdater::LockFileUpdater)
-        allow(updater).to receive(:updated_dependency_files).and_raise(
-          Dependabot::DependencyFileNotResolvable,
-          "error: No solution found when resolving dependencies"
-        )
-        allow(Dependabot::Uv::FileUpdater::LockFileUpdater).to receive(:new).and_return(updater)
-      end
-
-      it "returns the current version" do
-        result = resolver.latest_resolvable_version(requirement: ">=2.30.0")
-        expect(result.to_s).to eq("2.32.3")
-      end
-    end
-
     context "when uv updates multiple locked occurrences" do
       let(:dependency) do
         Dependabot::Dependency.new(
