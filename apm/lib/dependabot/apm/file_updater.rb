@@ -13,6 +13,13 @@ module Dependabot
       extend T::Sig
 
       MANIFEST_FILENAME = "apm.yml"
+      LOCKFILE_FILENAME = "apm.lock.yaml"
+
+      # What may follow a SHA pin on its line for `apm update`'s `# <tag>`
+      # comment to be written: nothing but whitespace or an existing comment.
+      LINE_REMAINDER_REGEX = /\A[ \t]*(?:#[^\r\n]*)?(?=\r?\n|\z)/
+
+      require_relative "file_updater/lockfile_updater"
 
       # A single ref-bump edit, located by an absolute [start_offset, end_offset)
       # character range in the original manifest content.
@@ -24,7 +31,7 @@ module Dependabot
 
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [/^apm\.yml$/]
+        [/^apm\.yml$/, /^apm\.lock\.yaml$/]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -34,6 +41,9 @@ module Dependabot
 
           updated_file(file: file, content: updated_manifest_content(file))
         end
+
+        updated_lockfile = updated_lockfile(updated_files)
+        updated_files << updated_lockfile if updated_lockfile
 
         raise "No files changed!" if updated_files.none?
 
@@ -57,6 +67,31 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
       def file_changed?(file)
         dependencies.any? { |dep| requirement_changed?(file, dep) }
+      end
+
+      # Regenerates the lockfile against the updated manifest. A branch pin
+      # update changes only the lockfile, as the manifest still names the branch.
+      # The lockfile is only ever updated, never created.
+      sig do
+        params(updated_manifests: T::Array[Dependabot::DependencyFile])
+          .returns(T.nilable(Dependabot::DependencyFile))
+      end
+      def updated_lockfile(updated_manifests)
+        lockfile = get_original_file(LOCKFILE_FILENAME)
+        manifest = get_original_file(MANIFEST_FILENAME)
+        return unless lockfile && manifest
+
+        manifest_content = updated_manifests.find { |f| f.name == manifest.name }&.content || manifest.content
+        content = LockfileUpdater.new(
+          dependencies: dependencies,
+          lockfile: lockfile,
+          manifest_content: T.must(manifest_content),
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
+        ).updated_lockfile_content
+        return if content == lockfile.content
+
+        updated_file(file: lockfile, content: content)
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
@@ -125,10 +160,31 @@ module Dependabot
         return unless original.include?(declaration)
 
         new_declaration = declaration.sub(ref_at_end, "##{new_ref}\\1")
-        Substitution.new(
+        substitution = Substitution.new(
           start_offset: start_offset,
           end_offset: end_offset,
           text: original.sub(declaration, new_declaration)
+        )
+        with_release_tag_comment(content, substitution, new_req.metadata_string("release_tag"))
+      end
+
+      # Like `apm update`, annotates a bumped SHA pin with the release it now
+      # points at, replacing any comment already on the line. The comment is
+      # only written when nothing but whitespace or a comment follows the entry
+      # on its line, so entries in a flow sequence are left uncommented.
+      sig do
+        params(content: String, substitution: Substitution, release_tag: T.nilable(String)).returns(Substitution)
+      end
+      def with_release_tag_comment(content, substitution, release_tag)
+        return substitution unless release_tag
+
+        line_remainder = content[substitution.end_offset..]&.match(LINE_REMAINDER_REGEX)
+        return substitution unless line_remainder
+
+        Substitution.new(
+          start_offset: substitution.start_offset,
+          end_offset: substitution.end_offset + line_remainder[0].to_s.length,
+          text: "#{substitution.text} # #{release_tag}"
         )
       end
 

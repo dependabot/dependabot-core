@@ -443,4 +443,25 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       expect(described_class.shorthand?({ "git" => "x" })).to be(false)
     end
   end
+
+  describe "#lockfile_key" do
+    def lockfile_key(raw, default_host: "github.com")
+      described_class.parse(raw, default_host: default_host).lockfile_key
+    end
+
+    it "uses the lowercased owner/repo for GitHub packages" do
+      expect(lockfile_key("Microsoft/Edge-AI#main")).to eq("microsoft/edge-ai")
+    end
+
+    it "prefixes other hosts and keeps their casing, ignoring the default host and port" do
+      expect(lockfile_key("Acme/Prompts#main", default_host: "git.corp.example"))
+        .to eq("git.corp.example/Acme/Prompts")
+      expect(lockfile_key("https://git.corp.example:8443/Acme/Prompts.git#main"))
+        .to eq("git.corp.example/Acme/Prompts")
+    end
+
+    it "appends the virtual path" do
+      expect(lockfile_key("org/mono/skills/review#main")).to eq("org/mono/skills/review")
+    end
+  end
 end

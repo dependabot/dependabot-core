@@ -52,6 +52,12 @@ module Dependabot
 
       DEFAULT_HOST = "github.com"
 
+      # APM only moves refs that are full commit SHAs (matched
+      # case-insensitively). Abbreviated SHAs are left alone, since they cannot
+      # be told apart from a branch name reliably.
+      FULL_SHA_REGEX = /\A[0-9a-f]{40}\z/i
+      ABBREVIATED_SHA_REGEX = /\A[0-9a-f]{7,39}\z/i
+
       # Azure DevOps Services hosts. Their repositories live at
       # `org/project/_git/repo`, a structure this generic owner/repo builder
       # cannot express, so ADO entries are out of scope for v1 (see README) and
@@ -341,6 +347,31 @@ module Dependabot
         repo_name = on_default_host ? "#{owner}/#{repo}" : "#{host}/#{owner}/#{repo}"
         virtual_path = sub_path
         virtual_path ? "#{repo_name}/#{virtual_path}" : repo_name
+      end
+
+      # The key APM uses to identify this package in `apm.lock.yaml`. Unlike
+      # `name`, it ignores the manifest's `default_host` and any port: APM keys
+      # entries by `repo_url`, prefixed by the host for anything other than
+      # github.com, plus the virtual path for virtual packages.
+      sig { returns(String) }
+      def lockfile_key
+        self.class.lockfile_key(
+          host: self.class.hostname_without_port(host),
+          repo_url: "#{owner}/#{repo}",
+          virtual_path: sub_path
+        )
+      end
+
+      # Builds a lockfile key from a lock entry's coordinates (or a manifest
+      # entry's, via #lockfile_key). GitHub-family identifiers are
+      # case-insensitive, so they are lowercased; other hosts keep their casing,
+      # as APM does.
+      sig { params(host: String, repo_url: String, virtual_path: T.nilable(String)).returns(String) }
+      def self.lockfile_key(host:, repo_url:, virtual_path: nil)
+        hostname = host.downcase
+        repo_url = repo_url.downcase if github_family?(hostname)
+        key = hostname == DEFAULT_HOST ? repo_url : "#{hostname}/#{repo_url}"
+        virtual_path ? "#{key}/#{virtual_path}" : key
       end
     end
   end

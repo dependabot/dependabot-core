@@ -9,6 +9,7 @@ require "dependabot/git_tag_details"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/apm/git_commit_checker"
+require "dependabot/apm/package_specifier"
 require "dependabot/apm/requirement"
 require "dependabot/apm/version"
 
@@ -34,8 +35,12 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version_with_no_unlock
-        # Updating an APM dependency always rewrites its manifest requirement,
-        # so there is no newer version reachable "without unlocking".
+        # A branch pin moves to the branch's new head commit through the
+        # lockfile alone, without touching the manifest requirement.
+        return latest_version if branch_pinned?
+
+        # Every other APM update rewrites its manifest requirement, so there is
+        # no newer version reachable "without unlocking".
         dependency.version
       end
 
@@ -59,6 +64,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless git_commit_checker.git_dependency?
+        return updated_sha_pin_requirements if sha_pinned?
 
         dependency.requirements.map do |req|
           source = req.source_hash
@@ -111,6 +117,10 @@ module Dependabot
       # version separate.
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_with_own_req_unlock
+        # Branch and SHA pins are versioned by commit, so the base behaviour of
+        # reporting the latest commit as the new version applies to them.
+        return super unless tag_pinned?
+
         new_requirements = updated_requirements
         new_version = pinned_versions(new_requirements).min
 
@@ -129,10 +139,11 @@ module Dependabot
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
       def fetch_latest_version
         return dependency.version unless git_commit_checker.git_dependency?
+        return latest_branch_commit if branch_pinned?
+        return latest_sha_pin_commit if sha_pinned?
 
-        # Only entries pinned to a semver tag are bumped in the manifest.
-        # Branch- and SHA-pinned entries are resolved via the lockfile, which
-        # APM regenerates itself, so Dependabot leaves them untouched.
+        # Unpinned entries are never parsed, so any other dependency is
+        # expected to be pinned to a version tag.
         return dependency.version unless git_commit_checker.pinned_ref_looks_like_version?
 
         # A merged dependency can hold several ref families (e.g. `review--v*`
@@ -144,6 +155,74 @@ module Dependabot
           tag_version = latest_version_tag(checker)&.version
           tag_version if tag_version && Version.new(ref_version) < tag_version
         end.max || dependency.version
+      end
+
+      sig { returns(T::Boolean) }
+      def branch_pinned?
+        dependency.requirements.any? { |req| req.source_string("branch") }
+      end
+
+      sig { returns(T::Boolean) }
+      def sha_pinned?
+        refs = dependency.requirements.map { |req| req.source_string("ref") }
+        refs.any? && refs.all? { |ref| ref&.match?(PackageSpecifier::FULL_SHA_REGEX) }
+      end
+
+      sig { returns(T::Boolean) }
+      def tag_pinned?
+        !branch_pinned? && !sha_pinned?
+      end
+
+      # A branch pin is versioned by the commit the lockfile resolved, and moves
+      # to the branch's current head commit.
+      sig { returns(T.nilable(String)) }
+      def latest_branch_commit
+        git_commit_checker.head_commit_for_current_branch
+      end
+
+      # The commit of the release each SHA-pinned declaration moves to. All of a
+      # dependency's declarations share one repository, so they resolve to the
+      # same release unless a declaration is already pinned beyond it.
+      sig { returns(T.nilable(String)) }
+      def latest_sha_pin_commit
+        dependency.requirements.filter_map { |req| sha_pin_release(req)&.commit_sha }.first || dependency.version
+      end
+
+      # Moves each SHA pin to its release commit, recording the release tag so
+      # the manifest can be annotated with it as `apm update` does.
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+      def updated_sha_pin_requirements
+        dependency.requirements.map do |req|
+          release = sha_pin_release(req)
+          source = req.source_hash
+          next req unless release && source
+
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source.merge(ref: release.commit_sha),
+              metadata: (req.metadata || {}).merge(release_tag: release.tag)
+            )
+          )
+        end
+      end
+
+      sig { params(req: Dependabot::DependencyRequirement).returns(T.nilable(Dependabot::GitTagDetails)) }
+      def sha_pin_release(req)
+        source = req.source_hash
+        pinned_sha = req.source_string("ref")&.downcase
+        return unless source && pinned_sha&.match?(PackageSpecifier::FULL_SHA_REGEX)
+
+        releases = sha_pin_releases
+        return releases[pinned_sha] if releases.key?(pinned_sha)
+
+        release = git_commit_checker_for(source).latest_annotated_release_tag(update_cooldown)
+        release = nil if release&.commit_sha.nil? || release&.commit_sha == pinned_sha
+        releases[pinned_sha] = release
+      end
+
+      sig { returns(T::Hash[String, T.nilable(Dependabot::GitTagDetails)]) }
+      def sha_pin_releases
+        @sha_pin_releases ||= T.let({}, T.nilable(T::Hash[String, T.nilable(Dependabot::GitTagDetails)]))
       end
 
       # The tag a single requirement should move to: the latest tag resolved
@@ -235,7 +314,7 @@ module Dependabot
         params(
           source: Dependabot::DependencyRequirement::ObjectHash,
           ref_version: T.nilable(String)
-        ).returns(Dependabot::GitCommitChecker)
+        ).returns(Dependabot::Apm::GitCommitChecker)
       end
       def git_commit_checker_for(source, ref_version = nil)
         scoped_dependency =

@@ -68,9 +68,11 @@ RSpec.describe Dependabot::Apm::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe ".updated_files_regex" do
-    it "matches apm.yml" do
+    it "matches apm.yml and its lockfile" do
       expect(described_class.updated_files_regex).to all(be_a(Regexp))
-      expect(described_class.updated_files_regex.any? { |re| "apm.yml".match?(re) }).to be(true)
+      %w(apm.yml apm.lock.yaml).each do |name|
+        expect(described_class.updated_files_regex.any? { |re| name.match?(re) }).to be(true)
+      end
     end
   end
 
@@ -113,8 +115,149 @@ RSpec.describe Dependabot::Apm::FileUpdater do
         expect(updater.send(:manifest_files).map(&:name)).to eq(["apm.yml"])
       end
 
-      it "still updates only apm.yml" do
-        expect(updated_files.map(&:name)).to eq(["apm.yml"])
+      context "when apm lock re-resolves the bumped entry" do
+        before do
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+            File.write(
+              "apm.lock.yaml",
+              "lockfile_version: '1'\napm_version: 0.33.0\n# locked against: #{File.read('apm.yml').lines[2].strip}\n"
+            )
+            ""
+          end
+        end
+
+        it "regenerates the lockfile against the updated manifest" do
+          expect(updated_files.map(&:name)).to eq(["apm.yml", "apm.lock.yaml"])
+          expect(updated_files.last.content).to include("# locked against: - microsoft/edge-ai#v1.2.0")
+        end
+      end
+
+      context "when apm lock leaves the lockfile unchanged" do
+        before do
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock").and_return("")
+        end
+
+        it "updates only apm.yml" do
+          expect(updated_files.map(&:name)).to eq(["apm.yml"])
+        end
+      end
+    end
+
+    context "when a full SHA pin moves to a new release" do
+      let(:old_sha) { "a" * 40 }
+      let(:new_sha) { "b" * 40 }
+      let(:dependency) do
+        requirement = lambda do |ref, span, metadata = {}|
+          {
+            file: "apm.yml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/microsoft/edge-ai", ref: ref, branch: nil },
+            metadata: { declaration_string: "microsoft/edge-ai##{old_sha}", declaration_span: span }.merge(metadata)
+          }
+        end
+
+        Dependabot::Dependency.new(
+          name: "microsoft/edge-ai",
+          version: new_sha,
+          previous_version: old_sha,
+          requirements: declaration_spans.map { |span| requirement.call(new_sha, span, release_tag: "v1.2.0") },
+          previous_requirements: declaration_spans.map { |span| requirement.call(old_sha, span) },
+          package_manager: "apm"
+        )
+      end
+
+      context "when the entry ends its line" do
+        let(:manifest_body) { "dependencies:\n  apm:\n    - microsoft/edge-ai##{old_sha}\n" }
+        let(:declaration_spans) { ["2:6:2:64"] }
+
+        it "rewrites the SHA and annotates it with the release tag" do
+          expect(updated_files.first.content).to eq(
+            "dependencies:\n  apm:\n    - microsoft/edge-ai##{new_sha} # v1.2.0\n"
+          )
+        end
+      end
+
+      context "when the entry already carries a comment" do
+        let(:manifest_body) { "dependencies:\n  apm:\n    - microsoft/edge-ai##{old_sha}   # v1.0.0\n" }
+        let(:declaration_spans) { ["2:6:2:64"] }
+
+        it "replaces the comment with the new release tag" do
+          expect(updated_files.first.content).to eq(
+            "dependencies:\n  apm:\n    - microsoft/edge-ai##{new_sha} # v1.2.0\n"
+          )
+        end
+      end
+
+      context "when the entry is in a flow sequence" do
+        let(:manifest_body) { "dependencies: { apm: [microsoft/edge-ai##{old_sha}] }\n" }
+        let(:declaration_spans) { ["0:22:0:80"] }
+
+        it "rewrites the SHA without adding a comment" do
+          expect(updated_files.first.content).to eq("dependencies: { apm: [microsoft/edge-ai##{new_sha}] }\n")
+        end
+      end
+    end
+
+    context "when a branch pin moves to a new head commit" do
+      let(:old_commit) { "1a" * 20 }
+      let(:new_commit) { "2b" * 20 }
+      let(:manifest_body) { "dependencies:\n  apm:\n    - microsoft/edge-ai#main\n" }
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '1'
+            apm_version: 0.33.0
+            dependencies:
+            - repo_url: microsoft/edge-ai
+              host: github.com
+              resolved_commit: #{old_commit}
+              resolved_ref: main
+              package_type: apm_package
+              content_hash: sha256:abc
+          YAML
+        )
+      end
+      let(:dependency) do
+        requirement = {
+          file: "apm.yml",
+          requirement: nil,
+          groups: [],
+          source: { type: "git", url: "https://github.com/microsoft/edge-ai", ref: "main", branch: "main" },
+          metadata: {
+            declaration_string: "microsoft/edge-ai#main",
+            declaration_span: "2:6:2:28",
+            lockfile_key: "microsoft/edge-ai"
+          }
+        }
+
+        Dependabot::Dependency.new(
+          name: "microsoft/edge-ai",
+          version: new_commit,
+          previous_version: old_commit,
+          requirements: [requirement],
+          previous_requirements: [requirement],
+          package_manager: "apm"
+        )
+      end
+      let(:updater) do
+        described_class.new(dependency_files: [manifest, lockfile], dependencies: [dependency], credentials: [])
+      end
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+          # APM re-hashes the entry whose stale content_hash was dropped.
+          File.write("apm.lock.yaml", "#{File.read('apm.lock.yaml')}  content_hash: sha256:def\n")
+          ""
+        end
+      end
+
+      it "updates only the lockfile, moving the entry to the new commit" do
+        expect(updated_files.map(&:name)).to eq(["apm.lock.yaml"])
+        expect(updated_files.first.content).to include("resolved_commit: #{new_commit}")
+        expect(updated_files.first.content).to include("content_hash: sha256:def")
+        expect(updated_files.first.content).not_to include("sha256:abc")
       end
     end
 

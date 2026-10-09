@@ -85,9 +85,115 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
-    describe "a dependency pinned to a branch rather than a semver tag" do
-      it "is excluded because it cannot be version-bumped" do
+    describe "a dependency pinned to a branch the lockfile hasn't resolved" do
+      it "is excluded because its current commit is unknown" do
         expect(dependencies.map(&:name)).not_to include("big-corp/pinned-branch")
+      end
+    end
+
+    context "with commit SHA pins" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - microsoft/edge-ai#0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E
+                - octo-org/octo-skills#1a2b3c4
+          YAML
+        )
+      end
+
+      it "versions a full SHA pin by the SHA and skips an abbreviated one" do
+        expect(dependencies.map(&:name)).to eq(["microsoft/edge-ai"])
+        expect(dependencies.first.version).to eq("0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e")
+        expect(dependencies.first.requirements.first[:source])
+          .to include(ref: "0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E", branch: nil)
+      end
+    end
+
+    context "with branch pins" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - Big-Corp/Pinned-Branch#main
+                - gitlab.com/acme/prompts/skills/review#develop
+                - octo-org/stale-branch#main
+          YAML
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '1'
+            dependencies:
+            - repo_url: big-corp/pinned-branch
+              host: github.com
+              resolved_commit: 4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e
+              resolved_ref: main
+            - repo_url: acme/prompts
+              host: gitlab.com
+              virtual_path: skills/review
+              resolved_commit: 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f
+              resolved_ref: develop
+            - repo_url: octo-org/stale-branch
+              resolved_commit: 6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a
+              resolved_ref: v1.0.0
+          YAML
+        )
+      end
+
+      it "versions each by the commit the lockfile resolved its branch to" do
+        expect(dependencies.to_h { |d| [d.name, d.version] }).to eq(
+          "big-corp/pinned-branch" => "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e",
+          "gitlab.com/acme/prompts/skills/review" => "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f"
+        )
+      end
+
+      it "records the branch and the lockfile entry it updates" do
+        requirement = dependencies.find { |d| d.name == "gitlab.com/acme/prompts/skills/review" }.requirements.first
+        expect(requirement[:source]).to include(ref: "develop", branch: "develop")
+        expect(requirement[:metadata]).to include(lockfile_key: "gitlab.com/acme/prompts/skills/review")
+      end
+
+      context "without a lockfile" do
+        let(:files) { [manifest] }
+
+        it "skips them" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "when the lockfile is malformed" do
+        let(:lockfile) { Dependabot::DependencyFile.new(name: "apm.lock.yaml", content: "dependencies: [") }
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
+        end
+      end
+    end
+
+    context "when a package is declared with different kinds of pin" do
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: <<~YAML
+            dependencies:
+              apm:
+                - microsoft/edge-ai#0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e
+                - microsoft/edge-ai#v1.0.0
+          YAML
+        )
+      end
+
+      it "only updates the tag pin" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.version).to eq("1.0.0")
+        expect(dependencies.first.requirements.map { |r| r[:source][:ref] }).to eq(["v1.0.0"])
       end
     end
 

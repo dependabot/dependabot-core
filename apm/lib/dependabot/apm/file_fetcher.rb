@@ -78,7 +78,7 @@ module Dependabot
         return @lockfile if defined?(@lockfile)
 
         @lockfile = T.let(
-          fetch_file_if_present(LOCKFILE_FILENAME)&.tap { |f| f.support_file = true },
+          fetch_file_if_present(LOCKFILE_FILENAME),
           T.nilable(Dependabot::DependencyFile)
         )
       end

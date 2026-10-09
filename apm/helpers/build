@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/apm"
+
+if ! [[ "$install_dir" =~ ^/ ]]; then
+  echo "$install_dir must be an absolute path"
+  exit 1
+fi
+
+# See https://github.com/microsoft/apm/releases
+apm_version="0.33.0"
+
+# Checksums come from the `<asset>.sha256` files published with each release.
+case "$(uname -m)" in
+  x86_64 | amd64)
+    apm_arch="x86_64"
+    apm_checksum="e6374402c74318f7c8bef97a90d8572d049fdab0dc3871492c6b0647ae9e881f"
+    ;;
+  aarch64 | arm64)
+    apm_arch="arm64"
+    apm_checksum="ac40dd0efd1af35a56847beedde96854530d2f54851e026728da017d3af827f8"
+    ;;
+  *)
+    echo "Unsupported architecture: $(uname -m)"
+    exit 1
+    ;;
+esac
+
+apm_asset="apm-linux-${apm_arch}"
+apm_url="https://github.com/microsoft/apm/releases/download/v${apm_version}/${apm_asset}.tar.gz"
+tarball="$(mktemp)"
+
+curl -sSLfo "$tarball" "$apm_url"
+echo "$apm_checksum  $tarball" | sha256sum -c
+rm -rf "${install_dir:?}/dist"
+mkdir -p "$install_dir/dist" "$install_dir/bin"
+tar -xzf "$tarball" -C "$install_dir/dist"
+rm -f "$tarball"
+
+# The release is a PyInstaller bundle: the `apm` executable must stay next to
+# its `_internal` directory, so expose it on a stable path through a symlink.
+ln -sf "$install_dir/dist/$apm_asset/apm" "$install_dir/bin/apm"
+
+echo "Verifying APM installation..."
+"$install_dir/bin/apm" --version

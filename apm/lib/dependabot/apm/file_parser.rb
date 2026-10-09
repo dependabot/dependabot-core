@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/apm/lockfile"
 require "dependabot/apm/package_manager"
 require "dependabot/apm/package_specifier"
 require "dependabot/apm/version"
@@ -50,6 +51,23 @@ module Dependabot
         T::Array[Integer]
       )
 
+      PIN_TAG = "tag"
+      PIN_SHA = "sha"
+      PIN_BRANCH = "branch"
+      PIN_PRECEDENCE = T.let([PIN_TAG, PIN_SHA, PIN_BRANCH].freeze, T::Array[String])
+
+      # A manifest scalar entry and the dependency groups its block confers.
+      class Declaration < T::Struct
+        const :raw_entry, String
+        const :span, String
+        const :groups, T::Array[String]
+      end
+
+      class PinnedEntry < T::Struct
+        const :pin_type, String
+        const :dependency, Dependabot::Dependency
+      end
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         # Non-GitHub git hosts (e.g. GitLab) are case-sensitive, so use a
@@ -69,8 +87,8 @@ module Dependabot
         # never registry-routed and are still updated.
         skip_shorthand = default_registry_configured?
 
-        DEPENDENCY_BLOCKS.each do |block_key, groups|
-          apm_entries_in(block_key).each do |entry, declaration_span|
+        pinned_entries = DEPENDENCY_BLOCKS.flat_map do |block_key, groups|
+          apm_entries_in(block_key).filter_map do |entry, declaration_span|
             # v1 supports the string shorthand form (e.g. "owner/repo#v1.0.0").
             # Object entries (git:/registry:/id:/path:) and `mcp` entries are
             # not yet supported and are skipped by only reading scalar entries.
@@ -78,17 +96,13 @@ module Dependabot
             next unless spec # local paths and unparseable specs are skipped
             next if skip_shorthand && PackageSpecifier.shorthand?(entry)
 
-            # Only entries pinned to a semver tag are updatable. Branch-, SHA-
-            # and unpinned entries are resolved by APM's own lockfile, so we
-            # leave them out of the dependency set entirely rather than have the
-            # update checker reach out to the git remote for something we will
-            # never bump. The tag may be plain (`v1.2.0`) or package-scoped
-            # (`review--v1.2.0`), so resolve it through the shared APM extractor.
-            ref = spec.ref
-            next unless ref && Version.semver_from_ref(ref, dependency_name: spec.name)
-
-            dependency_set << build_dependency(spec, entry, declaration_span, groups)
+            pinned_entry(spec, entry, declaration_span, groups)
           end
+        end
+
+        preferred_pins = preferred_pin_types(pinned_entries)
+        pinned_entries.each do |entry|
+          dependency_set << entry.dependency if preferred_pins[entry.dependency.name] == entry.pin_type
         end
 
         dependency_set.dependencies
@@ -107,21 +121,97 @@ module Dependabot
 
       private
 
+      # Classifies a pinned manifest entry and builds its dependency, or returns
+      # nil for entries Dependabot doesn't update:
+      #
+      #   * tag pins (`v1.2.0`, or package-scoped `review--v1.2.0`) are versioned
+      #     by the SemVer core of the tag;
+      #   * full 40-character SHA pins are versioned by the SHA, matching the
+      #     pins `apm update` moves between annotated release tags;
+      #   * any other ref is a branch (or similar moving ref) and is versioned by
+      #     the commit the lockfile resolved it to, so it is only updatable when
+      #     the lockfile records a commit for that ref.
+      #
+      # Unpinned entries and abbreviated SHAs are skipped, as APM leaves those
+      # unchanged too.
       sig do
         params(
           spec: Dependabot::Apm::PackageSpecifier,
           raw_entry: String,
           declaration_span: String,
           groups: T::Array[String]
+        ).returns(T.nilable(PinnedEntry))
+      end
+      def pinned_entry(spec, raw_entry, declaration_span, groups)
+        ref = spec.ref
+        return if ref.nil? || ref.empty?
+
+        declaration = Declaration.new(raw_entry: raw_entry, span: declaration_span, groups: groups)
+        tag_version = Version.semver_from_ref(ref, dependency_name: spec.name)
+        if tag_version
+          return PinnedEntry.new(
+            pin_type: PIN_TAG,
+            dependency: build_dependency(spec, declaration, version: Version.new(tag_version).to_s)
+          )
+        end
+        if ref.match?(PackageSpecifier::FULL_SHA_REGEX)
+          return PinnedEntry.new(
+            pin_type: PIN_SHA,
+            dependency: build_dependency(spec, declaration, version: ref.downcase)
+          )
+        end
+        return if ref.match?(PackageSpecifier::ABBREVIATED_SHA_REGEX)
+
+        branch_pinned_entry(spec, declaration, ref)
+      end
+
+      sig do
+        params(spec: Dependabot::Apm::PackageSpecifier, declaration: Declaration, branch: String)
+          .returns(T.nilable(PinnedEntry))
+      end
+      def branch_pinned_entry(spec, declaration, branch)
+        lockfile_key = spec.lockfile_key
+        commit = parsed_lockfile&.resolved_commit(lockfile_key, ref: branch)
+        return unless commit
+
+        PinnedEntry.new(
+          pin_type: PIN_BRANCH,
+          dependency: build_dependency(spec, declaration, version: commit, branch: branch, lockfile_key: lockfile_key)
+        )
+      end
+
+      # DependencySet merges every declaration of a package into one dependency,
+      # but a dependency can only carry one kind of version (a tag version or a
+      # commit). When a package is declared with several kinds of pin, only the
+      # declarations of the most specific kind (tag, then SHA, then branch) are
+      # updated; the others are left as they are.
+      sig { params(entries: T::Array[PinnedEntry]).returns(T::Hash[String, String]) }
+      def preferred_pin_types(entries)
+        entries.group_by { |entry| entry.dependency.name }.transform_values do |pins|
+          T.must(pins.map(&:pin_type).min_by { |pin_type| T.must(PIN_PRECEDENCE.index(pin_type)) })
+        end
+      end
+
+      sig do
+        params(
+          spec: Dependabot::Apm::PackageSpecifier,
+          declaration: Declaration,
+          version: String,
+          branch: T.nilable(String),
+          lockfile_key: T.nilable(String)
         ).returns(Dependabot::Dependency)
       end
-      def build_dependency(spec, raw_entry, declaration_span, groups)
-        ref = spec.ref
-        # The dependency version is the SemVer core of the pinned tag, even when
-        # the tag is package-scoped (`review--v1.2.0` -> `1.2.0`); the manifest
-        # requirement below keeps the original ref so the updater rewrites it.
-        core = Version.semver_from_ref(ref, dependency_name: spec.name) if ref
-        version = Version.new(core).to_s if core
+      def build_dependency(spec, declaration, version:, branch: nil, lockfile_key: nil)
+        # `declaration_span` locates the exact manifest scalar (see
+        # `encode_span`) so the file updater rewrites only that occurrence,
+        # never an identical string elsewhere in the file. Branch pins also
+        # record their lockfile identity so the lockfile updater can move the
+        # matching lock entry to the branch's new head commit.
+        metadata = T.let(
+          { declaration_string: declaration.raw_entry, declaration_span: declaration.span },
+          T::Hash[Symbol, String]
+        )
+        metadata[:lockfile_key] = lockfile_key if lockfile_key
 
         Dependency.new(
           name: spec.name,
@@ -130,20 +220,14 @@ module Dependabot
           requirements: [{
             requirement: nil,
             file: manifest_file.name,
-            groups: groups,
+            groups: declaration.groups,
             source: {
               type: "git",
               url: spec.git_url,
-              ref: ref,
-              branch: nil
+              ref: spec.ref,
+              branch: branch
             },
-            # `declaration_span` locates the exact manifest scalar (see
-            # `encode_span`) so the file updater rewrites only that occurrence,
-            # never an identical string elsewhere in the file.
-            metadata: {
-              declaration_string: raw_entry,
-              declaration_span: declaration_span
-            }
+            metadata: metadata
           }]
         )
       end
@@ -284,6 +368,14 @@ module Dependabot
           get_original_file(LOCKFILE_FILENAME),
           T.nilable(Dependabot::DependencyFile)
         )
+      end
+
+      sig { returns(T.nilable(Dependabot::Apm::Lockfile)) }
+      def parsed_lockfile
+        return @parsed_lockfile if defined?(@parsed_lockfile)
+
+        file = lockfile
+        @parsed_lockfile = T.let(file && Lockfile.new(file), T.nilable(Dependabot::Apm::Lockfile))
       end
 
       sig { override.void }

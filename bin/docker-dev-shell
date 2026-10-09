@@ -134,6 +134,7 @@ docker run --rm -ti \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
   -v "$(pwd)/apm/.rubocop.yml:$CODE_DIR/apm/.rubocop.yml" \
   -v "$(pwd)/apm/dependabot-apm.gemspec:$CODE_DIR/apm/dependabot-apm.gemspec" \
+  -v "$(pwd)/apm/helpers:$CODE_DIR/apm/helpers" \
   -v "$(pwd)/apm/lib:$CODE_DIR/apm/lib" \
   -v "$(pwd)/apm/script:$CODE_DIR/apm/script" \
   -v "$(pwd)/apm/spec:$CODE_DIR/apm/spec" \
