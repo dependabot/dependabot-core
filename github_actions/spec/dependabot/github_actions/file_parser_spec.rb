@@ -745,6 +745,42 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
+
+      context "when the actions lockfile pins the action" do
+        let(:pin_hostname) { "" }
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: Dependabot::GithubActions::LOCKFILE_NAME,
+            directory: Dependabot::GithubActions::WORKFLOW_DIRECTORY,
+            content: <<~YAML
+              version: 'v0.0.3'
+              dependencies:
+                'inactions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81':
+                  #{pin_hostname}
+                  ref: '01aecccf739ca6ff86c0539fbc67a7a5007bbc81'
+            YAML
+          )
+        end
+        let(:files) { [workflow_files, lockfile] }
+        let(:url) { dependencies.first.requirements.first.dig(:source, :url) }
+
+        before { stub_request(:get, service_pack_url).to_return(status: 503) }
+
+        it "keeps an omitted-hostname pin on the home host when the tenant blips" do
+          expect(url).to eq("https://ghes.other.com/inactions/checkout")
+        end
+
+        context "with an explicit github.com hostname" do
+          let(:pin_hostname) { "hostname: 'github.com'" }
+
+          before { mock_service_pack_request("inactions/checkout") }
+
+          it "binds to github.com without probing the tenant" do
+            expect(url).to eq("https://github.com/inactions/checkout")
+            expect(a_request(:get, service_pack_url)).not_to have_been_made
+          end
+        end
+      end
     end
 
     context "with an inaccessible source" do

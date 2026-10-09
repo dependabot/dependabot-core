@@ -67,6 +67,17 @@ module Dependabot
           Array(workflows[path]).include?(action_ref)
         end
 
+        # The host a pinned `owner/repo@ref` is bound to: its `hostname`, or `home`
+        # when omitted. Nil when the lockfile doesn't pin it.
+        sig { params(action_ref: String, home: String).returns(T.nilable(String)) }
+        def pinned_hostname(action_ref, home:)
+          entry = dependencies.find { |key, _| key.casecmp?(action_ref) }&.last
+          return unless entry.is_a?(Hash)
+
+          hostname = entry["hostname"].to_s
+          hostname.empty? ? home : hostname
+        end
+
         # Asserts every `dependencies` entry carries {REQUIRED_DEPENDENCY_KEYS}. A
         # missing key makes the engine silently treat the whole lockfile as empty.
         # Deferred to the relock gate (not the constructor) so a malformed lock
