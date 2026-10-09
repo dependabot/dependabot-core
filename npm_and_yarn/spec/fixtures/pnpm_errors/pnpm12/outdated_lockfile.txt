@@ -1,0 +1,15 @@
+Error: ERR_PNPM_OUTDATED_LOCKFILE
+
+  × installing dependencies
+  ╰─▶ Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up
+      to date with package.json.
+      
+        Failure reason:
+        specifiers in the lockfile don't match specifiers in package.json:
+      * in importers["."]:
+      * 1 dependency is mismatched:
+        - is-odd (lockfile: 3.0.0, manifest: 3.0.1)
+  help: Regenerate the lockfile with `pnpm install --lockfile-only` so that
+        pnpm-lock.yaml reflects the current package.json, then re-run `pnpm
+        install --frozen-lockfile`.
+
