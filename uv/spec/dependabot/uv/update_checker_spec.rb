@@ -1358,7 +1358,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         end
 
         context "when uv >= 0.12.14 prints the conflict" do
-          # generated with uv 0.12.20; the error handler only knows the `×` form, so it arrives as DependencyFileNotResolvable
+          # generated with uv 0.12.20
           let(:uv_conflict) do
             <<~ERROR
               error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.12')
@@ -1386,6 +1386,20 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
                   opentelemetry-api==1.26.0 cannot be used.
                   And because your project depends on opentelemetry-api==1.26.0, we can conclude
                   that your project's requirements are unsatisfiable.
+            ERROR
+          end
+
+          it "keeps the own update, so the file updater reports the error as before" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          end
+        end
+
+        context "when uv >= 0.12.14 fails for a reason that names no other direct dependency" do
+          let(:uv_conflict) do
+            <<~ERROR
+              error: No solution found when resolving dependencies
+                cause: Because the current Python version (3.10.12) does not satisfy Python>=3.12 and opentelemetry-api==1.26.0 depends on Python>=3.12, we can conclude that opentelemetry-api==1.26.0 cannot be used.
+                       And because your project depends on opentelemetry-api==1.26.0, we can conclude that your project's requirements are unsatisfiable.
             ERROR
           end
 
