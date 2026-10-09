@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
                   ),
                   "0.5.2" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(release_date: nil),
                   "0.5.3" => Dependabot::Julia::RegistryClient::Result::ReleaseDate.new(
-                    release_date: release_date2.to_s
+                    release_date: nil, pending: true
                   )
                 }
               )
@@ -96,6 +96,14 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
       expect(release_zero_five_zero.released_at).to eq(release_date1)
       expect(release_zero_five_one.released_at).to eq(release_date2)
       expect(release_zero_five_two.released_at).to be_nil
+    end
+
+    it "marks releases whose date is not published yet" do
+      releases = fetcher.fetch_package_releases.to_h { |r| [r.version.to_s, r] }
+
+      expect(releases["0.5.3"].released_at).to be_nil
+      expect(releases["0.5.3"].details).to eq("release_date_pending" => true)
+      expect(releases["0.5.2"].details).to eq({})
     end
 
     it "marks the latest version correctly" do

@@ -1,0 +1,12 @@
+{
+  "name": "test",
+  "packageManager": "yarn@4.1.0",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "objnest": "^4.1.2"
+  }
+}

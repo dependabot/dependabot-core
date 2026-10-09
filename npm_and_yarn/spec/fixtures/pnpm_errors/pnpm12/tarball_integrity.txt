@@ -1,0 +1,13 @@
+Error: ERR_PNPM_NO_MATCHING_VERSION
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: No matching version found for
+  │   lodash@^9.0.0 while fetching it from https://registry.npmjs.org/
+  │   
+  │   Failed to resolve lodash@^9.0.0
+  ╰─▶ No matching version found for lodash@^9.0.0 while fetching it from
+      https://registry.npmjs.org/
+  help: The latest release of lodash is "4.18.1". Published at 4/1/2026
+        
+        If you need the full list of all 117 published versions run "pnpm view
+        lodash versions".

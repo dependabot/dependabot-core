@@ -74,14 +74,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::run_pnpm_command" do
-    it "runs pnpm directly and passes through the environment" do
-      env = { "CUSTOM_VAR" => "custom-value" }
+    after { described_class.dependency_files = [] }
 
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "pnpm install",
-        fingerprint: "pnpm install dependencies",
-        env: env
-      ).and_return("")
+    let(:env) { { "CUSTOM_VAR" => "custom-value" } }
+    let(:lockfile_version) { "6.0" }
+    let(:manifest) { { "name" => "example" } }
+    let(:manifest_content) { manifest.to_json }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+        Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '#{lockfile_version}'\n")
+      ]
+    end
+
+    before do
+      described_class.dependency_files = files
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+    end
+
+    it "runs pnpm directly and passes through the environment" do
+      described_class.dependency_files = []
 
       described_class.run_pnpm_command("install", fingerprint: "install dependencies", env: env)
 
@@ -90,6 +102,72 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         fingerprint: "pnpm install dependencies",
         env: env
       )
+    end
+
+    {
+      "6.0" => "8",
+      "6.1" => "8",
+      "5.4" => "7"
+    }.each do |version, major|
+      context "when the lockfile is version #{version} and pnpm isn't pinned" do
+        let(:lockfile_version) { version }
+
+        it "runs the pnpm #{major} that wrote it, through Corepack" do
+          described_class.run_pnpm_command("install", fingerprint: "install dependencies", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack pnpm@#{major} install",
+            fingerprint: "corepack pnpm@#{major} install dependencies",
+            env: env
+          )
+        end
+      end
+    end
+
+    context "with an unparseable package.json" do
+      let(:manifest_content) { "{" }
+
+      it "treats pnpm as unpinned" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("corepack pnpm@8 install", fingerprint: "corepack pnpm@8 install", env: env)
+      end
+    end
+
+    ["9.0", "5.3"].each do |version|
+      context "when the lockfile is version #{version}" do
+        let(:lockfile_version) { version }
+
+        it "runs the default pnpm, which reads it or cannot be matched by a supported pnpm" do
+          described_class.run_pnpm_command("install", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with("pnpm install", fingerprint: "pnpm install", env: env)
+        end
+      end
+    end
+
+    context "when packageManager pins pnpm" do
+      let(:manifest) { { "name" => "example", "packageManager" => "pnpm@8.15.9" } }
+
+      it "leaves the pinned version to Corepack" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
+    context "without a pnpm lockfile" do
+      let(:files) { [Dependabot::DependencyFile.new(name: "package.json", content: manifest_content)] }
+
+      it "runs the default pnpm" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
     end
   end
 
@@ -136,6 +214,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   describe "::npm_version without an active selector" do
+    before { described_class.npm_version_selector = nil }
+
     it "checks the local npm binary directly instead of Corepack's unqualified default" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
@@ -147,18 +227,101 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::pnpm_indirect_dependency_names" do
+    it "reads the package from pnpm 11's single-line error" do
+      message = "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"accepts\" (requested \"1.3.5\") is not a direct dependency"
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq(["accepts"])
+    end
+
+    it "reads the package from pnpm 12's bordered error" do
+      message = fixture("pnpm_errors", "pnpm12", "update_version_on_indirect_dep.txt")
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq(["accepts"])
+    end
+
+    it "reads a package whose request pnpm 12 wrapped onto the next line" do
+      message = <<~MSG
+        Error: ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP
+
+          × updating dependencies
+          ╰─▶ "@some-scope/a-package-with-a-very-long-name-that-forces-a-wrap-here"
+              (requested "1.3.5") is not a direct dependency, so the requested
+              version cannot be recorded.
+      MSG
+
+      expect(described_class.pnpm_indirect_dependency_names(message))
+        .to eq(["@some-scope/a-package-with-a-very-long-name-that-forces-a-wrap-here"])
+    end
+
+    it "returns an empty array for any other error" do
+      message = "Error: ERR_PNPM_FETCH_401\n\n  × installing dependencies\n  ╰─▶ Unauthorized"
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq([])
+    end
+  end
+
+  describe "::version_from_output" do
+    it "returns the version when it is the only output" do
+      expect(described_class.version_from_output("12.10.1\n")).to eq("12.10.1")
+    end
+
+    it "skips a download message and warnings printed before the version" do
+      output = "Downloading the pnpm 12.10.1 binary for linux-x64...\n[WARN] A warning\n12.10.1\n"
+
+      expect(described_class.version_from_output(output)).to eq("12.10.1")
+    end
+
+    it "keeps a pre-release suffix" do
+      expect(described_class.version_from_output("12.0.0-rc.1\n")).to eq("12.0.0-rc.1")
+    end
+
+    it "does not take a version mentioned inside a notice printed after the version" do
+      output = "12.10.1\nUpdate available: 12.11.0 (run `corepack install -g pnpm@12.11.0`)\n"
+
+      expect(described_class.version_from_output(output)).to eq("12.10.1")
+    end
+
+    it "returns the trimmed output when no line is a version" do
+      expect(described_class.version_from_output(" something else \n")).to eq("something else")
+    end
+  end
+
   describe "::pnpm_version" do
-    it "returns the local pnpm version" do
+    after { described_class.dependency_files = [] }
+
+    it "returns the version of the pnpm that will run" do
+      described_class.dependency_files = []
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("pnpm -v", fingerprint: "pnpm -v")
+        .with("pnpm -v", fingerprint: "pnpm -v", env: nil)
         .and_return("10.16.0\n")
 
       expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("10.16.0"))
-      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-        .with("pnpm -v", fingerprint: "pnpm -v")
     end
 
-    it "returns nil when the local pnpm version cannot be determined" do
+    it "returns the matching pnpm's version when the lockfile is older than the default pnpm reads" do
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(name: "package.json", content: "{}"),
+        Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '6.0'\n")
+      ]
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("corepack pnpm@8 -v", fingerprint: "corepack pnpm@8 -v", env: nil)
+        .and_return("8.15.9\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("8.15.9"))
+    end
+
+    it "ignores output printed before the version" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v", env: nil)
+        .and_return("Downloading the pnpm 12.10.1 binary for linux-x64...\n[WARN] A warning\n12.10.1\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+    end
+
+    it "returns nil when the pnpm version cannot be determined" do
+      described_class.dependency_files = []
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing pnpm")
 
       expect(described_class.pnpm_version).to be_nil
@@ -393,6 +556,16 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env: nil
       ).and_return("7.0.0-alpha\n")
       expect(described_class.package_manager_version("npm")).to eq("7.0.0-alpha")
+    end
+
+    it "ignores corepack download progress printed before the version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack pnpm -v",
+        fingerprint: "corepack pnpm -v",
+        env: nil
+      ).and_return("Downloading the pnpm 12.10.1 binary for linux-x64...\n12.10.1\n")
+
+      expect(described_class.package_manager_version("pnpm")).to eq("12.10.1")
     end
 
     it "passes env through to the corepack version command" do

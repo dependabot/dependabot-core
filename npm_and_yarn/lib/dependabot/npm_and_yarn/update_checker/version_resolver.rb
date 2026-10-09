@@ -13,6 +13,7 @@ require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/package_name"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/update_checker"
@@ -268,6 +269,11 @@ module Dependabot
         sig { returns(T::Boolean) }
         def trust_downgrade_detected?
           @trust_downgrade_detected
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def trust_downgrade_error?(error)
+          PnpmErrorMessage.normalize(error.message).include?("ERR_PNPM_TRUST_DOWNGRADE")
         end
 
         sig { params(dep: Dependabot::Dependency).returns(PackageLatestVersionFinder) }
@@ -559,7 +565,7 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
+          if trust_downgrade_error?(e)
             Dependabot.logger.warn(
               "pnpm trust downgrade detected during peer dependency check; version will be skipped"
             )
@@ -800,7 +806,7 @@ module Dependabot
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
+          if trust_downgrade_error?(e)
             Dependabot.logger.warn(
               "pnpm trust downgrade detected in run_checker; version will be skipped"
             )

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -32,6 +32,14 @@ RSpec.describe Dependabot::Bun::PackageManagerHelper do
 
       it "prefers packageManager over engines" do
         expect(detected_version).to eq("1.2.3")
+      end
+    end
+
+    context "with Bun 1.4 in packageManager" do
+      let(:package_json) { { "packageManager" => "bun@1.4.2" } }
+
+      it "detects the requested Bun version" do
+        expect(detected_version).to eq("1.4.2")
       end
     end
 

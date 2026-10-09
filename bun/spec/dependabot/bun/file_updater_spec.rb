@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -74,6 +74,116 @@ RSpec.describe Dependabot::Bun::FileUpdater do
         let(:requirements) { previous_requirements }
 
         specify { expect { updated_files }.to raise_error(/No files/) }
+      end
+    end
+
+    %w(simple_v2 simple_v3).each do |project|
+      context "with a Bun 1.4 #{project} lockfile" do
+        let(:files) { project_dependency_files("bun/#{project}") }
+        let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.0.1" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: version,
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:original_lock) { YAML.safe_load(files.find { |file| file.name == "bun.lock" }.content) }
+        let(:updated_lock) { YAML.safe_load(updated_bun_lock.content) }
+
+        it "updates the dependency without downgrading the lockfile or changing unrelated packages" do
+          expect(updated_files.map(&:name)).to match_array(%w(package.json bun.lock))
+          expect(updated_lock["lockfileVersion"]).to eq(original_lock["lockfileVersion"])
+          expect(updated_lock["configVersion"]).to eq(original_lock["configVersion"])
+          expect(updated_lock["overrides"]).to eq(original_lock["overrides"])
+          expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+          expect(updated_lock["packages"].except("etag"))
+            .to include(original_lock["packages"].except("etag"))
+          expect(JSON.parse(updated_package_json.content)).to include(
+            "packageManager" => "bun@1.4.2",
+            "dependencies" => JSON.parse(files.find { |file| file.name == "package.json" }.content)
+                                  .fetch("dependencies").merge("etag" => "1.8.1")
+          )
+        end
+
+        context "with a security update" do
+          let(:advisory) do
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "etag",
+              package_manager: "bun",
+              vulnerable_versions: ["<=1.2.0"]
+            )
+          end
+          let(:parsed_dependency) do
+            Dependabot::Bun::FileParser.new(
+              dependency_files: files,
+              source: nil,
+              credentials: credentials
+            ).parse.find { |dep| dep.name == "etag" }
+          end
+          let(:checker) do
+            Dependabot::Bun::UpdateChecker.new(
+              dependency: parsed_dependency,
+              dependency_files: files,
+              credentials: credentials,
+              security_advisories: [advisory]
+            )
+          end
+          let(:dependencies) { checker.updated_dependencies(requirements_to_unlock: :own) }
+
+          before do
+            stub_request(:get, "https://registry.npmjs.org/etag")
+              .to_return(status: 200, body: fixture("npm_responses", "etag.json"))
+            stub_request(:head, "https://registry.npmjs.org/etag/-/etag-1.2.1.tgz")
+              .to_return(status: 200)
+            stub_request(:head, "https://registry.npmjs.org/etag/-/etag-1.7.0.tgz")
+              .to_return(status: 200)
+          end
+
+          it "applies the lowest safe version and preserves the lockfile format and scoped overrides" do
+            expect(checker).to be_vulnerable
+            expect(dependencies).to contain_exactly(have_attributes(name: "etag", version: "1.2.1"))
+            expect(updated_lock["lockfileVersion"]).to eq(original_lock["lockfileVersion"])
+            expect(updated_lock["configVersion"]).to eq(original_lock["configVersion"])
+            expect(updated_lock["overrides"]).to eq(original_lock["overrides"])
+            expect(updated_lock["packages"]["etag"].first).to eq("etag@1.2.1")
+            expect(updated_lock["packages"].except("etag"))
+              .to include(original_lock["packages"].except("etag"))
+            expect(JSON.parse(updated_package_json.content)["dependencies"]["etag"]).to eq("1.2.1")
+            expect(advisory.vulnerable?(Dependabot::Bun::Version.new(dependencies.first.version))).to be(false)
+          end
+        end
+      end
+    end
+
+    %w(simple_v0 simple_v1).each do |project|
+      context "with a #{project} lockfile" do
+        let(:files) { project_dependency_files("bun/#{project}") }
+        let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+
+        it "continues to update dependencies in older lockfiles" do
+          parsed_dependencies = Dependabot::Bun::FileParser.new(
+            dependency_files: [updated_bun_lock, updated_package_json],
+            source: nil,
+            credentials: credentials
+          ).parse
+
+          expect(parsed_dependencies.find { |dep| dep.name == "fetch-factory" }.version).to eq("0.0.2")
+          expect(parsed_dependencies.find { |dep| dep.name == "etag" }.version).to eq("1.8.1")
+          expect(JSON.parse(updated_package_json.content)["dependencies"]["fetch-factory"]).to eq("^0.0.2")
+        end
       end
     end
 

@@ -1,0 +1,13 @@
+Error: ERR_PNPM_FETCH_404
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: GET https://registry.npmjs.org/
+  │   @dependabot%2Ftotally-fake-dependency-soz: Not Found - 404
+  │   
+  │   Failed to resolve @dependabot/totally-fake-dependency-soz@^1.0.0
+  ╰─▶ GET https://registry.npmjs.org/@dependabot%2Ftotally-fake-dependency-
+      soz: Not Found - 404
+  help: @dependabot/totally-fake-dependency-soz is not in the npm registry, or
+        you have no permission to fetch it.
+        
+        No authorization header was set for the request.
