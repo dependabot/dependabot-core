@@ -9,6 +9,7 @@ require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/lockfile/reader"
 require "dependabot/github_actions/version"
 require "dependabot/github_actions/package_manager"
 require "dependabot/github_actions/workflow_file"
@@ -137,6 +138,9 @@ module Dependabot
         ).returns(Dependabot::Dependency)
       end
       def build_github_dependency(file, string, metadata)
+        locked = locked_hostname(string)
+        return github_dependency(file, string, locked, metadata) if locked
+
         unless source&.hostname == GITHUB_COM
           dep = github_dependency(file, string, T.must(source).hostname, metadata)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
@@ -190,6 +194,33 @@ module Dependabot
             }
           end,
           package_manager: PackageManager::NAME
+        )
+      end
+
+      # A lockfile pin already names its host, so trust it over probing the tenant:
+      # a tenant blip must not silently rebind an in-tenant action to github.com.
+      sig { params(string: String).returns(T.nilable(String)) }
+      def locked_hostname(string)
+        reader = lockfile_reader
+        return unless reader
+
+        details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
+        action_ref = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}@#{details.fetch(REF_KEY)}"
+        reader.pinned_hostname(action_ref, home: source&.hostname || GITHUB_COM)
+      end
+
+      # A malformed lock must not block parsing; the updater gates it at relock.
+      sig { returns(T.nilable(Lockfile::Reader)) }
+      def lockfile_reader
+        return @lockfile_reader if defined?(@lockfile_reader)
+
+        @lockfile_reader = T.let(
+          begin
+            Lockfile::Reader.from_files(dependency_files)
+          rescue Dependabot::DependencyFileNotParseable
+            nil
+          end,
+          T.nilable(Lockfile::Reader)
         )
       end
 
