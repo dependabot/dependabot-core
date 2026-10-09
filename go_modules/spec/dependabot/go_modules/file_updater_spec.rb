@@ -438,4 +438,57 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
   end
+
+  context "when updating one module of a workspace whose go.work was fetched as an ancestor file" do
+    let(:project_name) { "workspace" }
+    let(:directory) { "/libs" }
+    let(:go_work_body) { fixture("projects", project_name, "go.work") }
+    let(:ancestor_go_work) do
+      Dependabot::DependencyFile.new(
+        name: "../go.work", content: go_work_body, directory: directory, support_file: true
+      )
+    end
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "go.mod", content: fixture("projects", project_name, "libs", "go.mod"), directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "go.sum", content: fixture("projects", project_name, "libs", "go.sum"), directory: directory
+        ),
+        ancestor_go_work
+      ]
+    end
+    let(:dependency_name) { "github.com/fatih/color" }
+    let(:dependency_previous_version) { "v1.7.0" }
+    let(:dependency_version) { "v1.16.0" }
+    let(:updated_files) { updater.updated_dependency_files }
+
+    it "does not switch to workspace mode and updates only the module's files" do
+      expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+    end
+
+    context "when the update raises the module's Go version above go.work" do
+      let(:dependency_name) { "golang.org/x/sys" }
+      let(:dependency_previous_version) { "v0.0.0-20200922070232-aee5d888a860" }
+      let(:dependency_version) { "v0.33.0" }
+      let(:previous_requirements) { [] }
+      let(:requirements) { [] }
+
+      it "returns the bumped go.work as a regular (non-support) file at the repo root" do
+        updated_go_work = updated_files.find { |f| f.name == "../go.work" }
+
+        expect(updated_go_work&.content).to start_with("go 1.23")
+        expect(updated_go_work&.support_file?).to be(false)
+        expect(updated_go_work&.path).to eq("/go.work")
+      end
+
+      it "keeps the original go.work file untouched" do
+        updater.updated_dependency_files
+
+        expect(ancestor_go_work.content).to eq(go_work_body)
+        expect(ancestor_go_work.support_file?).to be(true)
+      end
+    end
+  end
 end
