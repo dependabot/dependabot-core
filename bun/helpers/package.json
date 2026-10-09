@@ -20,6 +20,12 @@
     "semver": "^7.6.3",
     "patch-package": "^8.0.0"
   },
+  "overrides": {
+    "tmp": "^0.2.7"
+  },
+  "resolutions": {
+    "tmp": "^0.2.7"
+  },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "eslint": "^9.16.0",
