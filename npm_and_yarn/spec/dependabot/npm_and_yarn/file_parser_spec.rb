@@ -39,6 +39,71 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  context "with an alias and an ordinary package sharing an installation name" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: { "dependencies" => { "ms" => "^2.0.0" } }.to_json
+        ),
+        Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: {
+            "lockfileVersion" => 3,
+            "packages" => {
+              "" => { "dependencies" => { "ms" => "^2.0.0" } },
+              "node_modules/ms" => { "version" => "2.0.0" },
+              "node_modules/parent/node_modules/ms" => { "name" => "is-number", "version" => "7.0.0" },
+              "node_modules/other/node_modules/ms" => { "name" => "is-number", "version" => "6.0.0" }
+            }
+          }.to_json
+        )
+      ]
+    end
+
+    it "isolates package versions without losing sibling installations during manifest aggregation" do
+      dependency = parser.parse.find { |dep| dep.name == "ms" }
+
+      expect(dependency.all_versions).to eq(["2.0.0"])
+      expect(dependency.requirements.map(&:requirement)).to eq(["^2.0.0"])
+      expect(
+        dependency.metadata_dependencies(:npm_package_versions).map do |dep|
+          [Dependabot::NpmAndYarn::Helpers.npm_package_name(dep), dep.version]
+        end
+      ).to contain_exactly(["ms", "2.0.0"], ["is-number", "6.0.0"], ["is-number", "7.0.0"])
+      expect(Dependabot::NpmAndYarn::Helpers.dependency_for_npm_package(dependency, "is-number").version)
+        .to eq("6.0.0")
+    end
+
+    it "also isolates versions when parsing lockfiles without manifests" do
+      dependency = described_class::LockfileParser.new(dependency_files: files).parse.first
+
+      expect(dependency.all_versions).to eq(["2.0.0"])
+      expect(Dependabot::NpmAndYarn::Helpers.dependency_for_npm_package(dependency, "is-number").version)
+        .to eq("6.0.0")
+    end
+
+    context "when dealiasing packages for the dependency graph" do
+      let(:parser) do
+        described_class.new(
+          dependency_files: files,
+          source: source,
+          credentials: credentials,
+          options: { dealias_packages: true }
+        )
+      end
+
+      it "retains every version under its canonical package name" do
+        dependencies = parser.parse
+
+        expect(dependencies.map(&:name)).to contain_exactly("ms", "is-number")
+        expect(dependencies.find { |dep| dep.name == "ms" }.all_versions).to eq(["2.0.0"])
+        expect(dependencies.find { |dep| dep.name == "is-number" }.all_versions)
+          .to contain_exactly("6.0.0", "7.0.0")
+      end
+    end
+  end
+
   describe "lockfile lookup presence" do
     let(:locked_entries) { { "chalk" => {} } }
     let(:files) do

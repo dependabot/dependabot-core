@@ -90,14 +90,14 @@ module Dependabot
           current_versions = versions_for(dep)
 
           # Skip pure direct dependencies (top-level with no transitive versions).
-          # But allow processing of deps that carry transitive versions in all_versions,
-          # even if top-level, since npm/yarn/pnpm may store the full set there.
+          # But allow processing of deps that carry multiple installed versions,
+          # including npm aliases, even when the combined record is top-level.
           next if dep.top_level? && current_versions.length == 1
 
           # Diff the full set of resolved versions rather than only `dep.version`.
           # Ecosystems that allow multiple versions of the same dependency
           # (npm/yarn/pnpm) de-dupe by name and expose the *lowest* version via
-          # `dep.version`, with the full set in `dep.all_versions`. Comparing the
+          # `dep.version`, with the full sets retained in version metadata. Comparing the
           # sets ensures a newly-introduced version is detected even when it is
           # not the lowest and even when the lowest version is unchanged.
           previous_versions_set = previous_version_sets[name_key] || []
@@ -141,6 +141,10 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def versions_for(dependency)
+        # Block rules match installation names, including every alias target in that slot.
+        npm_versions = dependency.metadata_dependencies(:npm_package_versions)
+        return npm_versions.filter_map(&:version).uniq if npm_versions
+
         dependency.all_versions.compact
       end
 

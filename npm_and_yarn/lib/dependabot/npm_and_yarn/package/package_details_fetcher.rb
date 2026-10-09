@@ -91,7 +91,7 @@ module Dependabot
         sig { returns(String) }
         def dependency_url
           if (configured_registry = configured_registry_from_credentials)
-            escaped_dependency_name = dependency.name.gsub("/", "%2F")
+            escaped_dependency_name = Helpers.npm_package_name(dependency).gsub("/", "%2F")
             return "#{configured_registry}/#{escaped_dependency_name}"
           end
 
@@ -183,7 +183,7 @@ module Dependabot
 
         sig { params(version: String).returns(String) }
         def package_version_url(version)
-          "#{dependency_registry}/#{@dependency.name}/v/#{version}"
+          "#{dependency_registry}/#{Helpers.npm_package_name(dependency)}/v/#{version}"
         end
 
         sig { params(node_requirement: T.nilable(String)).returns(T.nilable(Dependabot::Package::PackageLanguage)) }
@@ -309,9 +309,10 @@ module Dependabot
 
           # Check whether this dependency is (likely to be) private
           if dependency_registry == GLOBAL_REGISTRY
-            return false unless dependency.name.start_with?("@")
+            package_name = Helpers.npm_package_name(dependency)
+            return false unless package_name.start_with?("@")
 
-            web_response = Dependabot::RegistryClient.get(url: "#{NPM_OFFICIAL_WEBSITE}/package/#{dependency.name}")
+            web_response = Dependabot::RegistryClient.get(url: "#{NPM_OFFICIAL_WEBSITE}/package/#{package_name}")
             # NOTE: returns 429 when the login page is rate limited
             return web_response.body.include?("Forgot password?") ||
                    web_response.status == 429

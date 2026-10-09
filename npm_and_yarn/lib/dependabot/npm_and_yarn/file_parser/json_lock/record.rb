@@ -58,9 +58,12 @@ module Dependabot
             context = "#{@context}.#{field}"
             mapping = object_value(object.fetch(field, {}), context)
 
+            # Modern package maps also contain root and workspace records outside node_modules.
             # Modern package records contain requirement strings rather than nested lock entries.
-            mapping.reject { |_, value| value.is_a?(String) }.to_h do |key, data|
-              [key, self.class.new(data, path: @path, context: "#{context}.#{key}")]
+            mapping.each_with_object(T.let({}, T::Hash[String, Record])) do |(key, data), records|
+              next if data.is_a?(String) || (field == "packages" && !key.match?(%r{(?:\A|/)node_modules/}))
+
+              records[key] = self.class.new(data, path: @path, context: "#{context}.#{key}")
             end
           end
 

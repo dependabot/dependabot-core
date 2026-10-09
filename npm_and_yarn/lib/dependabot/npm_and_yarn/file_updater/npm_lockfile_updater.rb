@@ -222,6 +222,9 @@ module Dependabot
           # (likely it is no longer required)
           return !dependency.top_level? if existing_dep.nil?
 
+          existing_dep = Helpers.dependency_for_npm_package(existing_dep, Helpers.npm_package_name(dependency))
+          return !dependency.top_level? unless existing_dep
+
           existing_dep.version == dependency.version
         end
 

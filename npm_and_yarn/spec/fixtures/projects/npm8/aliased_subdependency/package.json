@@ -1,0 +1,10 @@
+{
+  "name": "aliased-subdependency",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "is-number": "5.0.0",
+    "number-alias": "npm:is-number@>=6.0.0 <8.0.0",
+    "pinned-number": "npm:is-number@5.0.0"
+  }
+}
