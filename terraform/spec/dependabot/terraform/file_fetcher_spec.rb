@@ -135,6 +135,19 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     end
   end
 
+  context "when a local path module is reached through a symlink to a directory already read" do
+    let(:project_name) { "local_path_module_symlink" }
+    let(:directory) { "/modules/foo" }
+
+    # Added here rather than committed, to keep a symlink loop out of the repository
+    before { File.symlink(".", File.join(repo_contents_path, "modules/foo/self")) }
+
+    it "fetches the module once" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(main.tf))
+    end
+  end
+
   context "when two local path modules share a module" do
     let(:project_name) { "local_path_module_diamond" }
 

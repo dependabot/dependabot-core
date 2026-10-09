@@ -77,7 +77,7 @@ module Dependabot
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
-      def local_path_module_files(files, dir: ".", visited: Set[directory])
+      def local_path_module_files(files, dir: ".", visited: Set[module_dir_key(directory)])
         terraform_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         files.each do |file|
@@ -87,7 +87,7 @@ module Dependabot
             # (`../../modules/foo` and `.` can be the same directory): a module can refer back
             # to one already read, through a cycle or in a commented-out usage example.
             module_dir = Pathname.new(File.join(directory, base_path)).cleanpath.to_path
-            next unless visited.add?(module_dir)
+            next unless visited.add?(module_dir_key(module_dir))
 
             # Skip excluded local module paths
             if Dependabot::FileFiltering.should_exclude_path?(base_path, "local path module directory", @exclude_paths)
@@ -107,6 +107,17 @@ module Dependabot
         # still parse provider requirements from these files, but will skip
         # module declarations (since we can't update local path modules)
         terraform_files.tap { |fs| fs.each { |f| f.support_file = true } }
+      end
+
+      # In a cloned repository, symlinks are resolved too: through a symlink to a directory
+      # already read (`self -> .`), each lexical path would be new until the OS link limit.
+      sig { params(module_dir: String).returns(String) }
+      def module_dir_key(module_dir)
+        return module_dir unless repo_contents_path
+
+        File.realpath(File.join(clone_repo_contents, module_dir))
+      rescue SystemCallError
+        module_dir
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
