@@ -151,18 +151,21 @@ module GithubApi
     def job_correlator
       base = "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
 
-      # If the manifest file does not have a name (e.g.,
-      # it is an empty file representing a deleted manifest),
-      # `path` will refer to the directory instead of a file.
-      path = manifest_file.path
-      dirname = manifest_file.name.empty? ? path : File.dirname(path)
-      dirname = dirname.gsub(%r{^/}, "")
+      dirname = manifest_file.directory.delete_prefix("/").delete_suffix("/")
 
       sanitized_path = if dirname.bytesize > 32
                          # If the dirname is pathologically long, we replace it with a SHA256
                          Digest::SHA256.hexdigest(dirname)
                        else
-                         dirname.tr("/", "-")
+                         # TODO: Consolidate on `scanned_manifest_path` as the correlator in future
+                         #
+                         # The `scanned_manifest_path` is a better version of this correlator calculation, due
+                         # to an historical decision to 'sluggify' paths we have to make sure to replace any
+                         # pre-existing `-` characters with `--` to avoid collisions on paths such as:
+                         # - service/web
+                         # - service-web
+                         #
+                         dirname.gsub("-", "--").tr("/", "-")
                        end
 
       sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"

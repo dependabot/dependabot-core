@@ -76,12 +76,12 @@ RSpec.shared_examples "dependency_submission" do |empty|
       {
         context: "with a RubyGems project in a subdirectory",
         directory: "ruby/backend-api/",
-        expected_correlator: "dependabot-bundler-ruby-backend-api"
+        expected_correlator: "dependabot-bundler-ruby-backend--api"
       },
       {
         context: "with mixed case in the file path",
         directory: "Ruby/backend-api/",
-        expected_correlator: "dependabot-bundler-Ruby-backend-api"
+        expected_correlator: "dependabot-bundler-Ruby-backend--api"
       },
       # If we're given something pathologically long, we use a SHA256 to limit length
       {
@@ -320,6 +320,118 @@ RSpec.describe GithubApi::DependencySubmission do
 
       expect(manifests.fetch("/base-requirements.txt")[:resolved].keys).to contain_exactly("starlette")
       expect(manifests.fetch("/test-requirements.txt")[:resolved].keys).to contain_exactly("pytest")
+    end
+  end
+
+  context "when a root scan's representative manifest lives in a subdirectory that is also scanned independently" do
+    subject(:root_scan_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: root_scan_manifest,
+            resolved_dependencies: {}
+          )
+        ]
+      )
+    end
+
+    let(:docs_scan_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: docs_scan_manifest,
+            resolved_dependencies: {}
+          )
+        ]
+      )
+    end
+
+    # A root ("/") scan whose first layer-primary manifest happens to live in "/docs" -
+    # a legitimate outcome of layered manifest selection, not a bug in itself.
+    let(:root_scan_manifest) do
+      Dependabot::DependencyFile.new(name: "docs/requirements.txt", content: "", directory: "/")
+    end
+
+    # A separate job configured to scan the "/docs" directory directly.
+    let(:docs_scan_manifest) do
+      Dependabot::DependencyFile.new(name: "requirements.txt", content: "", directory: "/docs")
+    end
+
+    it "gives the two distinct scan directories distinct job.correlator values" do
+      root_correlator = root_scan_submission.payload[:job][:correlator]
+      docs_correlator = docs_scan_submission.payload[:job][:correlator]
+
+      expect(root_correlator).to eq("dependabot-pip")
+      expect(docs_correlator).to eq("dependabot-pip-docs")
+      expect(root_correlator).not_to eq(docs_correlator)
+    end
+
+    it "matches the directory-derived scanned_manifest_path, which already disambiguates them" do
+      expect(root_scan_submission.payload[:metadata][:scanned_manifest_path]).to eq("pypi::/")
+      expect(docs_scan_submission.payload[:metadata][:scanned_manifest_path]).to eq("pypi::/docs")
+    end
+  end
+
+  context "when scanning sibling directories whose names only differ by a slash or a dash" do
+    subject(:svc_web_dash_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: svc_web_dash_manifest,
+            resolved_dependencies: {}
+          )
+        ]
+      )
+    end
+
+    let(:svc_web_slash_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: svc_web_slash_manifest,
+            resolved_dependencies: {}
+          )
+        ]
+      )
+    end
+
+    # "/svc-web" and "/svc/web" are different directories and should not sanitise to the same correlator.
+    let(:svc_web_dash_manifest) do
+      Dependabot::DependencyFile.new(name: "requirements.txt", content: "", directory: "/svc-web")
+    end
+
+    let(:svc_web_slash_manifest) do
+      Dependabot::DependencyFile.new(name: "requirements.txt", content: "", directory: "/svc/web")
+    end
+
+    it "gives the two distinct scan directories distinct job.correlator values" do
+      dash_correlator = svc_web_dash_submission.payload[:job][:correlator]
+      slash_correlator = svc_web_slash_submission.payload[:job][:correlator]
+
+      expect(dash_correlator).to eq("dependabot-pip-svc--web")
+      expect(slash_correlator).to eq("dependabot-pip-svc-web")
+      expect(dash_correlator).not_to eq(slash_correlator)
+    end
+
+    it "matches the directory-derived scanned_manifest_path, which already disambiguates them" do
+      expect(svc_web_dash_submission.payload[:metadata][:scanned_manifest_path]).to eq("pypi::/svc-web")
+      expect(svc_web_slash_submission.payload[:metadata][:scanned_manifest_path]).to eq("pypi::/svc/web")
     end
   end
 
