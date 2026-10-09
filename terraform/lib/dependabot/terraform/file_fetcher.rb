@@ -17,7 +17,7 @@ module Dependabot
       include FileFilter
 
       # https://www.terraform.io/docs/language/modules/sources.html#local-paths
-      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}
+      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>\.\.?\/[^'"]+)}
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -72,16 +72,22 @@ module Dependabot
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
-          dir: String
+          dir: String,
+          visited: T::Set[String]
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
-      def local_path_module_files(files, dir: ".")
+      def local_path_module_files(files, dir: ".", visited: Set[module_dir_key(directory)])
         terraform_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         files.each do |file|
           terraform_file_local_module_details(file).each do |path|
             base_path = Pathname.new(File.join(dir, path)).cleanpath.to_path
+            # Read each module directory once, keyed on its path from the repository root
+            # (`../../modules/foo` and `.` can be the same directory): a module can refer back
+            # to one already read, through a cycle or in a commented-out usage example.
+            module_dir = Pathname.new(File.join(directory, base_path)).cleanpath.to_path
+            next unless visited.add?(module_dir_key(module_dir))
 
             # Skip excluded local module paths
             if Dependabot::FileFiltering.should_exclude_path?(base_path, "local path module directory", @exclude_paths)
@@ -93,7 +99,7 @@ module Dependabot
               .select { |f| f.type == "file" && f.name.end_with?(".tf") }
               .map { |f| fetch_file_from_host(File.join(base_path, f.name)) }
             terraform_files += nested_terraform_files
-            terraform_files += local_path_module_files(nested_terraform_files, dir: path)
+            terraform_files += local_path_module_files(nested_terraform_files, dir: base_path, visited: visited)
           end
         end
 
@@ -101,6 +107,17 @@ module Dependabot
         # still parse provider requirements from these files, but will skip
         # module declarations (since we can't update local path modules)
         terraform_files.tap { |fs| fs.each { |f| f.support_file = true } }
+      end
+
+      # In a cloned repository, symlinks are resolved too: through a symlink to a directory
+      # already read (`self -> .`), each lexical path would be new until the OS link limit.
+      sig { params(module_dir: String).returns(String) }
+      def module_dir_key(module_dir)
+        return module_dir unless repo_contents_path
+
+        File.realpath(File.join(clone_repo_contents, module_dir))
+      rescue SystemCallError
+        module_dir
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
