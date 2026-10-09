@@ -52,6 +52,53 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
+  describe "#relock home host" do
+    subject(:engine) { described_class.new([], hostname: "tenant.ghe.com") }
+
+    before { stub_subprocess(stdout: "{}", exitstatus: 0, stderr: "") }
+
+    it "always passes --hostname to the engine" do
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+
+      expect(Dependabot::CommandHelpers).to have_received(:capture3_with_timeout)
+        .with([hash_including("GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"), anything,
+               "--no-onboard", "--no-narrow", "--no-interactive", "--json=findings",
+               "--hostname", "tenant.ghe.com", ".github/workflows/ci.yml", anything])
+    end
+  end
+
+  describe "#relock when the engine cannot verify a pin's host identity" do
+    before do
+      stub_subprocess(
+        stdout: "",
+        exitstatus: 2,
+        stderr: "verifying repository identity for actions/checkout on tenant.ghe.com: " \
+                "HTTP 404: Not Found (https://api.tenant.ghe.com/repos/actions/checkout)\n"
+      )
+    end
+
+    it "raises a user-actionable DependencyFileNotResolvable, not EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::DependencyFileNotResolvable, /verifying repository identity/)
+    end
+  end
+
+  describe "#relock when host identity verification fails transiently" do
+    before do
+      stub_subprocess(
+        stdout: "",
+        exitstatus: 2,
+        stderr: "verifying repository identity for actions/checkout on github.com: " \
+                "HTTP 502: Bad Gateway (https://api.github.com/repos/actions/checkout)\n"
+      )
+    end
+
+    it "raises a retryable EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /HTTP 502/)
+    end
+  end
+
   describe "#relock when stdout is valid non-object JSON" do
     before { stub_subprocess(stdout: "[]", exitstatus: 0, stderr: "") }
 

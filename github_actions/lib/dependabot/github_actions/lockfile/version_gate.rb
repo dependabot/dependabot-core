@@ -10,7 +10,7 @@ module Dependabot
   module GithubActions
     module Lockfile
       # Pre-1.0 lockfile schema revisions may be breaking, so only the explicitly
-      # supported version is safe to read and rewrite.
+      # supported versions are safe to read and rewrite.
       module VersionGate
         extend T::Sig
 
@@ -18,12 +18,12 @@ module Dependabot
         def self.assert_supported!(found)
           return if compatible?(found)
 
-          raise UnsupportedLockfileVersion.new(found, SUPPORTED_LOCKFILE_VERSION)
+          raise UnsupportedLockfileVersion.new(found, SUPPORTED_LOCKFILE_VERSIONS.join(", "))
         end
 
         sig { params(found: String).returns(T::Boolean) }
         def self.compatible?(found)
-          found == SUPPORTED_LOCKFILE_VERSION
+          SUPPORTED_LOCKFILE_VERSIONS.include?(found)
         end
       end
     end

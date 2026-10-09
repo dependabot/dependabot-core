@@ -46,6 +46,26 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
       end
     end
 
+    context "with a ghe.com home host" do
+      let(:credentials) do
+        [
+          cred({ "type" => "git_source", "host" => "github.com", "password" => "dotcom-token" }),
+          cred({ "type" => "git_source", "host" => "tenant.ghe.com", "password" => "tenant-token" })
+        ]
+      end
+
+      it "uses only the home-host token" do
+        expect(described_class.build(credentials, "tenant.ghe.com")).to eq("GH_TOKEN" => "tenant-token")
+      end
+
+      it "never forwards a dotcom token when the home host has none" do
+        expect(described_class.build(credentials.first(1), "tenant.ghe.com")).to eq(
+          "GH_TOKEN" => "x-access-token",
+          "GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"
+        )
+      end
+    end
+
     context "with a non-GitHub git credential" do
       let(:credentials) do
         [cred({ "type" => "git_source", "host" => "gitlab.com", "password" => "gitlab-token" })]

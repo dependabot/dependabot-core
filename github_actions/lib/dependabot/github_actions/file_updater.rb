@@ -82,7 +82,7 @@ module Dependabot
 
         # Materialize the full onboarded closure so the lock remains intact, but fix
         # only changed workflows so unrelated refs are not touched.
-        content = Lockfile::CliEngine.new(credentials).relock(
+        content = Lockfile::CliEngine.new(credentials, hostname: source_hostname).relock(
           workflow_files: rewritten_onboarded_workflow_files(reader, updated_workflow_files),
           lockfile: lock,
           workflow_paths: changed_onboarded.map { |file| repo_relative_path(file) }
@@ -112,6 +112,12 @@ module Dependabot
         dependency_files
           .reject { |f| lockfile?(f) }
           .select { |f| reader.onboarded?(repo_relative_path(f)) }
+      end
+
+      # The repository's home host, plumbed from the job source by the updater.
+      sig { returns(String) }
+      def source_hostname
+        T.cast(options.fetch(:source_hostname, GITHUB_COM), String)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

@@ -6,8 +6,9 @@ require "dependabot/github_actions/lockfile"
 
 RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
   describe ".compatible?" do
-    it "accepts the supported version" do
+    it "accepts the supported versions" do
       expect(described_class.compatible?("v0.0.2")).to be(true)
+      expect(described_class.compatible?("v0.0.3")).to be(true)
     end
 
     it "rejects the previous schema" do
@@ -15,7 +16,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
     end
 
     it "rejects a newer schema" do
-      expect(described_class.compatible?("v0.0.3")).to be(false)
+      expect(described_class.compatible?("v0.0.4")).to be(false)
     end
 
     it "rejects blank input" do
