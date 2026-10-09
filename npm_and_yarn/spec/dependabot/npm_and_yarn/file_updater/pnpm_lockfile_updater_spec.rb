@@ -196,6 +196,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      context "when the pnpm that matches an old lockfile is refused by engines.pnpm (pnpm 8 output)" do
+        let(:project_name) { "pnpm/aliased_dependency" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm8", "unsupported_engine.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "raises DependencyFileNotSupported naming the requirement, the lockfile version and the pnpm that ran" do
+          expect { updated_pnpm_lock_content }.to raise_error(
+            Dependabot::DependencyFileNotSupported,
+            /requires pnpm >=9 \(engines\.pnpm\), but \S*pnpm-lock\.yaml is lockfileVersion 6\.\d.*ran pnpm 8\.15\.9/
+          )
+        end
+      end
+
+      context "when the pnpm that matches an old lockfile refuses only the Node version (pnpm 8 output)" do
+        let(:project_name) { "pnpm/aliased_dependency" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm8", "unsupported_node_engine.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "is not reported as an engines.pnpm conflict" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::ToolVersionNotSupported, /Node/)
+        end
+      end
+
       context "with an unrecognized pnpm-workspace.yaml setting" do
         let(:project_name) { "pnpm/simple" }
 

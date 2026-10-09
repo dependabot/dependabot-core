@@ -976,6 +976,29 @@ module Dependabot
           end
         end
 
+        # pnpm 7 and 8 enforce `engines.pnpm`. When Dependabot ran one of them because that is the pnpm that wrote
+        # the lockfile (see Helpers.matching_pnpm_major_for_files), the repository asks for a newer pnpm than the one
+        # that can read its lockfile, and no pnpm Dependabot runs satisfies both.
+        sig do
+          params(
+            match_pkg_mgr: T.nilable(MatchData),
+            match_version: T.nilable(MatchData),
+            pnpm_lock: Dependabot::DependencyFile
+          ).void
+        end
+        def raise_old_lockfile_engine_conflict(match_pkg_mgr, match_version, pnpm_lock)
+          # The same error code is used when only the Node version is refused (`Your Node version is incompatible`)
+          return unless match_pkg_mgr && match_pkg_mgr[:pkg_mgr] == PNPMPackageManager::NAME
+          return unless match_version && Helpers.matching_pnpm_major_for_files(dependency_files)
+
+          raise Dependabot::DependencyFileNotSupported,
+                "package.json requires pnpm #{match_version[:supported_ver]} (engines.pnpm), but " \
+                "#{pnpm_lock.path} is lockfileVersion #{Helpers.pnpm_lockfile_version(pnpm_lock)}, which " \
+                "Dependabot's default pnpm cannot read. Dependabot ran pnpm #{match_version[:detected_ver]}, the " \
+                "version that matches the lockfile, and pnpm refused it because of the engines requirement. " \
+                "Regenerate the lockfile with a pnpm version that satisfies the requirement."
+        end
+
         sig { params(error_message: String).returns(String) }
         def unrecognized_workspace_settings_message(error_message)
           settings = error_message.match(UNRECOGNIZED_SETTINGS_LIST)&.[](:settings).to_s
@@ -1006,12 +1029,14 @@ module Dependabot
         sig do
           params(
             error_message: String,
-            _pnpm_lock: Dependabot::DependencyFile
+            pnpm_lock: Dependabot::DependencyFile
           ).returns(T.nilable(T.noreturn))
         end
-        def raise_unsupported_engine_error(error_message, _pnpm_lock)
+        def raise_unsupported_engine_error(error_message, pnpm_lock)
           match_pkg_mgr = error_message.match(PACAKGE_MANAGER)
           match_version = error_message.match(VERSION_REQUIREMENT)
+
+          raise_old_lockfile_engine_conflict(match_pkg_mgr, match_version, pnpm_lock)
 
           unless match_pkg_mgr && match_version &&
                  match_pkg_mgr.named_captures && match_version.named_captures
