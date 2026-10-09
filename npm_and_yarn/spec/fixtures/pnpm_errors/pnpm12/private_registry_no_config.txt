@@ -1,0 +1,12 @@
+Error: ERR_PNPM_FETCH_404
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: GET https://registry.npmjs.org/
+  │   @gsap%2Fbusiness: Not Found - 404
+  │   
+  │   Failed to resolve gsap@npm:@gsap/business@^3.12.4
+  ╰─▶ GET https://registry.npmjs.org/@gsap%2Fbusiness: Not Found - 404
+  help: @gsap/business is not in the npm registry, or you have no permission
+        to fetch it.
+        
+        No authorization header was set for the request.
