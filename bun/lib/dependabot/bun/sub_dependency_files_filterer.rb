@@ -30,9 +30,14 @@ module Dependabot
             lockfile_dependencies(lockfile).any? do |sub_dep|
               updated_dependencies.any? do |updated_dep|
                 next false unless sub_dep.name == updated_dep.name
+                next true if updated_dep.top_level?
 
-                version_class.new(updated_dep.version) >
-                  version_class.new(sub_dep.version)
+                next false unless updated_dep.version
+
+                updated_version = version_class.new(updated_dep.version)
+                candidate_versions_for(sub_dep).any? do |candidate_version|
+                  updated_version > candidate_version
+                end
               end
             end
           end
@@ -76,6 +81,16 @@ module Dependabot
       sig { returns(T.class_of(Dependabot::Bun::Version)) }
       def version_class
         Bun::Version
+      end
+
+      sig { params(sub_dep: Dependency).returns(T::Array[Dependabot::Bun::Version]) }
+      def candidate_versions_for(sub_dep)
+        all_versions = T.cast(sub_dep.metadata[:all_versions], T.nilable(T::Array[Dependency]))
+        dependencies = all_versions&.any? ? all_versions : [sub_dep]
+
+        dependencies.filter_map do |dep|
+          dep.version && version_class.correct?(dep.version) ? version_class.new(dep.version) : nil
+        end
       end
     end
   end
