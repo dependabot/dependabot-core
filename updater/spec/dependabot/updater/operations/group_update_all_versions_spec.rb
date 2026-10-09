@@ -350,7 +350,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         it "skips the group and marks it as handled" do
           expect(mock_create_group_update).not_to receive(:perform)
-          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group, defer_update_types: true)
           perform
         end
 
@@ -414,7 +414,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         it "skips creating a new PR" do
           expect(mock_create_group_update).not_to receive(:perform)
-          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group, defer_update_types: true)
           perform
         end
       end
@@ -441,7 +441,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         it "skips creating a new PR" do
           expect(mock_create_group_update).not_to receive(:perform)
-          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group, defer_update_types: true)
           perform
         end
       end
@@ -499,7 +499,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         it "treats the existing PR as a match" do
           expect(mock_create_group_update).not_to receive(:perform)
-          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group, defer_update_types: true)
           perform
         end
       end
@@ -510,7 +510,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         end
 
         it "marks the group as handled" do
-          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group, defer_update_types: true)
           perform
         end
       end
