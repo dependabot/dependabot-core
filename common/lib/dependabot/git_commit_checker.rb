@@ -315,7 +315,7 @@ module Dependabot
       local_tags_matching_sha(commit_sha).map(&:name)
     end
 
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
+    sig { overridable.params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
     def max_local_tag(tags)
       max_version_tag = tags.max_by { |t| version_from_tag(t) }
 
@@ -589,7 +589,7 @@ module Dependabot
       dependency_source_details&.ref
     end
 
-    sig { params(tag: String).returns(T::Boolean) }
+    sig { overridable.params(tag: String).returns(T::Boolean) }
     def version_tag?(tag)
       tag.match?(VERSION_REGEX)
     end
@@ -605,7 +605,7 @@ module Dependabot
       end
     end
 
-    sig { params(tag: String, other_tag: String).returns(T::Boolean) }
+    sig { overridable.params(tag: String, other_tag: String).returns(T::Boolean) }
     def same_prefix?(tag, other_tag)
       tag_prefix = tag.gsub(VERSION_REGEX, "")
       other_tag_prefix = other_tag.gsub(VERSION_REGEX, "")
@@ -796,7 +796,7 @@ module Dependabot
       version_class.new(scan_version(name))
     end
 
-    sig { params(name: String).returns(String) }
+    sig { overridable.params(name: String).returns(String) }
     def scan_version(name)
       T.must(T.must(name.match(VERSION_REGEX)).named_captures.fetch("version"))
     end
