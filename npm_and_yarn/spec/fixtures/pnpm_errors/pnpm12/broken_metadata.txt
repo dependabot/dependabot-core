@@ -1,0 +1,11 @@
+Error: ERR_PNPM_RESOLVING_NPM_RESOLVER_DECODE_ERROR
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: Failed to decode metadata from
+  │   http://127.0.0.1:9101/is-odd: EOF while parsing an object at line 1
+  │   column 32
+  │   
+  │   Failed to resolve is-odd@3.0.0
+  ╰─▶ Failed to decode metadata from http://127.0.0.1:9101/is-odd: EOF while
+      parsing an object at line 1 column 32
+

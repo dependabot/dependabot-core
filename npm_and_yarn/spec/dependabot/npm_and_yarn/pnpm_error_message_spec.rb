@@ -102,6 +102,17 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmErrorMessage do
       end
     end
 
+    context "with an error whose message is only the headline" do
+      let(:message) { pnpm_error("pnpm12", "unrecognized_workspace_settings") }
+
+      it "keeps the whole headline as the message" do
+        expect(normalized).to start_with(
+          "[ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS] The following settings in pnpm-workspace.yaml are not " \
+          "recognized by this version of pnpm: \"minimumReleaseAg\" (did you mean \"minimumReleaseAge\"?)."
+        )
+      end
+    end
+
     context "with a pnpm 11 message" do
       let(:message) { pnpm_error("pnpm11", "private_package_access") }
 
