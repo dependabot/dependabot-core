@@ -69,9 +69,15 @@ module Dependabot
         # Newer Yarn puts the peer identifier after the provided version instead:
         # YN0060: │ react is listed by your project with version 15.2.0 (p89012), \
         # which doesn't satisfy what react-dom requests (^16.0.0).
+        # When more than one package requests the peer, Yarn names the first and
+        # switches to the plural verb:
+        # YN0060: │ react is listed by your project with version 15.2.0 (p89012), \
+        # which doesn't satisfy what react-dom and other dependencies request \
+        # (but they have non-overlapping ranges!).
         YARN_BERRY_V4_PEER_DEP_ERROR_REGEX =
           /
-            YN0060:.+\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)(?:\s\((?<info_hash>\w+)\))?\srequests
+            YN0060:.+\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)(?:\s\((?<info_hash>\w+)\))?
+            \s(?:requests|and\sother\sdependencies\srequest)
           /x
 
         # Error message returned by `pnpm update`:
