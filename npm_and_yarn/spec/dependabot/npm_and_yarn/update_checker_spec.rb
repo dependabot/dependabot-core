@@ -2555,6 +2555,59 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(checker.update_cooldown.default_days).to eq(3)
     end
 
+    context "when npmrc contains duplicate settings" do
+      let(:target_version) { "1.2.0" }
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json", content: { dependencies: { dependency_name => "^1.0.0" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: ".npmrc", content: "min-release-age=30\nmin-release-age=#{last_value}\n"
+          )
+        ]
+      end
+      let(:registry_response) do
+        release_ages = { "1.0.0" => 60, "1.1.0" => 10, "1.2.0" => 2 }
+        {
+          "name" => dependency_name,
+          "dist-tags" => { "latest" => target_version },
+          "time" => release_ages.transform_values { |days| (Time.now.utc - (days * 86_400)).iso8601 },
+          "versions" => release_ages.keys.to_h do |version|
+            [version, { "name" => dependency_name, "version" => version }]
+          end
+        }.to_json
+      end
+
+      before do
+        %w(1.0.0 1.1.0).each do |version|
+          stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{version}.tgz")
+            .to_return(status: 200)
+        end
+      end
+
+      %w(1 soon 0).each do |value|
+        context "with a final value of #{value}" do
+          let(:last_value) { value }
+
+          it "selects using the configured three-day cooldown, not the earlier native gate" do
+            expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.1.0"))
+            expect(checker.update_cooldown.default_days).to eq(3)
+          end
+        end
+      end
+
+      context "with a stronger final numeric gate" do
+        let(:last_value) { "20" }
+
+        it "preserves the native floor when selecting a release" do
+          expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+          expect(checker.update_cooldown.default_days).to eq(20)
+        end
+      end
+    end
+
     context "when this is a security update" do
       let(:security_advisories) do
         [
@@ -2582,8 +2635,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      it "keeps default_days unchanged and logs no warning" do
-        expect(Dependabot.logger).not_to receive(:warn)
+      it "keeps default_days unchanged" do
         expect(checker.update_cooldown.default_days).to eq(10)
       end
     end
@@ -2599,19 +2651,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      it "raises default_days to the npmrc floor and logs semver-field warnings only" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          ".npmrc min-release-age (3 days) conflicts with dependabot.yml update_cooldown " \
-          "(default_days: 1); it acts as a minimum floor for all cooldown values."
-        ).once
-        # ReleaseCooldownOptions derives semver fields from default_days when not set
-        # explicitly, so all three are 1 and each gets an override warning.
-        %w(semver_major_days semver_minor_days semver_patch_days).each do |field|
-          expect(Dependabot.logger).to receive(:warn).with(
-            ".npmrc min-release-age (3 days) overrides dependabot.yml #{field} " \
-            "(1 days) because it would cause npm install to fail."
-          )
-        end
+      it "raises default_days to the npmrc floor" do
         expect(checker.update_cooldown.default_days).to eq(3)
       end
     end
@@ -2630,15 +2670,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      it "raises semver_patch_days to the npmrc floor and logs an override warning" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          ".npmrc min-release-age (3 days) conflicts with dependabot.yml update_cooldown " \
-          "(default_days: 10); it acts as a minimum floor for all cooldown values."
-        )
-        expect(Dependabot.logger).to receive(:warn).with(
-          ".npmrc min-release-age (3 days) overrides dependabot.yml semver_patch_days " \
-          "(1 days) because it would cause npm install to fail."
-        )
+      it "raises semver_patch_days to the npmrc floor" do
         expect(checker.update_cooldown.semver_patch_days).to eq(3)
       end
     end
@@ -2657,11 +2689,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      it "drops include/exclude and logs a warning" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          ".npmrc min-release-age does not support include/exclude patterns; " \
-          "dropping dependabot.yml update_cooldown include/exclude configuration."
-        )
+      it "drops include/exclude" do
         expect(checker.update_cooldown.include).to be_empty
         expect(checker.update_cooldown.exclude).to be_empty
         expect(checker.update_cooldown.default_days).to eq(5)

@@ -7,6 +7,8 @@ Yarn and npm support for [`dependabot-core`][core-repo].
 On npm 11.10 and later, transitive version resolution and lockfile updates use
 the same release-age policy. Ordinary updates retain stricter `.npmrc` gates;
 security updates bypass release-age gates.
+Duplicate `.npmrc` keys use npm's last-setting-wins semantics in both version
+selection and native commands.
 
 When semver cooldown windows differ, resolution checks the version actually
 allowed by parent constraints and repeats from the original lockfile only if

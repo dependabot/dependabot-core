@@ -596,8 +596,11 @@ module Dependabot
         # only filter out the security fix version at selection time.
         return if security_update?
 
-        npmrc_days = npmrc_min_release_age_days
-        return unless npmrc_days&.positive?
+        npmrc_days = Helpers.max_configured_release_age(
+          dependency_files,
+          [Helpers::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")]
+        )
+        return unless npmrc_days.is_a?(Integer) && npmrc_days.positive?
 
         if @update_cooldown.nil?
           @update_cooldown = Dependabot::Package::ReleaseCooldownOptions.new(default_days: npmrc_days)
@@ -663,37 +666,6 @@ module Dependabot
           include: [],
           exclude: []
         )
-      end
-
-      sig { returns(T.nilable(Integer)) }
-      def npmrc_min_release_age_days
-        npmrc_file = dependency_files.find { |f| File.basename(f.name) == ".npmrc" }
-        unless npmrc_file&.content
-          Dependabot.logger.debug("No .npmrc file found; skipping min-release-age check.")
-          return nil
-        end
-
-        T.must(npmrc_file.content).split("\n").each do |line|
-          days = parse_min_release_age_line(line, npmrc_file.name)
-          return days if days
-        end
-        Dependabot.logger.debug("No min-release-age key found in #{npmrc_file.name}.")
-        nil
-      end
-
-      sig { params(line: String, filename: String).returns(T.nilable(Integer)) }
-      def parse_min_release_age_line(line, filename)
-        key, value = line.strip.split("=", 2)
-        return nil unless key&.strip == "min-release-age" && value
-
-        parsed = T.let(Integer(value.strip, 10, exception: false), T.nilable(Integer))
-        if parsed&.positive?
-          Dependabot.logger.debug("Found min-release-age=#{parsed} days in #{filename}.")
-          parsed
-        else
-          Dependabot.logger.debug("Ignoring invalid min-release-age value '#{value.strip}' in #{filename}.")
-          nil
-        end
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
