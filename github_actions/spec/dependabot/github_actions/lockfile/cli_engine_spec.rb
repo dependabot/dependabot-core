@@ -72,13 +72,30 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       stub_subprocess(
         stdout: "",
         exitstatus: 2,
-        stderr: "verifying repository identity for actions/checkout on tenant.ghe.com: 404\n"
+        stderr: "verifying repository identity for actions/checkout on tenant.ghe.com: " \
+                "HTTP 404: Not Found (https://api.tenant.ghe.com/repos/actions/checkout)\n"
       )
     end
 
     it "raises a user-actionable DependencyFileNotResolvable, not EngineError" do
       expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
         .to raise_error(Dependabot::DependencyFileNotResolvable, /verifying repository identity/)
+    end
+  end
+
+  describe "#relock when host identity verification fails transiently" do
+    before do
+      stub_subprocess(
+        stdout: "",
+        exitstatus: 2,
+        stderr: "verifying repository identity for actions/checkout on github.com: " \
+                "HTTP 502: Bad Gateway (https://api.github.com/repos/actions/checkout)\n"
+      )
+    end
+
+    it "raises a retryable EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /HTTP 502/)
     end
   end
 

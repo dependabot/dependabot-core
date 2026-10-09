@@ -28,8 +28,9 @@ module Dependabot
         UNRESOLVABLE_CATEGORIES = %w(impostor-commit lockfile-forgery).freeze
 
         # Host-identity failures from the engine: the lock is bound to a host it can't
-        # be verified on. User-actionable (restore/regenerate), never retryable.
-        HOST_IDENTITY_ERROR = /verifying repository identity|repository IDs|not the selected host/
+        # be verified on. User-actionable (restore/regenerate), never retryable. The
+        # engine wraps every lookup error, so only a 404 counts; 5xx/429/403/timeouts stay EngineError.
+        HOST_IDENTITY_ERROR = /verifying repository identity .*: HTTP 404\b|repository IDs|not the selected host/
 
         # `hostname` is the repository's home host. The engine binds every pin with an
         # omitted lockfile `hostname` to it, so it must never be guessed.
