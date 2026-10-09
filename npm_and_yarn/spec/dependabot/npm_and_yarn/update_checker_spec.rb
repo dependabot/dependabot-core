@@ -2488,6 +2488,83 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "pnpm minimumReleaseAge cooldown" do
+    let(:workspace_yaml) { "minimumReleaseAge: 10080\n" }
+    let(:workspace_yaml_name) { "pnpm-workspace.yaml" }
+    let(:dependency_files) do
+      project_dependency_files("npm6/no_lockfile") +
+        [Dependabot::DependencyFile.new(name: workspace_yaml_name, content: workspace_yaml)]
+    end
+
+    it "creates a cooldown from the window, converted from minutes to days" do
+      expect(checker.update_cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+      expect(checker.update_cooldown.default_days).to eq(7)
+    end
+
+    context "when the window is not a whole number of days" do
+      let(:workspace_yaml) { "minimumReleaseAge: 1500\n" }
+
+      it "rounds up so a version younger than the window is not picked" do
+        expect(checker.update_cooldown.default_days).to eq(2)
+      end
+    end
+
+    context "when the workspace file is in an ancestor directory" do
+      let(:workspace_yaml_name) { "../pnpm-workspace.yaml" }
+
+      it "reads it" do
+        expect(checker.update_cooldown.default_days).to eq(7)
+      end
+    end
+
+    context "when the value is not a plain number" do
+      let(:workspace_yaml) { "minimumReleaseAge: soon\n" }
+
+      it "leaves the window to pnpm" do
+        expect(checker.update_cooldown).to be_nil
+      end
+    end
+
+    context "when this is a security update" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency.name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 99.0.0"]
+          )
+        ]
+      end
+
+      it "does not apply the window, so a fix is never held back by it" do
+        expect(checker.update_cooldown).to be_nil
+      end
+    end
+
+    context "when a dependabot.yml cooldown is longer" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14) }
+
+      it "keeps the longer cooldown and logs no warning" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(checker.update_cooldown.default_days).to eq(14)
+      end
+    end
+
+    context "when a dependabot.yml cooldown is shorter" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1, semver_patch_days: 0)
+      end
+
+      it "raises every field to the window and says so" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/minimumReleaseAge \(10080 minutes, 7 days\) acts as a minimum floor/)
+
+        expect(checker.update_cooldown.default_days).to eq(7)
+        expect(checker.update_cooldown.semver_patch_days).to eq(7)
+      end
+    end
+  end
+
   describe "npmrc min-release-age cooldown" do
     let(:dependency_files) { project_dependency_files("npm6/npmrc_min_release_age") }
 
