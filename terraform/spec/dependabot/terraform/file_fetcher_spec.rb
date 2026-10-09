@@ -153,4 +153,13 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
         .to match_array(%w(main.tf ../../modules/a/main.tf ../../modules/b/main.tf ../../modules/c/main.tf))
     end
   end
+
+  context "with registry sources whose namespace is one or two characters long" do
+    let(:project_name) { "registry_sources_with_short_namespaces" }
+
+    it "doesn't treat them as local paths" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(main.tf))
+    end
+  end
 end

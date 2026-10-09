@@ -17,7 +17,7 @@ module Dependabot
       include FileFilter
 
       # https://opentofu.org/docs/language/modules/sources/#local-paths
-      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}
+      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>\.\.?\/[^'"]+)}
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)

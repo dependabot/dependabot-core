@@ -17,7 +17,7 @@ module Dependabot
       include FileFilter
 
       # https://www.terraform.io/docs/language/modules/sources.html#local-paths
-      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}
+      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>\.\.?\/[^'"]+)}
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
