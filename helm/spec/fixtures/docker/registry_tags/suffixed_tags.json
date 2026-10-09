@@ -1,0 +1,16 @@
+{
+    "name": "example/app",
+    "tags": [
+        "1.0.0",
+        "1.0.0-alpine",
+        "1.0.0-debian",
+        "1.1.0-alpine",
+        "1.1.0-alpine-20250101",
+        "1.1.0-debian",
+        "1.2.0",
+        "1.2.0-debian",
+        "1.3.0-alpine-20250301",
+        "latest-alpine",
+        "latest-debian"
+    ]
+}

@@ -301,11 +301,21 @@ module Dependabot
         false
       end
 
+      sig { returns(T::Boolean) }
+      def version_up_to_date?
+        return latest_version.nil? if dependency_type == :docker_image
+
+        super
+      end
+
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def version_can_update?(requirements_to_unlock:)
         return false unless latest_version
-        # Non-chart deps (docker images) keep the base behavior — including its
-        # nilable current_version handling.
+        # An image's latest_version is the Docker UpdateChecker's full tag, set
+        # only when that checker found an update.
+        return true if dependency_type == :docker_image
+        # Other non-chart deps keep the base behavior, including its nilable
+        # current_version handling.
         return super unless dependency_type == :helm_chart
 
         return false unless version_class.new(latest_version.to_s) > T.must(current_version)
@@ -501,7 +511,7 @@ module Dependabot
         filtered
       end
 
-      sig { returns(T.nilable(Gem::Version)) }
+      sig { returns(T.nilable(String)) }
       def fetch_latest_image_version
         docker_dependency = build_docker_dependency
 
@@ -534,7 +544,7 @@ module Dependabot
 
         return unless docker_checker.can_update?(requirements_to_unlock: :none)
 
-        version_class.new(latest_version)
+        latest_version&.to_s
       end
 
       sig { params(tags: T::Array[String], repo_url: String).returns(T::Array[GitTagWithDetail]) }
