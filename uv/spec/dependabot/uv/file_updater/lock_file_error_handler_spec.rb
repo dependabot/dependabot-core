@@ -559,4 +559,178 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
   end
+
+  describe "#conflict_package_names" do
+    subject(:names) { error_handler.conflict_package_names(message) }
+
+    context "when the bumped package needs a newer peer" do
+      let(:message) do
+        <<~ERROR
+          × No solution found when resolving dependencies for split (markers:
+          │ python_full_version >= '3.12'):
+          ╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0
+              and your project depends on opentelemetry-api==1.26.0, we can conclude
+              that your project and opentelemetry-sdk==1.25.0 are incompatible.
+              And because your project depends on opentelemetry-sdk==1.25.0, we can
+              conclude that your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "returns every package named in the conflict, without markers" do
+        expect(names).to eq(%w(opentelemetry-sdk opentelemetry-api))
+      end
+    end
+
+    context "when a requirement has extras and mixed case" do
+      let(:message) do
+        "Because Foo_Bar[extra]>=2.0 depends on baz<1 and your project depends on baz==1.2, ..."
+      end
+
+      it "normalises the names" do
+        expect(names).to eq(%w(foo-bar baz))
+      end
+    end
+
+    context "when a requirement has extras and a marker" do
+      let(:message) { "Because foo[bar]{python_full_version >= '3.12'}>=1 depends on ..." }
+
+      it "returns the name only" do
+        expect(names).to eq(["foo"])
+      end
+    end
+
+    context "when a name ends in a non-alphanumeric character" do
+      let(:message) { "Because foo-==1 is odd" }
+
+      it "returns no name" do
+        expect(names).to eq([])
+      end
+    end
+
+    context "when a name is a single character" do
+      let(:message) { "Because a==1 is short" }
+
+      it "returns the name" do
+        expect(names).to eq(["a"])
+      end
+    end
+
+    context "with real uv conflict messages" do
+      # crates/uv/tests/lock/lock.rs:4319 (astral-sh/uv@5411378e)
+      it "reads a direct conflict between two packages" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies
+            cause: Because anyio==3.7.0 depends on idna==3.2 and your project depends on anyio==3.7.0, we can conclude that your project depends on idna==3.2.
+                   And because your project depends on idna==3.6, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(anyio idna))
+      end
+
+      # crates/uv/tests/lock/lock.rs:41086 (astral-sh/uv@5411378e)
+      it "reads a peer forked by a marker" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.11')
+            cause: Because pandas==1.5.3 depends on numpy{python_full_version >= '3.10'}>=1.21.0 and your project depends on numpy==1.20.3, we can conclude that your project and pandas==1.5.3 are incompatible.
+                   And because your project depends on pandas==1.5.3, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(pandas numpy))
+      end
+
+      # crates/uv/tests/lock/lock.rs:43886 (astral-sh/uv@5411378e)
+      it "reads a forked package with and without a specifier" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies for split (markers: python_full_version < '3.14' and sys_platform == 'other')
+            cause: Because your project depends on anyio{sys_platform == 'other'} and anyio{python_full_version < '3.14'}>=4.4.0, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(anyio))
+      end
+
+      # generated with uv 0.11.25 (`uv lock`, opentelemetry-sdk/api pinned under `python_version` markers)
+      it "reads a forked marker that uv wrapped across lines" do
+        message = <<~ERROR
+          × No solution found when resolving dependencies for split (markers:
+          │ python_full_version >= '3.12'):
+          ╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0
+              and your project depends on opentelemetry-api{python_full_version
+              >= '3.12'}==1.26.0, we can conclude that your project and
+              opentelemetry-sdk{python_full_version >= '3.12'}==1.25.0 are
+              incompatible.
+              And because your project depends on
+              opentelemetry-sdk{python_full_version >= '3.12'}==1.25.0, we can
+              conclude that your project's requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(opentelemetry-sdk opentelemetry-api))
+      end
+
+      # crates/uv/tests/pip_compile/pip_compile.rs:11566 (astral-sh/uv@5411378e)
+      it "reads a package with extras" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies
+            cause: Because only recursive-demo[outer]==1.0.0 is available and recursive-demo[outer]==1.0.0 depends on recursive-demo{sys_platform == 'darwin'}>=2, we can conclude that all versions of recursive-demo[outer] cannot be used.
+                   And because you require recursive-demo[outer], we can conclude that your requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(recursive-demo))
+      end
+
+      # crates/uv/tests/lock/lock.rs:6896 (astral-sh/uv@5411378e)
+      it "skips dependency groups and the project's own extras" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies
+            cause: Because project:project1 depends on sortedcontainers==2.3.0 and project[project2] depends on sortedcontainers==2.4.0, we can conclude that project:project1 and project[project2] are incompatible.
+                   And because your project requires project[project2] and project:project1, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(sortedcontainers))
+      end
+
+      # crates/uv/tests/sync/sync.rs:2496 (astral-sh/uv@5411378e)
+      it "reads a Python conflict reached through a dependency group" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies for split (markers: python_full_version == '3.8.*')
+            cause: Because the requested Python version (>=3.8) does not satisfy Python>=3.9 and sphinx==7.2.6 depends on Python>=3.9, we can conclude that sphinx==7.2.6 cannot be used.
+                   And because only sphinx<=7.2.6 is available, we can conclude that sphinx>=7.2.6 cannot be used.
+                   And because pharaohs-tomp:mygroup depends on sphinx>=7.2.6 and your project requires pharaohs-tomp:mygroup, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        # `python` is not a package; the top-level dependency filter drops it.
+        expect(error_handler.conflict_package_names(message)).to eq(%w(python sphinx))
+      end
+
+      # crates/uv/tests/lock/lock.rs:8207 (astral-sh/uv@5411378e)
+      it "reads a Python conflict with version ranges" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.7' and python_full_version < '3.7.9')
+            cause: Because the requested Python version (>=3.7) does not satisfy Python>=3.7.9 and pygls>=1.1.0,<=1.2.1 depends on Python>=3.7.9,<4, we can conclude that pygls>=1.1.0,<=1.2.1 cannot be used.
+                   And because only the following versions of pygls are available:
+                       pygls<=1.2.1
+                       pygls>=1.3.0
+                   we can conclude that pygls>=1.1.0,<1.3.0 cannot be used. (1)
+
+                   Because the requested Python version (>=3.7) does not satisfy Python>=3.8 and pygls==1.3.0 depends on Python>=3.8, we can conclude that pygls==1.3.0 cannot be used.
+                   And because only pygls<=1.3.0 is available, we can conclude that pygls>=1.3.0 cannot be used.
+                   And because we know from (1) that pygls>=1.1.0,<1.3.0 cannot be used, we can conclude that pygls>=1.1.0 cannot be used.
+                   And because your project depends on pygls>=1.1.0, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        # `python` is not a package; the top-level dependency filter drops it.
+        expect(error_handler.conflict_package_names(message)).to eq(%w(python pygls))
+      end
+
+      # crates/uv/tests/lock/lock.rs:41891 (astral-sh/uv@5411378e)
+      it "reads a wildcard specifier" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies
+            cause: Because only anyio<=4.3.0 is available and your project depends on anyio==5.4.*, we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(anyio))
+      end
+
+      # crates/uv/tests/pip_compile/pip_compile.rs:19102 (astral-sh/uv@5411378e)
+      it "reads local versions and skips uv's virtual system packages" do
+        message = <<~ERROR
+          error: No solution found when resolving dependencies
+            cause: Because torchvision==0.17.1+cu118 depends on system:cuda==11.8 and torch>=2.2.1+cu121 depends on system:cuda==12.1, we can conclude that torch>=2.2.1+cu121 and torchvision==0.17.1+cu118 are incompatible.
+                   And because you require torch==2.2.1+cu121 and torchvision==0.17.1+cu118, we can conclude that your requirements are unsatisfiable.
+        ERROR
+        expect(error_handler.conflict_package_names(message)).to eq(%w(torchvision torch))
+      end
+    end
+  end
 end

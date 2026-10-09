@@ -8,6 +8,7 @@ require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/dependency_requirement"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirement_parser"
 require "dependabot/uv/requirement"
@@ -31,6 +32,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/lock_file_resolver"
+      require_relative "update_checker/lockstep_resolver"
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
@@ -42,7 +44,70 @@ module Dependabot
         ).updated_requirements
       end
 
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def latest_resolvable_version
+        lockstep_checked(super)
+      end
+
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def lowest_resolvable_security_fix_version
+        lockstep_checked(super)
+      end
+
       private
+
+      sig { override.returns(T::Boolean) }
+      def latest_version_resolvable_with_full_unlock?
+        !lockstep_updates.nil?
+      end
+
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
+      def updated_dependencies_after_full_unlock
+        T.must(lockstep_updates)
+      end
+
+      # Relies on `:own` having been asked first: that probe records `rejected_version`, without which this is nil.
+      sig { returns(T.nilable(T::Array[Dependabot::Dependency])) }
+      def lockstep_updates
+        return unless lockstep_check_applies?
+
+        target = lockstep_resolver.rejected_version
+        return unless target
+
+        lockstep_resolver.updated_dependencies_after_full_unlock(target)
+      end
+
+      # `:own` claims any registry version is resolvable for pyproject dependencies. When another direct
+      # dependency is linked to this one in uv.lock, ask uv, so a lockstep conflict falls through to a full unlock.
+      sig { params(candidate: T.nilable(Gem::Version)).returns(T.nilable(Gem::Version)) }
+      def lockstep_checked(candidate)
+        return candidate if candidate.nil? || !lockstep_check_applies?
+
+        lockstep_resolver.lockstep_conflict?(candidate) ? nil : candidate
+      end
+
+      sig { returns(T::Boolean) }
+      def lockstep_check_applies?
+        Dependabot::Experiments.enabled?(:uv_lockstep_full_unlock) &&
+          uv_lock.any? &&
+          resolver_type == :requirements &&
+          lockstep_resolver.neighbours_in_lockfile?
+      end
+
+      sig { returns(LockstepResolver) }
+      def lockstep_resolver
+        @lockstep_resolver ||= T.let(
+          LockstepResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path,
+            requirements_update_strategy: requirements_update_strategy,
+            update_cooldown: @update_cooldown
+          ),
+          T.nilable(LockstepResolver)
+        )
+      end
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def fetch_lowest_resolvable_security_fix_version

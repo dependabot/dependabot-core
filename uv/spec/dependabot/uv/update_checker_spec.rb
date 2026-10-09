@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/update_checker"
 require "dependabot/requirements_update_strategy"
+require "dependabot/security_advisory"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Uv::UpdateChecker do
@@ -1160,6 +1161,270 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           end
 
           it { is_expected.to eq(Gem::Version.new("3.5.2")) }
+        end
+      end
+    end
+  end
+
+  describe "lockstep-pinned dependencies" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "lockstep_pinned.toml")
+        ),
+        Dependabot::DependencyFile.new(name: "uv.lock", content: fixture("uv_locks", "lockstep_pinned.lock"))
+      ]
+    end
+    let(:dependency_name) { "opentelemetry-api" }
+    let(:dependency_version) { "1.25.0" }
+    let(:dependency_requirements) do
+      [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }]
+    end
+    let(:pypi_url) { "https://pypi.org/simple/opentelemetry-api/" }
+    let(:pypi_response) do
+      <<~HTML
+        <html><body>
+        <a href="https://files.pythonhosted.org/packages/a/opentelemetry_api-1.25.0-py3-none-any.whl">opentelemetry_api-1.25.0-py3-none-any.whl</a><br/>
+        <a href="https://files.pythonhosted.org/packages/b/opentelemetry_api-1.26.0-py3-none-any.whl">opentelemetry_api-1.26.0-py3-none-any.whl</a><br/>
+        </body></html>
+      HTML
+    end
+    let(:lockstep_resolver) do
+      instance_double(
+        Dependabot::Uv::UpdateChecker::LockstepResolver,
+        neighbours_in_lockfile?: true,
+        rejected_version: Dependabot::Uv::Version.new("1.26.0")
+      )
+    end
+    let(:both_bumped) do
+      %w(opentelemetry-api opentelemetry-sdk).map do |name|
+        Dependabot::Dependency.new(
+          name: name,
+          version: "1.26.0",
+          previous_version: "1.25.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }],
+          package_manager: "uv"
+        )
+      end
+    end
+
+    before do
+      stub_request(:get, "https://pypi.org/pypi/lockstep/json/").to_return(status: 404)
+      allow(Dependabot::Uv::UpdateChecker::LockstepResolver).to receive(:new).and_return(lockstep_resolver)
+      allow(lockstep_resolver).to receive_messages(
+        lockstep_conflict?: true,
+        updated_dependencies_after_full_unlock: both_bumped
+      )
+    end
+
+    context "when the experiment is off" do
+      it "behaves as before" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(Dependabot::Uv::UpdateChecker::LockstepResolver).not_to have_received(:new)
+      end
+    end
+
+    context "when the experiment is on" do
+      before { Dependabot::Experiments.register(:uv_lockstep_full_unlock, true) }
+
+      it "can't update on its own" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+
+      context "when uv finds no lockstep conflict" do
+        before { allow(lockstep_resolver).to receive(:lockstep_conflict?).and_return(false) }
+
+        it "keeps the own update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        end
+      end
+
+      context "when no other top-level dependency is linked to it" do
+        before { allow(lockstep_resolver).to receive(:neighbours_in_lockfile?).and_return(false) }
+
+        it "doesn't probe with uv" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          expect(lockstep_resolver).not_to have_received(:lockstep_conflict?)
+        end
+      end
+
+      context "when the peers can't be moved either" do
+        before { allow(lockstep_resolver).to receive(:updated_dependencies_after_full_unlock).and_return(nil) }
+
+        it "can't update" do
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(false)
+        end
+      end
+
+      context "when the dependency is vulnerable" do
+        let(:security_advisories) do
+          [Dependabot::SecurityAdvisory.new(
+            dependency_name: "opentelemetry-api",
+            package_manager: "uv",
+            vulnerable_versions: ["<1.26.0"]
+          )]
+        end
+        let(:pypi_response) do
+          <<~HTML
+            <html><body>
+            <a href="https://files.pythonhosted.org/packages/a/opentelemetry_api-1.25.0-py3-none-any.whl">opentelemetry_api-1.25.0-py3-none-any.whl</a><br/>
+            <a href="https://files.pythonhosted.org/packages/b/opentelemetry_api-1.26.0-py3-none-any.whl">opentelemetry_api-1.26.0-py3-none-any.whl</a><br/>
+            <a href="https://files.pythonhosted.org/packages/c/opentelemetry_api-1.27.0-py3-none-any.whl">opentelemetry_api-1.27.0-py3-none-any.whl</a><br/>
+            </body></html>
+          HTML
+        end
+
+        before do
+          rejected = nil
+          allow(lockstep_resolver).to receive(:lockstep_conflict?) do |version|
+            rejected = version
+            true
+          end
+          allow(lockstep_resolver).to receive(:rejected_version) { rejected }
+        end
+
+        it "probes and fully unlocks to the lowest fixed version, not the latest" do
+          checker.can_update?(requirements_to_unlock: :own)
+          checker.can_update?(requirements_to_unlock: :all)
+
+          expect(lockstep_resolver).to have_received(:lockstep_conflict?)
+            .with(Dependabot::Uv::Version.new("1.26.0"))
+          expect(lockstep_resolver).not_to have_received(:lockstep_conflict?)
+            .with(Dependabot::Uv::Version.new("1.27.0"))
+          expect(lockstep_resolver).to have_received(:updated_dependencies_after_full_unlock)
+            .with(Dependabot::Uv::Version.new("1.26.0"))
+        end
+      end
+
+      context "with the real resolver and lock file updater, and only uv stubbed" do
+        let(:uv_commands) { [] }
+        let(:probed_pyprojects) { [] }
+        let(:uv_conflict) do
+          <<~ERROR
+            × No solution found when resolving dependencies for split (markers:
+            │ python_full_version >= '3.12'):
+            ╰─▶ Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0
+                and your project depends on opentelemetry-api==1.26.0, we can conclude
+                that your project and opentelemetry-sdk==1.25.0 are incompatible.
+                And because your project depends on opentelemetry-sdk==1.25.0, we can
+                conclude that your project's requirements are unsatisfiable.
+          ERROR
+        end
+
+        before do
+          allow(Dependabot::Uv::UpdateChecker::LockstepResolver).to receive(:new).and_call_original
+          allow(Dependabot::Uv::FileUpdater::LockFileUpdater).to receive(:new).and_call_original
+          allow(Dependabot::Uv::LanguageVersionManager).to receive(:new).and_return(
+            instance_double(
+              Dependabot::Uv::LanguageVersionManager,
+              install_required_python: nil,
+              python_version: "3.11.0",
+              python_major_minor: "3.11"
+            )
+          )
+          allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+            next "" if command.start_with?("pyenv local ")
+
+            uv_commands << command
+            pyproject = File.read("pyproject.toml")
+            probed_pyprojects << pyproject
+            unless pyproject.include?("opentelemetry-sdk>=1.25.0")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: uv_conflict, error_context: {})
+            end
+
+            File.write("uv.lock", File.read("uv.lock").gsub('version = "1.25.0"', 'version = "1.26.0"'))
+            ""
+          end
+        end
+
+        it "moves the peer only through its relaxed pin, in two uv runs" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
+
+          updated = checker.updated_dependencies(requirements_to_unlock: :all)
+          expect(updated.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+          expect(updated.map(&:version)).to eq(%w(1.26.0 1.26.0))
+          expect(updated.map { |dep| dep.requirements.first[:requirement] }).to eq(%w(==1.26.0 ==1.26.0))
+
+          expect(Dependabot::Uv::FileUpdater::LockFileUpdater).to have_received(:new).twice
+          expect(uv_commands.size).to eq(2)
+          expect(probed_pyprojects).to all(include('"opentelemetry-api==1.26.0"'))
+          expect(probed_pyprojects.last).to include('"opentelemetry-sdk>=1.25.0"')
+          expect(uv_commands).to all(include("uv lock --upgrade-package opentelemetry-api==1.26.0 "))
+          expect(uv_commands.grep(/--upgrade-package opentelemetry-sdk/)).to be_empty
+        end
+
+        context "when uv >= 0.12.14 prints the conflict" do
+          # generated with uv 0.12.20
+          let(:uv_conflict) do
+            <<~ERROR
+              error: No solution found when resolving dependencies for split (markers: python_full_version >= '3.12')
+                cause: Because opentelemetry-sdk==1.25.0 depends on opentelemetry-api==1.25.0 and your project depends on opentelemetry-api==1.26.0, we can conclude that your project and opentelemetry-sdk==1.25.0 are incompatible.
+                       And because your project depends on opentelemetry-sdk==1.25.0, we can conclude that your project's requirements are unsatisfiable.
+            ERROR
+          end
+
+          it "still moves the peer with it" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+            expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
+
+            updated = checker.updated_dependencies(requirements_to_unlock: :all)
+            expect(updated.map(&:name)).to eq(%w(opentelemetry-api opentelemetry-sdk))
+            expect(updated.map(&:version)).to eq(%w(1.26.0 1.26.0))
+          end
+        end
+
+        context "when uv fails for a reason that names no other direct dependency" do
+          let(:uv_conflict) do
+            <<~ERROR
+              × No solution found when resolving dependencies:
+              ╰─▶ Because the current Python version (3.10.12) does not satisfy Python>=3.12 and
+                  opentelemetry-api==1.26.0 depends on Python>=3.12, we can conclude that
+                  opentelemetry-api==1.26.0 cannot be used.
+                  And because your project depends on opentelemetry-api==1.26.0, we can conclude
+                  that your project's requirements are unsatisfiable.
+            ERROR
+          end
+
+          it "keeps the own update, so the file updater reports the error as before" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          end
+        end
+
+        context "when uv >= 0.12.14 fails for a reason that names no other direct dependency" do
+          let(:uv_conflict) do
+            <<~ERROR
+              error: No solution found when resolving dependencies
+                cause: Because the current Python version (3.10.12) does not satisfy Python>=3.12 and opentelemetry-api==1.26.0 depends on Python>=3.12, we can conclude that opentelemetry-api==1.26.0 cannot be used.
+                       And because your project depends on opentelemetry-api==1.26.0, we can conclude that your project's requirements are unsatisfiable.
+            ERROR
+          end
+
+          it "keeps the own update, so the file updater reports the error as before" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+          end
+        end
+
+        context "when asked about the peer instead" do
+          let(:dependency_name) { "opentelemetry-sdk" }
+          let(:pypi_url) { "https://pypi.org/simple/opentelemetry-sdk/" }
+          let(:pypi_response) do
+            <<~HTML
+              <html><body>
+              <a href="https://files.pythonhosted.org/packages/a/opentelemetry_sdk-1.25.0-py3-none-any.whl">opentelemetry_sdk-1.25.0-py3-none-any.whl</a><br/>
+              <a href="https://files.pythonhosted.org/packages/b/opentelemetry_sdk-1.26.0-py3-none-any.whl">opentelemetry_sdk-1.26.0-py3-none-any.whl</a><br/>
+              </body></html>
+            HTML
+          end
+
+          it "also reports that it can't move on its own" do
+            # update_all_versions#peer_dependency_should_update_instead? relies on this
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+            expect(uv_commands).to all(include("uv lock --upgrade-package opentelemetry-sdk==1.26.0 "))
+          end
         end
       end
     end

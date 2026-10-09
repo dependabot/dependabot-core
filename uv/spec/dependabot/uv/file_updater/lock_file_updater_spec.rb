@@ -14,7 +14,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       dependency_files: dependency_files,
       credentials: credentials,
       index_urls: index_urls,
-      target_requirement: target_requirement
+      target_requirement: target_requirement,
+      upgrade_package_names: upgrade_package_names
     )
   end
 
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
   let(:index_urls) { [] }
   let(:target_requirement) { nil }
+  let(:upgrade_package_names) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -1437,6 +1439,92 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
 
+    context "with several dependencies" do
+      let(:peer) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "2.2.3",
+          requirements: [{ file: "pyproject.toml", requirement: "==2.2.3", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==2.2.2", groups: [], source: nil }],
+          previous_version: "2.2.2",
+          package_manager: "uv"
+        )
+      end
+      let(:dependencies) { [dependency, peer] }
+
+      it "upgrades all of them in a single lock" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
+                           "--upgrade-package urllib3==2.2.3 " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+
+      context "with a target requirement" do
+        let(:target_requirement) { ">=2.19.0,<=2.20.0" }
+
+        it "applies the target requirement to the first dependency only" do
+          expected_command = "pyenv exec uv lock --upgrade-package requests>=2.19.0,<=2.20.0 " \
+                             "--upgrade-package urllib3==2.2.3 " \
+                             "--index https://token@example.com/simple " \
+                             "--default-index https://another_token@another.com/simple"
+
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(expected_command, fingerprint: anything, env: {})
+        end
+      end
+
+      context "when only some of them should be upgraded" do
+        let(:upgrade_package_names) { ["Requests"] }
+
+        it "only passes --upgrade-package for those" do
+          expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
+                             "--index https://token@example.com/simple " \
+                             "--default-index https://another_token@another.com/simple"
+
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(expected_command, fingerprint: anything, env: {})
+        end
+      end
+
+      context "when two of them are the same package with different extras" do
+        let(:peer) do
+          Dependabot::Dependency.new(
+            name: "requests[socks]",
+            version: "2.24.0",
+            requirements: [{ file: "pyproject.toml", requirement: "==2.24.0", groups: [], source: nil }],
+            previous_requirements: [{ file: "pyproject.toml", requirement: "==2.22.0", groups: [], source: nil }],
+            previous_version: "2.22.0",
+            package_manager: "uv"
+          )
+        end
+        let(:target_requirement) { ">=2.19.0,<=2.20.0" }
+
+        it "passes the package once" do
+          expected_command = "pyenv exec uv lock --upgrade-package requests>=2.19.0,<=2.20.0 " \
+                             "--index https://token@example.com/simple " \
+                             "--default-index https://another_token@another.com/simple"
+
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(expected_command, fingerprint: anything, env: {})
+        end
+      end
+    end
+
     context "with setuptools-scm dynamic versioning" do
       let(:pyproject_content) { fixture("pyproject_files", "setuptools_scm_version_file.toml") }
       let(:credentials) { [] }
@@ -1654,6 +1742,130 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "with several dependencies to update" do
+    let(:pyproject_content) do
+      <<~TOML
+        [project]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = [
+            "opentelemetry-api==1.25.0",
+            "opentelemetry-sdk==1.25.0",
+        ]
+      TOML
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "opentelemetry-api",
+        version: "1.26.0",
+        requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: [], source: nil }],
+        previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }],
+        previous_version: "1.25.0",
+        package_manager: "uv"
+      )
+    end
+    let(:peer) do
+      Dependabot::Dependency.new(
+        name: "opentelemetry-sdk",
+        version: nil,
+        requirements: [{ file: "pyproject.toml", requirement: ">=1.25.0", groups: [], source: nil }],
+        previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: [], source: nil }],
+        previous_version: "1.25.0",
+        package_manager: "uv"
+      )
+    end
+    let(:dependencies) { [dependency, peer] }
+
+    it "rewrites the requirement of each of them" do
+      content = updater.send(:updated_pyproject_content_for, pyproject_file)
+
+      expect(content).to include('"opentelemetry-api==1.26.0"')
+      expect(content).to include('"opentelemetry-sdk>=1.25.0"')
+    end
+
+    context "when only one of them is a build-system requirement" do
+      let(:peer) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.26.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "1.25.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "is not build-system only" do
+        expect(updater.send(:build_system_only_dependency?)).to be(false)
+      end
+    end
+
+    context "when only the first of them is a build-system requirement" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.26.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "1.25.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "is not build-system only" do
+        expect(updater.send(:build_system_only_dependency?)).to be(false)
+      end
+    end
+
+    context "when all of them are build-system requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.26.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.26.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==1.25.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "1.25.0",
+          package_manager: "uv"
+        )
+      end
+      let(:peer) do
+        Dependabot::Dependency.new(
+          name: "setuptools",
+          version: "75.0.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==75.0.0", groups: ["build-system"], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: "==74.0.0", groups: ["build-system"],
+                                    source: nil }],
+          previous_version: "74.0.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "is build-system only" do
+        expect(updater.send(:build_system_only_dependency?)).to be(true)
+      end
+    end
+
+    context "when only a later dependency is declared in pyproject.toml" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.23.0",
+          requirements: [{ file: "requirements.txt", requirement: "==2.23.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "requirements.txt", requirement: "==2.22.0", groups: [], source: nil }],
+          previous_version: "2.22.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "still updates the lock file" do
+        expect(updater.send(:create_or_update_lock_file?)).to be(true)
+      end
+    end
+  end
+
   describe "#replace_dep" do
     subject(:replace_dep) do
       updater.send(
@@ -1798,6 +2010,37 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         result = replace_dep
         expect(result).to include("'fastapi>=0.115.12,<0.122'")
         expect(result).not_to include("'fastapi>=0.115.12,<0.116'")
+      end
+    end
+
+    context "when another package name starts with the dependency name" do
+      let(:content) do
+        <<~TOML
+          [project]
+          name = "myproject"
+          dependencies = [
+              "boto3-stubs[s3]>=1.34.0",
+              "boto3>=1.34.0",
+          ]
+        TOML
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "boto3",
+          version: "1.35.0",
+          requirements: [{ file: "pyproject.toml", requirement: "==1.35.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: ">=1.30.0", groups: [], source: nil }],
+          previous_version: "1.34.0",
+          package_manager: "uv"
+        )
+      end
+      let(:new_req) { { requirement: "==1.35.0" } }
+      let(:old_req) { { requirement: ">=1.30.0" } }
+
+      it "leaves the longer name alone" do
+        result = replace_dep
+        expect(result).to include('"boto3-stubs[s3]>=1.34.0"')
+        expect(result).to include('"boto3==1.35.0"')
       end
     end
 
