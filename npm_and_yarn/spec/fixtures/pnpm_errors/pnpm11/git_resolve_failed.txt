@@ -1,0 +1,9 @@
+[ERR_PNPM_GIT_RESOLVE_FAILED] Failed to resolve git dependency "github:dsp-testing/this-repo-does-not-exist-xyz#main": git ls-remote failed: fatal: could not read Username for 'https://github.com': terminal prompts disabled
+
+This error happened while installing a direct dependency of /w
+
+pnpm resolves this specifier over HTTPS because it does not ask for SSH, and the URL it records has to work on every machine that installs the lockfile.
+
+If git can only reach github.com over SSH here, substitute the transport locally, leaving the recorded URL alone:
+
+    git config --global url."git@github.com:".insteadOf "https://github.com/"

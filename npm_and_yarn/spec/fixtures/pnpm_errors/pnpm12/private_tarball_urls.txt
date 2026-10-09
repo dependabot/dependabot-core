@@ -1,0 +1,10 @@
+Error: ERR_PNPM_FETCH_401
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: GET https://npm.pkg.github.com/@dsp-
+  │   testing%2Finner-source-top-secret-npm-2: Unauthorized - 401
+  │   
+  │   Failed to resolve @dsp-testing/inner-source-top-secret-npm-2@1.0.3
+  ╰─▶ GET https://npm.pkg.github.com/@dsp-testing%2Finner-source-top-secret-
+      npm-2: Unauthorized - 401
+  help: No authorization header was set for the request.

@@ -78,6 +78,168 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "errors" do
+    # pnpm 12 prints errors as a bordered, hard-wrapped block. These are real outputs, captured by running the
+    # same fixtures through pnpm 12.10.1, and must be classified the way the pnpm 11 output is.
+    context "with pnpm 12 error output" do
+      {
+        "private_tarball_urls" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_registry_ghpr" => Dependabot::PrivateSourceAuthenticationFailure,
+        "nonexistent_dependency_yanked_version" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_package_access" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_package_access_with_package_name" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_repo_no_access" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_repo_with_server_error" => Dependabot::PrivateSourceAuthenticationFailure,
+        "nonexistent_locked_dependency" => Dependabot::PrivateSourceAuthenticationFailure,
+        "private_registry_no_config" => Dependabot::DependencyNotFound,
+        "private_dep_access_with_no_package_name" => Dependabot::DependencyNotFound,
+        "missing_workspace_package" => Dependabot::DependencyFileNotResolvable,
+        "missing_workspace_dir_package" => Dependabot::DependencyFileNotResolvable,
+        "tarball_integrity" => Dependabot::DependencyFileNotResolvable
+      }.each do |scenario, error_class|
+        context "with #{scenario}" do
+          let(:project_name) { "pnpm/#{scenario}" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", "pnpm12", "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises #{error_class}" do
+            expect { updated_pnpm_lock_content }.to raise_error(error_class)
+          end
+        end
+      end
+
+      # Real output for failures that are not about one project's registry access, captured with pnpm 11.25.0 and
+      # 12.10.1. pnpm 12 renamed the codes for a failed registry request and for metadata it cannot decode, and
+      # reports an unparsable patch as INVALID_PATCH. A patch that does not apply is PATCH_FAILED on both.
+      [
+        %w(pnpm12 outdated_lockfile),
+        %w(pnpm12 peer_dep_issues),
+        %w(pnpm12 patch_invalid),
+        %w(pnpm12 patch_failed),
+        %w(pnpm11 patch_failed),
+        %w(pnpm12 network_error),
+        %w(pnpm11 network_error),
+        %w(pnpm12 broken_metadata)
+      ].each do |version_dir, scenario|
+        context "with #{scenario} (#{version_dir} output)" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", version_dir, "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises DependencyFileNotResolvable" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
+
+      {
+        "github:owner/repo#main" => "https://github.com/owner/repo",
+        "owner/repo" => "https://github.com/owner/repo",
+        "git+ssh://git@github.com/owner/repo.git#v1" => "https://github.com/owner/repo",
+        "git+ssh://git@github.com:owner/repo.git" => "https://github.com/owner/repo",
+        "ssh://git@gitlab.com:group/repo.git" => "https://gitlab.com/group/repo",
+        "git@github.com:owner/repo.git" => "https://github.com/owner/repo",
+        "git+https://github.com/owner/repo.git#semver:^1.0.0" => "https://github.com/owner/repo"
+      }.each do |specifier, url|
+        context "with the git dependency specifier #{specifier}" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "[ERR_PNPM_GIT_RESOLVE_FAILED] Failed to resolve git dependency \"#{specifier}\": " \
+                         "git ls-remote failed: fatal: could not read Username",
+                error_context: {}
+              )
+            )
+          end
+
+          it "reports the repository URL #{url}" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls).to eq([url])
+            end
+          end
+        end
+      end
+
+      context "with an unrecognized pnpm-workspace.yaml setting" do
+        let(:project_name) { "pnpm/simple" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "unrecognized_workspace_settings.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "raises DependencyFileNotResolvable naming the setting" do
+          expect { updated_pnpm_lock_content }.to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            /pnpm-workspace\.yaml has "minimumReleaseAg" that this version of pnpm does not recognize/
+          )
+        end
+      end
+
+      {
+        "pnpm12" => "https://github.com/dsp-testing/this-repo-does-not-exist-xyz",
+        "pnpm11" => "https://github.com/dsp-testing/this-repo-does-not-exist-xyz"
+      }.each do |version_dir, url|
+        context "with a git dependency pnpm cannot reach (#{version_dir} output)" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", version_dir, "git_resolve_failed.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises GitDependenciesNotReachable with the repository URL" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls).to eq([url])
+            end
+          end
+        end
+      end
+
+      context "when the lockfile version is one pnpm 12 can't read" do
+        let(:project_name) { "pnpm/simple" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: fixture("pnpm_errors", "pnpm12", "old_lockfile_v6.txt"),
+              error_context: {}
+            )
+          )
+        end
+
+        it "raises DependencyFileNotSupported naming both lockfile versions" do
+          expect { updated_pnpm_lock_content }.to raise_error(
+            Dependabot::DependencyFileNotSupported,
+            /pnpm-lock\.yaml has lockfileVersion 6\.0, .* only supports lockfileVersion 9\.x/
+          )
+        end
+      end
+    end
+
     context "with a dependency version that can't be found" do
       let(:project_name) { "pnpm/yanked_version" }
 
@@ -209,8 +371,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when there is a unsupported engine response (pnpm) from registry" do
+    # pnpm 12 does not enforce engines.pnpm and succeeds here, but a repository pinned to pnpm 10 or 11 still gets
+    # this error from pnpm, so the pnpm 11 output is replayed.
+    context "when pnpm 11 reports an unsupported engine for pnpm" do
       let(:project_name) { "pnpm/unsupported_engine_pnpm" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm11", "unsupported_engine_pnpm.txt"),
+            error_context: {}
+          )
+        )
+      end
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -439,6 +612,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       let(:project_name) { "pnpm/github_dependency_private" }
+
+      # pnpm 12 reuses the commit in the lockfile and makes no request, so it succeeds here, but a repository
+      # pinned to pnpm 10 or 11 still re-resolves the dependency and gets this error, which is replayed.
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: fixture("pnpm_errors", "pnpm11", "github_dependency_private.txt"),
+            error_context: {}
+          )
+        )
+      end
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -816,8 +1000,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
-              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              "-r --include-workspace-root update prettier --depth 9999 --lockfile-only",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth 9999 --lockfile-only" }
             )
             .ordered
             .and_return("")
@@ -890,7 +1074,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       it "returns the updated lockfile" do
-        expect(updated_pnpm_lock_content).to include("/acorn@6.7.3:")
+        expect(updated_pnpm_lock_content).to include("acorn@6.7.3:")
       end
     end
 
@@ -927,7 +1111,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       it "returns the updated lockfile" do
-        expect(updated_pnpm_lock_content).to include("/acorn@6.7.3:").and include("/acorn@6.0.0:")
+        expect(updated_pnpm_lock_content).to include("acorn@6.7.3:").and include("acorn@6.0.0:")
       end
     end
 
@@ -936,9 +1120,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     # onto `extra` when given.
     def rewrite_lockfile_acorn(version, extra: nil)
       content = File.read("pnpm-lock.yaml")
-      block = content[%r{^  /acorn@5\.2\.1:\n(?:    .*\n)+}]
-      content = content.sub("/acorn@5.2.1:", "/acorn@#{version}:")
-      content += block.gsub("5.2.1", extra) if extra
+      block = content[/^  acorn@5\.2\.1:\n(?:    .*\n)+/].sub("5.2.1", version)
+      content = content.gsub("acorn@5.2.1:", "acorn@#{version}:")
+      if extra
+        content = content.sub(block, "#{block}\n#{block.sub(version, extra)}")
+        content = content.sub("  acorn@#{version}: {}\n", "  acorn@#{version}: {}\n\n  acorn@#{extra}: {}\n")
+      end
       edges = [version, extra].compact
       edge = -1
       content = content.gsub("acorn: 5.2.1") { "acorn: #{edges[[edge += 1, edges.size - 1].min]}" }
@@ -1051,7 +1238,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "routes the deep-update fallback through the release-age gate" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).to include("--depth Infinity")
+          expect(cmd).to include("--depth 9999")
+          expect(cmd).not_to include("Infinity")
           expect(cmd).to include("--config.minimum-release-age=10080")
           ""
         end.at_least(:once)

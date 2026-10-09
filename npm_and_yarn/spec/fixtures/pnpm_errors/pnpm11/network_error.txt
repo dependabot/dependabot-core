@@ -1,0 +1,5 @@
+[WARN] GET http://127.0.0.1:9/is-odd error (unknown). Will retry in 10 seconds. 2 retries left.
+[WARN] GET http://127.0.0.1:9/is-odd error (unknown). Will retry in 1 minute. 1 retries left.
+[ERR_PNPM_META_FETCH_FAIL] GET http://127.0.0.1:9/is-odd: fetch failed
+
+This error happened while installing a direct dependency of /tmp/p3

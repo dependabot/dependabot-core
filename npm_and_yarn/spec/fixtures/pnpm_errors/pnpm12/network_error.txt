@@ -1,0 +1,16 @@
+Error: ERR_PNPM_RESOLVING_NPM_RESOLVER_NETWORK_ERROR
+
+  × installing dependencies
+  ├─▶ Failed to resolve dependency tree: Failed to fetch metadata from
+  │   http://127.0.0.1:9/is-odd: error sending request: client error
+  │   (Connect): tcp connect error: Connection refused (os error 111)
+  │   
+  │   Failed to resolve is-odd@3.0.0
+  ├─▶ Failed to fetch metadata from http://127.0.0.1:9/is-odd: error sending
+  │   request: client error (Connect): tcp connect error: Connection refused
+  │   (os error 111)
+  ├─▶ error sending request
+  ├─▶ client error (Connect)
+  ├─▶ tcp connect error
+  ╰─▶ Connection refused (os error 111)
+
