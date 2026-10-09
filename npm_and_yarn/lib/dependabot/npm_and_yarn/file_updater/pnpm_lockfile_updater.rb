@@ -147,11 +147,17 @@ module Dependabot
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
 
-        # No version of a dependency is old enough for the repo's minimumReleaseAge. pnpm 12 reports a pick that is
-        # too young as NO_MATURE_MATCHING_VERSION; pnpm 11 reports it, and entries already in the lockfile that
-        # fail verification, as MINIMUM_RELEASE_AGE_VIOLATION.
-        ERR_PNPM_RELEASE_AGE_NOT_MET =
-          /ERR_PNPM_NO_MATURE_MATCHING_VERSION|ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION/
+        # No version of a package that pnpm has to resolve is old enough for the minimumReleaseAge window. pnpm 10,
+        # 11 and 12 all report a pick that is too young this way. Entries already in the lockfile that fail
+        # verification are a different error (MINIMUM_RELEASE_AGE_VIOLATION), about the repo's own policy and not
+        # about the update, and are not matched here.
+        ERR_PNPM_RELEASE_AGE_NOT_MET = /ERR_PNPM_NO_MATURE_MATCHING_VERSION/
+        # The package pnpm rejected: `<name>@<version> was published at ...` (11, 12) or
+        # `Version <v> (released ...) of <name> does not meet ...` (10)
+        RELEASE_AGE_REJECTED_PACKAGE = Regexp.union(
+          %r{(?<name>@?[\w.-]+(?:/[\w.-]+)?)@[\w.+-]+ was published at},
+          /Version \S+ \(released [^)]*\) of (?<name>\S+) does not meet/
+        )
 
         ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
 
@@ -507,10 +513,16 @@ module Dependabot
           return if security_updates_only? || !@release_age_days&.positive?
           return unless pnpm_version.nil?
 
+          # Probe again, for the cause: a failed command raises its own error, which is what the user needs to see
+          # (a download that failed is not a misconfiguration). A version that comes back this time is used.
+          @pnpm_version = Helpers.pnpm_version!
+        rescue SharedHelpers::HelperSubprocessFailed
+          raise
+        rescue StandardError => e
           raise Dependabot::MisconfiguredTooling.new(
             "pnpm",
-            "`pnpm -v` did not print a version Dependabot could read, so the cooldown cannot be applied " \
-            "to the dependencies pnpm resolves."
+            "`pnpm -v` did not print a version Dependabot could read (#{e.message}), so the cooldown cannot be " \
+            "applied to the dependencies pnpm resolves."
           )
         end
 
@@ -841,15 +853,9 @@ module Dependabot
             raise_package_access_error(error_message, dependency_url, pnpm_lock)
           end
 
-          # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
-          if error_message.match?(ERR_PNPM_RELEASE_AGE_NOT_MET)
-            Dependabot.logger.warn(
-              "pnpm found no version old enough for the release-age window, so the update is not possible: " \
-              "#{error_message}"
-            )
-            raise Dependabot::UpdateNotPossible, dependencies.map(&:name)
-          end
+          raise_release_age_not_met_error(error_message) if error_message.match?(ERR_PNPM_RELEASE_AGE_NOT_MET)
 
+          # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
           if error_message.match?(ERR_PNPM_TARBALL_INTEGRITY)
             dependency_names = dependencies.map(&:name).join(", ")
             msg = "Error (ERR_PNPM_TARBALL_INTEGRITY) while resolving \"#{dependency_names}\"."
@@ -958,6 +964,23 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
+
+        # The update is not possible because pnpm would have to pick a version inside the release-age window. The
+        # package pnpm rejects is often a transitive dependency, or one that is not in this update, so the error
+        # names the dependencies of the update it rejected when it is one of them, and all of them otherwise. The
+        # rejected package is in the log either way.
+        sig { params(error_message: String).returns(T.noreturn) }
+        def raise_release_age_not_met_error(error_message)
+          rejected = error_message.scan(RELEASE_AGE_REJECTED_PACKAGE).flatten.compact.uniq
+          names = dependencies.map(&:name)
+          blocked = names & rejected
+
+          Dependabot.logger.warn(
+            "pnpm found no version old enough for the release-age window (rejected: #{rejected.join(', ')}), " \
+            "so the update is not possible: #{error_message}"
+          )
+          raise Dependabot::UpdateNotPossible, blocked.empty? ? names : blocked
+        end
 
         # The repository URL for a git dependency's specifier, which can be `github:owner/repo#ref`, `owner/repo`,
         # or an ssh or https URL.

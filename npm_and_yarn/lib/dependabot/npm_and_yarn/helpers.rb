@@ -294,16 +294,29 @@ module Dependabot
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
+        pnpm_version!
+      rescue StandardError => e
+        Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
+        nil
+      end
+
+      # Like pnpm_version, but raises the error of the last attempt, so a caller that cannot go on without the
+      # version can report why it is unknown.
+      sig { returns(Dependabot::Version) }
+      def self.pnpm_version!
+        last_error = T.let(nil, T.nilable(StandardError))
+
         PNPM_VERSION_PROBE_ATTEMPTS.times do |attempt|
           return Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
         rescue StandardError => e
+          last_error = e
           Dependabot.logger.warn(
-            "Could not determine pnpm version to gate release-age settings " \
-            "(attempt #{attempt + 1} of #{PNPM_VERSION_PROBE_ATTEMPTS}): #{e.message}"
+            "Could not determine pnpm version (attempt #{attempt + 1} of #{PNPM_VERSION_PROBE_ATTEMPTS}): " \
+            "#{e.message}"
           )
         end
 
-        nil
+        raise T.must(last_error)
       end
 
       # The concrete npm version that will run. Returns nil when it can't be determined.
@@ -663,14 +676,15 @@ module Dependabot
         PNPM_V7.to_s if version >= 5.4
       end
 
-      # The pnpm major for the lockfile pnpm will use from the job's directory (see matching_pnpm_major). pnpm
-      # climbs to the nearest workspace root, so that is the lockfile in the directory or in the nearest ancestor
-      # that has one. A lockfile in a sub-directory is not touched by a command run from here.
+      # The pnpm major for the repository's lockfile (see matching_pnpm_major). Only a lockfile in the job's own
+      # directory is used. A lockfile in an ancestor directory (a workspace root above the job) is not: Corepack
+      # honors a `packageManager` pin in that ancestor's package.json, which the file fetcher does not fetch, so
+      # choosing a pnpm here could override a pin that is not visible.
       sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T.nilable(String)) }
       def self.matching_pnpm_major_for_files(files)
         return unless files
 
-        lockfile = nearest_first(files, PNPMPackageManager::LOCKFILE_NAME).first
+        lockfile = files.find { |file| file.name == PNPMPackageManager::LOCKFILE_NAME }
         return unless lockfile&.content
 
         matching_pnpm_major(
@@ -679,8 +693,7 @@ module Dependabot
         )
       end
 
-      # The `packageManager` of the job's own package.json. Corepack also reads one declared in an ancestor's
-      # package.json, but the file fetcher does not fetch ancestor manifests, so that pin cannot be seen here.
+      # The `packageManager` of the job's own package.json.
       sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
       def self.package_manager_pin(files)
         manifest = files.find { |file| file.name == "package.json" }
@@ -690,18 +703,6 @@ module Dependabot
         pin.is_a?(String) ? pin : nil
       rescue JSON::ParserError
         nil
-      end
-
-      # Files named `basename` in the job's directory or in one of its ancestors (fetched as `../basename`),
-      # nearest first. The file fetcher fetches an ancestor's pnpm lockfile, but not its package.json.
-      sig do
-        params(files: T::Array[Dependabot::DependencyFile], basename: String)
-          .returns(T::Array[Dependabot::DependencyFile])
-      end
-      def self.nearest_first(files, basename)
-        files
-          .select { |file| file.name.match?(%r{\A(?:\.\./)*#{Regexp.escape(basename)}\z}) && file.content }
-          .sort_by { |file| file.name.scan("../").size }
       end
 
       # Run single yarn command returning stdout/stderr
