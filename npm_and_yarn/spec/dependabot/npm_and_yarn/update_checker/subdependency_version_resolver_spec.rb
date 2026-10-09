@@ -464,8 +464,8 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       context "when all changed occurrences are within the allowable version" do
         let(:latest_allowable_version) { "6.4.2" }
 
-        it "returns the version permitted by the root occurrence's parent constraints" do
-          expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+        it "returns the highest allowable updated occurrence" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("6.4.2"))
         end
       end
     end
