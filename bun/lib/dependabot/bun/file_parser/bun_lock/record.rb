@@ -12,6 +12,23 @@ module Dependabot
         class Record
           extend T::Sig
 
+          # Sections whose packages Bun installs alongside the package that declares them.
+          EDGE_SECTIONS = %w(dependencies optionalDependencies peerDependencies).freeze
+
+          # Returns the string keys of the given sections, skipping sections that are not objects.
+          sig { params(details: T::Hash[Object, Object], sections: T::Array[String]).returns(T::Array[String]) }
+          def self.section_names(details, sections)
+            sections.flat_map do |section|
+              names = details[section]
+              next [] unless names.is_a?(Hash)
+
+              names.keys.filter_map do |raw_name|
+                name = T.cast(raw_name, Object)
+                name if name.is_a?(String)
+              end
+            end.uniq
+          end
+
           sig { params(data: Object, path: String, context: String).void }
           def initialize(data, path:, context:)
             @data = data
@@ -64,6 +81,22 @@ module Dependabot
 
               child
             end
+          end
+
+          # Names of the packages this entry pulls in, used to classify dependency types.
+          # Registry entries keep their details in slot two; git and local entries keep
+          # them in slot one. Unreadable details give no edges rather than an error, so
+          # classification never makes an otherwise valid lockfile fail to parse.
+          sig { returns(T::Array[String]) }
+          def edge_names
+            return [] unless graph_compatible?
+
+            slot_two = entry[2]
+            slot_one = entry[1]
+            details = slot_two.is_a?(Hash) ? slot_two : slot_one
+            return [] unless details.is_a?(Hash)
+
+            self.class.section_names(details, EDGE_SECTIONS)
           end
 
           private
