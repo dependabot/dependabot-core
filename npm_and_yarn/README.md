@@ -5,10 +5,14 @@ Yarn and npm support for [`dependabot-core`][core-repo].
 ### Native npm transitive updates
 
 `npm update` accepts package names, not per-package version constraints. Dependabot
-checks every changed lockfile occurrence before accepting a transitive update,
-including nested packages and aliases. The resolver rejects versions above its
-allowable version or inside an ignore range; the writer raises `UpdateNotPossible`
-if npm exceeds the requested version. Existing unchanged occurrences are preserved.
+checks changed installations in v1, v2, and v3 lockfiles, including nested packages
+and aliases. It also checks the effective replacement of a removed installation,
+so deduplication cannot bypass the policy. Required installations must retain
+their package identity and a valid version.
+
+The resolver rejects versions above its allowable version or inside an ignore
+range; the writer raises `UpdateNotPossible` if npm exceeds the requested version.
+Existing unchanged effective versions are preserved.
 
 An out-of-policy native result is rejected, not relabelled as a lower version.
 Dependabot does not add manifest overrides to force an older candidate, since

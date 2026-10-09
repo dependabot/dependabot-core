@@ -91,8 +91,8 @@ module Dependabot
         ignored = ignored_versions.flat_map { |req| dependency.requirement_class.requirements_array(req) }
 
         changed_npm_dependency_records(lockfile, updated_content, dependency.name).all? do |record|
-          version = record.version
-          next false unless version && Version.correct?(version)
+          version = npm_record_version(record)
+          next false unless Version.semver_for(version)
 
           candidate = Version.new(version)
           next false if allowable && candidate > allowable
@@ -103,23 +103,204 @@ module Dependabot
 
       sig do
         params(lockfile: DependencyFile, updated_content: String, dependency_name: String)
-          .returns(T::Array[FileParser::JsonLock::Record])
+          .returns(T::Array[T.nilable(FileParser::JsonLock::Record)])
       end
       def self.changed_npm_dependency_records(lockfile, updated_content, dependency_name)
         updated_lockfile = lockfile.dup
         updated_lockfile.content = updated_content
-        before = FileParser::JsonLock.new(lockfile).parsed.package_entries
-        after = FileParser::JsonLock.new(updated_lockfile).parsed.package_entries
+        before = FileParser::JsonLock.new(lockfile).parsed.installed_entries
+        after = FileParser::JsonLock.new(updated_lockfile).parsed.installed_entries
 
-        after.filter_map do |path, record|
-          next unless path.include?("node_modules/")
-          next unless path.split("node_modules/").last == dependency_name || record.name == dependency_name
+        changed = T.let([], T::Array[T.nilable(FileParser::JsonLock::Record)])
+        after.each do |path, record|
+          next unless npm_dependency_record?(path, record, dependency_name)
 
           previous = before[path]
-          record unless previous && previous.version == record.version && previous.name == record.name
+          if previous && npm_record_name(path, previous) != npm_record_name(path, record)
+            changed << nil
+            next
+          end
+          next if previous && npm_record_version(previous) == npm_record_version(record)
+
+          changed << record
         end
+        changed + removed_npm_dependency_replacements(before, after, dependency_name)
       end
       private_class_method :changed_npm_dependency_records
+
+      sig do
+        params(
+          before: T::Hash[String, FileParser::JsonLock::Record],
+          after: T::Hash[String, FileParser::JsonLock::Record],
+          dependency_name: String
+        ).returns(T::Array[T.nilable(FileParser::JsonLock::Record)])
+      end
+      def self.removed_npm_dependency_replacements(before, after, dependency_name)
+        replacements = T.let([], T::Array[T.nilable(FileParser::JsonLock::Record)])
+        before.each do |path, record|
+          next unless npm_dependency_record?(path, record, dependency_name)
+          next if after[path] && npm_dependency_record?(path, T.must(after[path]), dependency_name)
+
+          installed_name = T.must(path.split("node_modules/").last)
+          npm_replacement_consumers(before, after, path).each do |consumer_path|
+            replacement = npm_replacement_record(after, consumer_path, path, record)
+            version = npm_record_version(replacement)
+            previous_version = npm_consumed_version(before, consumer_path, installed_name)
+            next if Version.semver_for(version) && version == previous_version
+
+            replacements << replacement
+          end
+        end
+        replacements
+      end
+      private_class_method :removed_npm_dependency_replacements
+
+      sig do
+        params(
+          entries: T::Hash[String, FileParser::JsonLock::Record],
+          consumer_path: String,
+          original_path: String,
+          original: FileParser::JsonLock::Record
+        ).returns(T.nilable(FileParser::JsonLock::Record))
+      end
+      def self.npm_replacement_record(entries, consumer_path, original_path, original)
+        name = T.must(original_path.split("node_modules/").last)
+        replacement_path = npm_dependency_path(entries, consumer_path, name)
+        return unless replacement_path
+
+        replacement = entries.fetch(replacement_path)
+        # Missing or differently named installations do not prove a safe replacement.
+        replacement if npm_record_name(replacement_path, replacement) == npm_record_name(original_path, original)
+      end
+      private_class_method :npm_replacement_record
+
+      sig do
+        params(
+          entries: T::Hash[String, FileParser::JsonLock::Record],
+          consumer_path: String,
+          name: String
+        ).returns(T.nilable(String))
+      end
+      def self.npm_consumed_version(entries, consumer_path, name)
+        return unless npm_consumer_requires?(entries, consumer_path, name)
+
+        path = npm_dependency_path(entries, consumer_path, name)
+        npm_record_version(entries.fetch(path)) if path
+      end
+      private_class_method :npm_consumed_version
+
+      sig do
+        params(
+          entries: T::Hash[String, FileParser::JsonLock::Record],
+          consumer_path: String,
+          name: String
+        ).returns(T::Boolean)
+      end
+      def self.npm_consumer_requires?(entries, consumer_path, name)
+        entries[consumer_path]&.dependency_names&.include?(name) || false
+      end
+      private_class_method :npm_consumer_requires?
+
+      sig do
+        params(
+          before: T::Hash[String, FileParser::JsonLock::Record],
+          after: T::Hash[String, FileParser::JsonLock::Record],
+          path: String
+        ).returns(T::Array[String])
+      end
+      def self.npm_replacement_consumers(before, after, path)
+        prefix, _, installed_name = path.rpartition("node_modules/")
+        consumers = before.filter_map do |consumer_path, consumer|
+          next unless consumer.dependency_names.include?(installed_name)
+
+          consumer_path if npm_dependency_path(before, consumer_path, installed_name) == path
+        end
+        if consumers.empty?
+          # Without requirement metadata, only a removed parent or a proven
+          # in-policy replacement makes the removal safe.
+          parent_path = prefix.delete_suffix("/")
+          consumers = !parent_path.empty? && !after.key?(parent_path) ? [] : [parent_path]
+        else
+          consumers.select! { |consumer_path| npm_consumer_requires?(after, consumer_path, installed_name) }
+        end
+
+        consumers + npm_new_consumers(before, after, path)
+      end
+      private_class_method :npm_replacement_consumers
+
+      sig do
+        params(
+          before: T::Hash[String, FileParser::JsonLock::Record],
+          after: T::Hash[String, FileParser::JsonLock::Record],
+          path: String
+        ).returns(T::Array[String])
+      end
+      def self.npm_new_consumers(before, after, path)
+        # A parent may itself have moved during deduplication. New consumers
+        # must not acquire an out-of-policy installation either.
+        installed_name = T.must(path.split("node_modules/").last)
+        after.filter_map do |consumer_path, consumer|
+          next if npm_consumer_requires?(before, consumer_path, installed_name)
+          next unless consumer.dependency_names.include?(installed_name)
+
+          replacement_path = npm_dependency_path(after, consumer_path, installed_name)
+          next unless replacement_path
+          next unless npm_record_name(replacement_path, after.fetch(replacement_path)) ==
+                      npm_record_name(path, before.fetch(path))
+
+          consumer_path
+        end
+      end
+      private_class_method :npm_new_consumers
+
+      sig do
+        params(
+          entries: T::Hash[String, FileParser::JsonLock::Record],
+          parent_path: String,
+          name: String
+        ).returns(T.nilable(String))
+      end
+      def self.npm_dependency_path(entries, parent_path, name)
+        loop do
+          candidate = parent_path.empty? ? "node_modules/#{name}" : "#{parent_path}/node_modules/#{name}"
+          return candidate if File.basename(parent_path) != "node_modules" && entries.key?(candidate)
+          return if parent_path.empty?
+
+          # Node searches ancestor directories, skipping node_modules/node_modules.
+          # Keep scoped names and workspace directory prefixes in these paths.
+          parent = File.dirname(parent_path)
+          return if parent == parent_path
+
+          parent_path = parent == "." ? "" : parent
+        end
+      end
+      private_class_method :npm_dependency_path
+
+      sig { params(path: String, record: FileParser::JsonLock::Record, name: String).returns(T::Boolean) }
+      def self.npm_dependency_record?(path, record, name)
+        path.include?("node_modules/") &&
+          (path.split("node_modules/").last == name || npm_record_name(path, record) == name)
+      end
+      private_class_method :npm_dependency_record?
+
+      sig { params(path: String, record: FileParser::JsonLock::Record).returns(String) }
+      def self.npm_record_name(path, record)
+        name = record.name
+        return name if name
+
+        version = record.version
+        return version.delete_prefix("npm:").rpartition("@").first if version&.start_with?("npm:")
+
+        T.must(path.split("node_modules/").last)
+      end
+      private_class_method :npm_record_name
+
+      sig { params(record: T.nilable(FileParser::JsonLock::Record)).returns(T.nilable(String)) }
+      def self.npm_record_version(record)
+        version = record&.version
+        version&.start_with?("npm:") ? version.rpartition("@").last : version
+      end
+      private_class_method :npm_record_version
 
       # Masks the varying cooldown day count out of the telemetry fingerprint while
       # keeping the security `=0` bypass distinguishable (mirrors the npm lockfile
