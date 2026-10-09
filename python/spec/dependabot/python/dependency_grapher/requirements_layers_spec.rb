@@ -202,6 +202,44 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       end
     end
 
+    # Regression: a constraints file that is itself an aggregate of `-r` lines (as in aio-libs/aiohttp's
+    # requirements/constraints.in). It joins every layer via `constraints_files`, so the siblings it
+    # references must be pulled in too - otherwise pip opens it in a layer that lacks them and the graph
+    # job fails with `dependency_file_not_evaluatable`.
+    context "with a constraints file that references siblings via -r" do
+      let(:dependency_files) do
+        [
+          file("constraints.in", "-r a.in\n"),
+          file("constraints.txt", "# via -r a.in\nclick==8.1.7\n"),
+          file("a.in", "click\n"),
+          file("a.txt", "# via -r a.in\nclick==8.1.7\n"),
+          file("b.in", "pytest\n"),
+          file("b.txt", "# via -r b.in\npytest==8.3.3\n")
+        ]
+      end
+
+      it "pulls the constraints file's references into a layer that does not otherwise need them" do
+        b_group = layers.groups.find { |g| g.primary.name == "b.in" }
+
+        expect(b_group.files.map(&:name))
+          .to contain_exactly("b.in", "b.txt", "constraints.in", "constraints.txt", "a.in")
+        expect(b_group.files.find { |f| f.name == "a.in" }).to be_support_file
+      end
+
+      it "leaves every layer able to resolve the references of each of its files" do
+        layers.groups.each do |group|
+          names = group.files.map(&:name)
+          referenced = group.files.flat_map do |f|
+            f.content.lines.filter_map do |line|
+              line.split.last if line.start_with?("-r ", "-c ")
+            end
+          end
+
+          expect(referenced - names).to be_empty
+        end
+      end
+    end
+
     context "with a single requirements manifest" do
       let(:dependency_files) { [file("requirements.txt", "foo==1.0\n")] }
 
