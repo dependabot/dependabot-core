@@ -46,7 +46,7 @@ PATH
       psych (~> 5.0)
       sorbet-runtime (~> 0.6)
       stackprof (~> 0.2)
-      toml-rb (~> 4.0)
+      toml-rb (~> 6.0)
 
 PATH
   remote: ../composer
@@ -263,7 +263,6 @@ GEM
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.3.0)
     bigdecimal (4.1.2)
-    citrus (3.0.2)
     commonmarker (2.10.0-aarch64-linux)
     commonmarker (2.10.0-aarch64-linux-musl)
     commonmarker (2.10.0-arm64-darwin)
@@ -558,9 +557,7 @@ GEM
     terminal-table (4.0.0)
       unicode-display_width (>= 1.1.1, < 4)
     thor (1.5.0)
-    toml-rb (4.2.1)
-      citrus (~> 3.0, > 3.0)
-      racc (~> 1.7)
+    toml-rb (6.0.0)
     tsort (0.2.0)
     turbo_tests2 (3.2.7)
       parallel_tests (>= 3.3.0, < 6)
@@ -670,7 +667,6 @@ CHECKSUMS
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
   bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
-  citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
   commonmarker (2.10.0-aarch64-linux) sha256=eeb167dea203dee066eb0dd99b3fd2deb526c8b5e7297ad385f7a5d60f869478
   commonmarker (2.10.0-aarch64-linux-musl) sha256=e95d9e87ea6306e21ffa11855a7bb55518538143b23a227fe3bb00b41873ce25
   commonmarker (2.10.0-arm64-darwin) sha256=39ecc891d1e4308b5233cc28b40383de854a2bfbefe17d68e49174347a8aa79e
@@ -831,7 +827,7 @@ CHECKSUMS
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
   terminal-table (4.0.0) sha256=f504793203f8251b2ea7c7068333053f0beeea26093ec9962e62ea79f94301d2
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
-  toml-rb (4.2.1) sha256=e6c40e27905e86a7d38cc252eb4bc12d72c61576c826a358390c30f5de0b9dbb
+  toml-rb (6.0.0) sha256=35db853da1befde1cf49b0d0c61e50368ddb3ae1cde64d8f85267e500304127b
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
   turbo_tests2 (3.2.7) sha256=b0fbc681d15aa1aa8158d7826575155d2fc084124a1903b45db02a0ea9a9c0e7
   unicode-display_width (3.2.0) sha256=0cdd96b5681a5949cdbc2c55e7b420facae74c4aaf9a9815eee1087cb1853c42
