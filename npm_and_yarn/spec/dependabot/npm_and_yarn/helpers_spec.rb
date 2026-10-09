@@ -320,11 +320,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
     end
 
+    it "tries again when the first attempt fails" do
+      described_class.dependency_files = []
+      calls = 0
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do
+        calls += 1
+        raise "pnpm is not ready yet" if calls == 1
+
+        "12.10.1\n"
+      end
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+      expect(calls).to eq(2)
+    end
+
     it "returns nil when the pnpm version cannot be determined" do
       described_class.dependency_files = []
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing pnpm")
 
       expect(described_class.pnpm_version).to be_nil
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
     end
   end
 

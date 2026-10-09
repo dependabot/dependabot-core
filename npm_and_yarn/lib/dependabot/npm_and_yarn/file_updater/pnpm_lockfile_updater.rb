@@ -147,6 +147,12 @@ module Dependabot
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
 
+        # No version of a dependency is old enough for the repo's minimumReleaseAge. pnpm 12 reports a pick that is
+        # too young as NO_MATURE_MATCHING_VERSION; pnpm 11 reports it, and entries already in the lockfile that
+        # fail verification, as MINIMUM_RELEASE_AGE_VIOLATION.
+        ERR_PNPM_RELEASE_AGE_NOT_MET =
+          /ERR_PNPM_NO_MATURE_MATCHING_VERSION|ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION/
+
         ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
 
         # pnpm 11 and 12 report a patch that does not apply as PATCH_FAILED, and pnpm 12 reports one it cannot
@@ -471,6 +477,8 @@ module Dependabot
         # old to enforce it.
         sig { returns(T.nilable(String)) }
         def release_age_gate_config
+          raise_if_cooldown_cannot_be_applied!
+
           if !security_updates_only? && @release_age_days&.positive? && !pnpm_supports_minimum_release_age?
             Dependabot.logger.warn(
               "pnpm #{pnpm_version || '(unknown version)'} does not support minimumReleaseAge " \
@@ -489,6 +497,21 @@ module Dependabot
           return minimum_release_age_gate_args(minutes) if security_updates_only?
 
           minimum_release_age_gate_args(minutes)
+        end
+
+        # A cooldown that Dependabot cannot pass to pnpm must not be dropped silently. A pnpm version that is
+        # unreadable even after a retry is not the same as one that is too old to have the setting (that case
+        # is logged and carries on), so stop rather than propose versions the cooldown would hold back.
+        sig { void }
+        def raise_if_cooldown_cannot_be_applied!
+          return if security_updates_only? || !@release_age_days&.positive?
+          return unless pnpm_version.nil?
+
+          raise Dependabot::MisconfiguredTooling.new(
+            "pnpm",
+            "`pnpm -v` did not print a version Dependabot could read, so the cooldown cannot be applied " \
+            "to the dependencies pnpm resolves."
+          )
         end
 
         # The pnpm `minimumReleaseAge` value (in minutes) to enforce for this
@@ -819,6 +842,14 @@ module Dependabot
           end
 
           # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
+          if error_message.match?(ERR_PNPM_RELEASE_AGE_NOT_MET)
+            Dependabot.logger.warn(
+              "pnpm found no version old enough for the release-age window, so the update is not possible: " \
+              "#{error_message}"
+            )
+            raise Dependabot::UpdateNotPossible, dependencies.map(&:name)
+          end
+
           if error_message.match?(ERR_PNPM_TARBALL_INTEGRITY)
             dependency_names = dependencies.map(&:name).join(", ")
             msg = "Error (ERR_PNPM_TARBALL_INTEGRITY) while resolving \"#{dependency_names}\"."

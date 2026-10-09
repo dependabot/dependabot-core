@@ -175,6 +175,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      [%w(pnpm12 no_mature_matching_version), %w(pnpm11 release_age_violation)].each do |version_dir, scenario|
+        context "with a release-age window no version meets (#{version_dir} output)" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", version_dir, "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises UpdateNotPossible naming the dependencies being updated" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+              expect(error.dependencies).to eq([dependency_name])
+            end
+          end
+        end
+      end
+
       context "with an unrecognized pnpm-workspace.yaml setting" do
         let(:project_name) { "pnpm/simple" }
 
@@ -1723,14 +1744,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version).and_return(nil)
         end
 
-        it "skips the gate rather than guessing" do
-          allow(Dependabot.logger).to receive(:warn)
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimumReleaseAge")
-            ""
-          end.at_least(:once)
+        it "stops with MisconfiguredTooling rather than dropping the cooldown" do
+          expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
 
-          updater.send(:run_pnpm_update_packages)
+          expect { updater.send(:run_pnpm_update_packages) }
+            .to raise_error(Dependabot::MisconfiguredTooling, /cooldown cannot be applied/)
+        end
+      end
+
+      context "when the pnpm version can't be determined and no cooldown is configured" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version).and_return(nil)
+        end
+
+        it "carries on, since there is no cooldown to apply" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("").at_least(:once)
+
+          expect { updater.send(:run_pnpm_update_packages) }.not_to raise_error
         end
       end
 

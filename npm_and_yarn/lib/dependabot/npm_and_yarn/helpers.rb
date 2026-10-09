@@ -284,15 +284,25 @@ module Dependabot
         message.scan(PNPM_INDIRECT_DEP_NAME).flatten
       end
 
+      # A one-off failure of `pnpm -v` (for example while Corepack fetches the binary) should not leave the version
+      # unknown, so the probe is tried this many times.
+      PNPM_VERSION_PROBE_ATTEMPTS = 2
+
       # The concrete pnpm version that will run for this update. Returns nil when
       # the version can't be determined. Used to gate version-specific config such as
       # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
-        Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
-      rescue StandardError => e
-        Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
+        PNPM_VERSION_PROBE_ATTEMPTS.times do |attempt|
+          return Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
+        rescue StandardError => e
+          Dependabot.logger.warn(
+            "Could not determine pnpm version to gate release-age settings " \
+            "(attempt #{attempt + 1} of #{PNPM_VERSION_PROBE_ATTEMPTS}): #{e.message}"
+          )
+        end
+
         nil
       end
 
