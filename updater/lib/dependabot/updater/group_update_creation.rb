@@ -194,7 +194,10 @@ module Dependabot
           T::Hash[String, Dependabot::DependencyFile]
         )
         changed_files_by_path = T.let({}, T::Hash[String, Dependabot::DependencyFile])
-        initial_paths = T.let(working_files_by_path.keys.to_set, T::Set[String])
+        initial_existence = T.let(
+          working_files_by_path.keys.to_h { |path| [path, true] },
+          T::Hash[String, T::Boolean]
+        )
         created_paths = T.let(Set.new, T::Set[String])
         dependency_changes = T.must(job.source.directories).filter_map do |directory|
           job.source.directory = directory
@@ -211,7 +214,7 @@ module Dependabot
             dependency.metadata[:directory] = directory
           end
           change&.updated_dependency_files&.each do |file|
-            apply_file_change(file, working_files_by_path, changed_files_by_path, initial_paths, created_paths)
+            apply_file_change(file, working_files_by_path, changed_files_by_path, initial_existence, created_paths)
           end
           change
         end
@@ -229,15 +232,22 @@ module Dependabot
           file: Dependabot::DependencyFile,
           working_files_by_path: T::Hash[String, Dependabot::DependencyFile],
           changed_files_by_path: T::Hash[String, Dependabot::DependencyFile],
-          initial_paths: T::Set[String],
+          initial_existence: T::Hash[String, T::Boolean],
           created_paths: T::Set[String]
         ).void
       end
-      def apply_file_change(file, working_files_by_path, changed_files_by_path, initial_paths, created_paths)
+      def apply_file_change(file, working_files_by_path, changed_files_by_path, initial_existence, created_paths)
+        # Paths outside the fetched dependency files (e.g. vendored files) are only known from their
+        # first reported operation, which is relative to the initial state because no earlier
+        # directory touched them.
+        initially_exists = initial_existence.fetch(file.path) do
+          initial_existence[file.path] = file.operation != Dependabot::DependencyFile::Operation::CREATE
+        end
+
         if file.deleted?
           working_files_by_path.delete(file.path)
           created_paths.delete(file.path)
-          if initial_paths.include?(file.path)
+          if initially_exists
             changed_files_by_path[file.path] =
               file
           else
@@ -247,7 +257,7 @@ module Dependabot
         end
 
         working_file = file.dup
-        if initial_paths.include?(file.path)
+        if initially_exists
           working_file.operation = Dependabot::DependencyFile::Operation::UPDATE
         else
           working_file.operation = Dependabot::DependencyFile::Operation::CREATE
