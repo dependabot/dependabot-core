@@ -65,6 +65,56 @@ RSpec.describe Dependabot::Python::PipenvRunner do
   let(:dependency_files) { nil }
   let(:repo_contents_path) { nil }
 
+  describe "#run_upgrade" do
+    let(:requirements) do
+      [
+        {
+          file: "Pipfile",
+          requirement: "==2.30.0",
+          groups: ["default"],
+          source: nil
+        },
+        {
+          file: "Pipfile",
+          requirement: "==2.30.0",
+          groups: ["develop"],
+          source: nil
+        }
+      ]
+    end
+
+    let(:lockfile_content) do
+      JSON.generate(
+        {
+          "default" => {
+            "requests" => { "version" => "==2.30.0" }
+          },
+          "develop" => {
+            "requests" => { "version" => "==2.30.0" }
+          }
+        }
+      )
+    end
+
+    it "updates all dependency groups" do
+      commands = []
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_options|
+        commands << command
+        ""
+      end
+
+      runner.run_upgrade("==2.34.2")
+
+      expect(commands.grep(/pipenv upgrade/)).to eq(
+        [
+          "pyenv exec pipenv upgrade --verbose requests==2.34.2",
+          "pyenv exec pipenv upgrade --verbose requests==2.34.2 --dev"
+        ]
+      )
+    end
+  end
+
   describe "#run_upgrade_and_fetch_version" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
