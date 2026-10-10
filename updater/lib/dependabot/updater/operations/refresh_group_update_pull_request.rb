@@ -98,7 +98,7 @@ module Dependabot
             )
 
             service.capture_exception(
-              error: DependabotError.new("Attempted to refresh a missing group."),
+              error: DependabotError.with_backtrace("Attempted to refresh a missing group."),
               job: job
             )
             return

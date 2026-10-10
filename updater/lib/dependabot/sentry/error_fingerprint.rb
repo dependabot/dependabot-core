@@ -21,13 +21,20 @@ module Dependabot
         ).returns(T.nilable(T::Array[String]))
       end
       def self.for(error:, package_manager:)
-        return unless eof_socket_error?(error)
+        if eof_socket_error?(error)
+          return [
+            "excon-eof",
+            package_manager || "unknown-package-manager",
+            dependabot_call_site(error) || "unknown-call-site"
+          ]
+        end
 
-        [
-          "excon-eof",
-          package_manager || "unknown-package-manager",
-          dependabot_call_site(error) || "unknown-call-site"
-        ]
+        # Group other errors by where they originated rather than by their
+        # message, which often embeds a dependency name and version.
+        call_site = dependabot_call_site(error)
+        return unless call_site
+
+        [error.class.to_s, package_manager || "unknown-package-manager", call_site]
       end
 
       sig { params(error: StandardError).returns(T::Boolean) }
