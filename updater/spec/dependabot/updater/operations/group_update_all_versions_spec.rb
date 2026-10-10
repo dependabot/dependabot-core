@@ -343,7 +343,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive(:existing_group_pull_requests).and_return(
             [
-              { "dependency-group-name" => "dummy-group", "pr_number" => 123 }
+              { "dependency-group-name" => "dummy-group", "pr-number" => 123 }
             ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
           )
         end
@@ -368,7 +368,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
             existing_group_pull_requests: [
               {
                 "dependency-group-name" => "dummy-group",
-                "pr_number" => 123,
+                "pr-number" => 123,
                 "dependencies" => [
                   {
                     "dependency-name" => "rollup",
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
             existing_group_pull_requests: [
               {
                 "dependency-group-name" => "dummy-group",
-                "pr_number" => 123,
+                "pr-number" => 123,
                 "dependencies" => [
                   {
                     "dependency-name" => "rollup",
@@ -486,7 +486,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
             existing_group_pull_requests: [
               {
                 "dependency-group-name" => "dummy-group",
-                "pr_number" => 123,
+                "pr-number" => 123,
                 "dependencies" => [
                   { "dependency-name" => "rollup", "dependency-version" => "2.79.2" }
                 ]
