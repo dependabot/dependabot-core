@@ -6,6 +6,7 @@
 --disable-watchman
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 --enable-experimental-rspec
+script/sorbet-spec-ratchet
 
 # Sorbet's RSpec support is experimental, so common specs are checked incrementally
 # while the remaining spec trees are ignored.

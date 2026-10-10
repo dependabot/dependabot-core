@@ -43,6 +43,14 @@ If a RuboCop exception is truly unavoidable, provide clear justification in a co
 - Add explicit type signatures for method parameters and return values
 - Always validate with `bundle exec srb tc`
 
+### RSpec migration
+
+- Target `strict` for supported specs and their helpers, including explicit signatures on important `let` and `subject` values.
+- Existing specs may move incrementally from `false` to `true` before reaching `strict`. A sigil in an ignored tree does not establish checked coverage.
+- New included specs below `strict`, and changed or newly included `false` specs, must explain the RSpec limitation in a top-of-file `# sorbet-rspec:` comment with an upstream link or issue reference.
+- Do not downgrade checked specs, re-exclude them, weaken production signatures, or add `T.unsafe`/`T.untyped` to silence test errors.
+- Validate both Sorbet and ordinary RSpec execution: signatures on memoized helpers can affect runtime behavior.
+
 ### Autocorrect Usage
 
 Use `bundle exec srb tc -a` **cautiously** — it often creates incorrect fixes for complex cases.

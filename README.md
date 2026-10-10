@@ -218,6 +218,24 @@ Each language/ecosystem sits on top of the core image. You need to rebuild which
   rspec common/spec/dependabot/file_fetchers/base_exclude_spec.rb
   ```
 
+### Sorbet checking of Ruby specs
+
+The root `sorbet/config` admits spec trees incrementally with experimental RSpec support. Target `typed: strict`;
+existing specs can move through `typed: true`. Signatures on `let` and `subject` make their return values useful to the
+type checker. Run the affected RSpec examples as well, since those signatures can change runtime validation.
+
+Use a complete checkout and the root bundle inside Docker for `bundle exec srb tc` and
+`bundle exec tapioca gem --verify`. The development shell's selected mounts do not include the root Sorbet configuration
+or bundle, so a partial mount is not equivalent to the root CI check.
+
+`BASE_REF=<parent-ref> bundle exec ruby script/sorbet-spec-ratchet` prevents checked specs from being downgraded or
+re-excluded. New included specs below strict, and changed or newly enrolled false specs, need a top-of-file
+`# sorbet-rspec:` explanation with an upstream link or issue reference. Preserve invalid-input tests and avoid unsafe
+casts or weaker production types to make the checker pass.
+
+Sorbet CI reports checked, false, and ignored spec counts separately, alongside compiler-reported untyped sends.
+An ignored file's strict sigil does not count as checked coverage.
+
 ### Making Changes to native Package Manager helpers
 
 Several Dependabot packages make use of 'native helpers', small executables in their host language.

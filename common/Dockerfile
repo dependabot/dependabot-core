@@ -7,3 +7,4 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 
 COPY --chown=dependabot:dependabot --parents common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot script/sorbet-spec-ratchet $DEPENDABOT_HOME/script/sorbet-spec-ratchet
