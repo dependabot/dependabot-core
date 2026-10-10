@@ -1,0 +1,4 @@
+--index-url https://main.example.com/simple
+--extra-index-url https://extra.example.com/simple
+psycopg2==2.6.1
+luigi==2.2.0
