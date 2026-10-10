@@ -812,6 +812,70 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         operation: Dependabot::DependencyFile::Operation::UPDATE
       )
     end
+
+    context "with vendored files that are not fetched dependency files" do
+      def vendored_file(name, operation, content: "vendored")
+        Dependabot::DependencyFile.new(
+          name: name,
+          content: operation == Dependabot::DependencyFile::Operation::DELETE ? nil : content,
+          vendored_file: true,
+          operation: operation
+        )
+      end
+
+      def change_with(*files)
+        instance_double(
+          Dependabot::DependencyChange,
+          updated_dependencies: [],
+          updated_dependency_files: files,
+          merge_changes!: nil
+        )
+      end
+
+      def operations_by_name(change)
+        change.updated_dependency_files.to_h { |file| [file.name, file.operation] }
+      end
+
+      it "keeps the reported operation of a vendored file" do
+        allow(test_instance).to receive(:compile_all_dependency_changes_for).and_return(
+          change_with(
+            raw_updated_file,
+            vendored_file("vendor/removed.go", Dependabot::DependencyFile::Operation::DELETE),
+            vendored_file("vendor/changed.go", Dependabot::DependencyFile::Operation::UPDATE),
+            vendored_file("vendor/added.go", Dependabot::DependencyFile::Operation::CREATE)
+          ),
+          nil
+        )
+
+        change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+        expect(operations_by_name(change)).to eq(
+          "Gemfile" => Dependabot::DependencyFile::Operation::UPDATE,
+          "vendor/removed.go" => Dependabot::DependencyFile::Operation::DELETE,
+          "vendor/changed.go" => Dependabot::DependencyFile::Operation::UPDATE,
+          "vendor/added.go" => Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+
+      it "folds later directory changes against the first reported operation" do
+        allow(test_instance).to receive(:compile_all_dependency_changes_for).and_return(
+          change_with(
+            vendored_file("vendor/added_then_removed.go", Dependabot::DependencyFile::Operation::CREATE),
+            vendored_file("vendor/removed_then_added.go", Dependabot::DependencyFile::Operation::DELETE)
+          ),
+          change_with(
+            vendored_file("vendor/added_then_removed.go", Dependabot::DependencyFile::Operation::DELETE),
+            vendored_file("vendor/removed_then_added.go", Dependabot::DependencyFile::Operation::CREATE)
+          )
+        )
+
+        change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+        expect(operations_by_name(change)).to eq(
+          "vendor/removed_then_added.go" => Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+    end
   end
 
   describe "#compile_updates_for blocked versions ignored metric" do
