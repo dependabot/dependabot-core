@@ -11,6 +11,13 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
+RSpec.configure do |config|
+  config.after do
+    Thread.current[:npm_and_yarn_npm_version_selector] = nil
+    Thread.current[:npm_and_yarn_npm_version_selectors] = nil
+  end
+end
+
 def create_dependency(
   name:,
   version:,

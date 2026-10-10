@@ -69,6 +69,37 @@ module Dependabot
             entries(object.fetch("dependencies", {}), "#{@context}.dependencies")
           end
 
+          sig { returns(T::Hash[String, Record]) }
+          def package_entries
+            entries(object.fetch("packages", {}), "#{@context}.packages")
+          end
+
+          # Keep modern packages authoritative, including an empty table in a v2 lockfile.
+          # Legacy dependency trees describe the same installation paths recursively.
+          sig { returns(T::Hash[String, Record]) }
+          def installed_entries
+            return package_entries if object.key?("packages")
+
+            legacy_entries.each_with_object({ "" => self }) do |(name, record), installed|
+              record.installed_entries.each do |path, child|
+                installed[File.join("node_modules", name, path).delete_suffix("/")] = child
+              end
+            end
+          end
+
+          sig { returns(T::Array[String]) }
+          def dependency_names
+            %w(requires dependencies devDependencies optionalDependencies peerDependencies).flat_map do |field|
+              value = object[field]
+              next [] if value.nil? || (field == "requires" && value == true)
+
+              # v1 dependencies are installations; its requirements live in "requires".
+              object_value(value, "#{@context}.#{field}").filter_map do |name, requirement|
+                name if requirement.is_a?(String)
+              end
+            end
+          end
+
           sig { params(name: String).returns(T.nilable(Record)) }
           def legacy_entry(name)
             dependencies = object["dependencies"]

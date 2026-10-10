@@ -380,6 +380,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "when native npm exceeds a requested subdependency version" do
+      let(:files) { project_dependency_files("npm8/subdependency_update") }
+      let(:dependency_name) { "acorn" }
+      let(:version) { "5.6.0" }
+      let(:previous_version) { "5.5.3" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+
+      it "does not publish an out-of-policy lockfile" do
+        expect { updated_npm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+      end
+    end
+
     context "when updating a subdependency in a workspace repo" do
       let(:files) { project_dependency_files("npm8/workspace_subdependency_update") }
 
@@ -472,6 +485,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       it "raises an unhandled error" do
         expect { updated_npm_lock_content }
           .to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+
+      context "when also updating a subdependency" do
+        let(:files) { project_dependency_files("npm8/subdependency_update") }
+        let(:dependencies) do
+          [
+            dependency,
+            Dependabot::Dependency.new(
+              name: "acorn",
+              version: "5.7.4",
+              previous_version: "5.5.3",
+              requirements: [],
+              previous_requirements: [],
+              package_manager: "npm_and_yarn"
+            )
+          ]
+        end
+
+        it "preserves the original registry failure classification" do
+          expect { updated_npm_lock_content }.to raise_error(Dependabot::InconsistentRegistryResponse)
+        end
       end
     end
 

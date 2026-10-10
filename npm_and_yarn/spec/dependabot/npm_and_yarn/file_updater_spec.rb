@@ -1096,31 +1096,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           .to eq("2.0.2")
       end
 
-      context "when updating to lowest required version" do
-        let(:dependency_name) { "extend" }
+      context "when native npm exceeds the requested version" do
         let(:version) { "2.0.1" }
-        let(:previous_version) { "2.0.0" }
-        let(:requirements) { [] }
-        let(:previous_requirements) { nil }
 
-        it "updates only relevant lockfiles" do
-          expect(updated_files.map(&:name))
-            .to contain_exactly("packages/package1/package-lock.json", "packages/package3/yarn.lock")
-
-          package1_npm_lock =
-            updated_files
-            .find { |f| f.name == "packages/package1/package-lock.json" }
-          package3_yarn_lock =
-            updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
-          parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
-
-          expect(package3_yarn_lock.content)
-            .to include("extend@~2.0.0:\n  version \"2.0.2\"")
-
-          # TODO: Change this to 2.0.1 once npm supports updating to specific
-          # sub dependency versions
-          expect(parsed_package1_npm_lock["packages"]["node_modules/extend"]["version"])
-            .to eq("2.0.2")
+        it "rejects the update rather than returning partial lockfile changes" do
+          expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible)
         end
       end
 
@@ -1501,22 +1481,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "git+ssh://git@github.com/jonschlinkert/is-number.git#" \
               "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
             )
-        end
-      end
-
-      context "with a sub-dependency" do
-        let(:files) { project_dependency_files("npm8/subdependency_update") }
-
-        let(:dependency_name) { "acorn" }
-        let(:version) { "5.7.3" }
-        let(:previous_version) { "5.5.3" }
-        let(:requirements) { [] }
-        let(:previous_requirements) { [] }
-
-        it "updates the version" do
-          parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_npm_lock["dependencies"]["acorn"]["version"])
-            .to eq("5.7.4")
         end
       end
 
@@ -2658,26 +2622,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             .to eq("2.0.2")
         end
 
-        context "when updating to lowest required version" do
-          let(:dependency_name) { "extend" }
+        context "when native npm exceeds the requested version" do
           let(:version) { "2.0.1" }
-          let(:previous_version) { "2.0.0" }
-          let(:requirements) { [] }
-          let(:previous_requirements) { nil }
 
-          it "updates only relevant lockfiles" do
-            expect(updated_files.map(&:name))
-              .to contain_exactly("packages/package1/package-lock.json")
-
-            package1_npm_lock =
-              updated_files
-              .find { |f| f.name == "packages/package1/package-lock.json" }
-            parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
-
-            # TODO: Change this to 2.0.1 once npm supports updating to specific
-            # sub dependency versions
-            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
-              .to eq("2.0.2")
+          it "rejects lockfile changes above the requested version" do
+            expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible)
           end
         end
 

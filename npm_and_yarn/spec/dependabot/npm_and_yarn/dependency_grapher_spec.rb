@@ -915,8 +915,6 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         Dependabot::NpmAndYarn::Helpers.npm_version_selector = "99"
       end
 
-      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
-
       it "activates each directory's own npm engine selector before generating its ephemeral lockfile" do
         selectors_seen = []
         allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator).to receive(:new) do |**kwargs|
