@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         notice = updater.notices.first
         expect(notice.type).to eq("julia_stdlib_zero_version_bound")
         expect(notice.show_in_pr).to be true
-        expect(notice.description).to include("`Statistics` is a standard library")
+        expect(notice.description).to start_with("This update adds `<0.0.1` to standard library compat entries.")
         expect(Dependabot::Notice.markdown_from_description(notice)).to start_with("> [!NOTE]\n")
       end
 

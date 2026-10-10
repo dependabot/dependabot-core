@@ -224,28 +224,27 @@ module Dependabot
 
       private
 
-      # A "<0.0.1" bound on a stdlib looks like a bug unless explained
+      # A "<0.0.1" bound on a stdlib looks like a bug unless explained.
+      # The text names no packages, so a PR across several directories shows it only once.
       sig { void }
       def add_zero_version_bound_notice
-        names = dependencies.filter_map do |dependency|
-          next unless dependency.metadata.key?(:julia_stdlib_versions)
-          next if zero_version_bound?(dependency.previous_requirements)
-          next unless zero_version_bound?(dependency.requirements)
-
-          "`#{dependency.name}`"
+        bound_added = dependencies.any? do |dependency|
+          dependency.metadata.key?(:julia_stdlib_versions) &&
+            !zero_version_bound?(dependency.previous_requirements) &&
+            zero_version_bound?(dependency.requirements)
         end
-        return if names.empty?
+        return unless bound_added
 
-        subject = names.one? ? "#{names.first} is a standard library" : "#{names.join(', ')} are standard libraries"
         @notices << Dependabot::Notice.new(
           mode: Dependabot::Notice::NoticeMode::INFO,
           type: "julia_stdlib_zero_version_bound",
           package_manager_name: "Pkg",
           title: "Why stdlib compat entries include `<0.0.1`",
-          description: "#{subject}. Before Julia 1.10, `Pkg.test()` gave standard libraries version 0.0.0, " \
-                       "so while the `julia` compat entry admits those releases, a stdlib compat entry needs " \
-                       "`<0.0.1` for tests to resolve. Raising the `julia` compat entry to `1.10` or later " \
-                       "removes the need for it. See the [stdlib compat PSA](#{STDLIB_COMPAT_PSA_URL}).",
+          description: "This update adds `<0.0.1` to standard library compat entries. Before Julia 1.10, " \
+                       "`Pkg.test()` gave standard libraries version 0.0.0, so while the `julia` compat entry " \
+                       "admits those releases, a stdlib compat entry needs `<0.0.1` for tests to resolve. " \
+                       "Raising the `julia` compat entry to `1.10` or later removes the need for it. " \
+                       "See the [stdlib compat PSA](#{STDLIB_COMPAT_PSA_URL}).",
           show_in_pr: true,
           show_alert: false
         )
