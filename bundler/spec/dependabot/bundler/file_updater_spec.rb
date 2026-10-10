@@ -808,6 +808,58 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             .to eq(old_lock.index(original_remote_line))
         end
 
+        context "when the dependency is declared inside a tag-pinned git block" do
+          let(:project_name) { "git_source_block" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "que",
+              version: "07f74f25cc1432acc84a857d2b356ec5c9a37d48",
+              previous_version: "997d1a6ee76a1f254fd72ce16acbc8d347fcaee3",
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "bundler"
+            )
+          end
+          let(:requirements) do
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/dependabot-fixtures/que",
+                branch: nil,
+                ref: "v0.12.0"
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/dependabot-fixtures/que",
+                branch: nil,
+                ref: "v0.11.6"
+              }
+            }]
+          end
+
+          it "updates the tag on the git block" do
+            gemfile = updated_files.find { |f| f.name == "Gemfile" }
+
+            expect(gemfile.content)
+              .to include(%(git "https://github.com/dependabot-fixtures/que", tag: "v0.12.0" do))
+          end
+
+          it "updates the dependency's tag and revision in the lockfile" do
+            expect(file.content).to include("tag: v0.12.0")
+            expect(file.content).not_to include("997d1a6ee76a1f254fd72ce16acbc8d347fcaee3")
+          end
+        end
+
         context "when a git source is specified that multiple deps use" do
           let(:project_name) { "git_source_with_multiple_deps" }
           let(:dependency) do
