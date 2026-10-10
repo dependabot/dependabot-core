@@ -75,4 +75,39 @@ public class GlobalJsonBuildFileTests
 
         Assert.Equal(expectedDependencies, dependencies);
     }
+
+    [Theory]
+    [InlineData("global.json",
+        "{\n  \"sdk\": {\n    \"version\": \"10.0.400\",\n    \"rollForward\": \"disable\"\n  }\n}",
+        new[] { "sdk", "version" },
+        "10.0.401",
+        "{\n  \"sdk\": {\n    \"version\": \"10.0.401\",\n    \"rollForward\": \"disable\"\n  }\n}")]
+    [InlineData("global.json",
+        "{\n  \"sdk\": {\n    \"version\": \"10.0.400\",\n    \"rollForward\": \"disable\"\n  }\n}\n",
+        new[] { "sdk", "version" },
+        "10.0.401",
+        "{\n  \"sdk\": {\n    \"version\": \"10.0.401\",\n    \"rollForward\": \"disable\"\n  }\n}\n")]
+    public async Task SaveAsync_PreservesFinalNewlineStateWhenSavingRealChanges(string relativePath,
+        string originalContent,
+        string[] propertyPathToModify,
+        string newValue,
+        string expectedReportedContent)
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            (relativePath, originalContent));
+
+        var filePath = Path.Combine(tempDirectory.DirectoryPath, relativePath);
+        var buildFile = new GlobalJsonBuildFile(
+            tempDirectory.DirectoryPath,
+            filePath,
+            originalContent,
+            new TestLogger());
+
+        buildFile.UpdateProperty(propertyPathToModify, newValue);
+
+        var changed = await buildFile.SaveAsync();
+
+        Assert.True(changed);
+        Assert.Equal(expectedReportedContent, await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken));
+    }
 }
