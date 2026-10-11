@@ -4,7 +4,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Match the MSBuild assemblies supplied by the SDK selected in global.json. -->
-    <MSBuildPackageVersion>18.9.6</MSBuildPackageVersion>
+    <MSBuildPackageVersion>18.10.1</MSBuildPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
