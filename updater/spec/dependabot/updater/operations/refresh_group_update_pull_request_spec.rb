@@ -132,6 +132,48 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
     end
 
+    context "when refreshing a dependency-name group using its configured parent" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh").tap do |definition|
+          definition["job"]["source"].delete("directory")
+          definition["job"]["source"]["directories"] = directories
+          definition["job"]["dependency-groups"].first["rules"]["group-by"] = "dependency-name"
+          definition["job"]["existing-group-pull-requests"].unshift(
+            "dependency-group-name" => "everything-everywhere-all-at-once",
+            "dependencies" => [{ "dependency-name" => "dummy-pkg-a", "dependency-version" => "4.0.0",
+                                 "directory" => "/" }]
+          )
+          definition["job"]["existing-group-pull-requests"].each do |pr|
+            pr["dependencies"] = directories.flat_map do |directory|
+              pr["dependencies"].map { |dependency| dependency.merge("directory" => directory) }
+            end
+          end
+        end
+      end
+
+      let(:directories) { %w(/one /two) }
+      let(:dependency_files) { directories.flat_map { |directory| original_bundler_files(directory: directory) } }
+      let(:expected_files) { directories.flat_map { |directory| updated_bundler_files(directory: directory) } }
+
+      before do
+        stub_rubygems_calls
+      end
+
+      it "updates the requested subgroup without closing it or including its sibling" do
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_service).not_to receive(:create_pull_request)
+        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eq("everything-everywhere-all-at-once/dummy-pkg-b")
+          expect(dependency_change.dependency_group.to_h).to eq("name" => "everything-everywhere-all-at-once")
+          expect(dependency_change.updated_dependencies.map(&:name).uniq).to eq(["dummy-pkg-b"])
+          expect(dependency_change.updated_dependencies.map(&:directory)).to match_array(directories)
+          expect(dependency_change.updated_dependency_files_hash).to match_array(expected_files.map(&:to_h))
+        end
+
+        refresh_group.perform
+      end
+    end
+
     context "when the dependencies have been since been updated by someone else and there's nothing to do" do
       let(:job_definition) do
         job_definition_fixture("bundler/version_updates/group_update_refresh")
