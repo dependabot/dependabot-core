@@ -74,7 +74,7 @@ module Dependabot
         def pinned_hostname(action_ref, home:)
           nwo, _, ref = action_ref.rpartition("@")
           entry = dependencies.find do |key, _|
-            key_nwo, _, key_ref = key.rpartition("@")
+            key_nwo, _, key_ref = key.to_s.rpartition("@")
             key_ref == ref && key_nwo.casecmp?(nwo)
           end&.last
           return unless entry.is_a?(Hash)

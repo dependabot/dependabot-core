@@ -24,8 +24,6 @@ module Dependabot
     # The name of the manifest file
     MANIFEST_FILE_YAML = "action.yaml"
     ACTION_FILE_NAMES = T.let([MANIFEST_FILE_YML, MANIFEST_FILE_YAML].freeze, T::Array[String])
-    # A step-level self repository reference, e.g. `uses: $/.github/actions/setup`
-    SELF_REPOSITORY_USES = %r{^[ \t]*(?:-[ \t]*)?uses:[ \t]*["']?\$/}
     # The pattern to match any .yml or .yaml file
     ANYTHING_YML = "<anything>.yml"
     # The path to the workflow directory

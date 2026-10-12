@@ -8,6 +8,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/experiments"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/workflow_file"
 
 module Dependabot
   module GithubActions
@@ -94,9 +95,9 @@ module Dependabot
       # relocking needs every action definition, at its repo-relative path.
       sig { returns(T::Array[DependencyFile]) }
       def self_repository_action_files
-        return [] unless correctly_encoded_workflow_files.any? { |f| f.content&.match?(SELF_REPOSITORY_USES) }
+        return [] unless correctly_encoded_workflow_files.any? { |f| self_repository_uses?(f) }
 
-        # ponytail: one recursive tree call; a truncated tree (>100k entries) may miss composites,
+        # One recursive tree call. A truncated tree (>100k entries) may miss composites,
         # which the engine then reports as an EngineError.
         repo_action_paths
           .reject { |path| correctly_encoded_workflow_files.any? { |f| f.path == path } }
@@ -105,6 +106,16 @@ module Dependabot
             file.support_file = true
             file
           end
+      end
+
+      sig { params(file: DependencyFile).returns(T::Boolean) }
+      def self_repository_uses?(file)
+        content = file.content.to_s
+        return false unless content.include?("$/")
+
+        WorkflowFile.new(content).uses_declarations.any? { |declaration| declaration.value.start_with?("$/") }
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
+        false
       end
 
       sig { returns(T::Array[String]) }

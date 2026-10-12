@@ -184,6 +184,16 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
             "/.github/actions/inner/action.yaml"
           )
         end
+
+        context "with a quoted uses key" do
+          let(:workflow_file_fixture) do
+            contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - \"uses\": \"$/tools/setup\"\n")
+          end
+
+          it "still fetches the action definitions" do
+            expect(file_fetcher_instance.files.count(&:support_file?)).to eq(2)
+          end
+        end
       end
 
       context "when the experiment is disabled" do
