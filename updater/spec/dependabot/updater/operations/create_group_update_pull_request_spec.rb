@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       it "reports unhandled dependencies that failed to update" do
         expect(mock_error_handler).to receive(:handle_dependency_error)
           .with(
-            error: kind_of(Dependabot::DependabotError),
+            error: an_instance_of(Dependabot::DependencyFileContentNotChanged),
             dependency: failed_dependency,
             dependency_group: dependency_group
           )
@@ -214,7 +214,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       it "reports unhandled dependencies that failed to update" do
         expect(mock_error_handler).to receive(:handle_dependency_error)
           .with(
-            error: kind_of(Dependabot::DependabotError),
+            error: an_instance_of(Dependabot::DependencyFileContentNotChanged),
             dependency: failed_dependency,
             dependency_group: dependency_group
           )
