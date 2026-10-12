@@ -55,6 +55,32 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
       it { is_expected.to eq(%w(libs services)) }
     end
 
+    context "with a single-line use for a directory without a ./ prefix" do
+      let(:content) { "use libs" }
+
+      it { is_expected.to eq(["libs"]) }
+    end
+
+    context "with a quoted single-line use directive" do
+      let(:content) { %(use "./libs" // some comment) }
+
+      it { is_expected.to eq(["libs"]) }
+    end
+
+    context "with quoted and unprefixed entries in a use block" do
+      let(:content) do
+        <<~GOWORK
+          use (
+            "./libs"
+            services // some comment
+            "./sdk/go"
+          )
+        GOWORK
+      end
+
+      it { is_expected.to eq(%w(libs services sdk/go)) }
+    end
+
     context "with mixed block and single-line use directives" do
       let(:content) do
         <<~GOWORK
