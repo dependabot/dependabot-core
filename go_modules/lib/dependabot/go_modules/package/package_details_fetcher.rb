@@ -84,8 +84,11 @@ module Dependabot
               version_strings = fetch_module_versions(dependency_name)
 
               # If no versions found, the path may be a sub-package rather than a module root.
-              # Try progressively shorter paths to find the actual module.
-              version_strings = resolve_module_versions_from_subpath(dependency_name) if version_strings.nil?
+              # Try progressively shorter paths to find the actual module, unless the path is a
+              # module of its own that has never been tagged and so only has pseudo-versions.
+              if version_strings.nil? && !untagged_module?(dependency_name)
+                version_strings = resolve_module_versions_from_subpath(dependency_name)
+              end
 
               return [package_release(version: T.must(dependency.version))] if version_strings.nil?
 
@@ -175,6 +178,19 @@ module Dependabot
             versions_json,
             command: "go list -m -versions -json <dependency_name>"
           ).versions
+        end
+
+        # A module without tags (e.g. golang.org/x/crypto/x509roots/fallback) lists no versions
+        # but still resolves at @latest to a pseudo-version, while a sub-package path does not.
+        sig { params(module_path: String).returns(T::Boolean) }
+        def untagged_module?(module_path)
+          SharedHelpers.run_shell_command(
+            "go list -m -json #{module_path}@latest",
+            fingerprint: "go list -m -json <dependency_name>@latest"
+          )
+          true
+        rescue SharedHelpers::HelperSubprocessFailed
+          false
         end
 
         # When a full import path (e.g. github.com/owner/repo/cmd/tool) is not a module,

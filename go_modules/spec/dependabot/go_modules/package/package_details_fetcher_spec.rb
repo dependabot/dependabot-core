@@ -75,6 +75,8 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
       let(:parent_query) { "go list -m -versions -json example.com/owner/repo/cmd" }
       let(:root_query) { "go list -m -versions -json example.com/owner/repo" }
       let(:last_query) { "go list -m -versions -json example.com/owner" }
+      let(:latest_fingerprint) { "go list -m -json <dependency_name>@latest" }
+      let(:latest_query) { "go list -m -json #{dependency_name}@latest" }
       let(:response) { JSON.generate("Versions" => ["v2.0.0", "invalid-version", "v1.0.0", "v2.0.0"]) }
       let(:parent_response) { '{"Versions":["v3.0.0"]}' }
       let(:root_response) { '{"Versions":["v4.0.0"]}' }
@@ -92,6 +94,11 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
           .with(root_query, fingerprint: fingerprint).and_return(root_response)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(last_query, fingerprint: fingerprint).and_return(last_response)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(latest_query, fingerprint: latest_fingerprint)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions for query \"latest\"", error_context: {}
+                     ))
       end
 
       it "preserves version filtering, order, duplicates, and original strings" do
@@ -110,6 +117,22 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
             expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
               .with(parent_query, fingerprint: fingerprint).once
           end
+        end
+      end
+
+      context "with an untagged module that only has pseudo-versions" do
+        let(:response) { "{}" }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(latest_query, fingerprint: latest_fingerprint)
+            .and_return('{"Path":"example.com/owner/repo/cmd/tool","Version":"v0.0.0-20261005185213-c3db4df58582"}')
+        end
+
+        it "keeps the current version instead of searching shorter paths" do
+          expect(fetch.map(&:version)).to eq([Dependabot::GoModules::Version.new(dependency.version)])
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(parent_query, fingerprint: fingerprint)
         end
       end
 
@@ -419,6 +442,16 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
           .with("go mod edit -json")
           .and_return("{}")
 
+        # A sub-package path does not resolve as a module
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -json github.com/wasilibs/go-shellcheck/cmd/shellcheck@latest",
+            fingerprint: "go list -m -json <dependency_name>@latest"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions for query \"latest\"", error_context: {}
+                     ))
+
         # Full path returns no versions (sub-package, not a module)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(
@@ -491,6 +524,15 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with("go mod edit -json")
           .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -json github.com/unknown/repo/cmd/tool@latest",
+            fingerprint: "go list -m -json <dependency_name>@latest"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions for query \"latest\"", error_context: {}
+                     ))
 
         # All paths return no versions
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
