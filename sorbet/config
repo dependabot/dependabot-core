@@ -9,6 +9,7 @@
 
 # Sorbet's RSpec support is experimental, so common specs are checked incrementally
 # while the remaining spec trees are ignored.
+--ignore=apm/spec/
 --ignore=bazel/spec/
 --ignore=bun/spec/
 --ignore=bundler/helpers/
