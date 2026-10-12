@@ -582,14 +582,12 @@ public class VersionFinderTests : TestBase
                 </configuration>
                 """)
         );
-        var metadataResource = new CountingMetadataResource([NuGetVersion.Parse("1.1.0")]);
         var packageMetadataResource = new CapturingPackageMetadataResource();
         using var context = new NuGetContext(
             tempDir.DirectoryPath,
             sourceRepositoryFactory: source => new SourceRepository(
                 source,
                 [
-                    new TestResourceProvider<MetadataResource>(metadataResource),
                     new TestResourceProvider<PackageMetadataResource>(packageMetadataResource),
                 ]));
         var dependencyInfo = new DependencyInfo
@@ -608,15 +606,19 @@ public class VersionFinderTests : TestBase
         };
         using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
             TestContext.Current.CancellationToken);
+        var source = context.PackageSources.Single();
 
-        var result = await VersionFinder.GetCandidateVersionsAsync(
+        var allowedSources = await VersionFinder.GetCooldownAllowedSourcesAsync(
             dependencyInfo,
             DateTimeOffset.UtcNow,
+            NuGetVersion.Parse("1.0.0"),
+            NuGetVersion.Parse("1.1.0"),
+            [source],
             context,
             new TestLogger(),
             cancellationSource.Token);
 
-        Assert.Contains(NuGetVersion.Parse("1.1.0"), result.GetVersions());
+        AssertEx.Equal([source], allowedSources);
         Assert.Equal(cancellationSource.Token, packageMetadataResource.ReceivedToken);
     }
 

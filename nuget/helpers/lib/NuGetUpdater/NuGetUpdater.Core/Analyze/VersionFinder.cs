@@ -61,6 +61,7 @@ internal static class VersionFinder
             nugetContext,
             logger,
             filterByCompatibility: true,
+            filterByCooldown: true,
             cancellationToken);
     }
 
@@ -85,6 +86,7 @@ internal static class VersionFinder
             nugetContext,
             logger,
             filterByCompatibility: true,
+            filterByCooldown: true,
             cancellationToken);
     }
 
@@ -108,6 +110,7 @@ internal static class VersionFinder
             nugetContext,
             logger,
             filterByCompatibility: false,
+            filterByCooldown: false,
             cancellationToken);
     }
 
@@ -130,6 +133,7 @@ internal static class VersionFinder
             nugetContext,
             logger,
             filterByCompatibility: true,
+            filterByCooldown: true,
             cancellationToken);
     }
 
@@ -142,6 +146,7 @@ internal static class VersionFinder
         NuGetContext nugetContext,
         ILogger logger,
         bool filterByCompatibility,
+        bool filterByCooldown,
         CancellationToken cancellationToken)
     {
         var includePrerelease = currentVersion.IsPrerelease;
@@ -169,7 +174,7 @@ internal static class VersionFinder
                     continue;
                 }
 
-                if (dependencyInfo.Cooldown is not null)
+                if (filterByCooldown && dependencyInfo.Cooldown is not null)
                 {
                     metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>();
                     if (metadataResource is null)
@@ -229,7 +234,7 @@ internal static class VersionFinder
                 }
 
                 // check date
-                if (dependencyInfo.Cooldown is not null)
+                if (filterByCooldown && dependencyInfo.Cooldown is not null)
                 {
                     var metadata = await metadataResource!.GetMetadataAsync(
                         packageIdentity,
@@ -248,6 +253,55 @@ internal static class VersionFinder
         }
 
         return result;
+    }
+
+    internal static async Task<ImmutableArray<PackageSource>> GetCooldownAllowedSourcesAsync(
+        DependencyInfo dependencyInfo,
+        DateTimeOffset currentTime,
+        NuGetVersion currentVersion,
+        NuGetVersion version,
+        ImmutableArray<PackageSource> sources,
+        NuGetContext nugetContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        if (dependencyInfo.Cooldown is null)
+        {
+            return sources;
+        }
+
+        var packageIdentity = new PackageIdentity(dependencyInfo.Name, version);
+        var allowedSources = ImmutableArray.CreateBuilder<PackageSource>();
+        foreach (var source in sources)
+        {
+            var sourceRepository = nugetContext.GetSourceRepository(source);
+            var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>();
+            if (metadataResource is null)
+            {
+                logger.Warn($"Failed to get {nameof(PackageMetadataResource)} for [{source.Source}]");
+                continue;
+            }
+
+            var metadata = await metadataResource.GetMetadataAsync(
+                packageIdentity,
+                nugetContext.SourceCacheContext,
+                NullLogger.Instance,
+                cancellationToken);
+            if (dependencyInfo.Cooldown.IsVersionUpdateAllowed(
+                    currentTime,
+                    metadata?.Published,
+                    currentVersion,
+                    version))
+            {
+                allowedSources.Add(source);
+            }
+            else
+            {
+                logger.Info($"Skipping update of {dependencyInfo.Name} from {currentVersion} to {version} due to cooldown settings.  Package publish date: {metadata?.Published}");
+            }
+        }
+
+        return allowedSources.ToImmutable();
     }
 
     internal static Func<NuGetVersion, bool> CreateVersionFilter(DependencyInfo dependencyInfo, VersionRange versionRange)

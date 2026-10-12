@@ -63,12 +63,42 @@ internal static class CompatibilityChecker
         return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
     }
 
+    public static async Task<bool> IsAvailableAndCompatibleAsync(
+        PackageIdentity package,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        NuGetContext nugetContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var packageInfo = await GetPackageInfoAsync(
+            package,
+            nugetContext,
+            requireSourceAvailability: true,
+            cancellationToken);
+        if (packageInfo is null)
+        {
+            return false;
+        }
+
+        if (projectFrameworks.IsEmpty)
+        {
+            return true;
+        }
+
+        var (isDevDependency, packageFrameworks) = packageInfo.GetValueOrDefault();
+        return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
+    }
+
     public static async Task<bool> ExistsAsync(
         PackageIdentity package,
         NuGetContext nugetContext,
         CancellationToken cancellationToken)
     {
-        var readersOption = await GetPackageReadersAsync(package, nugetContext, cancellationToken);
+        var readersOption = await GetPackageReadersAsync(
+            package,
+            nugetContext,
+            requireSourceAvailability: true,
+            cancellationToken);
         if (readersOption is null)
         {
             return false;
@@ -122,11 +152,33 @@ internal static class CompatibilityChecker
         NuGetContext nugetContext,
         CancellationToken cancellationToken)
     {
+        return await GetPackageReadersAsync(
+            package,
+            nugetContext,
+            requireSourceAvailability: false,
+            cancellationToken);
+    }
+
+    private static async Task<PackageReaders?> GetPackageReadersAsync(
+        PackageIdentity package,
+        NuGetContext nugetContext,
+        bool requireSourceAvailability,
+        CancellationToken cancellationToken)
+    {
         var packagePath = GetPackagePath(package, nugetContext);
-        var readers = File.Exists(packagePath)
-            ? ReadPackage(packagePath)
-            : await DownloadPackageAsync(package, nugetContext, cancellationToken);
-        return readers;
+        if (!requireSourceAvailability && File.Exists(packagePath))
+        {
+            return ReadPackage(packagePath);
+        }
+
+        if (File.Exists(packagePath))
+        {
+            return await IsAvailableAsync(package, nugetContext, cancellationToken)
+                ? ReadPackage(packagePath)
+                : null;
+        }
+
+        return await DownloadPackageAsync(package, nugetContext, cancellationToken);
     }
 
     internal static async Task<PackageInfo?> GetPackageInfoAsync(
@@ -135,6 +187,27 @@ internal static class CompatibilityChecker
         CancellationToken cancellationToken)
     {
         var readersOption = await GetPackageReadersAsync(package, nugetContext, cancellationToken);
+        return await ReadPackageInfoAsync(readersOption, cancellationToken);
+    }
+
+    private static async Task<PackageInfo?> GetPackageInfoAsync(
+        PackageIdentity package,
+        NuGetContext nugetContext,
+        bool requireSourceAvailability,
+        CancellationToken cancellationToken)
+    {
+        var readersOption = await GetPackageReadersAsync(
+            package,
+            nugetContext,
+            requireSourceAvailability,
+            cancellationToken);
+        return await ReadPackageInfoAsync(readersOption, cancellationToken);
+    }
+
+    private static async Task<PackageInfo?> ReadPackageInfoAsync(
+        PackageReaders? readersOption,
+        CancellationToken cancellationToken)
+    {
         if (readersOption is null)
         {
             return null;
@@ -224,20 +297,12 @@ internal static class CompatibilityChecker
         NuGetContext context,
         CancellationToken cancellationToken)
     {
-        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(context.Settings);
-        var packageSources = sourceMapping.GetConfiguredPackageSources(package.Id).ToHashSet();
-        var sources = packageSources.Count == 0
-            ? context.PackageSources
-            : context.PackageSources
-                .Where(p => packageSources.Contains(p.Name))
-                .ToImmutableArray();
-
-        foreach (var source in sources)
+        foreach (var source in GetAllowedSources(package.Id, context))
         {
             FindPackageByIdResource feed;
             try
             {
-                var sourceRepository = Repository.Factory.GetCoreV3(source);
+                var sourceRepository = context.GetSourceRepository(source);
                 feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>()
                     ?? throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
 
@@ -267,15 +332,55 @@ internal static class CompatibilityChecker
 
             var packagePath = GetPackagePath(package, context);
             var isDownloaded = await downloader.CopyNupkgFileToAsync(packagePath, cancellationToken);
-            if (!isDownloaded)
+            if (isDownloaded)
             {
-                continue;
+                return (downloader.CoreReader, downloader.ContentReader);
             }
-
-            return (downloader.CoreReader, downloader.ContentReader);
         }
 
         return null;
+    }
+
+    private static async Task<bool> IsAvailableAsync(
+        PackageIdentity package,
+        NuGetContext context,
+        CancellationToken cancellationToken)
+    {
+        foreach (var source in GetAllowedSources(package.Id, context))
+        {
+            try
+            {
+                var sourceRepository = context.GetSourceRepository(source);
+                var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>()
+                    ?? throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
+                if (await feed.DoesPackageExistAsync(
+                        package.Id,
+                        package.Version,
+                        context.SourceCacheContext,
+                        NullLogger.Instance,
+                        cancellationToken))
+                {
+                    return true;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // Try the next allowed source.
+            }
+        }
+
+        return false;
+    }
+
+    private static ImmutableArray<PackageSource> GetAllowedSources(string packageId, NuGetContext context)
+    {
+        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(context.Settings);
+        var packageSources = sourceMapping.GetConfiguredPackageSources(packageId).ToHashSet();
+        return packageSources.Count == 0
+            ? context.PackageSources
+            : context.PackageSources
+                .Where(source => packageSources.Contains(source.Name))
+                .ToImmutableArray();
     }
 
     internal static string GetPackagePath(PackageIdentity package, NuGetContext context)
