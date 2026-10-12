@@ -25,7 +25,10 @@ module Dependabot
 
         JsonObject = T.type_alias { T::Hash[String, Object] }
         FIXED_FINDING_CATEGORIES = %w(onboarding-required ref-changed stale).freeze
-        UNRESOLVABLE_CATEGORIES = %w(impostor-commit lockfile-forgery).freeze
+        UNRESOLVABLE_CATEGORIES = %w(
+          unreachable-pin repo-replaced repo-unavailable repo-renamed not-pinned
+          local-action invalid-self-repository-ref misleading-sha
+        ).freeze
 
         # Host-identity failures from the engine: the lock is bound to a host it can't
         # be verified on. User-actionable (restore/regenerate), never retryable. The
@@ -73,7 +76,7 @@ module Dependabot
             log_skips(skipped)
 
             # `findings` is the PRE-fix diagnosis; at exit 0 fix-mode already resolved
-            # them. Only exit 1 can carry a survivor (impostor/forgery or a skip).
+            # them. Writes are all-or-nothing, so exit 1 means nothing was written.
             raise_on_findings(json) if exit_status == 1
 
             File.read(File.join(dir, LOCKFILE_PATH))
@@ -154,23 +157,21 @@ module Dependabot
           [stdout || "", stderr || "", process.exitstatus]
         end
 
+        # Exit 1 wrote nothing. Any user-actionable finding wins; anything else retries.
         sig { params(json: JsonObject).void }
         def raise_on_findings(json)
-          T.cast(Array(json["findings"]), T::Array[JsonObject]).each do |finding|
-            next unless finding["severity"].nil? || finding["severity"] == "error"
-
-            category = finding["category"].to_s
-            next if FIXED_FINDING_CATEGORIES.include?(category)
-
-            if UNRESOLVABLE_CATEGORIES.include?(category)
-              raise UnresolvableDependency.new(
-                (finding["dependency"] || "unknown").to_s,
-                (finding["detail"] || category).to_s
-              )
-            end
-
-            raise EngineError, "gh-actions-lock left an unhandled #{category.inspect} finding"
+          errors = T.cast(Array(json["findings"]), T::Array[JsonObject])
+                    .select { |finding| finding["severity"].nil? || finding["severity"] == "error" }
+          unresolvable = errors.find { |finding| UNRESOLVABLE_CATEGORIES.include?(finding["category"].to_s) }
+          if unresolvable
+            raise UnresolvableDependency.new(
+              (unresolvable["dependency"] || "unknown").to_s,
+              (unresolvable["detail"] || unresolvable["category"]).to_s
+            )
           end
+
+          categories = errors.map { |finding| finding["category"].to_s }.uniq - FIXED_FINDING_CATEGORIES
+          raise EngineError, "gh-actions-lock exited 1 without an actionable finding: #{categories.inspect}"
         end
 
         # Partitions onboarding-required findings into genuine skips vs. a lock the

@@ -159,7 +159,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       {
         "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
         "findings" => [
-          { "category" => "impostor-commit", "severity" => "error",
+          { "category" => "unreachable-pin", "severity" => "error",
             "dependency" => "actions/checkout@v5", "detail" => "locked SHA not reachable from any branch" }
         ]
       }
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
-  describe "#relock with only an onboarding-required finding (exit 1)" do
+  describe "#relock with only an onboarding-required finding (exit 0)" do
     # The real binary's mixed default (no-onboard) response: three arrays populate
     # concurrently regardless of the --json selector.
     let(:body) do
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       }
     end
 
-    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
 
     it "does not raise — onboarding-required is a skip, not a blocker" do
       expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       }
     end
 
-    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
 
     it "raises DependencyFileNotParseable rather than silently skipping the relock" do
       expect { engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile) }
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       }
     end
 
-    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
 
     it "does not raise — a new unpinned action in a tracked workflow is a skip, not a corrupt lock" do
       expect { engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile) }
@@ -310,7 +310,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       }
     end
 
-    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
 
     it "counts the skipped workflow once" do
       allow(Dependabot.logger).to receive(:info)
@@ -351,7 +351,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
         "findings" => [
           { "workflow" => ".github/workflows/b.yml", "category" => "onboarding-required",
             "severity" => "error", "detail" => "not tracked" },
-          { "category" => "impostor-commit", "severity" => "error",
+          { "category" => "unreachable-pin", "severity" => "error",
             "dependency" => "actions/checkout@v6", "detail" => "locked SHA not reachable" }
         ]
       }
@@ -412,44 +412,23 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
-  describe "#relock when an auto-fixed bump coincides with a refused onboarding (exit 1)" do
-    # The second dry-run defect, reproduced against the real binary: ci.yml is a
-    # tracked workflow whose checkout ref was bumped v4->v5 (a `ref-changed`,
-    # severity:error, that fix-mode RE-PINS on disk), while a sibling NEW workflow
-    # b.yml references an unpinned action that --no-onboard refuses. The refusal
-    # forces exit 1, but `findings` is the global PRE-fix diagnosis, so it still
-    # lists ci.yml's already-resolved `ref-changed` and `stale`. Before this fix,
-    # raise_on_findings ran at exit 1 and raised EngineError on the auto-fixed
-    # `ref-changed`, killing a perfectly normal Dependabot bump. The mapper now
-    # treats fix-mode-resolved categories as non-blocking; only impostor-commit /
-    # lockfile-forgery survive. The run must skip b.yml and return the re-pinned lock.
+  describe "#relock at exit 1 with only pre-fix diagnoses" do
+    # `findings` is the PRE-fix diagnosis, so ref-changed/stale list every bump. Exit 1
+    # wrote nothing, so without an actionable finding the run must retry, not ship.
     let(:body) do
       {
-        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
-        "workflows" => [{ "path" => ".github/workflows/ci.yml" }],
         "findings" => [
-          { "workflow" => ".github/workflows/ci.yml", "category" => "ref-changed",
-            "severity" => "error", "confidence" => "high", "dependency" => "actions/checkout@v5",
-            "detail" => "workflow uses ref \"v5\" but lockfile pins \"v4\"" },
-          { "workflow" => ".github/workflows/ci.yml", "category" => "stale",
-            "severity" => "warning", "dependency" => "actions/checkout@v4",
-            "detail" => "lockfile pin no longer referenced by any uses:" },
-          { "workflow" => ".github/workflows/b.yml", "category" => "onboarding-required",
-            "severity" => "error", "confidence" => "high", "dependency" => "ncipollo/release-action@v1",
-            "detail" => "ncipollo/release-action@v1 has no lockfile entry; --no-onboard refuses to add it" }
+          { "category" => "ref-changed", "severity" => "error", "dependency" => "actions/checkout@v5" },
+          { "category" => "reachability-unknown", "severity" => "error", "dependency" => "actions/checkout@v5" }
         ]
       }
     end
 
     before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
 
-    it "does not raise — ref-changed/stale are auto-fixed pre-fix diagnoses, not survivors" do
+    it "raises a retryable EngineError" do
       expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
-        .not_to raise_error
-    end
-
-    it "returns the lock despite the refused onboarding" do
-      expect(engine.relock(workflow_files: [workflow], lockfile: lockfile)).to eq(lockfile.content)
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /reachability-unknown/)
     end
   end
 
