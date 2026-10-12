@@ -136,6 +136,26 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         end
       end
 
+      [["ordinary failure", 1], ["EOF", 2]].each do |message, attempts|
+        context "when the @latest query fails with #{message}" do
+          let(:response) { "{}" }
+
+          before do
+            failure = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+              .with(latest_query, fingerprint: latest_fingerprint).and_raise(failure)
+          end
+
+          it "keeps the error classification and retry limit instead of searching shorter paths" do
+            expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable, message)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with(latest_query, fingerprint: latest_fingerprint).exactly(attempts).times
+            expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+              .with(parent_query, fingerprint: fingerprint)
+          end
+        end
+      end
+
       context "with an empty initial version list" do
         let(:response) { '{"Versions":[]}' }
 

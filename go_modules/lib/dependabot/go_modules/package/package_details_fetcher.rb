@@ -189,7 +189,9 @@ module Dependabot
             fingerprint: "go list -m -json <dependency_name>@latest"
           )
           true
-        rescue SharedHelpers::HelperSubprocessFailed
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise unless e.message.include?("no matching versions")
+
           false
         end
 
