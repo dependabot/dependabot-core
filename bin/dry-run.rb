@@ -796,7 +796,7 @@ begin
       dependency_files: $files,
       repo_contents_path: $repo_contents_path,
       credentials: $options[:credentials],
-      options: $options[:updater_options]
+      options: $options[:updater_options].merge(source_hostname: $source.hostname)
     )
   end
 

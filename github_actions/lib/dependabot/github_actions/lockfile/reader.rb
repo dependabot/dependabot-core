@@ -67,15 +67,21 @@ module Dependabot
           Array(workflows[path]).include?(action_ref)
         end
 
-        # The host a pinned `owner/repo@ref` is bound to: its `hostname`, or `home`
-        # when omitted. Nil when the lockfile doesn't pin it.
+        # The host a pinned `owner/repo@ref` is bound to. An omitted `hostname` means
+        # `home` in v0.0.3 and github.com in older schemas. Nil when unpinned or when
+        # bound to a host other than `home` or github.com.
         sig { params(action_ref: String, home: String).returns(T.nilable(String)) }
         def pinned_hostname(action_ref, home:)
-          entry = dependencies.find { |key, _| key.casecmp?(action_ref) }&.last
+          nwo, _, ref = action_ref.rpartition("@")
+          entry = dependencies.find do |key, _|
+            key_nwo, _, key_ref = key.rpartition("@")
+            key_ref == ref && key_nwo.casecmp?(nwo)
+          end&.last
           return unless entry.is_a?(Hash)
 
           hostname = entry["hostname"].to_s
-          hostname.empty? ? home : hostname
+          hostname = version == "v0.0.3" ? home : GITHUB_COM if hostname.empty?
+          hostname if [home, GITHUB_COM].include?(hostname)
         end
 
         # Asserts every `dependencies` entry carries {REQUIRED_DEPENDENCY_KEYS}. A
