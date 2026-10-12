@@ -27,6 +27,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
   describe ".assert_supported!" do
     it "does not raise for a supported version" do
       expect { described_class.assert_supported!("v0.0.2") }.not_to raise_error
+      expect { described_class.assert_supported!("v0.0.3") }.not_to raise_error
     end
 
     it "raises UnsupportedLockfileVersion for an unsupported version" do
