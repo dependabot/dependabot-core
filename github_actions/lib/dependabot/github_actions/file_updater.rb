@@ -85,6 +85,7 @@ module Dependabot
         content = Lockfile::CliEngine.new(credentials, hostname: source_hostname).relock(
           workflow_files: rewritten_onboarded_workflow_files(reader, updated_workflow_files),
           lockfile: lock,
+          action_files: dependency_files.select { |f| ACTION_FILE_NAMES.include?(File.basename(f.name)) },
           workflow_paths: changed_onboarded.map { |file| repo_relative_path(file) }
         )
 

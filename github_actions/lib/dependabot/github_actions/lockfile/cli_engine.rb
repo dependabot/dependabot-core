@@ -54,11 +54,17 @@ module Dependabot
           params(
             workflow_files: T::Array[Dependabot::DependencyFile],
             lockfile: Dependabot::DependencyFile,
-            workflow_paths: T::Array[String]
+            workflow_paths: T::Array[String],
+            action_files: T::Array[Dependabot::DependencyFile]
           ).returns(String)
         end
-        def relock(workflow_files:, lockfile:, workflow_paths: workflow_files.map { |file| repo_path(file) })
-          in_repo(workflow_files, lockfile) do |dir|
+        def relock(
+          workflow_files:,
+          lockfile:,
+          workflow_paths: workflow_files.map { |file| repo_path(file) },
+          action_files: []
+        )
+          in_repo(workflow_files + action_files, lockfile) do |dir|
             args = %w(--no-onboard --no-narrow --no-interactive --json=findings) +
                    ["--hostname", hostname] + workflow_paths
             json, exit_status = run(dir, args)
@@ -133,7 +139,9 @@ module Dependabot
         # [stdout, stderr, exit_status].
         sig { params(dir: String, args: T::Array[String]).returns([String, String, Integer]) }
         def invoke(dir, args)
-          env_cmd = [Env.build(credentials, hostname), self.class.binary_path, *args, { chdir: dir }]
+          # The temp dir has no .git, so name the root that `$/` paths resolve against.
+          env = Env.build(credentials, hostname).merge("GH_ACTIONS_LOCK_REPO_ROOT" => dir)
+          env_cmd = [env, self.class.binary_path, *args, { chdir: dir }]
           stdout, stderr, process = CommandHelpers.capture3_with_timeout(env_cmd)
 
           # A failed spawn comes back as a nil status, not an exception.

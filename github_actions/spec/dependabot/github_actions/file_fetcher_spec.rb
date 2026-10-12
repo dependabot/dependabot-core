@@ -148,6 +148,44 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
           )
       end
 
+      context "when a workflow uses a self repository action" do
+        let(:workflow_file_fixture) do
+          contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - uses: $/tools/setup\n")
+        end
+
+        def contents_json(path, content)
+          { type: "file", name: File.basename(path), path: path, encoding: "base64",
+            content: Base64.encode64(content) }.to_json
+        end
+
+        before do
+          stub_request(:get, github_url + "repos/gocardless/bump/git/trees/sha?recursive=true")
+            .to_return(
+              status: 200,
+              headers: { "content-type" => "application/json" },
+              body: { truncated: false, tree: [
+                { path: "tools/setup/action.yml", type: "blob" },
+                { path: ".github/actions/inner/action.yaml", type: "blob" },
+                { path: "tools/setup/README.md", type: "blob" }
+              ] }.to_json
+            )
+          %w(tools/setup/action.yml .github/actions/inner/action.yaml).each do |path|
+            stub_request(:get, url + "#{path}?ref=sha")
+              .to_return(status: 200,
+                         body: contents_json(path, "runs: {}\n"),
+                         headers: { "content-type" => "application/json" })
+          end
+        end
+
+        it "fetches every action definition as a support file" do
+          support = file_fetcher_instance.files.select(&:support_file?)
+          expect(support.map(&:path)).to contain_exactly(
+            "/tools/setup/action.yml",
+            "/.github/actions/inner/action.yaml"
+          )
+        end
+      end
+
       context "when the experiment is disabled" do
         before { Dependabot::Experiments.reset! }
 

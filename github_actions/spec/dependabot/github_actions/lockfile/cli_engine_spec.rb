@@ -67,6 +67,23 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
+  describe "#relock with self repository actions" do
+    let(:action) { Dependabot::DependencyFile.new(name: "tools/setup/action.yml", content: "runs: {}\n") }
+
+    it "materializes them at repo-relative paths under the named repo root" do
+      seen = nil
+      allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout) do |cmd|
+        dir = cmd.last[:chdir]
+        seen = [cmd.first["GH_ACTIONS_LOCK_REPO_ROOT"] == dir, File.read(File.join(dir, "tools/setup/action.yml"))]
+        ["{}", "", process_double(0)]
+      end
+
+      engine.relock(workflow_files: [workflow], lockfile: lockfile, action_files: [action])
+
+      expect(seen).to eq([true, "runs: {}\n"])
+    end
+  end
+
   describe "#relock when the engine cannot verify a pin's host identity" do
     before do
       stub_subprocess(

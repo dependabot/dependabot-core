@@ -2133,6 +2133,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         expect(fake_engine).to have_received(:relock).with(
           workflow_files: anything,
           lockfile: lockfile,
+          action_files: [],
           workflow_paths: [".github/workflows/workflow.yml"]
         )
       end
