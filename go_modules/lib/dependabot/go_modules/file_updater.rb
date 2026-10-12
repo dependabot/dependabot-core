@@ -123,7 +123,9 @@ module Dependabot
 
         # Fetched as a support file, but once its Go version is bumped it is a real change
         # and must not be filtered out like other contextual support files.
-        updated_file(file: original, content: content).tap { |file| file.support_file = false }
+        updated = T.let(updated_file(file: original, content: content), Dependabot::DependencyFile)
+        updated.support_file = false
+        updated
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
