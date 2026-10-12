@@ -138,7 +138,7 @@ module Dependabot
           file = fetch_file_if_present("#{'../' * depth}go.work")
           next unless file
 
-          module_path = T.must(segments.last(depth)).join("/")
+          module_path = segments.last(depth).join("/")
           listed = GoWorkParser.use_paths(T.must(file.content)).map { |p| Pathname.new(p).cleanpath.to_s }
           return nil unless listed.include?(module_path)
 
