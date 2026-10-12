@@ -190,6 +190,32 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       end
     end
 
+    context "when go.work lists the module without a ./ prefix or with quotes" do
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        File.write(File.join(path, "go.work"), "go 1.21\n\n#{use_directive}\n")
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add --all")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
+        end
+        path
+      end
+
+      {
+        "an unprefixed path" => "use libs",
+        "a quoted path" => %(use "./libs"),
+        "a quoted path in a use block" => %(use (\n\t"./libs" // libs module\n))
+      }.each do |description, directive|
+        context "with #{description}" do
+          let(:use_directive) { directive }
+
+          it "fetches the ancestor go.work" do
+            expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work")
+          end
+        end
+      end
+    end
+
     context "when the experiment is disabled" do
       let(:experiment_enabled) { false }
 
