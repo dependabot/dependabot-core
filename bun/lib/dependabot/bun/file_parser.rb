@@ -236,7 +236,7 @@ module Dependabot
       def parsed_catalog_definitions
         @parsed_catalog_definitions ||= T.let(
           begin
-            json = parsed_package_json
+            json = JSON.parse(T.must(package_json.content))
             result = T.let({}, T::Hash[String, T.untyped])
 
             # Catalogs can be at top level or inside "workspaces"
