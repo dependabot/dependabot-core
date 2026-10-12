@@ -6,6 +6,8 @@ stderr dependency_file_not_found
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "**/*"

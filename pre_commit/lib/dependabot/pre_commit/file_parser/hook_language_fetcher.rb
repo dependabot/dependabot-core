@@ -29,7 +29,7 @@ module Dependabot
         end
         def initialize(credentials:)
           @credentials = credentials
-          @hooks_cache = T.let({}, T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])])
+          @hooks_cache = T.let({}, T::Hash[String, T.nilable(T::Array[T::Hash[String, Object]])])
         end
 
         # Fetches the language for a specific hook from the hook source repository.
@@ -64,7 +64,7 @@ module Dependabot
           params(
             repo_url: String,
             revision: String
-          ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          ).returns(T.nilable(T::Array[T::Hash[String, Object]]))
         end
         def fetch_hooks_from_repo(repo_url, revision)
           cache_key = "#{repo_url}@#{revision}"
@@ -79,7 +79,7 @@ module Dependabot
           params(
             repo_url: String,
             revision: String
-          ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          ).returns(T.nilable(T::Array[T::Hash[String, Object]]))
         end
         def fetch_hooks_internal(repo_url, revision)
           source = Source.from_url(repo_url)
@@ -96,18 +96,17 @@ module Dependabot
           params(
             source: Dependabot::Source,
             revision: String
-          ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          ).returns(T.nilable(T::Array[T::Hash[String, Object]]))
         end
         def fetch_from_github(source, revision)
-          response = github_client.send(
-            :contents,
+          response = github_client.contents(
             source.repo,
             path: HOOKS_FILE,
             ref: revision
           )
-          return nil unless response
 
-          content = Base64.decode64(response.content)
+          resource = T.cast(response, Sawyer::Resource)
+          content = Base64.decode64(T.cast(resource[:content], String))
           parse_hooks_yaml(content)
         rescue Octokit::NotFound
           Dependabot.logger.debug("#{HOOKS_FILE} not found in #{source.repo}@#{revision}")
@@ -121,7 +120,7 @@ module Dependabot
           params(
             repo_url: String,
             revision: String
-          ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          ).returns(T.nilable(T::Array[T::Hash[String, Object]]))
         end
         def fetch_via_git_clone(repo_url, revision)
           source = Source.from_url(repo_url)
@@ -157,7 +156,7 @@ module Dependabot
           nil
         end
 
-        sig { params(content: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { params(content: String).returns(T.nilable(T::Array[T::Hash[String, Object]])) }
         def parse_hooks_yaml(content)
           yaml = YAML.safe_load(content, aliases: true)
           return nil unless yaml.is_a?(Array)

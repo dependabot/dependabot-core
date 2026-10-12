@@ -37,7 +37,7 @@ module Dependabot
         latest_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         # Submodule requirements are the URL and branch to use for the
         # submodule. We never want to update either.

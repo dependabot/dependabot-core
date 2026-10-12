@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "cgi/escape"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -162,6 +163,38 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
             expect(WebMock)
               .not_to have_requested(:post, "#{repo_api_url}/labels")
+          end
+
+          context "when the paginated response is not an array" do
+            before do
+              stub_request(:get, repo_labels_url + "&page=2")
+                .to_return(
+                  status: 200,
+                  body: JSON.dump(name: "Dependency: Gems"),
+                  headers: json_header
+                )
+            end
+
+            it "raises a bad response error" do
+              expect { labeler.create_default_labels_if_required }
+                .to raise_error(Dependabot::PrivateSourceBadResponse, /page data must be an array/)
+            end
+          end
+
+          context "when the paginated response contains a non-object label" do
+            before do
+              stub_request(:get, repo_labels_url + "&page=2")
+                .to_return(
+                  status: 200,
+                  body: JSON.dump(["Dependency: Gems"]),
+                  headers: json_header
+                )
+            end
+
+            it "raises a bad response error" do
+              expect { labeler.create_default_labels_if_required }
+                .to raise_error(Dependabot::PrivateSourceBadResponse, /label must be an object/)
+            end
           end
         end
 
@@ -516,6 +549,76 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                      headers: json_header)
       end
 
+      context "when a label name is malformed" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100")
+            .to_return(
+              status: 200,
+              body: JSON.dump([{ name: 1 }]),
+              headers: json_header
+            )
+        end
+
+        it "raises a bad response error" do
+          expect { labeler.labels_for_pr }
+            .to raise_error(Dependabot::PrivateSourceBadResponse, /name must be a string/)
+        end
+      end
+
+      context "when the first page contains a non-object label" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100")
+            .to_return(
+              status: 200,
+              body: JSON.dump(["dependencies"]),
+              headers: json_header
+            )
+        end
+
+        it "raises a bad response error" do
+          expect { labeler.labels_for_pr }
+            .to raise_error(Dependabot::PrivateSourceBadResponse, /label must be an object/)
+        end
+      end
+
+      context "when Octokit auto-pagination is enabled" do
+        let(:repo_labels_url) { "#{repo_api_url}/labels?per_page=100" }
+        let(:custom_labels) { ["dependencies", "Dependency: Gems"] }
+        let(:links_header) do
+          {
+            "Content-Type" => "application/json",
+            "Link" => "<#{repo_labels_url}&page=2>; rel=\"next\""
+          }
+        end
+
+        around do |example|
+          original = ENV.fetch("OCTOKIT_AUTO_PAGINATE", nil)
+          ENV["OCTOKIT_AUTO_PAGINATE"] = "true"
+          example.run
+        ensure
+          ENV["OCTOKIT_AUTO_PAGINATE"] = original
+        end
+
+        before do
+          stub_request(:get, repo_labels_url)
+            .to_return(
+              status: 200,
+              body: fixture("github", "labels_with_dependencies.json"),
+              headers: links_header
+            )
+          stub_request(:get, repo_labels_url + "&page=2")
+            .to_return(
+              status: 200,
+              body: fixture("github", "labels_with_custom.json"),
+              headers: json_header
+            )
+        end
+
+        it "uses labels returned from every page" do
+          expect(labeler.labels_for_pr).to contain_exactly("dependencies", "Dependency: Gems")
+        end
+      end
+
       context "when a 'dependencies' label exists" do
         let(:labels_fixture_name) { "labels_with_dependencies.json" }
 
@@ -791,6 +894,22 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           .to_return(status: 200,
                      body: fixture("gitlab", "labels_with_dependencies.json"),
                      headers: json_header)
+      end
+
+      context "when a label name is malformed" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100")
+            .to_return(
+              status: 200,
+              body: JSON.dump([{ name: 1 }]),
+              headers: json_header
+            )
+        end
+
+        it "raises a bad response error" do
+          expect { labeler.labels_for_pr }
+            .to raise_error(Dependabot::PrivateSourceBadResponse, /name must be a string/)
+        end
       end
 
       context "when a 'dependencies' label exists" do

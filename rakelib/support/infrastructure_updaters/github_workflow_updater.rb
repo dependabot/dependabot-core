@@ -9,7 +9,8 @@ class GitHubWorkflowUpdater < BaseUpdater
   extend T::Sig
 
   # Keys that should appear first in ci-filters.yml
-  FIRST_KEYS = T.let(%w(shared rakefile_tests dry_run).freeze, T::Array[String])
+  FIRST_KEYS = %w(shared rakefile_tests dry_run).freeze
+  BAKE_ECOSYSTEM_ENTRY = /^\s+\{ name = "([^"]+)", image = "([^"]+)",/
 
   sig { void }
   def update_all
@@ -17,8 +18,7 @@ class GitHubWorkflowUpdater < BaseUpdater
     update_smoke_filters
     update_smoke_matrix
     update_ci_workflow
-    update_images_branch_workflow
-    update_images_latest_workflow
+    update_docker_bake
     update_issue_labeler
   end
 
@@ -207,124 +207,59 @@ class GitHubWorkflowUpdater < BaseUpdater
     insert_index
   end
 
-  # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
   sig { void }
-  def update_images_branch_workflow
-    file = ".github/workflows/images-branch.yml"
+  def update_docker_bake
+    file = "docker-bake.hcl"
     return unless file_exists?(file)
 
     content = File.read(file)
-
-    if content.include?("- { name: #{ecosystem_name},")
+    image_name = ecosystem_name.tr("_", "-")
+    if content.lines.any? { |line| line[BAKE_ECOSYSTEM_ENTRY, 1] == ecosystem_name }
       skip_message(file, "ecosystem already exists")
+      return
+    end
+    if content.lines.any? { |line| line[BAKE_ECOSYSTEM_ENTRY, 2] == image_name }
+      warning_message(file, "Image name #{image_name} already exists")
       return
     end
 
     lines = content.lines
-    suite_start_index = -1
-    in_push_updater_images = T.let(false, T::Boolean)
-
-    lines.each_with_index do |line, idx|
-      in_push_updater_images = true if line.include?("push-updater-images:")
-
-      if in_push_updater_images && line.strip == "suite:"
-        suite_start_index = idx
-        break
-      end
-    end
-
-    if suite_start_index >= 0
-      last_suite_index = suite_start_index
-      ((suite_start_index + 1)...lines.size).each do |i|
-        break unless T.must(lines[i]).match?(/^\s+- \{/)
-
-        last_suite_index = i
-      end
-
-      ecosystem_str = ecosystem_name.tr("_", "-")
-      new_entry = "          - { name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
-
-      insert_index = suite_start_index + 1
-      while insert_index <= last_suite_index
-        line = lines[insert_index]
-        if line =~ /- \{ name: (\w+),/
-          existing_name = ::Regexp.last_match(1)
-          break if T.must(existing_name) > ecosystem_name
-        end
-        insert_index += 1
-      end
-
-      lines.insert(insert_index, new_entry)
-      write_file(file, lines.join)
-      record_change(file, "Added #{ecosystem_name} to images-branch matrix")
-      success_message(file)
-    else
-      warning_message(file, "Could not find matrix.suite section")
-    end
-  end
-  # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
-
-  # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
-  sig { void }
-  def update_images_latest_workflow
-    file = ".github/workflows/images-latest.yml"
-    return unless file_exists?(file)
-
-    content = File.read(file)
-
-    if content.include?("- { name: #{ecosystem_name},")
-      skip_message(file, "ecosystem already exists")
+    insert_index = find_docker_bake_insert_position(lines)
+    unless insert_index
+      warning_message(file, "Could not find ECOSYSTEMS matrix")
       return
     end
 
-    lines = content.lines
-    suite_start_index = -1
-
-    lines.each_with_index do |line, idx|
-      next unless line.include?("matrix:") && idx.positive? && T.must(lines[(idx - 10)..idx]).any? do |l|
-        l.include?("push-updater-image")
-      end
-
-      ((idx + 1)...lines.size).each do |j|
-        if T.must(lines[j]).include?("suite:")
-          suite_start_index = j
-          break
-        end
-        break if T.must(lines[j]).strip.empty? || !T.must(lines[j]).start_with?(" ")
-      end
-      break if suite_start_index >= 0
-    end
-
-    if suite_start_index >= 0
-      last_suite_index = suite_start_index
-      ((suite_start_index + 1)...lines.size).each do |i|
-        break unless T.must(lines[i]).match?(/^\s+- \{/)
-
-        last_suite_index = i
-      end
-
-      ecosystem_str = ecosystem_name.tr("_", "-")
-      new_entry = "          - { name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
-
-      insert_index = suite_start_index + 1
-      while insert_index <= last_suite_index
-        line = lines[insert_index]
-        if line =~ /- \{ name: (\w+),/
-          existing_name = ::Regexp.last_match(1)
-          break if T.must(existing_name) > ecosystem_name
-        end
-        insert_index += 1
-      end
-
-      lines.insert(insert_index, new_entry)
-      write_file(file, lines.join)
-      record_change(file, "Added #{ecosystem_name} to images-latest matrix")
-      success_message(file)
-    else
-      warning_message(file, "Could not find matrix.suite section")
-    end
+    lines.insert(insert_index, docker_bake_entry(image_name))
+    write_file(file, lines.join)
+    record_change(file, "Added #{ecosystem_name} to published image Bake matrix")
+    success_message(file)
   end
-  # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
+
+  sig { params(lines: T::Array[String]).returns(T.nilable(Integer)) }
+  def find_docker_bake_insert_position(lines)
+    matrix_index = lines.index { |line| line.strip == 'variable "ECOSYSTEMS" {' }
+    return unless matrix_index
+
+    list_index = ((matrix_index + 1)...lines.size).find { |index| T.must(lines[index]).strip == "default = [" }
+    return unless list_index
+
+    ((list_index + 1)...lines.size).each do |index|
+      line = T.must(lines[index])
+      return index if line.strip == "]"
+
+      existing_name = line[BAKE_ECOSYSTEM_ENTRY, 1]
+      return index if existing_name && existing_name > ecosystem_name
+    end
+
+    nil
+  end
+
+  sig { params(image_name: String).returns(String) }
+  def docker_bake_entry(image_name)
+    "    { name = \"#{ecosystem_name}\", image = \"#{image_name}\", " \
+      "dockerfile = \"#{ecosystem_name}/Dockerfile\" },\n"
+  end
 
   sig { void }
   def update_issue_labeler

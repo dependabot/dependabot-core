@@ -4,6 +4,7 @@
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/package/npm_lockfile_details"
 require "sorbet-runtime"
 
 module Dependabot
@@ -20,9 +21,10 @@ module Dependabot
 
         LockFile = T.type_alias { T.any(JsonLock, YarnLock, PnpmLock) }
 
-        sig { params(dependency_files: T::Array[DependencyFile]).void }
-        def initialize(dependency_files:)
+        sig { params(dependency_files: T::Array[DependencyFile], dealias_packages: T::Boolean).void }
+        def initialize(dependency_files:, dealias_packages: false)
           @dependency_files = dependency_files
+          @dealias_packages = dealias_packages
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -47,10 +49,10 @@ module Dependabot
 
         sig do
           params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
-            .returns(T.nilable(T::Hash[String, T.untyped]))
+            .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
-          details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          details = T.let(nil, T.nilable(Dependabot::Package::NpmLockfileDetails))
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
             details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
 
@@ -81,11 +83,11 @@ module Dependabot
           @lockfiles ||= T.let({}, T.nilable(T::Hash[String, LockFile]))
           @lockfiles[file.name] ||= case file.name
                                     when *package_locks.map(&:name), *shrinkwraps.map(&:name)
-                                      JsonLock.new(file)
+                                      JsonLock.new(file, dealias_packages: @dealias_packages)
                                     when *yarn_locks.map(&:name)
-                                      YarnLock.new(file)
+                                      YarnLock.new(file, dealias_packages: @dealias_packages)
                                     when *pnpm_locks.map(&:name)
-                                      PnpmLock.new(file)
+                                      PnpmLock.new(file, dealias_packages: @dealias_packages)
                                     else
                                       raise "Unexpected lockfile: #{file.name}"
                                     end

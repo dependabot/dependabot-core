@@ -11,19 +11,16 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
-      SOURCE_KEYS = T.let(
-        %w(
-          source_code_uri
-          homepage_uri
-          wiki_uri
-          bug_tracker_uri
-          documentation_uri
-          changelog_uri
-          mailing_list_uri
-          download_uri
-        ).freeze,
-        T::Array[String]
-      )
+      SOURCE_KEYS = %w(
+        source_code_uri
+        homepage_uri
+        wiki_uri
+        bug_tracker_uri
+        documentation_uri
+        changelog_uri
+        mailing_list_uri
+        download_uri
+      ).freeze
 
       sig do
         params(
@@ -95,9 +92,9 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        info = T.must(dependency.requirements.filter_map(&:source_hash).first)
 
-        url = info[:url] || info.fetch("url")
+        url = T.cast(info[:url] || info.fetch("url"), T.nilable(String))
         Source.from_url(url)
       end
 
@@ -222,8 +219,8 @@ module Dependabot
       def registry_url
         return base_url if new_source_type == "default"
 
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-        info[:url] || info.fetch("url")
+        info = T.must(dependency.requirements.filter_map(&:source_hash).first)
+        T.cast(info[:url] || info.fetch("url"), String)
       end
 
       sig { returns(String) }

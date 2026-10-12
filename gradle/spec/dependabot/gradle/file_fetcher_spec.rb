@@ -54,6 +54,15 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     stub_no_content_request("#{prefix}gradlew.bat?ref=sha")
   end
 
+  def stub_no_plugin_source_files(*project_dirs)
+    project_dirs.each do |project_dir|
+      described_class::PLUGIN_SOURCE_SET_DIRS.each do |source_dir|
+        path = project_dir == "." ? source_dir : File.join(project_dir, source_dir)
+        stub_no_content_request("#{path}?ref=sha")
+      end
+    end
+  end
+
   context "with a basic buildfile" do
     before do
       stub_no_content_request("gradle?ref=sha")
@@ -77,19 +86,22 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         stub_content_request("gradlew.bat?ref=sha", "gradlew.bat.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.jar?ref=sha", "gradle-wrapper.jar.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.properties?ref=sha", "gradle-wrapper.properties.json")
+        stub_content_request("gradle.properties?ref=sha", "contents_gradle_properties.json")
       end
 
-      it "fetches the wrapper files" do
-        expect(file_fetcher_instance.files.map(&:name)).to eq(
+      it "fetches the wrapper files and gradle.properties" do
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(
           %w(
             build.gradle
+            gradle.properties
             gradlew
             gradlew.bat
             gradle/wrapper/gradle-wrapper.jar
             gradle/wrapper/gradle-wrapper.properties
           )
         )
-        expect(file_fetcher_instance.files.map(&:content_encoding)).to eq(%w(utf-8 utf-8 utf-8 base64 utf-8))
+        wrapper_jar = file_fetcher_instance.files.find { |f| f.name.end_with?("gradle-wrapper.jar") }
+        expect(wrapper_jar.content_encoding).to eq("base64")
       end
     end
 
@@ -155,6 +167,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("buildSrc/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("buildSrc/gradle.lockfile?ref=sha")
           stub_no_wrapper_files("buildSrc/")
+          stub_no_plugin_source_files("buildSrc")
         end
 
         context "when the buildSrc is implicitly included" do
@@ -188,6 +201,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
             stub_no_content_request("included/gradle.lockfile?ref=sha")
             stub_no_wrapper_files("included/")
+            stub_no_plugin_source_files("included")
           end
 
           it "doesn't fetch buildSrc buildfiles twice" do
@@ -218,6 +232,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included/app/gradle.lockfile?ref=sha")
           stub_no_wrapper_files("included/")
+          stub_no_plugin_source_files("included", "included/app")
         end
 
         it "fetches all buildfiles" do
@@ -255,6 +270,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_no_content_request("included2/app/gradle.lockfile?ref=sha")
           stub_no_wrapper_files("included/")
           stub_no_wrapper_files("included2/")
+          stub_no_plugin_source_files("included", "included/app", "included2", "included2/app")
         end
 
         it "fetches all buildfiles" do
@@ -307,6 +323,14 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_no_wrapper_files("included/included/")
           stub_no_wrapper_files("included/included/included/")
           stub_no_wrapper_files("included/included/included/buildSrc/")
+          stub_no_plugin_source_files(
+            "included",
+            "included/app",
+            "included/included",
+            "included/included/app",
+            "included/included/included",
+            "included/included/included/buildSrc"
+          )
         end
 
         it "fetches all buildfiles transitively" do
@@ -326,6 +350,133 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
+      context "when lockfile updater needs included build plugin sources" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+
+          stub_content_request("included?ref=sha", "contents_included_with_convention_dir.json")
+          stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_content_request("included/settings.gradle?ref=sha", "contents_java_settings_convention_subproject.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
+
+          stub_content_request("included/convention?ref=sha", "contents_included_convention_dir.json")
+          stub_content_request("included/convention/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/convention/gradle.lockfile?ref=sha")
+
+          stub_content_request(
+            "included/convention/src/main/kotlin?ref=sha",
+            "contents_included_convention_src_main_kotlin_dir.json"
+          )
+          stub_content_request(
+            "included/convention/src/main/kotlin/AndroidLibraryConventionsPlugin.kt?ref=sha",
+            "contents_included_android_library_conventions_plugin_kt.json"
+          )
+
+          stub_no_plugin_source_files("included", ".", "app")
+          stub_no_content_request("included/convention/src/main/java?ref=sha")
+          stub_no_content_request("included/convention/src/main/groovy?ref=sha")
+          stub_no_content_request("included/convention/src/main/resources?ref=sha")
+
+          stub_no_wrapper_files("included/")
+          stub_no_wrapper_files("included/convention/")
+        end
+
+        it "fetches included build plugin implementation sources as support files" do
+          file_names = file_fetcher_instance.files.map(&:name)
+          plugin_source = file_fetcher_instance.files.find do |f|
+            f.name == "included/convention/src/main/kotlin/AndroidLibraryConventionsPlugin.kt"
+          end
+
+          expect(file_names).to include("included/convention/src/main/kotlin/AndroidLibraryConventionsPlugin.kt")
+          expect(plugin_source&.support_file).to be(true)
+        end
+      end
+
+      context "when lockfile updater needs root subproject plugin sources" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_with_build_logic_subproject.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+
+          stub_content_request("build-logic/convention/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("build-logic/convention/gradle.lockfile?ref=sha")
+
+          stub_no_plugin_source_files(".", "app")
+          stub_no_content_request("build-logic/convention/src/main/java?ref=sha")
+          stub_content_request(
+            "build-logic/convention/src/main/kotlin?ref=sha",
+            "contents_build_logic_convention_src_main_kotlin_dir.json"
+          )
+          stub_no_content_request("build-logic/convention/src/main/groovy?ref=sha")
+          stub_no_content_request("build-logic/convention/src/main/resources?ref=sha")
+          stub_content_request(
+            "build-logic/convention/src/main/kotlin/AndroidLibraryConventionsPlugin.kt?ref=sha",
+            "contents_build_logic_convention_plugin_kt.json"
+          )
+        end
+
+        it "fetches root subproject plugin implementation sources as support files" do
+          file_names = file_fetcher_instance.files.map(&:name)
+          plugin_source = file_fetcher_instance.files.find do |f|
+            f.name == "build-logic/convention/src/main/kotlin/AndroidLibraryConventionsPlugin.kt"
+          end
+
+          expect(file_names).to include("build-logic/convention/src/main/kotlin/AndroidLibraryConventionsPlugin.kt")
+          expect(plugin_source&.support_file).to be(true)
+        end
+      end
+
+      context "when lockfile updater needs an included build's own root plugin sources" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+
+          # The included build declares no settings.gradle of its own, so its convention
+          # plugin source lives directly at the included build's own root directory.
+          stub_content_request("included?ref=sha", "contents_java.json")
+          stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
+          stub_no_wrapper_files("included/")
+
+          stub_no_plugin_source_files(".", "app")
+
+          stub_no_content_request("included/src/main/java?ref=sha")
+          stub_content_request(
+            "included/src/main/kotlin?ref=sha",
+            "contents_included_root_src_main_kotlin_dir.json"
+          )
+          stub_no_content_request("included/src/main/groovy?ref=sha")
+          stub_no_content_request("included/src/main/resources?ref=sha")
+          stub_content_request(
+            "included/src/main/kotlin/AndroidLibraryConventionsPlugin.kt?ref=sha",
+            "contents_included_root_android_library_conventions_plugin_kt.json"
+          )
+        end
+
+        it "fetches the included build's own root plugin implementation sources as support files" do
+          file_names = file_fetcher_instance.files.map(&:name)
+          plugin_source = file_fetcher_instance.files.find do |f|
+            f.name == "included/src/main/kotlin/AndroidLibraryConventionsPlugin.kt"
+          end
+
+          expect(file_names).to include("included/src/main/kotlin/AndroidLibraryConventionsPlugin.kt")
+          expect(plugin_source&.support_file).to be(true)
+        end
+      end
+
       context "when a script plugin is present" do
         before do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
@@ -340,6 +491,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
           stub_no_wrapper_files("included/")
+          stub_no_plugin_source_files("included")
         end
 
         it "fetches script plugin of main and included build" do

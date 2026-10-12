@@ -2,14 +2,13 @@
 # frozen_string_literal: true
 
 require "json"
-require "time"
-require "cgi"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
 require "dependabot/registry_client"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
+require "dependabot/composer/package/registry_package"
 
 # Stores metadata for a package, including all its available versions
 module Dependabot
@@ -47,7 +46,7 @@ module Dependabot
           @security_advisories = security_advisories
 
           @registry_urls = T.let(nil, T.nilable(T::Array[String]))
-          @registry_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @registry_version_details = T.let(nil, T.nilable(T::Array[RegistryPackage::Release]))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -67,38 +66,18 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_releases
-          available_version_details = registry_version_details
-                                      .select do |version_details|
-            version = version_details.fetch("version")
-            version && version_class.correct?(version.gsub(/^v/, ""))
-          end
-
-          releases = available_version_details.map do |version_details|
-            format_version_release(version_details)
-          end
-          releases
+          registry_version_details.filter_map { |release| format_version_release(release) }
         end
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          available_version_details = registry_version_details
-                                      .select do |version_details|
-            version = version_details.fetch("version")
-            version && version_class.correct?(version.gsub(/^v/, ""))
-          end
-
-          releases = available_version_details.map do |version_details|
-            format_version_release(version_details)
-          end
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: releases.reverse.uniq(&:version)
+            releases: fetch_releases.reverse.uniq(&:version)
           )
         end
 
-        sig do
-          returns(T::Array[T::Hash[String, T.untyped]])
-        end
+        sig { returns(T::Array[RegistryPackage::Release]) }
         def registry_version_details
           return @registry_version_details unless @registry_version_details.nil?
 
@@ -115,19 +94,23 @@ module Dependabot
             urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json"
           end
 
-          @registry_version_details = []
+          releases = T.let([], T::Array[RegistryPackage::Release])
           urls.each do |url|
-            @registry_version_details += fetch_registry_versions_from_url(url)
+            releases.concat(fetch_registry_versions_from_url(url))
           end
 
-          @registry_version_details.uniq! { |version_details| version_details["version"] }
-          @registry_version_details
+          @registry_version_details = releases.uniq(&:version_string)
         end
 
-        sig { params(url: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { params(url: String).returns(T::Array[RegistryPackage::Release]) }
         def fetch_registry_versions_from_url(url)
           url_host = URI(url).host
-          cred = registry_credentials.find { |c| url_host == c["registry"] || url_host == URI(T.must(c["registry"])).host } # rubocop:disable Layout/LineLength
+          cred = registry_credentials.find do |c|
+            registry = c["registry"]
+            next unless registry
+
+            url_host == registry || url_host == URI(registry).host
+          end
 
           response = Dependabot::RegistryClient.get(
             url: url,
@@ -142,60 +125,25 @@ module Dependabot
           []
         end
 
-        sig { params(response: T.untyped, url: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { params(response: Excon::Response, url: String).returns(T::Array[RegistryPackage::Release]) }
         def parse_registry_response(response, url)
           return [] unless response.status == 200
 
-          listing = JSON.parse(response.body)
-          return [] if listing.nil?
-          return [] unless listing.is_a?(Hash)
-          return [] if listing.fetch("packages", []) == []
-          return [] unless listing.dig("packages", dependency.name.downcase)
-
-          extract_versions(listing)
-        rescue JSON::ParserError
-          msg = "'#{url}' does not contain valid JSON"
-          raise DependencyFileNotResolvable, msg
-        end
-
-        sig { params(listing: T::Hash[String, T.untyped]).returns(T::Array[T::Hash[String, T.untyped]]) }
-        def extract_versions(listing)
-          # Packagist's Metadata API format:
-          # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
-          # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
-          version_listings = listing.dig("packages", dependency.name.downcase)
-
-          if version_listings.is_a?(Hash) # some private registries are still using the v1 format
-            # Regardless of API version, composer always reads the version from the metadata hash. So for the v1 API,
-            # ignore the keys as repositories other than packagist.org could be using different keys. Instead, coerce
-            # to an array of metadata hashes to match v2 format.
-            version_listings = version_listings.values
-          end
-
-          if version_listings.is_a?(Array)
-            version_listings
-          else
-            []
-          end
+          RegistryPackage.from_json(response.body, package_name: dependency.name, source: url).releases
         end
 
         sig do
-          params(
-            release_data: T::Hash[String, T.untyped]
-          )
-            .returns(Dependabot::Package::PackageRelease)
+          params(release_data: RegistryPackage::Release).returns(T.nilable(Dependabot::Package::PackageRelease))
         end
         def format_version_release(release_data)
-          version = release_data["version"].gsub(/^v/, "")
-          released_at = release_data["time"] ? Time.parse(release_data["time"]) : nil # this will return nil if the time key is missing, avoiding error # rubocop:disable Layout/LineLength
-          url = release_data["dist"] ? release_data["dist"]["url"] : nil
-          package_type = PACKAGE_TYPE
+          version = release_data.version_string
+          return unless version && version_class.correct?(version.gsub(/^v/, ""))
 
           package_release(
-            version: version,
-            released_at: released_at,
-            url: url,
-            package_type: package_type
+            version: version.gsub(/^v/, ""),
+            released_at: release_data.released_at,
+            url: release_data.url,
+            package_type: PACKAGE_TYPE
           )
         end
 

@@ -12,8 +12,8 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-using TestFile = (string Path, string Content);
 using RawTestFile = (string Path, byte[] Content);
+using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
@@ -97,6 +97,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -131,6 +132,142 @@ public class EndToEndTests
                                 <Project Sdk="Microsoft.NET.Sdk">
                                   <PropertyGroup>
                                     <TargetFramework>net9.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task WithPackageReferenceAndRestorePackagesWithLockFile_LockFileNotPresent()
+    {
+        await RunAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: null, // use real worker
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/Directory.Build.props",
+                        "/Directory.Build.targets",
+                        "/Directory.Packages.props",
+                        "/project.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Directory = "/",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "project.csproj",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net9.0</TargetFramework>
+                                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
                                   </PropertyGroup>
                                   <ItemGroup>
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
@@ -243,6 +380,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -379,7 +517,6 @@ public class EndToEndTests
                         FilePath = p.FilePath,
                         ImportedFiles = p.ImportedFiles,
                         IsSuccess = p.IsSuccess,
-                        Properties = p.Properties,
                         ReferencedProjectPaths = p.ReferencedProjectPaths,
                         TargetFrameworks = p.TargetFrameworks,
                     }).ToImmutableArray()
@@ -426,6 +563,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -619,6 +757,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Test.Tool",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -679,6 +818,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "TestSdk",
+                            Directory = "/",
                             Version = "3.10.3",
                             Requirements = [
                                 new()
@@ -899,6 +1039,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -926,6 +1067,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1084,6 +1226,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/src/project",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1175,6 +1318,14 @@ public class EndToEndTests
             MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
             MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.1.0", "net9.0"),
         ], repoContentsPath);
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "src/client/client.csproj",
+                "src/client/packages.lock.json",
+                "src/library/library.csproj",
+                "src/library/packages.lock.json",
+            ]);
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
         var logger = new TestLogger();
@@ -1247,6 +1398,236 @@ public class EndToEndTests
         Assert.Equal("2.1.0", resolvedInLibrary);
     }
 
+    [Fact]
+    public async Task FindRootDirectory_ExpandsDirectoryThroughProjChain()
+    {
+        // Job starts at /src/client, but a .proj chain leads up to the repo root.
+        // With FindRootDirectory enabled, the job should discover from "/" instead,
+        // which also picks up /test/client/client-test.csproj that would not be found
+        // if only /src/client were examined.
+        await RunAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/src/client",
+                }
+            },
+            files: [
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectFile Include="src\dirs.proj" />
+                        <ProjectFile Include="test\dirs.proj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectFile Include="client\client.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("test/dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectFile Include="client\client-test.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/client/client.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("test/client/client-test.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                        <ProjectReference Include="..\..\src\client\client.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: null,
+            analyzeWorker: null,
+            updaterWorker: null,
+            experimentsManager: new ExperimentsManager() { FindRootDirectory = true },
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src/client/client.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/test/client/client-test.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/Directory.Build.props",
+                        "/Directory.Build.targets",
+                        "/Directory.Packages.props",
+                        "/src/client/client.csproj",
+                        "/test/client/client-test.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Directory = "/",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/src/client/client.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src/client/client.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Directory = "/",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/test/client/client-test.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/test/client/client-test.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src/client",
+                            Name = "client.csproj",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net9.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """
+                        },
+                        new()
+                        {
+                            Directory = "/test/client",
+                            Name = "client-test.csproj",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net9.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                    <ProjectReference Include="..\..\src\client\client.csproj" />
+                                  </ItemGroup>
+                                </Project>
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
     public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
     public const string TestPullRequestTitle = "test-pull-request-title";
     public const string TestPullRequestBody = "test-pull-request-body";
@@ -1270,6 +1651,7 @@ public class EndToEndTests
             Directory.CreateDirectory(directory);
             await File.WriteAllBytesAsync(fullPath, content);
         }
+        await GitTestHelper.InitializeRepositoryAsync(repoContentsPath, rawFiles.Select(file => file.Path));
 
         // act
         experimentsManager ??= new ExperimentsManager();

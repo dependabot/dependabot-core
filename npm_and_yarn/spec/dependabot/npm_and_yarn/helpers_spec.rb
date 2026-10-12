@@ -5,8 +5,329 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
+require_relative "../../support/corepack_registry"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  describe "::activate_npm_version_selector" do
+    let(:legacy_files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/legacy")]
+    end
+    let(:modern_files) do
+      [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/modern")]
+    end
+
+    after { described_class.npm_version_selector = nil }
+
+    it "restores the selector registered for each manifest directory" do
+      described_class.register_npm_version_selector("/legacy", "9")
+      described_class.register_npm_version_selector("/modern", "10")
+
+      described_class.activate_npm_version_selector(legacy_files)
+      expect(described_class.npm_version_selector).to eq("9")
+
+      described_class.activate_npm_version_selector(modern_files)
+      expect(described_class.npm_version_selector).to eq("10")
+    end
+  end
+
+  describe "::run_npm_command" do
+    after { described_class.npm_version_selector = nil }
+
+    context "when an npm selector is configured" do
+      before { described_class.npm_version_selector = "10" }
+
+      it "runs the Corepack-managed npm and passes through the environment" do
+        env = { "CUSTOM_VAR" => "custom-value" }
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm@10 install",
+          fingerprint: "corepack npm@10 install dependencies",
+          output_observer: kind_of(Proc),
+          env: env
+        ).and_return("")
+
+        described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm@10 install",
+          fingerprint: "corepack npm@10 install dependencies",
+          output_observer: kind_of(Proc),
+          env: env
+        )
+      end
+    end
+
+    context "when no npm selector is configured" do
+      it "runs the direct npm binary" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+        described_class.run_npm_command("install", fingerprint: "install dependencies")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "npm install",
+          fingerprint: "npm install dependencies",
+          output_observer: kind_of(Proc),
+          env: nil
+        )
+      end
+    end
+  end
+
+  describe "::run_pnpm_command" do
+    after { described_class.dependency_files = [] }
+
+    let(:env) { { "CUSTOM_VAR" => "custom-value" } }
+    let(:lockfile_version) { "6.0" }
+    let(:manifest) { { "name" => "example" } }
+    let(:manifest_content) { manifest.to_json }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(name: "package.json", content: manifest_content),
+        Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '#{lockfile_version}'\n")
+      ]
+    end
+
+    before do
+      described_class.dependency_files = files
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+    end
+
+    it "runs pnpm directly and passes through the environment" do
+      described_class.dependency_files = []
+
+      described_class.run_pnpm_command("install", fingerprint: "install dependencies", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "pnpm install",
+        fingerprint: "pnpm install dependencies",
+        env: env
+      )
+    end
+
+    {
+      "6.0" => "8",
+      "6.1" => "8",
+      "5.4" => "7"
+    }.each do |version, major|
+      context "when the lockfile is version #{version} and pnpm isn't pinned" do
+        let(:lockfile_version) { version }
+
+        it "runs the pnpm #{major} that wrote it, through Corepack" do
+          described_class.run_pnpm_command("install", fingerprint: "install dependencies", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+            "corepack pnpm@#{major} install",
+            fingerprint: "corepack pnpm@#{major} install dependencies",
+            env: env
+          )
+        end
+      end
+    end
+
+    context "with an unparseable package.json" do
+      let(:manifest_content) { "{" }
+
+      it "treats pnpm as unpinned" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("corepack pnpm@8 install", fingerprint: "corepack pnpm@8 install", env: env)
+      end
+    end
+
+    ["9.0", "5.3"].each do |version|
+      context "when the lockfile is version #{version}" do
+        let(:lockfile_version) { version }
+
+        it "runs the default pnpm, which reads it or cannot be matched by a supported pnpm" do
+          described_class.run_pnpm_command("install", env: env)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with("pnpm install", fingerprint: "pnpm install", env: env)
+        end
+      end
+    end
+
+    context "when packageManager pins pnpm" do
+      let(:manifest) { { "name" => "example", "packageManager" => "pnpm@8.15.9" } }
+
+      it "leaves the pinned version to Corepack" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+
+    context "without a pnpm lockfile" do
+      let(:files) { [Dependabot::DependencyFile.new(name: "package.json", content: manifest_content)] }
+
+      it "runs the default pnpm" do
+        described_class.run_pnpm_command("install", env: env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with("pnpm install", fingerprint: "pnpm install", env: env)
+      end
+    end
+  end
+
+  describe "::run_yarn_command" do
+    it "runs yarn directly and passes through the environment" do
+      env = { "CUSTOM_VAR" => "custom-value" }
+      allow(described_class).to receive(:setup_yarn_berry)
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "yarn install",
+        fingerprint: "yarn install dependencies",
+        env: env
+      ).and_return("")
+
+      described_class.run_yarn_command("install", fingerprint: "install dependencies", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "yarn install",
+        fingerprint: "yarn install dependencies",
+        env: env
+      )
+    end
+  end
+
+  describe "::npm_version" do
+    before { described_class.npm_version_selector = "10" }
+    after { described_class.npm_version_selector = nil }
+
+    it "returns the Corepack-managed npm version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("corepack npm@10 -v", fingerprint: "corepack npm@10 -v", env: nil)
+        .and_return("10.9.4\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("10.9.4"))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("corepack npm@10 -v", fingerprint: "corepack npm@10 -v", env: nil)
+    end
+
+    it "returns nil when the local npm version cannot be determined" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing npm")
+
+      expect(described_class.npm_version).to be_nil
+    end
+  end
+
+  describe "::npm_version without an active selector" do
+    before { described_class.npm_version_selector = nil }
+
+    it "checks the local npm binary directly instead of Corepack's unqualified default" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+        .and_return("11.9.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+    end
+  end
+
+  describe "::pnpm_indirect_dependency_names" do
+    it "reads the package from pnpm 11's single-line error" do
+      message = "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"accepts\" (requested \"1.3.5\") is not a direct dependency"
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq(["accepts"])
+    end
+
+    it "reads the package from pnpm 12's bordered error" do
+      message = fixture("pnpm_errors", "pnpm12", "update_version_on_indirect_dep.txt")
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq(["accepts"])
+    end
+
+    it "reads a package whose request pnpm 12 wrapped onto the next line" do
+      message = <<~MSG
+        Error: ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP
+
+          × updating dependencies
+          ╰─▶ "@some-scope/a-package-with-a-very-long-name-that-forces-a-wrap-here"
+              (requested "1.3.5") is not a direct dependency, so the requested
+              version cannot be recorded.
+      MSG
+
+      expect(described_class.pnpm_indirect_dependency_names(message))
+        .to eq(["@some-scope/a-package-with-a-very-long-name-that-forces-a-wrap-here"])
+    end
+
+    it "returns an empty array for any other error" do
+      message = "Error: ERR_PNPM_FETCH_401\n\n  × installing dependencies\n  ╰─▶ Unauthorized"
+
+      expect(described_class.pnpm_indirect_dependency_names(message)).to eq([])
+    end
+  end
+
+  describe "::version_from_output" do
+    it "returns the version when it is the only output" do
+      expect(described_class.version_from_output("12.10.1\n")).to eq("12.10.1")
+    end
+
+    it "skips a download message and warnings printed before the version" do
+      output = "Downloading the pnpm 12.10.1 binary for linux-x64...\n[WARN] A warning\n12.10.1\n"
+
+      expect(described_class.version_from_output(output)).to eq("12.10.1")
+    end
+
+    it "keeps a pre-release suffix" do
+      expect(described_class.version_from_output("12.0.0-rc.1\n")).to eq("12.0.0-rc.1")
+    end
+
+    it "does not take a version mentioned inside a notice printed after the version" do
+      output = "12.10.1\nUpdate available: 12.11.0 (run `corepack install -g pnpm@12.11.0`)\n"
+
+      expect(described_class.version_from_output(output)).to eq("12.10.1")
+    end
+
+    it "returns the trimmed output when no line is a version" do
+      expect(described_class.version_from_output(" something else \n")).to eq("something else")
+    end
+  end
+
+  describe "::pnpm_version" do
+    after { described_class.dependency_files = [] }
+
+    it "returns the version of the pnpm that will run" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v", env: nil)
+        .and_return("10.16.0\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+    end
+
+    it "returns the matching pnpm's version when the lockfile is older than the default pnpm reads" do
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(name: "package.json", content: "{}"),
+        Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '6.0'\n")
+      ]
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("corepack pnpm@8 -v", fingerprint: "corepack pnpm@8 -v", env: nil)
+        .and_return("8.15.9\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("8.15.9"))
+    end
+
+    it "ignores output printed before the version" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v", env: nil)
+        .and_return("Downloading the pnpm 12.10.1 binary for linux-x64...\n[WARN] A warning\n12.10.1\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+    end
+
+    it "returns nil when the pnpm version cannot be determined" do
+      described_class.dependency_files = []
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing pnpm")
+
+      expect(described_class.pnpm_version).to be_nil
+    end
+  end
+
   describe "::dependencies_with_all_versions_metadata" do
     let(:foo_a) do
       Dependabot::Dependency.new(
@@ -169,6 +490,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       )
       described_class.package_manager_install("npm", "7.0.0")
     end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@11.9.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: env
+      ).ordered.and_raise(
+        StandardError.new("Internal Error: No compatible signature found in package metadata")
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@11.9.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("")
+
+      described_class.package_manager_install("npm", "11.9.0", env: env)
+    end
   end
 
   describe "::package_manager_activate" do
@@ -181,12 +522,62 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       )
       described_class.package_manager_activate("npm", "7.0.0")
     end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.9.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: env
+      ).ordered.and_raise(
+        StandardError.new(
+          "Preparing npm@11.9.0 for immediate activation...\n" \
+          "Internal Error: No compatible signature found in package metadata"
+        )
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.9.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("Preparing npm@11.9.0 for immediate activation...")
+
+      expect(described_class.package_manager_activate("npm", "11.9.0", env: env))
+        .to eq("Preparing npm@11.9.0 for immediate activation...")
+    end
   end
 
   describe "::package_manager_version" do
     it "retrieves the correct package manager version" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0-alpha\n")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).and_return("7.0.0-alpha\n")
       expect(described_class.package_manager_version("npm")).to eq("7.0.0-alpha")
+    end
+
+    it "ignores corepack download progress printed before the version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack pnpm -v",
+        fingerprint: "corepack pnpm -v",
+        env: nil
+      ).and_return("Downloading the pnpm 12.10.1 binary for linux-x64...\n12.10.1\n")
+
+      expect(described_class.package_manager_version("pnpm")).to eq("12.10.1")
+    end
+
+    it "passes env through to the corepack version command" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).and_return("11.9.0\n")
+
+      expect(described_class.package_manager_version("npm", env: env)).to eq("11.9.0")
     end
   end
 
@@ -195,6 +586,84 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class).to receive(:package_manager_run_command).with("npm", "install")
 
       described_class.package_manager_run_command("npm", "install")
+    end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "npm_config_registry" => "https://packages.example.com/artifactory/api/npm/npm",
+        "registry" => "https://packages.example.com/artifactory/api/npm/npm"
+      }
+
+      first_error = StandardError.new(
+        "Preparing npm@11.9.0 for immediate activation...\n" \
+        "Internal Error: No compatible signature found in package metadata"
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).ordered.and_raise(first_error)
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("11.9.0\n")
+
+      expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
+    end
+
+    it "fails closed without retrying when merged COREPACK_INTEGRITY_KEYS are present" do
+      merged_keys = JSON.generate("npm" => [{ "keyid" => "SHA256:merged", "key" => "abc" }])
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "COREPACK_INTEGRITY_KEYS" => merged_keys
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      # Only one attempt: with merged keys already set we never disable verification.
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
+
+    it "does not retry for signature errors when no private registry env is configured" do
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v")
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
+
+    it "does not retry for signature errors when the configured registry is npmjs" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org/"
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
     end
   end
 
@@ -234,7 +703,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("8.0.0")
 
         # Log expectations
@@ -275,11 +745,13 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("10.8.2")
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:error).with(
           "Error activating npm@8.0.0: Unexpected error"
         )
@@ -321,11 +793,13 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("10.8.2")
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:error).with("Error activating npm@8.0.0: Corepack failed")
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of npm."
@@ -349,61 +823,43 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         }
       end
 
-      it "passes private registry env vars to fallback activation" do
+      it "retries activation with COREPACK_INTEGRITY_KEYS disabled instead of falling back" do
+        retry_env = private_registry_env.merge("COREPACK_INTEGRITY_KEYS" => "")
+
         # First call: corepack prepare npm@10.0.0 --activate WITH private registry env
-        # Fails with signature error (Artifactory strips signatures)
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        # Fails with signature error (Artifactory strips signatures from its version endpoint)
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@10.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: private_registry_env
-        ).and_raise(
+        ).ordered.and_raise(
           StandardError,
           "Preparing npm@10.0.0 for immediate activation...\n" \
           "Internal Error: No compatible signature found in package metadata"
         )
 
-        # Fallback: npm -v returns the container's installed version
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "npm -v",
-          fingerprint: "npm -v"
-        ).and_return("11.9.0")
-
-        # Fallback must use the same private registry env vars
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack prepare npm@11.9.0 --activate",
+        # Retry: same command with signature verification disabled succeeds
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
-          env: private_registry_env
-        ).and_return("Preparing npm@11.9.0 for immediate activation...")
+          env: retry_env
+        ).ordered.and_return("Preparing npm@10.0.0 for immediate activation...")
 
-        # package_manager_version after fallback
+        # package_manager_version after successful activation
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
-        ).and_return("11.9.0")
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        ).and_return("10.0.0")
 
-        # Log expectations
-        expect(Dependabot.logger).to receive(:info).with("Installing \"npm@10.0.0\"")
-        expect(Dependabot.logger).to receive(:error).with(
-          a_string_matching(/Error activating npm@10.0.0:.*No compatible signature found/m)
+        # It must not fall back to the locally installed npm version
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
         )
-        expect(Dependabot.logger).to receive(:info).with(
-          "Falling back to activate the currently installed version of npm."
-        )
-        expect(Dependabot.logger).to receive(:info).with(
-          "Activating currently installed version of npm: 11.9.0"
-        )
-        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
-        expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 11.9.0")
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
-        expect(result).to eq("11.9.0")
-
-        # Verify the fallback call received the private registry env
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack prepare npm@11.9.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: private_registry_env
-        )
+        expect(result).to eq("10.0.0")
       end
 
       it "passes private registry env vars to fallback on unexpected output" do
@@ -430,7 +886,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
         ).and_return("11.9.0")
 
         # Log expectations
@@ -456,6 +913,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: private_registry_env
         )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        )
       end
     end
   end
@@ -473,56 +936,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     let(:empty_lockfile) { Dependabot::DependencyFile.new(name: "package-lock.json", content: "") }
     let(:nil_lockfile) { nil }
 
-    context "when the feature flag :enable_corepack_for_npm_and_yarn is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(true)
-      end
-
-      it "returns true if lockfileVersion is 3 or higher" do
-        expect(described_class.parse_npm8?(lockfile_with_v3)).to be true
-      end
-
-      it "returns true if lockfileVersion is 2" do
-        expect(described_class.parse_npm8?(lockfile_with_v2)).to be true
-      end
-
-      it "returns true if lockfileVersion is 1" do
-        expect(described_class.parse_npm8?(lockfile_with_v1)).to be false
-      end
-
-      it "returns true if lockfile is empty" do
-        expect(described_class.parse_npm8?(empty_lockfile)).to be true
-      end
-
-      it "returns true if lockfile is nil" do
-        expect(described_class.parse_npm8?(nil_lockfile)).to be true
-      end
+    it "returns true if lockfileVersion is 3 or higher" do
+      expect(described_class.parse_npm8?(lockfile_with_v3)).to be true
     end
 
-    context "when the feature flag :enable_corepack_for_npm_and_yarn is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(false)
-      end
+    it "returns true if lockfileVersion is 2" do
+      expect(described_class.parse_npm8?(lockfile_with_v2)).to be true
+    end
 
-      it "returns true if 3=< lockfileVersion" do
-        expect(described_class.parse_npm8?(lockfile_with_v3)).to be true
-      end
+    it "returns false if lockfileVersion is 1" do
+      expect(described_class.parse_npm8?(lockfile_with_v1)).to be false
+    end
 
-      it "returns true if 2=< lockfileVersion <3" do
-        expect(described_class.parse_npm8?(lockfile_with_v2)).to be true
-      end
+    it "returns true if lockfile is empty" do
+      expect(described_class.parse_npm8?(empty_lockfile)).to be true
+    end
 
-      it "returns false if 1=< lockfileVersion <2" do
-        expect(described_class.parse_npm8?(lockfile_with_v1)).to be false
-      end
-
-      it "returns true if lockfile is empty" do
-        expect(described_class.parse_npm8?(empty_lockfile)).to be true
-      end
-
-      it "returns true if lockfile is nil" do
-        expect(described_class.parse_npm8?(nil_lockfile)).to be true
-      end
+    it "returns true if lockfile is nil" do
+      expect(described_class.parse_npm8?(nil_lockfile)).to be true
     end
   end
 
@@ -577,8 +1008,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         "node -v",
         fingerprint: "node -v"
       ).and_return("v16.13.1")
+      allow(Dependabot.logger).to receive(:info)
 
       expect(described_class.node_version).to eq("16.13.1")
+      expect(Dependabot.logger).to have_received(:info).with("Using node version: 16.13.1")
     end
 
     it "raises an error if the Node.js version command fails" do
@@ -625,15 +1058,22 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     before do
       described_class.dependency_files = dependency_files
       described_class.credentials = credentials
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_private_registry_for_corepack).and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+      # Building env for a replaces-base registry fetches Corepack signing keys.
+      # Stub the endpoints so these examples stay hermetic and don't hit the network.
+      stub_request(:get, %r{/-/npm/v1/keys\z})
+        .to_return(
+          status: 200,
+          body: JSON.generate("keys" => [{ "keyid" => "SHA256:test", "key" => "test-key" }])
+        )
+      # Ensure a fresh integrity-keys cache so the stubs are exercised each example.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     after do
       described_class.dependency_files = []
       described_class.credentials = []
+      # Clear fake keys so they don't leak into later randomized specs.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     describe ".build_corepack_env_variables" do
@@ -645,18 +1085,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(env["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-      end
-
-      context "when experiment flag is disabled" do
-        before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(false)
-        end
-
-        it "returns nil" do
-          env = described_class.send(:build_corepack_env_variables)
-          expect(env).to be_nil
-        end
       end
 
       context "when dependency_files is empty" do
@@ -803,33 +1231,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
-    describe ".run_npm_command integration" do
-      it "automatically injects corepack env variables with only registry" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]).not_to be_nil
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-          ""
-        end
-
-        described_class.run_npm_command("install")
-      end
-
-      it "preserves manually provided env variables" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          ""
-        end
-
-        described_class.run_npm_command("install", env: { "CUSTOM_VAR" => "custom-value" })
-      end
-    end
-
     describe "thread-local storage" do
       it "isolates dependency_files across threads" do
         thread1_files = [npmrc_file]
@@ -879,6 +1280,283 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         expect(results[:thread1]).to eq(thread1_creds)
         expect(results[:thread2]).to eq(thread2_creds)
+      end
+    end
+  end
+
+  describe "::yarn_berry_supports_minimal_age_gate?" do
+    context "when Yarn version is >= 4.10.0" do
+      it "logs version and support decision, returns true" do
+        allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.10.0")
+        expect(Dependabot.logger).to receive(:info)
+          .with(a_string_including("Yarn 4.10.0").and(including("supports npmMinimalAgeGate")))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(true)
+      end
+    end
+
+    context "when Yarn version is < 4.10.0" do
+      it "logs version and no-support decision, returns false" do
+        allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.9.2")
+        expect(Dependabot.logger).to receive(:info)
+          .with(a_string_including("Yarn 4.9.2").and(including("does not support npmMinimalAgeGate")))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
+      end
+    end
+
+    context "when the version command raises an error" do
+      it "logs a warning and returns false" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn).with(a_string_including("command failed"))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
+      end
+
+      it "warns that a configured gate may still block security updates" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn)
+          .with(a_string_including("may still block security updates"))
+        described_class.yarn_berry_supports_minimal_age_gate?
+      end
+    end
+  end
+
+  describe "::higher_release_age_gate" do
+    it "returns the cooldown when no user gate is configured" do
+      expect(described_class.higher_release_age_gate(7, nil)).to eq(7)
+    end
+
+    it "returns nil when the cooldown is nil" do
+      expect(described_class.higher_release_age_gate(nil, 10)).to be_nil
+    end
+
+    it "returns nil when the cooldown is zero" do
+      expect(described_class.higher_release_age_gate(0, nil)).to be_nil
+    end
+
+    it "returns nil when the cooldown is negative" do
+      expect(described_class.higher_release_age_gate(-5, nil)).to be_nil
+    end
+
+    it "overrides with the cooldown when it exceeds the user gate" do
+      expect(described_class.higher_release_age_gate(14, 7)).to eq(14)
+    end
+
+    it "leaves the user gate untouched when it is equal or longer" do
+      expect(described_class.higher_release_age_gate(7, 7)).to be_nil
+      expect(described_class.higher_release_age_gate(7, 30)).to be_nil
+    end
+
+    it "never overrides a non-numeric (Float::INFINITY) user gate" do
+      expect(described_class.higher_release_age_gate(10_000, Float::INFINITY)).to be_nil
+    end
+  end
+
+  describe "::max_configured_release_age" do
+    def file(name, content)
+      Dependabot::DependencyFile.new(name: name, content: content)
+    end
+
+    let(:npmrc_setting) do
+      described_class::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
+    end
+    let(:pnpm_settings) do
+      [
+        described_class::ReleaseAgeGateSetting.new(
+          filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+        ),
+        described_class::ReleaseAgeGateSetting.new(
+          filename: ".npmrc", key: "minimum-release-age", separator: "="
+        )
+      ]
+    end
+
+    it "returns nil when no file matches a setting" do
+      files = [file("package.json", "{}")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "returns nil when the matching file does not set the key" do
+      files = [file(".npmrc", "registry=https://example.com\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "parses a bare integer value" do
+      files = [file(".npmrc", "min-release-age=30\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "returns Float::INFINITY for a present-but-non-numeric value" do
+      files = [file(".npmrc", "min-release-age=7d\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "returns the largest value across multiple matching files" do
+      files = [
+        file("pnpm-workspace.yaml", "minimumReleaseAge: 60\n"),
+        file(".npmrc", "minimum-release-age=120\n")
+      ]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(120)
+    end
+
+    it "matches the key/separator per setting (YAML colon vs npmrc equals)" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 45\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(45)
+    end
+
+    it "uses the last occurrence within a file (npmrc/INI last-key-wins)" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=3\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+
+    it "resolves the effective value from the last occurrence, even when non-numeric" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=soon\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "parses a YAML value with a trailing inline comment" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 4320 # 3 days\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(4320)
+    end
+
+    it "parses an npmrc value with a trailing inline comment" do
+      files = [file(".npmrc", "min-release-age=30 # about a month\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "parses an optionally quoted YAML key and value" do
+      files = [file("pnpm-workspace.yaml", "\"minimumReleaseAge\": \"20160\"\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(20_160)
+    end
+
+    it "parses an npmrc value with a trailing semicolon comment" do
+      files = [file(".npmrc", "min-release-age=3 ; temporary\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+  end
+
+  describe "::npm_supports_min_release_age?" do
+    it "is true for npm 11.10.0 and newer" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.16.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(true)
+    end
+
+    it "is false for npm older than 11.10.0" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
+
+    it "is false when the npm version cannot be determined" do
+      allow(described_class).to receive(:npm_version).and_return(nil)
+      expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
+  end
+
+  # Exercise real Corepack with an isolated cache and locally served packages.
+  describe "Corepack integration" do
+    let(:signatures) { :root }
+    let(:registry) { CorepackRegistry.new(signatures: signatures) }
+    let(:manifest) { "{}" }
+    let(:env) do
+      {
+        "COREPACK_HOME" => File.join(Dir.pwd, "corepack-cache"),
+        "COREPACK_NPM_REGISTRY" => registry.url,
+        "COREPACK_INTEGRITY_KEYS" => registry.integrity_keys,
+        "COREPACK_DEFAULT_TO_LATEST" => "0",
+        "COREPACK_ENABLE_AUTO_PIN" => "0",
+        "COREPACK_ENABLE_DOWNLOAD_PROMPT" => "0",
+        "COREPACK_ENABLE_NETWORK" => "1",
+        "COREPACK_ENABLE_PROJECT_SPEC" => "1",
+        "COREPACK_ENABLE_STRICT" => "1",
+        "COREPACK_ENV_FILE" => "0",
+        "COREPACK_ON_UNVERIFIED_DOWNLOAD" => "ignore",
+        "NO_PROXY" => "127.0.0.1"
+      }
+    end
+
+    around do |example|
+      manifest_content = manifest
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        File.write("package.json", manifest_content)
+        example.run
+      ensure
+        registry.close
+      end
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+    end
+
+    it "installs a package using signatures from package-root metadata without retrying" do
+      described_class.package_manager_install("pnpm", "10.0.0", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+      expect(registry.requests).to include("/pnpm/10.0.0", "/pnpm", "/pnpm/-/pnpm-10.0.0.tgz")
+      expect(described_class.package_manager_run_command("pnpm@10.0.0", "-v", env: env)).to eq("10.0.0")
+    end
+
+    context "when neither metadata endpoint has signatures" do
+      let(:signatures) { :none }
+
+      it "preserves verification when custom integrity keys are configured" do
+        expect do
+          described_class.package_manager_install("pnpm", "10.0.0", env: env)
+        end.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /No compatible signature found/)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+        expect(registry.requests).to include("/pnpm")
+      end
+
+      it "retries without verification when no custom integrity keys are configured" do
+        registry_env = env.except("COREPACK_INTEGRITY_KEYS")
+
+        described_class.package_manager_install("pnpm", "10.0.0", env: registry_env)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack install pnpm@10.0.0 --global --cache-only",
+          fingerprint: "corepack install <name>@<version> --global --cache-only",
+          env: registry_env.merge("COREPACK_INTEGRITY_KEYS" => "")
+        ).once
+        expect(registry.requests).to include("/pnpm")
+        expect(described_class.package_manager_run_command("pnpm@10.0.0", "-v", env: registry_env)).to eq("10.0.0")
+      end
+    end
+
+    context "when package-root signatures are invalid" do
+      let(:signatures) { :invalid }
+
+      it "rejects the package without disabling verification" do
+        expect do
+          described_class.package_manager_install("pnpm", "10.0.0", env: env)
+        end.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Signature does not match/)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+        expect(registry.requests).to include("/pnpm")
+      end
+    end
+
+    context "with a devEngines.packageManager range" do
+      let(:manifest) { fixture("projects", "corepack", "dev_engines", "package.json") }
+
+      it "uses the newest matching version without adding a packageManager field" do
+        expect(described_class.package_manager_version("pnpm", env: env)).to eq("10.1.0")
+        expect(registry.requests).to include("/pnpm/10.1.0")
+        expect(registry.requests).not_to include("/pnpm/11.0.0")
+        expect(File.read("package.json")).to eq(manifest)
+      end
+
+      context "with a compatible top-level packageManager" do
+        let(:manifest) { JSON.parse(super()).merge("packageManager" => "pnpm@10.0.0").to_json }
+
+        it "gives the top-level packageManager precedence over the range" do
+          expect(described_class.package_manager_version("pnpm", env: env)).to eq("10.0.0")
+          expect(registry.requests).to include("/pnpm/10.0.0")
+          expect(registry.requests).not_to include("/pnpm/10.1.0")
+        end
       end
     end
   end

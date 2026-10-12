@@ -11,17 +11,14 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
-      ENVIRONMENT_FILE_NAMES = T.let(
-        %w(
-          environment.yml
-          environment.yaml
-        ).freeze,
-        T::Array[String]
-      )
+      ENVIRONMENT_FILE_NAMES = %w(
+        environment.yml
+        environment.yaml
+      ).freeze
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |filename| ENVIRONMENT_FILE_NAMES.include?(filename) }
+        filenames.intersect?(ENVIRONMENT_FILE_NAMES)
       end
 
       sig { override.returns(String) }
@@ -44,7 +41,7 @@ module Dependabot
             raise(
               Dependabot::DependencyFileNotFound.new(
                 File.join(directory, environment_file.name),
-                unsupported_environment_message(validation[:reason])
+                unsupported_environment_message(T.cast(validation[:reason], T.nilable(Symbol)))
               )
             )
           end
@@ -63,7 +60,7 @@ module Dependabot
 
       # Validate that environment file is a proper conda manifest with manageable packages
       # Returns a hash with :valid (Boolean) and :reason (Symbol or nil)
-      sig { params(file: DependencyFile).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(file: DependencyFile).returns(T::Hash[Symbol, T.anything]) }
       def validate_conda_environment(file)
         content = file.content
         return { valid: false, reason: :no_content } unless content
@@ -81,7 +78,7 @@ module Dependabot
         { valid: true, reason: nil }
       end
 
-      sig { params(content: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
       def parse_and_validate_yaml(content)
         parsed_yaml = parse_yaml_content(content)
         return nil unless parsed_yaml
@@ -94,7 +91,7 @@ module Dependabot
       end
 
       # Check if there are any manageable packages (simple specs or pip)
-      sig { params(dependencies: T.untyped).returns(T::Boolean) }
+      sig { params(dependencies: Object).returns(T::Boolean) }
       def manageable_packages?(dependencies)
         return false unless dependencies.is_a?(Array)
 
@@ -107,7 +104,7 @@ module Dependabot
         has_simple_conda || has_pip
       end
 
-      sig { params(content: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
       def parse_yaml_content(content)
         parsed = YAML.safe_load(content)
         parsed.is_a?(Hash) ? parsed : nil

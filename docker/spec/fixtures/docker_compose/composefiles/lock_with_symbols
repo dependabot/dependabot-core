@@ -1,0 +1,24 @@
+name: minio
+services:
+  minio:
+    command:
+      - server
+      - /data
+      - --console-address
+      - :9001
+    image: quay.io/minio/minio:RELEASE.2025-01-20T14-49-07Z@sha256:ed9be66eb5f2636c18289c34c3b725ddf57815f2777c77b5938543b78a44f144
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 9000
+        published: "9000"
+        protocol: tcp
+      - mode: ingress
+        target: 9001
+        published: "9001"
+        protocol: tcp
+    restart: always
+networks:
+  default:
+    name: minio_default

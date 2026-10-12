@@ -18,7 +18,7 @@ require "dependabot/uv/authed_url_builder"
 module Dependabot
   module Uv
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class CompileFileUpdater
         extend T::Sig
 
@@ -26,19 +26,14 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "lock_file_error_handler"
 
-        UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          /There are incompatible versions in the resolved dependencies:.*\z/m,
-          Regexp
-        )
-        WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
-        UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
-        RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
-        NATIVE_COMPILATION_ERROR = T.let(
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
-          String
-        )
-        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
+        UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
+        PYTHON_VERSION_REGEX = /--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -58,10 +53,10 @@ module Dependabot
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @credentials = credentials
+          @index_urls = index_urls
           @build_isolation = T.let(true, T::Boolean)
         end
 
@@ -177,35 +172,39 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig do
           params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile])
         end
         def update_uncompiled_files(updated_files)
           updated_filenames = updated_files.map(&:name)
           all_old_reqs = T.must(dependency).previous_requirements
-          old_reqs = T.must(all_old_reqs).reject { |r| updated_filenames.include?(r[:file]) }
+          old_reqs = T.must(all_old_reqs).reject { |r| updated_filenames.include?(r.file) }
           all_new_reqs = T.must(dependency).requirements
-          new_reqs = all_new_reqs.reject { |r| updated_filenames.include?(r[:file]) }
+          new_reqs = all_new_reqs.reject { |r| updated_filenames.include?(r.file) }
 
           return [] if new_reqs.none?
 
           files = dependency_files
                   .reject { |file| updated_filenames.include?(file.name) }
 
-          args = T.must(dependency).to_h
-          args = args.keys.to_h { |k| [k.to_sym, args[k]] }
-          args[:requirements] = new_reqs
-          args[:previous_requirements] = old_reqs
+          dep = T.must(dependency)
 
           RequirementFileUpdater.new(
-            dependencies: [Dependency.new(**T.unsafe(args))],
+            dependencies: [Dependency.new(
+              name: dep.name,
+              version: dep.version,
+              requirements: new_reqs,
+              package_manager: dep.package_manager,
+              previous_version: dep.previous_version,
+              previous_requirements: old_reqs,
+              directory: dep.directory,
+              subdependency_metadata: dep.subdependency_metadata,
+              removed: dep.removed?
+            )],
             dependency_files: files,
             credentials: credentials
           ).updated_dependency_files
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig do
           params(
             cmd: String,
@@ -284,15 +283,15 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(dependency).previous_requirements
-          old_req = old_req&.find { |r| r[:file] == file.name }
+          old_req = old_req&.find { |r| r.file == file.name }
 
           return file.content unless old_req
-          return file.content if old_req == "==#{T.must(dependency).version}"
+          return file.content if old_req.requirement_string == "==#{T.must(dependency).version}"
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
+            old_requirement: old_req.requirement_string,
             new_requirement: "==#{T.must(dependency).version}",
             index_urls: @index_urls
           ).updated_content
@@ -303,17 +302,17 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(dependency).previous_requirements
-          old_req = old_req&.find { |r| r[:file] == file.name }
+          old_req = old_req&.find { |r| r.file == file.name }
           new_req = T.must(dependency).requirements
-          new_req = new_req.find { |r| r[:file] == file.name }
-          return file.content unless old_req&.fetch(:requirement)
+          new_req = new_req.find { |r| r.file == file.name }
+          return file.content unless old_req&.requirement_string
           return file.content if old_req == new_req
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
-            new_requirement: T.must(new_req)[:requirement],
+            old_requirement: old_req.requirement_string,
+            new_requirement: T.must(T.must(new_req).requirement_string),
             index_urls: @index_urls
           ).updated_content
         end
@@ -323,7 +322,17 @@ module Dependabot
           content = replace_header_with_original(updated_content, T.must(file.content))
           content = remove_new_warnings(content, T.must(file.content))
           content = update_hashes_if_required(content, T.must(file.content))
+          content = scrub_index_url_credentials(content)
           replace_absolute_file_paths(content, T.must(file.content))
+        end
+
+        # Index URLs are passed to `uv pip compile` with credentials embedded so
+        # the private index can be fetched, and uv emits those URLs verbatim
+        # into the compiled file when `--emit-index-url` is active. Strip any
+        # userinfo so tokens are never written into the regenerated file.
+        sig { params(content: String).returns(String) }
+        def scrub_index_url_credentials(content)
+          content.gsub(%r{^(--(?:extra-)?index-url[= ]https?://)[^/\s]+@}, "\\1")
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
@@ -435,12 +444,17 @@ module Dependabot
             args << index_url if index_url
 
             begin
+              helper_result = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              )
+
+              # Skip this index if helper returned nil (can happen with unavailable registries)
+              next if helper_result.nil?
+
               native_helper_hashes = T.cast(
-                SharedHelpers.run_helper_subprocess(
-                  command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-                  function: "get_dependency_hash",
-                  args: args
-                ),
+                helper_result,
                 T::Array[T::Hash[String, String]]
               ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
 
@@ -451,6 +465,8 @@ module Dependabot
               next
             end
           end
+
+          raise DependencyFileNotResolvable, "Unable to find hashes for package #{name}" if hashes.empty?
 
           hashes
         end
@@ -548,7 +564,7 @@ module Dependabot
         def filenames_to_compile
           files_from_reqs =
             T.must(dependency).requirements
-             .map { |r| r[:file] }
+             .filter_map(&:file)
              .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
@@ -666,7 +682,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

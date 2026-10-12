@@ -8,5 +8,7 @@
     <NoWarn>$(NoWarn);MSB3644</NoWarn>
     <!-- A package downgrade warning shouldn't be lifted to an error because that would prevent discovery. -->
     <NoWarn>$(NoWarn);NU1605</NoWarn>
+    <!-- Deprecated MonoAndroid framework shouldn't cause a warning because we'll do nothing about it here. -->
+    <NoWarn>$(NoWarn);NU1703</NoWarn>
   </PropertyGroup>
 </Project>

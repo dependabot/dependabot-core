@@ -30,3 +30,4 @@ Updating the list of known versions might be tricky, here are the steps:
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core
+

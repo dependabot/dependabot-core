@@ -32,9 +32,9 @@ public class UpdaterWorker : IUpdaterWorker
         _logger = logger;
     }
 
-    public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, string? resultOutputPath = null)
+    public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTopLevel, string? resultOutputPath = null)
     {
-        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTopLevel);
         if (resultOutputPath is { })
         {
             await WriteResultFile(result, resultOutputPath, _logger);
@@ -42,11 +42,11 @@ public class UpdaterWorker : IUpdaterWorker
     }
 
     // this is a convenient method for tests
-    internal async Task<UpdateOperationResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    internal async Task<UpdateOperationResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTopLevel)
     {
         try
         {
-            var result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+            var result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTopLevel);
             return result;
         }
         catch (Exception ex)
@@ -66,7 +66,7 @@ public class UpdaterWorker : IUpdaterWorker
         }
     }
 
-    public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTopLevel)
     {
         MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath, _logger);
 

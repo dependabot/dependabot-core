@@ -126,5 +126,30 @@ RSpec.describe namespace::LatestVersionFinder do
         end
       end
     end
+
+    context "when the release date is unavailable" do
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Elm::Version.new("1.2.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Elm::Package::PackageDetailsFetcher,
+          fetch_package_releases: [release]
+        )
+      end
+
+      before do
+        allow(Dependabot::Elm::Package::PackageDetailsFetcher)
+          .to receive(:new).with(dependency: dependency).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version).to eq(Dependabot::Elm::Version.new("1.2.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
   end
 end

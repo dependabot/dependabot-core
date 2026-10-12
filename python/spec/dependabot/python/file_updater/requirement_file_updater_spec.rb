@@ -95,6 +95,73 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
+      context "when the new requirement has no version specifier" do
+        # A version specifier is optional in Python packaging, so the updater
+        # must leave such requirements untouched rather than crashing.
+        subject(:updated_files) { updater.updated_dependency_files }
+
+        context "with a bare package name" do
+          let(:requirements) do
+            Dependabot::DependencyFile.new(
+              content: "psycopg2\n",
+              name: "requirements.txt"
+            )
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "psycopg2",
+              version: "2.8.1",
+              requirements: [{
+                file: "requirements.txt",
+                requirement: nil,
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [],
+              package_manager: "pip"
+            )
+          end
+
+          it "does not raise and leaves the file unchanged" do
+            expect { updated_files }.not_to raise_error
+            expect(updated_files).to be_empty
+          end
+        end
+
+        context "with a URL/VCS direct reference" do
+          let(:requirements) do
+            Dependabot::DependencyFile.new(
+              content: "psycopg2 @ git+https://github.com/psycopg/psycopg2.git@2.6.1\n",
+              name: "requirements.txt"
+            )
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "psycopg2",
+              version: "2.8.1",
+              requirements: [{
+                file: "requirements.txt",
+                requirement: nil,
+                groups: [],
+                source: { type: "git", url: "https://github.com/psycopg/psycopg2.git", ref: "2.8.1" }
+              }],
+              previous_requirements: [{
+                file: "requirements.txt",
+                requirement: nil,
+                groups: [],
+                source: { type: "git", url: "https://github.com/psycopg/psycopg2.git", ref: "2.6.1" }
+              }],
+              package_manager: "pip"
+            )
+          end
+
+          it "does not raise and leaves the file unchanged" do
+            expect { updated_files }.not_to raise_error
+            expect(updated_files).to be_empty
+          end
+        end
+      end
+
       context "with an unknown package" do
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -606,6 +673,77 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         end
 
         its(:content) { is_expected.to include "flake8 > 2.5.4, < 3.4.0\n" }
+      end
+    end
+
+    context "when the same package with different extras appears in multiple pyproject.toml groups" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          content: fixture("pyproject_files", "pyproject_duplicate_extras_same_package.toml"),
+          name: "pyproject.toml"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "frequenz-repo-config",
+          version: "0.14.0",
+          requirements: [
+            {
+              file: "pyproject.toml",
+              requirement: "==0.14.0",
+              groups: ["optional-dependencies:dev-mkdocs"],
+              source: nil
+            },
+            {
+              file: "pyproject.toml",
+              requirement: "==0.14.0",
+              groups: ["optional-dependencies:dev-noxfile"],
+              source: nil
+            },
+            {
+              file: "pyproject.toml",
+              requirement: "==0.14.0",
+              groups: ["optional-dependencies:dev-pytest"],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "pyproject.toml",
+              requirement: "==0.13.6",
+              groups: ["optional-dependencies:dev-mkdocs"],
+              source: nil
+            },
+            {
+              file: "pyproject.toml",
+              requirement: "==0.13.6",
+              groups: ["optional-dependencies:dev-noxfile"],
+              source: nil
+            },
+            {
+              file: "pyproject.toml",
+              requirement: "==0.13.6",
+              groups: ["optional-dependencies:dev-pytest"],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
+      end
+
+      it "updates all occurrences including identical duplicates across groups" do
+        expect(updated_files.count).to eq(1)
+        updated_content = updated_files.first.content
+        expect(updated_content).not_to include("==0.13.6")
+        # Both [lib] entries (dev-mkdocs and dev-noxfile) are updated
+        expect(updated_content.scan("frequenz-repo-config[lib]==0.14.0").length).to eq(2)
+        # The [extra-lint-examples] entry (dev-pytest) is also updated
+        expect(updated_content).to include("frequenz-repo-config[extra-lint-examples]==0.14.0")
+        # Other packages are not affected
+        expect(updated_content).to include("some-other-package==1.0.0")
+        expect(updated_content).to include("nox==2026.2.9")
+        expect(updated_content).to include("pytest==9.0.2")
       end
     end
 

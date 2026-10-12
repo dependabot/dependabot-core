@@ -165,6 +165,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:registry_response) do
+        response = JSON.parse(super())
+        response.fetch("time").delete("1.7.0")
+        JSON.dump(response)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version_from_registry).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when the latest version is a prerelease" do
       before do
         body = fixture("npm_responses", "prerelease.json")
@@ -753,6 +767,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
+    context "when the global registry socket closes unexpectedly" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_raise(Excon::Error::Socket.new(EOFError.new))
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the npm link resolves to a 403" do
       before do
         stub_request(:get, registry_listing_url)
@@ -1230,9 +1253,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
     end
   end
 
-  describe "#possible_versions_with_details" do
-    subject(:possible_versions_with_details) do
-      version_finder.possible_versions_with_details
+  describe "#possible_releases" do
+    subject(:possible_releases) do
+      version_finder.possible_releases
+    end
+
+    it "retains the original release objects and metadata" do
+      releases = version_finder.package_details.releases
+
+      possible_releases.each do |release|
+        original = releases.find { |candidate| candidate.version == release.version }
+        expect(release).to be(original)
+        expect(release.details).to be(original.details)
+        expect(release.released_at).to eq(original.released_at)
+        expect(release.language).to be(original.language)
+      end
+      expect(possible_releases).not_to be_empty
     end
 
     context "with versions that would be considered equivalent" do
@@ -1258,7 +1294,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
 
       it "returns a list of versions" do
-        expect(possible_versions_with_details.count).to eq(49)
+        expect(possible_releases.count).to eq(49)
       end
     end
 
@@ -1284,9 +1320,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
 
       it "excludes ignored versions" do
-        versions = possible_versions_with_details
-        latest_version = versions.first.first
-        expect(versions.count).to eq(20)
+        releases = possible_releases
+        latest_version = releases.first.version
+        expect(releases.count).to eq(20)
         expect(latest_version)
           .to eq(Dependabot::NpmAndYarn::Version.new("15.6.2"))
       end
@@ -1312,14 +1348,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
 
       it "returns no versions" do
-        expect(possible_versions_with_details).to eq([])
+        expect(possible_releases).to eq([])
       end
     end
   end
 
-  describe "#possible_previous_versions_with_details" do
-    subject(:possible_previous_versions_with_details) do
-      version_finder.possible_previous_versions_with_details
+  describe "#possible_previous_releases" do
+    subject(:possible_previous_releases) do
+      version_finder.possible_previous_releases
+    end
+
+    it "retains the original releases rather than reconstructing versions and details" do
+      releases = version_finder.package_details.releases
+
+      expect(possible_previous_releases.map(&:object_id)).to eq(releases.map(&:object_id))
     end
 
     context "with ignored versions and non pre-release version requirement" do
@@ -1344,9 +1386,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
 
       it "includes ignored versions and excludes pre-releases" do
-        versions = possible_previous_versions_with_details
-        latest_version = versions.first.first
-        expect(versions.count).to eq(80)
+        releases = possible_previous_releases
+        latest_version = releases.first.version
+        expect(releases.count).to eq(80)
         expect(latest_version)
           .to eq(Dependabot::NpmAndYarn::Version.new("16.6.0"))
       end
@@ -1373,9 +1415,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
 
       it "includes pre-released versions" do
-        versions = possible_previous_versions_with_details
-        latest_version = versions.first.first
-        expect(versions.count).to eq(103)
+        releases = possible_previous_releases
+        latest_version = releases.first.version
+        expect(releases.count).to eq(103)
         expect(latest_version)
           .to eq(Dependabot::NpmAndYarn::Version.new("16.6.0"))
       end
@@ -1401,7 +1443,80 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
 
       it "returns all versions" do
-        expect(possible_previous_versions_with_details.count).to eq(13)
+        expect(possible_previous_releases.count).to eq(13)
+      end
+    end
+  end
+
+  describe "JSR dependency handling" do
+    let(:dependency_name) { "@arendjr/text-clipper" }
+    let(:escaped_dependency_name) { "@arendjr%2Ftext-clipper" }
+    let(:unscoped_dependency_name) { "text-clipper" }
+    let(:dependency_version) { "3.0.0" }
+    let(:registry_base) { "https://npm.jsr.io" }
+    let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
+    let(:target_version) { "3.2.0" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          file: "package.json",
+          requirement: "jsr:^3.0.0",
+          groups: [],
+          source: { type: "registry", url: "https://npm.jsr.io" }
+        }],
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:registry_response) do
+      {
+        "name" => "@arendjr/text-clipper",
+        "dist-tags" => { "latest" => "3.2.0" },
+        "versions" => {
+          "3.0.0" => { "version" => "3.0.0" },
+          "3.1.0" => { "version" => "3.1.0" },
+          "3.2.0" => { "version" => "3.2.0" }
+        }
+      }.to_json
+    end
+
+    before do
+      stub_request(:get, %r{https://npm\.jsr\.io/@arendjr%2Ftext-clipper/.*})
+        .to_return(status: 200)
+    end
+
+    describe "#latest_version_from_registry" do
+      subject(:latest_version) { version_finder.latest_version_from_registry }
+
+      it "finds the latest version from JSR registry" do
+        expect(latest_version).to eq(Gem::Version.new("3.2.0"))
+      end
+
+      it "does not treat the JSR requirement as a dist tag" do
+        expect(latest_version).not_to be_nil
+      end
+    end
+
+    describe "#latest_version_from_registry with long form" do
+      subject(:latest_version) { version_finder.latest_version_from_registry }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@arendjr/text-clipper",
+          version: "3.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "jsr:@arendjr/text-clipper@^3.0.0",
+            groups: [],
+            source: { type: "registry", url: "https://npm.jsr.io" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "finds the latest version from JSR registry" do
+        expect(latest_version).to eq(Gem::Version.new("3.2.0"))
       end
     end
   end

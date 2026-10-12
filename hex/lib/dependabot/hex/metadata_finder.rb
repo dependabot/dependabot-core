@@ -12,15 +12,12 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
-      SOURCE_KEYS = T.let(
-        %w(
-          GitHub Github github
-          GitLab Gitlab gitlab
-          BitBucket Bitbucket bitbucket
-          Source source
-        ).freeze,
-        T::Array[String]
-      )
+      SOURCE_KEYS = %w(
+        GitHub Github github
+        GitLab Gitlab gitlab
+        BitBucket Bitbucket bitbucket
+        Source source
+      ).freeze
 
       private
 
@@ -50,10 +47,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-
-        url = info[:url] || info.fetch("url")
-        Source.from_url(url)
+        Source.from_url(dependency.source_string("url", allowed_types: ["git"]))
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }

@@ -47,11 +47,12 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |req|
-          req.merge(requirement: latest_version)
+        updated = dependency.requirements.map do |req|
+          req.merge(requirement: latest_version&.to_s)
         end
+        wrap_requirements(updated)
       end
 
       private
@@ -89,16 +90,16 @@ module Dependabot
         false
       end
 
-      sig { params(tag: T.nilable(T::Hash[Symbol, String])).returns(T.untyped) }
+      sig { params(tag: T.nilable(Dependabot::GitTagDetails)).returns(T.nilable(String)) }
       def version_from_tag(tag)
         # To compare with the current version we either use the commit SHA
         # (if that's what the parser picked up) or the tag name.
-        return tag&.fetch(:commit_sha) if dependency.version&.match?(/^[0-9a-f]{40}$/)
+        return tag&.commit_sha if dependency.version&.match?(/^[0-9a-f]{40}$/)
 
-        tag&.fetch(:tag)
+        tag&.tag
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, String]) }
       def default_source
         { type: "default", source: dependency.name }
       end

@@ -9,7 +9,7 @@ module GithubApi
   class EcosystemMapper
     extend T::Sig
 
-    UNMAPPED_ECOSYSTEM = T.let("other", String)
+    UNMAPPED_ECOSYSTEM = "other"
 
     # Mapping from Dependency Graph ecosystem to Dependabot package managers.
     ECOSYSTEM_TO_PACKAGE_MANAGERS = T.let(

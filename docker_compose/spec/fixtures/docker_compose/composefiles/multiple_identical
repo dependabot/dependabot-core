@@ -1,6 +1,0 @@
-version: '2'
-services:
-  node-1:
-    image: node:10-alpine
-  node-2:
-    image: node:10-alpine

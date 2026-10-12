@@ -22,9 +22,9 @@ module Dependabot
         sig { params(toml_string: String).returns(RustToolchainToml) }
         def self.from_toml(toml_string)
           parsed_data = TomlRB.parse(toml_string)
-          data = T.cast(parsed_data, T::Hash[String, T.untyped])
+          data = T.cast(parsed_data, T::Hash[String, Object])
 
-          toolchain_data = T.cast(data["toolchain"], T::Hash[String, T.untyped])
+          toolchain_data = T.cast(data["toolchain"], T::Hash[String, Object])
           new(
             toolchain: RustToolchainConfig.from_hash(toolchain_data)
           )

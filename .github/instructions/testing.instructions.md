@@ -3,13 +3,25 @@ applyTo:
   - "**/*_spec.rb"
   - "**/spec/**"
   - "**/spec_helper.rb"
+  - "nuget/helpers/lib/NuGetUpdater/**"
 ---
 
 # Testing Guidelines
 
 ## Docker-Based Testing
 
-All tests must run inside Docker containers. The development environment, dependencies, and native helpers are containerized and will not work on the host system. Never attempt to run tests directly on your machine.
+All tests must run inside Docker containers. The development environment, dependencies, and native helpers are
+containerized and will not work on the host system. Never attempt to run tests directly on your machine.
+
+## NuGet Local Development Exception
+
+NuGet C# development under `nuget/helpers/lib/NuGetUpdater` is an exception to the Docker-only rule. When a
+compatible .NET SDK is installed, build and test the C# projects directly on the host:
+
+```bash
+dotnet build nuget/helpers/lib/NuGetUpdater/NuGetUpdater.slnx
+dotnet test nuget/helpers/lib/NuGetUpdater/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
+```
 
 ## Quick Testing with `bin/test`
 

@@ -91,11 +91,14 @@ module Functions
     # Set flags and credentials
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
-    Bundler::Definition.build(args.fetch(:gemfile_name), nil, {})
-                       .send(:sources)
-                       .rubygems_remotes
-                       .find { |uri| uri.host.include?("jfrog") }
-                       &.host
+    sources = Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).send(:sources)
+    # Bundler 4 removed SourceList#rubygems_remotes; use rubygems_sources + flat_map(&:remotes)
+    remotes = if sources.respond_to?(:rubygems_remotes)
+                sources.rubygems_remotes
+              else
+                sources.rubygems_sources.flat_map(&:remotes)
+              end
+    remotes.find { |uri| uri.host&.include?("jfrog") }&.host
   end
 
   def self.git_specs(**args)

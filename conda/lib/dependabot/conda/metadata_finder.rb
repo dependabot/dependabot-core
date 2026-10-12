@@ -29,7 +29,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def pip_dependency?
-        dependency.requirements.any? { |req| req[:groups]&.include?("pip") }
+        dependency.requirements.any? { |req| req.groups&.include?("pip") }
       end
 
       sig { returns(Dependabot::Python::MetadataFinder) }

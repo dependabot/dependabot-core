@@ -1,17 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/shared_helpers"
-
-class DependencyRequirement < T::Struct
-  const :file, String
-  const :requirement, String
-  const :groups, T::Array[String]
-  const :source, T.nilable(T::Hash[Symbol, T.untyped])
-end
 
 module Dependabot
   module NpmAndYarn
@@ -73,13 +66,13 @@ module Dependabot
           params(
             content: String,
             dependency: Dependabot::Dependency,
-            old_requirement: DependencyRequirement,
-            new_requirement: DependencyRequirement
+            old_requirement: Dependabot::DependencyRequirement,
+            new_requirement: Dependabot::DependencyRequirement
           ).returns(String)
         end
         def replace_version_in_content(content:, dependency:, old_requirement:, new_requirement:)
-          old_version = old_requirement.requirement
-          new_version = new_requirement.requirement
+          old_version = string_requirement(old_requirement)
+          new_version = string_requirement(new_requirement)
 
           pattern = build_replacement_pattern(
             dependency_name: dependency.name,
@@ -94,6 +87,14 @@ module Dependabot
           content.gsub(pattern, replacement)
         end
 
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(String) }
+        def string_requirement(requirement)
+          value = requirement.requirement
+          return value if value.is_a?(String)
+
+          raise TypeError, "pnpm workspace requirement must be a string"
+        end
+
         sig { params(dependency_name: String, version: String).returns(Regexp) }
         def build_replacement_pattern(dependency_name:, version:)
           /(["']?)#{dependency_name}\1:\s*(["']?)#{Regexp.escape(version)}\2/
@@ -104,37 +105,19 @@ module Dependabot
           "\\1#{dependency_name}\\1: \\2#{version}\\2"
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T::Array[DependencyRequirement]) }
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def new_requirements(dependency)
-          dependency.requirements
-                    .select { |r| r[:file] == workspace_file.name }
-                    .map do |r|
-            DependencyRequirement.new(
-              file: r[:file],
-              requirement: r[:requirement],
-              groups: r[:groups],
-              source: r[:source]
-            )
-          end
+          dependency.requirements.select { |r| r.file == workspace_file.name }
         end
 
         sig do
           params(
             dependency: Dependabot::Dependency,
-            new_requirement: DependencyRequirement
-          ).returns(T.nilable(DependencyRequirement))
+            new_requirement: Dependabot::DependencyRequirement
+          ).returns(T.nilable(Dependabot::DependencyRequirement))
         end
         def old_requirement(dependency, new_requirement)
-          matching_req = T.must(dependency.previous_requirements).find { |r| r[:groups] == new_requirement.groups }
-
-          return nil if matching_req.nil?
-
-          DependencyRequirement.new(
-            file: matching_req[:file],
-            requirement: matching_req[:requirement],
-            groups: matching_req[:groups],
-            source: matching_req[:source]
-          )
+          T.must(dependency.previous_requirements).find { |r| r.groups == new_requirement.groups }
         end
       end
     end

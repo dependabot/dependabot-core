@@ -12,11 +12,19 @@ require "dependabot/python/update_checker/latest_version_finder"
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   before do
     stub_request(:get, pypi_url)
-      .with(headers: { "Accept" => "text/html" })
+      .with(headers: { "Accept" => registry_accept })
       .to_return(status: 200, body: pypi_response)
   end
 
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:registry_accept) do
+    if pypi_url.start_with?("https://pypi.org/", "https://pypi.python.org/")
+      "text/html"
+    else
+      "application/vnd.pypi.simple.v1+json, " \
+        "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+    end
+  end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
     described_class.new(
@@ -25,7 +33,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      cooldown_options: cooldown_options
     )
   end
   let(:credentials) do
@@ -41,6 +50,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:cooldown_options) { nil }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
@@ -80,6 +90,61 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       groups: [],
       source: nil
     }]
+  end
+
+  describe "selection from typed distribution metadata" do
+    let(:dependency_name) { "demo" }
+    let(:dependency_version) { "1.0.0" }
+    let(:credentials) { [] }
+    let(:pypi_url) { "https://registry.example.test/simple/demo/" }
+    let(:dependency_files) do
+      [Dependabot::DependencyFile.new(
+        name: "requirements.txt", content: "--index-url https://registry.example.test/simple/\ndemo==1.0.0\n"
+      )]
+    end
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:pypi_response) do
+      JSON.generate(
+        "files" => [
+          { "filename" => "demo-3.0.0.whl", "requires-python" => ">=3.8", "upload-time" => "2024-06-14T00:00:00Z" },
+          { "filename" => "demo-2.0.0.whl", "requires-python" => ">=3.10",
+            "upload-time" => "2024-05-01T00:00:00Z" },
+          { "filename" => "demo-2.0.0.tar.gz", "requires-python" => ">=3.8", "upload-time" => "2024-05-01T00:00:00Z",
+            "yanked" => "Broken source archive" },
+          { "filename" => "demo-1.5.0.whl", "requires-python" => ">=3.8",
+            "upload-time" => "2024-05-01T00:00:00Z" }
+        ]
+      )
+    end
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.utc(2024, 6, 15))
+      stub_request(:get, pypi_url)
+        .with(headers: { "Accept" => registry_accept })
+        .to_return(
+          status: 200,
+          headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+          body: pypi_response
+        )
+    end
+
+    it "uses each file's language requirements, withdrawal status, and publication date" do
+      expect(finder.eligible_releases(language_version: "3.9").map { |release| release.version.to_s }).to eq(["1.5.0"])
+      expect(finder.latest_version(language_version: "3.9")).to eq(Dependabot::Python::Version.new("1.5.0"))
+    end
+
+    context "with a security advisory" do
+      let(:security_advisories) do
+        [Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name, package_manager: "pip", vulnerable_versions: ["< 1.5.0"]
+        )]
+      end
+
+      it "retains the minimum eligible security fix" do
+        expect(finder.lowest_security_fix_version(language_version: "3.9"))
+          .to eq(Dependabot::Python::Version.new("1.5.0"))
+      end
+    end
   end
 
   describe "#latest_version" do
@@ -122,6 +187,32 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
 
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Python::Version.new("2.6.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details) do
+        Dependabot::Package::PackageDetails.new(dependency: dependency, releases: [release])
+      end
+      let(:package_details_fetcher) do
+        instance_double(Dependabot::Python::Package::PackageDetailsFetcher, fetch: package_details)
+      end
+
+      before do
+        allow(Dependabot::Python::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version).to eq(Dependabot::Python::Version.new("2.6.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when the pypi link responds with devpi-style" do
       let(:pypi_response) { fixture("pypi", "pypi_simple_response_devpi.html") }
       let(:dependency_version) { "0.9.0" }
@@ -143,6 +234,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      it "returns a version with a clean string representation" do
+        expect(latest_version.to_s).to eq("2.6.0")
+      end
     end
 
     context "when the PyPI response includes data-requires-python entries" do
@@ -327,6 +422,44 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:dependency_files) { [requirements_file] }
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "when distributions have different Python requirements" do
+          subject(:latest_python_version) do
+            finder.latest_version(language_version: Dependabot::Python::Version.new("3.8"))
+          end
+
+          let(:pypi_response) do
+            JSON.dump(
+              "meta" => { "api-version" => "1.1" },
+              "files" => [
+                {
+                  "filename" => "luigi-3.0.0-py3-none-any.whl",
+                  "url" => "../files/a.whl",
+                  "requires-python" => ">=4.0",
+                  "yanked" => false
+                },
+                {
+                  "filename" => "luigi-3.0.0.tar.gz",
+                  "url" => "../files/z.tar.gz",
+                  "requires-python" => ">=3.8",
+                  "yanked" => false
+                }
+              ]
+            )
+          end
+
+          before do
+            stub_request(:get, pypi_url)
+              .with(headers: { "Accept" => registry_accept })
+              .to_return(
+                status: 200,
+                headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+                body: pypi_response
+              )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+        end
 
         context "when the url is invalid" do
           let(:requirements_fixture_name) { "custom_index_invalid.txt" }
@@ -772,149 +905,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it { is_expected.to be_nil }
         end
-      end
-    end
-  end
-
-  describe "#latest_version_tag" do
-    subject(:latest_version_tag) { git_finder.latest_version_tag(git_commit_checker: git_commit_checker) }
-
-    let(:git_dependency) do
-      Dependabot::Dependency.new(
-        name: "fastapi",
-        version: "0.110.0",
-        requirements: [{
-          requirement: nil,
-          file: "pyproject.toml",
-          groups: ["dependencies"],
-          source: {
-            type: "git",
-            url: "https://github.com/tiangolo/fastapi",
-            ref: "0.110.0",
-            branch: nil
-          }
-        }],
-        package_manager: "pip"
-      )
-    end
-
-    let(:git_commit_checker) do
-      Dependabot::GitCommitChecker.new(
-        dependency: git_dependency,
-        credentials: credentials,
-        ignored_versions: [],
-        raise_on_ignored: false
-      )
-    end
-
-    let(:git_finder) do
-      described_class.new(
-        dependency: git_dependency,
-        dependency_files: dependency_files,
-        credentials: credentials,
-        ignored_versions: ignored_versions,
-        raise_on_ignored: raise_on_ignored,
-        cooldown_options: cooldown_options,
-        security_advisories: security_advisories
-      )
-    end
-
-    let(:cooldown_options) { nil }
-
-    let(:allowed_version_tags) do
-      [
-        { tag: "0.110.0", version: Gem::Version.new("0.110.0"), commit_sha: "abc1", tag_sha: "def1" },
-        { tag: "0.111.0", version: Gem::Version.new("0.111.0"), commit_sha: "abc2", tag_sha: "def2" },
-        { tag: "0.120.0", version: Gem::Version.new("0.120.0"), commit_sha: "abc3", tag_sha: "def3" },
-        { tag: "0.124.0", version: Gem::Version.new("0.124.0"), commit_sha: "abc4", tag_sha: "def4" },
-        { tag: "0.124.2", version: Gem::Version.new("0.124.2"), commit_sha: "abc5", tag_sha: "def5" },
-        { tag: "0.125.0", version: Gem::Version.new("0.125.0"), commit_sha: "abc6", tag_sha: "def6" },
-        { tag: "0.126.0", version: Gem::Version.new("0.126.0"), commit_sha: "abc7", tag_sha: "def7" },
-        { tag: "0.127.0", version: Gem::Version.new("0.127.0"), commit_sha: "abc8", tag_sha: "def8" },
-        { tag: "0.128.0", version: Gem::Version.new("0.128.0"), commit_sha: "abc9", tag_sha: "def9" }
-      ]
-    end
-
-    let(:git_tag_details) do
-      [
-        Dependabot::GitTagWithDetail.new(tag: "0.110.0", release_date: "2025-02-01"),
-        Dependabot::GitTagWithDetail.new(tag: "0.111.0", release_date: "2025-05-15"),
-        Dependabot::GitTagWithDetail.new(tag: "0.120.0", release_date: "2025-10-01"),
-        Dependabot::GitTagWithDetail.new(tag: "0.124.0", release_date: "2025-12-06"),
-        Dependabot::GitTagWithDetail.new(tag: "0.124.2", release_date: "2025-12-10"),
-        Dependabot::GitTagWithDetail.new(tag: "0.125.0", release_date: "2025-12-17"),
-        Dependabot::GitTagWithDetail.new(tag: "0.126.0", release_date: "2025-12-20"),
-        Dependabot::GitTagWithDetail.new(tag: "0.127.0", release_date: "2025-12-21"),
-        Dependabot::GitTagWithDetail.new(tag: "0.128.0", release_date: "2025-12-27")
-      ]
-    end
-
-    before do
-      allow(git_commit_checker).to receive_messages(
-        local_tags_for_allowed_versions: allowed_version_tags,
-        local_tag_for_latest_version: allowed_version_tags.last,
-        refs_for_tag_with_detail: git_tag_details
-      )
-      # Freeze time to January 21, 2026
-      allow(Time).to receive(:now).and_return(Time.parse("2026-01-21"))
-    end
-
-    context "when cooldown is not set" do
-      let(:cooldown_options) { nil }
-
-      it "returns the latest version without filtering" do
-        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.128.0"))
-      end
-    end
-
-    context "when cooldown applies with 40-day default" do
-      let(:cooldown_options) do
-        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 40)
-      end
-
-      it "returns the latest version outside cooldown period" do
-        # 0.128.0 released 2025-12-27 is 25 days old (in cooldown)
-        # 0.124.2 released 2025-12-10 is 42 days old (outside cooldown)
-        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.124.2"))
-      end
-    end
-
-    context "when cooldown applies with 10-day default" do
-      let(:cooldown_options) do
-        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10)
-      end
-
-      it "returns the latest version outside 10-day cooldown" do
-        # 0.128.0 released 2025-12-27 is 25 days old (outside 10-day cooldown)
-        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.128.0"))
-      end
-    end
-
-    context "when all versions are in cooldown" do
-      let(:cooldown_options) do
-        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 365)
-      end
-
-      it "returns nil" do
-        expect(latest_version_tag).to be_nil
-      end
-    end
-
-    context "when cooldown has semver-based days" do
-      let(:cooldown_options) do
-        Dependabot::Package::ReleaseCooldownOptions.new(
-          default_days: 0,
-          semver_major_days: 60,
-          semver_minor_days: 40,
-          semver_patch_days: 10
-        )
-      end
-
-      it "applies semver-based cooldown correctly" do
-        # Minor bump from 0.110.0 to 0.128.0 uses semver_minor_days: 40
-        # 0.128.0 released 2025-12-27 is 25 days old (in cooldown with 40 days)
-        # 0.124.2 released 2025-12-10 is 42 days old (outside cooldown with 40 days)
-        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.124.2"))
       end
     end
   end

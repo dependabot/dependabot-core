@@ -4,9 +4,15 @@ common: &common
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/**'
+apm:
+  - *common
+  - 'apm/**'
 bazel:
   - *common
   - 'bazel/**'
+deno:
+  - *common
+  - 'deno/**'
 github_actions:
   - *common
   - 'github_actions/**'
@@ -47,6 +53,9 @@ hex:
 maven:
   - *common
   - 'maven/**'
+nix:
+  - *common
+  - 'nix/**'
 npm_and_yarn:
   - *common
   - 'npm_and_yarn/**'
@@ -68,6 +77,10 @@ git_submodules:
 rust_toolchain:
   - *common
   - 'rust_toolchain/**'
+sbt:
+  - *common
+  - 'sbt/**'
+  - 'maven/**'
 swift:
   - *common
   - 'swift/**'

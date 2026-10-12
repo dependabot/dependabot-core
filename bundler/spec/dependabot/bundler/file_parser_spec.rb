@@ -27,6 +27,147 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe "helper-result boundaries" do
+    let(:gemfile) { Dependabot::DependencyFile.new(name: "Gemfile", content: "gem \"business\", \"~> 1.4.0\"\n") }
+    let(:dependency_files) { [gemfile] }
+    let(:operation) { "parsed_gemfile" }
+    let(:record) do
+      {
+        "name" => "business",
+        "requirement" => "~> 1.4.0",
+        "groups" => ["default"],
+        "source" => nil,
+        "type" => "runtime"
+      }
+    end
+    let(:result) { [record] }
+
+    before do
+      allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_call_original
+      allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess)
+        .with(hash_including(function: operation)).and_return(result)
+    end
+
+    it "uses typed Gemfile records without changing group representation" do
+      expect(parser.parse.first.requirements).to eq(
+        [{ requirement: "~> 1.4.0", file: "Gemfile", source: nil, groups: [:default] }]
+      )
+    end
+
+    context "with the same dependency declared in two files" do
+      let(:dependency_files) do
+        [gemfile, Dependabot::DependencyFile.new(name: "other.rb", content: gemfile.content)]
+      end
+      let(:record) { super().merge("source" => { "type" => "rubygems", "url" => "https://gems.example/" }) }
+
+      it "keeps each requirement's source independent" do
+        requirements = parser.parse.first.requirements
+        expect(requirements.length).to eq(2)
+
+        requirements.first.source_hash[:url] = "https://other.example/"
+        expect(requirements.last.source_string("url")).to eq("https://gems.example/")
+      end
+    end
+
+    ["2.7.2", "4.0.20"].each do |version|
+      context "with BUNDLED WITH #{version}" do
+        let(:dependency_files) do
+          [
+            gemfile,
+            Dependabot::DependencyFile.new(
+              name: "Gemfile.lock",
+              content: <<~LOCK
+                GEM
+                  remote: https://rubygems.org/
+                  specs:
+                    business (1.4.0)
+
+                PLATFORMS
+                  ruby
+
+                DEPENDENCIES
+                  business (~> 1.4.0)
+
+                BUNDLED WITH
+                   #{version}
+              LOCK
+            )
+          ]
+        end
+
+        it "selects the matching helper while retaining the locked version" do
+          expect(parser.parse.first.version).to eq("1.4.0")
+          expect(Dependabot::Bundler::NativeHelpers).to have_received(:run_bundler_subprocess)
+            .with(hash_including(function: "parsed_gemfile", bundler_version: version.split(".").first))
+        end
+      end
+    end
+
+    context "with a malformed entry that is not declared in the file" do
+      let(:result) { [record, record.merge("name" => "undeclared", "groups" => [1])] }
+
+      it "decodes the complete result before declaration filtering" do
+        expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+          expect(error.message).to include(operation, gemfile.path, "[1]", "groups")
+        end
+      end
+    end
+
+    context "when the helper raises an unrelated type error" do
+      before do
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess)
+          .with(hash_including(function: operation)).and_raise(TypeError, "helper execution failed")
+      end
+
+      it "does not classify the exception as malformed output" do
+        expect { parser.parse }.to raise_error(TypeError, "helper execution failed")
+      end
+    end
+
+    context "with gemspec results" do
+      let(:operation) { "parsed_gemspec" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "example.gemspec",
+            content: <<~GEMSPEC
+              Gem::Specification.new do |spec|
+                spec.name = "example"
+                spec.version = "1.0.0"
+                spec.add_dependency "business", "~> 1.4.0"
+              end
+            GEMSPEC
+          )
+        ]
+      end
+      let(:record) { super().merge("groups" => nil) }
+
+      it "preserves runtime gemspec groups" do
+        expect(parser.parse.first.requirements).to eq(
+          [{ requirement: "~> 1.4.0", file: "example.gemspec", source: nil, groups: ["runtime"] }]
+        )
+      end
+
+      context "with another string dependency type" do
+        let(:record) { super().merge("type" => "other") }
+
+        it "preserves the development-group fallback" do
+          expect(parser.parse.first.requirements.first.groups).to eq(["development"])
+        end
+      end
+
+      context "with a malformed undeclared entry" do
+        let(:result) { [record, record.merge("name" => "undeclared", "requirement" => 1)] }
+
+        it "reports the operation, file, and field before filtering" do
+          expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+            expect(error.message).to include(operation, "example.gemspec", "[1]", "requirement")
+          end
+        end
+      end
+    end
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 

@@ -7,6 +7,12 @@ require "dependabot/version"
 RSpec.describe Dependabot::Version do
   subject(:version) { described_class.new(version_string) }
 
+  describe ".update_type" do
+    it "does not override the generic update classification" do
+      expect(described_class.update_type("1.0.0", "2.0.0")).to be_nil
+    end
+  end
+
   describe "#lowest_prerelease_suffix" do
     subject(:ignored_versions) { version.lowest_prerelease_suffix }
 

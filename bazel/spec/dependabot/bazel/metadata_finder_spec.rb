@@ -159,6 +159,42 @@ RSpec.describe Dependabot::Bazel::MetadataFinder do
         expect(source_url).to eq("https://github.com/bazelbuild/rules_cc")
       end
 
+      context "with string-keyed source details" do
+        let(:requirements) do
+          [{
+            file: "WORKSPACE",
+            requirement: "0.2.0",
+            groups: [],
+            source: {
+              "type" => "http_archive",
+              "url" => "https://github.com/bazelbuild/rules_cc/archive/v0.2.0.tar.gz"
+            }
+          }]
+        end
+
+        it "extracts the GitHub repository URL" do
+          expect(source_url).to eq("https://github.com/bazelbuild/rules_cc")
+        end
+      end
+
+      context "with a malformed source type" do
+        let(:requirements) do
+          [{
+            file: "WORKSPACE",
+            requirement: "0.2.0",
+            groups: [],
+            source: {
+              type: 123,
+              url: "https://github.com/bazelbuild/rules_cc/archive/v0.2.0.tar.gz"
+            }
+          }]
+        end
+
+        it "raises a type error" do
+          expect { source_url }.to raise_error(TypeError, "source type must be a string or nil")
+        end
+      end
+
       context "with a GitHub releases URL" do
         let(:requirements) do
           [{

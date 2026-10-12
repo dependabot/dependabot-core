@@ -376,7 +376,7 @@ RSpec.describe Dependabot::Updater do
           security_advisories: anything,
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
-          update_cooldown: nil,
+          update_cooldown: having_attributes(default_days: 0),
           options: anything
         ).once
       end
@@ -486,7 +486,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: false,
             requirements_update_strategy: anything,
-            update_cooldown: nil,
+            update_cooldown: having_attributes(default_days: 0),
             options: anything
           )
         end
@@ -518,7 +518,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
-            update_cooldown: nil,
+            update_cooldown: having_attributes(default_days: 0),
             options: anything
           )
         end
@@ -550,7 +550,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
-            update_cooldown: nil,
+            update_cooldown: having_attributes(default_days: 0),
             options: anything
           )
         end
@@ -660,7 +660,7 @@ RSpec.describe Dependabot::Updater do
           dependency_files: default_dependency_files,
           repo_contents_path: nil,
           credentials: anything,
-          options: { cloning: true }
+          options: hash_including(cloning: true)
         ).and_call_original
 
         expect(service).to receive(:create_pull_request).once
@@ -814,7 +814,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
-            update_cooldown: nil
+            update_cooldown: having_attributes(default_days: 0)
           ).twice.ordered
           # this is the "peer checker" instantiation
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
@@ -827,7 +827,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: false,
             requirements_update_strategy: anything,
-            update_cooldown: nil
+            update_cooldown: having_attributes(default_days: 0)
           ).ordered
         end
       end
@@ -2165,7 +2165,7 @@ RSpec.describe Dependabot::Updater do
           ],
           repo_contents_path: nil,
           credentials: anything,
-          options: { large_hadron_collider: true }
+          options: hash_including(large_hadron_collider: true)
         ).and_call_original
 
         updater.run
@@ -2193,7 +2193,7 @@ RSpec.describe Dependabot::Updater do
           security_advisories: anything,
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
-          update_cooldown: nil,
+          update_cooldown: having_attributes(default_days: 0),
           options: { large_hadron_collider: true }
         ).twice
       end
@@ -2460,6 +2460,63 @@ RSpec.describe Dependabot::Updater do
       expect(service).not_to receive(:create_pull_request)
       updater.run
     end
+
+    # These exercise Dependabot::Updater#run rather than a specific Operation, which is the
+    # responsibility this file is being repurposed to cover.
+    context "when a registry gave no publication date for a cooldown check" do
+      it "records a job-level warning even though no pull request is created" do
+        stub_update_checker(up_to_date?: true)
+
+        job = build_job
+        service = build_service
+        dependency_snapshot = build_dependency_snapshot(job: job)
+        updater = build_updater(service: service, job: job, dependency_snapshot: dependency_snapshot)
+
+        dependency_snapshot.all_dependencies.each do |dependency|
+          dependency.metadata[:cooldown_date_unavailable] = true
+        end
+
+        expect(service).not_to receive(:create_pull_request)
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "cooldown_date_unavailable",
+          warn_title: "Cooldown was not applied",
+          warn_description: "Cooldown could not be applied because no publication date was available " \
+                            "from the registry."
+        )
+
+        updater.run
+      end
+
+      it "does not fail the job when the warning cannot be recorded" do
+        stub_update_checker(up_to_date?: true)
+
+        job = build_job
+        service = build_service
+        dependency_snapshot = build_dependency_snapshot(job: job)
+        updater = build_updater(service: service, job: job, dependency_snapshot: dependency_snapshot)
+        dependency_snapshot.all_dependencies.each do |dependency|
+          dependency.metadata[:cooldown_date_unavailable] = true
+        end
+        allow(service).to receive(:record_update_job_warning).and_raise(StandardError, "network error")
+        allow(Dependabot.logger).to receive(:error)
+
+        expect { updater.run }.not_to raise_error
+        expect(Dependabot.logger).to have_received(:error).with(
+          "Failed to record cooldown warning: network error"
+        )
+      end
+    end
+
+    it "does not record a cooldown warning when publication dates were available" do
+      stub_update_checker(up_to_date?: true)
+
+      service = build_service
+      updater = build_updater(service: service)
+
+      expect(service).not_to receive(:record_update_job_warning)
+
+      updater.run
+    end
   end
 
   def build_updater(
@@ -2526,7 +2583,7 @@ RSpec.describe Dependabot::Updater do
     service
   end
 
-  # rubocop:disable Metrics/MethodLength
+  # rubocop:disable-next Metrics/MethodLength
   def build_job(
     requested_dependencies: nil,
     allowed_updates: default_allowed_updates,
@@ -2540,7 +2597,7 @@ RSpec.describe Dependabot::Updater do
     dependency_groups: [],
     lockfile_only: false,
     repo_contents_path: nil,
-    update_cooldown: nil
+    update_cooldown: { "default-days" => 0 }
   )
     Dependabot::Job.new(
       id: "1",
@@ -2586,10 +2643,9 @@ RSpec.describe Dependabot::Updater do
       security_updates_only: security_updates_only,
       repo_contents_path: repo_contents_path,
       dependency_groups: dependency_groups,
-      update_cooldown: update_cooldown
+      cooldown: update_cooldown
     )
   end
-  # rubocop:enable Metrics/MethodLength
 
   def default_allowed_updates
     [
@@ -2604,7 +2660,7 @@ RSpec.describe Dependabot::Updater do
     ]
   end
 
-  # rubocop:disable Metrics/MethodLength
+  # rubocop:disable-next Metrics/MethodLength
   def stub_update_checker(stubs = {})
     update_checker =
       instance_double(
@@ -2660,5 +2716,4 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
   end
-  # rubocop:enable Metrics/MethodLength
 end

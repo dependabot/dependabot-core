@@ -1,7 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-require "cgi"
 require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/elm/package/package_details_fetcher"

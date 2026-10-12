@@ -42,6 +42,8 @@ pr-updated expected.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:
@@ -67,6 +69,8 @@ job:
 -- input-rebase-old.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:
@@ -98,6 +102,8 @@ job:
 -- input-rebase-new.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:

@@ -65,7 +65,7 @@ module Dependabot
       # Parses a single pip requirement string (e.g. "types-requests==2.31.0.10")
       # into a structured hash. Returns nil if the string is not a valid requirement
       # or has no version constraint.
-      sig { params(dependency_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(dependency_string: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
       def self.parse(dependency_string)
         match = dependency_string.strip.match(VALID_REQ_TXT_REQUIREMENT)
         return nil unless match
@@ -92,17 +92,17 @@ module Dependabot
       sig { params(requirements_string: String).returns(T.nilable(String)) }
       def self.extract_pinned_version(requirements_string)
         requirement = Dependabot::Python::Requirement.new(requirements_string)
-        constraints = T.let(requirement.requirements, T::Array[T::Array[T.untyped]])
+        constraints = T.let(requirement.requirements, T::Array[[String, Gem::Version]])
 
         exact_pin = constraints.find do |pair|
-          op = T.cast(pair[0], String)
+          op = pair[0]
           op == "==" || op == "="
         end
-        return T.cast(exact_pin[1], Gem::Version).to_s if exact_pin
+        return exact_pin[1].to_s if exact_pin
 
         lower_bound_operators = %w(>= > ~>).freeze
-        lower_bound = constraints.find { |pair| lower_bound_operators.include?(T.cast(pair[0], String)) }
-        return T.cast(lower_bound[1], Gem::Version).to_s if lower_bound
+        lower_bound = constraints.find { |pair| lower_bound_operators.include?(pair[0]) }
+        return lower_bound[1].to_s if lower_bound
 
         nil
       rescue Gem::Requirement::BadRequirementError

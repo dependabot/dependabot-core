@@ -1,5 +1,10 @@
 [
   {
+    "core": "apm",
+    "test": "apm",
+    "ecosystem": "apm"
+  },
+  {
     "core": "bazel",
     "test": "bazel",
     "ecosystem": "bazel"
@@ -23,6 +28,11 @@
     "core": "conda",
     "test": "conda",
     "ecosystem": "conda"
+  },
+  {
+    "core": "deno",
+    "test": "deno",
+    "ecosystem": "deno"
   },
   {
     "core": "devcontainers",
@@ -65,6 +75,11 @@
     "ecosystem": "gradle"
   },
   {
+    "core": "helm",
+    "test": "helm",
+    "ecosystem": "helm"
+  },
+  {
     "core": "hex",
     "test": "hex",
     "ecosystem": "mix"
@@ -80,18 +95,23 @@
     "ecosystem": "maven"
   },
   {
+    "core": "nix",
+    "test": "nix",
+    "ecosystem": "nix"
+  },
+  {
     "core": "npm_and_yarn",
     "test": "npm",
     "ecosystem": "npm"
   },
   {
     "core": "nuget",
-    "test": "nuget",
+    "test": "nuget-resolvability",
     "ecosystem": "nuget"
   },
   {
     "core": "nuget",
-    "test": "nuget-resolvability",
+    "test": "nuget",
     "ecosystem": "nuget"
   },
   {
@@ -120,6 +140,11 @@
     "ecosystem": "rust-toolchain"
   },
   {
+    "core": "sbt",
+    "test": "sbt",
+    "ecosystem": "sbt"
+  },
+  {
     "core": "swift",
     "test": "swift",
     "ecosystem": "swift"
@@ -128,6 +153,11 @@
     "core": "terraform",
     "test": "terraform",
     "ecosystem": "terraform"
+  },
+  {
+    "core": "uv",
+    "test": "uv",
+    "ecosystem": "uv"
   },
   {
     "core": "vcpkg",

@@ -9,6 +9,12 @@ require "vcr"
 require "dependabot/julia"
 require_relative "dependabot/shared_examples"
 
+# Keep helper subprocesses hermetic: version discovery and manifest updates
+# must run against the depot's existing registry state, not a mid-test
+# network refresh (which can pull package versions absent from the test
+# image's package cache).
+ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
+
 def common_dir
   @common_dir ||= Gem::Specification.find_by_name("dependabot-common").gem_dir
 end

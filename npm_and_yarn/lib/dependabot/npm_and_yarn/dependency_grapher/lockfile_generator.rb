@@ -4,9 +4,11 @@
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
 module Dependabot
@@ -14,6 +16,12 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       class LockfileGenerator
         extend T::Sig
+
+        # URL extraction patterns
+        GENERIC_URL_REGEX = %r{(https?://[^\s"']+)}
+        NETWORK_ERROR_HOST_REGEX = /E(?:NOTFOUND|TIMEDOUT)\s+(\S+)/i
+
+        FALLBACK_SOURCE = "a private registry"
 
         sig do
           params(
@@ -28,7 +36,7 @@ module Dependabot
           @credentials = credentials
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { returns(Dependabot::DependencyFile) }
         def generate
           SharedHelpers.in_a_temporary_directory do
             write_temporary_files
@@ -37,7 +45,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_generation_error(e)
-          nil
+          raise
         end
 
         private
@@ -145,13 +153,13 @@ module Dependabot
           Helpers.run_pnpm_command(command, fingerprint: command)
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { returns(Dependabot::DependencyFile) }
         def read_generated_lockfile
           lockfile_name = expected_lockfile_name
 
           unless File.exist?(lockfile_name)
-            Dependabot.logger.warn("Lockfile #{lockfile_name} was not generated")
-            return nil
+            Dependabot.logger.error("#{lockfile_name} was not generated")
+            raise Dependabot::DependencyFileNotEvaluatable, "#{lockfile_name} was not generated"
           end
 
           content = File.read(lockfile_name)
@@ -159,8 +167,14 @@ module Dependabot
           Dependabot::DependencyFile.new(
             name: lockfile_name,
             content: content,
-            directory: "/"
+            directory: package_json_directory
           )
+        end
+
+        sig { returns(String) }
+        def package_json_directory
+          package_json = dependency_files.find { |f| f.name.end_with?("package.json") }
+          package_json&.directory || "/"
         end
 
         sig { returns(String) }
@@ -196,20 +210,51 @@ module Dependabot
             "Failed to generate lockfile with #{package_manager}: #{error.message}"
           )
 
-          # Log more details for debugging
-          if error.message.include?("ERESOLVE")
+          # pnpm 12 hard-wraps long lines, which can cut a registry URL in two
+          message = PnpmErrorMessage.normalize(error.message)
+
+          if message.include?("ERESOLVE")
             Dependabot.logger.error(
               "Dependency resolution failed. This may be due to conflicting peer dependencies."
             )
-          elsif error.message.include?("ENOTFOUND") || error.message.include?("ETIMEDOUT")
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Could not resolve dependencies. This may be due to conflicting peer dependencies."
+          elsif message.include?("ENOTFOUND") || message.include?("ETIMEDOUT")
             Dependabot.logger.error(
               "Network error while generating lockfile. Registry may be unreachable."
             )
-          elsif error.message.include?("401") || error.message.include?("403")
+            raise Dependabot::PrivateSourceTimedOut, extract_network_error_host(message)
+          elsif authentication_error?(message)
             Dependabot.logger.error(
               "Authentication error. Check that credentials are configured correctly."
             )
+            raise Dependabot::PrivateSourceAuthenticationFailure, extract_url(message)
           end
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def authentication_error?(message)
+          message.include?("401") ||
+            message.include?("403") ||
+            message.include?(NpmAndYarn::AUTHENTICATION_TOKEN_NOT_PROVIDED) ||
+            message.include?(NpmAndYarn::AUTHENTICATION_IS_NOT_CONFIGURED) ||
+            message.include?(NpmAndYarn::AUTHENTICATION_HEADER_NOT_PROVIDED) ||
+            message.match?(NpmAndYarn::AUTH_REQUIRED_ERROR)
+        end
+
+        sig { params(message: String).returns(String) }
+        def extract_url(message)
+          match = message.match(GENERIC_URL_REGEX)
+          match ? T.must(match[1]).chomp(":") : FALLBACK_SOURCE
+        end
+
+        sig { params(message: String).returns(String) }
+        def extract_network_error_host(message)
+          match = message.match(NETWORK_ERROR_HOST_REGEX)
+          return T.must(match[1]) if match
+
+          match = message.match(GENERIC_URL_REGEX)
+          match ? T.must(match[1]) : FALLBACK_SOURCE
         end
       end
     end

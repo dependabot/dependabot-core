@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@std/path/posix": "jsr:@std/path@^1.0.0/posix",
+    "lodash/merge": "npm:lodash@^4.17.21/merge"
+  }
+}

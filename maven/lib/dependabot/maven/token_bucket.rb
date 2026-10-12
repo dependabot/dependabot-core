@@ -13,14 +13,15 @@ module Dependabot
       extend T::Helpers
       include Comparable
 
-      prop :tokens, T::Array[T.untyped]
+      prop :tokens, T::Array[Object]
       prop :addition, T.nilable(TokenBucket)
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Object]) }
       def to_a
         return tokens if addition.nil?
 
-        tokens.clone.append(addition.to_a)
+        result = T.let(tokens.clone, T::Array[Object])
+        result.append(addition.to_a)
       end
 
       sig { params(other: TokenBucket).returns(T.nilable(Integer)) }
@@ -33,8 +34,8 @@ module Dependabot
 
       sig do
         params(
-          first: T::Array[T.any(String, Integer)],
-          second: T::Array[T.any(String, Integer)]
+          first: T::Array[Object],
+          second: T::Array[Object]
         ).returns(T.nilable(Integer))
       end
       def compare_tokens(first, second)
@@ -48,8 +49,8 @@ module Dependabot
 
       sig do
         params(
-          first: T.nilable(T.any(String, Integer)),
-          second: T.nilable(T.any(String, Integer))
+          first: T.nilable(Object),
+          second: T.nilable(Object)
         ).returns(T.nilable(Integer))
       end
       def compare_token_pair(first = 0, second = 0) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity

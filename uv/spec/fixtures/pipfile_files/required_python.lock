@@ -5,8 +5,8 @@
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_full_version": "3.9.4",
-            "python_version": "3.9"
+            "python_full_version": "3.10.20",
+            "python_version": "3.10"
         },
         "sources": [
             {

@@ -1,0 +1,4 @@
+on: [push]
+
+name: Reusable workflow collision
+jobs: { reusable: { uses: actions/checkout/.github/workflows/test.yml@v2.1.0 }, build: { runs-on: ubuntu-latest, steps: [{ uses: actions/setup-node@v3.0.0 }] } }

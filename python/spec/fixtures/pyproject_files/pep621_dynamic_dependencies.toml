@@ -1,0 +1,21 @@
+[project]
+name = "my-package"
+version = "1.0.0"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+dependencies = [
+    "requests>=2.13.0",
+    "django>=5.0.0",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+requests = { version = ">=2.13.0", source = "private-source" }
+django = "^5.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

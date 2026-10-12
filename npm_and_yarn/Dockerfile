@@ -2,15 +2,15 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.34.6
+ARG COREPACK_VERSION=0.36.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
-ARG PNPM_VERSION=10.16.0
+ARG PNPM_VERSION=12.10.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
-ARG YARN_VERSION=4.9.2
+ARG YARN_VERSION=4.18.0
 
 # See https://github.com/nodesource/distributions#installation-instructions
 # Always update NODEJS_VERSION with a compatible NPM_VERSION
@@ -21,7 +21,14 @@ ARG NODEJS_VERSION=24
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be aligned with NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
-ARG NPM_VERSION=11.8.0
+ARG NPM_VERSION=11.17.0
+
+# Route Node's built-in fetch() and http(s) agents through HTTP_PROXY/HTTPS_PROXY.
+# Corepack >=0.35 requires this setting for proxy support, and pnpm 12's
+# npm package is a launcher that downloads the native `@pnpm/exe.<platform>` binary
+# with a bare fetch() on first run. Without this, that download bypasses the
+# Dependabot proxy and fails with "fetch failed".
+ENV NODE_USE_ENV_PROXY=1
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \
@@ -42,6 +49,8 @@ RUN <<EOF
   corepack install npm@$NPM_VERSION --global
   # Pre-cache popular older versions of npm for on-demand activation
   corepack install -g --cache-only npm@10 npm@9 npm@8
+  # pnpm 12's package is a launcher that downloads its native binary on first run; run it once to cache it in the image
+  pnpm --version
 EOF
 
 # Configure Node to use our custom CA bundle

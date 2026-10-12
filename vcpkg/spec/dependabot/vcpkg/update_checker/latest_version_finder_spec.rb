@@ -188,4 +188,66 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder do
       end
     end
   end
+
+  describe "#tag_for_commit_sha" do
+    subject(:tag_for_commit_sha) { finder.tag_for_commit_sha(commit_sha) }
+
+    let(:package_details_fetcher) { instance_double(Dependabot::Vcpkg::Package::PackageDetailsFetcher) }
+    let(:mock_package_details) do
+      Dependabot::Package::PackageDetails.new(
+        dependency: dependency,
+        releases: [
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Vcpkg::Version.new("2025.06.13"),
+            tag: "2025.06.13",
+            url: "https://github.com/microsoft/vcpkg.git",
+            released_at: Time.new(2025, 6, 13),
+            details: { "commit_sha" => "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "tag_sha" => "t1" }
+          ),
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Vcpkg::Version.new("2025.04.09"),
+            tag: "2025.04.09",
+            url: "https://github.com/microsoft/vcpkg.git",
+            released_at: Time.new(2025, 4, 9),
+            details: { "commit_sha" => "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "tag_sha" => "t2" }
+          )
+        ]
+      )
+    end
+
+    before do
+      allow(Dependabot::Vcpkg::Package::PackageDetailsFetcher)
+        .to receive(:new)
+        .and_return(package_details_fetcher)
+      allow(package_details_fetcher).to receive(:fetch).and_return(mock_package_details)
+    end
+
+    context "when a release matches the commit SHA" do
+      let(:commit_sha) { "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }
+
+      it "returns the matching release tag" do
+        expect(tag_for_commit_sha).to eq("2025.04.09")
+      end
+    end
+
+    context "when no release matches the commit SHA" do
+      let(:commit_sha) { "cccccccccccccccccccccccccccccccccccccccc" }
+
+      it "returns nil" do
+        expect(tag_for_commit_sha).to be_nil
+      end
+    end
+
+    context "when no package details are available" do
+      let(:commit_sha) { "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }
+
+      before do
+        allow(package_details_fetcher).to receive(:fetch).and_return(nil)
+      end
+
+      it "returns nil" do
+        expect(tag_for_commit_sha).to be_nil
+      end
+    end
+  end
 end

@@ -153,6 +153,44 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
+    context "when compile and lock updaters both return the same manifest file" do
+      let(:dependency_files) { [requirements] }
+      let(:manifest_from_compile_updater) do
+        Dependabot::DependencyFile.new(
+          name: "libs/testing_tools/pyproject.toml",
+          content: "compile updater content"
+        )
+      end
+      let(:manifest_from_lock_updater) do
+        Dependabot::DependencyFile.new(
+          name: "libs/testing_tools/pyproject.toml",
+          content: "lock updater content"
+        )
+      end
+      let(:lockfile_from_lock_updater) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: "updated lock content"
+        )
+      end
+
+      it "deduplicates files by name and keeps the lock updater version" do
+        compile_updater = instance_double(described_class::CompileFileUpdater)
+        lock_updater = instance_double(described_class::LockFileUpdater)
+
+        allow(described_class::CompileFileUpdater).to receive(:new).and_return(compile_updater)
+        allow(described_class::LockFileUpdater).to receive(:new).and_return(lock_updater)
+        allow(compile_updater).to receive(:updated_dependency_files).and_return([manifest_from_compile_updater])
+        allow(lock_updater).to receive(:updated_dependency_files).and_return(
+          [manifest_from_lock_updater, lockfile_from_lock_updater]
+        )
+
+        expect(updated_files.map(&:name)).to contain_exactly("libs/testing_tools/pyproject.toml", "uv.lock")
+        expect(updated_files.find { |file| file.name == "libs/testing_tools/pyproject.toml" }&.content)
+          .to eq("lock updater content")
+      end
+    end
+
     describe "#pip_compile_index_urls" do
       let(:instance) do
         described_class.new(

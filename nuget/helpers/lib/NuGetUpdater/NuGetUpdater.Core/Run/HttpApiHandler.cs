@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace NuGetUpdater.Core.Run;
 
-public class HttpApiHandler : IApiHandler
+public class HttpApiHandler : IApiHandler, IApiRetryDelayProvider
 {
     private static readonly HttpClient HttpClient = new();
 
@@ -16,12 +16,21 @@ public class HttpApiHandler : IApiHandler
 
     private readonly string _apiUrl;
     private readonly string _jobId;
+    private readonly Func<TimeSpan, Task> _retryDelay;
 
     public HttpApiHandler(string apiUrl, string jobId)
+        : this(apiUrl, jobId, Task.Delay)
+    {
+    }
+
+    internal HttpApiHandler(string apiUrl, string jobId, Func<TimeSpan, Task> retryDelay)
     {
         _apiUrl = apiUrl.TrimEnd('/');
         _jobId = jobId;
+        _retryDelay = retryDelay;
     }
+
+    Task IApiRetryDelayProvider.DelayAsync(TimeSpan delay) => _retryDelay(delay);
 
     public async Task SendAsync(string endpoint, object body, string method)
     {
@@ -37,12 +46,7 @@ public class HttpApiHandler : IApiHandler
         if (!response.IsSuccessStatusCode)
         {
             var responseContent = await response.Content.ReadAsStringAsync();
-            if (!string.IsNullOrEmpty(responseContent))
-            {
-                responseContent = string.Concat(": ", responseContent);
-            }
-
-            throw new HttpRequestException(message: $"{(int)response.StatusCode} ({response.StatusCode}){responseContent}", inner: null, statusCode: response.StatusCode);
+            throw new HttpApiException(method, endpoint, response.StatusCode, responseContent);
         }
     }
 

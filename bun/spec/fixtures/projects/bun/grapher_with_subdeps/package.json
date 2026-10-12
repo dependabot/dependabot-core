@@ -1,0 +1,10 @@
+{
+  "name": "grapher-subdeps-test",
+  "version": "1.0.0",
+  "dependencies": {
+    "fetch-factory": "^0.0.1"
+  },
+  "devDependencies": {
+    "etag": "^1.0.0"
+  }
+}

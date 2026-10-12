@@ -96,7 +96,7 @@ module Dependabot
 
       sig { params(field: String).returns(T.nilable(String)) }
       def extract_version_content(field)
-        parsed_version = parsed_elm_json.fetch(field, nil)
+        parsed_version = T.cast(parsed_elm_json.fetch(field, nil), T.nilable(String))
 
         return if parsed_version.nil? || parsed_version.empty?
 
@@ -112,7 +112,10 @@ module Dependabot
 
         DEPENDENCY_TYPES.each do |dep_type|
           if repo_type == "application"
-            dependencies_hash = parsed_elm_json.fetch(dep_type, {})
+            dependencies_hash = T.cast(
+              parsed_elm_json.fetch(dep_type, {}),
+              T::Hash[String, T::Hash[String, String]]
+            )
             dependencies_hash.fetch("direct", {}).each do |name, req|
               dependency_set << build_elm_json_dependency(
                 name: name, group: dep_type, requirement: req, direct: true
@@ -124,7 +127,7 @@ module Dependabot
               )
             end
           elsif repo_type == "package"
-            parsed_elm_json.fetch(dep_type, {}).each do |name, req|
+            T.cast(parsed_elm_json.fetch(dep_type, {}), T::Hash[String, String]).each do |name, req|
               dependency_set << build_elm_json_dependency(
                 name: name, group: dep_type, requirement: req, direct: true
               )
@@ -164,7 +167,7 @@ module Dependabot
 
       sig { returns(String) }
       def repo_type
-        parsed_elm_json.fetch("type")
+        T.cast(parsed_elm_json.fetch("type"), String)
       end
 
       sig { override.void }
@@ -183,9 +186,9 @@ module Dependabot
         req.requirements.first.last
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, T.anything]) }
       def parsed_elm_json
-        @parsed_elm_json ||= T.let(JSON.parse(T.must(elm_json&.content)), T.nilable(T::Hash[String, T.untyped]))
+        @parsed_elm_json ||= T.let(JSON.parse(T.must(elm_json&.content)), T.nilable(T::Hash[String, T.anything]))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, elm_json&.path || MANIFEST_FILE
       end

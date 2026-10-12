@@ -1,5 +1,13 @@
 # Core utility functions for DependabotHelper.jl
 
+# Pkg 1.13 changed `registry_info` to take the `RegistryInstance` alongside the
+# `PkgEntry`; earlier versions only accept the entry. Dispatch on what this Pkg has.
+if hasmethod(Pkg.Registry.registry_info, Tuple{Pkg.Registry.RegistryInstance, Pkg.Registry.PkgEntry})
+    registry_info(reg::Pkg.Registry.RegistryInstance, entry::Pkg.Registry.PkgEntry) = Pkg.Registry.registry_info(reg, entry)
+else
+    registry_info(::Pkg.Registry.RegistryInstance, entry::Pkg.Registry.PkgEntry) = Pkg.Registry.registry_info(entry)
+end
+
 """
     with_autoprecompilation_disabled(f::Function)
 
@@ -60,6 +68,31 @@ function get_manifest_file_name(dir::String)
 end
 
 """
+    environment_manifest_files(dir::String) -> Vector{String}
+
+The manifests in `dir` that some Julia release uses: each version-specific
+`Manifest-vX.Y.toml`, and the unversioned manifest the other releases fall back to.
+For each name, `JuliaManifest` wins over `Manifest`, as in Julia's own lookup.
+"""
+function environment_manifest_files(dir::String)
+    names = readdir(dir)
+    versions = unique(m[2] for m in (match(r"^(Julia)?Manifest-v(\d+\.\d+)\.toml$", name) for name in names) if m !== nothing)
+    # Julia reads version-specific manifests from 1.10 on, and only by the canonical name
+    filter!(versions) do v
+        version = VersionNumber(v)
+        v == "$(version.major).$(version.minor)" && version >= v"1.10"
+    end
+    candidates = [("JuliaManifest-v$v.toml", "Manifest-v$v.toml") for v in versions]
+    push!(candidates, ("JuliaManifest.toml", "Manifest.toml"))
+    manifests = String[]
+    for pair in candidates
+        i = findfirst(in(names), pair)
+        i === nothing || push!(manifests, joinpath(dir, pair[i]))
+    end
+    return manifests
+end
+
+"""
     find_workspace_project_files(dir::String)
 
 Find all Project.toml files in a workspace that share the same manifest file.
@@ -83,16 +116,9 @@ function find_workspace_project_files(dir::String)
         # Julia's Pkg.Types.Context handles workspace detection automatically
         project_file, manifest_file = find_environment_files(dir)
 
-        if !isfile(manifest_file)
-            # No manifest file found, just return the single project file
-            return Dict(
-                "project_files" => [project_file],
-                "manifest_file" => "",
-                "workspace_root" => dirname(project_file)
-            )
-        end
-
-        # The workspace root is where the manifest file lives
+        # Pkg computes the manifest path (and thus the workspace root) even
+        # when the manifest has not been committed, so workspace member
+        # discovery must not depend on the file's existence.
         workspace_root = dirname(manifest_file)
         project_files = String[]
 
@@ -107,7 +133,8 @@ function find_workspace_project_files(dir::String)
 
         return Dict(
             "project_files" => project_files,
-            "manifest_file" => manifest_file,
+            "manifest_file" => isfile(manifest_file) ? manifest_file : "",
+            "manifest_files" => environment_manifest_files(workspace_root),
             "workspace_root" => workspace_root
         )
     catch ex
@@ -126,7 +153,7 @@ function collect_workspace_projects!(project_files::Vector{String}, dir::String)
     # Find the project file in this directory
     proj_file = nothing
     for name in ("JuliaProject.toml", "Project.toml")
-        candidate = joinpath(dir, name)
+        candidate = normpath(joinpath(dir, name))
         if isfile(candidate)
             proj_file = candidate
             break
@@ -135,10 +162,10 @@ function collect_workspace_projects!(project_files::Vector{String}, dir::String)
 
     proj_file === nothing && return
 
-    # Add this project file if not already present
-    if !(proj_file in project_files)
-        push!(project_files, proj_file)
-    end
+    # Already visited: stop here, otherwise mutually-referencing
+    # [workspace].projects entries would recurse forever
+    proj_file in project_files && return
+    push!(project_files, proj_file)
 
     # Parse the project file to find workspace members
     try

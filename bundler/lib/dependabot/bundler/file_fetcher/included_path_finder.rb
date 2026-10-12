@@ -33,12 +33,13 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :file
 
-        sig { params(node: T.untyped).returns(T::Array[String]) }
+        sig { params(node: T.nilable(Prism::Node)).returns(T::Array[String]) }
         def find_require_relative_paths(node)
           return [] if node.nil?
 
           if declares_require_relative?(node)
-            relative_arg = node.arguments&.arguments&.first
+            call_node = T.cast(node, Prism::CallNode)
+            relative_arg = call_node.arguments&.arguments&.first
             return [] unless relative_arg.is_a?(Prism::StringNode)
 
             path = relative_arg.unescaped
@@ -52,12 +53,13 @@ module Dependabot
           end
         end
 
-        sig { params(node: T.untyped).returns(T::Array[String]) }
+        sig { params(node: T.nilable(Prism::Node)).returns(T::Array[String]) }
         def find_eval_paths(node)
           return [] if node.nil?
 
           if declares_eval?(node)
-            eval_arg = node.arguments&.arguments&.first
+            call_node = T.cast(node, Prism::CallNode)
+            eval_arg = call_node.arguments&.arguments&.first
 
             if eval_arg.is_a?(Prism::Node)
               file_read_node = find_file_read_node(eval_arg)

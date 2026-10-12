@@ -39,6 +39,8 @@ pr-updated expected.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directory: "/"
     provider: example
@@ -54,6 +56,8 @@ job:
 -- input-updating-pr.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directory: "/"
     provider: example

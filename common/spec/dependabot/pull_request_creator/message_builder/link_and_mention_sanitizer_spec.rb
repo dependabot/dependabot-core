@@ -7,10 +7,14 @@ require "dependabot/pull_request_creator/message_builder/" \
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSanitizer do
   subject(:sanitizer) do
-    described_class.new(github_redirection_service: github_redirection_service)
+    described_class.new(
+      github_redirection_service: github_redirection_service,
+      metadata_source_url: metadata_source_url
+    )
   end
 
   let(:github_redirection_service) { "github-redirect.com" }
+  let(:metadata_source_url) { nil }
 
   describe "#sanitize_links_and_mentions" do
     subject(:sanitize_links_and_mentions) do
@@ -35,6 +39,30 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
           expect(sanitize_links_and_mentions).to eq(
             "<p>Great work <a href=\"https://github.com/greysteil-work\">" \
             "<code>@\u200Bgreysteil-work</code></a>!</p>\n"
+          )
+        end
+      end
+
+      context "when the metadata source is GitLab" do
+        let(:metadata_source_url) { "https://gitlab.com/dependabot/dependabot" }
+        let(:text) { "Great work @first.last and @first_last!" }
+
+        it "uses GitLab profile links and username syntax" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Great work <a href=\"https://gitlab.com/first.last\">" \
+            "<code>@\u200Bfirst.last</code></a> and " \
+            "<a href=\"https://gitlab.com/first_last\"><code>@\u200Bfirst_last</code></a>!</p>\n"
+          )
+        end
+      end
+
+      context "when the metadata source is unknown" do
+        let(:metadata_source_url) { "https://registry.example.com/packages/business" }
+
+        it "falls back to a GitHub profile link" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Great work <a href=\"https://github.com/greysteil\">" \
+            "<code>@\u200Bgreysteil</code></a>!</p>\n"
           )
         end
       end
@@ -212,6 +240,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
             "<p>Thanks <code>@\u200Bdependabot/reviewers</code></p>\n"
           )
         end
+
+        context "when the metadata source is GitLab" do
+          let(:metadata_source_url) { "https://gitlab.com/dependabot/dependabot" }
+          let(:text) { "Thanks @dependabot_org/release.team" }
+
+          it "uses GitLab username syntax" do
+            expect(sanitize_links_and_mentions).to eq(
+              "<p>Thanks <code>@\u200Bdependabot_org/release.team</code></p>\n"
+            )
+          end
+        end
       end
 
       context "when the text includes multiple team mentions" do
@@ -231,6 +270,36 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
           expect(sanitize_links_and_mentions).to eq(
             "<p>Thanks <code>@\u200Bdependabot/reviewers</code></p>\n<p>And more regular text</p>\n"
           )
+        end
+      end
+
+      context "when a scoped package name is inside a link" do
+        let(:text) { "Sourced from [@adamlui/minify.js](https://npmjs.com/package/@adamlui/minify.js)" }
+
+        it "preserves the link without partial code formatting" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Sourced from <a href=\"https://npmjs.com/package/@adamlui/minify.js\">" \
+            "@\u200Badamlui/minify.js</a></p>\n"
+          )
+        end
+      end
+
+      context "when a scoped package name without extension is inside a link" do
+        let(:text) { "Sourced from [@angular/cli](https://npmjs.com/package/@angular/cli)" }
+
+        it "preserves the link without code formatting" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Sourced from <a href=\"https://npmjs.com/package/@angular/cli\">" \
+            "@\u200Bangular/cli</a></p>\n"
+          )
+        end
+      end
+
+      context "when a team mention is inside a link" do
+        let(:text) { "Reviewed by [@dependabot/reviewers](https://github.com/orgs/dependabot/teams/reviewers)" }
+
+        it "inserts zero-width space to prevent notifications" do
+          expect(sanitize_links_and_mentions).to include("@\u200Bdependabot/reviewers")
         end
       end
     end

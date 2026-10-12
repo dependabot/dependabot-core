@@ -34,7 +34,7 @@ public class CloneWorker
         JobErrorBase? parseError = null;
         try
         {
-            jobFile = RunWorker.Deserialize(jobFileContent);
+            jobFile = RunWorker.Deserialize(jobFileContent, _logger);
             if (jobFile is null)
             {
                 parseError = new UnknownError(new Exception("Job file could not be deserialized"), _jobId);

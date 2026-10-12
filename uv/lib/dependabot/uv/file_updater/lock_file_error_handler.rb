@@ -11,35 +11,17 @@ module Dependabot
       class LockFileErrorHandler
         extend T::Sig
 
-        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
-        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
-        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        UV_UNRESOLVABLE_REGEX = /× No solution found when resolving dependencies.*[\s\S]*$/
+        UV_BUILD_FAILED_REGEX = /× Failed to build.*[\s\S]*$/
+        RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
 
-        GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(%r{git clone.*(?<url>https?://[^\s]+)}, Regexp)
-        GIT_REFERENCE_NOT_FOUND_REGEX = T.let(
-          /Did not find branch or tag '(?<tag>[^\n"']+)'/m,
-          Regexp
-        )
-        GIT_CREDENTIALS_ERROR_REGEX = T.let(
-          /could not read Username for '(?<url>[^']+)'/,
-          Regexp
-        )
-        GIT_DEPENDENCY_URL_FROM_UV_REGEX = T.let(
-          %r{git\+(?<url>https?://[^\s@#]+)},
-          Regexp
-        )
-        PYTHON_VERSION_ERROR_REGEX = T.let(
-          /Requires-Python|requires-python|python_requires|Python version/i,
-          Regexp
-        )
-        AUTH_ERROR_REGEX = T.let(
-          /authentication|unauthorized|forbidden|HTTP status code: 40[13]/i,
-          Regexp
-        )
-        TIMEOUT_ERROR_REGEX = T.let(
-          /timed?\s*out|connection.*reset|read timeout|connect timeout/i,
-          Regexp
-        )
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = %r{git clone.*(?<url>https?://[^\s]+)}
+        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"']+)'/m
+        GIT_CREDENTIALS_ERROR_REGEX = /could not read Username for '(?<url>[^']+)'/
+        GIT_DEPENDENCY_URL_FROM_UV_REGEX = %r{git\+(?<url>https?://[^\s@#]+)}
+        PYTHON_VERSION_ERROR_REGEX = /Requires-Python|requires-python|python_requires|Python version/i
+        AUTH_ERROR_REGEX = /authentication|unauthorized|forbidden|HTTP status code: 40[13]/i
+        TIMEOUT_ERROR_REGEX = /timed?\s*out|connection.*reset|read timeout|connect timeout/i
         NETWORK_ERROR_REGEX = T.let(
           Regexp.union(
             /ConnectionError/i,
@@ -52,39 +34,17 @@ module Dependabot
           ),
           Regexp
         )
-        PACKAGE_NOT_FOUND_REGEX = T.let(
-          /No matching distribution found|package.*not found|No versions found/i,
-          Regexp
-        )
-        UV_REQUIRED_VERSION_REGEX = T.let(
-          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
-          Regexp
-        )
-        TOML_PARSE_ERROR_REGEX = T.let(
-          /Failed to parse:?\s*`?(?<file>[^`\n]+\.toml)`?|TOML parse error/i,
-          Regexp
-        )
+        PACKAGE_NOT_FOUND_REGEX = /No matching distribution found|package.*not found|No versions found/i
+        UV_REQUIRED_VERSION_REGEX =
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/
+        TOML_PARSE_ERROR_REGEX = /Failed to parse:?\s*`?(?<file>[^`\n]+\.toml)`?|TOML parse error/i
         # uv prefixes errors with interpreter info that should be stripped
-        USING_CPYTHON_LINE_REGEX = T.let(
-          /\AUsing CPython \S+ interpreter at: [^\n]+\n?/,
-          Regexp
-        )
-        PYPROJECT_SCHEMA_ERROR_REGEX = T.let(
-          /missing field `project`|missing.*\[project\].*table|Field `project\.name` is required/i,
-          Regexp
-        )
-        WORKSPACE_MEMBER_ERROR_REGEX = T.let(
-          /Failed to find workspace member|No `pyproject\.toml` found in workspace member/i,
-          Regexp
-        )
-        PATH_DEPENDENCY_ERROR_REGEX = T.let(
-          /Failed to read `(?<path>[^`]+)`|failed to read from file `(?<path>[^`]+)`/i,
-          Regexp
-        )
-        HTTP_STATUS_ERROR_REGEX = T.let(
-          /HTTP status code: (?<code>\d{3})/i,
-          Regexp
-        )
+        USING_CPYTHON_LINE_REGEX = /\AUsing CPython \S+ interpreter at: [^\n]+\n?/
+        PYPROJECT_SCHEMA_ERROR_REGEX =
+          /missing field `project`|missing.*\[project\].*table|Field `project\.name` is required/i
+        WORKSPACE_MEMBER_ERROR_REGEX = /Failed to find workspace member|No `pyproject\.toml` found in workspace member/i
+        PATH_DEPENDENCY_ERROR_REGEX = /Failed to read `(?<path>[^`]+)`|failed to read from file `(?<path>[^`]+)`/i
+        HTTP_STATUS_ERROR_REGEX = /HTTP status code: (?<code>\d{3})/i
         UV_MISCONFIGURED_REGEX = T.let(
           Regexp.union(
             /unknown field `[^`]+`, expected one of/i,
@@ -100,7 +60,7 @@ module Dependabot
         # This limit ensures error messages remain readable while providing enough
         # context for debugging. Most uv error messages convey the key information
         # within the first few lines.
-        MAX_ERROR_LINES = T.let(10, Integer)
+        MAX_ERROR_LINES = 10
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_uv_error(error)

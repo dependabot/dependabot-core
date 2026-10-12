@@ -14,6 +14,9 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 public sealed record Job
 {
     public string PackageManager { get; init; } = "nuget";
+
+    public JobCommand Command { get; init; } = JobCommand.None;
+
     public ImmutableArray<AllowedUpdate> AllowedUpdates { get; init; } = [new AllowedUpdate()];
 
     [JsonConverter(typeof(NullAsBoolConverter))]
@@ -34,12 +37,12 @@ public sealed record Job
     public required JobSource Source { get; init; }
     public bool UpdateSubdependencies { get; init; } = false;
     public bool UpdatingAPullRequest { get; init; } = false;
+    public bool MultiEcosystemUpdate { get; init; } = false;
     public bool VendorDependencies { get; init; } = false;
     public bool RejectExternalCode { get; init; } = false;
     public bool RepoPrivate { get; init; } = false;
     public CommitOptions? CommitMessageOptions { get; init; } = null;
     public ImmutableArray<Dictionary<string, object>>? CredentialsMetadata { get; init; } = null;
-    public int MaxUpdaterRunTime { get; init; } = 0;
     public Cooldown? Cooldown { get; init; } = null;
 
     public ImmutableArray<string> GetRawDirectories()
@@ -50,7 +53,7 @@ public sealed record Job
             builder.Add(Source.Directory);
         }
 
-        builder.AddRange(Source.Directories ?? []);
+        builder.AddRange((Source.Directories ?? []).Where(d => d is not null));
         if (builder.Count == 0)
         {
             builder.Add("/");
@@ -99,25 +102,98 @@ public sealed record Job
         return existingPullRequests;
     }
 
-    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(IEnumerable<Dependency> dependencies, bool considerVersions)
+    public DependencyGroup? ResolveDependencyGroupToRefresh()
     {
-        if (dependencies.Any(d => d.Version is null))
+        if (DependencyGroupToRefresh is null)
         {
             return null;
         }
 
-        string CreateIdentifier(string dependencyName, string dependencyVersion)
+        var exactGroup = FindConfiguredDependencyGroup(DependencyGroupToRefresh);
+        if (exactGroup is not null)
         {
-            return $"{dependencyName}/{(considerVersions ? dependencyVersion : null)}";
+            return exactGroup.IsGroupedByDependencyName ? null : exactGroup;
         }
 
-        var desiredDependencySet = dependencies.Select(d => CreateIdentifier(d.Name, d.Version!)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var dynamicParent = DependencyGroups
+            .Where(g => g.IsGroupedByDependencyName)
+            .Where(g => DependencyGroupToRefresh.StartsWith($"{g.Name}/", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(g => g.Name.Length)
+            .FirstOrDefault();
+        if (dynamicParent is null)
+        {
+            return null;
+        }
+
+        var dependencyName = DependencyGroupToRefresh[(dynamicParent.Name.Length + 1)..];
+        if (dependencyName.Length == 0 ||
+            (Dependencies.Length > 0 && !Dependencies.Contains(dependencyName, StringComparer.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        return dynamicParent.CreateDependencyNameSubgroup(dependencyName, DependencyGroupToRefresh);
+    }
+
+    public DependencyGroup? FindConfiguredDependencyGroup(string name)
+    {
+        return DependencyGroups.FirstOrDefault(g => g.Name == name) ??
+            DependencyGroups.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
+        IEnumerable<ReportedDependencyWithDirectory> dependencies,
+        bool considerVersions)
+    {
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false);
+    }
+
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
+        IEnumerable<ReportedDependencyWithDirectory> dependencies,
+        bool considerVersions,
+        string dependencyGroupName)
+    {
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true);
+    }
+
+    private Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
+        IEnumerable<ReportedDependencyWithDirectory> dependencies,
+        bool considerVersions,
+        string? dependencyGroupName,
+        bool matchGroupName)
+    {
+        var desiredDependencies = dependencies.ToArray();
+        if (desiredDependencies.Any(d => d.Version is null))
+        {
+            return null;
+        }
+
+        bool NamesAndVersionsMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
+        {
+            return desiredDependency.Name.Equals(existingDependency.DependencyName, StringComparison.OrdinalIgnoreCase) &&
+                (!considerVersions ||
+                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion.ToString(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
+        {
+            return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
+                (existingDependency.Directory is null ||
+                    desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
+        }
+
         var existingPullRequests = GetAllExistingPullRequests();
         var existingPullRequest = existingPullRequests
             .FirstOrDefault(pr =>
             {
-                var prDependencySet = pr.Item2.Select(d => CreateIdentifier(d.DependencyName, d.DependencyVersion.ToString())).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                return prDependencySet.SetEquals(desiredDependencySet);
+                if (matchGroupName &&
+                    !string.Equals(pr.Item1, dependencyGroupName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                return desiredDependencies.All(desired => pr.Item2.Any(existing => DependenciesMatch(desired, existing))) &&
+                    pr.Item2.All(existing => desiredDependencies.Any(desired => DependenciesMatch(desired, existing)));
             });
         return existingPullRequest;
     }
@@ -125,7 +201,7 @@ public sealed record Job
     public bool IsDependencyIgnoredByNameOnly(string dependencyName)
     {
         var packageNamesToIgnore = IgnoreConditions
-            .Where(c => (c.UpdateTypes ?? []).Length == 0 && c.VersionRequirement is null) // ignoring by name means there can't be any qualification
+            .Where(c => c.IsUnconditionalIgnore())
             .Select(c => c.DependencyName)
             .ToArray();
         var isIgnored = packageNamesToIgnore
@@ -210,8 +286,8 @@ public sealed record Job
                     return true;
                 }
 
-                // ...no specific update being performed, do it if it's not transitive
-                return !dependency.IsTransitive;
+                // ...no specific update being performed, do it if it's a top-level dependency
+                return dependency.IsTopLevel;
             }
         }
 

@@ -7,10 +7,20 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/maven/shared/shared_version_finder"
 require "dependabot/maven/version"
+require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
+  # SharedVersionFinder is abstract, so use a concrete subclass for testing
+  let(:concrete_class) do
+    Class.new(described_class) do
+      def package_details
+        nil
+      end
+    end
+  end
+
   let(:finder) do
-    described_class.new(
+    concrete_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
@@ -697,6 +707,486 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           end
         end
       end
+
+      context "when the dependency versions uses dates for the delimiter" do
+        context "when the date is dot separated" do
+          let(:dependency_version) { "2025.12.16.05.04" }
+          let(:comparison_version) { "2026.12.16.05.06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is dash separated" do
+          let(:dependency_version) { "2025-12-16-05-04" }
+          let(:comparison_version) { "2026-12-16-05-06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is compact YYYYMMDD" do
+          let(:dependency_version) { "20251216" }
+          let(:comparison_version) { "20261216" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when it is a compact YYYYMMDD date" do
+          let(:dependency_version) { "1.0-20251216" }
+          let(:comparison_version) { "1.0-20261216" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is embedded in a version string" do
+          let(:dependency_version) { "1.0.0-2025_12_16_05_04" }
+          let(:comparison_version) { "1.0.0-2026_12_16_05_06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date has single digit month/day" do
+          let(:dependency_version) { "2025_1_6_05_04" }
+          let(:comparison_version) { "2026_1_6_05_06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when date appears with prefix and suffix text" do
+          let(:dependency_version) { "release-2025_12_16_05_04-hotfix" }
+          let(:comparison_version) { "release-2026_12_16_05_06-hotfix" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the dependency version uses dates for the delimiter" do
+          context "when the date is dot separated" do
+            let(:dependency_version) { "2025.12.16.05.04" }
+            let(:comparison_version) { "2026.12.16.05.06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is dash separated" do
+            let(:dependency_version) { "2025-12-16-05-04" }
+            let(:comparison_version) { "2026-12-16-05-06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is compact YYYYMMDD" do
+            let(:dependency_version) { "20251216" }
+            let(:comparison_version) { "20261216" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is a unix timestamp" do
+            # This test is not resolved via the date logic but the numeric suffix logic
+            # but it's worth testing that it doesn't cause a failure
+            let(:dependency_version) { "1.0-1766457600" }
+            let(:comparison_version) { "2.0-1766257600" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is embedded after a semver prefix" do
+            let(:dependency_version) { "1.0-20251216" }
+            let(:comparison_version) { "1.0-20261216" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is embedded in a version string" do
+            let(:dependency_version) { "1.0.0-2025_12_16_05_04" }
+            let(:comparison_version) { "1.0.0-2026_12_16_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date has single digit month and day" do
+            let(:dependency_version) { "2025_1_6_05_04" }
+            let(:comparison_version) { "2026_1_6_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when only current is a date" do
+            let(:dependency_version) { "2025-12-16" }
+            let(:comparison_version) { "1.0" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when comparison version is a date" do
+            let(:dependency_version) { "1.0" }
+            let(:comparison_version) { "2025-12-16" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date has a leading separator" do
+            let(:dependency_version) { "_2025_12_16_05_04" }
+            let(:comparison_version) { "_2026_12_16_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the version has a single number" do
+            # May or may not be a date
+            let(:dependency_version) { "2024919191" }
+            let(:comparison_version) { "2024.1" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date appears with prefix and suffix text" do
+            let(:dependency_version) { "release-2025_12_16_05_04-hotfix" }
+            let(:comparison_version) { "release-2026_12_16_05_06-hotfix" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the version contains an invalid date" do
+            let(:dependency_version) { "2025_13_16_05_04" }
+            let(:comparison_version) { "2026_13_16_05_06" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when the version contains an invalid day" do
+            let(:dependency_version) { "2025_12_32_05_04" }
+            let(:comparison_version) { "2026_12_32_05_06" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when candidate is a pre-release version" do
+            let(:dependency_version) { "2026_12_32_05_06" }
+            let(:comparison_version) { "23.0-RC1" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when existing is a pre-release version" do
+            let(:dependency_version) { "23.0-RC1" }
+            let(:comparison_version) { "2026_12_32_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is embedded in a non semantic version" do
+            let(:dependency_version) { "RELEASE-2025.07.3" }
+            let(:comparison_version) { "RELEASE-2025.08.3" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when it is missing the day" do
+            let(:dependency_version) { "RELEASE-2024.1" }
+            let(:comparison_version) { "RELEASE-2024.1" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when there is a mix" do
+            let(:dependency_version) { "2019.05.Stable.3" }
+            let(:comparison_version) { "2019.05.Stable.4" }
+
+            it { is_expected.to be true }
+          end
+        end
+      end
+    end
+  end
+
+  describe "#filter_date_based_versions" do
+    subject(:filtered_versions) { finder.send(:filter_date_based_versions, releases) }
+
+    let(:releases) do
+      versions.map { |v| Dependabot::Package::PackageRelease.new(version: version_class.new(v)) }
+    end
+
+    context "when the current version is date-based (>= 100)" do
+      let(:dependency_version) { "20230101" }
+      let(:versions) { %w(20230101 20230202 20230303) }
+
+      it "does not filter any versions" do
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(20230101 20230202 20230303))
+      end
+    end
+
+    context "when the current version is NOT date-based (< 100)" do
+      let(:dependency_version) { "23.3-jre" }
+      let(:versions) { %w(23.3 23.6 20230101 1901) }
+
+      it "filters out versions > 1900" do
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(23.3 23.6))
+      end
+    end
+
+    context "when no versions exceed 1900" do
+      let(:dependency_version) { "1.0.0" }
+      let(:versions) { %w(1.0.0 1.1.0 2.0.0) }
+
+      it "returns all versions" do
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(1.0.0 1.1.0 2.0.0))
+      end
+    end
+
+    context "when the dependency has no version" do
+      let(:dependency_version) { nil }
+      let(:versions) { %w(1.0.0 20230101) }
+
+      it "filters out date-based versions" do
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(1.0.0))
+      end
+    end
+  end
+
+  describe "#filter_version_types" do
+    subject(:filtered_versions_by_type) { finder.send(:filter_version_types, releases) }
+
+    let(:releases) do
+      versions.map { |v| Dependabot::Package::PackageRelease.new(version: version_class.new(v)) }
+    end
+
+    context "when the dependency has a jre suffix" do
+      let(:dependency_version) { "23.3-jre" }
+      let(:versions) { %w(23.4-jre 23.4-android 23.5-jre 23.5) }
+
+      it "keeps only versions with compatible suffixes" do
+        result = filtered_versions_by_type.map { |r| r.version.to_s }
+        expect(result).to include("23.4-jre", "23.5-jre")
+        expect(result).not_to include("23.4-android")
+      end
+    end
+
+    context "when the dependency has no suffix" do
+      let(:dependency_version) { "1.0.0" }
+      let(:versions) { %w(1.1.0 1.2.0-jre8 1.3.0) }
+
+      it "keeps versions without suffixes" do
+        result = filtered_versions_by_type.map { |r| r.version.to_s }
+        expect(result).to include("1.1.0", "1.3.0")
+        expect(result).not_to include("1.2.0-jre8")
+      end
+    end
+
+    context "when all versions match the type" do
+      let(:dependency_version) { "1.0.0" }
+      let(:versions) { %w(1.1.0 1.2.0 2.0.0) }
+
+      it "returns all versions" do
+        expect(filtered_versions_by_type.map { |r| r.version.to_s }).to eq(%w(1.1.0 1.2.0 2.0.0))
+      end
+    end
+  end
+
+  describe "#wants_prerelease?" do
+    subject { finder.send(:wants_prerelease?) }
+
+    context "when the dependency version is a prerelease" do
+      let(:dependency_version) { "1.0.0-RC1" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency version is a stable release" do
+      let(:dependency_version) { "1.0.0" }
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no version" do
+      let(:dependency_version) { nil }
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no version but requirements reference a prerelease" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-alpha1",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency is stable but requirements reference a prerelease" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-beta1",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a numbered DEV qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-DEV5",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a numbered PREVIEW qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-PREVIEW1",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a numbered EXPERIMENTAL qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-EXPERIMENTAL2",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a dot-separated number qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-DEV.5",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a stable version" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the requirement contains a RELEASE qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0.RELEASE",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the requirement is a Maven range with brackets containing a prerelease" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "[1.0.0-alpha1, 2.0.0)",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a SNAPSHOT qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-SNAPSHOT",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+  end
+
+  describe "#wants_date_based_version?" do
+    subject { finder.send(:wants_date_based_version?) }
+
+    context "when the dependency version is >= 100" do
+      let(:dependency_version) { "20230101" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency version is exactly 100" do
+      let(:dependency_version) { "100" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency version is < 100" do
+      let(:dependency_version) { "23.3-jre" }
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no version" do
+      let(:dependency_version) { nil }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#version_class" do
+    subject(:resolved_version_class) { finder.send(:version_class) }
+
+    it "returns the dependency's version class" do
+      expect(resolved_version_class).to eq(Dependabot::Maven::Version)
     end
   end
 end

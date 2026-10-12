@@ -20,6 +20,8 @@ stdout '{"data":{"error-type":"security_update_not_needed","error-details":{"dep
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:

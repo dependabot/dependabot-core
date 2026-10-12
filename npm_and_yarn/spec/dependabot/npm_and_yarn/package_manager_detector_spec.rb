@@ -81,7 +81,8 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
 
   let(:lockfiles) { { npm: npm_lockfile, yarn: yarn_lockfile, pnpm: pnpm_lockfile } }
   let(:package_json) { { "packageManager" => "npm@7" } }
-  let(:detector) { described_class.new(lockfiles, package_json) }
+  let(:config) { Dependabot::Package::NpmPackageManagerConfig.from_package_json(package_json) }
+  let(:detector) { described_class.new(lockfiles, config) }
 
   describe "#detect_package_manager" do
     context "when npm lockfile exists" do
@@ -165,6 +166,15 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
       context "when there are unknown keys in the engines" do
         let(:lockfiles) { {} }
         let(:package_json) { { "engines" => { "node" => "1" } } }
+
+        it "returns default (npm)" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+
+      context "when a package manager engine has a null requirement" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => { "yarn" => nil } } }
 
         it "returns default (npm)" do
           expect(detector.detect_package_manager).to eq("npm")

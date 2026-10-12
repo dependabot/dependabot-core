@@ -17,7 +17,7 @@
 # See also {AST::Node}, {AST::Processor::Mixin} and {AST::Sexp} for
 # additional recommendations and design patterns.
 #
-# source://ast//lib/ast.rb#13
+# pkg:gem/ast#lib/ast.rb:13
 module AST; end
 
 # Node is an immutable class, instances of which represent abstract
@@ -56,7 +56,7 @@ module AST; end
 # temporary node type requires making globally visible changes to
 # the codebase.
 #
-# source://ast//lib/ast/node.rb#40
+# pkg:gem/ast#lib/ast/node.rb:40
 class AST::Node
   # Constructs a new instance of Node.
   #
@@ -68,23 +68,13 @@ class AST::Node
   #
   # The `properties` hash is passed to {#assign_properties}.
   #
-  # @return [Node] a new instance of Node
-  #
-  # source://ast//lib/ast/node.rb#72
+  # pkg:gem/ast#lib/ast/node.rb:72
   def initialize(type, children = T.unsafe(nil), properties = T.unsafe(nil)); end
 
-  # Concatenates `array` with `children` and returns the resulting node.
-  #
-  # @return [AST::Node]
-  #
-  # source://ast//lib/ast/node.rb#172
+  # pkg:gem/ast#lib/ast/node.rb:172
   def +(array); end
 
-  # Appends `element` to `children` and returns the resulting node.
-  #
-  # @return [AST::Node]
-  #
-  # source://ast//lib/ast/node.rb#181
+  # pkg:gem/ast#lib/ast/node.rb:181
   def <<(element); end
 
   # Compares `self` to `other`, possibly converting with `to_ast`. Only
@@ -92,14 +82,14 @@ class AST::Node
   #
   # @return [Boolean]
   #
-  # source://ast//lib/ast/node.rb#153
+  # pkg:gem/ast#lib/ast/node.rb:153
   def ==(other); end
 
   # Appends `element` to `children` and returns the resulting node.
   #
   # @return [AST::Node]
   #
-  # source://ast//lib/ast/node.rb#177
+  # pkg:gem/ast#lib/ast/node.rb:177
   def append(element); end
 
   # Returns the children of this node.
@@ -114,23 +104,17 @@ class AST::Node
   #
   # @return [Array]
   #
-  # source://ast//lib/ast/node.rb#56
+  # pkg:gem/ast#lib/ast/node.rb:56
   def children; end
 
-  # Nodes are already frozen, so there is no harm in returning the
-  # current node as opposed to initializing from scratch and freezing
-  # another one.
-  #
-  # @return self
-  #
-  # source://ast//lib/ast/node.rb#118
+  # pkg:gem/ast#lib/ast/node.rb:118
   def clone; end
 
   # Concatenates `array` with `children` and returns the resulting node.
   #
   # @return [AST::Node]
   #
-  # source://ast//lib/ast/node.rb#168
+  # pkg:gem/ast#lib/ast/node.rb:168
   def concat(array); end
 
   # Enables matching for Node, where type is the first element
@@ -138,7 +122,7 @@ class AST::Node
   #
   # @return [Array]
   #
-  # source://ast//lib/ast/node.rb#253
+  # pkg:gem/ast#lib/ast/node.rb:253
   def deconstruct; end
 
   # Nodes are already frozen, so there is no harm in returning the
@@ -147,67 +131,48 @@ class AST::Node
   #
   # @return self
   #
-  # source://ast//lib/ast/node.rb#115
+  # pkg:gem/ast#lib/ast/node.rb:115
   def dup; end
 
   # Test if other object is equal to
-  #
-  # @param other [Object]
+  # @param [Object] other
   # @return [Boolean]
   #
-  # source://ast//lib/ast/node.rb#85
+  # pkg:gem/ast#lib/ast/node.rb:85
   def eql?(other); end
 
   # Returns the precomputed hash value for this node
-  #
   # @return [Integer]
   #
-  # source://ast//lib/ast/node.rb#61
+  # pkg:gem/ast#lib/ast/node.rb:61
   def hash; end
 
   # Converts `self` to a s-expression ruby string.
   # The code return will recreate the node, using the sexp module s()
   #
-  # @param indent [Integer] Base indentation level.
+  # @param  [Integer] indent Base indentation level.
   # @return [String]
   #
-  # source://ast//lib/ast/node.rb#211
+  # pkg:gem/ast#lib/ast/node.rb:211
   def inspect(indent = T.unsafe(nil)); end
 
-  # Returns the children of this node.
-  # The returned value is frozen.
-  # The to_a alias is useful for decomposing nodes concisely.
-  # For example:
-  #
-  #     node = s(:gasgn, :$foo, s(:integer, 1))
-  #     var_name, value = *node
-  #     p var_name # => :$foo
-  #     p value    # => (integer 1)
-  #
-  # @return [Array]
-  #
-  # source://ast//lib/ast/node.rb#57
+  # pkg:gem/ast#lib/ast/node.rb:57
   def to_a; end
 
   # @return [AST::Node] self
   #
-  # source://ast//lib/ast/node.rb#229
+  # pkg:gem/ast#lib/ast/node.rb:229
   def to_ast; end
 
-  # Converts `self` to a pretty-printed s-expression.
-  #
-  # @param indent [Integer] Base indentation level.
-  # @return [String]
-  #
-  # source://ast//lib/ast/node.rb#204
+  # pkg:gem/ast#lib/ast/node.rb:204
   def to_s(indent = T.unsafe(nil)); end
 
   # Converts `self` to a pretty-printed s-expression.
   #
-  # @param indent [Integer] Base indentation level.
+  # @param  [Integer] indent Base indentation level.
   # @return [String]
   #
-  # source://ast//lib/ast/node.rb#187
+  # pkg:gem/ast#lib/ast/node.rb:187
   def to_sexp(indent = T.unsafe(nil)); end
 
   # Converts `self` to an Array where the first element is the type as a Symbol,
@@ -215,14 +180,13 @@ class AST::Node
   #
   # @return [Array<Symbol, [...Array]>]
   #
-  # source://ast//lib/ast/node.rb#237
+  # pkg:gem/ast#lib/ast/node.rb:237
   def to_sexp_array; end
 
   # Returns the type of this node.
-  #
   # @return [Symbol]
   #
-  # source://ast//lib/ast/node.rb#43
+  # pkg:gem/ast#lib/ast/node.rb:43
   def type; end
 
   # Returns a new instance of Node where non-nil arguments replace the
@@ -234,12 +198,12 @@ class AST::Node
   #
   # If the resulting node would be identical to `self`, does nothing.
   #
-  # @param type [Symbol, nil]
-  # @param children [Array, nil]
-  # @param properties [Hash, nil]
+  # @param  [Symbol, nil] type
+  # @param  [Array, nil]  children
+  # @param  [Hash, nil]   properties
   # @return [AST::Node]
   #
-  # source://ast//lib/ast/node.rb#133
+  # pkg:gem/ast#lib/ast/node.rb:133
   def updated(type = T.unsafe(nil), children = T.unsafe(nil), properties = T.unsafe(nil)); end
 
   protected
@@ -252,7 +216,7 @@ class AST::Node
   #
   # @return [nil]
   #
-  # source://ast//lib/ast/node.rb#98
+  # pkg:gem/ast#lib/ast/node.rb:98
   def assign_properties(properties); end
 
   # Returns `@type` with all underscores replaced by dashes. This allows
@@ -261,12 +225,12 @@ class AST::Node
   #
   # @return [String]
   #
-  # source://ast//lib/ast/node.rb#264
+  # pkg:gem/ast#lib/ast/node.rb:264
   def fancy_type; end
 
   private
 
-  # source://ast//lib/ast/node.rb#107
+  # pkg:gem/ast#lib/ast/node.rb:107
   def original_dup; end
 end
 
@@ -277,7 +241,7 @@ end
 #
 # @deprecated Use {AST::Processor::Mixin} instead.
 #
-# source://ast//lib/ast/processor.rb#8
+# pkg:gem/ast#lib/ast/processor.rb:8
 class AST::Processor
   include ::AST::Processor::Mixin
 end
@@ -520,14 +484,14 @@ end
 # use some partial evaluation before! The possibilites are
 # endless. Have fun.
 #
-# source://ast//lib/ast/processor/mixin.rb#240
+# pkg:gem/ast#lib/ast/processor/mixin.rb:240
 module AST::Processor::Mixin
   # Default handler. Does nothing.
   #
-  # @param node [AST::Node]
+  # @param  [AST::Node] node
   # @return [AST::Node, nil]
   #
-  # source://ast//lib/ast/processor/mixin.rb#284
+  # pkg:gem/ast#lib/ast/processor/mixin.rb:284
   def handler_missing(node); end
 
   # Dispatches `node`. If a node has type `:foo`, then a handler
@@ -538,19 +502,19 @@ module AST::Processor::Mixin
   # If the handler returns `nil`, `node` is returned; otherwise,
   # the return value of the handler is passed along.
   #
-  # @param node [AST::Node, nil]
+  # @param  [AST::Node, nil] node
   # @return [AST::Node, nil]
   #
-  # source://ast//lib/ast/processor/mixin.rb#251
+  # pkg:gem/ast#lib/ast/processor/mixin.rb:251
   def process(node); end
 
   # {#process}es each node from `nodes` and returns an array of
   # results.
   #
-  # @param nodes [Array<AST::Node>]
+  # @param  [Array<AST::Node>] nodes
   # @return [Array<AST::Node>]
   #
-  # source://ast//lib/ast/processor/mixin.rb#274
+  # pkg:gem/ast#lib/ast/processor/mixin.rb:274
   def process_all(nodes); end
 end
 
@@ -573,7 +537,7 @@ end
 #
 # This way the amount of boilerplate code is greatly reduced.
 #
-# source://ast//lib/ast/sexp.rb#20
+# pkg:gem/ast#lib/ast/sexp.rb:20
 module AST::Sexp
   # Creates a {Node} with type `type` and children `children`.
   # Note that the resulting node is of the type AST::Node and not a
@@ -581,6 +545,6 @@ module AST::Sexp
   # This would not pose a problem with comparisons, as {Node#==}
   # ignores metadata.
   #
-  # source://ast//lib/ast/sexp.rb#26
+  # pkg:gem/ast#lib/ast/sexp.rb:26
   def s(type, *children); end
 end

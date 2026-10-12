@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
@@ -15,19 +16,62 @@ module Dependabot
       extend T::Sig
 
       require_relative "dependency_grapher/lockfile_generator"
+      require_relative "dependency_grapher/npm_relationship_resolver"
+      require_relative "dependency_grapher/yarn_relationship_resolver"
+      require_relative "dependency_grapher/pnpm_relationship_resolver"
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        # Prefer lockfile if present, otherwise use package.json
+        # An ephemerally generated lockfile should not be reported as the
+        # relevant file since it doesn't exist in the repository.
+        return package_json if @ephemeral_lockfile_generated
+
         lockfile || package_json
+      end
+
+      # Override to expand multi-version dependencies into separate resolved
+      # dependency entries. When the same package exists at multiple versions
+      # (e.g., is-number@6.0.0 direct + is-number@7.0.0 transitive), each
+      # version gets its own entry with correct subdependency edges.
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+      def resolved_dependencies
+        prepare! unless prepared
+
+        @dependencies.each_with_object({}) do |dep, resolved|
+          all_versions = dep.metadata_dependencies(:all_versions) || [dep]
+
+          all_versions.each do |version_dep|
+            purl = build_purl(version_dep)
+            next if resolved.key?(purl)
+
+            resolved[purl] = Dependabot::DependencyGraphers::ResolvedDependency.new(
+              package_url: purl,
+              direct: version_dep.top_level? || !version_dep.metadata[:alias].nil?,
+              runtime: version_dep.production?,
+              dependencies: subdependency_purls_for(version_dep)
+            )
+          end
+        end
       end
 
       sig { override.void }
       def prepare!
+        # Enable alias extraction for graph jobs so aliased packages appear
+        # in the dependency graph for security scanning.
+        file_parser.dealias_packages!
+
+        # Graph jobs never call `FileParser#parse` through `#ecosystem` (unlike
+        # update/security jobs), so without this the npm engine constraint for
+        # this directory would never be set up, and the thread-local npm
+        # version selector would still hold whichever directory ran last (or
+        # none at all). Force it here, before any npm command can run (namely
+        # ephemeral lockfile generation below), so the right npm is active.
+        file_parser.ecosystem
+
         if lockfile.nil?
           Dependabot.logger.info("No lockfile found, generating ephemeral lockfile for dependency graphing")
           generate_ephemeral_lockfile!
-          emit_missing_lockfile_warning!
+          emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
       end
@@ -74,11 +118,14 @@ module Dependabot
 
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles_hash
-        {
-          npm: dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
-          yarn: dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
-          pnpm: dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
-        }
+        @lockfiles_hash ||= T.let(
+          {
+            npm: dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
+            yarn: dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
+            pnpm: dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
+          },
+          T.nilable(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
+        )
       end
 
       sig { returns(String) }
@@ -86,7 +133,7 @@ module Dependabot
         @detected_package_manager ||= T.let(
           PackageManagerDetector.new(
             lockfiles_hash,
-            parsed_package_json
+            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json)
           ).detect_package_manager,
           T.nilable(String)
         )
@@ -101,16 +148,18 @@ module Dependabot
         )
 
         ephemeral_lockfile = generator.generate
-        return unless ephemeral_lockfile
 
         # Inject the ephemeral lockfile into the dependency files
         # so the file parser can use it
         inject_ephemeral_lockfile(ephemeral_lockfile)
+        @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
 
         Dependabot.logger.info(
           "Successfully generated ephemeral #{ephemeral_lockfile.name} for dependency graphing"
         )
       rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = e
         Dependabot.logger.warn(
           "Failed to generate ephemeral lockfile: #{e.message}. " \
           "Dependency versions may not be resolved."
@@ -122,7 +171,8 @@ module Dependabot
         dependency_files << ephemeral_lockfile
 
         # Clear our cached lockfile reference so it picks up the new one
-        @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+        remove_instance_variable(:@lockfile) if instance_variable_defined?(:@lockfile)
+        remove_instance_variable(:@lockfiles_hash) if instance_variable_defined?(:@lockfiles_hash)
 
         # Clear the FileParser's memoized lockfile references so it will
         # find the newly injected lockfile when parse is called
@@ -140,20 +190,84 @@ module Dependabot
         Dependabot.logger.warn(
           "No lockfile was found in this repository. " \
           "Dependabot generated a temporary lockfile to determine exact dependency versions.\n\n" \
-          "To ensure consistent builds and security scanning, we recommend:\n" \
-          "  - Committing your package-lock.json (npm), yarn.lock (yarn), or pnpm-lock.yaml (pnpm)\n" \
-          "  - Setting up a scheduled Dependabot graph job to periodically scan for changes\n\n" \
+          "To ensure consistent builds and security scanning, we recommend committing your " \
+          "package-lock.json (npm), yarn.lock (yarn), or pnpm-lock.yaml (pnpm). " \
           "Without a committed lockfile, resolved dependency versions may change between scans " \
           "due to new package releases."
         )
       end
 
-      # Fetches subdependencies for a given dependency.
-      # For npm/yarn/pnpm, we can extract this from the lockfile parser if available.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        # Check if the parser has attached depends_on metadata
-        dependency.metadata.fetch(:depends_on, [])
+        key = "#{dependency.name}@#{dependency.version}"
+        package_relationships.fetch(key, [])
+      end
+
+      # Builds purl strings for subdependencies directly from the name@version
+      # entries in package_relationships, without going through dependencies_by_name
+      # which only holds one combined dep per package name.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def subdependency_purls_for(dependency)
+        return [] if errored_fetching_subdependencies
+
+        key = "#{dependency.name}@#{dependency.version}"
+        children = package_relationships.fetch(key, [])
+
+        children.filter_map do |child_key|
+          child_name, child_version = split_name_version(child_key)
+          next unless child_name && child_version
+
+          purl_name = child_name.sub(/^@/, "%40")
+          format(PURL_TEMPLATE, type: "npm", name: purl_name, version: "@#{child_version}")
+        end
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        []
+      end
+
+      # Splits a "name@version" string, handling scoped packages like "@scope/pkg@1.0.0"
+      sig { params(name_version: String).returns([T.nilable(String), T.nilable(String)]) }
+      def split_name_version(name_version)
+        # For scoped packages (@scope/name@version), find the second @
+        at_index = if name_version.start_with?("@")
+                     name_version.index("@", 1)
+                   else
+                     name_version.index("@")
+                   end
+        return [name_version, nil] unless at_index
+
+        version = name_version[(at_index + 1)..]
+        version = nil if version.nil? || version.empty?
+        [name_version[0...at_index], version]
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def package_relationships
+        @package_relationships ||= T.let(
+          fetch_package_relationships,
+          T.nilable(T::Hash[String, T::Array[String]])
+        )
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        @package_relationships = {}
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_package_relationships
+        case detected_package_manager
+        when NpmPackageManager::NAME
+          NpmRelationshipResolver.new(T.must(lockfiles_hash[:npm])).relationships
+        when YarnPackageManager::NAME
+          YarnRelationshipResolver.new(T.must(lockfiles_hash[:yarn])).relationships
+        when PNPMPackageManager::NAME
+          PnpmRelationshipResolver.new(T.must(lockfiles_hash[:pnpm])).relationships
+        else
+          {}
+        end
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }

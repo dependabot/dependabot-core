@@ -9,20 +9,23 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_credential_helpers"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
   module NpmAndYarn
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+      include Package::RegistryCredentialHelpers
 
       # Lifecycle scripts that run automatically during package installation.
       # These are security-relevant because they execute with user privileges.
       # https://docs.npmjs.com/cli/v11/using-npm/scripts#npm-install
-      INSTALL_SCRIPTS = T.let(
-        %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze,
-        T::Array[String]
-      )
+      INSTALL_SCRIPTS = %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze
+
+      # RFC 3986 unreserved ASCII characters; everything else needs percent-encoding.
+      CHARS_REQUIRING_ENCODING = /[^A-Za-z0-9._~-]/
+      private_constant :CHARS_REQUIRING_ENCODING
 
       sig { override.returns(T.nilable(String)) }
       def homepage_url
@@ -36,12 +39,14 @@ module Dependabot
 
       sig { override.returns(T.nilable(String)) }
       def maintainer_changes
-        return unless npm_releaser
+        releaser = npm_releaser
+        return unless releaser
         return unless npm_listing.dig("time", dependency.version)
-        return if previous_releasers&.include?(npm_releaser)
+        return if previous_releasers&.include?(releaser)
 
+        encoded_releaser = encode_npm_releaser(releaser)
         "This version was pushed to npm by " \
-          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "[#{releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
           "releaser for #{dependency.name} since your current version."
       end
 
@@ -95,6 +100,16 @@ module Dependabot
         script_names = scripts.map { |s| "`#{s}`" }.join(", ")
         noun = scripts.size == 1 ? "script" : "scripts"
         "#{action} #{script_names} #{noun}"
+      end
+
+      # Percent-encodes npm releaser names for safe inclusion in npmjs.com profile URLs.
+      sig { params(releaser: String).returns(String) }
+      def encode_npm_releaser(releaser)
+        return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
+
+        releaser.gsub(CHARS_REQUIRING_ENCODING) do |char|
+          char.bytes.map { |byte| "%#{format('%02X', byte)}" }.join
+        end
       end
 
       sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
@@ -157,34 +172,44 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_registry
-        # Attempt to use version_listing first, as fetching the entire listing
-        # array can be slow (if it's large)
-        potential_sources =
-          [
-            get_source(latest_version_listing["repository"]),
-            get_source(latest_version_listing["homepage"]),
-            get_source(latest_version_listing["bugs"])
-          ].compact
+        # Attempt to use the latest version listing first, as fetching the
+        # entire listing array can be slow (if it's large)
+        latest_source = source_from_listing(latest_version_listing)
+        return latest_source if latest_source
 
-        return potential_sources.first if potential_sources.any?
+        seen_urls = T.let(Set.new, T::Set[String])
+        all_version_listings.each do |_, listing|
+          listing_source = source_from_listing(listing, seen_urls)
+          return listing_source if listing_source
+        end
 
-        potential_sources =
-          all_version_listings.flat_map do |_, listing|
-            [
-              get_source(listing["repository"]),
-              get_source(listing["homepage"]),
-              get_source(listing["bugs"])
-            ]
-          end.compact
-
-        potential_sources.first
+        nil
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig do
+        params(
+          listing: T::Hash[String, T.untyped],
+          seen_urls: T.nilable(T::Set[String])
+        ).returns(T.nilable(Dependabot::Source))
+      end
+      def source_from_listing(listing, seen_urls = nil)
+        [listing["repository"], listing["homepage"], listing["bugs"]].each do |details|
+          url = get_url(details)
+          next unless url
+          next if seen_urls && !seen_urls.add?(url)
+
+          source = get_source(details)
+          return source if source
+        end
+
+        nil
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def new_source
         sources = dependency.requirements
-                            .map { |r| r.fetch(:source) }.uniq.compact
-                            .sort_by { |source| Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+                            .map(&:source_hash).uniq.compact
+                            .sort_by { |source| Package::RegistryFinder.central_registry?(T.cast(source[:url], String)) ? 1 : 0 }
 
         sources.first
       end
@@ -244,7 +269,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
         url = new_source&.[](:url) || new_source&.fetch("url")
-        Source.from_url(url)
+        Source.from_url(T.cast(url, T.nilable(String)))
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
@@ -254,11 +279,14 @@ module Dependabot
         @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
 
         response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest", headers: registry_auth_headers)
-        @latest_version_listing = JSON.parse(response.body) if response.status == 200
+        if response.status == 200
+          parsed = JSON.parse(response.body)
+          @latest_version_listing = parsed if parsed.is_a?(Hash)
+        end
 
-        @latest_version_listing
+        T.must(@latest_version_listing)
       rescue JSON::ParserError, Excon::Error::Timeout
-        @latest_version_listing
+        T.must(@latest_version_listing)
       end
 
       sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
@@ -281,22 +309,25 @@ module Dependabot
         return T.must(@npm_listing) if response.status >= 500
 
         begin
-          @npm_listing = JSON.parse(response.body)
+          parsed = JSON.parse(response.body)
+          @npm_listing = parsed if parsed.is_a?(Hash)
         rescue JSON::ParserError
           raise unless non_standard_registry?
         end
 
-        @npm_listing
+        T.must(@npm_listing)
       rescue Excon::Error::Timeout
-        @npm_listing
+        T.must(@npm_listing)
       end
 
       sig { returns(String) }
       def dependency_url
         registry_url =
-          if new_source.nil?
-            # Check credentials for a configured registry before falling back to public registry
-            configured_registry_from_credentials || "https://registry.npmjs.org"
+          if (configured_registry = configured_registry_from_credentials)
+            # Prioritize replaces-base credential over lockfile source
+            configured_registry
+          elsif new_source.nil?
+            "https://registry.npmjs.org"
           else
             new_source&.fetch(:url)
           end
@@ -311,41 +342,30 @@ module Dependabot
 
       sig { returns(T::Hash[String, String]) }
       def registry_auth_headers
-        return {} unless auth_token
+        token = auth_token
+        return {} unless token
 
-        { "Authorization" => "Bearer #{auth_token}" }
-      end
-
-      sig { returns(T.nilable(String)) }
-      def configured_registry_from_credentials
-        # Look for a credential that replaces the base registry (global registry replacement)
-        replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
-        return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
-
-        nil
-      end
-
-      sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
-      def normalize_registry_url(registry)
-        return nil unless registry
-        return registry if registry.start_with?("http")
-
-        "https://#{registry}"
+        auth_header_for(token)
       end
 
       sig { returns(String) }
       def dependency_registry
-        if new_source.nil? then "registry.npmjs.org"
-        else
-          new_source&.fetch(:url)&.gsub("https://", "")&.gsub("http://", "")
+        # Prioritize replaces-base credential over lockfile source
+        if (configured_registry = configured_registry_from_credentials)
+          return configured_registry.sub(%r{^https?://}, "")
         end
+
+        source = new_source
+        return "registry.npmjs.org" if source.nil?
+
+        T.cast(source.fetch(:url), String).gsub("https://", "").gsub("http://", "")
       end
 
       sig { returns(T.nilable(String)) }
       def auth_token
         credentials
           .select { |cred| cred["type"] == "npm_registry" }
-          .find { |cred| cred["registry"] == dependency_registry }
+          .find { |cred| cred["registry"]&.sub(%r{^https?://}, "")&.gsub(%r{/+$}, "") == dependency_registry }
           &.fetch("token", nil)
       end
 

@@ -69,9 +69,9 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
             groups: [],
             file: "main.tf",
             source: {
-              type: "registry",
-              registry_hostname: "registry.opentofu.org",
-              module_identifier: "hashicorp/consul/aws"
+              "type" => "registry",
+              "registry_hostname" => "registry.opentofu.org",
+              "module_identifier" => "hashicorp/consul/aws"
             }
           }],
           previous_requirements: [{
@@ -79,9 +79,9 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
             groups: [],
             file: "main.tf",
             source: {
-              type: "registry",
-              registry_hostname: "registry.opentofu.org",
-              module_identifier: "hashicorp/consul/aws"
+              "type" => "registry",
+              "registry_hostname" => "registry.opentofu.org",
+              "module_identifier" => "hashicorp/consul/aws"
             }
           }],
           package_manager: "opentofu"
@@ -143,6 +143,47 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
 
       it do
         expect(source_url).to eq("https://github.com/opentofu/terraform-provider-aws")
+      end
+    end
+
+    context "with an oci module" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example",
+          version: "1.0.1",
+          previous_version: "1.0.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "oci",
+              digest: nil,
+              tag: "1.0.1",
+              version: "1.0.1",
+              artifact_identifier: "ghcr.io/diofeher/test-module",
+              subdirectory: nil
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "oci",
+              digest: nil,
+              tag: "1.0.0",
+              version: "1.0.0",
+              artifact_identifier: "ghcr.io/diofeher/test-module",
+              subdirectory: nil
+            }
+          }],
+          package_manager: "opentofu"
+        )
+      end
+
+      it do
+        expect(source_url).to eq("https://ghcr.io/diofeher/test-module")
       end
     end
   end

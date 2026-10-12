@@ -226,6 +226,139 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a config file at repository root and Cargo.toml in a deeply nested directory" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "a/b/c"
+      )
+    end
+
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/a/b/c/"
+    end
+
+    before do
+      # Mock the nested directory listing (includes Cargo.toml and Cargo.lock)
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/a/b/c?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_lockfile.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_manifest.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "Cargo.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_lockfile.json"),
+          headers: json_header
+        )
+
+      # No config anywhere between the nested directory and the repository root
+      %w(a/b/c a/b a).each do |dir|
+        base = "https://api.github.com/repos/gocardless/bump/contents/#{dir}"
+        stub_request(:get, "#{base}/.cargo?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+        stub_request(:get, "#{base}/.cargo/config.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+        stub_request(:get, "#{base}/.cargo/config?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+      end
+
+      # Config at repository root, reachable only by walking up multiple parent dirs
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_dir.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_config.json"),
+          headers: json_header
+        )
+    end
+
+    it "names the config file exactly '.cargo/config.toml' regardless of nesting depth" do
+      config = file_fetcher_instance.files.find { |f| f.name.end_with?("config.toml") }
+
+      expect(config.name).to eq(".cargo/config.toml")
+      # Depth is captured in the directory / path, never in the name.
+      expect(config.path).to eq("/a/b/c/.cargo/config.toml")
+    end
+  end
+
+  context "with cargo config files in both the package directory and the repository root" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "my_dir"
+      )
+    end
+
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
+    end
+
+    before do
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/my_dir?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: fixture("github", "contents_cargo_with_lockfile.json"), headers: json_header)
+
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: fixture("github", "contents_cargo_manifest.json"), headers: json_header)
+
+      stub_request(:get, url + "Cargo.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: fixture("github", "contents_cargo_lockfile.json"), headers: json_header)
+
+      # Local config in the package directory
+      stub_request(:get, url + ".cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: fixture("github", "contents_cargo_dir.json"), headers: json_header)
+      stub_request(:get, url + ".cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: fixture("github", "contents_cargo_config.json"), headers: json_header)
+
+      # Config also present at the repository root (an ancestor directory)
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: fixture("github", "contents_cargo_config.json"), headers: json_header)
+    end
+
+    it "fetches both the package-directory and ancestor cargo configs" do
+      config_files = file_fetcher_instance.files.select { |f| f.name.end_with?(".cargo/config.toml") }
+
+      expect(config_files.map(&:name))
+        .to match_array(%w(.cargo/config.toml ../.cargo/config.toml))
+      # The ancestor config keeps its relative path so Cargo can merge it,
+      # while the package-directory config keeps the canonical name.
+      expect(config_files.map(&:path))
+        .to match_array(%w(/my_dir/.cargo/config.toml /.cargo/config.toml))
+      expect(config_files).to all(be_support_file)
+    end
+  end
+
   context "without a lockfile" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -458,6 +591,14 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
               body: fixture("github", "contents_cargo_without_lockfile.json"),
               headers: json_header
             )
+
+          # No cargo config in the parent (repository root) directory
+          stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config.toml?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404, headers: json_header)
+          stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404, headers: json_header)
         end
 
         it "fetches the path dependency's Cargo.toml" do

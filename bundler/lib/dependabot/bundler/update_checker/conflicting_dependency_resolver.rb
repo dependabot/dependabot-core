@@ -49,7 +49,7 @@ module Dependabot
         #
         # @param dependency [Dependabot::Dependency] the dependency to check
         # @param target_version [String] the version to check
-        # @return [Array<Hash{String => String}]
+        # @return [Array<Hash{String => Object}]
         #   * name [String] the blocking dependencies name
         #   * version [String] the version of the blocking dependency
         #   * requirement [String] the requirement on the target_dependency
@@ -58,7 +58,7 @@ module Dependabot
             dependency: Dependabot::Dependency,
             target_version: String
           )
-            .returns(T::Array[T::Hash[String, String]])
+            .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
         def conflicting_dependencies(dependency:, target_version:)
           return [] if lockfile.nil?

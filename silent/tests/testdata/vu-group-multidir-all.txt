@@ -75,6 +75,8 @@ dependabot update -f input-preexisting.yml --local . --updater-image ghcr.io/dep
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/foo"
@@ -92,6 +94,8 @@ job:
 -- input-preexisting.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/foo"

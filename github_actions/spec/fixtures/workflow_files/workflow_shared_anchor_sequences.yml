@@ -1,0 +1,10 @@
+on: [push]
+
+name: Shared anchor sequences
+jobs:
+  first:
+    runs-on: ubuntu-latest
+    steps: [{ uses: &pin actions/checkout@v2.1.0 }, { uses: actions/setup-node@v3.0.0 }]
+  second:
+    runs-on: ubuntu-latest
+    steps: [{ uses: *pin }, { uses: actions/setup-node@v3.0.0 }]

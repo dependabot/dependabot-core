@@ -146,7 +146,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           "➤ YN0060: │ react-dom is ...... non-overlapping ranges." \
           "➤ YN0060: │ redux is listed by your non-overlapping ranges." \
           "➤ YN0086: │ Some peer dependencies are incorrectly met by your project;" \
-          "➤ YN0086: │ Some peer dependencies are incorrectly met by dependencies;" \
+          "➤ YN0086: │ Some peer dependencies are incorrectly met by dependencies;"
       end
 
       it "raises a DependencyFileNotResolvable error" do

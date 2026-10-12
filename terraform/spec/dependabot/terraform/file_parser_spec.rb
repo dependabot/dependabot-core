@@ -151,6 +151,28 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a registry source that includes a port" do
+      let(:files) { project_dependency_files("registry_with_port") }
+
+      it "parses the module dependency with the port in the hostname" do
+        module_dep = dependencies.find { |d| d.name == "terraform-aws-modules/vpc/aws" }
+        expect(module_dep).not_to be_nil
+        expect(module_dep.version).to eq("5.5.1")
+        expect(module_dep.requirements).to eq(
+          [{
+            requirement: "5.5.1",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io:443",
+              module_identifier: "terraform-aws-modules/vpc/aws"
+            }
+          }]
+        )
+      end
+    end
+
     context "with a private registry" do
       let(:files) { project_dependency_files("private_registry") }
 
@@ -973,6 +995,26 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(module_dependency).not_to be_nil
         expect(module_dependency.version).to eq("2.2.0")
         expect(module_dependency.requirements.first[:source][:module_identifier]).to eq("babbel/cloudfront-bucket/aws")
+      end
+    end
+
+    context "when a module source address is interpolated" do
+      let(:files) { project_dependency_files("interpolated_module_source") }
+
+      it "does not raise" do
+        expect { dependencies }.not_to raise_error
+      end
+
+      it "skips the interpolated module" do
+        expect(dependencies.map(&:name).any? { |name| name.start_with?("interpolated") }).to be(false)
+      end
+
+      it "still parses the provider requirement in the same file" do
+        expect(dependencies.map(&:name)).to include("hashicorp/aws")
+      end
+
+      it "still parses a sibling module whose ref is a literal" do
+        expect(dependencies.map(&:name)).to include("literal::github::example/modules::v1.2.3")
       end
     end
 

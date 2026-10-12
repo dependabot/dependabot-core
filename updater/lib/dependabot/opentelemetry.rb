@@ -1,10 +1,12 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "opentelemetry/sdk"
 require "opentelemetry-logs-sdk"
 require "opentelemetry-metrics-sdk"
+require "dependabot/error_details"
+require "dependabot/job"
 
 module Dependabot
   module OpenTelemetry
@@ -78,7 +80,7 @@ module Dependabot
       params(
         job_id: T.any(String, Integer),
         error_type: T.any(String, Symbol),
-        error_details: T.nilable(T::Hash[T.untyped, T.untyped])
+        error_details: T.nilable(Dependabot::ErrorDetails::Detail)
       ).void
     end
     def self.record_update_job_error(job_id:, error_type:, error_details:)
@@ -89,8 +91,13 @@ module Dependabot
         Attributes::ERROR_TYPE => error_type
       }
 
-      error_details&.each do |key, value|
-        attributes.store("#{Attributes::ERROR_DETAILS}.#{key}", value)
+      case error_details
+      when Hash
+        error_details.each do |key, value|
+          attributes.store("#{Attributes::ERROR_DETAILS}.#{key}", value)
+        end
+      when String
+        attributes.store(Attributes::ERROR_DETAILS, error_details)
       end
 
       current_span.add_event(error_type, attributes: attributes)
@@ -119,8 +126,8 @@ module Dependabot
     sig do
       params(
         error: StandardError,
-        job: T.untyped,
-        tags: T::Hash[String, T.untyped]
+        job: T.nilable(Dependabot::Job),
+        tags: T::Hash[String, Object]
       ).void
     end
     def self.record_exception(error:, job: nil, tags: {})

@@ -19,7 +19,7 @@ module Dependabot
       GO_DEP_WITHOUT_VERSION =
         /\A\s*(?<name>#{MODULE_PATH})\s*\z/x
 
-      sig { params(dependency_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(dependency_string: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
       def self.parse(dependency_string)
         match = dependency_string.strip.match(GO_DEP_WITH_VERSION)
         return nil unless match

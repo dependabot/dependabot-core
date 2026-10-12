@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" ExcludeAssets="runtime" />
-    <PackageReference Include="NuGet.Core" Aliases="CoreV2" PrivateAssets="All" />
     <PackageReference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 
@@ -24,6 +23,18 @@
     directory contains a copy of that file with that method replaced by a stub.
     -->
     <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Commands\Pack\AssemblyMetadataExtractor.cs" />
+    <!--
+    The following files depend on the NuGet.Core (v2) package via the CoreV2 extern alias. This directory contains
+    replacement files with the CoreV2 dependencies removed or stubbed.
+    -->
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Program.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Commands\Command.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Commands\ProjectFactory.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Commands\UpdateCommand.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Common\CommandLineRepositoryFactory.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Credentials\CredentialProviderAdapter.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Credentials\CredentialServiceAdapter.cs" />
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\SettingsCredentialProvider.cs" />
   </ItemGroup>
 
   <ItemGroup>

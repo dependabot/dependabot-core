@@ -78,6 +78,27 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it { is_expected.to be(false) }
     end
+
+    context "with a nil requirement" do
+      let(:dependency_version) { nil }
+      let(:string_req) { nil }
+      let(:elm_package_url) do
+        "https://package.elm-lang.org/packages/realWorld/ElmPackage/releases.json"
+      end
+      let(:elm_package_response) do
+        fixture("elm_package_responses", "elm-lang-core.json")
+      end
+
+      before do
+        stub_request(:get, elm_package_url)
+          .to_return(status: 200, body: elm_package_response)
+      end
+
+      it "raises the requirement error" do
+        expect { checker.up_to_date? }
+          .to raise_error(Gem::Requirement::BadRequirementError, "Nil requirement not supported in Elm")
+      end
+    end
   end
 
   describe "can_update?" do

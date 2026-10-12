@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/NuGet.Client/">
+    <Project Path="NuGetProjects/NuGet.Build.Tasks.Pack/NuGet.Build.Tasks.Pack.csproj" />
+    <Project Path="NuGetProjects/NuGet.Build.Tasks/NuGet.Build.Tasks.csproj" />
+    <Project Path="NuGetProjects/NuGet.CommandLine/NuGet.CommandLine.csproj" />
+    <Project Path="NuGetProjects/NuGet.Commands/NuGet.Commands.csproj" />
+    <Project Path="NuGetProjects/NuGet.Common/NuGet.Common.csproj" />
+    <Project Path="NuGetProjects/NuGet.Configuration/NuGet.Configuration.csproj" />
+    <Project Path="NuGetProjects/NuGet.Credentials/NuGet.Credentials.csproj" />
+    <Project Path="NuGetProjects/NuGet.DependencyResolver.Core/NuGet.DependencyResolver.Core.csproj" />
+    <Project Path="NuGetProjects/NuGet.Frameworks/NuGet.Frameworks.csproj" />
+    <Project Path="NuGetProjects/NuGet.LibraryModel/NuGet.LibraryModel.csproj" />
+    <Project Path="NuGetProjects/NuGet.PackageManagement/NuGet.PackageManagement.csproj" />
+    <Project Path="NuGetProjects/NuGet.Packaging/NuGet.Packaging.csproj" />
+    <Project Path="NuGetProjects/NuGet.ProjectModel/NuGet.ProjectModel.csproj" />
+    <Project Path="NuGetProjects/NuGet.Protocol/NuGet.Protocol.csproj" />
+    <Project Path="NuGetProjects/NuGet.Resolver/NuGet.Resolver.csproj" />
+    <Project Path="NuGetProjects/NuGet.Versioning/NuGet.Versioning.csproj" />
+  </Folder>
+  <Project Path="DotNetPackageCorrelation.Cli/DotNetPackageCorrelation.Cli.csproj" />
+  <Project Path="DotNetPackageCorrelation.Test/DotNetPackageCorrelation.Test.csproj" />
+  <Project Path="DotNetPackageCorrelation/DotNetPackageCorrelation.csproj" />
+  <Project Path="NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj" />
+  <Project Path="NuGetUpdater.Cli/NuGetUpdater.Cli.csproj" />
+  <Project Path="NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj" />
+  <Project Path="NuGetUpdater.Core/NuGetUpdater.Core.csproj" />
+</Solution>

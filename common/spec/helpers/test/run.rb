@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 # rubocop:disable RSpec/Output -- This is a subprocess helper, not a spec. It must write to stdout/stderr.
@@ -19,6 +19,9 @@ when "useful_error"
 when "hard_error"
   puts "Oh no!"
   exit 0
+when "malformed_error"
+  $stdout.write(JSON.dump(error: nil))
+  exit 1
 when "killed"
   # SIGKILL the helper, which is what the kernel OOMKiller might do.
   Process.kill("KILL", Process.pid)

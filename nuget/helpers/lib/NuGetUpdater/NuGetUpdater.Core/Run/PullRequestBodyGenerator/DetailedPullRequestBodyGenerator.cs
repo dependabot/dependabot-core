@@ -91,7 +91,7 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
                         updateOperation.OldVersion is not null)
                     {
                         var repoName = uri.LocalPath.TrimStart('/');
-                        var versionsAndDetails = await packageDetailFinder.GetReleaseDataForVersionsAsync(repoName, updateOperation.OldVersion, updateOperation.NewVersion);
+                        var versionsAndDetails = await packageDetailFinder.GetReleaseDataForVersionsAsync(repoName, updateOperation.DependencyName, updateOperation.OldVersion, updateOperation.NewVersion);
                         var ordered = versionsAndDetails
                             .Where(kv => kv.Key != updateOperation.OldVersion)
                             .OrderByDescending(kv => kv.Key)

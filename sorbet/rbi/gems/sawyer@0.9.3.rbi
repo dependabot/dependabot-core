@@ -5,10 +5,10 @@
 # Please instead update this file by running `bin/tapioca gem sawyer`.
 
 
-# source://sawyer//lib/sawyer.rb#1
+# pkg:gem/sawyer#lib/sawyer.rb:1
 module Sawyer; end
 
-# source://sawyer//lib/sawyer/agent.rb#5
+# pkg:gem/sawyer#lib/sawyer/agent.rb:5
 class Sawyer::Agent
   # Agents handle making the requests, and passing responses to
   # Sawyer::Response.
@@ -25,27 +25,16 @@ class Sawyer::Agent
   #
   # Yields the Faraday::Connection if a block is given.
   #
-  # @return [Agent] a new instance of Agent
-  # @yield [@conn]
-  #
-  # source://sawyer//lib/sawyer/agent.rb#41
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:41
   def initialize(endpoint, options = T.unsafe(nil)); end
 
-  # Returns the value of attribute allow_undefined_methods.
-  #
-  # source://sawyer//lib/sawyer/agent.rb#9
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:9
   def allow_undefined_methods; end
 
-  # Sets the attribute allow_undefined_methods
-  #
-  # @param value the value to set the attribute allow_undefined_methods to.
-  #
-  # source://sawyer//lib/sawyer/agent.rb#9
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:9
   def allow_undefined_methods=(_arg0); end
 
-  # @return [Boolean]
-  #
-  # source://sawyer//lib/sawyer/agent.rb#142
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:142
   def allow_undefined_methods?; end
 
   # Makes a request through Faraday.
@@ -62,12 +51,12 @@ class Sawyer::Agent
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/agent.rb#90
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:90
   def call(method, url, data = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Public: Close the underlying connection.
   #
-  # source://sawyer//lib/sawyer/agent.rb#52
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:52
   def close; end
 
   # Decodes a String response body to a resource.
@@ -76,7 +65,7 @@ class Sawyer::Agent
   #
   # Returns an Object resource (Hash by default).
   #
-  # source://sawyer//lib/sawyer/agent.rb#129
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:129
   def decode_body(str); end
 
   # Encodes an object to a string for the API request.
@@ -85,97 +74,87 @@ class Sawyer::Agent
   #
   # Returns a String.
   #
-  # source://sawyer//lib/sawyer/agent.rb#120
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:120
   def encode_body(data); end
 
-  # source://sawyer//lib/sawyer/agent.rb#137
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:137
   def expand_url(url, options = T.unsafe(nil)); end
 
-  # source://sawyer//lib/sawyer/agent.rb#146
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:146
   def inspect; end
 
-  # Returns the value of attribute links_parser.
-  #
-  # source://sawyer//lib/sawyer/agent.rb#8
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:8
   def links_parser; end
 
-  # Sets the attribute links_parser
-  #
-  # @param value the value to set the attribute links_parser to.
-  #
-  # source://sawyer//lib/sawyer/agent.rb#8
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:8
   def links_parser=(_arg0); end
 
-  # source://sawyer//lib/sawyer/agent.rb#155
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:155
   def marshal_dump; end
 
-  # source://sawyer//lib/sawyer/agent.rb#159
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:159
   def marshal_load(dumped); end
 
-  # source://sawyer//lib/sawyer/agent.rb#133
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:133
   def parse_links(data); end
 
   # Public: Retains a reference to the root relations of the API.
   #
   # Returns a Sawyer::Relation::Map.
   #
-  # source://sawyer//lib/sawyer/agent.rb#59
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:59
   def rels; end
 
   # Public: Retains a reference to the root response of the API.
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/agent.rb#66
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:66
   def root; end
 
   # Public: Hits the root of the API to get the initial actions.
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/agent.rb#73
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:73
   def start; end
 
   # private
   #
-  # source://sawyer//lib/sawyer/agent.rb#151
+  # pkg:gem/sawyer#lib/sawyer/agent.rb:151
   def to_yaml_properties; end
 
   class << self
-    # source://sawyer//lib/sawyer/agent.rb#23
+    # pkg:gem/sawyer#lib/sawyer/agent.rb:23
     def decode(data); end
 
-    # source://sawyer//lib/sawyer/agent.rb#19
+    # pkg:gem/sawyer#lib/sawyer/agent.rb:19
     def encode(data); end
 
-    # source://sawyer//lib/sawyer/agent.rb#15
+    # pkg:gem/sawyer#lib/sawyer/agent.rb:15
     def serializer; end
 
-    # Sets the attribute serializer
-    #
-    # @param value the value to set the attribute serializer to.
-    #
-    # source://sawyer//lib/sawyer/agent.rb#12
+    # pkg:gem/sawyer#lib/sawyer/agent.rb:12
     def serializer=(_arg0); end
   end
 end
 
-# source://sawyer//lib/sawyer/agent.rb#6
+# pkg:gem/sawyer#lib/sawyer/agent.rb:6
 Sawyer::Agent::NO_BODY = T.let(T.unsafe(nil), Set)
 
-# source://sawyer//lib/sawyer.rb#4
+# pkg:gem/sawyer#lib/sawyer.rb:4
 class Sawyer::Error < ::StandardError; end
 
-# source://sawyer//lib/sawyer/link_parsers/hal.rb#2
+# pkg:gem/sawyer#lib/sawyer/link_parsers/hal.rb:2
 module Sawyer::LinkParsers; end
 
-# source://sawyer//lib/sawyer/link_parsers/hal.rb#4
+# pkg:gem/sawyer#lib/sawyer/link_parsers/hal.rb:4
 class Sawyer::LinkParsers::Hal
-  # source://sawyer//lib/sawyer/link_parsers/hal.rb#6
+  # pkg:gem/sawyer#lib/sawyer/link_parsers/hal.rb:6
   def parse(data); end
 end
 
-# source://sawyer//lib/sawyer/link_parsers/simple.rb#4
+# pkg:gem/sawyer#lib/sawyer/link_parsers/simple.rb:4
 class Sawyer::LinkParsers::Simple
   # Public: Parses simple *_url style links on resources
   #
@@ -183,14 +162,14 @@ class Sawyer::LinkParsers::Simple
   #
   # Returns a Hash of data with separate links Hash
   #
-  # source://sawyer//lib/sawyer/link_parsers/simple.rb#14
+  # pkg:gem/sawyer#lib/sawyer/link_parsers/simple.rb:14
   def parse(data); end
 end
 
-# source://sawyer//lib/sawyer/link_parsers/simple.rb#6
+# pkg:gem/sawyer#lib/sawyer/link_parsers/simple.rb:6
 Sawyer::LinkParsers::Simple::LINK_REGEX = T.let(T.unsafe(nil), Regexp)
 
-# source://sawyer//lib/sawyer/relation.rb#2
+# pkg:gem/sawyer#lib/sawyer/relation.rb:2
 class Sawyer::Relation
   # A Relation represents an available next action for a resource.
   #
@@ -199,19 +178,13 @@ class Sawyer::Relation
   # href   - The String URL of the location of the next action.
   # method - The Symbol HTTP method.  Default: :get
   #
-  # @return [Relation] a new instance of Relation
-  #
-  # source://sawyer//lib/sawyer/relation.rb#108
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:108
   def initialize(agent, name, href, method = T.unsafe(nil)); end
 
-  # Returns the value of attribute agent.
-  #
-  # source://sawyer//lib/sawyer/relation.rb#56
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:56
   def agent; end
 
-  # Returns the value of attribute available_methods.
-  #
-  # source://sawyer//lib/sawyer/relation.rb#56
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:56
   def available_methods; end
 
   # Public: Makes an API request with the curent Relation.
@@ -227,7 +200,7 @@ class Sawyer::Relation
   # Raises ArgumentError if the :method value is not in @available_methods.
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#259
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:259
   def call(data = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Public: Makes an API request with the curent Relation using DELETE.
@@ -240,7 +213,7 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#221
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:221
   def delete(data = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Public: Makes an API request with the curent Relation using GET.
@@ -255,7 +228,7 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#161
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:161
   def get(options = T.unsafe(nil)); end
 
   # Public: Makes an API request with the curent Relation using HEAD.
@@ -270,28 +243,22 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#144
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:144
   def head(options = T.unsafe(nil)); end
 
-  # source://sawyer//lib/sawyer/relation.rb#242
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:242
   def href(options = T.unsafe(nil)); end
 
-  # Returns the value of attribute href_template.
-  #
-  # source://sawyer//lib/sawyer/relation.rb#56
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:56
   def href_template; end
 
-  # source://sawyer//lib/sawyer/relation.rb#268
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:268
   def inspect; end
 
-  # Returns the value of attribute method.
-  #
-  # source://sawyer//lib/sawyer/relation.rb#56
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:56
   def method; end
 
-  # Returns the value of attribute name.
-  #
-  # source://sawyer//lib/sawyer/relation.rb#56
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:56
   def name; end
 
   # Public: Makes an API request with the curent Relation using OPTIONS.
@@ -304,7 +271,7 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#236
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:236
   def options(data = T.unsafe(nil), opt = T.unsafe(nil)); end
 
   # Public: Makes an API request with the curent Relation using PATCH.
@@ -317,7 +284,7 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#206
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:206
   def patch(data = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Public: Makes an API request with the curent Relation using POST.
@@ -330,7 +297,7 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#176
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:176
   def post(data = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Public: Makes an API request with the curent Relation using PUT.
@@ -343,7 +310,7 @@ class Sawyer::Relation
   #
   # Returns a Sawyer::Response.
   #
-  # source://sawyer//lib/sawyer/relation.rb#191
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:191
   def put(data = T.unsafe(nil), options = T.unsafe(nil)); end
 
   class << self
@@ -358,7 +325,7 @@ class Sawyer::Relation
     #
     # Returns a Relation.
     #
-    # source://sawyer//lib/sawyer/relation.rb#93
+    # pkg:gem/sawyer#lib/sawyer/relation.rb:93
     def from_link(agent, name, options); end
 
     # Public: Builds an index of Relations from the value of a `_links`
@@ -371,19 +338,17 @@ class Sawyer::Relation
     #
     # Returns a Relation::Map
     #
-    # source://sawyer//lib/sawyer/relation.rb#71
+    # pkg:gem/sawyer#lib/sawyer/relation.rb:71
     def from_links(agent, index, rels = T.unsafe(nil)); end
   end
 end
 
-# source://sawyer//lib/sawyer/relation.rb#3
+# pkg:gem/sawyer#lib/sawyer/relation.rb:3
 class Sawyer::Relation::Map
   # Tracks the available next actions for a resource, and
   # issues requests for them.
   #
-  # @return [Map] a new instance of Map
-  #
-  # source://sawyer//lib/sawyer/relation.rb#6
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:6
   def initialize; end
 
   # Adds a Relation to the map.
@@ -392,7 +357,7 @@ class Sawyer::Relation::Map
   #
   # Returns nothing.
   #
-  # source://sawyer//lib/sawyer/relation.rb#15
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:15
   def <<(rel); end
 
   # Gets the raw Relation by its name.
@@ -401,34 +366,34 @@ class Sawyer::Relation::Map
   #
   # Returns a Relation.
   #
-  # source://sawyer//lib/sawyer/relation.rb#24
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:24
   def [](key); end
 
-  # source://sawyer//lib/sawyer/relation.rb#50
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:50
   def inspect; end
 
   # Gets a list of the Relation names.
   #
   # Returns an Array of Symbols in no specific order.
   #
-  # source://sawyer//lib/sawyer/relation.rb#38
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:38
   def keys; end
 
   # Gets the number of mapped Relations.
   #
   # Returns an Integer.
   #
-  # source://sawyer//lib/sawyer/relation.rb#31
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:31
   def size; end
 
-  # source://sawyer//lib/sawyer/relation.rb#48
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:48
   def to_h; end
 
-  # source://sawyer//lib/sawyer/relation.rb#42
+  # pkg:gem/sawyer#lib/sawyer/relation.rb:42
   def to_hash; end
 end
 
-# source://sawyer//lib/sawyer/resource.rb#4
+# pkg:gem/sawyer#lib/sawyer/resource.rb:4
 class Sawyer::Resource
   include ::Enumerable
   extend ::Forwardable
@@ -438,9 +403,7 @@ class Sawyer::Resource
   # agent - The Sawyer::Agent that made the API request.
   # data  - Hash of key/value properties.
   #
-  # @return [Resource] a new instance of Resource
-  #
-  # source://sawyer//lib/sawyer/resource.rb#15
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:15
   def initialize(agent, data = T.unsafe(nil)); end
 
   # Allow fields to be retrieved via Hash notation
@@ -449,7 +412,7 @@ class Sawyer::Resource
   #
   # Returns the value from attrs if exists
   #
-  # source://sawyer//lib/sawyer/resource.rb#57
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:57
   def [](method); end
 
   # Allow fields to be set via Hash notation
@@ -459,39 +422,31 @@ class Sawyer::Resource
   #
   # Returns - value
   #
-  # source://sawyer//lib/sawyer/resource.rb#69
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:69
   def []=(method, value); end
 
-  # Returns the value of attribute _agent.
-  #
-  # source://sawyer//lib/sawyer/resource.rb#6
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:6
   def _agent; end
 
-  # Returns the value of attribute _fields.
-  #
-  # source://sawyer//lib/sawyer/resource.rb#6
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:6
   def _fields; end
 
-  # Returns the value of attribute _rels.
-  #
-  # source://sawyer//lib/sawyer/resource.rb#6
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:6
   def _rels; end
 
-  # Returns the value of attribute attrs.
-  #
-  # source://sawyer//lib/sawyer/resource.rb#7
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:7
   def attrs; end
 
-  # source://sawyer//lib/sawyer/resource.rb#75
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:75
   def dig(*args, **_arg1, &block); end
 
-  # source://sawyer//lib/sawyer/resource.rb#127
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:127
   def each(&block); end
 
-  # source://sawyer//lib/sawyer/resource.rb#75
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:75
   def fetch(*args, **_arg1, &block); end
 
-  # source://sawyer//lib/sawyer/resource.rb#123
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:123
   def inspect; end
 
   # Checks to see if the given key is in this resource.
@@ -500,20 +455,18 @@ class Sawyer::Resource
   #
   # Returns true if the key exists, or false.
   #
-  # @return [Boolean]
-  #
-  # source://sawyer//lib/sawyer/resource.rb#48
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:48
   def key?(key); end
 
-  # source://sawyer//lib/sawyer/resource.rb#151
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:151
   def marshal_dump; end
 
-  # source://sawyer//lib/sawyer/resource.rb#155
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:155
   def marshal_load(dumped); end
 
   # Provides access to a resource's attributes.
   #
-  # source://sawyer//lib/sawyer/resource.rb#81
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:81
   def method_missing(method, *args); end
 
   # Processes an individual value of this resource.  Hashes get exploded
@@ -523,76 +476,66 @@ class Sawyer::Resource
   #
   # Returns an Object to set as the value of a Resource key.
   #
-  # source://sawyer//lib/sawyer/resource.rb#35
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:35
   def process_value(value); end
 
-  # source://sawyer//lib/sawyer/resource.rb#136
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:136
   def to_attrs; end
 
-  # source://sawyer//lib/sawyer/resource.rb#149
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:149
   def to_h; end
 
-  # source://sawyer//lib/sawyer/resource.rb#148
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:148
   def to_hash; end
 
   # private
   #
-  # source://sawyer//lib/sawyer/resource.rb#132
+  # pkg:gem/sawyer#lib/sawyer/resource.rb:132
   def to_yaml_properties; end
 
   class << self
     # Wire up accessor methods to pull from attrs
     #
-    # source://sawyer//lib/sawyer/resource.rb#105
+    # pkg:gem/sawyer#lib/sawyer/resource.rb:105
     def attr_accessor(*attrs); end
   end
 end
 
-# source://sawyer//lib/sawyer/resource.rb#78
+# pkg:gem/sawyer#lib/sawyer/resource.rb:78
 Sawyer::Resource::ATTR_PREDICATE = T.let(T.unsafe(nil), String)
 
-# source://sawyer//lib/sawyer/resource.rb#77
+# pkg:gem/sawyer#lib/sawyer/resource.rb:77
 Sawyer::Resource::ATTR_SETTER = T.let(T.unsafe(nil), String)
 
-# source://sawyer//lib/sawyer/resource.rb#5
+# pkg:gem/sawyer#lib/sawyer/resource.rb:5
 Sawyer::Resource::SPECIAL_METHODS = T.let(T.unsafe(nil), Set)
 
-# source://sawyer//lib/sawyer/response.rb#2
+# pkg:gem/sawyer#lib/sawyer/response.rb:2
 class Sawyer::Response
   # Builds a Response after a completed request.
   #
   # agent - The Sawyer::Agent that is managing the API connection.
   # res   - A Faraday::Response.
   #
-  # @return [Response] a new instance of Response
-  #
-  # source://sawyer//lib/sawyer/response.rb#14
+  # pkg:gem/sawyer#lib/sawyer/response.rb:14
   def initialize(agent, res, options = T.unsafe(nil)); end
 
-  # Returns the value of attribute agent.
-  #
-  # source://sawyer//lib/sawyer/response.rb#3
+  # pkg:gem/sawyer#lib/sawyer/response.rb:3
   def agent; end
 
-  # Returns the value of attribute body.
-  #
-  # source://sawyer//lib/sawyer/response.rb#3
+  # pkg:gem/sawyer#lib/sawyer/response.rb:3
   def body; end
 
-  # source://sawyer//lib/sawyer/response.rb#25
+  # pkg:gem/sawyer#lib/sawyer/response.rb:25
   def data; end
 
-  # Returns the value of attribute env.
-  #
-  # source://sawyer//lib/sawyer/response.rb#3
+  # pkg:gem/sawyer#lib/sawyer/response.rb:3
   def env; end
 
-  # Returns the value of attribute headers.
-  #
-  # source://sawyer//lib/sawyer/response.rb#3
+  # pkg:gem/sawyer#lib/sawyer/response.rb:3
   def headers; end
 
-  # source://sawyer//lib/sawyer/response.rb#68
+  # pkg:gem/sawyer#lib/sawyer/response.rb:68
   def inspect; end
 
   # Turns parsed contents from an API response into a Resource or
@@ -602,42 +545,36 @@ class Sawyer::Response
   #
   # Returns either a Resource or Array of Resources.
   #
-  # source://sawyer//lib/sawyer/response.rb#38
+  # pkg:gem/sawyer#lib/sawyer/response.rb:38
   def process_data(data); end
 
   # Finds link relations from 'Link' response header
   #
   # Returns an array of Relations
   #
-  # source://sawyer//lib/sawyer/response.rb#50
+  # pkg:gem/sawyer#lib/sawyer/response.rb:50
   def process_rels; end
 
-  # Returns the value of attribute rels.
-  #
-  # source://sawyer//lib/sawyer/response.rb#3
+  # pkg:gem/sawyer#lib/sawyer/response.rb:3
   def rels; end
 
-  # Returns the value of attribute status.
-  #
-  # source://sawyer//lib/sawyer/response.rb#3
+  # pkg:gem/sawyer#lib/sawyer/response.rb:3
   def status; end
 
-  # source://sawyer//lib/sawyer/response.rb#64
+  # pkg:gem/sawyer#lib/sawyer/response.rb:64
   def time; end
 
-  # source://sawyer//lib/sawyer/response.rb#60
+  # pkg:gem/sawyer#lib/sawyer/response.rb:60
   def timing; end
 end
 
-# source://sawyer//lib/sawyer/serializer.rb#5
+# pkg:gem/sawyer#lib/sawyer/serializer.rb:5
 class Sawyer::Serializer
   # Public: Wraps a serialization format for Sawyer.  Nested objects are
   # prepared for serialization (such as changing Times to ISO 8601 Strings).
   # Any serialization format that responds to #dump and #load will work.
   #
-  # @return [Serializer] a new instance of Serializer
-  #
-  # source://sawyer//lib/sawyer/serializer.rb#39
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:39
   def initialize(format, dump_method_name = T.unsafe(nil), load_method_name = T.unsafe(nil)); end
 
   # Public: Decodes a String into an Object (usually a Hash or Array of
@@ -647,25 +584,19 @@ class Sawyer::Serializer
   #
   # Returns a decoded Object.
   #
-  # source://sawyer//lib/sawyer/serializer.rb#62
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:62
   def decode(data); end
 
-  # source://sawyer//lib/sawyer/serializer.rb#96
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:96
   def decode_hash(hash); end
 
-  # source://sawyer//lib/sawyer/serializer.rb#103
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:103
   def decode_hash_value(key, value); end
 
-  # source://sawyer//lib/sawyer/serializer.rb#88
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:88
   def decode_object(data); end
 
-  # Public: Encodes an Object (usually a Hash or Array of Hashes).
-  #
-  # data - Object to be encoded.
-  #
-  # Returns an encoded String.
-  #
-  # source://sawyer//lib/sawyer/serializer.rb#54
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:54
   def dump(data); end
 
   # Public: Encodes an Object (usually a Hash or Array of Hashes).
@@ -674,47 +605,38 @@ class Sawyer::Serializer
   #
   # Returns an encoded String.
   #
-  # source://sawyer//lib/sawyer/serializer.rb#50
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:50
   def encode(data); end
 
-  # source://sawyer//lib/sawyer/serializer.rb#77
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:77
   def encode_hash(hash); end
 
-  # source://sawyer//lib/sawyer/serializer.rb#69
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:69
   def encode_object(data); end
 
-  # Public: Decodes a String into an Object (usually a Hash or Array of
-  # Hashes).
-  #
-  # data - An encoded String.
-  #
-  # Returns a decoded Object.
-  #
-  # source://sawyer//lib/sawyer/serializer.rb#67
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:67
   def load(data); end
 
-  # @return [Boolean]
-  #
-  # source://sawyer//lib/sawyer/serializer.rb#125
+  # pkg:gem/sawyer#lib/sawyer/serializer.rb:125
   def time_field?(key, value); end
 
   class << self
-    # source://sawyer//lib/sawyer/serializer.rb#6
+    # pkg:gem/sawyer#lib/sawyer/serializer.rb:6
     def any_json; end
 
-    # source://sawyer//lib/sawyer/serializer.rb#18
+    # pkg:gem/sawyer#lib/sawyer/serializer.rb:18
     def json; end
 
-    # source://sawyer//lib/sawyer/serializer.rb#30
+    # pkg:gem/sawyer#lib/sawyer/serializer.rb:30
     def message_pack; end
 
-    # source://sawyer//lib/sawyer/serializer.rb#24
+    # pkg:gem/sawyer#lib/sawyer/serializer.rb:24
     def multi_json; end
 
-    # source://sawyer//lib/sawyer/serializer.rb#12
+    # pkg:gem/sawyer#lib/sawyer/serializer.rb:12
     def yajl; end
   end
 end
 
-# source://sawyer//lib/sawyer.rb#2
+# pkg:gem/sawyer#lib/sawyer.rb:2
 Sawyer::VERSION = T.let(T.unsafe(nil), String)

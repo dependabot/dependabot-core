@@ -1,9 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "json"
-require "time"
-require "cgi"
+require "cgi/escape"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -12,6 +10,9 @@ require "dependabot/python/name_normaliser"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/python/package/package_registry_finder"
+require "dependabot/python/package/simple_api_parser"
+require "dependabot/python/package/distribution"
+require "dependabot/python/package/pypi_json_parser"
 
 # Stores metadata for a package, including all its available versions
 module Dependabot
@@ -21,6 +22,7 @@ module Dependabot
       CREDENTIALS_PASSWORD = "password"
 
       APPLICATION_JSON = "application/json"
+      APPLICATION_PYPI_SIMPLE_JSON = "application/vnd.pypi.simple.v1+json"
       APPLICATION_TEXT = "text/html"
       CPYTHON = "cpython"
       PYTHON = "python"
@@ -42,11 +44,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(
-          dependency:,
-          dependency_files:,
-          credentials:
-        )
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
@@ -70,7 +68,7 @@ module Dependabot
                              .flat_map do |index_url|
             fetch_from_registry(index_url) || [] # Ensure it always returns an array
           rescue Excon::Error::Timeout, Excon::Error::Socket
-            raise if MAIN_PYPI_INDEXES.include?(index_url)
+            raise if main_pypi_index?(index_url)
 
             raise PrivateSourceTimedOut, sanitized_url(index_url)
           rescue URI::InvalidURIError
@@ -90,15 +88,43 @@ module Dependabot
             .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
-          metadata = fetch_from_json_registry(index_url)
+          return fetch_from_simple_registry(index_url) unless main_pypi_index?(index_url)
 
-          return metadata if metadata&.any?
+          begin
+            metadata = fetch_from_json_registry(index_url)
 
-          Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
-          fetch_from_html_registry(index_url)
-        rescue StandardError => e
-          Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
-          fetch_from_html_registry(index_url)
+            return metadata if metadata&.any?
+
+            Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
+            fetch_from_html_registry(index_url)
+          rescue Dependabot::DependencyFileNotResolvable
+            raise
+          rescue StandardError => e
+            Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
+            fetch_from_html_registry(index_url)
+          end
+        end
+
+        sig { params(index_url: String).returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def fetch_from_simple_registry(index_url)
+          Dependabot.logger.info(
+            "Fetching release information from simple registry at #{sanitized_url(index_url)} for #{dependency.name}"
+          )
+          response = registry_response_for_dependency(index_url, accept: simple_api_accept)
+          project_url = project_url_for(response, index_url)
+          check_authentication_response(response, index_url)
+
+          version_releases = if simple_json_response?(response)
+                               SimpleApiParser.new(
+                                 dependency: dependency,
+                                 project_url: project_url
+                               ).parse(response.body)
+                             else
+                               distributions_from_html(response.body, project_url: project_url)
+                             end
+
+          format_version_releases(version_releases, preserve_distributions: simple_json_response?(response))
+            .sort_by(&:version).reverse
         end
 
         # Example JSON Response Format:
@@ -161,16 +187,13 @@ module Dependabot
           return nil unless response.status == 200
 
           begin
-            data = JSON.parse(response.body)
-
-            version_releases = data["releases"]
+            version_releases = PypiJsonParser.new(source_url: json_url).parse(response.body)
 
             releases = format_version_releases(version_releases)
 
             releases.sort_by(&:version).reverse
-          rescue JSON::ParserError
-            Dependabot.logger.warn("JSON parsing error for #{json_url}. Falling back to HTML.")
-            nil
+          rescue Dependabot::DependencyFileNotResolvable
+            raise
           rescue StandardError => e
             Dependabot.logger.warn("Unexpected error while fetching JSON data: #{e.message}.")
             nil
@@ -203,123 +226,96 @@ module Dependabot
           Dependabot.logger.info(
             "Fetching release information from html registry at #{sanitized_url(index_url)} for #{dependency.name}"
           )
-          index_response = registry_response_for_dependency(index_url)
-          if index_response.status == 401 || index_response.status == 403
-            registry_index_response = registry_index_response(index_url)
+          index_response = registry_response_for_dependency(index_url, accept: APPLICATION_TEXT)
+          check_authentication_response(index_response, index_url)
 
-            if registry_index_response.status == 401 || registry_index_response.status == 403
-              raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
-            end
-          end
-
-          version_releases = extract_release_details_json_from_html(index_response.body)
+          version_releases = distributions_from_html(
+            index_response.body, project_url: project_url_for(index_response, index_url)
+          )
           releases = format_version_releases(version_releases)
 
           releases.sort_by(&:version).reverse
         end
 
-        sig do
-          params(html_body: String)
-            .returns(T::Hash[String, T::Array[T::Hash[String, T.untyped]]]) # Returns JSON-like format
+        sig { params(response: Excon::Response).returns(T::Boolean) }
+        def simple_json_response?(response)
+          response.headers["Content-Type"].to_s.split(";", 2).first.to_s.strip.downcase == APPLICATION_PYPI_SIMPLE_JSON
         end
-        def extract_release_details_json_from_html(html_body)
+
+        sig { returns(String) }
+        def simple_api_accept
+          "application/vnd.pypi.simple.v1+json, " \
+            "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+        end
+
+        sig { params(response: Excon::Response, index_url: String).void }
+        def check_authentication_response(response, index_url)
+          return unless [401, 403].include?(response.status)
+
+          index_response = registry_index_response(index_url)
+          return unless [401, 403].include?(index_response.status)
+
+          raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
+        end
+
+        sig { params(response: Excon::Response, index_url: String).returns(String) }
+        def project_url_for(response, index_url)
+          response.path ? Excon::Utils.request_uri(response.data) : index_url + normalised_name + "/"
+        end
+
+        sig { params(html_body: String, project_url: String).returns(T::Hash[String, T::Array[Distribution]]) }
+        def distributions_from_html(html_body, project_url:)
           doc = Nokogiri::HTML(html_body)
+          context = Distribution.context("HTML index", project_url)
+          releases = T.let({}, T::Hash[String, T::Array[Distribution]])
 
-          releases = {}
+          doc.css("a").each_with_index do |link, index|
+            filename = link.content
+            url = link["href"]
+            next unless filename.match?(name_regex) || url&.match?(name_regex)
 
-          doc.css("a").each do |a_tag|
-            details = version_details_from_link(a_tag.to_s)
-            if details && details["version"]
-              releases[details["version"]] ||= []
-              releases[details["version"]] << details
-            end
+            version = get_version_from_filename(filename)
+            next unless version && version_class.correct?(version)
+
+            distribution = Distribution.from_html(
+              link, version_string: version, context: "#{context}.links[#{index}]", project_url: project_url
+            )
+            releases[version] ||= []
+            T.must(releases[version]) << distribution
           end
 
           releases
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        sig do
-          params(link: T.nilable(String))
-            .returns(T.nilable(T::Hash[String, T.untyped]))
-        end
-        def version_details_from_link(link)
-          return unless link
-
-          doc = Nokogiri::XML(link)
-          filename = doc.at_css("a")&.content
-          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
-
-          return unless filename&.match?(name_regex) || url&.match?(name_regex)
-
-          version = get_version_from_filename(filename)
-          return unless version_class.correct?(version)
-
-          {
-            "version" => version,
-            "requires_python" => requires_python_from_link(link),
-            "yanked" => link.include?("data-yanked"),
-            "url" => link
-          }
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
         sig do
           params(
-            releases_json: T.nilable(T::Hash[String, T::Array[T::Hash[String, T.untyped]]])
+            distributions: T::Hash[String, T::Array[Distribution]],
+            preserve_distributions: T::Boolean
           )
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def format_version_releases(releases_json)
-          return [] unless releases_json
-
-          releases_json.each_with_object([]) do |(version, release_data_array), versions|
-            release_data = release_data_array.last
-
-            next unless release_data
-
-            release = format_version_release(version, release_data)
-
-            next unless release
-
-            versions << release
+        def format_version_releases(distributions, preserve_distributions: false)
+          distributions.each_value.flat_map do |files|
+            selected = preserve_distributions ? files : files.last(1)
+            selected.map { |distribution| format_version_release(distribution) }
           end
         end
 
-        sig do
-          params(
-            version: String,
-            release_data: T::Hash[String, T.untyped]
-          )
-            .returns(T.nilable(Dependabot::Package::PackageRelease))
-        end
-        def format_version_release(version, release_data)
-          # Skip versions that don't conform to PEP 440
-          unless Dependabot::Python::Version.correct?(version)
-            Dependabot.logger.warn("Skipping invalid version #{version}: does not match PEP 440")
-            return nil
-          end
-
-          upload_time = release_data["upload_time"]
-          released_at = Time.parse(upload_time) if upload_time
-          yanked = release_data["yanked"] || false
-          yanked_reason = release_data["yanked_reason"]
-          downloads = release_data["downloads"] || -1
-          url = release_data["url"]
-          package_type = release_data["packagetype"]
+        sig { params(distribution: Distribution).returns(Dependabot::Package::PackageRelease) }
+        def format_version_release(distribution)
           language = package_language(
-            python_version: release_data["python_version"],
-            requires_python: release_data["requires_python"]
+            python_version: distribution.python_version,
+            requires_python: distribution.requires_python
           )
 
           Dependabot::Package::PackageRelease.new(
-            version: Dependabot::Python::Version.new(version),
-            released_at: released_at,
-            yanked: yanked,
-            yanked_reason: yanked_reason,
-            downloads: downloads,
-            url: url,
-            package_type: package_type,
+            version: Dependabot::Python::Version.new(distribution.version_string),
+            released_at: distribution.released_at,
+            yanked: distribution.yanked,
+            yanked_reason: distribution.yanked_reason,
+            downloads: distribution.downloads,
+            url: distribution.url,
+            package_type: distribution.package_type,
             language: language
           )
         end
@@ -397,11 +393,11 @@ module Dependabot
           )
         end
 
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_response_for_dependency(index_url)
+        sig { params(index_url: String, accept: String).returns(Excon::Response) }
+        def registry_response_for_dependency(index_url, accept:)
           Dependabot::RegistryClient.get(
             url: index_url + normalised_name + "/",
-            headers: { "Accept" => APPLICATION_TEXT }
+            headers: { "Accept" => accept }
           )
         end
 
@@ -416,6 +412,7 @@ module Dependabot
         sig { params(filename: String).returns(T.nilable(String)) }
         def get_version_from_filename(filename)
           filename
+            .strip
             .gsub(/#{name_regex}-/i, "")
             .split(/-|\.tar\.|\.zip|\.whl/)
             .first
@@ -431,18 +428,6 @@ module Dependabot
           requirement_class.new(CGI.unescapeHTML(req_string))
         rescue Gem::Requirement::BadRequirementError
           nil
-        end
-
-        sig { params(link: String).returns(T.nilable(String)) }
-        def requires_python_from_link(link)
-          raw_value = Nokogiri::XML(link)
-                              .at_css("a")
-                              &.attribute("data-requires-python")
-                              &.content
-
-          return nil unless raw_value
-
-          CGI.unescapeHTML(raw_value) # Decodes HTML entities like &gt;=3 → >=3
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
@@ -484,6 +469,14 @@ module Dependabot
         sig { params(index_url: String).returns(String) }
         def sanitized_url(index_url)
           index_url.sub(%r{//([^/@]+)@}, "//redacted@")
+        end
+
+        sig { params(index_url: String).returns(T::Boolean) }
+        def main_pypi_index?(index_url)
+          uri = URI.parse(index_url)
+          T.must(uri.scheme.to_s.casecmp("https")).zero? && uri.port == 443 &&
+            uri.path.to_s.split("/").reject(&:empty?) == ["simple"] &&
+            %w(pypi.org pypi.python.org).include?(uri.host.to_s.downcase)
         end
 
         sig { params(dep_name: String).returns(String) }

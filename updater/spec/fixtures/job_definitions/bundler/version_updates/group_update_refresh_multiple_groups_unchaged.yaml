@@ -35,7 +35,6 @@ job:
       host: github.com
   security-advisories: []
   security-updates-only: false
-  max-updater-run-time: 2700
   vendor-dependencies: false
   repo-private: false
   proxy-log-response-body-on-auth-failure: true

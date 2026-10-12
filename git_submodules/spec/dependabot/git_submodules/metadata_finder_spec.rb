@@ -30,13 +30,13 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
         file: ".gitmodules",
         requirement: nil,
         groups: [],
-        source: { type: "git", url: url, branch: "master", ref: "master" }
+        source: { "type" => "git", "url" => url, "branch" => "master", "ref" => "master" }
       }],
       previous_requirements: [{
         file: ".gitmodules",
         requirement: nil,
         groups: [],
-        source: { type: "git", url: url, branch: "master", ref: "master" }
+        source: { "type" => "git", "url" => url, "branch" => "master", "ref" => "master" }
       }],
       package_manager: "submodules"
     )

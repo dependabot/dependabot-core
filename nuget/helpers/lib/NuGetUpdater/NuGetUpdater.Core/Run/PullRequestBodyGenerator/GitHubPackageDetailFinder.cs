@@ -28,25 +28,27 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
         return "commits";
     }
 
-    public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, NuGetVersion oldVersion, NuGetVersion newVersion)
+    public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, string dependencyName, NuGetVersion oldVersion, NuGetVersion newVersion)
     {
-        var result = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var versionReleaseData = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var packageScopedVersionReleaseData = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var otherPackageScopedVersionReleaseData = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
         var url = $"https://api.github.com/repos/{repoName}/releases?per_page=100";
         var jsonOption = await _httpFetcher.GetJsonElementAsync(url);
         if (jsonOption is null)
         {
-            return result;
+            return versionReleaseData;
         }
 
         var json = jsonOption.Value;
         if (json.ValueKind != JsonValueKind.Array)
         {
-            return result;
+            return versionReleaseData;
         }
 
         if (json.GetArrayLength() == 0)
         {
-            return result;
+            return versionReleaseData;
         }
 
         foreach (var releaseObject in json.EnumerateArray())
@@ -75,7 +77,10 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
             var tagName = tagNameElement.GetString()!;
 
             // find matching version
-            var correspondingVersion = IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);
+            var packageScopedVersion = IPackageDetailFinder.GetPackageScopedVersionFromNames(releaseName, tagName, dependencyName);
+            var correspondingVersion = packageScopedVersion ?? IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);
+            var isOtherPackageScopedVersion = packageScopedVersion is null &&
+                IPackageDetailFinder.HasPackageScopedVersionForOtherDependency(releaseName, tagName, dependencyName);
             if (correspondingVersion is null)
             {
                 continue;
@@ -90,11 +95,37 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
                 }
 
                 var body = bodyElement.GetString()!;
-                result[correspondingVersion] = (tagName, body);
+                if (packageScopedVersion is not null)
+                {
+                    packageScopedVersionReleaseData[correspondingVersion] = (tagName, body);
+                }
+                else if (isOtherPackageScopedVersion)
+                {
+                    otherPackageScopedVersionReleaseData[correspondingVersion] = (tagName, body);
+                }
+                else
+                {
+                    versionReleaseData[correspondingVersion] = (tagName, body);
+                }
             }
         }
 
-        return result;
+        if (packageScopedVersionReleaseData.Count > 0)
+        {
+            foreach (var packageScopedDetails in packageScopedVersionReleaseData)
+            {
+                versionReleaseData[packageScopedDetails.Key] = packageScopedDetails.Value;
+            }
+
+            return versionReleaseData;
+        }
+
+        foreach (var otherPackageScopedDetails in otherPackageScopedVersionReleaseData)
+        {
+            versionReleaseData[otherPackageScopedDetails.Key] = otherPackageScopedDetails.Value;
+        }
+
+        return versionReleaseData;
     }
 
     public string GetReleasesUrlPath() => "releases";

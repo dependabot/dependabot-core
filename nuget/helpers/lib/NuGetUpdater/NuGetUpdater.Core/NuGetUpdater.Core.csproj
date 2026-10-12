@@ -11,6 +11,7 @@
     <None Include="DependencyDiscovery.props" CopyToOutputDirectory="PreserveNewest" />
     <None Include="DependencyDiscoveryTargetingPacks.props" CopyToOutputDirectory="PreserveNewest" />
     <None Include="DependencyDiscovery.targets" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="GetProperty.targets" CopyToOutputDirectory="PreserveNewest" />
     <None Include="TargetFrameworkReporter.targets" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
@@ -25,9 +26,9 @@
     <PackageReference Include="Microsoft.Build.Locator" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="MSBuild.StructuredLogger" />
-    <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
     <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" />
     <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="packageurl-dotnet" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>

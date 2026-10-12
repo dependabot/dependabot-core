@@ -1,0 +1,6 @@
+{
+  // Top-level comment
+  "imports": {
+    "@std/path": "jsr:@std/path@^1.0.0" // trailing comment
+  }
+}

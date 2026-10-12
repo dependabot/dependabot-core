@@ -33,6 +33,22 @@ module Dependabot
           subprojects.uniq.map { |name| process_subproject_name(name) }
         end
 
+        # Returns a map of filesystem directory path => Gradle project name for all declared subprojects.
+        # For example: { 'app' => ':app', 'subprojects/chrome-trace' => ':chrome-trace' }
+        # This correctly handles custom projectDir mappings in settings files.
+        sig { returns(T::Hash[String, String]) }
+        def subproject_path_to_name_map
+          subprojects = T.let([], T::Array[String])
+          process_include_functions(subprojects)
+          subprojects.uniq.each_with_object(T.let({}, T::Hash[String, String])) do |name, map|
+            path = process_subproject_name(name)
+            next unless path
+
+            # Normalise name to Gradle colon-separated project path (e.g. ':app', ':sub:module')
+            map[path] = ":#{name.sub(/^:/, '')}"
+          end
+        end
+
         private
 
         sig { params(subprojects: T::Array[String]).void }

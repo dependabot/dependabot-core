@@ -42,17 +42,41 @@ public class PathHelperTests
         // arrange
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync([.. directoriesOnDisk.Select(d => (Path.Combine(d, "file.txt"), "contents irrelevant"))]);
 
-        // test both rooted and unrooted patterns
+        // test both rooted and unrooted patterns; the casing of the patterns and the directories on disk
+        // always agrees here, so the results are the same whether or not matching is case-sensitive
         var unrootedSearchPattern = rawSearchPattern.TrimStart('/');
         var rootedSearchPattern = rawSearchPattern.EnsurePrefix("/");
         foreach (var searchPattern in new[] { unrootedSearchPattern, rootedSearchPattern })
         {
-            // act
-            var actualDirectories = PathHelper.GetMatchingDirectoriesUnder(tempDir.DirectoryPath, searchPattern, caseSensitive: true).ToArray();
+            foreach (var caseSensitive in new[] { true, false })
+            {
+                // act
+                var actualDirectories = PathHelper.GetMatchingDirectoriesUnder(tempDir.DirectoryPath, searchPattern, caseSensitive).ToArray();
 
-            // assert
-            AssertEx.Equal(expectedDirectories, actualDirectories);
+                // assert
+                AssertEx.Equal(expectedDirectories, actualDirectories);
+            }
         }
+    }
+
+    [Theory]
+    // a pattern that differs only in casing matches when case-sensitivity is off...
+    [InlineData("/src/client/android", false, new[] { "/Src/Client/Android" })]
+    // ...and doesn't when it's on
+    [InlineData("/src/client/android", true, new string[] { })]
+    // an exactly cased pattern matches either way
+    [InlineData("/Src/Client/Android", false, new[] { "/Src/Client/Android" })]
+    [InlineData("/Src/Client/Android", true, new[] { "/Src/Client/Android" })]
+    public async Task DirectoryPatternMatchHonorsCaseSensitivity(string searchPattern, bool caseSensitive, string[] expectedDirectories)
+    {
+        // arrange
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(("Src/Client/Android/file.txt", "contents irrelevant"));
+
+        // act
+        var actualDirectories = PathHelper.GetMatchingDirectoriesUnder(tempDir.DirectoryPath, searchPattern, caseSensitive).ToArray();
+
+        // assert
+        AssertEx.Equal(expectedDirectories, actualDirectories);
     }
 
     public static IEnumerable<object[]> DirectoryPatternMatchTestData()

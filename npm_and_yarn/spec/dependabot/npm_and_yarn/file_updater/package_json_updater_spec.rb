@@ -539,5 +539,140 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "with npm overrides" do
+      let(:project_name) { "npm8/simple_with_overrides" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "3.10.1",
+          previous_version: "3.10.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "updates the override, as well as the declaration" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("overrides", "lodash")).to eq("3.10.1")
+      end
+    end
+
+    context "with npm overrides for a sub-dependency" do
+      let(:project_name) { "npm8/subdep_with_override" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates the override preserving the version prefix" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
+      end
+    end
+
+    context "with npm overrides for a sub-dependency using exact version" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "@actions/http-client": "^2.2.3" },
+            overrides: { undici: "6.23.0" }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates the override with the exact version" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("overrides", "undici")).to eq("6.24.1")
+      end
+    end
+
+    context "with yarn resolutions for a sub-dependency" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "some-parent": "^1.0.0" },
+            resolutions: { undici: "^6.23.0" }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates the resolution" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("resolutions", "undici")).to eq("^6.24.1")
+      end
+    end
+
+    context "with pnpm overrides for a sub-dependency" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "some-parent": "^1.0.0" },
+            pnpm: { overrides: { undici: ">=6.23.0" } }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates the pnpm override" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("pnpm", "overrides", "undici")).to eq(">=6.24.1")
+      end
+    end
   end
 end

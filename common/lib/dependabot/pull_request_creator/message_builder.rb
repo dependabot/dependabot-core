@@ -14,7 +14,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/message"
 require "dependabot/notices"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     # MessageBuilder builds PR message for a dependency update
@@ -45,10 +45,10 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :pr_message_footer
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, T.anything])) }
       attr_reader :commit_message_options
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, T::Array[T::Hash[String, String]]]) }
       attr_reader :vulnerabilities_fixed
 
       sig { returns(T.nilable(String)) }
@@ -79,8 +79,8 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           pr_message_header: T.nilable(String),
           pr_message_footer: T.nilable(String),
-          commit_message_options: T.nilable(T::Hash[Symbol, T.untyped]),
-          vulnerabilities_fixed: T::Hash[String, T.untyped],
+          commit_message_options: T.nilable(T::Hash[Symbol, T.anything]),
+          vulnerabilities_fixed: T::Hash[String, T::Array[T::Hash[String, String]]],
           github_redirection_service: T.nilable(String),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           pr_message_max_length: T.nilable(Integer),
@@ -214,6 +214,7 @@ module Dependabot
       sig { returns(String) }
       def solo_pr_name
         name = library? ? library_pr_name : application_pr_name
+        name += " (via audit fix)" if dependencies.any? { |dep| dep.metadata[:audit_fix_used] }
         "#{name}#{pr_name_directory}"
       end
 
@@ -278,7 +279,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_pr_name
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dep.metadata_string_array(:updated_directories) || [dep.metadata_string(:directory)].compact
 
         if directories.count > 1
           "bump #{dep.name} across #{directories.count} directories"
@@ -340,7 +341,9 @@ module Dependabot
         subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
         return subject unless subject.length > 72
 
-        subject = subject.gsub(/ from [^\s]*? to [^\s]*/, "")
+        # Requirements can contain spaces ("^0.20, ^0.21"), so match up to the
+        # suffixes solo_pr_name adds rather than to the next space
+        subject = subject.sub(%r{ from .+? to .+?(?= \(via audit fix\)| in /|\z)}, "")
         return subject unless subject.length > 72
 
         T.must(subject.split(" in ").first)
@@ -378,7 +381,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def custom_trailers
-        trailers = commit_message_options&.dig(:trailers)
+        trailers = T.cast(commit_message_options&.dig(:trailers), T.nilable(Object))
         return if trailers.nil?
         raise("Commit trailers must be a Hash object") unless trailers.is_a?(Hash)
 
@@ -394,7 +397,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def signoff_message
-        signoff_details = commit_message_options&.dig(:signoff_details)
+        signoff_details = T.cast(commit_message_options&.dig(:signoff_details), T.nilable(Object))
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:name] && signoff_details[:email]
 
@@ -403,7 +406,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def on_behalf_of_message
-        signoff_details = commit_message_options&.dig(:signoff_details)
+        signoff_details = T.cast(commit_message_options&.dig(:signoff_details), T.nilable(Object))
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:org_name] && signoff_details[:org_email]
 
@@ -570,7 +573,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_intro
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dep.metadata_string_array(:updated_directories) || [dep.metadata_string(:directory)].compact
 
         msg = "Bumps #{dependency_links.first}"
 
@@ -635,14 +638,14 @@ module Dependabot
       def updating_a_property?
         T.must(dependencies.first)
          .requirements
-         .any? { |r| r.dig(:metadata, :property_name) }
+         .any? { |r| r.metadata_string("property_name") }
       end
 
       sig { returns(T::Boolean) }
       def updating_a_dependency_set?
         T.must(dependencies.first)
          .requirements
-         .any? { |r| r.dig(:metadata, :dependency_set) }
+         .any? { |r| r.metadata_string_hash("dependency_set") }
       end
 
       sig { returns(T::Boolean) }
@@ -662,8 +665,8 @@ module Dependabot
           T.let(
             dependencies.first
               &.requirements
-              &.find { |r| r.dig(:metadata, :property_name) }
-              &.dig(:metadata, :property_name),
+              &.find { |r| r.metadata_string("property_name") }
+              &.metadata_string("property_name"),
             T.nilable(String)
           )
 
@@ -678,9 +681,9 @@ module Dependabot
           T.let(
             dependencies.first
               &.requirements
-              &.find { |r| r.dig(:metadata, :dependency_set) }
-              &.dig(:metadata, :dependency_set),
-            T.nilable(T.nilable(T::Hash[Symbol, String]))
+              &.find { |r| r.metadata_string_hash("dependency_set") }
+              &.metadata_string_hash("dependency_set"),
+            T.nilable(T::Hash[Symbol, String])
           )
 
         raise "No dependency set!" unless @dependency_set
@@ -800,6 +803,9 @@ module Dependabot
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service
         ).to_s
+      rescue StandardError => e
+        suppress_error("metadata cascades for #{dependency.name}", e)
+        ""
       end
 
       sig { returns(String) }
@@ -906,10 +912,10 @@ module Dependabot
           T.must(dependency.previous_requirements) - dependency.requirements
 
         gemspec =
-          old_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec.fetch(:requirement) if gemspec
+          old_reqs.find { |r| T.must(r.file).match?(%r{^[^/]*\.gemspec$}) }
+        return gemspec.requirement_string if gemspec
 
-        req = T.must(old_reqs.first).fetch(:requirement)
+        req = T.must(old_reqs.first).requirement_string
         return req if req
 
         dependency.previous_ref if dependency.ref_changed?
@@ -921,10 +927,10 @@ module Dependabot
           dependency.requirements - T.must(dependency.previous_requirements)
 
         gemspec =
-          updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec.fetch(:requirement) if gemspec
+          updated_reqs.find { |r| T.must(r.file).match?(%r{^[^/]*\.gemspec$}) }
+        return T.must(gemspec.requirement_string) if gemspec
 
-        req = T.must(updated_reqs.first).fetch(:requirement)
+        req = T.must(updated_reqs.first).requirement_string
         return req if req
         return T.must(dependency.new_ref) if dependency.ref_changed? && dependency.new_ref
 
@@ -972,4 +978,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

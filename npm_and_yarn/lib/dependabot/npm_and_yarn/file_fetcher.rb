@@ -3,6 +3,7 @@
 
 require "json"
 require "sorbet-runtime"
+require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
@@ -12,6 +13,7 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
+require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
 module Dependabot
   module NpmAndYarn
@@ -34,6 +36,7 @@ module Dependabot
       )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
+      BUN_LOCKFILE_NAME = "bun.lock"
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -79,10 +82,12 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
+      def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        raise_if_bun_lock_misconfigured_as_npm!
+
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
-        fetched_files << T.must(npmrc) if npmrc
+        fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
         fetched_files += pnpm_files if pnpm_version
@@ -90,10 +95,20 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
+        # When no package manager version is detected at all (no lockfile, no
+        # packageManager, no engines) AND no committed .npmrc exists, the
+        # inferred_npmrc path inside npm_files is never reached. Try generating
+        # an .npmrc from scope credentials, or reject if no config is available.
+        # Skip for yarn/pnpm-only projects where npm isn't the relevant manager.
+        if no_package_manager_detected? && npmrc.nil?
+          generated = inferred_npmrc
+          fetched_files << generated if generated
+          reject_if_private_registry_without_config! unless generated
+        end
+
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
-          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+          !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
         end
 
         filtered_files
@@ -137,31 +152,40 @@ module Dependabot
         fetched_lerna_files
       end
 
-      # If every entry in the lockfile uses the same registry, we can infer
-      # that there is a global .npmrc file, so add it here as if it were in the repo.
+      # Generates or infers an .npmrc file for the project.
+      # Priority order:
+      #   1. If credentials have `scope` → generate from credentials (authoritative, overrides everything)
+      #   2. If no `scope` AND `.npmrc` in repo → return nil (committed file handled upstream)
+      #   3. If no `scope` AND no `.npmrc` → try lockfile inference (transitional)
+      #   4. If nothing works → return nil
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { returns(T.nilable(DependencyFile)) }
       def inferred_npmrc # rubocop:disable Metrics/PerceivedComplexity
         return @inferred_npmrc if defined?(@inferred_npmrc)
-        return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile)) unless npmrc.nil? && package_lock
+
+        if Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation) && credentials_have_scope?
+          npmrc_from_credentials = generate_npmrc_from_credentials
+          if npmrc_from_credentials
+            Dependabot.logger.warn("Generated .npmrc from credential scope configuration (overrides committed .npmrc)")
+            return @inferred_npmrc ||= T.let(npmrc_from_credentials, T.nilable(DependencyFile))
+          end
+        end
+
+        unless npmrc.nil? && package_lock
+          # If .npmrc exists in the repo, it handles things — no rejection needed.
+          # If no .npmrc AND no lockfile, we can't infer, so check for rejection.
+          reject_if_private_registry_without_config! if npmrc.nil?
+          return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile))
+        end
 
         known_registries = []
-        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
-          "dependencies",
-          {}
-        ).each do |dependency_name, details|
-          resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
-
-          begin
-            uri = URI.parse(resolved)
-          rescue URI::InvalidURIError
-            # Ignoring non-URIs since they're not registries.
-            # This can happen if resolved is `false`, for instance
-            # npm6 bug https://github.com/npm/cli/issues/1138
-            next
-          end
+        FileParser::JsonLock.new(T.must(package_lock)).legacy_dependencies.each do |dependency_name, details|
+          uri = details.registry_uri(DEFAULT_NPM_REGISTRY)
+          next unless uri
 
           next unless uri.scheme && uri.host
 
@@ -187,10 +211,117 @@ module Dependabot
           )
         end
 
+        # Lockfile inference failed — fall back to replaces-base credential generation
+        if Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
+          npmrc_from_credentials = generate_npmrc_from_credentials
+          if npmrc_from_credentials
+            Dependabot.logger.info("Generated .npmrc from credential replaces-base configuration")
+            return @inferred_npmrc ||= npmrc_from_credentials
+          end
+        end
+
+        # Phase 3: Reject updates when private registries exist but no config is resolvable
+        reject_if_private_registry_without_config!
+
         @inferred_npmrc ||= nil
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def generate_npmrc_from_credentials
+        content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
+        return unless content
+
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: content,
+          directory: directory
+        )
+      end
+
+      sig { void }
+      def reject_if_private_registry_without_config! # rubocop:disable Metrics/PerceivedComplexity
+        return unless Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
+        return if credentials_have_scope?
+        return if wrapped_credentials.any?(&:replaces_base?)
+
+        private_registry_creds = wrapped_credentials.select do |cred|
+          next false unless cred["type"] == "npm_registry"
+
+          registry = cred["registry"]
+          next false if registry.nil?
+
+          # Normalize: strip scheme to compare against CENTRAL_REGISTRIES (bare hostnames)
+          normalized = registry.sub(%r{^https?://}, "")
+          !NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(normalized)
+        end
+        return if private_registry_creds.empty?
+
+        registry = private_registry_creds.first&.fetch("registry", nil) || "unknown"
+        raise Dependabot::PrivateRegistryConfigNotFound, registry
+      end
+
+      sig { returns(T::Boolean) }
+      def credentials_have_scope?
+        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope&.any? }
+      end
+
+      # file_fetcher_command.rb may pass raw Hashes as credentials at runtime.
+      # Wrap them in Credential objects so we can use .scope and .replaces_base? safely.
+      # Credential#initialize destructively removes "scope"/"replaces-base" keys, so we .dup first.
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def wrapped_credentials
+        @wrapped_credentials ||= T.let(
+          credentials.map { |cred| ensure_credential(cred) },
+          T.nilable(T::Array[Dependabot::Credential])
+        )
+      end
+
+      sig do
+        params(cred: T.any(Dependabot::Credential, T::Hash[String, T.untyped]))
+          .returns(Dependabot::Credential)
+      end
+      def ensure_credential(cred)
+        return cred if cred.is_a?(Dependabot::Credential)
+
+        Dependabot::Credential.new(cred.dup)
+      end
+
+      sig { returns(T::Boolean) }
+      def scope_overrides_npmrc?
+        Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation) && credentials_have_scope?
+      end
+
+      sig { returns(T::Boolean) }
+      def no_package_manager_detected?
+        !npm_version && !yarn_version && !pnpm_version
+      end
+
+      # Without this check, a bun-managed project misconfigured as "npm" would silently get a
+      # PR that bumps package.json without updating bun.lock (dependabot-core#14223).
+      sig { void }
+      def raise_if_bun_lock_misconfigured_as_npm!
+        return unless no_package_manager_detected?
+        return unless bun_lock
+
+        raise Dependabot::MisconfiguredTooling.new(
+          "Bun",
+          "This project has a `#{BUN_LOCKFILE_NAME}` file but no `package-lock.json`, `yarn.lock` or " \
+          "`pnpm-lock.yaml`, which means it is managed by Bun. Dependabot's `npm_and_yarn` ecosystem " \
+          "cannot update `#{BUN_LOCKFILE_NAME}`. Set `package-ecosystem: \"bun\"` in your dependabot.yml " \
+          "for this directory so Dependabot can update this project's dependencies correctly."
+        )
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def bun_lock
+        return @bun_lock if defined?(@bun_lock)
+
+        @bun_lock ||= T.let(fetch_file_if_present(BUN_LOCKFILE_NAME), T.nilable(DependencyFile))
+      end
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version
@@ -217,7 +348,7 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            parsed_package_json,
+            Dependabot::Package::NpmPackageManagerConfig.from_package_json(parsed_package_json),
             lockfiles,
             registry_config_files,
             credentials
@@ -373,8 +504,7 @@ module Dependabot
           next if fetched_files.map(&:name).include?(cleaned_name)
 
           # Skip excluded path dependencies
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
             Dependabot.logger.warn(
               "Skipping excluded path dependency '#{cleaned_name}' for package '#{name}'. " \
               "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
@@ -614,8 +744,7 @@ module Dependabot
         file = File.join(workspace, MANIFEST_FILENAME)
 
         # Skip excluded workspace packages
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-           !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
+        if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
           Dependabot.logger.info(
             "Skipping excluded workspace package '#{file}' from workspace '#{workspace}'. " \
             "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
@@ -670,7 +799,9 @@ module Dependabot
       def parsed_pnpm_workspace_yaml
         return {} unless pnpm_workspace_yaml
 
-        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        parsed = YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        # A file with only comments (or a bare scalar) parses to something other than a mapping
+        parsed.is_a?(Hash) ? parsed : {}
       rescue Psych::SyntaxError, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, T.must(pnpm_workspace_yaml).path
       end

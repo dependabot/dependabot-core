@@ -118,6 +118,30 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     end
   end
 
+  describe "#updated_dependency_files unlock none with a pinned flutter sdk constraint" do
+    let(:project) { "preserves_pinned_flutter_sdk_constraint" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "collection",
+        version: "1.15.0",
+        requirements: [],
+        previous_version: "1.14.13",
+        package_manager: "pub"
+      )
+    end
+
+    def sdks_block(content)
+      content[/^sdks:\n(?:  .*\n)*/]
+    end
+
+    it "does not widen the exact flutter sdk constraint recorded in pubspec.lock" do
+      updated_files = updater.updated_dependency_files
+      expect(lockfile(updated_files)).to include "version: \"1.15.0\""
+      expect(sdks_block(lockfile(updated_files))).to eq sdks_block(lockfile(dependency_files))
+      expect(lockfile(updated_files)).to include "flutter: \"3.24.0\""
+    end
+  end
+
   describe "#updated_dependency_files unlock own" do
     let(:dependency) do
       Dependabot::Dependency.new(

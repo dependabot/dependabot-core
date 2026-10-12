@@ -1,0 +1,5 @@
+name: web-stack
+services:
+  nginx:
+    image: >-
+      docker.io/library/nginx:1.25.4@sha256:3f5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4c

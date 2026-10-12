@@ -1,0 +1,13 @@
+{
+  "name": "Gemfile",
+  "path": "Gemfile",
+  "sha": "0000000000000000000000000000000000000000",
+  "size": 85,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/0000000000000000000000000000000000000000",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile",
+  "type": "file",
+  "content": "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVtcC1jb3Jl\nIiwgcGF0aDogIi4uLy4uLy4uLy4uL3ZlbmRvci9idW1wLWNvcmUiCg==\n",
+  "encoding": "base64"
+}

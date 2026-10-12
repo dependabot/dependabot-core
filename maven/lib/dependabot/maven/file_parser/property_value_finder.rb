@@ -21,6 +21,9 @@ module Dependabot
 
         DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
         MAVEN_PROPERTY_REGEX = /\$\{.+?/
+        PropertyDetails = T.type_alias do
+          T::Hash[Symbol, T.any(String, Nokogiri::XML::Node)]
+        end
 
         sig do
           params(
@@ -44,7 +47,7 @@ module Dependabot
             property_name: String,
             callsite_pom: DependencyFile,
             seen_properties: T::Set[String]
-          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          ).returns(T.nilable(PropertyDetails))
         end
         def property_details(property_name:, callsite_pom:, seen_properties: Set.new)
           pom = callsite_pom
@@ -115,9 +118,9 @@ module Dependabot
             content: String,
             callsite_pom: DependencyFile,
             pom: DependencyFile,
-            node: T.untyped,
+            node: Nokogiri::XML::Node,
             seen_properties: T::Set[String]
-          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          ).returns(T.nilable(PropertyDetails))
         end
         def resolve_property_placeholder(content, callsite_pom, pom, node, seen_properties)
           resolved_value = content.gsub(/\$\{(.+?)}/) do

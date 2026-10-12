@@ -13,6 +13,7 @@ Test = "1"
 julia = "1.10"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 FilePathsBase = "48062228-2e41-5def-b9a4-89aafe57970f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
@@ -23,4 +24,4 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 ProjectWithExtrasJSONExt = "JSON"
 
 [targets]
-test = ["Test", "FilePathsBase"]
+test = ["Aqua", "Test", "FilePathsBase"]

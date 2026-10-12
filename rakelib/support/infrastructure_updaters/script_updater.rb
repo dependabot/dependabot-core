@@ -8,7 +8,7 @@ class ScriptUpdater < BaseUpdater
   extend T::Sig
 
   # Ecosystems to skip when sorting in script/dependabot
-  SKIP_ECOSYSTEMS = T.let(%w(updater bin common).freeze, T::Array[String])
+  SKIP_ECOSYSTEMS = %w(updater bin common).freeze
 
   sig { void }
   def update_all

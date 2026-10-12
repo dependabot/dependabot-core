@@ -1,8 +1,0 @@
-{
-    "name": "openjdk",
-    "tags": [
-        "21-ea-32",
-        "22-ea-7",
-        "22-ea-jdk-nanoserver-1809"
-    ]
-}

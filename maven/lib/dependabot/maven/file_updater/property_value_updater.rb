@@ -35,6 +35,7 @@ module Dependabot
           )
           node = declaration_details&.fetch(:node)
           filename = declaration_details&.fetch(:file)
+          raise "Property node not found" unless node.is_a?(Nokogiri::XML::Node)
 
           pom_to_update = dependency_files.find { |f| f.name == filename }
           property_re = %r{<#{Regexp.quote(node.name)}>

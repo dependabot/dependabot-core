@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.IO.Enumeration;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using NuGet.Versioning;
 
@@ -19,6 +20,42 @@ public record DependencyGroup
     public Dictionary<string, object> Rules { get; init; } = new();
 
     public GroupMatcher GetGroupMatcher() => GroupMatcher.FromRules(Rules);
+
+    public bool IsGroupedByDependencyName =>
+        GetString(Rules, "group-by")?.Equals("dependency-name", StringComparison.Ordinal) == true;
+
+    [JsonIgnore]
+    public string? DependencyNameGroupTarget { get; init; }
+
+    public DependencyGroup CreateDependencyNameSubgroup(string dependencyName, string? subgroupName = null)
+    {
+        var matchesParent = GetGroupMatcher().IsMatch(dependencyName);
+        var subgroupRules = new Dictionary<string, object>(Rules)
+        {
+            ["patterns"] = matchesParent ? new[] { dependencyName } : Array.Empty<string>(),
+        };
+        return this with
+        {
+            Name = subgroupName ?? $"{Name}/{dependencyName}",
+            Rules = subgroupRules,
+            DependencyNameGroupTarget = dependencyName,
+        };
+    }
+
+    private static string? GetString(Dictionary<string, object> rules, string propertyName)
+    {
+        if (!rules.TryGetValue(propertyName, out var propertyObject))
+        {
+            return null;
+        }
+
+        return propertyObject switch
+        {
+            string value => value,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
+    }
 }
 
 public enum GroupUpdateType
@@ -44,9 +81,14 @@ public class GroupMatcher
 
     public bool IsAllowedByVersion(NuGetVersion oldVersion, NuGetVersion newVersion)
     {
+        if (newVersion <= oldVersion)
+        {
+            return false;
+        }
+
         var isMajorBump = newVersion.Major > oldVersion.Major;
         var isMinorBump = newVersion.Major == oldVersion.Major && newVersion.Minor > oldVersion.Minor;
-        var isPatchBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor && newVersion.Patch > oldVersion.Patch;
+        var isPatchEquivalentBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor;
 
         var allowedUpdateTypes = new HashSet<GroupUpdateType>(UpdateTypes);
 
@@ -60,7 +102,7 @@ public class GroupMatcher
             return true;
         }
 
-        if (isPatchBump && allowedUpdateTypes.Contains(GroupUpdateType.Patch))
+        if (isPatchEquivalentBump && allowedUpdateTypes.Contains(GroupUpdateType.Patch))
         {
             return true;
         }

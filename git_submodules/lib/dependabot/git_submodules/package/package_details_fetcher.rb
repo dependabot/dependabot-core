@@ -3,7 +3,6 @@
 
 require "json"
 require "time"
-require "cgi"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -43,7 +42,7 @@ module Dependabot
           versions_metadata = T.let(fetch_tags_and_release_date, T.nilable(T::Array[GitTagWithDetail]))
 
           # we fallback to the git based tag info if no versions metadata is available
-          if versions_metadata&.empty?
+          if versions_metadata && versions_metadata.empty?
             versions_metadata = T.let(
               fetch_latest_tag_info,
               T.nilable(T::Array[GitTagWithDetail])
@@ -121,7 +120,7 @@ module Dependabot
 
         sig { returns(String) }
         def url
-          dependency.source_details&.fetch(:url, nil)
+          T.must(dependency.source_string("url"))
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

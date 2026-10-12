@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "poetry-metadata-only-group"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Various small python projects."
+
+[tool.poetry.dependencies]
+python = "3.11.1"
+requests = "2.18.0"
+
+[dependency-groups]
+gpu = [
+  "onnxruntime-gpu==1.23.2",
+]
+
+[tool.poetry.group.gpu]
+optional = true

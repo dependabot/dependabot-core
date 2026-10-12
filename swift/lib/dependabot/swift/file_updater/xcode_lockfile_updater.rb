@@ -17,7 +17,7 @@ module Dependabot
       class XcodeLockfileUpdater
         extend T::Sig
 
-        SUPPORTED_VERSIONS = T.let([1, 2, 3].freeze, T::Array[Integer])
+        SUPPORTED_VERSIONS = [1, 2, 3].freeze
 
         # Maps schema version to the JSON keys used for each pin field
         PIN_KEYS = T.let(
@@ -26,7 +26,7 @@ module Dependabot
             2 => { url: "location", identity: "identity", pins_path: ["pins"] },
             3 => { url: "location", identity: "identity", pins_path: ["pins"] }
           }.freeze,
-          T::Hash[Integer, T::Hash[Symbol, T.untyped]]
+          T::Hash[Integer, T::Hash[Symbol, Object]]
         )
 
         sig do
@@ -87,7 +87,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :workspace_files
 
-        sig { params(content: String).returns(T::Hash[String, T.untyped]) }
+        sig { params(content: String).returns(T::Hash[String, Object]) }
         def parse_json(content)
           JSON.parse(content)
         rescue JSON::ParserError => e
@@ -97,7 +97,7 @@ module Dependabot
           )
         end
 
-        sig { params(parsed: T::Hash[String, T.untyped]).returns(Integer) }
+        sig { params(parsed: T::Hash[String, Object]).returns(Integer) }
         def detect_schema_version(parsed)
           version = parsed["version"]
 
@@ -114,9 +114,9 @@ module Dependabot
 
         sig do
           params(
-            parsed: T::Hash[String, T.untyped],
+            parsed: T::Hash[String, Object],
             schema_version: Integer,
-            keys: T::Hash[Symbol, T.untyped]
+            keys: T::Hash[Symbol, Object]
           ).void
         end
         def update_pins(parsed, schema_version, keys)
@@ -138,14 +138,14 @@ module Dependabot
 
         sig do
           params(
-            parsed: T::Hash[String, T.untyped],
+            parsed: T::Hash[String, Object],
             path: T::Array[String]
-          ).returns(T.untyped)
+          ).returns(Object)
         end
         def dig_pins(parsed, path)
           # Navigate nested hash using path keys
           # Path is either ["object", "pins"] for v1 or ["pins"] for v2/v3
-          current = T.let(parsed, T.untyped)
+          current = T.let(parsed, Object)
           path.each do |key|
             break unless current.is_a?(Hash)
 
@@ -156,9 +156,9 @@ module Dependabot
 
         sig do
           params(
-            pins: T::Array[T::Hash[String, T.untyped]],
+            pins: T::Array[T::Hash[String, Object]],
             dependency: Dependabot::Dependency,
-            keys: T::Hash[Symbol, T.untyped],
+            keys: T::Hash[Symbol, Object],
             schema_version: Integer
           ).void
         end
@@ -169,9 +169,8 @@ module Dependabot
           state = pin["state"]
           return unless state.is_a?(Hash)
 
-          source = dependency.requirements.first&.dig(:source)
           new_version = dependency.version
-          new_ref = source&.dig(:ref)
+          new_ref = dependency.requirements.first&.source_string("ref")
 
           if new_version
             state["version"] = new_version
@@ -192,11 +191,11 @@ module Dependabot
 
         sig do
           params(
-            pins: T::Array[T::Hash[String, T.untyped]],
+            pins: T::Array[T::Hash[String, Object]],
             dependency: Dependabot::Dependency,
-            keys: T::Hash[Symbol, T.untyped],
+            keys: T::Hash[Symbol, Object],
             schema_version: Integer
-          ).returns(T.nilable(T::Hash[String, T.untyped]))
+          ).returns(T.nilable(T::Hash[String, Object]))
         end
         def find_pin_for_dependency(pins, dependency, keys, schema_version)
           identity_key = T.cast(keys[:identity], String)
@@ -205,6 +204,7 @@ module Dependabot
 
           pins.find do |pin|
             pin_identity = pin[identity_key]
+            pin_identity = nil unless pin_identity.is_a?(String)
             pin_identity = pin_identity&.downcase if schema_version == 1
 
             if identity && pin_identity == identity
@@ -227,7 +227,7 @@ module Dependabot
           @dependencies_for_file ||= T.let(
             dependencies.select do |dep|
               dep.requirements.any? do |req|
-                req_file_matches_resolved_scope?(req[:file])
+                req_file_matches_resolved_scope?(req.file)
               end
             end,
             T.nilable(T::Array[Dependabot::Dependency])

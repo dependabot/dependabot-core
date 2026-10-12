@@ -1,0 +1,30 @@
+[
+  {
+    "name": "build.sbt",
+    "path": "build.sbt",
+    "sha": "abc123",
+    "size": 500,
+    "type": "file"
+  },
+  {
+    "name": "project",
+    "path": "project",
+    "sha": "def456",
+    "size": 0,
+    "type": "dir"
+  },
+  {
+    "name": "core",
+    "path": "core",
+    "sha": "aaa111",
+    "size": 0,
+    "type": "dir"
+  },
+  {
+    "name": "web",
+    "path": "web",
+    "sha": "bbb222",
+    "size": 0,
+    "type": "dir"
+  }
+]

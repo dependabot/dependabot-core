@@ -59,6 +59,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./apm/lib"
 $LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
@@ -66,8 +67,8 @@ $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
+$LOAD_PATH << "./deno/lib"
 $LOAD_PATH << "./devcontainers/lib"
-$LOAD_PATH << "./docker_compose/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
@@ -79,12 +80,14 @@ $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
+$LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
+$LOAD_PATH << "./sbt/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./opentofu/lib"
@@ -117,15 +120,16 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/apm"
 require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
+require "dependabot/deno"
 require "dependabot/devcontainers"
 require "dependabot/docker"
-require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -141,6 +145,7 @@ require "dependabot/nuget"
 require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
+require "dependabot/sbt"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/opentofu"
@@ -167,6 +172,7 @@ $options = {
   security_updates_only: false,
   vendor_dependencies: false,
   ignore_conditions: [],
+  blocked_versions: [],
   pull_request: false,
   hostname: nil,
   cooldown: nil
@@ -222,11 +228,17 @@ unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   $options[:ignore_conditions] = JSON.parse(ENV.fetch("IGNORE_CONDITIONS", nil))
 end
 
+unless ENV["BLOCKED_VERSIONS"].to_s.strip.empty?
+  # For example:
+  # [{"dependency-name":"event-stream","version-requirement":"= 3.3.6","reason":"malware"}]
+  $options[:blocked_versions] = JSON.parse(ENV.fetch("BLOCKED_VERSIONS", nil))
+end
+
 if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
   $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
 end
 
-# rubocop:disable Metrics/BlockLength
+# rubocop:disable-next Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
 
@@ -348,7 +360,6 @@ option_parse = OptionParser.new do |opts|
     $options[:api_endpoint] = File.join(value, "api", "v3")
   end
 end
-# rubocop:enable Metrics/BlockLength
 
 # Parse options before validating arguments
 option_parse.parse!
@@ -361,12 +372,14 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  apm
   bazel
   bun
   bundler
   cargo
   composer
   conda
+  deno
   devcontainers
   docker
   docker_compose
@@ -386,6 +399,7 @@ valid_package_managers = %w(
   pub
   python
   rust_toolchain
+  sbt
   swift
   terraform
   opentofu
@@ -408,6 +422,20 @@ $package_manager, $repo_name = ARGV
 # Ensure the script does not exit prematurely
 begin
   $package_manager, $repo_name = ARGV
+
+  # Known errors are printed as "handled" and skipped; collect them so the run doesn't report success.
+  $handled_errors = []
+
+  def finish_dry_run
+    if $handled_errors.empty?
+      puts "Dry-run completed successfully."
+      exit 0
+    end
+
+    puts "Dry-run completed with #{$handled_errors.size} handled error(s):"
+    $handled_errors.each { |error| puts "  - #{error}" }
+    exit 1
+  end
 
   def show_diff(original_file, updated_file)
     return unless original_file
@@ -464,7 +492,7 @@ begin
   # rubocop:disable Metrics/AbcSize
   # rubocop:disable Metrics/MethodLength
   # rubocop:disable Metrics/CyclomaticComplexity
-  # rubocop:disable Metrics/PerceivedComplexity
+  # rubocop:disable-next Metrics/PerceivedComplexity
   def cached_dependency_files_read
     cache_dir = dependency_files_cache_dir
     cache_manifest_path = File.join(
@@ -527,7 +555,6 @@ begin
       data
     end
   end
-  # rubocop:enable Metrics/PerceivedComplexity
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
@@ -560,8 +587,9 @@ begin
     error_details = Dependabot.fetcher_error_details(e)
     raise unless error_details
 
-    puts " => handled error whilst fetching dependencies: #{error_details.fetch(:"error-type")} " \
-         "#{error_details.fetch(:"error-detail")}"
+    puts " => handled error whilst fetching dependencies: #{error_details.error_type} " \
+         "#{error_details.error_detail}"
+    $handled_errors << "fetching dependencies: #{error_details.error_type}"
 
     []
   end
@@ -572,8 +600,9 @@ begin
     error_details = Dependabot.parser_error_details(e)
     raise unless error_details
 
-    puts " => handled error whilst parsing dependencies: #{error_details.fetch(:"error-type")} " \
-         "#{error_details.fetch(:"error-detail")}"
+    puts " => handled error whilst parsing dependencies: #{error_details.error_type} " \
+         "#{error_details.error_detail}"
+    $handled_errors << "parsing dependencies: #{error_details.error_type}"
 
     []
   end
@@ -650,7 +679,7 @@ begin
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
-  return if $files.empty?
+  finish_dry_run if $files.empty?
 
   ecosystem_versions = fetcher.ecosystem_versions
   puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
@@ -696,20 +725,31 @@ begin
   end
 
   def ignored_versions_for(dep)
-    if $options[:ignore_conditions].any?
-      ignore_conditions = $options[:ignore_conditions].map do |ic|
-        Dependabot::Config::IgnoreCondition.new(
-          dependency_name: ic["dependency-name"],
-          versions: [ic["version-requirement"]].compact,
-          update_types: ic["update-types"]
-        )
-      end
-      Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
-                                      .ignored_versions_for(dep,
-                                                            security_updates_only: $options[:security_updates_only])
-    else
-      $update_config.ignored_versions_for(dep)
-    end
+    versions = if $options[:ignore_conditions].any?
+                 ignore_conditions = $options[:ignore_conditions].map do |ic|
+                   Dependabot::Config::IgnoreCondition.new(
+                     dependency_name: ic["dependency-name"],
+                     versions: [ic["version-requirement"]].compact,
+                     update_types: ic["update-types"]
+                   )
+                 end
+                 Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
+                                                 .ignored_versions_for(
+                                                   dep,
+                                                   security_updates_only: $options[:security_updates_only]
+                                                 )
+               else
+                 $update_config.ignored_versions_for(dep)
+               end
+
+    versions + blocked_versions_for(dep)
+  end
+
+  def blocked_versions_for(dep)
+    $options[:blocked_versions]
+      .select { |bv| bv["dependency-name"] && bv["version-requirement"] }
+      .select { |bv| bv["dependency-name"].casecmp(dep.name).zero? }
+      .map { |bv| bv["version-requirement"] }
   end
 
   def security_advisories
@@ -767,6 +807,15 @@ begin
   end
 
   puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
+
+  if $options[:blocked_versions].any?
+    puts "=> blocked versions active:"
+    $options[:blocked_versions].each do |bv|
+      msg = "   #{bv['dependency-name']} #{bv['version-requirement']}"
+      msg += " (#{bv['reason']})" if bv["reason"]
+      puts msg
+    end
+  end
 
   # rubocop:disable Metrics/BlockLength
   checker_count = 0
@@ -918,8 +967,9 @@ begin
     error_details = Dependabot.updater_error_details(e)
     raise unless error_details
 
-    puts " => handled error whilst updating #{dep.name}: #{error_details.fetch(:"error-type")} " \
-         "#{error_details.fetch(:"error-detail")}"
+    puts " => handled error whilst updating #{dep.name}: #{error_details.error_type} " \
+         "#{error_details.error_detail}"
+    $handled_errors << "updating #{dep.name}: #{error_details.error_type}"
   end
 
   StackProf.stop if $options[:profile]
@@ -935,6 +985,4 @@ rescue StandardError => e
   exit 1
 end
 
-# Ensure the script exits successfully if no errors occur
-puts "Dry-run completed successfully."
-exit 0
+finish_dry_run

@@ -75,7 +75,7 @@ module Dependabot
                  fetch_github_submodule_commit(path)
                when "gitlab"
                  tmp_path = path.gsub(%r{^/*}, "")
-                 T.unsafe(gitlab_client).get_file(repo, tmp_path, commit).blob_id
+                 gitlab_string(gitlab_client.get_file(repo, tmp_path, T.must(commit)), "blob_id")
                when "azure"
                  azure_client.fetch_file_contents(T.must(commit), path)
                else raise "Unsupported provider '#{source.provider}'."
@@ -95,14 +95,28 @@ module Dependabot
 
       sig { params(path: String).returns(String) }
       def fetch_github_submodule_commit(path)
-        content = T.unsafe(github_client).contents(
+        content = github_client.contents(
           repo,
           path: path,
           ref: commit
         )
-        raise Dependabot::DependencyFileNotFound, path if content.is_a?(Array) || content.type != "submodule"
+        raise Dependabot::DependencyFileNotFound, path unless content.is_a?(Sawyer::Resource)
 
-        content.sha
+        type = T.cast(content[:type], Object)
+        raise Dependabot::DependencyFileNotFound, path unless type == "submodule"
+
+        value = T.cast(content[:sha], Object)
+        return value if value.is_a?(String)
+
+        raise Dependabot::DependencyFileNotFound, path
+      end
+
+      sig { params(resource: Gitlab::ObjectifiedHash, key: String).returns(String) }
+      def gitlab_string(resource, key)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(String)
+
+        raise Dependabot::PrivateSourceBadResponse.new(source.url, "Malformed GitLab response: #{key} must be a string")
       end
     end
   end

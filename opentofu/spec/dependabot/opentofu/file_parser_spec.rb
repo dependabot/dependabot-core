@@ -869,6 +869,19 @@ RSpec.describe Dependabot::Opentofu::FileParser do
           )
         end
       end
+
+      context "with an early evaluation terragrunt source" do
+        let(:files) { project_dependency_files("terragrunt_early_evaluation") }
+
+        it "is warned and skipped without dropping other dependencies" do
+          expect(Dependabot.logger).to receive(:warn).with(
+            "Cannot parse terragrunt module source with early evaluation in terragrunt.hcl."
+          )
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("gruntwork-io/modules-example")
+          expect(dependencies.first.version).to eq("0.0.2")
+        end
+      end
     end
 
     context "when dealing with terraform.lock.hcl files" do
@@ -903,6 +916,75 @@ RSpec.describe Dependabot::Opentofu::FileParser do
               type: "provider",
               registry_hostname: "registry.opentofu.org",
               module_identifier: "hashicorp/http"
+            }
+          }]
+        )
+      end
+    end
+
+    context "with a module version using interpolated local syntax" do
+      let(:files) { project_dependency_files("module_with_interpolated_local_version") }
+
+      it "resolves the interpolated local reference" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/consul/aws" }
+
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.opentofu.org",
+              module_identifier: "hashicorp/consul/aws",
+              local_variable: "module_version"
+            }
+          }]
+        )
+      end
+    end
+
+    context "with a module version referencing a local in the same file" do
+      let(:files) { project_dependency_files("module_with_local_version") }
+
+      it "resolves the local and has the right details" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/consul/aws" }
+
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.opentofu.org",
+              module_identifier: "hashicorp/consul/aws",
+              local_variable: "module_version"
+            }
+          }]
+        )
+      end
+    end
+
+    context "with a module version referencing a local in a different file" do
+      let(:files) { project_dependency_files("module_with_cross_file_local_version") }
+
+      it "resolves the local and points to the locals file" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/consul/aws" }
+
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "locals.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.opentofu.org",
+              module_identifier: "hashicorp/consul/aws",
+              local_variable: "module_version"
             }
           }]
         )
@@ -986,6 +1068,30 @@ RSpec.describe Dependabot::Opentofu::FileParser do
       end
     end
 
+    context "with built-in providers" do
+      let(:files) { project_dependency_files("provider_with_builtin_terraform") }
+
+      it "skips providers in built-in namespaces" do
+        expect(dependencies.length).to eq(2)
+        # Should not include any built-in provider (terraform.io/builtin/* or opentofu.org/builtin/*)
+        expect(dependencies.find { |d| d.name == "builtin/terraform" }).to be_nil
+        expect(dependencies.find { |d| d.name == "builtin/example" }).to be_nil
+        # Should include other providers
+        expect(dependencies.find { |d| d.name == "hashicorp/http" }).not_to be_nil
+        expect(dependencies.find { |d| d.name == "hashicorp/aws" }).not_to be_nil
+      end
+
+      it "parses other providers correctly" do
+        http_provider = dependencies.find { |d| d.name == "hashicorp/http" }
+        expect(http_provider.version).to eq("2.1.0")
+        expect(http_provider.requirements.first[:requirement]).to eq("~> 2.0")
+
+        aws_provider = dependencies.find { |d| d.name == "hashicorp/aws" }
+        expect(aws_provider.version).to eq("3.37.0")
+        expect(aws_provider.requirements.first[:requirement]).to eq("3.37.0")
+      end
+    end
+
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
 
@@ -1013,6 +1119,137 @@ RSpec.describe Dependabot::Opentofu::FileParser do
           expect(dependency.version).to eq("1.2.3")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with an oci module with a tag" do
+      let(:files) { project_dependency_files("modules_oci") }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "oci",
+            digest: nil,
+            tag: "v1.0.0",
+            version: "v1.0.0",
+            artifact_identifier: "example.com/repository-name",
+            subdirectory: nil
+          }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependencies.length).to eq(1)
+        dependency = dependencies.find { |d| d.source_type == "oci" }
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.version).to eq("v1.0.0")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with an oci module without a tag or digest" do
+      let(:files) { project_dependency_files("modules_oci_no_tag") }
+
+      it "skips the dependency since there is nothing to update" do
+        expect(dependencies.length).to eq(0)
+      end
+    end
+
+    context "with an oci module with a digest" do
+      let(:files) { project_dependency_files("modules_oci_digest") }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "oci",
+            digest: "sha256:abc123",
+            tag: nil,
+            version: "sha256:abc123",
+            artifact_identifier: "example.com/repository-name",
+            subdirectory: nil
+          }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependencies.length).to eq(1)
+        dependency = dependencies.find { |d| d.source_type == "oci" }
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.version).to eq("sha256:abc123")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with an oci module that selects a sub-directory" do
+      let(:files) { project_dependency_files("modules_oci_subdir") }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "oci",
+            digest: nil,
+            tag: "v1.2.0",
+            version: "v1.2.0",
+            artifact_identifier: "example.com/repository-name",
+            subdirectory: "modules/vpc"
+          }
+        }]
+      end
+
+      it "splits the bare repository from the sub-directory" do
+        expect(dependencies.length).to eq(1)
+        dependency = dependencies.find { |d| d.source_type == "oci" }
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.version).to eq("v1.2.0")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with an oci module that pins both a tag and a digest" do
+      let(:files) { project_dependency_files("modules_oci_tag_and_digest") }
+
+      it "raises a DependencyFileNotEvaluatable error" do
+        expect { dependencies }.to raise_error(
+          Dependabot::DependencyFileNotEvaluatable,
+          /only one of `tag` or `digest`/
+        )
+      end
+    end
+
+    context "with an oci module pointing at a local registry (host:port)" do
+      let(:files) { project_dependency_files("modules_oci_localhost") }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "oci",
+            digest: nil,
+            tag: "v1.0.0",
+            version: "v1.0.0",
+            artifact_identifier: "localhost:5001/example-module",
+            subdirectory: nil
+          }
+        }]
+      end
+
+      it "parses host:port and the pinned tag" do
+        expect(dependencies.length).to eq(1)
+        dependency = dependencies.find { |d| d.source_type == "oci" }
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.version).to eq("v1.0.0")
+        expect(dependency.requirements).to eq(expected_requirements)
       end
     end
 
@@ -1082,6 +1319,22 @@ RSpec.describe Dependabot::Opentofu::FileParser do
             expect(source_type).to eq(:http_archive)
           end
         end
+      end
+    end
+
+    context "when the source type is an oci" do
+      let(:source_string) { "oci://local-registry/module-name" }
+
+      it "returns the correct source type" do
+        expect(source_type).to eq(:oci)
+      end
+    end
+
+    context "when an oci source contains interpolation" do
+      let(:source_string) { "oci://${var.registry}/acme/module?tag=1.0.0" }
+
+      it "returns the interpolation source type" do
+        expect(source_type).to eq(:interpolation)
       end
     end
 

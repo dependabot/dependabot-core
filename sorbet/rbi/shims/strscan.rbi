@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 class StringScanner
-  sig { params(string: String).void }
-  def initialize(string); end
+  sig { params(string: String, duplicate: T.untyped).void }
+  def initialize(string, duplicate = T.unsafe(nil)); end
 
   sig { params(pattern: T.any(Regexp, String)).returns(T.nilable(String)) }
   def scan(pattern); end

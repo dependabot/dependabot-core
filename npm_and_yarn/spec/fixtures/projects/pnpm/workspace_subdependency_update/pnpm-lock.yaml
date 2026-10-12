@@ -1,0 +1,68 @@
+lockfileVersion: '6.0'
+
+importers:
+
+  .:
+    dependencies: {}
+
+  packages/app:
+    dependencies:
+      fetch-factory:
+        specifier: 0.0.1
+        version: 0.0.1
+
+packages:
+
+  /es6-promise@3.3.1:
+    resolution: {integrity: sha512-fakehash1==}
+    dev: false
+
+  /fetch-factory@0.0.1:
+    resolution: {integrity: sha512-fakehash2==}
+    dependencies:
+      es6-promise: 3.3.1
+      isomorphic-fetch: 2.2.1
+      lodash: 3.10.1
+    dev: false
+
+  /isomorphic-fetch@2.2.1:
+    resolution: {integrity: sha512-fakehash3==}
+    dependencies:
+      node-fetch: 1.7.3
+      whatwg-fetch: 3.6.2
+    dev: false
+
+  /lodash@3.10.1:
+    resolution: {integrity: sha512-fakehash4==}
+    dev: false
+
+  /node-fetch@1.7.3:
+    resolution: {integrity: sha512-fakehash5==}
+    dependencies:
+      encoding: 0.1.13
+      is-stream: 1.1.0
+    dev: false
+
+  /whatwg-fetch@3.6.2:
+    resolution: {integrity: sha512-fakehash6==}
+    dev: false
+
+  /encoding@0.1.13:
+    resolution: {integrity: sha512-fakehash7==}
+    dependencies:
+      iconv-lite: 0.6.3
+    dev: false
+
+  /iconv-lite@0.6.3:
+    resolution: {integrity: sha512-fakehash8==}
+    dependencies:
+      safer-buffer: 2.1.2
+    dev: false
+
+  /is-stream@1.1.0:
+    resolution: {integrity: sha512-fakehash9==}
+    dev: false
+
+  /safer-buffer@2.1.2:
+    resolution: {integrity: sha512-fakehash10==}
+    dev: false

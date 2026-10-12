@@ -115,6 +115,16 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "#latest_version with cooldown" do
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:mock_versions) { [Dependabot::RustToolchain::Version.new("1.73")] }
+
+    it "allows the release and marks the dependency when its date is unavailable" do
+      expect(version_finder.latest_version).to eq(Dependabot::RustToolchain::Version.new("1.73"))
+      expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+    end
+  end
+
   describe "#apply_post_fetch_latest_versions_filter" do
     let(:mock_versions) do
       [

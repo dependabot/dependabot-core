@@ -163,10 +163,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     end
   end
 
-  context "when enable_swift_xcode_spm experiment is enabled" do
-    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, true) }
-    after { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
-
+  context "with Xcode SPM projects" do
     describe "#updated_dependency_files" do
       subject(:updated_dependency_files) { updater.updated_dependency_files }
 
@@ -235,22 +232,33 @@ RSpec.describe Dependabot::Swift::FileUpdater do
           ]
         end
 
-        it "returns the updated Package.resolved file" do
-          expect(updated_dependency_files.length).to eq(1)
-          resolved = updated_dependency_files.first
+        it "returns the updated Package.resolved and project.pbxproj files" do
+          expect(updated_dependency_files.length).to eq(2)
+
+          resolved = updated_dependency_files.find { |f| f.name.end_with?("Package.resolved") }
           expect(resolved.name).to eq(
             "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
           )
+
+          pbxproj = updated_dependency_files.find { |f| f.name.end_with?("project.pbxproj") }
+          expect(pbxproj.name).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(pbxproj.support_file).to be false
         end
 
         it "updates the version in the resolved file" do
-          resolved = updated_dependency_files.first
+          resolved = updated_dependency_files.find { |f| f.name.end_with?("Package.resolved") }
           expect(resolved.content).to include('"version" : "2.55.0"')
           expect(resolved.content).not_to include('"version" : "2.54.0"')
         end
 
+        it "updates the minimumVersion in the pbxproj file" do
+          pbxproj = updated_dependency_files.find { |f| f.name.end_with?("project.pbxproj") }
+          expect(pbxproj.content).to include("minimumVersion = 2.55.0;")
+          expect(pbxproj.content).not_to include("minimumVersion = 2.54.0;")
+        end
+
         it "preserves the schema version" do
-          resolved = updated_dependency_files.first
+          resolved = updated_dependency_files.find { |f| f.name.end_with?("Package.resolved") }
           parsed = JSON.parse(resolved.content)
           expect(parsed["version"]).to eq(2)
         end
@@ -324,12 +332,16 @@ RSpec.describe Dependabot::Swift::FileUpdater do
           ]
         end
 
-        it "updates workspace Package.resolved" do
-          expect(updated_dependency_files.length).to eq(1)
-          resolved = updated_dependency_files.first
+        it "updates workspace Package.resolved and project.pbxproj" do
+          expect(updated_dependency_files.length).to eq(2)
 
+          resolved = updated_dependency_files.find { |f| f.name.end_with?("Package.resolved") }
           expect(resolved.name).to eq("MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved")
           expect(resolved.content).to include('"version" : "2.55.0"')
+
+          pbxproj = updated_dependency_files.find { |f| f.name.end_with?("project.pbxproj") }
+          expect(pbxproj.name).to eq("AppA.xcodeproj/project.pbxproj")
+          expect(pbxproj.content).to include("minimumVersion = 2.55.0;")
         end
       end
 
@@ -409,12 +421,12 @@ RSpec.describe Dependabot::Swift::FileUpdater do
             ]
           end
 
-          it "only updates AppA's Package.resolved" do
-            expect(updated_dependency_files.length).to eq(1)
-            expect(updated_dependency_files.first.name).to include("AppA.xcodeproj")
+          it "updates AppA's Package.resolved and project.pbxproj" do
+            expect(updated_dependency_files.length).to eq(2)
+            expect(updated_dependency_files.map(&:name)).to all(include("AppA.xcodeproj"))
           end
 
-          it "does not modify AppB's Package.resolved" do
+          it "does not modify AppB's files" do
             expect(updated_dependency_files.map(&:name)).not_to include(
               a_string_matching(/AppB\.xcodeproj/)
             )
@@ -470,10 +482,16 @@ RSpec.describe Dependabot::Swift::FileUpdater do
         end
 
         it "preserves v1 format while updating" do
-          resolved = updated_dependency_files.first
+          resolved = updated_dependency_files.find { |f| f.name.end_with?("Package.resolved") }
           parsed = JSON.parse(resolved.content)
           expect(parsed["version"]).to eq(1)
           expect(parsed["object"]["pins"].first["state"]["version"]).to eq("2.55.0")
+        end
+
+        it "also updates the project.pbxproj" do
+          pbxproj = updated_dependency_files.find { |f| f.name.end_with?("project.pbxproj") }
+          expect(pbxproj).not_to be_nil
+          expect(pbxproj.content).to include("minimumVersion = 2.55.0;")
         end
       end
     end

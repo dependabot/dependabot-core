@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/shared/shared_file_fetcher"
@@ -41,7 +41,7 @@ module Dependabot
         @chart_locks ||=
           T.let(
             repo_contents(raise_errors: false)
-                      .select { |f| f.type == "file" && f.name.casecmp(CHART_LOCK_FILENAME).zero? }
+                      .select { |f| f.type == "file" && T.must(f.name.casecmp(CHART_LOCK_FILENAME)).zero? }
                       .map { |f| fetch_file_from_host(f.name) },
             T.nilable(T::Array[DependencyFile])
           )

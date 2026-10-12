@@ -66,7 +66,8 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
           downloads: downloads,
           url: url,
           package_type: package_type,
-          language: language
+          language: language,
+          tag: release.fetch(:tag, nil)
         )
       end
     )
@@ -152,6 +153,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       downloads: 1,
       url: "https://example.com",
       package_type: "gem",
+      tag: "v7.0.0",
       language: language_with_requirement
     }
   end
@@ -279,6 +281,22 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
 
     it { is_expected.to eq(TestVersion.new("7.0.0")) }
 
+    context "when a release requires an unsupported language version" do
+      subject(:latest_version) { finder.latest_version(language_version: TestVersion.new("2.6.0")) }
+
+      let(:available_releases) { [available_release_7_0_0, available_release_6_1_4] }
+      let(:cooldown_options) { nil }
+
+      it "logs why the release was filtered out" do
+        expect(Dependabot.logger).to receive(:info).with(
+          /Filtered out rails 7\.0\.0 because dummy requirement >= 2\.7\.0 is not satisfied by dummy 2\.6\.0/
+        )
+        expect(Dependabot.logger).to receive(:info).with(/Filtered out 1 unsupported Language 2\.6\.0 versions/)
+
+        expect(latest_version).to eq(TestVersion.new("6.1.4"))
+      end
+    end
+
     context "when all supported versions are ignored" do
       let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
 
@@ -309,6 +327,59 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
           expect(latest_version).to eq(TestVersion.new("7.0.0"))
         end
       end
+    end
+  end
+
+  describe "#latest_tag" do
+    subject(:latest_tag) { finder.latest_tag }
+
+    it "returns the tag of the latest release" do
+      expect(latest_tag).to eq("v7.0.0")
+    end
+
+    context "when the latest release has no tag" do
+      let(:available_releases) do
+        [available_release_6_1_4, available_release_6_0_2, available_release_6_0_0]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when all supported versions are ignored" do
+      let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#latest_release" do
+    subject(:latest_release) { finder.latest_release }
+
+    it "returns the latest non-yanked release" do
+      expect(latest_release).to be_a(Dependabot::Package::PackageRelease)
+      expect(latest_release.version).to eq(TestVersion.new("7.0.0"))
+    end
+
+    it "includes the tag from the release" do
+      expect(latest_release.tag).to eq("v7.0.0")
+    end
+
+    context "when all supported versions are ignored" do
+      let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      it { is_expected.to be_nil }
     end
   end
 
@@ -409,6 +480,182 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
     end
   end
 
+  describe "#wants_prerelease?" do
+    subject(:wants_prerelease) { finder.send(:wants_prerelease?) }
+
+    # Minimal PEP 440 stub: post-releases are stable, a/b/rc/dev are pre-release.
+    # Avoids coupling common specs to the Python ecosystem gem.
+    let(:pep440_version_class) do
+      Class.new(Dependabot::Version) do
+        def self.correct?(version)
+          version.to_s.match?(/\A[\d]+(?:\.[\d]+)*(?:\.?(?:a|b|rc|dev|post|rev|r)\d*)?\z/)
+        end
+
+        def prerelease?
+          to_s.match?(/(?:a|b|rc|dev)\d*/)
+        end
+      end
+    end
+
+    let(:available_releases) { [] }
+    let(:dependency_files) { [requirements_file] }
+    let(:requirements_file) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "dummy"
+      )
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: dependency_requirements,
+        package_manager: "pep440_stub"
+      )
+    end
+
+    before do
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_call_original
+      allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager).and_call_original
+
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager)
+        .with("pep440_stub")
+        .and_return(pep440_version_class)
+      allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
+        .with("pep440_stub")
+        .and_return(Gem::Requirement)
+    end
+
+    context "when the current version is a stable release" do
+      let(:dependency_version) { "2.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: "==2.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the current version is a pre-release" do
+      let(:dependency_version) { "2.0.0a1" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: "==2.0.0a1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the current version is a post-release (stable)" do
+      let(:dependency_version) { "2.0.0.post1" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=2.0.0.post1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the current version is a rev-release (stable)" do
+      let(:dependency_version) { "2.0.0.rev1" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=2.0.0.rev1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when requirements reference a pre-release version" do
+      let(:dependency_version) { "1.9.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.9.0,<2.0.0rc1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when requirements reference a dev version" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.0.0.dev0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when requirements are stable with no pre-release markers" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.0.0,<2.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the requirement is empty" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: nil, groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no pinned version but requirements reference a pre-release" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=2.0.0b1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency has no pinned version and requirements are stable" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "with Gem::Version style (default version class)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: dependency_requirements,
+          package_manager: "dummy"
+        )
+      end
+
+      context "when the current version has an alpha pre-release suffix" do
+        let(:dependency_version) { "1.0.0.alpha" }
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: "~> 1.0.0.alpha", groups: [], source: nil }]
+        end
+
+        it { is_expected.to be true }
+      end
+
+      context "when the current version is stable" do
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: "~> 1.0", groups: [], source: nil }]
+        end
+
+        it { is_expected.to be false }
+      end
+
+      context "when requirement references a beta version" do
+        let(:dependency_version) { nil }
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: ">= 2.0.0.beta1", groups: [], source: nil }]
+        end
+
+        it { is_expected.to be true }
+      end
+    end
+  end
+
   describe "cooldown fallback to current version" do
     let(:dependency_version) { "6.0.0" }
 
@@ -496,6 +743,86 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
 
       it "returns the latest version without fallback" do
         expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+      end
+    end
+
+    context "when a release date is unavailable" do
+      let(:available_releases) do
+        [{ version: "6.0.1", released_at: nil, yanked: false }]
+      end
+
+      it "allows the version and marks the dependency" do
+        expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+
+      context "when the dependency is excluded from cooldown" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 7,
+            exclude: [dependency_name]
+          )
+        end
+
+        it "does not mark the dependency" do
+          finder.latest_version
+
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      context "when the undated release is ignored" do
+        let(:available_releases) do
+          [
+            { version: "6.0.2", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+        let(:ignored_versions) { ["6.0.1"] }
+
+        it "does not mark the dependency" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.2"))
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      context "when a newer selected release has a usable date" do
+        let(:available_releases) do
+          [
+            { version: "6.0.2", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+
+        it "does not mark the dependency" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.2"))
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      context "when a higher dated prerelease is filtered out" do
+        let(:available_releases) do
+          [
+            { version: "7.0.0.beta1", released_at: "2023-01-01", yanked: false },
+            { version: "6.0.1", released_at: nil, yanked: false }
+          ]
+        end
+
+        it "marks the selected undated release" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+
+      context "when the effective cooldown is zero days" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0)
+        end
+
+        it "does not mark the dependency" do
+          expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
       end
     end
 

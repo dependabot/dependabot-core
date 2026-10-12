@@ -1,0 +1,18 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 4.0)
+  business (~> 1.4)
+
+CHECKSUMS
+  business (1.4.0) sha256=456
+  bundler (4.0.12) sha256=old12
+
+BUNDLED WITH
+   4.0.12

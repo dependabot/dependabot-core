@@ -72,6 +72,15 @@ module Functions
         lockfile_specs.include?(spec)
       end.map(&:name).uniq
 
+      cache_path = Bundler.app_cache
+
+      # Snapshot the gems already vendored in the repo before we re-cache.
+      # `cache_all_platforms` re-fetches every platform variant of every gem,
+      # which adds gem files for platforms the repo may never have vendored.
+      # We only want to add platform variants for gems this update actually
+      # changed, so anything else newly added is reverted below.
+      pre_existing_gems = Dir["#{cache_path}/*.gem"]
+
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -84,9 +93,29 @@ module Functions
 
         # Only prune updated gems (the original implementation is in
         # Bundler::Runtime)
-        cache_path = Bundler.app_cache
         prune_gem_cache(resolve, cache_path, updated_gems)
         prune_git_and_path_cache(resolve, cache_path)
+      end
+
+      # Revert gem files newly added by the all-platforms re-cache that belong
+      # to dependencies this update didn't touch. Without this a single-gem
+      # update re-vendors missing platform variants for *every* gem, producing
+      # large diffs unrelated to the update on repos that don't vendor every
+      # platform.
+      prune_unrequested_gem_additions(cache_path, pre_existing_gems, updated_gems)
+    end
+
+    # Removes gem files added by the all-platforms re-cache that were not
+    # present before and don't belong to an updated dependency (including
+    # sub-dependencies). Pre-existing vendored gems are always left untouched.
+    def prune_unrequested_gem_additions(cache_path, pre_existing_gems, updated_gems)
+      Dir["#{cache_path}/*.gem"].each do |path|
+        next if pre_existing_gems.include?(path)
+
+        spec = Bundler.rubygems.spec_from_gem(path)
+        next if updated_gems.include?(spec.name)
+
+        File.delete(path)
       end
     end
 
