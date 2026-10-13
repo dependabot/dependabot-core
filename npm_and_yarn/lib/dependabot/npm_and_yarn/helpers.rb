@@ -213,6 +213,10 @@ module Dependabot
       def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
 
+        # npm 12 no longer reads or writes npm-shrinkwrap.json. Route unpinned shrinkwrap
+        # repos to npm 11 where npm-shrinkwrap.json is still supported.
+        return NPM_V11 if lockfile&.name&.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
+
         # Return npm 12 as the default if the lockfile is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 

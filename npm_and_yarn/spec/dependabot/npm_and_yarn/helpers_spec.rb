@@ -227,6 +227,36 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::npm_version_numeric" do
+    context "with a package-lock.json" do
+      it "returns 12 for lockfileVersion 3" do
+        lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: '{"lockfileVersion": 3}'
+        )
+        expect(described_class.npm_version_numeric(lockfile)).to eq(12)
+      end
+
+      it "returns 8 for lockfileVersion 2" do
+        lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: '{"lockfileVersion": 2}'
+        )
+        expect(described_class.npm_version_numeric(lockfile)).to eq(8)
+      end
+    end
+
+    context "with an npm-shrinkwrap.json" do
+      it "returns 11 because npm 12 dropped shrinkwrap support" do
+        shrinkwrap = Dependabot::DependencyFile.new(
+          name: "npm-shrinkwrap.json",
+          content: '{"lockfileVersion": 3}'
+        )
+        expect(described_class.npm_version_numeric(shrinkwrap)).to eq(11)
+      end
+    end
+  end
+
   describe "::npm_supports_allow_flags?" do
     context "when running npm 12 or higher" do
       it "returns true" do

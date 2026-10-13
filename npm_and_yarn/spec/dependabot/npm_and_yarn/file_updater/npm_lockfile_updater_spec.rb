@@ -983,6 +983,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with an EALLOWGIT error" do
+      let(:response) do
+        "npm error code EALLOWGIT\nFetching packages of type \"git\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"git\" has been disabled by npm configuration.")
+        end
+      end
+    end
+
+    context "with an EALLOWREMOTE error" do
+      let(:response) do
+        "npm error code EALLOWREMOTE\nFetching packages of type \"remote\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"remote\" has been disabled by npm configuration.")
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do

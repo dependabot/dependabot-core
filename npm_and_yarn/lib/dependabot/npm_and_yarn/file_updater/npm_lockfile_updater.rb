@@ -149,6 +149,10 @@ module Dependabot
         ERR_INVALID_AUTH = /npm error code ERR_INVALID_AUTH/
         INVALID_AUTH_CONFIG = /Invalid auth configuration found.*_auth.*must be renamed to/
 
+        # npm 12 blocked dependency errors
+        EALLOWGIT = /npm error code EALLOWGIT/
+        EALLOWREMOTE = /npm error code EALLOWREMOTE/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -805,6 +809,16 @@ module Dependabot
                   "The _auth setting in .npmrc needs to be scoped to the specific registry." \
                   "Please update your .npmrc configuration to use registry-specific auth settings."
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
+          if error_message.match?(EALLOWGIT)
+            msg = "Fetching packages of type \"git\" has been disabled by npm configuration."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(EALLOWREMOTE)
+            msg = "Fetching packages of type \"remote\" has been disabled by npm configuration."
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           raise error
