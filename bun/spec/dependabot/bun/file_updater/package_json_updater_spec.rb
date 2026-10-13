@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,6 +7,8 @@ require "dependabot/dependency_file"
 require "dependabot/bun/file_updater/package_json_updater"
 
 RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
+  extend T::Sig
+
   describe "#updated_package_json" do
     subject(:updated_content) do
       described_class.new(package_json: package_json, dependencies: [dependency]).updated_package_json.content
@@ -29,6 +31,7 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
     let(:new_requirement) { "7.0.0" }
     let(:source) { nil }
 
+    sig { params(group: String, requirement: T.nilable(String)).returns(T::Hash[Symbol, T.anything]) }
     def requirement(group, requirement)
       { file: "package.json", requirement: requirement, groups: [group], source: source }
     end
