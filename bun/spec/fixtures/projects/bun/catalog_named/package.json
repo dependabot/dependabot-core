@@ -1,0 +1,18 @@
+{
+  "name": "catalog-named",
+  "private": true,
+  "workspaces": {
+    "packages": ["packages/*"],
+    "catalogs": {
+      "default": {
+        "is-number": "^6.0.0"
+      },
+      "legacy": {
+        "etag": "1.0.1"
+      },
+      "current": {
+        "etag": "1.7.0"
+      }
+    }
+  }
+}

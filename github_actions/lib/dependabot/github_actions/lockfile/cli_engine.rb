@@ -25,11 +25,22 @@ module Dependabot
 
         JsonObject = T.type_alias { T::Hash[String, Object] }
         FIXED_FINDING_CATEGORIES = %w(onboarding-required ref-changed stale).freeze
-        UNRESOLVABLE_CATEGORIES = %w(impostor-commit lockfile-forgery).freeze
+        UNRESOLVABLE_CATEGORIES = %w(
+          unreachable-pin repo-replaced repo-unavailable repo-renamed not-pinned
+          local-action invalid-self-repository-ref misleading-sha
+        ).freeze
 
-        sig { params(credentials: T::Array[Dependabot::Credential]).void }
-        def initialize(credentials)
+        # Host-identity failures from the engine: the lock is bound to a host it can't
+        # be verified on. User-actionable (restore/regenerate), never retryable. The
+        # engine wraps every lookup error, so only a 404 counts; 5xx/429/403/timeouts stay EngineError.
+        HOST_IDENTITY_ERROR = /verifying repository identity .*: HTTP 404\b|repository IDs|not the selected host/
+
+        # `hostname` is the repository's home host. The engine binds every pin with an
+        # omitted lockfile `hostname` to it, so it must never be guessed.
+        sig { params(credentials: T::Array[Dependabot::Credential], hostname: String).void }
+        def initialize(credentials, hostname: GITHUB_COM)
           @credentials = credentials
+          @hostname = hostname
         end
 
         # Binary baked into the ecosystem image; falls back to PATH for local dev.
@@ -46,19 +57,26 @@ module Dependabot
           params(
             workflow_files: T::Array[Dependabot::DependencyFile],
             lockfile: Dependabot::DependencyFile,
-            workflow_paths: T::Array[String]
+            workflow_paths: T::Array[String],
+            action_files: T::Array[Dependabot::DependencyFile]
           ).returns(String)
         end
-        def relock(workflow_files:, lockfile:, workflow_paths: workflow_files.map { |file| repo_path(file) })
-          in_repo(workflow_files, lockfile) do |dir|
-            args = %w(--no-onboard --no-narrow --no-interactive --json=findings) + workflow_paths
+        def relock(
+          workflow_files:,
+          lockfile:,
+          workflow_paths: workflow_files.map { |file| repo_path(file) },
+          action_files: []
+        )
+          in_repo(workflow_files + action_files, lockfile) do |dir|
+            args = %w(--no-onboard --no-narrow --no-interactive --json=findings) +
+                   ["--hostname", hostname] + workflow_paths
             json, exit_status = run(dir, args)
 
             skipped = onboarding_skips(json, lockfile)
             log_skips(skipped)
 
             # `findings` is the PRE-fix diagnosis; at exit 0 fix-mode already resolved
-            # them. Only exit 1 can carry a survivor (impostor/forgery or a skip).
+            # them. Writes are all-or-nothing, so exit 1 means nothing was written.
             raise_on_findings(json) if exit_status == 1
 
             File.read(File.join(dir, LOCKFILE_PATH))
@@ -69,6 +87,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(String) }
+        attr_reader :hostname
 
         sig do
           type_parameters(:T)
@@ -104,6 +125,7 @@ module Dependabot
         sig { params(dir: String, args: T::Array[String]).returns([JsonObject, Integer]) }
         def run(dir, args)
           stdout, stderr, exit_status = invoke(dir, args)
+          raise DependencyFileNotResolvable, stderr.strip if exit_status > 1 && stderr.match?(HOST_IDENTITY_ERROR)
           raise EngineError, "gh-actions-lock failed (exit #{exit_status}): #{stderr.strip}" if exit_status > 1
 
           json = case (parsed = JSON.parse(stdout))
@@ -120,7 +142,9 @@ module Dependabot
         # [stdout, stderr, exit_status].
         sig { params(dir: String, args: T::Array[String]).returns([String, String, Integer]) }
         def invoke(dir, args)
-          env_cmd = [Env.build(credentials), self.class.binary_path, *args, { chdir: dir }]
+          # The temp dir has no .git, so name the root that `$/` paths resolve against.
+          env = Env.build(credentials, hostname).merge("GH_ACTIONS_LOCK_REPO_ROOT" => dir)
+          env_cmd = [env, self.class.binary_path, *args, { chdir: dir }]
           stdout, stderr, process = CommandHelpers.capture3_with_timeout(env_cmd)
 
           # A failed spawn comes back as a nil status, not an exception.
@@ -133,23 +157,21 @@ module Dependabot
           [stdout || "", stderr || "", process.exitstatus]
         end
 
+        # Exit 1 wrote nothing. Any user-actionable finding wins; anything else retries.
         sig { params(json: JsonObject).void }
         def raise_on_findings(json)
-          T.cast(Array(json["findings"]), T::Array[JsonObject]).each do |finding|
-            next unless finding["severity"].nil? || finding["severity"] == "error"
-
-            category = finding["category"].to_s
-            next if FIXED_FINDING_CATEGORIES.include?(category)
-
-            if UNRESOLVABLE_CATEGORIES.include?(category)
-              raise UnresolvableDependency.new(
-                (finding["dependency"] || "unknown").to_s,
-                (finding["detail"] || category).to_s
-              )
-            end
-
-            raise EngineError, "gh-actions-lock left an unhandled #{category.inspect} finding"
+          errors = T.cast(Array(json["findings"]), T::Array[JsonObject])
+                    .select { |finding| finding["severity"].nil? || finding["severity"] == "error" }
+          unresolvable = errors.find { |finding| UNRESOLVABLE_CATEGORIES.include?(finding["category"].to_s) }
+          if unresolvable
+            raise UnresolvableDependency.new(
+              (unresolvable["dependency"] || "unknown").to_s,
+              (unresolvable["detail"] || unresolvable["category"]).to_s
+            )
           end
+
+          categories = errors.map { |finding| finding["category"].to_s }.uniq - FIXED_FINDING_CATEGORIES
+          raise EngineError, "gh-actions-lock exited 1 without an actionable finding: #{categories.inspect}"
         end
 
         # Partitions onboarding-required findings into genuine skips vs. a lock the

@@ -1,11 +1,17 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/git_tag_details"
 
 RSpec.describe Dependabot::GitTagDetails do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Gem::Version) }
   let(:version) { Gem::Version.new("1.2.3") }
+
+  sig { returns(Dependabot::GitTagDetails) } # rubocop:disable RSpec/DescribedClass -- Signatures need concrete types.
   let(:details) do
     described_class.new(
       tag: "v1.2.3",
@@ -14,6 +20,7 @@ RSpec.describe Dependabot::GitTagDetails do
       tag_sha: "tag-sha"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   it "preserves Hash compatibility and typed readers" do
     expect(details).to eq(

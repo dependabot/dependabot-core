@@ -3,8 +3,10 @@
 
 require "sorbet-runtime"
 
+require "dependabot/bun/file_parser"
 require "dependabot/bun/file_updater"
 require "dependabot/package/json_object_members"
+require "dependabot/package/npm_package_json"
 
 module Dependabot
   module Bun
@@ -108,7 +110,10 @@ module Dependabot
         def old_requirement(dependency, new_requirement)
           T.must(dependency.previous_requirements)
            .select { |r| r.file == package_json.name }
-           .find { |r| r.groups == new_requirement.groups }
+           .find do |r|
+             r.groups == new_requirement.groups &&
+               r.metadata_string("catalog") == new_requirement.metadata_string("catalog")
+           end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -146,6 +151,17 @@ module Dependabot
             .returns(String)
         end
         def update_package_json_declaration(package_json_content:, new_req:, dependency_name:, old_req:)
+          catalog = new_req.metadata_string("catalog")
+          if catalog
+            return update_entries(
+              catalog_sections(catalog, package_json_content),
+              package_json_content,
+              dependency_name,
+              old_req,
+              new_req
+            )
+          end
+
           sections = T.must(new_req.groups).map { |group| [group.to_s] }
 
           update_package_json_sections(
@@ -305,6 +321,31 @@ module Dependabot
           # TODO: Move this logic to the UpdateChecker (and parse peer deps)
           sections += [["peerDependencies"]]
 
+          update_entries(sections, content, entry_name, old_req, new_req)
+        end
+
+        # Bun reads catalogs only from `NpmPackageJson#catalog_container`, and
+        # the default catalog is `catalog` together with `catalogs.default`.
+        sig { params(catalog: String, content: String).returns(T::Array[T::Array[String]]) }
+        def catalog_sections(catalog, content)
+          document = Dependabot::Package::NpmPackageJson.new(JSON.parse(content), package_json.path)
+          container = [document.catalog_container].compact
+          sections = [container + ["catalogs", catalog]]
+          sections.unshift(container + ["catalog"]) if catalog == FileParser::DEFAULT_CATALOG
+          sections
+        end
+
+        sig do
+          params(
+            sections: T::Array[T::Array[String]],
+            content: String,
+            entry_name: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
+          )
+            .returns(String)
+        end
+        def update_entries(sections, content, entry_name, old_req, new_req)
           value_ranges = section_ranges(content, sections).filter_map do |range|
             Dependabot::Package::JsonObjectMembers.strings(content, range.begin)[entry_name]
           end
