@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/bun/file_updater"
+require "dependabot/bun/file_updater/json_object_members"
 
 module Dependabot
   module Bun
@@ -131,25 +132,14 @@ module Dependabot
             .returns(String)
         end
         def update_package_json_declaration(package_json_content:, new_req:, dependency_name:, old_req:)
-          original_line = declaration_line(
-            dependency_name: dependency_name,
-            dependency_req: old_req,
-            content: package_json_content
-          )
-
-          replacement_line = replacement_declaration_line(
-            original_line: original_line,
-            old_req: old_req,
-            new_req: new_req
-          )
-
-          groups = T.must(new_req.groups).map(&:to_s)
+          sections = T.must(new_req.groups).map { |group| [group.to_s] }
 
           update_package_json_sections(
-            groups,
+            sections,
             package_json_content,
-            original_line,
-            replacement_line
+            dependency_name,
+            old_req,
+            new_req
           )
         end
 
@@ -176,23 +166,15 @@ module Dependabot
           return package_json_content unless resolutions.any?
 
           content = package_json_content
-          resolutions.each do |_, resolution|
-            original_line = declaration_line(
-              dependency_name: dep.name,
-              dependency_req: Dependabot::DependencyRequirement.create(requirement: resolution),
-              content: content
-            )
-
+          resolutions.each do |name, resolution|
             new_resolution = resolution == old_req ? new_req : dep.version
 
-            replacement_line = replacement_declaration_line(
-              original_line: original_line,
-              old_req: Dependabot::DependencyRequirement.create(requirement: resolution),
-              new_req: Dependabot::DependencyRequirement.create(requirement: new_resolution)
-            )
-
             content = update_package_json_sections(
-              %w(resolutions overrides), content, original_line, replacement_line
+              [["resolutions"], ["overrides"], %w(pnpm overrides)],
+              content,
+              name,
+              Dependabot::DependencyRequirement.create(requirement: resolution),
+              Dependabot::DependencyRequirement.create(requirement: new_resolution)
             )
           end
           content
@@ -290,50 +272,67 @@ module Dependabot
           )
         end
 
+        # Each section is a path of member names from the document root, so an
+        # object with the same name nested elsewhere is never edited.
         sig do
           params(
-            sections: T::Array[String],
+            sections: T::Array[T::Array[String]],
             content: String,
-            old_line: String,
-            new_line: String
+            entry_name: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
           )
             .returns(String)
         end
-        def update_package_json_sections(sections, content, old_line, new_line)
+        def update_package_json_sections(sections, content, entry_name, old_req, new_req)
           # Currently, Dependabot doesn't update peerDependencies. However,
           # if a development dependency is being updated and its requirement
           # matches the requirement on a peer dependency we probably want to
           # update the peer too.
           #
           # TODO: Move this logic to the UpdateChecker (and parse peer deps)
-          sections += ["peerDependencies"]
-          sections_regex = /#{sections.join('|')}/
+          sections += [["peerDependencies"]]
 
-          declaration_blocks = T.let([], T::Array[String])
-
-          content.scan(/['"]#{sections_regex}['"]\s*:\s*\{/m) do
-            mtch = T.must(Regexp.last_match)
-            declaration_blocks <<
-              (mtch.to_s + T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)]))
+          value_ranges = section_ranges(content, sections).filter_map do |range|
+            JsonObjectMembers.strings(content, range.begin)[entry_name]
           end
 
-          declaration_blocks.reduce(content.dup) do |new_content, block|
-            updated_block = block.sub(old_line, new_line)
-            new_content.sub(block, updated_block)
+          # Replacing from the end keeps the earlier ranges valid.
+          value_ranges.sort_by(&:begin).reverse.each_with_object(content.dup) do |range, updated|
+            value = updated_value(entry_name, T.must(updated[range]), old_req, new_req)
+            updated[range] = value if value
           end
         end
 
-        sig { params(string: String).returns(Integer) }
-        def closing_bracket_index(string)
-          closes_required = 1
+        sig { params(content: String, sections: T::Array[T::Array[String]]).returns(T::Array[T::Range[Integer]]) }
+        def section_ranges(content, sections)
+          root_start = content.index("{")
+          return [] unless root_start
 
-          string.chars.each_with_index do |char, index|
-            closes_required += 1 if char == "{"
-            closes_required -= 1 if char == "}"
-            return index if closes_required.zero?
+          sections.uniq.filter_map do |path|
+            path.reduce(T.let(root_start..root_start, T.nilable(T::Range[Integer]))) do |range, name|
+              JsonObjectMembers.objects(content, range.begin)[name] if range
+            end
           end
+        end
 
-          0
+        # The value is matched and rewritten as a normalized declaration, so
+        # its source formatting never affects the match.
+        sig do
+          params(
+            entry_name: String,
+            value: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
+          )
+            .returns(T.nilable(String))
+        end
+        def updated_value(entry_name, value, old_req, new_req)
+          prefix = %("#{entry_name}": )
+          line = prefix + JSON.generate(JSON.parse(value))
+          return if declaration_line(dependency_name: entry_name, dependency_req: old_req, content: line).empty?
+
+          replacement_declaration_line(original_line: line, old_req: old_req, new_req: new_req).delete_prefix(prefix)
         end
 
         sig { params(dependency: Dependabot::Dependency).void }
