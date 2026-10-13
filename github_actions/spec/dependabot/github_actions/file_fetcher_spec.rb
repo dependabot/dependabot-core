@@ -544,5 +544,28 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
       end
     end
+
+    context "when a repository workflow is invalidly encoded" do
+      before do
+        stub_request(:get, url + ".github/workflows?ref=sha")
+          .to_return(
+            status: 200,
+            body: listing_json(
+              ".github/workflows/ci.yml", ".github/workflows/bad.yml", ".github/workflows/actions.lock"
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".github/workflows/bad.yml?ref=sha")
+          .to_return(
+            status: 200,
+            body: contents_json(".github/workflows/bad.yml", "\xFF\xFE".b),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches only the composite action" do
+        expect(file_fetcher_instance.files.map(&:path)).to eq(["/.github/actions/inner/action.yml"])
+      end
+    end
   end
 end

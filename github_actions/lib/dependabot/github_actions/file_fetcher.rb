@@ -52,9 +52,7 @@ module Dependabot
           # and never activates the ecosystem on its own. Relocking also requires
           # every workflow to be materialized, so retain the workflow-only path if
           # an invalidly encoded workflow had to be omitted.
-          if incorrectly_encoded_workflow_files.empty? && (lockfile = actions_lockfile)
-            fetched_files += [lockfile] + repository_workflow_files + self_repository_action_files
-          end
+          fetched_files += relock_files if incorrectly_encoded_workflow_files.empty?
           return fetched_files
         end
 
@@ -80,6 +78,16 @@ module Dependabot
 
       private
 
+      # The lockfile plus everything the engine needs to relock it, or nothing when
+      # a workflow it would read is invalidly encoded.
+      sig { returns(T::Array[DependencyFile]) }
+      def relock_files
+        lockfile = actions_lockfile
+        return [] unless lockfile && repository_workflow_files.all? { |f| f.content&.valid_encoding? }
+
+        [lockfile] + repository_workflow_files + self_repository_action_files
+      end
+
       # Fetches the canonical `.github/workflows/actions.lock`. Composite-action
       # directories cannot own a lockfile, but `$/` workflows reaching them do.
       sig { returns(T.nilable(DependencyFile)) }
@@ -102,7 +110,6 @@ module Dependabot
             repo_contents(dir: dir, raise_errors: false)
               .select { |f| f.type == "file" && f.name.match?(MANIFEST_FILE_PATTERN) }
               .map { |f| fetch_file_from_host(File.join(dir, f.name)) }
-              .select { |f| f.content&.valid_encoding? }
               .each { |f| f.support_file = true }
           end,
           T.nilable(T::Array[DependencyFile])
