@@ -167,8 +167,23 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       expect(ancestor.path).to eq("/go.work")
     end
 
-    it "only fetches the module's own go.mod and go.sum" do
-      expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work")
+    it "also fetches go.work.sum and the other members' go.mod and go.sum relative to the directory" do
+      expect(fetched_files.map(&:name)).to contain_exactly(
+        "go.mod",
+        "go.sum",
+        "../go.work",
+        "../go.work.sum",
+        "../go.mod",
+        "../go.sum",
+        "../services/go.mod",
+        "../services/go.sum"
+      )
+    end
+
+    it "fetches only the module's own go.mod and go.sum as regular files" do
+      regular_files = fetched_files.reject(&:support_file?)
+
+      expect(regular_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
     end
 
     context "when the directory is nested more than one level below go.work" do
@@ -185,8 +200,8 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       end
       let(:directory) { "/libs/nested" }
 
-      it "walks up to the go.work and names it relative to the directory" do
-        expect(fetched_files.map(&:name)).to include("../../go.work")
+      it "walks up to the go.work and names the workspace files relative to the directory" do
+        expect(fetched_files.map(&:name)).to include("../../go.work", "../../go.work.sum", "../../go.mod")
       end
     end
 
@@ -210,9 +225,32 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
           let(:use_directive) { directive }
 
           it "fetches the ancestor go.work" do
-            expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work")
+            expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
           end
         end
+      end
+    end
+
+    context "when go.work lists members that are missing, nested or outside the repository" do
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        FileUtils.mkdir_p(File.join(path, "libs", "nested"))
+        File.write(File.join(path, "libs", "nested", "go.mod"), "module example.com/libs/nested\n\ngo 1.21\n")
+        File.write(
+          File.join(path, "go.work"),
+          "go 1.21\n\nuse (\n\t./libs\n\t./libs/nested\n\t./missing\n\t../outside\n)\n"
+        )
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add --all")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m members")
+        end
+        path
+      end
+
+      it "fetches nested members, and skips missing ones and ones outside the repository" do
+        expect(fetched_files.map(&:name)).to contain_exactly(
+          "go.mod", "go.sum", "../go.work", "../go.work.sum", "nested/go.mod"
+        )
       end
     end
 
