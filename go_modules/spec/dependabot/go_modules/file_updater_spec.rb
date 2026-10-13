@@ -500,7 +500,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
   end
 
-  context "with workspace directory configurations" do
+  shared_examples "workspace directory configurations" do |experiment_enabled|
     let(:project_name) { "workspace" }
     let(:dependency_name) { "github.com/fatih/color" }
     let(:dependency_previous_version) { "v1.7.0" }
@@ -521,7 +521,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     before do
-      Dependabot::Experiments.register(:enable_go_work_version_sync, true)
+      Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
       allow(Open3).to receive(:capture3).and_call_original
     end
 
@@ -576,6 +576,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
     end
+  end
+
+  context "with workspace directory configurations and the experiment enabled" do
+    it_behaves_like "workspace directory configurations", true
+  end
+
+  context "with workspace directory configurations and the experiment disabled" do
+    it_behaves_like "workspace directory configurations", false
   end
 
   context "when updating one module of a workspace whose go.work was fetched as an ancestor file" do
@@ -699,6 +707,18 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:dependency_version) { "v0.33.0" }
       let(:previous_requirements) { [] }
       let(:requirements) { [] }
+
+      context "when the experiment is disabled" do
+        before { Dependabot::Experiments.register(:enable_go_work_version_sync, false) }
+
+        it "does not collect the ancestor go.work even when go get raises its Go version" do
+          allow(File).to receive(:read).and_call_original
+
+          expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+          expect(File.read(File.join(repo_contents_path, "go.work"))).to start_with("go 1.23")
+          expect(File).not_to have_received(:read).with("../go.work")
+        end
+      end
 
       it "returns the bumped go.work as a regular (non-support) file at the repo root" do
         updated_go_work = updated_files.find { |f| f.name == "../go.work" }
