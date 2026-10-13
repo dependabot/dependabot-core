@@ -1,10 +1,10 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/bun/file_updater/json_object_members"
+require "dependabot/package/json_object_members"
 
-RSpec.describe Dependabot::Bun::FileUpdater::JsonObjectMembers do
+RSpec.describe Dependabot::Package::JsonObjectMembers do
   let(:content) do
     <<~JSON
       {
@@ -48,6 +48,18 @@ RSpec.describe Dependabot::Bun::FileUpdater::JsonObjectMembers do
         "react" => '"^19.0.0"',
         "is-number" => '"6.0.0"'
       )
+    end
+  end
+
+  describe ".object_at" do
+    it "follows the path from the root object" do
+      expect(content[described_class.object_at(content, %w(catalogs testing))]).to eq('{ "jest": "30.0.0" }')
+    end
+
+    it "returns nil when a member is missing or not an object" do
+      expect(described_class.object_at(content, %w(catalogs missing))).to be_nil
+      expect(described_class.object_at(content, %w(name nested))).to be_nil
+      expect(described_class.object_at(content, %w(testing))).to be_nil
     end
   end
 end

@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/bun/file_updater"
-require "dependabot/bun/file_updater/json_object_members"
+require "dependabot/package/json_object_members"
 
 module Dependabot
   module Bun
@@ -294,7 +294,7 @@ module Dependabot
           sections += [["peerDependencies"]]
 
           value_ranges = section_ranges(content, sections).filter_map do |range|
-            JsonObjectMembers.strings(content, range.begin)[entry_name]
+            Dependabot::Package::JsonObjectMembers.strings(content, range.begin)[entry_name]
           end
 
           # Replacing from the end keeps the earlier ranges valid.
@@ -306,14 +306,7 @@ module Dependabot
 
         sig { params(content: String, sections: T::Array[T::Array[String]]).returns(T::Array[T::Range[Integer]]) }
         def section_ranges(content, sections)
-          root_start = content.index("{")
-          return [] unless root_start
-
-          sections.uniq.filter_map do |path|
-            path.reduce(T.let(root_start..root_start, T.nilable(T::Range[Integer]))) do |range, name|
-              JsonObjectMembers.objects(content, range.begin)[name] if range
-            end
-          end
+          sections.uniq.filter_map { |path| Dependabot::Package::JsonObjectMembers.object_at(content, path) }
         end
 
         # The value is matched and rewritten as a normalized declaration, so
