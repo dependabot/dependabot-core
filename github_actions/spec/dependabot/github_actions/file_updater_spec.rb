@@ -2133,6 +2133,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         expect(fake_engine).to have_received(:relock).with(
           workflow_files: anything,
           lockfile: lockfile,
+          action_files: [],
           workflow_paths: [".github/workflows/workflow.yml"]
         )
       end
@@ -2142,6 +2143,24 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         expect(fake_engine).to have_received(:relock) do |workflow_files:, **|
           expect(workflow_files.find { |file| file.name == workflow.name }).to equal(workflow)
+        end
+      end
+
+      context "with a ghe.com home host" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: [dependency],
+            credentials: credentials,
+            options: { source_hostname: "tenant.ghe.com" }
+          )
+        end
+
+        it "relocks against the home host" do
+          updated_files
+
+          expect(Dependabot::GithubActions::Lockfile::CliEngine)
+            .to have_received(:new).with(credentials, hostname: "tenant.ghe.com")
         end
       end
 
