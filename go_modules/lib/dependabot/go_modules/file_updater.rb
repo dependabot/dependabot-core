@@ -114,8 +114,6 @@ module Dependabot
         updated_files
       end
 
-      # Workspace files fetched from a parent directory (go.work, go.work.sum and the other
-      # members' go.mod/go.sum) that the update changed.
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_ancestor_workspace_files
         file_updater.updated_ancestor_workspace_files.filter_map do |name, content|

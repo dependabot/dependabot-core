@@ -167,16 +167,12 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       expect(ancestor.path).to eq("/go.work")
     end
 
-    it "also fetches go.work.sum and the other members' go.mod and go.sum relative to the directory" do
+    it "fetches the ancestor workspace files without fetching other members' manifests" do
       expect(fetched_files.map(&:name)).to contain_exactly(
         "go.mod",
         "go.sum",
         "../go.work",
-        "../go.work.sum",
-        "../go.mod",
-        "../go.sum",
-        "../services/go.mod",
-        "../services/go.sum"
+        "../go.work.sum"
       )
     end
 
@@ -201,7 +197,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       let(:directory) { "/libs/nested" }
 
       it "walks up to the go.work and names the workspace files relative to the directory" do
-        expect(fetched_files.map(&:name)).to include("../../go.work", "../../go.work.sum", "../../go.mod")
+        expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "../../go.work", "../../go.work.sum")
       end
     end
 
@@ -247,9 +243,9 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
         path
       end
 
-      it "fetches nested members, and skips missing ones and ones outside the repository" do
+      it "does not fetch nested, missing or outside members" do
         expect(fetched_files.map(&:name)).to contain_exactly(
-          "go.mod", "go.sum", "../go.work", "../go.work.sum", "nested/go.mod"
+          "go.mod", "go.sum", "../go.work", "../go.work.sum"
         )
       end
     end
