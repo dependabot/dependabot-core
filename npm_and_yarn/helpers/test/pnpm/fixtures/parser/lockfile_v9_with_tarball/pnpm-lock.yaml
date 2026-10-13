@@ -1,0 +1,33 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      foo:
+        specifier: imtoo/foo#master
+        version: https://codeload.github.com/imtoo/foo/tar.gz/abc1234def5678abc1234def5678abc1234def56
+    devDependencies:
+      etag:
+        specifier: ^1.0.0
+        version: 1.8.1
+
+packages:
+
+  etag@1.8.1:
+    resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
+    engines: {node: '>= 0.6'}
+
+  foo@https://codeload.github.com/imtoo/foo/tar.gz/abc1234def5678abc1234def5678abc1234def56:
+    resolution: {tarball: https://codeload.github.com/imtoo/foo/tar.gz/abc1234def5678abc1234def5678abc1234def56}
+    version: 1.0.0
+
+snapshots:
+
+  etag@1.8.1: {}
+
+  foo@https://codeload.github.com/imtoo/foo/tar.gz/abc1234def5678abc1234def5678abc1234def56: {}
