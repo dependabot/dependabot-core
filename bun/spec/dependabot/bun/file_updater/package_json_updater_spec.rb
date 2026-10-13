@@ -216,6 +216,23 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
         end
       end
 
+      context "when the resolution is the previous requirement" do
+        let(:content) do
+          <<~JSON
+            {
+              "dependencies": { "is-number": "^6.0.0" },
+              "resolutions": { "is-number": "^6.0.0" }
+            }
+          JSON
+        end
+        let(:previous_requirement) { "^6.0.0" }
+        let(:new_requirement) { "^7.0.0" }
+
+        it "updates the resolution to the new requirement" do
+          expect(updated_content).to eq(content.gsub('"^6.0.0"', '"^7.0.0"'))
+        end
+      end
+
       context "when the resolution is compact" do
         let(:content) do
           <<~JSON

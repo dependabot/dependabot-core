@@ -160,14 +160,14 @@ module Dependabot
           parsed_json_content = JSON.parse(package_json_content)
           resolutions =
             parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {})
-                               .reject { |_, v| v != old_req && v != dep.previous_version }
+                               .reject { |_, v| v != old_req&.requirement && v != dep.previous_version }
                                .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
 
           return package_json_content unless resolutions.any?
 
           content = package_json_content
           resolutions.each do |name, resolution|
-            new_resolution = resolution == old_req ? new_req : dep.version
+            new_resolution = resolution == old_req&.requirement ? new_req.requirement : dep.version
 
             content = update_package_json_sections(
               [["resolutions"], ["overrides"], %w(pnpm overrides)],
