@@ -616,7 +616,7 @@ module Dependabot
         def run_bun_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              workspace_filters.flat_map { |filter| run_bun_update(filter: filter, version: version) }
+              workspace_filters(path).flat_map { |filter| run_bun_update(filter: filter, version: version) }
             end
           end
         end
@@ -641,35 +641,39 @@ module Dependabot
           handle_peer_dependency_errors(e.message)
         end
 
-        # Returns every workspace filter (nil for the repo root, or a
-        # workspace path) that declares +dependency+. Checked once per
-        # manifest, since Bun merges same-name declarations into a single
-        # Dependency. Falls back to an unfiltered root check if it isn't
-        # declared anywhere (e.g. a sub-dependency).
-        sig { returns(T::Array[T.nilable(String)]) }
-        def workspace_filters
+        # Returns every workspace filter (nil for the +path+ we've already
+        # chdir'd into, or a workspace path relative to it) that declares
+        # +dependency+. Checked once per manifest, since Bun merges same-name
+        # declarations into a single Dependency. Falls back to an unfiltered
+        # check at +path+ if it isn't declared anywhere (e.g. a
+        # sub-dependency).
+        sig { params(path: String).returns(T::Array[T.nilable(String)]) }
+        def workspace_filters(path)
+          root_manifest = path == "." ? "package.json" : "#{path}/package.json"
+
           workspace_filters = dependency.requirements.filter_map do |requirement|
             file = requirement.file
-            next if file.nil? || file == "package.json"
+            next if file.nil? || file == root_manifest
 
             workspace_file = dependency_files.find { |f| f.name == file }
             next unless workspace_file
 
-            workspace_filter(workspace_file)
+            workspace_filter(workspace_file, path: path)
           end.uniq
 
-          declared_at_root = dependency.requirements.any? { |r| r.file == "package.json" }
+          declared_at_root = dependency.requirements.any? { |r| r.file == root_manifest }
           return workspace_filters if !declared_at_root && workspace_filters.any?
 
           [nil, *workspace_filters]
         end
 
-        # Path-based --filter target for the workspace at +file+ (e.g.
-        # "./packages/app"). Bun's --filter also accepts a package's declared
-        # "name", but names can contain glob metacharacters that would match
-        # unrelated workspaces, so a path is used instead.
-        sig { params(file: Dependabot::DependencyFile).returns(String) }
-        def workspace_filter(file)
+        # Path-based --filter target, relative to +path+, for the workspace
+        # at +file+ (e.g. "./packages/app"). Bun's --filter also accepts a
+        # package's declared "name", but names can contain glob
+        # metacharacters that would match unrelated workspaces, so a path is
+        # used instead.
+        sig { params(file: Dependabot::DependencyFile, path: String).returns(String) }
+        def workspace_filter(file, path:)
           unless Dependabot::Package::NpmPackageJson.from_file(file).name
             raise Dependabot::DependencyFileNotParseable.new(
               file.path,
@@ -677,7 +681,9 @@ module Dependabot
             )
           end
 
-          "./#{File.dirname(file.name)}"
+          workspace_dir = File.dirname(file.name)
+          workspace_dir = workspace_dir.delete_prefix("#{path}/") unless path == "."
+          "./#{workspace_dir}"
         end
 
         sig do

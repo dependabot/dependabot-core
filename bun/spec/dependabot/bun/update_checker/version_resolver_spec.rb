@@ -776,6 +776,44 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
     end
   end
 
+  describe "#latest_resolvable_version with a dependency declared in a nested project with its own lockfile" do
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
+
+    let(:project_name) { "bun/nested_lockfile_workspace_dependency" }
+    let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: "1.0.1",
+        requirements: [{
+          file: "packages/member/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }],
+        package_manager: "bun"
+      )
+    end
+
+    it { is_expected.to eq(latest_allowable_version) }
+
+    it "checks the dependency from within the nested project, without a stale repo-root-relative filter" do
+      allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+      latest_resolvable_version
+
+      # DependencyFilesFilterer#paths_requiring_update_check returns
+      # "packages/member" for this nested project, and run_bun_checker then
+      # chdirs there. A filter built relative to the repository root (e.g.
+      # "./packages/member") would therefore point Bun at the non-existent
+      # "packages/member/packages/member".
+      expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+        ["update", "etag@1.8.1", "--save-text-lockfile", "--ignore-scripts"],
+        fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+      )
+    end
+  end
+
   describe "#latest_resolvable_version with the same dependency declared in two workspaces" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
