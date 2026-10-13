@@ -13,7 +13,9 @@ module Dependabot
       extend T::Sig
 
       ObjectHash = T.type_alias { T::Hash[String, Object] }
+      CatalogEntries = T.type_alias { T::Hash[String, String] }
       DEPENDENCY_TYPES = %w(dependencies devDependencies optionalDependencies).freeze
+      CATALOG_FIELDS = %w(catalog catalogs).freeze
 
       sig { params(file: DependencyFile).returns(NpmPackageJson) }
       def self.from_file(file)
@@ -63,7 +65,55 @@ module Dependabot
         NpmPackageManagerConfig.from_package_json(@data)
       end
 
+      # The default catalog that `catalog:` requirements resolve against.
+      sig { returns(CatalogEntries) }
+      def catalog
+        prefix, fields = catalog_fields
+        value = fields["catalog"]
+        return {} unless value
+
+        catalog_entries(value, "#{prefix}catalog")
+      end
+
+      # Named catalogs that `catalog:<name>` requirements resolve against,
+      # keyed by catalog name. `default` extends the default catalog.
+      sig { returns(T::Hash[String, CatalogEntries]) }
+      def catalogs
+        prefix, fields = catalog_fields
+        value = fields["catalogs"]
+        return {} unless value
+
+        field = "#{prefix}catalogs"
+        result = T.let({}, T::Hash[String, CatalogEntries])
+        object_hash(value, field).each do |name, entries|
+          result[name] = catalog_entries(entries, "#{field}.#{name}")
+        end
+        result
+      end
+
       private
+
+      # Bun reads both catalog fields from `workspaces` when it declares
+      # either of them, and from the root otherwise.
+      sig { returns([String, ObjectHash]) }
+      def catalog_fields
+        workspaces = @data["workspaces"]
+        if workspaces.is_a?(Hash)
+          fields = object_hash(workspaces, "workspaces")
+          return ["workspaces.", fields] if CATALOG_FIELDS.any? { |field| fields.key?(field) }
+        end
+
+        ["", @data]
+      end
+
+      sig { params(value: Object, field: String).returns(CatalogEntries) }
+      def catalog_entries(value, field)
+        entries = T.let({}, CatalogEntries)
+        object_hash(value, field).each do |name, requirement|
+          entries[name] = requirement if requirement.is_a?(String)
+        end
+        entries
+      end
 
       sig { params(value: Object, field: String).returns(ObjectHash) }
       def object_hash(value, field)
