@@ -338,7 +338,8 @@ module Dependabot
         supported
       end
 
-      # True when the running npm requires `--allow-git` and `--allow-remote` to resolve git and tarball dependencies (npm 12+).
+      # True when the running npm requires `--allow-git` and `--allow-remote` to resolve
+      # git and tarball dependencies (npm 12+).
       sig { returns(T::Boolean) }
       def self.npm_supports_allow_flags?
         version = npm_version

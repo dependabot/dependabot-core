@@ -414,8 +414,8 @@ module Dependabot
 
           command_args << "--save-optional" if has_optional_dependencies
           if npm_supports_allow_flags?
-            command_args << "--allow-git"
-            command_args << "--allow-remote"
+            command_args << "--allow-git=all"
+            command_args << "--allow-remote=all"
           end
           min_release_age_arg = effective_min_release_age_arg
           command_args << min_release_age_arg if min_release_age_arg
@@ -432,8 +432,8 @@ module Dependabot
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
           if npm_supports_allow_flags?
-            fingerprint_args << "--allow-git"
-            fingerprint_args << "--allow-remote"
+            fingerprint_args << "--allow-git=all"
+            fingerprint_args << "--allow-remote=all"
           end
           # The cooldown day value varies per job, so keep it out of the fingerprint.
           fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg

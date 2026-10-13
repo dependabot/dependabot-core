@@ -1425,11 +1425,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
         end
 
-        it "includes --allow-git and --allow-remote flags in install command" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
-            expect(command).to include("--allow-git")
-            expect(command).to include("--allow-remote")
+        it "includes --allow-git=all and --allow-remote=all flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).to include("--allow-git=all")
+            expect(command).to include("--allow-remote=all")
             expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).to include("--allow-git=all")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
             ""
           end
 
@@ -1444,10 +1446,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
 
         it "does not include --allow-git and --allow-remote flags in install command" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
             expect(command).not_to include("--allow-git")
             expect(command).not_to include("--allow-remote")
             expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).not_to include("--allow-remote")
             ""
           end
 

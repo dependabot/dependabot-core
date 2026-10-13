@@ -603,7 +603,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     end
 
     context "when a private registry replaces the base registry" do
-      let(:package_json) { { "engines" => { "npm" => ">=11" } } }
+      let(:package_json) { { "packageManager" => "npm@11.0.0" } }
       let(:credentials) do
         [
           Dependabot::Credential.new(
@@ -627,7 +627,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       before do
         allow(helper).to receive(:package_manager).and_return(
-          Dependabot::NpmAndYarn::NpmPackageManager.new(detected_version: "11")
+          Dependabot::NpmAndYarn::NpmPackageManager.new(detected_version: "11.0.0")
         )
         allow(Dependabot::NpmAndYarn::RegistryHelper).to receive(:corepack_integrity_keys).and_return(nil)
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
@@ -636,14 +636,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "passes the private registry env variables to corepack" do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack install npm@11 --global --cache-only",
+          "corepack install npm@11.0.0 --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
           env: expected_env
         ).and_return("")
 
         expect(helper.installed_version("npm")).to eq("11.0.0")
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack install npm@11 --global --cache-only",
+          "corepack install npm@11.0.0 --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
           env: expected_env
         )
@@ -652,7 +652,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       shared_examples "a fallback to the local version" do |install_error_message|
         it "passes the private registry env variables to the local version fallback" do
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-            "corepack install npm@11 --global --cache-only",
+            "corepack install npm@11.0.0 --global --cache-only",
             fingerprint: "corepack install <name>@<version> --global --cache-only",
             env: expected_env
           ).and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(

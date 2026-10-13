@@ -128,7 +128,17 @@ module Dependabot
           # Use --package-lock-only to generate lockfile without installing node_modules
           # Use --ignore-scripts to prevent running any scripts
           # Use --force to ignore platform checks
-          command = "install --package-lock-only --ignore-scripts --force"
+          command_args = [
+            "install",
+            "--package-lock-only",
+            "--ignore-scripts",
+            "--force"
+          ]
+          if Helpers.npm_supports_allow_flags?
+            command_args << "--allow-git=all"
+            command_args << "--allow-remote=all"
+          end
+          command = command_args.join(" ")
           Helpers.run_npm_command(command, fingerprint: command)
         end
 

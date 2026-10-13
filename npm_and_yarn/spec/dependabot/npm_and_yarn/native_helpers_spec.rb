@@ -35,4 +35,86 @@ RSpec.describe Dependabot::NpmAndYarn::NativeHelpers do
       end
     end
   end
+
+  describe ".run_npm8_subdependency_update_command" do
+    context "when running on npm 12" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      end
+
+      it "includes --allow-git=all and --allow-remote=all flags and fingerprints" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+          expect(command).to include("--allow-git=all")
+          expect(command).to include("--allow-remote=all")
+          expect(command).to include("--ignore-scripts")
+          expect(options[:fingerprint]).to include("--allow-git=all")
+          expect(options[:fingerprint]).to include("--allow-remote=all")
+          ""
+        end
+
+        described_class.run_npm8_subdependency_update_command(["lodash"])
+      end
+    end
+
+    context "when running on npm 11" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+      end
+
+      it "does not include allow flags" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+          expect(command).not_to include("--allow-git")
+          expect(command).not_to include("--allow-remote")
+          expect(options[:fingerprint]).not_to include("--allow-git")
+          expect(options[:fingerprint]).not_to include("--allow-remote")
+          ""
+        end
+
+        described_class.run_npm8_subdependency_update_command(["lodash"])
+      end
+    end
+  end
+
+  describe ".run_npm_audit_fix_command" do
+    context "when running on npm 12" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      end
+
+      it "includes --allow-git=all and --allow-remote=all flags and fingerprints" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+          expect(command).to include("--allow-git=all")
+          expect(command).to include("--allow-remote=all")
+          expect(command).to include("--ignore-scripts")
+          expect(options[:fingerprint]).to include("--allow-git=all")
+          expect(options[:fingerprint]).to include("--allow-remote=all")
+          ""
+        end
+
+        described_class.run_npm_audit_fix_command
+      end
+    end
+
+    context "when running on npm 11" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+      end
+
+      it "does not include allow flags" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+          expect(command).not_to include("--allow-git")
+          expect(command).not_to include("--allow-remote")
+          expect(options[:fingerprint]).not_to include("--allow-git")
+          expect(options[:fingerprint]).not_to include("--allow-remote")
+          ""
+        end
+
+        described_class.run_npm_audit_fix_command
+      end
+    end
+  end
 end

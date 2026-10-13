@@ -1863,6 +1863,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it { is_expected.to be(true) }
+
+      context "when running on npm 12" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_supports_allow_flags?).and_return(true)
+        end
+
+        it "includes allow flags in the check command" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |cmd|
+            expect(cmd).to include("--allow-git=all")
+            expect(cmd).to include("--allow-remote=all")
+            ""
+          end
+
+          expect(resolver.latest_version_resolvable_with_full_unlock?).to be(true)
+        end
+      end
     end
   end
 

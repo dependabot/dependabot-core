@@ -40,8 +40,8 @@ module Dependabot
           "--package-lock-only"
         ]
         if Helpers.npm_supports_allow_flags?
-          command_args << "--allow-git"
-          command_args << "--allow-remote"
+          command_args << "--allow-git=all"
+          command_args << "--allow-remote=all"
         end
         # Apply the effective release-age gate: `=0` bypasses any `.npmrc` gate for
         # security fixes, a positive value enforces the dependabot.yml cooldown
@@ -57,8 +57,8 @@ module Dependabot
           "--package-lock-only"
         ]
         if Helpers.npm_supports_allow_flags?
-          fingerprint_args << "--allow-git"
-          fingerprint_args << "--allow-remote"
+          fingerprint_args << "--allow-git=all"
+          fingerprint_args << "--allow-remote=all"
         end
         fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
         fingerprint = fingerprint_args.join(" ")
@@ -73,11 +73,32 @@ module Dependabot
         # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
         # `--force` ignores checks for platform (os, cpu) and engines,
         # matching the flags used by run_npm8_subdependency_update_command.
-        command = "audit fix --force --package-lock-only --ignore-scripts"
+        command_args = [
+          "audit fix",
+          "--force",
+          "--package-lock-only",
+          "--ignore-scripts"
+        ]
+        if Helpers.npm_supports_allow_flags?
+          command_args << "--allow-git=all"
+          command_args << "--allow-remote=all"
+        end
         # Apply the effective release-age gate (see run_npm8_subdependency_update_command).
-        command += " #{min_release_age_arg}" if min_release_age_arg
-        fingerprint = "audit fix --force --package-lock-only --ignore-scripts"
-        fingerprint += " #{fingerprint_min_release_age_arg(min_release_age_arg)}" if min_release_age_arg
+        command_args << min_release_age_arg if min_release_age_arg
+        command = command_args.join(" ")
+
+        fingerprint_args = [
+          "audit fix",
+          "--force",
+          "--package-lock-only",
+          "--ignore-scripts"
+        ]
+        if Helpers.npm_supports_allow_flags?
+          fingerprint_args << "--allow-git=all"
+          fingerprint_args << "--allow-remote=all"
+        end
+        fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
+        fingerprint = fingerprint_args.join(" ")
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end

@@ -33,7 +33,10 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
 
       it "attempts to generate a package-lock.json" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          run_npm_command: "",
+          npm_supports_allow_flags?: false
+        )
 
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with("package-lock.json").and_return(true)
@@ -47,6 +50,28 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
             "install --package-lock-only --ignore-scripts --force",
             fingerprint: "install --package-lock-only --ignore-scripts --force"
           )
+      end
+
+      context "when running on npm 12" do
+        it "includes --allow-git=all and --allow-remote=all flags" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+            run_npm_command: "",
+            npm_supports_allow_flags?: true
+          )
+
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("package-lock.json").and_return(true)
+          allow(File).to receive(:read).and_call_original
+          allow(File).to receive(:read).with("package-lock.json").and_return("{}")
+
+          generator.generate
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+            .with(
+              "install --package-lock-only --ignore-scripts --force --allow-git=all --allow-remote=all",
+              fingerprint: "install --package-lock-only --ignore-scripts --force --allow-git=all --allow-remote=all"
+            )
+        end
       end
 
       context "when lockfile generation succeeds" do

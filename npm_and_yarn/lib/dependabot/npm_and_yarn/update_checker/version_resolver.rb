@@ -948,8 +948,18 @@ module Dependabot
           ).returns(T::Array[PeerDependencyConflict])
         end
         def run_npm8_checker(version:)
-          cmd =
-            "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
+          cmd_args = [
+            "install",
+            version_install_arg(version: version),
+            "--package-lock-only",
+            "--dry-run=true",
+            "--ignore-scripts"
+          ]
+          if Helpers.npm_supports_allow_flags?
+            cmd_args << "--allow-git=all"
+            cmd_args << "--allow-remote=all"
+          end
+          cmd = cmd_args.join(" ")
           output = Helpers.run_npm_command(cmd)
           if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
             error_context = { command: cmd, process_exit_value: 1 }
