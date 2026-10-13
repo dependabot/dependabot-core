@@ -413,6 +413,10 @@ module Dependabot
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
+          if npm_supports_allow_flags?
+            command_args << "--allow-git"
+            command_args << "--allow-remote"
+          end
           min_release_age_arg = effective_min_release_age_arg
           command_args << min_release_age_arg if min_release_age_arg
 
@@ -427,6 +431,10 @@ module Dependabot
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
+          if npm_supports_allow_flags?
+            fingerprint_args << "--allow-git"
+            fingerprint_args << "--allow-remote"
+          end
           # The cooldown day value varies per job, so keep it out of the fingerprint.
           fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
 
@@ -469,6 +477,15 @@ module Dependabot
           return @npm_supports_min_release_age unless @npm_supports_min_release_age.nil?
 
           @npm_supports_min_release_age = Helpers.npm_supports_min_release_age?
+        end
+
+        # Whether the npm that will run requires `--allow-git` and `--allow-remote` (npm 12+).
+        sig { returns(T::Boolean) }
+        def npm_supports_allow_flags?
+          @npm_supports_allow_flags = T.let(@npm_supports_allow_flags, T.nilable(T::Boolean))
+          return @npm_supports_allow_flags unless @npm_supports_allow_flags.nil?
+
+          @npm_supports_allow_flags = Helpers.npm_supports_allow_flags?
         end
 
         sig { params(arg: String).returns(String) }

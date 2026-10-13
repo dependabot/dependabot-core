@@ -204,7 +204,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "returns an NpmPackageManager instance from engines field" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
-        expect(helper.package_manager.detected_version).to eq("11")
+        expect(helper.package_manager.detected_version).to eq("12")
       end
 
       it "supports npm version 11" do
@@ -212,8 +212,28 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         expect(npm_package_manager.supported_versions).to include(Dependabot::Version.new("11"))
       end
 
+      it "supports npm version 12" do
+        npm_package_manager = helper.package_manager
+        expect(npm_package_manager.supported_versions).to include(Dependabot::Version.new("12"))
+      end
+
       it "does not throw unsupported version error" do
         expect { helper.package_manager.raise_if_unsupported! }.not_to raise_error
+      end
+    end
+
+    context "with engines field for npm >=12.0.0" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "npm" => ">=12.0.0" } } }
+
+      it "returns an NpmPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("12")
+      end
+
+      it "supports npm version 12" do
+        npm_package_manager = helper.package_manager
+        expect(npm_package_manager.supported_versions).to include(Dependabot::Version.new("12"))
       end
     end
 

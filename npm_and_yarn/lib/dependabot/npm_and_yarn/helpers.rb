@@ -78,14 +78,18 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V12 = 12
       NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V11
+      NPM_DEFAULT_VERSION = NPM_V12
 
       # Minimum npm version that supports the `--min-release-age` CLI flag.
       NPM_MINIMUM_RELEASE_AGE_VERSION = "11.10.0"
+
+      # Minimum npm version that defaults to blocking git and remote tarball dependencies.
+      NPM_ALLOW_FLAGS_MIN_VERSION = "12.0.0"
 
       # PNPM Version Constants
       PNPM_V10 = 10
@@ -209,7 +213,7 @@ module Dependabot
       def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
 
-        # Return npm 10 as the default if the lockfile is missing or empty
+        # Return npm 12 as the default if the lockfile is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
         parsed_lockfile = JSON.parse(lockfile_content)
@@ -220,14 +224,14 @@ module Dependabot
 
         lockfile_version = lockfile_version_str.to_i
 
-        # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V11 if lockfile_version >= 3
+        # Using npm 12 as the default for lockfile_version >= 3.
+        return NPM_V12 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
         # Return nil if can't capture
       rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to npm 8 if the lockfile content cannot be parsed
+        NPM_DEFAULT_VERSION # Fallback to default if the lockfile content cannot be parsed
       end
 
       private_class_method :detect_npm_version
@@ -332,6 +336,15 @@ module Dependabot
           )
         end
         supported
+      end
+
+      # True when the running npm requires `--allow-git` and `--allow-remote` to resolve git and tarball dependencies (npm 12+).
+      sig { returns(T::Boolean) }
+      def self.npm_supports_allow_flags?
+        version = npm_version
+        return false if version.nil?
+
+        version >= Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }

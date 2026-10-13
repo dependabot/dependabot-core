@@ -39,6 +39,10 @@ module Dependabot
           "--ignore-scripts",
           "--package-lock-only"
         ]
+        if Helpers.npm_supports_allow_flags?
+          command_args << "--allow-git"
+          command_args << "--allow-remote"
+        end
         # Apply the effective release-age gate: `=0` bypasses any `.npmrc` gate for
         # security fixes, a positive value enforces the dependabot.yml cooldown
         # floor on transitive updates. nil leaves npm's own resolution untouched.
@@ -52,6 +56,10 @@ module Dependabot
           "--ignore-scripts",
           "--package-lock-only"
         ]
+        if Helpers.npm_supports_allow_flags?
+          fingerprint_args << "--allow-git"
+          fingerprint_args << "--allow-remote"
+        end
         fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
         fingerprint = fingerprint_args.join(" ")
 

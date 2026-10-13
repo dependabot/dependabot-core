@@ -93,6 +93,19 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
         expect(package_manager.supported_versions).to include(Dependabot::Version.new("11"))
       end
     end
+
+    context "when version is npm 12" do
+      let(:detected_version) { "12" }
+      let(:raw_version) { "12.2.0" }
+
+      it "returns false as npm 12 is supported" do
+        expect(package_manager.unsupported?).to be false
+      end
+
+      it "includes npm 12 in supported versions" do
+        expect(package_manager.supported_versions).to include(Dependabot::Version.new("12"))
+      end
+    end
   end
 
   describe "#raise_if_unsupported!" do

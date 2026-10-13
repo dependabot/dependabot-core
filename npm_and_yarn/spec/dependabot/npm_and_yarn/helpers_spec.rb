@@ -219,11 +219,39 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "checks the local npm binary directly instead of Corepack's unqualified default" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
-        .and_return("11.9.0\n")
+        .and_return("12.2.0\n")
 
-      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.2.0"))
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
+    end
+  end
+
+  describe "::npm_supports_allow_flags?" do
+    context "when running npm 12 or higher" do
+      it "returns true" do
+        allow(described_class).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+
+        expect(described_class.npm_supports_allow_flags?).to be true
+      end
+    end
+
+    context "when running npm 11 or lower" do
+      it "returns false" do
+        allow(described_class).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+
+        expect(described_class.npm_supports_allow_flags?).to be false
+      end
+    end
+
+    context "when npm version cannot be determined" do
+      it "returns false" do
+        allow(described_class).to receive(:npm_version).and_return(nil)
+
+        expect(described_class.npm_supports_allow_flags?).to be false
+      end
     end
   end
 
