@@ -1,0 +1,6 @@
+{
+  "name": "legacy",
+  "dependencies": {
+    "etag": "catalog:legacy"
+  }
+}
