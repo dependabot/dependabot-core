@@ -107,8 +107,8 @@ module Dependabot
           .map { |file| updated_by_path.fetch(repo_relative_path(file), file) }
       end
 
-      # Repository workflows whose `$/` chain (through nested composites or reusable
-      # workflows) reaches a changed action. Only `$/` matters: gh-actions-lock refuses
+      # Repository workflows whose step-level `$/` chain (through nested composites)
+      # reaches a changed action. Only `$/` matters: gh-actions-lock refuses
       # `./` refs in locked workflows.
       sig do
         params(changed_actions: T::Array[Dependabot::DependencyFile])
@@ -135,20 +135,20 @@ module Dependabot
         end
       end
 
-      # Files a workflow or action references via `$/`: an action directory or a
-      # reusable workflow path, both repo-relative.
+      # Action definitions a workflow or composite references via step-level `$/`.
+      # Job-level `$/` reusable workflows own their lock entries, so they are not followed.
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
       def self_repository_files(file)
         content = file.content.to_s
         return [] unless content.include?("$/")
 
         WorkflowFile.new(content).uses_declarations.filter_map do |declaration|
-          next unless declaration.value.start_with?("$/")
+          next unless declaration.steps_sequence && declaration.value.start_with?("$/")
 
           target = Pathname.new("./#{declaration.value.delete_prefix('$/')}").cleanpath.to_s
           dependency_files.find do |candidate|
             path = repo_relative_path(candidate)
-            path == target || (File.dirname(path) == target && ACTION_FILE_NAMES.include?(File.basename(path)))
+            File.dirname(path) == target && ACTION_FILE_NAMES.include?(File.basename(path))
           end
         end
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias

@@ -2357,6 +2357,36 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           end
         end
 
+        context "when reached through a reusable workflow" do
+          let(:caller_body) { "jobs:\n  a:\n    uses: $/.github/workflows/reusable.yml\n" }
+          let(:reusable_workflow) do
+            Dependabot::DependencyFile.new(
+              name: "../../workflows/reusable.yml",
+              directory: directory,
+              content: "on: workflow_call\njobs:\n  a:\n    steps:\n      - uses: $/.github/actions/inner\n",
+              support_file: true
+            )
+          end
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: "../../workflows/actions.lock",
+              directory: directory,
+              content: super().content.sub(
+                "dependencies:",
+                "  \".github/workflows/reusable.yml\":\n    - \"actions/setup-node@master\"\ndependencies:"
+              )
+            )
+          end
+          let(:files) { [workflow_file, lockfile, caller_workflow, reusable_workflow] }
+
+          it "relocks the reusable workflow but not its caller" do
+            updated_files
+
+            expect(fake_engine).to have_received(:relock)
+              .with(hash_including(workflow_paths: [".github/workflows/reusable.yml"]))
+          end
+        end
+
         context "when no workflow reaches it" do
           let(:caller_body) { "jobs:\n  a:\n    steps:\n      - uses: $/.github/actions/other\n" }
 
