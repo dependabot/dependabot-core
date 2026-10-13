@@ -206,50 +206,17 @@ module Dependabot
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def catalog_dependencies
         dependency_set = DependencySet.new
-        catalogs = parsed_catalog_definitions
-        return dependency_set if catalogs.empty?
+        document = package_json_document
+        catalogs = [["catalog", document.catalog], *document.catalogs.values.map { |entries| ["catalogs", entries] }]
 
-        # Default catalog
-        catalogs.fetch("catalog", {}).each do |name, version|
-          dep = build_dependency(
-            file: package_json, type: "catalog", name: name, requirement: version
-          )
-          dependency_set << dep if dep
-        end
-
-        # Named catalogs
-        catalogs.fetch("catalogs", {}).each do |_group_name, group_deps|
-          next unless group_deps.is_a?(Hash)
-
-          group_deps.each do |name, version|
-            dep = build_dependency(
-              file: package_json, type: "catalogs", name: name, requirement: version
-            )
+        catalogs.each do |type, entries|
+          entries.each do |name, requirement|
+            dep = build_dependency(file: package_json, type: type, name: name, requirement: requirement)
             dependency_set << dep if dep
           end
         end
 
         dependency_set
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_catalog_definitions
-        @parsed_catalog_definitions ||= T.let(
-          begin
-            json = JSON.parse(T.must(package_json.content))
-            result = T.let({}, T::Hash[String, T.untyped])
-
-            # Catalogs can be at top level or inside "workspaces"
-            catalog = json["catalog"] || json.dig("workspaces", "catalog")
-            catalogs = json["catalogs"] || json.dig("workspaces", "catalogs")
-
-            result["catalog"] = catalog if catalog.is_a?(Hash)
-            result["catalogs"] = catalogs if catalogs.is_a?(Hash)
-
-            result
-          end,
-          T.nilable(T::Hash[String, T.untyped])
-        )
       end
 
       sig do

@@ -213,36 +213,95 @@ RSpec.describe Dependabot::Bun::FileParser do
         its(:length) { is_expected.to eq(0) }
       end
 
-      context "with catalog dependencies" do
+      context "with array workspaces and no catalogs" do
+        let(:files) { project_dependency_files("bun/simple_workspace_v0") }
+
+        it "parses the workspace manifests" do
+          expect(top_level_dependencies.map(&:name)).to contain_exactly("etag", "lodash", "chalk")
+        end
+      end
+
+      context "with catalogs under workspaces" do
         let(:files) { project_dependency_files("bun/catalog_workspace") }
 
-        it "parses dependencies from the default catalog" do
-          react = dependencies.find { |d| d.name == "react" }
-          expect(react).to be_a(Dependabot::Dependency)
-          expect(react.version).to eq("18.2.0")
-          expect(react.requirements).to include(
-            a_hash_including(
-              requirement: "^18.2.0",
-              groups: ["catalog"]
-            )
+        it "parses the default catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.version).to eq("6.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "^6.0.0",
+              file: "package.json",
+              groups: ["catalog"],
+              source: nil
+            }]
           )
         end
 
-        it "parses dependencies from named catalogs" do
-          jest = dependencies.find { |d| d.name == "jest" }
-          expect(jest).to be_a(Dependabot::Dependency)
-          expect(jest.version).to eq("29.6.2")
-          expect(jest.requirements).to include(
-            a_hash_including(
-              requirement: "^29.6.2",
-              groups: ["catalogs"]
-            )
+        it "parses named catalogs" do
+          dependency = top_level_dependencies.find { |d| d.name == "etag" }
+
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.1",
+              file: "package.json",
+              groups: ["catalogs"],
+              source: nil
+            }]
           )
         end
+      end
 
-        it "includes all catalog dependencies" do
-          catalog_names = dependencies.map(&:name)
-          expect(catalog_names).to include("react", "react-dom", "jest", "testing-library")
+      context "with a root catalog and array workspaces" do
+        let(:files) { project_dependency_files("bun/catalog_top_level") }
+
+        it "parses the root catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.version).to eq("6.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "6.0.0",
+              file: "package.json",
+              groups: ["catalog"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "with catalogs.default and a package in two named catalogs" do
+        let(:files) { project_dependency_files("bun/catalog_named") }
+
+        it "parses catalogs.default as the default catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.requirements.map(&:requirement)).to eq(["^6.0.0"])
+        end
+
+        it "keeps the requirement from each catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "etag" }
+
+          expect(dependency.requirements.map(&:requirement)).to contain_exactly("1.0.1", "1.7.0")
+        end
+      end
+
+      context "with catalog fields both at the root and under workspaces" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: JSON.dump(
+                "workspaces" => { "packages" => ["packages/*"], "catalog" => { "is-number" => "7.0.0" } },
+                "catalog" => { "etag" => "1.8.1" }
+              )
+            )
+          ]
+        end
+
+        it "reads only the workspaces fields, as Bun does" do
+          expect(top_level_dependencies.map { |d| [d.name, d.version] }).to eq([["is-number", "7.0.0"]])
         end
       end
 
