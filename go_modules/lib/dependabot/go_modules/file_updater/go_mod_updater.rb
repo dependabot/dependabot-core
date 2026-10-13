@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/go_work_parser"
@@ -116,6 +117,7 @@ module Dependabot
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
         ANCESTOR_WORKSPACE_FILENAMES = %w(go.work go.work.sum go.mod go.sum).freeze
+        OWN_MODULE_FILENAMES = %w(go.mod go.sum).freeze
 
         sig do
           params(
@@ -195,8 +197,12 @@ module Dependabot
         # go.sum are not support files, so this never includes them.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def ancestor_workspace_files
+          return [] unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
+
           dependency_files.select do |file|
-            file.support_file? && ANCESTOR_WORKSPACE_FILENAMES.include?(File.basename(file.name))
+            file.support_file? &&
+              !OWN_MODULE_FILENAMES.include?(file.name) &&
+              ANCESTOR_WORKSPACE_FILENAMES.include?(File.basename(file.name))
           end
         end
 
