@@ -232,8 +232,9 @@ RSpec.describe Dependabot::Bun::FileParser do
             [{
               requirement: "^6.0.0",
               file: "package.json",
-              groups: ["catalog"],
-              source: nil
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "default" }
             }]
           )
         end
@@ -246,10 +247,16 @@ RSpec.describe Dependabot::Bun::FileParser do
             [{
               requirement: "1.0.1",
               file: "package.json",
-              groups: ["catalogs"],
-              source: nil
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "testing" }
             }]
           )
+        end
+
+        it "treats catalog dependencies as production dependencies" do
+          expect(top_level_dependencies.map(&:name)).to contain_exactly("is-number", "etag")
+          expect(top_level_dependencies).to all(be_production)
         end
       end
 
@@ -264,8 +271,9 @@ RSpec.describe Dependabot::Bun::FileParser do
             [{
               requirement: "6.0.0",
               file: "package.json",
-              groups: ["catalog"],
-              source: nil
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "default" }
             }]
           )
         end
@@ -277,13 +285,16 @@ RSpec.describe Dependabot::Bun::FileParser do
         it "parses catalogs.default as the default catalog" do
           dependency = top_level_dependencies.find { |d| d.name == "is-number" }
 
-          expect(dependency.requirements.map(&:requirement)).to eq(["^6.0.0"])
+          expect(dependency.requirements.map(&:metadata)).to eq([{ catalog: "default" }])
         end
 
         it "keeps the requirement from each catalog" do
           dependency = top_level_dependencies.find { |d| d.name == "etag" }
 
-          expect(dependency.requirements.map(&:requirement)).to contain_exactly("1.0.1", "1.7.0")
+          expect(dependency.requirements.map { |r| [r.requirement, r.metadata] }).to contain_exactly(
+            ["1.0.1", { catalog: "legacy" }],
+            ["1.7.0", { catalog: "current" }]
+          )
         end
       end
 

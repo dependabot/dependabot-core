@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/bun/file_parser"
 require "dependabot/bun/file_updater"
 
 module Dependabot
@@ -93,7 +94,10 @@ module Dependabot
         def old_requirement(dependency, new_requirement)
           T.must(dependency.previous_requirements)
            .select { |r| r.file == package_json.name }
-           .find { |r| r.groups == new_requirement.groups }
+           .find do |r|
+             r.groups == new_requirement.groups &&
+               r.metadata_string("catalog") == new_requirement.metadata_string("catalog")
+           end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -142,6 +146,9 @@ module Dependabot
             old_req: old_req,
             new_req: new_req
           )
+
+          catalog = new_req.metadata_string("catalog")
+          return update_catalog_section(catalog, package_json_content, original_line, replacement_line) if catalog
 
           groups = T.must(new_req.groups).map(&:to_s)
 
@@ -309,15 +316,52 @@ module Dependabot
           sections += ["peerDependencies"]
           sections_regex = /#{sections.join('|')}/
 
-          declaration_blocks = T.let([], T::Array[String])
+          replace_in_blocks(declaration_blocks(content, sections_regex), content, old_line, new_line)
+        end
 
-          content.scan(/['"]#{sections_regex}['"]\s*:\s*\{/m) do
-            mtch = T.must(Regexp.last_match)
-            declaration_blocks <<
-              (mtch.to_s + T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)]))
+        # The default catalog is `catalog` together with `catalogs.default`.
+        # Both may sit at the root or under `workspaces`.
+        sig do
+          params(
+            catalog: String,
+            content: String,
+            old_line: String,
+            new_line: String
+          )
+            .returns(String)
+        end
+        def update_catalog_section(catalog, content, old_line, new_line)
+          blocks = catalog == FileParser::DEFAULT_CATALOG ? declaration_blocks(content, /catalog/) : []
+          declaration_blocks(content, /catalogs/).each do |catalogs_block|
+            blocks += declaration_blocks(catalogs_block, /#{Regexp.escape(catalog)}/)
           end
 
-          declaration_blocks.reduce(content.dup) do |new_content, block|
+          replace_in_blocks(blocks, content, old_line, new_line)
+        end
+
+        sig { params(content: String, key_regex: Regexp).returns(T::Array[String]) }
+        def declaration_blocks(content, key_regex)
+          blocks = T.let([], T::Array[String])
+
+          content.scan(/['"]#{key_regex}['"]\s*:\s*\{/m) do
+            mtch = T.must(Regexp.last_match)
+            blocks << (mtch.to_s + T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)]))
+          end
+
+          blocks
+        end
+
+        sig do
+          params(
+            blocks: T::Array[String],
+            content: String,
+            old_line: String,
+            new_line: String
+          )
+            .returns(String)
+        end
+        def replace_in_blocks(blocks, content, old_line, new_line)
+          blocks.reduce(content.dup) do |new_content, block|
             updated_block = block.sub(old_line, new_line)
             new_content.sub(block, updated_block)
           end

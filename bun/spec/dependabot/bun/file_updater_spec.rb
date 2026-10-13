@@ -360,6 +360,137 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
+    context "with catalog dependencies" do
+      let(:files) { project_dependency_files("bun/#{project}") }
+      let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+      let(:original_package_json) { JSON.parse(files.find { |file| file.name == "package.json" }.content) }
+      let(:updated_manifest) { JSON.parse(updated_package_json.content) }
+      let(:updated_lock) { YAML.safe_load(updated_bun_lock.content) }
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: previous_requirement,
+          groups: ["dependencies"],
+          source: nil,
+          metadata: { catalog: catalog }
+        }]
+      end
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: requirement,
+          groups: ["dependencies"],
+          source: nil,
+          metadata: { catalog: catalog }
+        }]
+      end
+
+      context "when updating the default catalog under workspaces" do
+        let(:project) { "catalog_workspace" }
+        let(:dependency_name) { "is-number" }
+        let(:catalog) { "default" }
+        let(:previous_version) { "6.0.0" }
+        let(:version) { "7.0.0" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:requirement) { "^7.0.0" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_files.map(&:name)).to match_array(%w(package.json bun.lock))
+          expect(updated_manifest).to eq(
+            original_package_json.merge(
+              "workspaces" => original_package_json["workspaces"].merge(
+                "catalog" => { "is-number" => "^7.0.0" }
+              )
+            )
+          )
+          expect(updated_lock["catalog"]).to eq("is-number" => "^7.0.0")
+          expect(updated_lock["catalogs"]).to eq("testing" => { "etag" => "1.0.1" })
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+          expect(updated_lock["workspaces"]["packages/app"]["dependencies"]).to eq("is-number" => "catalog:")
+        end
+      end
+
+      context "when updating a named catalog under workspaces" do
+        let(:project) { "catalog_workspace" }
+        let(:dependency_name) { "etag" }
+        let(:catalog) { "testing" }
+        let(:previous_version) { "1.0.1" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirement) { "1.0.1" }
+        let(:requirement) { "1.8.1" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_manifest["workspaces"]["catalogs"]).to eq("testing" => { "etag" => "1.8.1" })
+          expect(updated_manifest["workspaces"]["catalog"]).to eq(original_package_json["workspaces"]["catalog"])
+          expect(updated_lock["catalogs"]).to eq("testing" => { "etag" => "1.8.1" })
+          expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        end
+      end
+
+      context "when updating a root catalog" do
+        let(:project) { "catalog_top_level" }
+        let(:dependency_name) { "is-number" }
+        let(:catalog) { "default" }
+        let(:previous_version) { "6.0.0" }
+        let(:version) { "7.0.0" }
+        let(:previous_requirement) { "6.0.0" }
+        let(:requirement) { "7.0.0" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_manifest).to eq(original_package_json.merge("catalog" => { "is-number" => "7.0.0" }))
+          expect(updated_lock["catalog"]).to eq("is-number" => "7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "when updating catalogs.default" do
+        let(:project) { "catalog_named" }
+        let(:dependency_name) { "is-number" }
+        let(:catalog) { "default" }
+        let(:previous_version) { "6.0.0" }
+        let(:version) { "7.0.0" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:requirement) { "^7.0.0" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_manifest["workspaces"]["catalogs"]).to eq(
+            original_package_json["workspaces"]["catalogs"].merge("default" => { "is-number" => "^7.0.0" })
+          )
+          expect(updated_lock["catalogs"]["default"]).to eq("is-number" => "^7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "when a package is in two named catalogs" do
+        let(:project) { "catalog_named" }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.7.0" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          %w(legacy current).zip(%w(1.0.1 1.7.0)).map do |catalog, requirement|
+            { file: "package.json", requirement: requirement, groups: ["dependencies"], source: nil,
+              metadata: { catalog: catalog } }
+          end
+        end
+        let(:requirements) do
+          %w(legacy current).zip(%w(1.0.1 1.8.1)).map do |catalog, requirement|
+            { file: "package.json", requirement: requirement, groups: ["dependencies"], source: nil,
+              metadata: { catalog: catalog } }
+          end
+        end
+
+        it "updates only the catalog whose requirement changed" do
+          expect(updated_manifest["workspaces"]["catalogs"]).to eq(
+            "default" => { "is-number" => "^6.0.0" },
+            "legacy" => { "etag" => "1.0.1" },
+            "current" => { "etag" => "1.8.1" }
+          )
+          expect(updated_lock["catalogs"]["legacy"]).to eq("etag" => "1.0.1")
+          expect(updated_lock["catalogs"]["current"]).to eq("etag" => "1.8.1")
+        end
+      end
+    end
+
     context "when a wildcard is specified" do
       let(:files) { project_dependency_files("bun/wildcard") }
       let(:repo_contents_path) { build_tmp_repo("bun/wildcard", path: "projects") }
