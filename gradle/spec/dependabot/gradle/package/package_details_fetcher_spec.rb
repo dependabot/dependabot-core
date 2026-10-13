@@ -390,6 +390,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         expect(hydrated_release.released_at).to be_nil
       end
+
+      it "ignores a Last-Modified header on a failed pom response" do
+        stub_request(:head, guava_pom_url).to_return(
+          status: 404,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to be_nil
+      end
     end
 
     context "with a kotlin plugin" do
