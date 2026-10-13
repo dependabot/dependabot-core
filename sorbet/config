@@ -22,7 +22,6 @@
 --ignore=deno/spec/
 --ignore=devcontainers/spec/
 --ignore=docker/spec/
---ignore=dotnet_sdk/spec/
 --ignore=elm/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
