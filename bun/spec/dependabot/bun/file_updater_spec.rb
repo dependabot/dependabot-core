@@ -168,44 +168,53 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
-    context "with a dependency only declared in a nested workspace package.json" do
-      let(:files) { project_dependency_files("bun/workspace_dependency_not_at_root") }
-      let(:repo_contents_path) { build_tmp_repo("bun/workspace_dependency_not_at_root", path: "projects") }
-      let(:dependency_name) { "etag" }
-      let(:previous_version) { "1.0.1" }
-      let(:version) { "1.8.1" }
-      let(:previous_requirements) do
-        [{
-          file: "packages/app/package.json",
-          requirement: "^1.0.0",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-      let(:requirements) { previous_requirements }
+    %w(workspace_dependency_not_at_root workspace_dependency_not_at_root_v1
+       workspace_dependency_not_at_root_v3).each do |project|
+      context "with a dependency only declared in a nested workspace package.json (#{project})" do
+        let(:files) { project_dependency_files("bun/#{project}") }
+        let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.0.1" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          [{
+            file: "packages/app/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:requirements) { previous_requirements }
 
-      it "updates the dependency instead of silently dropping it" do
-        expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
-        updated_lock = YAML.safe_load(updated_bun_lock.content)
-        expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
-      end
+        it "updates the dependency instead of silently dropping it" do
+          expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+          updated_lock = YAML.safe_load(updated_bun_lock.content)
+          expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        end
 
-      it "scopes the install to the workspace that declares the dependency" do
-        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+        it "preserves the lockfile version" do
+          original_lock = YAML.safe_load(files.find { |file| file.name == "bun.lock" }.content)
+          updated_lock = YAML.safe_load(updated_bun_lock.content)
+          expect(updated_lock["lockfileVersion"]).to eq(original_lock["lockfileVersion"])
+        end
 
-        updated_files
+        it "scopes the install to the workspace that declares the dependency" do
+          allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
 
-        # Without --filter, bun install would add the dependency to the
-        # root package.json instead, and the final full install would then
-        # revert it as an orphaned entry, silently dropping the update.
-        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-          ["install", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
-          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
-        )
-      end
+          updated_files
 
-      it "does not add the dependency to the root package.json" do
-        expect(updated_files.map(&:name)).not_to include("package.json")
+          # Without --filter, bun install would add the dependency to the
+          # root package.json instead, and the final full install would then
+          # revert it as an orphaned entry, silently dropping the update.
+          expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+            ["install", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+          )
+        end
+
+        it "does not add the dependency to the root package.json" do
+          expect(updated_files.map(&:name)).not_to include("package.json")
+        end
       end
     end
 
