@@ -196,7 +196,8 @@ module Dependabot
         end
 
         # When a full import path (e.g. github.com/owner/repo/cmd/tool) is not a module,
-        # try progressively shorter paths to find the actual module root.
+        # try progressively shorter paths to find the actual module root. The search stops
+        # at an untagged module so that its tagged parent is not mistaken for the root.
         sig { params(full_path: String).returns(T.nilable(T::Array[String])) }
         def resolve_module_versions_from_subpath(full_path)
           parts = full_path.split("/")
@@ -207,12 +208,15 @@ module Dependabot
           (parts.length - 1).downto(min_parts).each do |i|
             candidate = T.must(parts[0...i]).join("/")
             Dependabot.logger.debug("Trying shorter module path: #{candidate}")
-            versions = fetch_module_versions(candidate)
-            return versions if versions&.any?
-          rescue SharedHelpers::HelperSubprocessFailed => e
-            raise if e.is_a?(ModuleInfo::InvalidOutput)
+            versions = begin
+              fetch_module_versions(candidate)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise if e.is_a?(ModuleInfo::InvalidOutput)
 
-            next
+              next
+            end
+            return versions if versions&.any?
+            return nil if versions.nil? && untagged_module?(candidate)
           end
 
           nil

@@ -77,6 +77,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
       let(:last_query) { "go list -m -versions -json example.com/owner" }
       let(:latest_fingerprint) { "go list -m -json <dependency_name>@latest" }
       let(:latest_query) { "go list -m -json #{dependency_name}@latest" }
+      let(:parent_latest_query) { "go list -m -json example.com/owner/repo/cmd@latest" }
       let(:response) { JSON.generate("Versions" => ["v2.0.0", "invalid-version", "v1.0.0", "v2.0.0"]) }
       let(:parent_response) { '{"Versions":["v3.0.0"]}' }
       let(:root_response) { '{"Versions":["v4.0.0"]}' }
@@ -95,7 +96,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(last_query, fingerprint: fingerprint).and_return(last_response)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(latest_query, fingerprint: latest_fingerprint)
+          .with(a_string_ending_with("@latest"), fingerprint: latest_fingerprint)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "no matching versions for query \"latest\"", error_context: {}
                      ))
@@ -152,6 +153,46 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
               .with(latest_query, fingerprint: latest_fingerprint).exactly(attempts).times
             expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
               .with(parent_query, fingerprint: fingerprint)
+          end
+        end
+      end
+
+      context "with a sub-package of an untagged module inside a tagged parent" do
+        let(:response) { "{}" }
+        let(:parent_response) { "{}" }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(parent_latest_query, fingerprint: latest_fingerprint)
+            .and_return('{"Path":"example.com/owner/repo/cmd","Version":"v0.0.0-20261005185213-c3db4df58582"}')
+        end
+
+        it "stops at the untagged module instead of taking the parent's tags" do
+          expect(fetch.map(&:version)).to eq([Dependabot::GoModules::Version.new(dependency.version)])
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(parent_latest_query, fingerprint: latest_fingerprint).once
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(root_query, fingerprint: fingerprint)
+        end
+      end
+
+      [["ordinary failure", 1], ["EOF", 2]].each do |message, attempts|
+        context "when a shorter path's @latest query fails with #{message}" do
+          let(:response) { "{}" }
+          let(:parent_response) { "{}" }
+
+          before do
+            failure = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+              .with(parent_latest_query, fingerprint: latest_fingerprint).and_raise(failure)
+          end
+
+          it "keeps the error classification and retry limit instead of continuing the search" do
+            expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable, message)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+              .with(parent_latest_query, fingerprint: latest_fingerprint).exactly(attempts).times
+            expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+              .with(root_query, fingerprint: fingerprint)
           end
         end
       end
@@ -577,6 +618,15 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
           .and_return('{"Path":"github.com/unknown/repo","Version":"v1.0.0"}')
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -json github.com/unknown/repo@latest",
+            fingerprint: "go list -m -json <dependency_name>@latest"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions for query \"latest\"", error_context: {}
+                     ))
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(
