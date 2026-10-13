@@ -91,19 +91,25 @@ module Dependabot
         result
       end
 
+      # The key of the object Bun reads both catalog fields from, or nil for
+      # the root. Bun reads them from `workspaces` when it declares either of
+      # them, and ignores the root fields in that case.
+      sig { returns(T.nilable(String)) }
+      def catalog_container
+        workspaces = @data["workspaces"]
+        return unless workspaces.is_a?(Hash)
+
+        "workspaces" if CATALOG_FIELDS.any? { |field| object_hash(workspaces, "workspaces").key?(field) }
+      end
+
       private
 
-      # Bun reads both catalog fields from `workspaces` when it declares
-      # either of them, and from the root otherwise.
       sig { returns([String, ObjectHash]) }
       def catalog_fields
-        workspaces = @data["workspaces"]
-        if workspaces.is_a?(Hash)
-          fields = object_hash(workspaces, "workspaces")
-          return ["workspaces.", fields] if CATALOG_FIELDS.any? { |field| fields.key?(field) }
-        end
+        container = catalog_container
+        return ["", @data] unless container
 
-        ["", @data]
+        ["#{container}.", object_hash(@data[container], container)]
       end
 
       sig { params(value: Object, field: String).returns(CatalogEntries) }

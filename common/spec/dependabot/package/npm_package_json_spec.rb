@@ -219,6 +219,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       let(:payload) { { "workspaces" => ["packages/*"] } }
 
       it "returns empty catalogs" do
+        expect(reader.catalog_container).to be_nil
         expect(reader.catalog).to eq({})
         expect(reader.catalogs).to eq({})
       end
@@ -234,6 +235,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       end
 
       it "reads the root fields" do
+        expect(reader.catalog_container).to be_nil
         expect(reader.catalog).to eq("react" => "^19.0.0")
         expect(reader.catalogs).to eq("testing" => { "jest" => "30.0.0" })
       end
@@ -251,6 +253,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       end
 
       it "reads the workspaces fields" do
+        expect(reader.catalog_container).to eq("workspaces")
         expect(reader.catalog).to eq("react" => "^19.0.0")
         expect(reader.catalogs).to eq(
           "default" => { "zod" => "^4.0.0" },
@@ -269,6 +272,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       end
 
       it "reads only the workspaces fields, as Bun does" do
+        expect(reader.catalog_container).to eq("workspaces")
         expect(reader.catalog).to eq("react" => "^19.0.0")
         expect(reader.catalogs).to eq({})
       end
@@ -283,6 +287,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
       end
 
       it "reads the root fields" do
+        expect(reader.catalog_container).to be_nil
         expect(reader.catalog).to eq("react" => "^19.0.0")
       end
     end

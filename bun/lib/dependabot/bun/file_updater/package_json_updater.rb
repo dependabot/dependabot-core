@@ -5,6 +5,8 @@ require "sorbet-runtime"
 
 require "dependabot/bun/file_parser"
 require "dependabot/bun/file_updater"
+require "dependabot/bun/file_updater/json_object_members"
+require "dependabot/package/npm_package_json"
 
 module Dependabot
   module Bun
@@ -320,7 +322,8 @@ module Dependabot
         end
 
         # The default catalog is `catalog` together with `catalogs.default`.
-        # Both may sit at the root or under `workspaces`.
+        # Only the fields in `NpmPackageJson#catalog_container` are updated,
+        # since Bun ignores the others.
         sig do
           params(
             catalog: String,
@@ -331,12 +334,29 @@ module Dependabot
             .returns(String)
         end
         def update_catalog_section(catalog, content, old_line, new_line)
-          blocks = catalog == FileParser::DEFAULT_CATALOG ? declaration_blocks(content, /catalog/) : []
-          declaration_blocks(content, /catalogs/).each do |catalogs_block|
-            blocks += declaration_blocks(catalogs_block, /#{Regexp.escape(catalog)}/)
+          root_start = content.index("{")
+          return content unless root_start
+
+          fields = JsonObjectMembers.find(content, root_start)
+          document = Dependabot::Package::NpmPackageJson.new(JSON.parse(content), package_json.path)
+          container = document.catalog_container
+          if container
+            container_range = fields[container]
+            return content unless container_range
+
+            fields = JsonObjectMembers.find(content, container_range.begin)
           end
 
-          replace_in_blocks(blocks, content, old_line, new_line)
+          ranges = T.let([], T::Array[T.nilable(T::Range[Integer])])
+          ranges << fields["catalog"] if catalog == FileParser::DEFAULT_CATALOG
+          catalogs_range = fields["catalogs"]
+          ranges << JsonObjectMembers.find(content, catalogs_range.begin)[catalog] if catalogs_range
+
+          # Identical blocks can sit in ignored fields, so replacement is by
+          # position, from the end to keep earlier ranges valid.
+          ranges.compact.sort_by(&:begin).reverse.each_with_object(content.dup) do |range, updated|
+            updated[range] = T.must(updated[range]).sub(old_line, new_line)
+          end
         end
 
         sig { params(content: String, key_regex: Regexp).returns(T::Array[String]) }
