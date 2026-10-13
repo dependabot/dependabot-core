@@ -221,12 +221,123 @@ RSpec.describe Dependabot::Bazel::Version do
       expect(described_class.correct?("v1.2.3-rc1")).to be true
     end
 
+    it "rejects .bazelversion file content — only version_from_file handles multi-line/wrapper forms" do
+      expect(described_class.correct?("buildbuddy-io/5.0.321\n9.1.0\n")).to be false
+      expect(described_class.correct?("buildbuddy-io/5.0.321")).to be false
+    end
+
+    it "rejects slash-containing strings like git tags, as before BuildBuddy support" do
+      expect(described_class.correct?("release/1.2.3")).to be false
+      expect(described_class.correct?("refs/tags/v1.2.3")).to be false
+    end
+
     it "rejects malformed strings" do
       expect(described_class.correct?("not_valid!!!")).to be false
     end
 
     it "rejects nil" do
       expect(described_class.correct?(nil)).to be false
+    end
+  end
+
+  describe ".extract_bazel_version" do
+    it "returns simple version strings untouched" do
+      expect(described_class.extract_bazel_version("9.1.0")).to eq("9.1.0")
+    end
+
+    it "extracts the Bazel version from a multi-line BuildBuddy wrapper string" do
+      content = "buildbuddy-io/5.0.321\n9.1.0\n"
+      expect(described_class.extract_bazel_version(content)).to eq("9.1.0")
+    end
+
+    it "extracts the Bazel version when comments and wrapper lines are present" do
+      content = "# Wrapper definition\nbuildbuddy-io/5.0.321\n\n# Actual Bazel version\n8.4.0-rc2\n"
+      expect(described_class.extract_bazel_version(content)).to eq("8.4.0-rc2")
+    end
+
+    it "extracts the version number when only a fork reference string is present" do
+      expect(described_class.extract_bazel_version("myorg/bazel-fork/8.0.0")).to eq("8.0.0")
+    end
+
+    it "returns empty string for a wrapper-only entry rather than the wrapper's own version" do
+      expect(described_class.extract_bazel_version("buildbuddy-io/5.0.321")).to eq("")
+      expect(described_class.extract_bazel_version("# wrapper\nbuildbuddy-io/5.0.321\n")).to eq("")
+    end
+
+    it "matches wrapper orgs case-insensitively (GitHub orgs are case-insensitive)" do
+      expect(described_class.extract_bazel_version("BuildBuddy-io/5.0.321")).to eq("")
+      expect(described_class.extract_bazel_version("BUILDBUDDY-IO/5.0.321\n9.1.0\n")).to eq("9.1.0")
+    end
+
+    it "uses the first surviving line, matching what Bazelisk would execute" do
+      expect(described_class.extract_bazel_version("myorg/8.0.0\n9.1.0\n")).to eq("8.0.0")
+    end
+
+    it "handles CRLF line endings" do
+      expect(described_class.extract_bazel_version("buildbuddy-io/5.0.321\r\n9.1.0\r\n")).to eq("9.1.0")
+    end
+
+    it "returns empty string for nil or empty input or slash-only input" do
+      expect(described_class.extract_bazel_version(nil)).to eq("")
+      expect(described_class.extract_bazel_version("   \n  ")).to eq("")
+      expect(described_class.extract_bazel_version("///")).to eq("")
+    end
+  end
+
+  describe ".bazelisk_target_from_file" do
+    def file_with(content)
+      Dependabot::DependencyFile.new(name: ".bazelversion", content: content)
+    end
+
+    it "returns a plain version untouched" do
+      expect(described_class.bazelisk_target_from_file(file_with("9.1.0\n"))).to eq("9.1.0")
+    end
+
+    it "preserves a fork target verbatim" do
+      expect(described_class.bazelisk_target_from_file(file_with("myorg/8.0.0\n"))).to eq("myorg/8.0.0")
+    end
+
+    it "drops BuildBuddy wrapper lines and returns the underlying Bazel entry" do
+      content = "buildbuddy-io/5.0.321\n9.1.0\n"
+      expect(described_class.bazelisk_target_from_file(file_with(content))).to eq("9.1.0")
+    end
+
+    it "preserves Bazelisk-relative values verbatim — Bazelisk understands them" do
+      expect(described_class.bazelisk_target_from_file(file_with("latest\n"))).to eq("latest")
+      expect(described_class.bazelisk_target_from_file(file_with("buildbuddy-io/5.0.321\nlast_green\n")))
+        .to eq("last_green")
+    end
+
+    it "returns nil for wrapper-only, comment-only, empty, or nil files" do
+      expect(described_class.bazelisk_target_from_file(file_with("buildbuddy-io/5.0.321\n"))).to be_nil
+      expect(described_class.bazelisk_target_from_file(file_with("# just a comment\n"))).to be_nil
+      expect(described_class.bazelisk_target_from_file(file_with("  \n"))).to be_nil
+      expect(described_class.bazelisk_target_from_file(nil)).to be_nil
+    end
+  end
+
+  describe ".version_from_file" do
+    it "extracts and normalizes version from a DependencyFile" do
+      file = Dependabot::DependencyFile.new(name: ".bazelversion", content: "buildbuddy-io/5.0.321\nv9.1.0.bcr.1\n")
+      expect(described_class.version_from_file(file)).to eq("9.1.0")
+    end
+
+    it "returns nil when file is nil or empty" do
+      expect(described_class.version_from_file(nil)).to be_nil
+      file = Dependabot::DependencyFile.new(name: ".bazelversion", content: "   \n")
+      expect(described_class.version_from_file(file)).to be_nil
+    end
+
+    it "returns nil for a wrapper-only file so callers apply their own fallbacks" do
+      file = Dependabot::DependencyFile.new(name: ".bazelversion", content: "buildbuddy-io/5.0.321\n")
+      expect(described_class.version_from_file(file)).to be_nil
+    end
+
+    it "returns nil for Bazelisk-relative values that aren't semantic versions" do
+      %w(latest last_green last_rc rolling myorg/last_green).each do |content|
+        file = Dependabot::DependencyFile.new(name: ".bazelversion", content: content)
+        expect(described_class.version_from_file(file)).to be_nil
+      end
     end
   end
 end
