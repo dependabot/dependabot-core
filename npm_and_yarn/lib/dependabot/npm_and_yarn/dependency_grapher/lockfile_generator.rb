@@ -8,6 +8,7 @@ require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
 module Dependabot
@@ -209,22 +210,25 @@ module Dependabot
             "Failed to generate lockfile with #{package_manager}: #{error.message}"
           )
 
-          if error.message.include?("ERESOLVE")
+          # pnpm 12 hard-wraps long lines, which can cut a registry URL in two
+          message = PnpmErrorMessage.normalize(error.message)
+
+          if message.include?("ERESOLVE")
             Dependabot.logger.error(
               "Dependency resolution failed. This may be due to conflicting peer dependencies."
             )
             raise Dependabot::DependencyFileNotResolvable,
                   "Could not resolve dependencies. This may be due to conflicting peer dependencies."
-          elsif error.message.include?("ENOTFOUND") || error.message.include?("ETIMEDOUT")
+          elsif message.include?("ENOTFOUND") || message.include?("ETIMEDOUT")
             Dependabot.logger.error(
               "Network error while generating lockfile. Registry may be unreachable."
             )
-            raise Dependabot::PrivateSourceTimedOut, extract_network_error_host(error.message)
-          elsif authentication_error?(error.message)
+            raise Dependabot::PrivateSourceTimedOut, extract_network_error_host(message)
+          elsif authentication_error?(message)
             Dependabot.logger.error(
               "Authentication error. Check that credentials are configured correctly."
             )
-            raise Dependabot::PrivateSourceAuthenticationFailure, extract_url(error.message)
+            raise Dependabot::PrivateSourceAuthenticationFailure, extract_url(message)
           end
         end
 

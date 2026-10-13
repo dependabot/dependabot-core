@@ -129,7 +129,9 @@ module Dependabot
           end
 
           # When the primary is a compiled `.txt`, the `-r`/`-c` directives live in the paired `.in` files.
-          referenced = referenced_requirement_files([primary] + paired)
+          # Constraints files join every layer below, so they are seeded here too: a constraints file
+          # that references siblings needs those siblings on disk for the layer to parse.
+          referenced = referenced_requirement_files([primary] + paired + constraints_files)
 
           support = (paired + referenced + constraints_files).uniq.map do |f|
             as_support_file(f)

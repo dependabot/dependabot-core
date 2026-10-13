@@ -386,6 +386,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to_return(status: 404)
     end
 
+    ["# pnpm settings go here\n# packages:\n#   - 'packages/*'\n", "just a string\n"].each do |workspace_yaml|
+      context "when pnpm-workspace.yaml is not a mapping (#{workspace_yaml.lines.first.strip})" do
+        before do
+          listing = JSON.parse(fixture("github", "contents_js_pnpm.json"))
+          listing << listing.find { |entry| entry["name"] == "pnpm-lock.yaml" }
+                            .merge("name" => "pnpm-workspace.yaml", "path" => "pnpm-workspace.yaml")
+          stub_request(:get, url + "?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 200, body: listing.to_json, headers: json_header)
+          stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "pnpm_lock_quotes_content.json"),
+              headers: json_header
+            )
+          stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: {
+                name: "pnpm-workspace.yaml",
+                path: "pnpm-workspace.yaml",
+                type: "file",
+                encoding: "base64",
+                content: Base64.encode64(workspace_yaml)
+              }.to_json,
+              headers: json_header
+            )
+        end
+
+        it "fetches the files and treats the workspace as having no packages" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to include("package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml")
+        end
+      end
+    end
+
     context "when source points to nested project" do
       let(:repo) { "dependabot-fixtures/projects/pnpm/workspace_v9" }
       let(:directory) { "/packages/package1" }

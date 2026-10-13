@@ -91,8 +91,63 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       let(:lockfiles) { { pnpm: pnpm_lockfile } }
 
       it "returns a PNPMPackageManager instance" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version_numeric).and_return(7)
+        allow(Dependabot::NpmAndYarn::Helpers)
+          .to receive_messages(pnpm_version_numeric: 7, package_manager_version: "7.33.7")
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
+      end
+    end
+
+    context "with a pnpm lockfile and no packageManager" do
+      let(:lockfiles) { { pnpm: pnpm_lockfile } }
+      let(:package_json) { {} }
+      let(:pnpm_lockfile) do
+        instance_double(Dependabot::DependencyFile, name: "pnpm-lock.yaml", content: "lockfileVersion: '#{version}'\n")
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("pnpm@8", env: nil).and_return("8.15.9")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("pnpm@7", env: nil).and_return("7.33.7")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("pnpm", env: nil).and_return("12.9.1")
+      end
+
+      context "when the lockfile is older than the default pnpm can read" do
+        let(:version) { "6.0" }
+
+        it "reports the pnpm that will update the lockfile" do
+          expect(helper.package_manager.version.to_s).to eq("8.15.9")
+        end
+
+        context "with lockfile version 5.4" do
+          let(:version) { "5.4" }
+
+          it "reports pnpm 7" do
+            expect(helper.package_manager.version.to_s).to eq("7.33.7")
+          end
+        end
+      end
+
+      context "when the lockfile is one the default pnpm can read" do
+        let(:version) { "9.0" }
+
+        it "reports the default pnpm" do
+          expect(helper.package_manager.version.to_s).to eq("12.9.1")
+        end
+      end
+
+      context "when packageManager pins pnpm" do
+        let(:version) { "6.0" }
+        let(:package_json) { { "packageManager" => "pnpm@8.15.9" } }
+
+        it "asks Corepack for pnpm and lets it honor the pin" do
+          helper.package_manager
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_version).with("pnpm", env: nil)
+          expect(Dependabot::NpmAndYarn::Helpers)
+            .not_to have_received(:package_manager_version).with("pnpm@8", env: nil)
+        end
       end
     end
 
@@ -491,8 +546,9 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(helper).to receive(:package_manager).and_return(
           Dependabot::NpmAndYarn::PNPMPackageManager.new(detected_version: "7")
         )
+        # the lockfile is version 5.4, so the pnpm 7 that wrote it is the one asked for
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
-          .with("pnpm", env: nil).and_return(nil, "7.1.0")
+          .with("pnpm@7", env: nil).and_return(nil, "7.1.0")
       end
 
       it "installs the inferred version" do
@@ -615,14 +671,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when memoization is in effect" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v", env: nil).and_return("7.1.0")
+          .with("corepack pnpm@7 -v", fingerprint: "corepack pnpm@7 -v", env: nil).and_return("7.1.0")
         # Pre-cache the result
         helper.installed_version("pnpm")
       end
 
       it "does not re-run the shell command and uses the cached version" do
         expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
-          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v", env: nil)
+          .with("corepack pnpm@7 -v", fingerprint: "corepack pnpm@7 -v", env: nil)
         expect(helper.installed_version("pnpm")).to eq("7.1.0")
       end
     end

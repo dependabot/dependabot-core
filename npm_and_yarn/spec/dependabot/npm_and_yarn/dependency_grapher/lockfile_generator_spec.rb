@@ -305,6 +305,23 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       end
     end
 
+    context "with a pnpm 12 authentication error whose URL is wrapped" do
+      let(:package_manager) { "pnpm" }
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_no_lockfile") }
+
+      it "raises PrivateSourceAuthenticationFailure with the whole registry URL" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: fixture("pnpm_errors", "pnpm12", "private_tarball_urls.txt"),
+                       error_context: {}
+                     ))
+
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("https://npm.pkg.github.com/@dsp-testing%2Finner-source-top-secret-npm-2")
+        end
+      end
+    end
+
     context "with yarn authentication error" do
       let(:package_manager) { "yarn" }
       let(:dependency_files) { project_dependency_files("grapher/yarn_no_lockfile") }

@@ -85,6 +85,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
     it { is_expected.to be(true) }
 
+    context "with the transitive experiment on" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(true)
+        allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+      end
+
+      it "re-parses the POMs without running the dependency tree scan" do
+        expect(updater.update_possible?).to be(true)
+        expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
+      end
+    end
+
     context "without a target version" do
       let(:target_version_details) { nil }
 

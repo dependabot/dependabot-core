@@ -1,3 +1,7 @@
+"L: apm":
+- changed-files:
+  - any-glob-to-any-file: apm/**
+
 "L: ruby:bundler":
 - changed-files:
   - any-glob-to-any-file: bundler/**

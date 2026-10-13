@@ -3936,16 +3936,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       context "with a sub-dependency" do
         let(:project_name) { "pnpm/no_lockfile_change" }
 
-        # pnpm resolves a transitive package to what a fresh install would, so
-        # the requested version is the one the parents' ranges reach.
+        # pnpm updates a transitive package within the ranges its dependents declare, so the requested
+        # version is the newest one those ranges reach.
         let(:dependency_name) { "acorn" }
-        let(:version) { "6.4.2" }
+        let(:version) { "5.7.4" }
         let(:previous_version) { "5.2.1" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
         it "updates the version" do
-          expect(updated_pnpm_lock.content).to include("acorn@6.4.2:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("acorn@5.7.4:\n    resolution").once
         end
       end
 
@@ -4049,11 +4049,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         let(:dependency_name) { "typescript" }
         let(:version) { "2.9.1" }
-        let(:previous_version) { "2.2.2" }
+        let(:previous_version) { "2.1.4" }
         let(:requirements) do
           [{
             file: "package.json",
-            requirement: "^2.2.2",
+            requirement: "^2.1.1",
             groups: ["devDependencies"],
             source: nil
           }]
@@ -4063,7 +4063,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the lockfile" do
           expect(updated_files.map(&:name)).to eq(%w(pnpm-lock.yaml))
 
-          expect(updated_pnpm_lock.content).to include("typescript@2.2.2:")
+          expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
           expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
         end
       end

@@ -125,7 +125,8 @@ module Dependabot
           @dependencies_using_property ||= T.let(
             Maven::FileParser.new(
               dependency_files: dependency_files,
-              source: nil
+              source: nil,
+              options: { skip_dependency_tree: true }
             ).parse.select do |dep|
               dep.requirements.any? { |requirement| uses_property?(requirement) }
             end,

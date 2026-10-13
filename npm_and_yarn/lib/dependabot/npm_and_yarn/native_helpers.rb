@@ -110,16 +110,20 @@ module Dependabot
       end
       private_class_method :pnpm_major_version
 
+      # `--depth` limit that stands in for "the whole graph". pnpm 12 rejects `Infinity` and only accepts an
+      # integer, while every supported pnpm accepts one and no dependency graph is anywhere near this deep.
+      PNPM_DEEP_UPDATE_DEPTH = 9999
+
       sig { params(dependency_name: String, recursive: T::Boolean).returns([String, String]) }
       def self.pnpm_deep_update_command(dependency_name, recursive: false)
-        # `pnpm update --depth Infinity <dep>` traverses the full dependency
+        # `pnpm update --depth <large> <dep>` traverses the full dependency
         # graph, allowing transitive dependencies to be updated in the lockfile
         # without relying on audit fixes that may modify manifests on older pnpm versions.
         # `-r --include-workspace-root` is required for workspace repos so the
         # update is applied across all packages.
         flags = recursive ? "-r --include-workspace-root " : ""
-        cmd = "#{flags}update #{dependency_name} --depth Infinity --lockfile-only"
-        fingerprint = "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        cmd = "#{flags}update #{dependency_name} --depth #{PNPM_DEEP_UPDATE_DEPTH} --lockfile-only"
+        fingerprint = "#{flags}update <dependency_name> --depth #{PNPM_DEEP_UPDATE_DEPTH} --lockfile-only"
         [cmd, fingerprint]
       end
 
