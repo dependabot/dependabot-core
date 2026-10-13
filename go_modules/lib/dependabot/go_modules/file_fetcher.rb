@@ -13,6 +13,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      WORKSPACE_MODULE_FILENAMES = %w(go.mod go.sum).freeze
+
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("go.mod") || filenames.include?("go.work")
@@ -59,7 +61,7 @@ module Dependabot
         else
           fetched_files << T.must(go_mod) if go_mod
           fetched_files << T.must(go_sum) if go_sum
-          fetched_files << T.must(ancestor_go_work) if ancestor_go_work
+          fetched_files.concat(ancestor_workspace_files)
         end
 
         fetched_files << T.must(go_env) if go_env
@@ -121,32 +123,53 @@ module Dependabot
         @go_work ||= T.let(fetch_file_if_present("go.work"), T.nilable(Dependabot::DependencyFile))
       end
 
-      # The nearest go.work above the job directory, when it lists this module. It is
-      # fetched as a support file (e.g. "../../go.work") so a Go version bump made by
-      # `go get` can be returned, without switching the job into workspace mode.
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def ancestor_go_work
-        return nil unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
+      # When the job directory is a member of a workspace whose go.work lives in a parent
+      # directory, fetch that go.work, its go.work.sum and the other members' go.mod/go.sum
+      # as support files named relative to the job directory (e.g. "../../go.work"). This
+      # lets the updater run `go work sync` and return every file it changes, without
+      # switching the job into workspace mode (go.work is looked up by its exact name).
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def ancestor_workspace_files
+        return [] unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
 
-        @ancestor_go_work ||= T.let(find_ancestor_go_work, T.nilable(Dependabot::DependencyFile))
+        @ancestor_workspace_files ||= T.let(
+          find_ancestor_workspace_files,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def find_ancestor_go_work
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def find_ancestor_workspace_files
         segments = directory.split("/").reject(&:empty?)
         (1..segments.length).each do |depth|
-          file = fetch_file_if_present("#{'../' * depth}go.work")
-          next unless file
+          prefix = "../" * depth
+          ancestor_go_work = fetch_file_if_present("#{prefix}go.work")
+          next unless ancestor_go_work
 
-          module_path = segments.last(depth).join("/")
-          listed = GoWorkParser.use_paths(T.must(file.content)).map { |p| Pathname.new(p).cleanpath.to_s }
-          return nil unless listed.include?(module_path)
+          # Go uses the nearest go.work, so stop here even if it doesn't list this module.
+          work_dir_path = segments.first(segments.length - depth).join("/")
+          work_dir = Pathname.new(work_dir_path.empty? ? "." : work_dir_path)
+          use_paths = GoWorkParser.use_paths(T.must(ancestor_go_work.content))
+                                  .map { |path| work_dir.join(path).cleanpath.to_s }
+          return [] unless use_paths.include?(segments.join("/"))
 
-          file.support_file = true
-          return file
+          files = [ancestor_go_work, fetch_file_if_present("#{prefix}go.work.sum")].compact
+          files.concat(ancestor_workspace_module_files(use_paths, segments.join("/")))
+          files.each { |file| file.support_file = true }
+          return files
         end
 
-        nil
+        []
+      end
+
+      sig { params(module_dirs: T::Array[String], job_dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def ancestor_workspace_module_files(module_dirs, job_dir)
+        module_dirs.flat_map do |module_dir|
+          next [] if module_dir == job_dir || module_dir.start_with?("../") || Pathname.new(module_dir).absolute?
+
+          relative_dir = Pathname.new(module_dir).relative_path_from(Pathname.new(job_dir)).to_s
+          WORKSPACE_MODULE_FILENAMES.filter_map { |name| fetch_file_if_present("#{relative_dir}/#{name}") }
+        end
       end
 
       sig { returns(T::Array[String]) }

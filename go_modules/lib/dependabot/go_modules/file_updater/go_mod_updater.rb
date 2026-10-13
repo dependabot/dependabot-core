@@ -115,6 +115,8 @@ module Dependabot
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
+        ANCESTOR_WORKSPACE_FILENAMES = %w(go.work go.work.sum go.mod go.sum).freeze
+
         sig do
           params(
             dependencies: T::Array[Dependabot::Dependency],
@@ -152,9 +154,11 @@ module Dependabot
           updated_files[:go_sum]
         end
 
-        sig { returns(T.nilable(String)) }
-        def updated_ancestor_go_work_content
-          updated_files[:ancestor_go_work]
+        # Contents of the ancestor workspace files (go.work, go.work.sum and the other members'
+        # go.mod/go.sum) after the update, keyed by their name relative to the job directory.
+        sig { returns(T::Hash[String, String]) }
+        def updated_ancestor_workspace_files
+          updated_files.fetch(:ancestor_workspace_files, {})
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -182,17 +186,33 @@ module Dependabot
         sig { returns(String) }
         attr_reader :directory
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[Symbol, T.untyped]) }
         def updated_files
-          @updated_files ||= T.let(update_files, T.nilable(T::Hash[Symbol, String]))
+          @updated_files ||= T.let(update_files, T.nilable(T::Hash[Symbol, T.untyped]))
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def ancestor_go_work_file
-          dependency_files.find { |f| f.name.match?(%r{\A(\.\./)+go\.work\z}) }
+        # Workspace files fetched from outside the job directory (see FileFetcher). Own go.mod and
+        # go.sum are not support files, so this never includes them.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def ancestor_workspace_files
+          dependency_files.select do |file|
+            file.support_file? && ANCESTOR_WORKSPACE_FILENAMES.include?(File.basename(file.name))
+          end
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        # When the job directory is a member of a workspace fetched from a parent directory, bring
+        # the other members in sync, as `go work sync` does for a workspace update.
+        sig { void }
+        def sync_ancestor_workspace
+          run_go_work_sync if ancestor_workspace_files.any?
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def read_ancestor_workspace_files
+          ancestor_workspace_files.to_h { |file| [file.name, File.read(file.name)] }
+        end
+
+        sig { returns(T::Hash[Symbol, T.untyped]) }
         def update_files
           in_repo_path do
             # During grouped updates, the dependency_files are from a previous dependency
@@ -224,6 +244,8 @@ module Dependabot
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
             if substitutions.empty?
+              sync_ancestor_workspace
+
               # go mod tidy should run before go mod vendor to ensure any
               # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
@@ -235,9 +257,7 @@ module Dependabot
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
-            updated_ancestor_go_work = ancestor_go_work_file && File.read(T.must(ancestor_go_work_file).name)
-
-            { go_mod: updated_go_mod, go_sum: updated_go_sum, ancestor_go_work: updated_ancestor_go_work }.compact
+            { go_mod: updated_go_mod, go_sum: updated_go_sum, ancestor_workspace_files: read_ancestor_workspace_files }
           end
         end
 

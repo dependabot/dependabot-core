@@ -464,8 +464,42 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     let(:dependency_version) { "v1.16.0" }
     let(:updated_files) { updater.updated_dependency_files }
 
-    it "does not switch to workspace mode and updates only the module's files" do
+    it "does not switch to workspace mode and updates only the module's files when nothing else changes" do
       expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+    end
+
+    context "when the other workspace members were fetched as support files" do
+      let(:member_files) do
+        {
+          "../go.mod" => %w(go.mod),
+          "../go.sum" => %w(go.sum),
+          "../services/go.mod" => %w(services go.mod),
+          "../services/go.sum" => %w(services go.sum)
+        }.map do |name, fixture_path|
+          Dependabot::DependencyFile.new(
+            name: name,
+            content: fixture("projects", project_name, *fixture_path),
+            directory: directory,
+            support_file: true
+          )
+        end
+      end
+      let(:files) { super() + member_files }
+      let(:synced_member_names) { %w(../go.mod ../services/go.mod) }
+
+      it "returns the other members' go.mod files brought in sync by `go work sync` as regular files" do
+        synced = updated_files.select { |f| synced_member_names.include?(f.name) }
+
+        expect(synced.map(&:name)).to contain_exactly("../go.mod", "../services/go.mod")
+        expect(synced.map(&:support_file?)).to all(be(false))
+        synced.each do |file|
+          expect(file.content).to match(%r{github\.com/fatih/color\s+#{Regexp.escape(dependency_version)}})
+        end
+      end
+
+      it "returns every changed file at the repo-root paths" do
+        expect(updated_files.map(&:path)).to include("/libs/go.mod", "/go.mod", "/services/go.mod")
+      end
     end
 
     context "when the update raises the module's Go version above go.work" do
