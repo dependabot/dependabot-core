@@ -16,6 +16,8 @@ module Dependabot
 
         PATCH_PACKAGE = T.let([/patch:/].freeze, T::Array[Regexp])
 
+        RESOLUTION_SECTIONS = [["resolutions"], ["overrides"], %w(pnpm overrides)].freeze
+
         sig do
           params(
             package_json: Dependabot::DependencyFile,
@@ -25,6 +27,18 @@ module Dependabot
         def initialize(package_json:, dependencies:)
           @package_json = package_json
           @dependencies = dependencies
+        end
+
+        # Maps each supported resolutions object to its string members. Each
+        # object is read on its own, since a package.json can declare several.
+        sig { params(parsed: Object).returns(T::Hash[T::Array[String], T::Hash[String, String]]) }
+        def self.resolution_entries(parsed)
+          RESOLUTION_SECTIONS.to_h do |section|
+            object = T.let(parsed, Object)
+            section.each { |name| object = object.is_a?(Hash) ? object[name] : nil }
+            entries = object.is_a?(Hash) ? object.select { |_, value| value.is_a?(String) } : {}
+            [section, entries]
+          end
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -156,28 +170,26 @@ module Dependabot
             .returns(String)
         end
         def update_package_json_resolutions(package_json_content:, new_req:, dependency:, old_req:)
-          dep = dependency
-          parsed_json_content = JSON.parse(package_json_content)
-          resolutions =
-            parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {})
-                               .reject { |_, v| v != old_req&.requirement && v != dep.previous_version }
-                               .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+          old_resolutions = [old_req&.requirement, dependency.previous_version]
 
-          return package_json_content unless resolutions.any?
+          entries_by_section = self.class.resolution_entries(JSON.parse(package_json_content))
 
-          content = package_json_content
-          resolutions.each do |name, resolution|
-            new_resolution = resolution == old_req&.requirement ? new_req.requirement : dep.version
+          entries_by_section.reduce(package_json_content) do |content, (section, entries)|
+            entries.reduce(content) do |updated, (name, resolution)|
+              next updated unless name == dependency.name || name.end_with?("/#{dependency.name}")
+              next updated unless old_resolutions.include?(resolution)
 
-            content = update_package_json_sections(
-              [["resolutions"], ["overrides"], %w(pnpm overrides)],
-              content,
-              name,
-              Dependabot::DependencyRequirement.create(requirement: resolution),
-              Dependabot::DependencyRequirement.create(requirement: new_resolution)
-            )
+              new_resolution = resolution == old_req&.requirement ? new_req.requirement : dependency.version
+
+              update_package_json_sections(
+                [section],
+                updated,
+                name,
+                Dependabot::DependencyRequirement.create(requirement: resolution),
+                Dependabot::DependencyRequirement.create(requirement: new_resolution)
+              )
+            end
           end
-          content
         end
 
         sig do

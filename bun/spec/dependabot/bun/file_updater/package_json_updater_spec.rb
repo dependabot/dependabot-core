@@ -216,6 +216,53 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
         end
       end
 
+      context "when top-level overrides pin the previous version" do
+        let(:content) do
+          <<~JSON
+            {
+              "dependencies": { "is-number": "6.0.0" },
+              "overrides": { "is-number": "6.0.0" }
+            }
+          JSON
+        end
+
+        it "updates the declaration and the override" do
+          expect(updated_content).to eq(content.gsub('"6.0.0"', '"7.0.0"'))
+        end
+      end
+
+      context "when unrelated resolutions precede the overrides" do
+        let(:content) do
+          <<~JSON
+            {
+              "dependencies": { "is-number": "6.0.0" },
+              "resolutions": { "etag": "1.0.1" },
+              "overrides": { "is-number": "6.0.0" }
+            }
+          JSON
+        end
+
+        it "updates the declaration and the override" do
+          expect(updated_content).to eq(content.gsub('"6.0.0"', '"7.0.0"'))
+        end
+      end
+
+      context "when unrelated resolutions precede pnpm overrides" do
+        let(:content) do
+          <<~JSON
+            {
+              "dependencies": { "is-number": "6.0.0" },
+              "resolutions": { "etag": "1.0.1" },
+              "pnpm": { "overrides": { "is-number": "6.0.0" } }
+            }
+          JSON
+        end
+
+        it "updates the declaration and the override" do
+          expect(updated_content).to eq(content.gsub('"6.0.0"', '"7.0.0"'))
+        end
+      end
+
       context "when the resolution is the previous requirement" do
         let(:content) do
           <<~JSON
@@ -230,6 +277,24 @@ RSpec.describe Dependabot::Bun::FileUpdater::PackageJsonUpdater do
 
         it "updates the resolution to the new requirement" do
           expect(updated_content).to eq(content.gsub('"^6.0.0"', '"^7.0.0"'))
+        end
+      end
+
+      context "when resolutions and overrides pin the dependency differently" do
+        let(:content) do
+          <<~JSON
+            {
+              "dependencies": { "is-number": "^6.0.0" },
+              "resolutions": { "is-number": "^6.0.0" },
+              "overrides": { "is-number": "6.0.0" }
+            }
+          JSON
+        end
+        let(:previous_requirement) { "^6.0.0" }
+        let(:new_requirement) { "^7.0.0" }
+
+        it "updates each entry from its own value" do
+          expect(updated_content).to eq(content.gsub('"^6.0.0"', '"^7.0.0"').sub('"6.0.0"', '"7.0.0"'))
         end
       end
 

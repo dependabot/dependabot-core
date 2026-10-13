@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
-    context "when the same requirement appears outside the sections being updated" do
+    context "with entries in several package.json objects" do
       let(:dependency_name) { "is-number" }
       let(:previous_version) { "6.0.0" }
       let(:version) { "7.0.0" }
@@ -220,6 +220,21 @@ RSpec.describe Dependabot::Bun::FileUpdater do
         let(:new_requirement) { "^7.0.0" }
 
         it "updates the dependencies and the resolutions and leaves the catalog alone" do
+          expect(updated_package_json.content).to eq(
+            original_package_json.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"')
+                                 .sub('"is-number": "6.0.0"', '"is-number": "7.0.0"')
+          )
+          expect(updated_lock["overrides"]).to eq("is-number" => "7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "with overrides alongside unrelated resolutions" do
+        let(:project) { "overrides_with_unrelated_resolutions" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:new_requirement) { "^7.0.0" }
+
+        it "updates the dependencies and the overrides" do
           expect(updated_package_json.content).to eq(
             original_package_json.sub('"is-number": "^6.0.0"', '"is-number": "^7.0.0"')
                                  .sub('"is-number": "6.0.0"', '"is-number": "7.0.0"')
