@@ -583,12 +583,14 @@ public class VersionFinderTests : TestBase
                 """)
         );
         var packageMetadataResource = new CapturingPackageMetadataResource();
+        var resourceProvider = new TestResourceProvider<PackageMetadataResource>(
+            packageMetadataResource);
         using var context = new NuGetContext(
             tempDir.DirectoryPath,
             sourceRepositoryFactory: source => new SourceRepository(
                 source,
                 [
-                    new TestResourceProvider<PackageMetadataResource>(packageMetadataResource),
+                    resourceProvider,
                 ]));
         var dependencyInfo = new DependencyInfo
         {
@@ -619,6 +621,7 @@ public class VersionFinderTests : TestBase
             cancellationSource.Token);
 
         AssertEx.Equal([source], allowedSources);
+        Assert.Equal(cancellationSource.Token, resourceProvider.ReceivedToken);
         Assert.Equal(cancellationSource.Token, packageMetadataResource.ReceivedToken);
     }
 
@@ -872,9 +875,15 @@ public class VersionFinderTests : TestBase
         public string Name => typeof(TResource).Name;
         public IEnumerable<string> Before => [];
         public IEnumerable<string> After => [];
+        public CancellationToken ReceivedToken { get; private set; }
 
-        public Task<Tuple<bool, INuGetResource?>> TryCreate(SourceRepository source, CancellationToken token) =>
-            Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(
+            SourceRepository source,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        }
     }
 
     private sealed class CountingMetadataResource(

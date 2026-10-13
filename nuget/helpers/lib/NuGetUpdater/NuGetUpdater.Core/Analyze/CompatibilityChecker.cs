@@ -303,7 +303,7 @@ internal static class CompatibilityChecker
             try
             {
                 var sourceRepository = context.GetSourceRepository(source);
-                feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>()
+                feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancellationToken)
                     ?? throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
 
                 // a non-compliant v2 API returning 404 can cause this to throw
@@ -351,7 +351,7 @@ internal static class CompatibilityChecker
             try
             {
                 var sourceRepository = context.GetSourceRepository(source);
-                var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>()
+                var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancellationToken)
                     ?? throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
                 if (await feed.DoesPackageExistAsync(
                         package.Id,

@@ -167,7 +167,7 @@ internal static class VersionFinder
             try
             {
                 var sourceRepository = nugetContext.GetSourceRepository(source);
-                var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
+                var feed = await sourceRepository.GetResourceAsync<MetadataResource>(cancellationToken);
                 if (feed is null)
                 {
                     logger.Warn($"Failed to get {nameof(MetadataResource)} for [{source.Source}]");
@@ -176,7 +176,8 @@ internal static class VersionFinder
 
                 if (filterByCooldown && dependencyInfo.Cooldown is not null)
                 {
-                    metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>();
+                    metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(
+                        cancellationToken);
                     if (metadataResource is null)
                     {
                         logger.Warn($"Failed to get {nameof(PackageMetadataResource)} for [{source.Source}]");
@@ -275,7 +276,8 @@ internal static class VersionFinder
         foreach (var source in sources)
         {
             var sourceRepository = nugetContext.GetSourceRepository(source);
-            var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>();
+            var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(
+                cancellationToken);
             if (metadataResource is null)
             {
                 logger.Warn($"Failed to get {nameof(PackageMetadataResource)} for [{source.Source}]");
