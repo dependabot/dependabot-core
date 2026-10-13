@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency_group"
@@ -7,10 +7,19 @@ require "dependabot/dependency"
 # TODO: Once the Updater has been merged into Core, we should test this
 # using the DependencyGroupEngine methods instead of mocking the functionality
 RSpec.describe Dependabot::DependencyGroup do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::DependencyGroup) } # rubocop:disable RSpec/DescribedClass -- Signatures need concrete types.
   let(:dependency_group) { described_class.new(name: name, rules: rules) }
+
+  sig { returns(String) }
   let(:name) { "test_group" }
+
+  sig { returns(T::Hash[String, T.any(String, T::Array[String])]) }
   let(:rules) { { "patterns" => ["test-*"] } }
 
+  sig { returns(Dependabot::Dependency) }
   let(:test_dependency1) do
     Dependabot::Dependency.new(
       name: "test-dependency-1",
@@ -27,6 +36,7 @@ RSpec.describe Dependabot::DependencyGroup do
     )
   end
 
+  sig { returns(Dependabot::Dependency) }
   let(:test_dependency2) do
     Dependabot::Dependency.new(
       name: "test-dependency-2",
@@ -43,6 +53,7 @@ RSpec.describe Dependabot::DependencyGroup do
     )
   end
 
+  sig { returns(Dependabot::Dependency) }
   let(:production_dependency) do
     Dependabot::Dependency.new(
       name: "another-dependency",
@@ -60,13 +71,13 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   # Mock out the dependency-type == production check for Bundler
+  sig { returns(T.proc.params(gemfile_groups: T::Array[String]).returns(T::Boolean)) }
   let(:production_checker) do
     lambda do |gemfile_groups|
-      return true if gemfile_groups.empty?
-      return true if gemfile_groups.include?("runtime")
-      return true if gemfile_groups.include?("default")
-
-      gemfile_groups.any? { |g| g.include?("prod") }
+      gemfile_groups.empty? ||
+        gemfile_groups.include?("runtime") ||
+        gemfile_groups.include?("default") ||
+        gemfile_groups.any? { |g| g.include?("prod") }
     end
   end
 
@@ -139,6 +150,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
   describe "#contains?" do
     context "when the rules include patterns" do
+      sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
       let(:rules) do
         {
           "patterns" => ["test-*", "nothing-matches-this"],
@@ -186,6 +198,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
 
     context "when the rules specify a dependency-type" do
+      sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
       let(:rules) do
         {
           "dependency-type" => "production"
@@ -202,6 +215,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       context "when a dependency is specifically excluded" do
+        sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
         let(:rules) do
           {
             "dependency-type" => "production",
@@ -216,6 +230,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
 
     context "when the rules specify a mix of patterns and dependency-types" do
+      sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
       let(:rules) do
         {
           "patterns" => ["*dependency*"],
@@ -239,6 +254,7 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   describe "#to_config_yaml" do
+    sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
     let(:rules) do
       {
         "patterns" => ["test-*", "nothing-matches-this"],
@@ -261,6 +277,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
   describe "#group_by" do
     context "when rules do not contain group-by" do
+      sig { override.returns(Dependabot::DependencyGroup) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:dependency_group) { described_class.new(name: name, rules: rules) }
 
       it "returns nil" do
@@ -269,7 +286,10 @@ RSpec.describe Dependabot::DependencyGroup do
     end
 
     context "when rules contain group-by" do
+      sig { returns(T::Hash[String, T.any(String, T::Array[String])]) }
       let(:rules_with_group_by) { { "patterns" => ["test-*"], "group-by" => "dependency-name" } }
+
+      sig { override.returns(Dependabot::DependencyGroup) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
 
       it "returns the group-by value from rules" do
@@ -279,10 +299,14 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   describe "#group_by_dependency_name?" do
+    sig { returns(T::Hash[String, T.any(String, T::Array[String])]) }
     let(:rules_with_group_by) { { "patterns" => ["test-*"], "group-by" => "dependency-name" } }
+
+    sig { returns(T::Hash[String, T.any(String, T::Array[String])]) }
     let(:rules_with_other_group_by) { { "patterns" => ["test-*"], "group-by" => "something-else" } }
 
     context "when rules contain group-by: dependency-name" do
+      sig { override.returns(Dependabot::DependencyGroup) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
 
       it "returns true" do
@@ -291,6 +315,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
 
     context "when rules do not contain group-by" do
+      sig { override.returns(Dependabot::DependencyGroup) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:dependency_group) { described_class.new(name: name, rules: rules) }
 
       it "returns false" do
@@ -299,11 +324,13 @@ RSpec.describe Dependabot::DependencyGroup do
     end
 
     context "when rules contain a different group-by value" do
+      sig { override.returns(Dependabot::DependencyGroup) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:dependency_group) { described_class.new(name: name, rules: rules_with_other_group_by) }
 
       it "returns false" do
         expect(dependency_group.group_by_dependency_name?).to be(false)
       end
     end
+    # rubocop:enable RSpec/ScatteredLet
   end
 end
