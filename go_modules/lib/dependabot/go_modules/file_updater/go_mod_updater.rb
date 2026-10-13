@@ -116,8 +116,7 @@ module Dependabot
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
-        ANCESTOR_WORKSPACE_FILENAMES = %w(go.work go.work.sum go.mod go.sum).freeze
-        OWN_MODULE_FILENAMES = %w(go.mod go.sum).freeze
+        ANCESTOR_WORKSPACE_FILENAMES = %w(go.work go.work.sum).freeze
 
         sig do
           params(
@@ -156,8 +155,6 @@ module Dependabot
           updated_files[:go_sum]
         end
 
-        # Contents of the ancestor workspace files (go.work, go.work.sum and the other members'
-        # go.mod/go.sum) after the update, keyed by their name relative to the job directory.
         sig { returns(T::Hash[String, String]) }
         def updated_ancestor_workspace_files
           updated_files.fetch(:ancestor_workspace_files, {})
@@ -193,24 +190,14 @@ module Dependabot
           @updated_files ||= T.let(update_files, T.nilable(T::Hash[Symbol, T.untyped]))
         end
 
-        # Workspace files fetched from outside the job directory (see FileFetcher). Own go.mod and
-        # go.sum are not support files, so this never includes them.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def ancestor_workspace_files
           return [] unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
 
           dependency_files.select do |file|
             file.support_file? &&
-              !OWN_MODULE_FILENAMES.include?(file.name) &&
               ANCESTOR_WORKSPACE_FILENAMES.include?(File.basename(file.name))
           end
-        end
-
-        # When the job directory is a member of a workspace fetched from a parent directory, bring
-        # the other members in sync, as `go work sync` does for a workspace update.
-        sig { void }
-        def sync_ancestor_workspace
-          run_go_work_sync if ancestor_workspace_files.any?
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -250,8 +237,6 @@ module Dependabot
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
             if substitutions.empty?
-              sync_ancestor_workspace
-
               # go mod tidy should run before go mod vendor to ensure any
               # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
