@@ -738,38 +738,41 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
     end
   end
 
-  describe "#latest_resolvable_version with a dependency only declared in a nested workspace" do
-    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
+  %w(workspace_dependency_not_at_root workspace_dependency_not_at_root_v1
+     workspace_dependency_not_at_root_v3).each do |project|
+    describe "#latest_resolvable_version with a dependency only declared in a nested workspace (#{project})" do
+      subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
-    let(:project_name) { "bun/workspace_dependency_not_at_root" }
-    let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "etag",
-        version: "1.0.1",
-        requirements: [{
-          file: "packages/app/package.json",
-          requirement: "^1.0.0",
-          groups: ["devDependencies"],
-          source: nil
-        }],
-        package_manager: "bun"
-      )
-    end
+      let(:project_name) { "bun/#{project}" }
+      let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.1",
+          requirements: [{
+            file: "packages/app/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }],
+          package_manager: "bun"
+        )
+      end
 
-    it { is_expected.to eq(latest_allowable_version) }
+      it { is_expected.to eq(latest_allowable_version) }
 
-    it "scopes the peer dependency check to the workspace that declares the dependency" do
-      allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+      it "scopes the peer dependency check to the workspace that declares the dependency" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
 
-      latest_resolvable_version
+        latest_resolvable_version
 
-      # Without --filter, bun update at the repo root fails with "is not a
-      # dependency of this workspace" for a workspace-only dependency.
-      expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-        ["update", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
-        fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
-      )
+        # Without --filter, bun update at the repo root fails with "is not a
+        # dependency of this workspace" for a workspace-only dependency.
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["update", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+        )
+      end
     end
   end
 
