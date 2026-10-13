@@ -55,30 +55,59 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
       it { is_expected.to eq(%w(libs services)) }
     end
 
-    context "with a single-line use for a directory without a ./ prefix" do
-      let(:content) { "use libs" }
+    context "with the enable_go_work_version_sync experiment enabled" do
+      before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
 
-      it { is_expected.to eq(["libs"]) }
-    end
+      after { Dependabot::Experiments.reset! }
 
-    context "with a quoted single-line use directive" do
-      let(:content) { %(use "./libs" // some comment) }
+      context "with a single-line use for a directory without a ./ prefix" do
+        let(:content) { "use libs" }
 
-      it { is_expected.to eq(["libs"]) }
-    end
-
-    context "with quoted and unprefixed entries in a use block" do
-      let(:content) do
-        <<~GOWORK
-          use (
-            "./libs"
-            services // some comment
-            "./sdk/go"
-          )
-        GOWORK
+        it { is_expected.to eq(["libs"]) }
       end
 
-      it { is_expected.to eq(%w(libs services sdk/go)) }
+      context "with a quoted single-line use directive" do
+        let(:content) { %(use "./libs" // some comment) }
+
+        it { is_expected.to eq(["libs"]) }
+      end
+
+      context "with quoted and unprefixed entries in a use block" do
+        let(:content) do
+          <<~GOWORK
+            use (
+              "./libs"
+              services // some comment
+              "./sdk/go"
+            )
+          GOWORK
+        end
+
+        it { is_expected.to eq(%w(libs services sdk/go)) }
+      end
+    end
+
+    context "with the enable_go_work_version_sync experiment disabled" do
+      context "with a single-line use for a directory without a ./ prefix" do
+        let(:content) { "use libs" }
+
+        it { is_expected.to eq([]) }
+      end
+
+      context "with quoted entries" do
+        let(:content) do
+          <<~GOWORK
+            use "./api"
+            use (
+              "./libs"
+            )
+          GOWORK
+        end
+
+        it "keeps the previous behaviour" do
+          expect(paths).to eq(['"./libs"'])
+        end
+      end
     end
 
     context "with mixed block and single-line use directives" do

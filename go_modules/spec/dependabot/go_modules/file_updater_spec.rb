@@ -524,8 +524,60 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     let(:dependency_version) { "v1.16.0" }
     let(:updated_files) { updater.updated_dependency_files }
 
+    before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
+
+    after { Dependabot::Experiments.reset! }
+
     it "does not switch to workspace mode and updates only the module's files when nothing else changes" do
       expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+    end
+
+    context "when the experiment is disabled" do
+      before { Dependabot::Experiments.reset! }
+
+      let(:files) { super() + member_files }
+      let(:member_files) do
+        [Dependabot::DependencyFile.new(
+          name: "../services/go.mod",
+          content: fixture("projects", project_name, "services", "go.mod"),
+          directory: directory,
+          support_file: true
+        )]
+      end
+
+      it "keeps the previous behaviour: no `go work sync` and only the module's files" do
+        allow(Open3).to receive(:capture3).and_call_original
+
+        expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+        expect(Open3).not_to have_received(:capture3).with("go work sync")
+      end
+    end
+
+    context "when the module's own go.mod and go.sum are support files (e.g. in a git submodule)" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", project_name, "libs", "go.mod"),
+            directory: directory,
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "go.sum",
+            content: fixture("projects", project_name, "libs", "go.sum"),
+            directory: directory,
+            support_file: true
+          )
+        ]
+      end
+
+      it "does not treat them as workspace files" do
+        allow(Open3).to receive(:capture3).and_call_original
+
+        updater.updated_dependency_files
+
+        expect(Open3).not_to have_received(:capture3).with("go work sync")
+      end
     end
 
     context "when the other workspace members were fetched as support files" do
