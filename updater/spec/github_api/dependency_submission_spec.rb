@@ -76,12 +76,28 @@ RSpec.shared_examples "dependency_submission" do |empty|
       {
         context: "with a RubyGems project in a subdirectory",
         directory: "ruby/backend-api/",
-        expected_correlator: "dependabot-bundler-ruby-backend--api"
+        expected_correlator: "dependabot-bundler-ruby/backend-api"
       },
       {
         context: "with mixed case in the file path",
         directory: "Ruby/backend-api/",
-        expected_correlator: "dependabot-bundler-Ruby-backend--api"
+        expected_correlator: "dependabot-bundler-Ruby/backend-api"
+      },
+      {
+        context: "with emoji in the file path",
+        directory: "/📁docs/",
+        expected_correlator: "dependabot-bundler-📁docs"
+      },
+      {
+        context: "with a directory of exactly 32 bytes made up of multi-byte characters",
+        directory: "😀" * 8,
+        expected_correlator: "dependabot-bundler-#{'😀' * 8}"
+      },
+      {
+        context: "with a directory of multi-byte characters whose byte length exceeds 32 but whose " \
+                 "character count does not",
+        directory: "😀" * 9,
+        expected_correlator: /dependabot-bundler-[a-fA-F0-9]{64}/
       },
       # If we're given something pathologically long, we use a SHA256 to limit length
       {
@@ -411,7 +427,6 @@ RSpec.describe GithubApi::DependencySubmission do
       )
     end
 
-    # "/svc-web" and "/svc/web" are different directories and should not sanitise to the same correlator.
     let(:svc_web_dash_manifest) do
       Dependabot::DependencyFile.new(name: "requirements.txt", content: "", directory: "/svc-web")
     end
@@ -424,8 +439,8 @@ RSpec.describe GithubApi::DependencySubmission do
       dash_correlator = svc_web_dash_submission.payload[:job][:correlator]
       slash_correlator = svc_web_slash_submission.payload[:job][:correlator]
 
-      expect(dash_correlator).to eq("dependabot-pip-svc--web")
-      expect(slash_correlator).to eq("dependabot-pip-svc-web")
+      expect(dash_correlator).to eq("dependabot-pip-svc-web")
+      expect(slash_correlator).to eq("dependabot-pip-svc/web")
       expect(dash_correlator).not_to eq(slash_correlator)
     end
 

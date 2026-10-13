@@ -157,15 +157,7 @@ module GithubApi
                          # If the dirname is pathologically long, we replace it with a SHA256
                          Digest::SHA256.hexdigest(dirname)
                        else
-                         # TODO: Consolidate on `scanned_manifest_path` as the correlator in future
-                         #
-                         # The `scanned_manifest_path` is a better version of this correlator calculation, due
-                         # to an historical decision to 'sluggify' paths we have to make sure to replace any
-                         # pre-existing `-` characters with `--` to avoid collisions on paths such as:
-                         # - service/web
-                         # - service-web
-                         #
-                         dirname.gsub("-", "--").tr("/", "-")
+                         dirname
                        end
 
       sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"
