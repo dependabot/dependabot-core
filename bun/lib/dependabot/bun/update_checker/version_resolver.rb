@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
 require "dependabot/logger"
+require "dependabot/package/npm_package_json"
 require "dependabot/package/npm_registry_package"
 require "dependabot/bun/dependency_files_filterer"
 require "dependabot/bun/file_parser"
@@ -615,13 +616,68 @@ module Dependabot
         def run_bun_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              Helpers.run_bun_command(
-                "update #{dependency.name}@#{version} --save-text-lockfile --ignore-scripts",
-                fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
-              )
+              workspace_filters.flat_map { |filter| run_bun_update(filter: filter, version: version) }
             end
           end
+        end
+
+        sig do
+          params(
+            filter: T.nilable(String),
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T::Array[PeerDependencyConflict])
+        end
+        def run_bun_update(filter:, version:)
+          command = T.let(["update", "#{dependency.name}@#{version}"], T::Array[String])
+          command += ["--filter", filter] if filter
+          command += ["--save-text-lockfile", "--ignore-scripts"]
+
+          Helpers.run_bun_command(
+            command,
+            fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+          )
           []
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_peer_dependency_errors(e.message)
+        end
+
+        # Returns every workspace filter (nil for the repo root, or a
+        # workspace path) that declares +dependency+. Checked once per
+        # manifest, since Bun merges same-name declarations into a single
+        # Dependency. Falls back to an unfiltered root check if it isn't
+        # declared anywhere (e.g. a sub-dependency).
+        sig { returns(T::Array[T.nilable(String)]) }
+        def workspace_filters
+          workspace_filters = dependency.requirements.filter_map do |requirement|
+            file = requirement.file
+            next if file.nil? || file == "package.json"
+
+            workspace_file = dependency_files.find { |f| f.name == file }
+            next unless workspace_file
+
+            workspace_filter(workspace_file)
+          end.uniq
+
+          declared_at_root = dependency.requirements.any? { |r| r.file == "package.json" }
+          return workspace_filters if !declared_at_root && workspace_filters.any?
+
+          [nil, *workspace_filters]
+        end
+
+        # Path-based --filter target for the workspace at +file+ (e.g.
+        # "./packages/app"). Bun's --filter also accepts a package's declared
+        # "name", but names can contain glob metacharacters that would match
+        # unrelated workspaces, so a path is used instead.
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def workspace_filter(file)
+          unless Dependabot::Package::NpmPackageJson.from_file(file).name
+            raise Dependabot::DependencyFileNotParseable.new(
+              file.path,
+              "#{file.name} must declare a \"name\" to be targeted for a workspace-scoped check"
+            )
+          end
+
+          "./#{File.dirname(file.name)}"
         end
 
         sig do

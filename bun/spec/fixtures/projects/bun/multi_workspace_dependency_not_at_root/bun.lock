@@ -1,0 +1,37 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "workspace-root",
+      "devDependencies": {
+        "typescript": "4.9.5",
+      },
+    },
+    "packages/app": {
+      "name": "app",
+      "version": "0.0.1",
+      "devDependencies": {
+        "etag": "1.0.1",
+      },
+    },
+    "packages/other": {
+      "name": "other",
+      "version": "0.0.1",
+      "dependencies": {
+        "is-number": "2.0.0",
+      },
+    },
+  },
+  "packages": {
+    "app": ["app@workspace:packages/app"],
+
+    "etag": ["etag@1.0.1", "", {}, "sha512-UT24BZefQnjqe7po1hLOvkRz16uzIRkfFhtNfcj0mKc3PBakEv9eS7Ms68d5ueHygFtxftF9gzFiiay0eZJrOQ=="],
+
+    "is-number": ["is-number@2.0.0", "", {}, "sha512-LRme8p0WzIN9lrlP9/wJKs6242c9KYvDj6JlW9N9Up28wFxzyLNyNtnWu1j9nIuoWliquNRQx6+/OZ5mI2yVpQ=="],
+
+    "other": ["other@workspace:packages/other"],
+
+    "typescript": ["typescript@4.9.5", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g=="],
+  }
+}
