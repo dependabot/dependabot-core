@@ -5,8 +5,6 @@ require "spec_helper"
 require "dependabot/bun/file_updater/json_object_members"
 
 RSpec.describe Dependabot::Bun::FileUpdater::JsonObjectMembers do
-  subject(:members) { described_class.find(content, content.index("{")).transform_values { |range| content[range] } }
-
   let(:content) do
     <<~JSON
       {
@@ -14,25 +12,42 @@ RSpec.describe Dependabot::Bun::FileUpdater::JsonObjectMembers do
         "workspaces": ["packages/*"],
         "name": "example",
         "catalogs": { "catalog": { "react": "^19.0.0" }, "t\\u0065sting": { "jest": "30.0.0" } },
-        "catalog": { "react": "^19.0.0" }
+        "catalog": {"react":"^19.0.0", "is-\\u006eumber" :  "6.0.0", "jest": {"nested": "1.0.0"}}
       }
     JSON
   end
 
-  it "maps only direct object members to their source text" do
-    expect(members).to eq(
-      "scripts" => '{ "build": "echo ${OUT} } { \" \\\\", "list": "[" }',
-      "catalogs" => '{ "catalog": { "react": "^19.0.0" }, "t\u0065sting": { "jest": "30.0.0" } }',
-      "catalog" => '{ "react": "^19.0.0" }'
-    )
+  def source_text(members)
+    members.transform_values { |range| content[range] }
   end
 
-  it "scans a nested object from its opening brace" do
-    nested = described_class.find(content, content.index('{ "catalog"'))
+  describe ".objects" do
+    it "maps only direct object members to their source text" do
+      expect(source_text(described_class.objects(content, content.index("{")))).to eq(
+        "scripts" => '{ "build": "echo ${OUT} } { \" \\\\", "list": "[" }',
+        "catalogs" => '{ "catalog": { "react": "^19.0.0" }, "t\u0065sting": { "jest": "30.0.0" } }',
+        "catalog" => '{"react":"^19.0.0", "is-\u006eumber" :  "6.0.0", "jest": {"nested": "1.0.0"}}'
+      )
+    end
 
-    expect(nested.transform_values { |range| content[range] }).to eq(
-      "catalog" => '{ "react": "^19.0.0" }',
-      "testing" => '{ "jest": "30.0.0" }'
-    )
+    it "scans a nested object from its opening brace" do
+      expect(source_text(described_class.objects(content, content.index('{ "catalog"')))).to eq(
+        "catalog" => '{ "react": "^19.0.0" }',
+        "testing" => '{ "jest": "30.0.0" }'
+      )
+    end
+  end
+
+  describe ".strings" do
+    it "maps only direct string members to their source text" do
+      expect(source_text(described_class.strings(content, content.index("{")))).to eq("name" => '"example"')
+    end
+
+    it "decodes keys and keeps the value formatting" do
+      expect(source_text(described_class.strings(content, content.index('{"react"')))).to eq(
+        "react" => '"^19.0.0"',
+        "is-number" => '"6.0.0"'
+      )
+    end
   end
 end

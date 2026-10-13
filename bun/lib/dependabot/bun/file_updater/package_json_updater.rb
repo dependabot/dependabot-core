@@ -137,6 +137,17 @@ module Dependabot
             .returns(String)
         end
         def update_package_json_declaration(package_json_content:, new_req:, dependency_name:, old_req:)
+          catalog = new_req.metadata_string("catalog")
+          if catalog
+            return update_catalog_declaration(
+              catalog: catalog,
+              content: package_json_content,
+              dependency_name: dependency_name,
+              old_req: old_req,
+              new_req: new_req
+            )
+          end
+
           original_line = declaration_line(
             dependency_name: dependency_name,
             dependency_req: old_req,
@@ -148,9 +159,6 @@ module Dependabot
             old_req: old_req,
             new_req: new_req
           )
-
-          catalog = new_req.metadata_string("catalog")
-          return update_catalog_section(catalog, package_json_content, original_line, replacement_line) if catalog
 
           groups = T.must(new_req.groups).map(&:to_s)
 
@@ -318,73 +326,84 @@ module Dependabot
           sections += ["peerDependencies"]
           sections_regex = /#{sections.join('|')}/
 
-          replace_in_blocks(declaration_blocks(content, sections_regex), content, old_line, new_line)
+          declaration_blocks = T.let([], T::Array[String])
+
+          content.scan(/['"]#{sections_regex}['"]\s*:\s*\{/m) do
+            mtch = T.must(Regexp.last_match)
+            declaration_blocks <<
+              (mtch.to_s + T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)]))
+          end
+
+          declaration_blocks.reduce(content.dup) do |new_content, block|
+            updated_block = block.sub(old_line, new_line)
+            new_content.sub(block, updated_block)
+          end
         end
 
-        # The default catalog is `catalog` together with `catalogs.default`.
-        # Only the fields in `NpmPackageJson#catalog_container` are updated,
-        # since Bun ignores the others.
+        # Bun reads catalogs only from `NpmPackageJson#catalog_container`, so
+        # the entry is looked up and replaced among those catalogs' members.
         sig do
           params(
             catalog: String,
             content: String,
-            old_line: String,
-            new_line: String
+            dependency_name: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
           )
             .returns(String)
         end
-        def update_catalog_section(catalog, content, old_line, new_line)
-          root_start = content.index("{")
-          return content unless root_start
+        def update_catalog_declaration(catalog:, content:, dependency_name:, old_req:, new_req:)
+          value_ranges = catalog_ranges(catalog, content).filter_map do |range|
+            JsonObjectMembers.strings(content, range.begin)[dependency_name]
+          end
 
-          fields = JsonObjectMembers.find(content, root_start)
+          # Replacing from the end keeps the earlier ranges valid.
+          value_ranges.sort_by(&:begin).reverse.each_with_object(content.dup) do |range, updated|
+            value = updated_catalog_value(dependency_name, T.must(updated[range]), old_req, new_req)
+            updated[range] = value if value
+          end
+        end
+
+        # The default catalog is `catalog` together with `catalogs.default`.
+        sig { params(catalog: String, content: String).returns(T::Array[T::Range[Integer]]) }
+        def catalog_ranges(catalog, content)
+          root_start = content.index("{")
+          return [] unless root_start
+
+          fields = JsonObjectMembers.objects(content, root_start)
           document = Dependabot::Package::NpmPackageJson.new(JSON.parse(content), package_json.path)
           container = document.catalog_container
           if container
             container_range = fields[container]
-            return content unless container_range
+            return [] unless container_range
 
-            fields = JsonObjectMembers.find(content, container_range.begin)
+            fields = JsonObjectMembers.objects(content, container_range.begin)
           end
 
-          ranges = T.let([], T::Array[T.nilable(T::Range[Integer])])
-          ranges << fields["catalog"] if catalog == FileParser::DEFAULT_CATALOG
           catalogs_range = fields["catalogs"]
-          ranges << JsonObjectMembers.find(content, catalogs_range.begin)[catalog] if catalogs_range
-
-          # Identical blocks can sit in ignored fields, so replacement is by
-          # position, from the end to keep earlier ranges valid.
-          ranges.compact.sort_by(&:begin).reverse.each_with_object(content.dup) do |range, updated|
-            updated[range] = T.must(updated[range]).sub(old_line, new_line)
-          end
+          [
+            (fields["catalog"] if catalog == FileParser::DEFAULT_CATALOG),
+            (JsonObjectMembers.objects(content, catalogs_range.begin)[catalog] if catalogs_range)
+          ].compact
         end
 
-        sig { params(content: String, key_regex: Regexp).returns(T::Array[String]) }
-        def declaration_blocks(content, key_regex)
-          blocks = T.let([], T::Array[String])
-
-          content.scan(/['"]#{key_regex}['"]\s*:\s*\{/m) do
-            mtch = T.must(Regexp.last_match)
-            blocks << (mtch.to_s + T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)]))
-          end
-
-          blocks
-        end
-
+        # The value is matched and rewritten as a normalized declaration, so
+        # its source formatting never affects the match.
         sig do
           params(
-            blocks: T::Array[String],
-            content: String,
-            old_line: String,
-            new_line: String
+            dependency_name: String,
+            value: String,
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
           )
-            .returns(String)
+            .returns(T.nilable(String))
         end
-        def replace_in_blocks(blocks, content, old_line, new_line)
-          blocks.reduce(content.dup) do |new_content, block|
-            updated_block = block.sub(old_line, new_line)
-            new_content.sub(block, updated_block)
-          end
+        def updated_catalog_value(dependency_name, value, old_req, new_req)
+          prefix = %("#{dependency_name}": )
+          line = prefix + JSON.generate(JSON.parse(value))
+          return if declaration_line(dependency_name: dependency_name, dependency_req: old_req, content: line).empty?
+
+          replacement_declaration_line(original_line: line, old_req: old_req, new_req: new_req).delete_prefix(prefix)
         end
 
         sig { params(string: String).returns(Integer) }
