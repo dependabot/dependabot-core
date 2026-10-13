@@ -1,0 +1,13 @@
+[
+  {
+    "name": "apm.yml",
+    "path": "apm.yml",
+    "sha": "0000000000000000000000000000000000000000",
+    "size": 100,
+    "url": "https://api.github.com/repos/example/agent-repo/contents/apm.yml?ref=sha",
+    "html_url": "https://github.com/example/agent-repo/blob/main/apm.yml",
+    "git_url": "https://api.github.com/repos/example/agent-repo/git/blobs/0000000000000000000000000000000000000000",
+    "download_url": "https://raw.githubusercontent.com/example/agent-repo/main/apm.yml",
+    "type": "file"
+  }
+]
