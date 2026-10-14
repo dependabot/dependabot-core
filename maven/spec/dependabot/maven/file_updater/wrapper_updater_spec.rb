@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve nested shared hooks or callback-assigned locals. https://srb.help/7003
 # frozen_string_literal: true
 
 require "base64"
