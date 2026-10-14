@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve contexts and fixtures generated inside shared examples. https://srb.help/7003
 # frozen_string_literal: true
 
 RSpec.shared_examples "a pip resolver reading pyproject constraints" do
