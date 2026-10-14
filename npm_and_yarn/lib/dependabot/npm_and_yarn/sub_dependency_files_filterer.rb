@@ -3,6 +3,7 @@
 
 require "dependabot/utils"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "sorbet-runtime"
 
@@ -31,8 +32,11 @@ module Dependabot
               updated_dependencies.any? do |updated_dep|
                 next false unless sub_dep.name == updated_dep.name
 
+                matching_dep = Helpers.dependency_for_npm_package(sub_dep, Helpers.npm_package_name(updated_dep))
+                next false unless matching_dep
+
                 version_class.new(updated_dep.version) >
-                  version_class.new(sub_dep.version)
+                  version_class.new(matching_dep.version)
               end
             end
           end

@@ -62,7 +62,8 @@ module Dependabot
 
         "This version has no provenance attestation, while the previous version " \
           "(#{dependency.previous_version}) was attested. Review the " \
-          "[package versions](https://www.npmjs.com/package/#{dependency.name}?activeTab=versions) " \
+          "[package versions](https://www.npmjs.com/package/#{Helpers.npm_package_name(dependency)}" \
+          "?activeTab=versions) " \
           "before updating."
       end
 
@@ -336,7 +337,7 @@ module Dependabot
         registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
 
         # NPM registries expect slashes to be escaped
-        escaped_dependency_name = dependency.name.gsub("/", "%2F")
+        escaped_dependency_name = Helpers.npm_package_name(dependency).gsub("/", "%2F")
         "#{registry_url}/#{escaped_dependency_name}"
       end
 

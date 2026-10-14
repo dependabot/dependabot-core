@@ -37,7 +37,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def scoped_credential_registry_for_dependency
-          dep_name = dependency.name
+          dep_name = Helpers.npm_package_name(dependency)
           return unless dep_name.start_with?("@") && dep_name.include?("/")
 
           scope = T.must(dep_name.split("/").first)

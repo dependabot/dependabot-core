@@ -14,6 +14,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
   end
 
   let(:dependency_name) { "etag" }
+  let(:metadata) { {} }
   let(:credentials) do
     [Dependabot::Credential.new(
       {
@@ -31,7 +32,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       requirements: [
         { file: "package.json", requirement: "^1.0", groups: [], source: nil }
       ],
-      package_manager: "npm_and_yarn"
+      package_manager: "npm_and_yarn",
+      metadata: metadata
     )
   end
 
@@ -101,6 +103,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
+
+      context "when installed under an npm alias" do
+        let(:dependency_name) { "etag-alias" }
+        let(:metadata) { { npm_package_name: "etag" } }
+
+        it "fetches metadata for the real package name" do
+          expect(source_url).to eq("https://github.com/jshttp/etag")
+          expect(WebMock).to have_requested(:get, "#{npm_url}/latest")
+          expect(WebMock).not_to have_requested(:get, "https://registry.npmjs.org/etag-alias/latest")
+        end
+      end
 
       it "caches the call to npm" do
         2.times { source_url }

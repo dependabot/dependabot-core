@@ -34,12 +34,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       previous_version: previous_version,
       requirements: requirements,
       previous_requirements: previous_requirements,
-      package_manager: "npm_and_yarn"
+      package_manager: "npm_and_yarn",
+      metadata: metadata
     )
   end
   let(:dependency_name) { "fetch-factory" }
   let(:version) { "0.0.2" }
   let(:previous_version) { "0.0.1" }
+  let(:metadata) { {} }
   let(:requirements) do
     [{
       file: "package.json",
@@ -72,7 +74,133 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     Dependabot::Experiments.reset!
   end
 
+  context "when an npm installation name contains different registry packages" do
+    let(:dependency_name) { "ms" }
+    let(:version) { "7.0.0" }
+    let(:previous_version) { "1.0.0" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+    let(:metadata) { { npm_package_name: "is-number" } }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(name: "package.json", content: "{}"),
+        Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: { "lockfileVersion" => 3, "packages" => packages }.to_json
+        )
+      ]
+    end
+    let(:packages) do
+      {
+        "" => {},
+        "node_modules/ms" => { "name" => "is-number", "version" => "7.0.0" },
+        "node_modules/parent/node_modules/ms" => { "version" => "2.0.0" }
+      }
+    end
+
+    it "avoids updating an already current alias when the ordinary package has a lower version" do
+      expect(updater).not_to receive(:run_current_npm_update)
+      expect(updated_npm_lock_content).to eq(package_lock.content)
+    end
+
+    context "when only the other registry package has the requested version" do
+      let(:version) { "2.0.0" }
+
+      it "keeps the alias update pending" do
+        expect(updater.send(:updatable_dependencies)).to eq([dependency])
+      end
+    end
+
+    context "when the alias has an older installed version as well" do
+      let(:packages) do
+        super().merge("node_modules/other/node_modules/ms" => { "name" => "is-number", "version" => "6.0.0" })
+      end
+
+      it "keeps the update pending until the lowest alias version is current" do
+        expect(updater.send(:updatable_dependencies)).to eq([dependency])
+      end
+    end
+
+    context "when both registry packages have the requested version" do
+      let(:version) { "2.0.0" }
+      let(:packages) do
+        super().merge("node_modules/ms" => { "name" => "is-number", "version" => "2.0.0" })
+      end
+
+      it "recognizes the matching alias even at an equal version" do
+        expect(updated_npm_lock_content).to eq(package_lock.content)
+      end
+    end
+
+    context "when the alias no longer exists at the installation name" do
+      let(:version) { "2.0.0" }
+      let(:packages) { super().except("node_modules/ms") }
+
+      it "leaves the unrelated package unchanged without running npm" do
+        expect(updater).not_to receive(:run_current_npm_update)
+        expect(updated_npm_lock_content).to eq(package_lock.content)
+      end
+    end
+
+    context "when updating the ordinary package" do
+      let(:metadata) { {} }
+      let(:version) { "2.0.0" }
+      let(:packages) do
+        super().merge("node_modules/ms" => { "name" => "is-number", "version" => "1.0.0" })
+      end
+
+      it "recognizes the current ordinary package despite the lower alias version" do
+        expect(updated_npm_lock_content).to eq(package_lock.content)
+      end
+    end
+  end
+
   describe "npm 8 specific" do
+    context "when updating an npm v3 alias" do
+      let(:files) { project_dependency_files("npm8/aliased_subdependency") }
+      let(:dependency_name) { "number-alias" }
+      let(:previous_version) { "6.0.0" }
+      let(:version) { "7.0.0" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:metadata) { { npm_package_name: "is-number" } }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_audit_fix_fallback).and_return(false)
+      end
+
+      it "updates only the selected alias without changing the ordinary package or alias constraints" do
+        packages = JSON.parse(updated_npm_lock_content).fetch("packages")
+
+        expect(packages.fetch("node_modules/number-alias")).to include("name" => "is-number", "version" => "7.0.0")
+        expect(packages.fetch("node_modules/is-number").fetch("version")).to eq("5.0.0")
+        expect(packages.fetch("node_modules/pinned-number").fetch("version")).to eq("5.0.0")
+        expect(packages.fetch("").fetch("dependencies"))
+          .to eq(JSON.parse(files.find { |file| file.name == "package.json" }.content).fetch("dependencies"))
+        expect(updater.updated_package_json_files).to be_empty
+      end
+
+      context "with npm-shrinkwrap.json" do
+        let(:files) do
+          project_dependency_files("npm8/aliased_subdependency").map do |file|
+            next file unless file.name == "package-lock.json"
+
+            Dependabot::DependencyFile.new(name: "npm-shrinkwrap.json", content: file.content)
+          end
+        end
+        let(:package_lock) { files.find { |file| file.name == "npm-shrinkwrap.json" } }
+
+        it "updates the existing alias in the shrinkwrap" do
+          packages = JSON.parse(updated_npm_lock_content).fetch("packages")
+
+          expect(packages.fetch("node_modules/number-alias")).to include("name" => "is-number", "version" => "7.0.0")
+          expect(packages.fetch("node_modules/is-number").fetch("version")).to eq("5.0.0")
+          expect(packages.fetch("node_modules/pinned-number").fetch("version")).to eq("5.0.0")
+        end
+      end
+    end
+
     # NOTE: This used to raise in npm 6
     context "when there is a private git dep we don't have access to" do
       let(:files) { project_dependency_files("npm8/github_dependency_private") }

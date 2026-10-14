@@ -30,6 +30,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
     )]
   end
   let(:dependency_name) { "etag" }
+  let(:metadata) { {} }
   let(:requirements) do
     [{
       file: "package.json",
@@ -43,7 +44,8 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       name: dependency_name,
       version: "1.0.0",
       requirements: requirements,
-      package_manager: "npm_and_yarn"
+      package_manager: "npm_and_yarn",
+      metadata: metadata
     )
   end
   let(:source) { nil }
@@ -732,6 +734,34 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
     subject(:finder_dependency_url) { finder.dependency_url }
 
     it { is_expected.to eq("https://registry.npmjs.org/etag") }
+
+    context "with an npm lockfile alias" do
+      let(:dependency_name) { "number-alias" }
+      let(:metadata) { { npm_package_name: "is-number" } }
+
+      it "uses the target name for registry and tarball URLs" do
+        expect(finder_dependency_url).to eq("https://registry.npmjs.org/is-number")
+        expect(finder.tarball_url("6.0.0"))
+          .to eq("https://registry.npmjs.org/is-number/-/is-number-6.0.0.tgz")
+      end
+
+      context "when the target and alias have different scopes" do
+        let(:dependency_name) { "@aliases/package" }
+        let(:metadata) { { npm_package_name: "@actual/package" } }
+        let(:npmrc_file) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: "@actual:registry=https://actual.example.com\n@aliases:registry=https://alias.example.com"
+          )
+        end
+
+        it "uses the target scope for registry selection and tarball naming" do
+          expect(finder_dependency_url).to eq("https://actual.example.com/@actual%2Fpackage")
+          expect(finder.tarball_url("1.0.0"))
+            .to eq("https://actual.example.com/@actual/package/-/package-1.0.0.tgz")
+        end
+      end
+    end
 
     context "with a private registry source" do
       let(:source) do

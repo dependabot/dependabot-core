@@ -55,6 +55,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
       end
     end
 
+    context "with local workspace package records" do
+      let(:data) do
+        {
+          "lockfileVersion" => 3,
+          "packages" => {
+            "" => { "name" => "root", "version" => "1.0.0" },
+            "packages/local" => { "name" => "@workspace/local", "version" => "1.0.0" },
+            "packages/custom_node_modules/local" => { "name" => "another-local", "version" => "1.0.0" },
+            "node_modules/@workspace/local" => { "resolved" => "packages/local", "link" => true },
+            "node_modules/example" => entry,
+            "node_modules/@scope/package" => { "version" => "2.0.0" },
+            "node_modules/example/node_modules/nested" => { "version" => "3.0.0" },
+            "packages/local/node_modules/@scope/child" => { "version" => "4.0.0" },
+            "packages/local/node_modules/example" => { "version" => "5.0.0" }
+          }
+        }
+      end
+
+      shared_examples "registry package traversal" do
+        it "excludes local records but keeps registry packages at every installation depth" do
+          expect(dependencies.map(&:name)).to contain_exactly("example", "@scope/package", "nested", "@scope/child")
+          expect(reader.dependencies.all_versions_for_name("example").map(&:version))
+            .to contain_exactly("1.0.0", "5.0.0")
+          expect(dependencies.find { |dep| dep.name == "@scope/package" }.version).to eq("2.0.0")
+          expect(dependencies.find { |dep| dep.name == "nested" }.version).to eq("3.0.0")
+          expect(dependencies.find { |dep| dep.name == "@scope/child" }.version).to eq("4.0.0")
+        end
+      end
+
+      it_behaves_like "registry package traversal"
+
+      context "with dealiasing enabled" do
+        let(:dealias_packages) { true }
+
+        it_behaves_like "registry package traversal"
+      end
+    end
+
     context "with an invalid version string" do
       let(:entry) { { "version" => "not-semver", "dependencies" => "unconsumed", "dev" => "unconsumed" } }
 
@@ -63,18 +101,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
       end
     end
 
-    context "with a nested legacy dependency" do
-      let(:data) do
-        {
-          "lockfileVersion" => 1,
-          "dependencies" => {
-            "example" => { "version" => "1.0.0", "dependencies" => { "child" => { "version" => "2.0.0" } } }
+    [1, 2].each do |lockfile_version|
+      context "with a nested legacy dependency in lockfile version #{lockfile_version}" do
+        let(:data) do
+          {
+            "lockfileVersion" => lockfile_version,
+            "dependencies" => {
+              "example" => { "version" => "1.0.0", "dependencies" => { "@scope/child" => { "version" => "2.0.0" } } }
+            },
+            "packages" => { "node_modules/ignored" => { "version" => "3.0.0" } }
           }
-        }
-      end
+        end
 
-      it "preserves recursion" do
-        expect(dependencies.map(&:name)).to eq(%w(example child))
+        it "preserves recursion and prefers legacy entries over packages" do
+          expect(dependencies).to contain_exactly(
+            have_attributes(name: "example", version: "1.0.0"),
+            have_attributes(name: "@scope/child", version: "2.0.0")
+          )
+        end
       end
     end
 
@@ -110,18 +154,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
       end
     end
 
-    context "with an unconsumed malformed alias hint" do
+    context "with a malformed alias hint" do
       let(:entry) { super().merge("name" => 1) }
 
-      it "uses the package key without dealiasing" do
-        expect(dependencies.first.name).to eq("example")
+      it "reports the consumed name field for modern packages" do
+        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
 
-      context "with dealiasing enabled" do
-        let(:dealias_packages) { true }
+      context "with legacy dependencies" do
+        let(:data) { { "lockfileVersion" => 1, "dependencies" => { "example" => entry } } }
 
-        it "reports the consumed name field" do
-          expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable, /name must be a string or nil/)
+        it "uses the package key without dealiasing" do
+          expect(dependencies.first.name).to eq("example")
+        end
+
+        context "with dealiasing enabled" do
+          let(:dealias_packages) { true }
+
+          it "reports the consumed name field" do
+            expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
+          end
         end
       end
     end

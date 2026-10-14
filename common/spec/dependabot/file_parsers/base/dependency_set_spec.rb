@@ -370,4 +370,118 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       end
     end
   end
+
+  context "when npm packages share an installation name" do
+    before do
+      version_class = Dependabot::Utils.version_class_for_package_manager("dummy")
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager)
+        .with("npm_and_yarn").and_return(version_class)
+    end
+
+    it "preserves case-insensitive version deduplication for ordinary packages" do
+      records = %w(MS ms).map do |name|
+        Dependabot::Dependency.new(
+          name: name,
+          version: "2.0.0",
+          package_manager: "npm_and_yarn",
+          requirements: []
+        )
+      end
+
+      expect(described_class.new(records).all_versions_for_name("ms")).to eq([records.first])
+    end
+
+    [nil, "is-odd"].product(
+      [["7.0.0", "2.0.0"], ["2.0.0", "7.0.0"], ["7.0.0", "7.0.0"]],
+      [false, true]
+    ).each do |other_target, versions, reverse|
+      context "with targets is-number and #{other_target || 'ms'}, versions #{versions}, reversed: #{reverse}" do
+        let(:records) do
+          targets = ["is-number", other_target].zip(versions)
+          targets.reverse! if reverse
+          targets.map do |target, version|
+            metadata = { marker: target || "ordinary" }
+            metadata[:npm_package_name] = target if target
+            Dependabot::Dependency.new(
+              name: "ms",
+              version: version,
+              package_manager: "npm_and_yarn",
+              requirements: [],
+              metadata: metadata
+            )
+          end
+        end
+        let(:dependency_set) { described_class.new(records) }
+
+        it "keeps every target/version and aligns the combined identity with the preferred version" do
+          expected = if records.first.version == records.last.version
+                       records.last
+                     else
+                       records.min_by { |record| Gem::Version.new(record.version) }
+                     end
+          combined = dependency_set.dependency_for_name("ms")
+
+          expect(dependency_set.dependencies.length).to eq(1)
+          expect(combined.version).to eq(expected.version)
+          expect(combined.metadata).to eq(
+            records.first.metadata.except(:npm_package_name).merge(
+              expected.metadata.slice(:npm_package_name)
+            )
+          )
+          expect(dependency_set.all_versions_for_name("ms").map { |record| [record.metadata, record.version] })
+            .to eq(records.map { |record| [record.metadata, record.version] })
+        end
+      end
+    end
+
+    [false, true].product(["2.0.0", "7.0.0"]).each do |reverse, direct_version|
+      context "with direct ordinary version #{direct_version}, reversed: #{reverse}" do
+        let(:aliased) do
+          Dependabot::Dependency.new(
+            name: "ms",
+            version: "2.0.0",
+            package_manager: "npm_and_yarn",
+            requirements: [],
+            metadata: { npm_package_name: "is-number" }
+          )
+        end
+        let(:ordinary) do
+          Dependabot::Dependency.new(
+            name: "ms",
+            version: direct_version,
+            package_manager: "npm_and_yarn",
+            requirements: [{ requirement: ">=2.0.0", file: "package.json", groups: ["dependencies"], source: nil }]
+          )
+        end
+
+        it "prefers the direct version without inheriting the alias target" do
+          records = reverse ? [ordinary, aliased] : [aliased, ordinary]
+          dependency_set = described_class.new(records)
+          combined = dependency_set.dependency_for_name("ms")
+
+          expect(combined.version).to eq(direct_version)
+          expect(combined.metadata).not_to have_key(:npm_package_name)
+          expect(combined.requirements).to eq(ordinary.requirements)
+          expect(dependency_set.all_versions_for_name("ms").map { |record| [record.metadata, record.version] })
+            .to eq(records.map { |record| [record.metadata, record.version] })
+        end
+      end
+    end
+  end
+
+  it "ignores npm identity metadata for other ecosystems" do
+    records = %w(is-number is-odd).map do |target|
+      Dependabot::Dependency.new(
+        name: "ms",
+        version: "2.0.0",
+        package_manager: "dummy",
+        requirements: [],
+        metadata: { npm_package_name: target }
+      )
+    end
+    dependency_set = described_class.new(records)
+
+    expect(dependency_set.all_versions_for_name("ms").length).to eq(1)
+    expect(dependency_set.dependency_for_name("ms").metadata).to eq(records.first.metadata)
+  end
 end

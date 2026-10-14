@@ -10,13 +10,14 @@ require "support/dummy_package_manager/dummy"
 RSpec.describe Dependabot::Updater::BlockedVersionDetector do
   subject(:detector) do
     described_class.new(
-      package_manager: "dummy",
+      package_manager: package_manager,
       blocked_versions: blocked_versions,
       previous_dependencies: previous_dependencies,
       current_dependencies: current_dependencies
     )
   end
 
+  let(:package_manager) { "dummy" }
   let(:blocked_versions) { [] }
   let(:previous_dependencies) { [] }
   let(:current_dependencies) { [] }
@@ -140,6 +141,34 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
   describe "#blocked_changes" do
     let(:previous_dependencies) { [transitive_dependency(name: "left-pad", version: "1.0.0")] }
     let(:current_dependencies) { [transitive_dependency(name: "left-pad", version: "1.1.0")] }
+
+    context "when an npm alias update changes the combined package identity" do
+      let(:previous_dependencies) { alias_collision_dependencies("1.0.0") }
+      let(:current_dependencies) { alias_collision_dependencies("7.0.0") }
+      let(:blocked_versions) { [blocked_version(name: "ms", requirement: ">= 7.0.0")] }
+
+      def alias_collision_dependencies(alias_version)
+        aliased = transitive_dependency(name: "ms", version: alias_version)
+        aliased.metadata[:npm_package_name] = "is-number"
+        versions = [aliased, transitive_dependency(name: "ms", version: "2.0.0")]
+        primary = versions.min_by { |dependency| Gem::Version.new(dependency.version) }
+
+        [
+          Dependabot::Dependency.new(
+            name: "ms",
+            version: primary.version,
+            requirements: [],
+            package_manager: "dummy",
+            metadata: primary.metadata.merge(all_versions: [primary], npm_package_versions: versions)
+          )
+        ]
+      end
+
+      it "still applies installation-name blocks to the updated sibling alias" do
+        expect(detector.blocked_changes.map { |change| [change.name, change.new_version] })
+          .to eq([["ms", "7.0.0"]])
+      end
+    end
 
     context "when a changed transitive dependency matches a blocked version" do
       let(:blocked_versions) do
