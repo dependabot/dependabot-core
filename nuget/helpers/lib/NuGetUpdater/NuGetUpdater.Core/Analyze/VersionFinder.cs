@@ -223,17 +223,6 @@ internal static class VersionFinder
             {
                 var packageIdentity = new PackageIdentity(dependencyInfo.Name, version);
 
-                if (filterByCompatibility &&
-                    !await CompatibilityChecker.ExistsAndIsCompatibleAsync(
-                        packageIdentity,
-                        projectTfms,
-                        nugetContext,
-                        logger,
-                        cancellationToken))
-                {
-                    continue;
-                }
-
                 // check date
                 if (filterByCooldown && dependencyInfo.Cooldown is not null)
                 {
@@ -247,6 +236,17 @@ internal static class VersionFinder
                         logger.Info($"Skipping update of {dependencyInfo.Name} from {currentVersion} to {version} due to cooldown settings.  Package publish date: {metadata?.Published}");
                         continue;
                     }
+                }
+
+                if (filterByCompatibility &&
+                    !await CompatibilityChecker.ExistsAndIsCompatibleAsync(
+                        packageIdentity,
+                        projectTfms,
+                        nugetContext,
+                        logger,
+                        cancellationToken))
+                {
+                    continue;
                 }
 
                 result.Add(source, version);

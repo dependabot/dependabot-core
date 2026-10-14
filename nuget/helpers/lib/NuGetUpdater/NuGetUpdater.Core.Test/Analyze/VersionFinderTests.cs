@@ -501,6 +501,120 @@ public class VersionFinderTests : TestBase
     }
 
     [Fact]
+    public async Task ExcludedCandidatesAreNotDownloaded()
+    {
+        var currentTime = new DateTimeOffset(2025, 4, 1, 0, 0, 0, TimeSpan.Zero);
+        var excludedDownloadRequests = 0;
+        using var tempDir = new TemporaryDirectory();
+        using var http = TestHttpServer.CreateTestServer(url =>
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            if (uri.AbsolutePath == "/base/some.package/1.0.2/some.package.1.0.2.nupkg")
+            {
+                Interlocked.Increment(ref excludedDownloadRequests);
+                return (403, Encoding.UTF8.GetBytes("""{"message":"Package unavailable."}"""));
+            }
+
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                      "version": "3.0.0",
+                      "resources": [
+                        {
+                          "@id": "{{baseUrl}}/base",
+                          "@type": "PackageBaseAddress/3.0.0"
+                        },
+                        {
+                          "@id": "{{baseUrl}}/registrations",
+                          "@type": "RegistrationsBaseUrl/3.6.0"
+                        }
+                      ]
+                    }
+                    """)),
+                "/base/some.package/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {"versions":["1.0.0","1.0.1","1.0.2"]}
+                    """)),
+                "/base/some.package/1.0.1/some.package.1.0.1.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net8.0").GetZipStream().ReadAllBytes()),
+                "/registrations/some.package/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                      "count": 1,
+                      "items": [
+                        {
+                          "count": 3,
+                          "lower": "1.0.0",
+                          "upper": "1.0.2",
+                          "items": [
+                            {
+                              "catalogEntry": {
+                                "id": "Some.Package",
+                                "version": "1.0.0",
+                                "published": "{{currentTime.AddDays(-30):O}}"
+                              }
+                            },
+                            {
+                              "catalogEntry": {
+                                "id": "Some.Package",
+                                "version": "1.0.1",
+                                "published": "{{currentTime.AddDays(-20):O}}"
+                              }
+                            },
+                            {
+                              "catalogEntry": {
+                                "id": "Some.Package",
+                                "version": "1.0.2",
+                                "published": "{{currentTime.AddDays(-2):O}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}"))
+            };
+        });
+        await File.WriteAllTextAsync(Path.Combine(tempDir.DirectoryPath, "NuGet.Config"), $"""
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="test_feed" value="{http.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+              </packageSources>
+            </configuration>
+            """, TestContext.Current.CancellationToken);
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            Cooldown = new Cooldown
+            {
+                DefaultDays = 10,
+            },
+        };
+        using var context = new NuGetContext(tempDir.DirectoryPath);
+        VersionResult? result = null;
+
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            result = await VersionFinder.GetVersionsAsync(
+                [NuGetFramework.Parse("net8.0")],
+                dependencyInfo,
+                NuGetVersion.Parse(dependencyInfo.Version),
+                currentTime,
+                context,
+                new TestLogger(),
+                TestContext.Current.CancellationToken);
+        });
+
+        Assert.Equal(0, Volatile.Read(ref excludedDownloadRequests));
+        Assert.Null(exception);
+        Assert.NotNull(result);
+        AssertEx.Equal(["1.0.1"], result.GetVersions().Select(v => v.ToString()).ToArray());
+    }
+
+    [Fact]
     public async Task MisbehavingNuGetFeedDoesNotPreventFindingVersions()
     {
         using var http = TestHttpServer.CreateTestStringServer(url =>
