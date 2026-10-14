@@ -1866,7 +1866,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       context "when running on npm 12" do
         before do
-          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_supports_allow_flags?).and_return(true)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
         end
 
         it "includes allow flags in the check command" do

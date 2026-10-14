@@ -235,9 +235,11 @@ module Dependabot
         content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
         return unless content
 
+        policy_lines = NpmAndYarn::FileUpdater::NpmrcBuilder.policy_lines(npmrc&.content)
+
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: content,
+          content: [content, *policy_lines].reject(&:empty?).join("\n"),
           directory: directory
         )
       end
@@ -360,7 +362,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
+          npm: shrinkwrap || package_lock,
           yarn: yarn_lock,
           pnpm: pnpm_lock
         }

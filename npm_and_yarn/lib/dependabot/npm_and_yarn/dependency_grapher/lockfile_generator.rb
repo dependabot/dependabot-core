@@ -132,12 +132,9 @@ module Dependabot
             "install",
             "--package-lock-only",
             "--ignore-scripts",
-            "--force"
+            "--force",
+            *Helpers.npm_allow_flags(dependency_files)
           ]
-          if Helpers.npm_supports_allow_flags?
-            command_args << "--allow-git=all"
-            command_args << "--allow-remote=all"
-          end
           command = command_args.join(" ")
           Helpers.run_npm_command(command, fingerprint: command)
         end

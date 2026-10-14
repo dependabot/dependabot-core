@@ -2728,6 +2728,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       npmrc_files = file_fetcher_instance.files.select { |f| f.name == ".npmrc" }
       expect(npmrc_files.count).to eq(1)
     end
+
+    context "when the committed .npmrc sets npm 12 allow policies" do
+      before do
+        stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: JSON.dump({ "content" => Base64.encode64("allow-git=none\nallow-remote=root\nfoo=bar\n") }),
+            headers: json_header
+          )
+      end
+
+      it "keeps the allow policies in the generated .npmrc" do
+        npmrc_file = file_fetcher_instance.files.find { |f| f.name == ".npmrc" }
+        expect(npmrc_file.content).to eq(<<~NPMRC.chomp)
+          @my-company:registry=https://npm.pkg.github.com
+          allow-git=none
+          allow-remote=root
+        NPMRC
+      end
+    end
   end
 
   context "with no .npmrc, lockfile inference fails, but credentials have scope" do

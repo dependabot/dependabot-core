@@ -58,6 +58,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
         end
       end
+
+      context "when npm 12 allow policies use environment substitution" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "allow-git=${ALLOW_GIT}\n//npm.fury.io/:_authToken=${TOKEN}\nregistry=https://example.com\n"
+            )
+          ]
+        end
+
+        it "keeps the policy line but still removes other environment variable use" do
+          expect(npmrc_content).to eq("allow-git=${ALLOW_GIT}\n\nregistry=https://example.com\n")
+        end
+      end
     end
 
     context "with no private sources and some credentials" do
@@ -1405,6 +1420,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             .to eq(<<~NPMRC.chomp)
               @my-company:registry=https://npm.pkg.github.com
               //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
+
+      context "when credentials have scope and the committed .npmrc sets npm 12 allow policies" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "allow-git=none\n\"allow-remote\" = root\nallow-git=${ALLOW_GIT}\nregistry=https://example.com\n"
+            )
+          ]
+        end
+
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.pkg.github.com",
+              "token" => "my_token",
+              "scope" => "@my-company"
+            }
+          )]
+        end
+
+        it "keeps the allow policies so they match the flags derived from the committed .npmrc" do
+          expect(npmrc_content)
+            .to eq(<<~NPMRC.chomp)
+              @my-company:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+              allow-git=none
+              "allow-remote" = root
+              allow-git=${ALLOW_GIT}
             NPMRC
         end
       end

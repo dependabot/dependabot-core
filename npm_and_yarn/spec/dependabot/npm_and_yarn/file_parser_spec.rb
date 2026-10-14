@@ -195,6 +195,68 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       expect(parser.ecosystem.package_manager.name).to eq("npm")
     end
 
+    context "when both npm-shrinkwrap.json and package-lock.json exist" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: "{}"),
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: { "lockfileVersion" => 3, "packages" => {} }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "npm-shrinkwrap.json",
+            content: { "lockfileVersion" => 2, "dependencies" => {} }.to_json
+          )
+        ]
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return("11.17.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "gives npm-shrinkwrap.json precedence and routes the project to npm 11" do
+        parser.ecosystem
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+          .with("npm", "11", env: nil)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("11")
+      end
+    end
+
+    context "when only a nested npm-shrinkwrap.json exists next to a root package-lock.json" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: "{}"),
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: { "lockfileVersion" => 3, "packages" => {} }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "packages/foo/npm-shrinkwrap.json",
+            content: { "lockfileVersion" => 2, "dependencies" => {} }.to_json
+          )
+        ]
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return("12.2.0")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "does not route the whole project to npm 11" do
+        parser.ecosystem
+
+        expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+          .with("npm", "11", env: nil)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).not_to eq("11")
+      end
+    end
+
     context "when the manifest specifies an npm engine range" do
       let(:files) do
         [

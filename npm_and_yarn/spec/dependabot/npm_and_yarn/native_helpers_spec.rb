@@ -6,6 +6,8 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 
 RSpec.describe Dependabot::NpmAndYarn::NativeHelpers do
+  after { Dependabot::NpmAndYarn::Helpers.dependency_files = nil }
+
   describe ".run_pnpm_audit_fix_command" do
     before do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
@@ -54,6 +56,24 @@ RSpec.describe Dependabot::NpmAndYarn::NativeHelpers do
         end
 
         described_class.run_npm8_subdependency_update_command(["lodash"])
+      end
+
+      it "respects explicit deny in .npmrc by omitting the denied flag" do
+        Dependabot::NpmAndYarn::Helpers.dependency_files = [
+          Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+        ]
+
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+          expect(command).not_to include("--allow-git")
+          expect(command).to include("--allow-remote=all")
+          expect(options[:fingerprint]).not_to include("--allow-git")
+          expect(options[:fingerprint]).to include("--allow-remote=all")
+          ""
+        end
+
+        described_class.run_npm8_subdependency_update_command(["lodash"])
+      ensure
+        Dependabot::NpmAndYarn::Helpers.dependency_files = nil
       end
     end
 

@@ -408,19 +408,17 @@ module Dependabot
         #   stay in optionalDependencies section and allow version upgrades
         sig { params(install_args: T::Array[String], has_optional_dependencies: T::Boolean).returns(String) }
         def run_npm_install_lockfile_only(install_args = [], has_optional_dependencies: false)
+          allow_flags = npm_allow_flags
           command_args = [
             "install",
             *install_args,
             "--force",
             "--ignore-scripts",
-            "--package-lock-only"
+            "--package-lock-only",
+            *allow_flags
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
-          if npm_supports_allow_flags?
-            command_args << "--allow-git=all"
-            command_args << "--allow-remote=all"
-          end
           min_release_age_arg = effective_min_release_age_arg
           command_args << min_release_age_arg if min_release_age_arg
 
@@ -431,14 +429,11 @@ module Dependabot
             install_args.empty? ? "" : "<install_args>",
             "--force",
             "--ignore-scripts",
-            "--package-lock-only"
+            "--package-lock-only",
+            *allow_flags
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
-          if npm_supports_allow_flags?
-            fingerprint_args << "--allow-git=all"
-            fingerprint_args << "--allow-remote=all"
-          end
           # The cooldown day value varies per job, so keep it out of the fingerprint.
           fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
 
@@ -483,13 +478,10 @@ module Dependabot
           @npm_supports_min_release_age = Helpers.npm_supports_min_release_age?
         end
 
-        # Whether the npm that will run requires `--allow-git` and `--allow-remote` (npm 12+).
-        sig { returns(T::Boolean) }
-        def npm_supports_allow_flags?
-          @npm_supports_allow_flags = T.let(@npm_supports_allow_flags, T.nilable(T::Boolean))
-          return @npm_supports_allow_flags unless @npm_supports_allow_flags.nil?
-
-          @npm_supports_allow_flags = Helpers.npm_supports_allow_flags?
+        # Returns the allow flags to pass to npm 12+ commands, respecting explicit .npmrc config.
+        sig { returns(T::Array[String]) }
+        def npm_allow_flags
+          @npm_allow_flags ||= T.let(Helpers.npm_allow_flags(dependency_files), T.nilable(T::Array[String]))
         end
 
         sig { params(arg: String).returns(String) }

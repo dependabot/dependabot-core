@@ -47,7 +47,8 @@ RUN <<EOF
   corepack install pnpm@$PNPM_VERSION --global
   corepack install yarn@$YARN_VERSION --global
   corepack install npm@$NPM_VERSION --global
-  # Pre-cache popular older versions of npm for on-demand activation
+  # Pre-cache the latest of each older npm major for on-demand activation. Exact pins that miss the cache are
+  # resolved to their cached major by PackageManagerHelper#install rather than falling back to the image's npm.
   corepack install -g --cache-only npm@11 npm@10 npm@9 npm@8
   # pnpm 12's package is a launcher that downloads its native binary on first run; run it once to cache it in the image
   pnpm --version

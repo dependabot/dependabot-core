@@ -34,8 +34,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
 
       it "attempts to generate a package-lock.json" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
-          run_npm_command: "",
-          npm_supports_allow_flags?: false
+          npm_version: Dependabot::NpmAndYarn::Version.new("11.17.0"),
+          run_npm_command: ""
         )
 
         allow(File).to receive(:exist?).and_call_original
@@ -55,8 +55,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       context "when running on npm 12" do
         it "includes --allow-git=all and --allow-remote=all flags" do
           allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
-            run_npm_command: "",
-            npm_supports_allow_flags?: true
+            npm_version: Dependabot::NpmAndYarn::Version.new("12.2.0"),
+            run_npm_command: ""
           )
 
           allow(File).to receive(:exist?).and_call_original

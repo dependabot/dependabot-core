@@ -1463,6 +1463,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           updater.send(:run_npm_install_lockfile_only, install_args)
         end
+
+        it "omits --allow-git when allow-git=none is set in .npmrc" do
+          npmrc_file = Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+          custom_updater = described_class.new(
+            lockfile: package_lock,
+            dependency_files: files + [npmrc_file],
+            dependencies: dependencies,
+            credentials: credentials
+          )
+
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).to include("--allow-remote=all")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          custom_updater.send(:run_npm_install_lockfile_only, install_args)
+        end
       end
 
       context "when running on npm 11" do

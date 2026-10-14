@@ -70,6 +70,28 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           env: nil
         )
       end
+
+      it "allows commands to independently append npm 12 allow flags unless explicitly configured in .npmrc" do
+        allow(described_class).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+
+        npmrc = Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+        flags = described_class.npm_allow_flags([npmrc])
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+        described_class.run_npm_command(
+          "install #{flags.join(' ')}".strip,
+          fingerprint: "install #{flags.join(' ')}".strip
+        )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "npm install --allow-remote=all",
+          fingerprint: "npm install --allow-remote=all",
+          output_observer: kind_of(Proc),
+          env: nil
+        )
+      end
     end
   end
 
@@ -293,81 +315,51 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
-  describe "::npm_supports_allow_flags?" do
+  describe "::npm_allow_flags" do
     context "when running npm 12 or higher" do
       before do
         allow(described_class).to receive(:npm_version)
           .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
       end
 
-      it "returns true by default (:enabled mode)" do
-        expect(described_class.npm_supports_allow_flags?).to be true
+      it "returns both --allow-git=all and --allow-remote=all by default" do
+        expect(described_class.npm_allow_flags([])).to eq(["--allow-git=all", "--allow-remote=all"])
       end
 
-      context "when in :enabled mode" do
-        it "returns true even if .npmrc sets allow-git=none" do
-          files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")]
-          expect(
-            described_class.npm_supports_allow_flags?(
-              "allow-git",
-              mode: described_class::NPM_ALLOW_FLAGS_MODE_ENABLED,
-              dependency_files: files
-            )
-          ).to be true
-        end
+      it "omits --allow-git when allow-git is explicitly set in .npmrc" do
+        files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")]
+        expect(described_class.npm_allow_flags(files)).to eq(["--allow-remote=all"])
       end
 
-      context "when in :npmrc mode" do
-        let(:mode) { described_class::NPM_ALLOW_FLAGS_MODE_NPMRC }
+      it "omits --allow-remote when allow-remote is explicitly set in .npmrc" do
+        files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-remote=none\n")]
+        expect(described_class.npm_allow_flags(files)).to eq(["--allow-git=all"])
+      end
 
-        it "returns false when .npmrc explicitly configures the setting" do
-          files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")]
-          expect(
-            described_class.npm_supports_allow_flags?(
-              "allow-git",
-              mode: mode,
-              dependency_files: files
-            )
-          ).to be false
-        end
-
-        it "returns true when .npmrc does not configure the setting" do
-          files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "other-setting=foo\n")]
-          expect(
-            described_class.npm_supports_allow_flags?(
-              "allow-git",
-              mode: mode,
-              dependency_files: files
-            )
-          ).to be true
-        end
-
-        it "returns true when no .npmrc file is present" do
-          expect(
-            described_class.npm_supports_allow_flags?(
-              "allow-git",
-              mode: mode,
-              dependency_files: []
-            )
-          ).to be true
-        end
+      it "omits both flags when both allow-git and allow-remote are explicitly set in .npmrc" do
+        files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\nallow-remote=none\n")]
+        expect(described_class.npm_allow_flags(files)).to be_empty
       end
     end
 
     context "when running npm 11 or lower" do
-      it "returns false" do
+      before do
         allow(described_class).to receive(:npm_version)
           .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+      end
 
-        expect(described_class.npm_supports_allow_flags?).to be false
+      it "returns an empty array" do
+        expect(described_class.npm_allow_flags([])).to be_empty
       end
     end
 
     context "when npm version cannot be determined" do
-      it "returns false" do
+      before do
         allow(described_class).to receive(:npm_version).and_return(nil)
+      end
 
-        expect(described_class.npm_supports_allow_flags?).to be false
+      it "returns an empty array" do
+        expect(described_class.npm_allow_flags([])).to be_empty
       end
     end
   end

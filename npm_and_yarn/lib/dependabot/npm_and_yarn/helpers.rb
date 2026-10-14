@@ -21,7 +21,7 @@ module Dependabot
       class << self
         extend T::Sig
 
-        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).void }
         def dependency_files=(files)
           Thread.current[:npm_and_yarn_dependency_files] = files
         end
@@ -90,15 +90,6 @@ module Dependabot
 
       # Minimum npm version that defaults to blocking git and remote tarball dependencies.
       NPM_ALLOW_FLAGS_MIN_VERSION = "12.0.0"
-
-      # Modes for controlling whether `--allow-git=all` and `--allow-remote=all` flags
-      # are passed to npm 12+ commands:
-      # - :enabled (default): Always passes the flags when running npm 12+.
-      # - :npmrc: Parses project `.npmrc` files; if an explicit setting (`allow-git` / `allow-remote`)
-      #           is configured, omits the CLI flag so the user's policy takes precedence.
-      NPM_ALLOW_FLAGS_MODE_ENABLED = :enabled
-      NPM_ALLOW_FLAGS_MODE_NPMRC = :npmrc
-      NPM_ALLOW_FLAGS_DEFAULT_MODE = NPM_ALLOW_FLAGS_MODE_ENABLED
 
       # PNPM Version Constants
       PNPM_V10 = 10
@@ -370,32 +361,24 @@ module Dependabot
         values.last
       end
 
-      # True when the running npm requires `--allow-git` and `--allow-remote` to resolve
-      # git and tarball dependencies (npm 12+).
-      # When mode is :npmrc, inspects project `.npmrc` files: if the given setting (e.g. "allow-git")
-      # is already explicitly configured in `.npmrc`, returns false so the repo's policy is preserved.
+      # Returns the CLI flags (`--allow-git=all`, `--allow-remote=all`) to append for npm 12+,
+      # respecting explicit `.npmrc` settings (omits `--allow-git` if `allow-git` is set,
+      # and `--allow-remote` if `allow-remote` is set).
+      # If running npm < 12, returns an empty array.
       sig do
         params(
-          setting: T.nilable(String),
-          mode: Symbol,
-          dependency_files: T.nilable(T::Array[DependencyFile])
-        ).returns(T::Boolean)
+          dependency_files: T.nilable(T::Array[DependencyFile]),
+          npm_ver: T.nilable(Dependabot::Version)
+        ).returns(T::Array[String])
       end
-      def self.npm_supports_allow_flags?(
-        setting = nil,
-        mode: NPM_ALLOW_FLAGS_DEFAULT_MODE,
-        dependency_files: self.dependency_files
-      )
-        version = npm_version
-        return false if version.nil?
-        return false unless version >= Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
+      def self.npm_allow_flags(dependency_files = self.dependency_files, npm_ver: nil)
+        version = npm_ver || npm_version
+        return [] if version.nil? || version < Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
 
-        if mode == NPM_ALLOW_FLAGS_MODE_NPMRC && setting &&
-           npmrc_configured_setting(setting, dependency_files)
-          return false
-        end
-
-        true
+        flags = []
+        flags << "--allow-git=all" unless npmrc_configured_setting("allow-git", dependency_files)
+        flags << "--allow-remote=all" unless npmrc_configured_setting("allow-remote", dependency_files)
+        flags
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -847,6 +830,20 @@ module Dependabot
           "#{name} -v",
           fingerprint: "#{name} -v"
         ).strip
+      end
+
+      # Corepack can't provide the requested npm, so the image's npm would be used. Fail instead of silently
+      # updating with a different npm major than the one requested.
+      sig { params(version: String).void }
+      def self.raise_unless_local_npm_major_matches!(version)
+        local_major = Version.new(local_package_manager_version(NpmPackageManager::NAME)).segments.first
+        return if local_major.to_s == version[/\A\d+/]
+
+        raise ToolVersionNotSupported.new(
+          NpmPackageManager::NAME.upcase,
+          version,
+          NpmPackageManager::SUPPORTED_VERSIONS.map { |v| "#{v}.*" }.join(", ")
+        )
       end
 
       # The version a `-v` command printed. The launcher can print a download message (pnpm 12 fetching its native

@@ -953,12 +953,9 @@ module Dependabot
             version_install_arg(version: version),
             "--package-lock-only",
             "--dry-run=true",
-            "--ignore-scripts"
+            "--ignore-scripts",
+            *Helpers.npm_allow_flags(dependency_files)
           ]
-          if Helpers.npm_supports_allow_flags?
-            cmd_args << "--allow-git=all"
-            cmd_args << "--allow-remote=all"
-          end
           cmd = cmd_args.join(" ")
           output = Helpers.run_npm_command(cmd)
           if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
