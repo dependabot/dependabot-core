@@ -333,13 +333,24 @@ module Dependabot
 
           if version
             raise_if_unsupported!(name, version.to_s)
-            install(name, version.to_s) if name == PNPMPackageManager::NAME
+            install(name, version.to_s) if should_install_guessed_version?(name, version)
           end
         end
         version
       end
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { params(name: String, version: Integer).returns(T::Boolean) }
+      def should_install_guessed_version?(name, version)
+        return true if name == PNPMPackageManager::NAME
+
+        # If an unpinned repository uses npm-shrinkwrap.json (which routes to npm 11 because
+        # npm 12 dropped shrinkwrap support), install/activate npm 11 through Corepack so the
+        # updater runs npm 11 rather than falling back to the image-local npm 12.
+        name == NpmPackageManager::NAME && version == Helpers::NPM_V11
+      end
+      private :should_install_guessed_version?
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)

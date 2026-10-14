@@ -310,6 +310,31 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when unpinned repository uses npm-shrinkwrap.json" do
+      let(:package_json) { {} }
+      let(:lockfiles) { { npm: shrinkwrap_lockfile } }
+      let(:shrinkwrap_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "npm-shrinkwrap.json",
+          content: '{"name": "shrinkwrapped-project", "lockfileVersion": 2, "dependencies": {}}'
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "installs and activates npm 11 through Corepack" do
+        expect(helper.setup("npm")).to eq(11)
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+          .with("npm", "11", env: nil)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("11")
+      end
+    end
+
     context "when lockfile specifies a deprecated version" do
       subject(:package_manager) { helper.package_manager }
 

@@ -257,13 +257,101 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::npmrc_configured_setting" do
+    let(:npmrc_file) do
+      Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: <<~NPMRC
+          # Comments
+          allow-git=none
+          allow-remote = all ; inline comment
+          other-setting="custom_val"
+        NPMRC
+      )
+    end
+
+    it "extracts the value for a configured setting" do
+      expect(described_class.npmrc_configured_setting("allow-git", [npmrc_file])).to eq("none")
+      expect(described_class.npmrc_configured_setting("allow-remote", [npmrc_file])).to eq("all")
+      expect(described_class.npmrc_configured_setting("other-setting", [npmrc_file])).to eq("custom_val")
+    end
+
+    it "takes the last occurrence when a setting appears multiple times" do
+      duplicate_file = Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "allow-git=all\nallow-git=none\n"
+      )
+      expect(described_class.npmrc_configured_setting("allow-git", [duplicate_file])).to eq("none")
+    end
+
+    it "returns nil when the setting is not configured" do
+      expect(described_class.npmrc_configured_setting("allow-scripts", [npmrc_file])).to be_nil
+    end
+
+    it "returns nil when no .npmrc file is present" do
+      expect(described_class.npmrc_configured_setting("allow-git", [])).to be_nil
+      expect(described_class.npmrc_configured_setting("allow-git", nil)).to be_nil
+    end
+  end
+
   describe "::npm_supports_allow_flags?" do
     context "when running npm 12 or higher" do
-      it "returns true" do
+      before do
         allow(described_class).to receive(:npm_version)
           .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      end
 
+      it "returns true by default (:enabled mode)" do
         expect(described_class.npm_supports_allow_flags?).to be true
+      end
+
+      context "when in :enabled mode" do
+        it "returns true even if .npmrc sets allow-git=none" do
+          files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")]
+          expect(
+            described_class.npm_supports_allow_flags?(
+              "allow-git",
+              mode: described_class::NPM_ALLOW_FLAGS_MODE_ENABLED,
+              dependency_files: files
+            )
+          ).to be true
+        end
+      end
+
+      context "when in :npmrc mode" do
+        let(:mode) { described_class::NPM_ALLOW_FLAGS_MODE_NPMRC }
+
+        it "returns false when .npmrc explicitly configures the setting" do
+          files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")]
+          expect(
+            described_class.npm_supports_allow_flags?(
+              "allow-git",
+              mode: mode,
+              dependency_files: files
+            )
+          ).to be false
+        end
+
+        it "returns true when .npmrc does not configure the setting" do
+          files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "other-setting=foo\n")]
+          expect(
+            described_class.npm_supports_allow_flags?(
+              "allow-git",
+              mode: mode,
+              dependency_files: files
+            )
+          ).to be true
+        end
+
+        it "returns true when no .npmrc file is present" do
+          expect(
+            described_class.npm_supports_allow_flags?(
+              "allow-git",
+              mode: mode,
+              dependency_files: []
+            )
+          ).to be true
+        end
       end
     end
 

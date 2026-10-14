@@ -91,6 +91,15 @@ module Dependabot
       # Minimum npm version that defaults to blocking git and remote tarball dependencies.
       NPM_ALLOW_FLAGS_MIN_VERSION = "12.0.0"
 
+      # Modes for controlling whether `--allow-git=all` and `--allow-remote=all` flags
+      # are passed to npm 12+ commands:
+      # - :enabled (default): Always passes the flags when running npm 12+.
+      # - :npmrc: Parses project `.npmrc` files; if an explicit setting (`allow-git` / `allow-remote`)
+      #           is configured, omits the CLI flag so the user's policy takes precedence.
+      NPM_ALLOW_FLAGS_MODE_ENABLED = :enabled
+      NPM_ALLOW_FLAGS_MODE_NPMRC = :npmrc
+      NPM_ALLOW_FLAGS_DEFAULT_MODE = NPM_ALLOW_FLAGS_MODE_ENABLED
+
       # PNPM Version Constants
       PNPM_V10 = 10
       PNPM_V9 = 9
@@ -211,34 +220,39 @@ module Dependabot
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(T.nilable(Integer)) }
       def self.detect_npm_version(lockfile)
-        lockfile_content = lockfile&.content
-
         # npm 12 no longer reads or writes npm-shrinkwrap.json. Route unpinned shrinkwrap
         # repos to npm 11 where npm-shrinkwrap.json is still supported.
-        return NPM_V11 if lockfile&.name&.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
+        return NPM_V11 if shrinkwrap_lockfile?(lockfile)
 
-        # Return npm 12 as the default if the lockfile is missing or empty
+        lockfile_content = lockfile&.content
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
-        parsed_lockfile = JSON.parse(lockfile_content)
+        version_from_lockfile_content(lockfile_content)
+      rescue JSON::ParserError
+        NPM_DEFAULT_VERSION # Fallback to default if the lockfile content cannot be parsed
+      end
+      private_class_method :detect_npm_version
 
+      sig { params(lockfile: T.nilable(DependencyFile)).returns(T::Boolean) }
+      def self.shrinkwrap_lockfile?(lockfile)
+        lockfile&.name&.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME) || false
+      end
+      private_class_method :shrinkwrap_lockfile?
+
+      sig { params(lockfile_content: String).returns(T.nilable(Integer)) }
+      def self.version_from_lockfile_content(lockfile_content)
+        parsed_lockfile = JSON.parse(lockfile_content)
         lockfile_version_str = parsed_lockfile["lockfileVersion"]
 
         return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
 
         lockfile_version = lockfile_version_str.to_i
-
-        # Using npm 12 as the default for lockfile_version >= 3.
         return NPM_V12 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
-        # Return nil if can't capture
-      rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to default if the lockfile content cannot be parsed
       end
-
-      private_class_method :detect_npm_version
+      private_class_method :version_from_lockfile_content
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
@@ -342,14 +356,56 @@ module Dependabot
         supported
       end
 
+      # Resolves an explicit string setting from the repo's `.npmrc` files,
+      # reading the last matching line (highest precedence). Returns nil if unset.
+      sig { params(key: String, dependency_files: T.nilable(T::Array[DependencyFile])).returns(T.nilable(String)) }
+      def self.npmrc_configured_setting(key, dependency_files = self.dependency_files)
+        return nil unless dependency_files
+
+        npmrc_files = dependency_files.select { |f| File.basename(f.name) == ".npmrc" }
+        return nil if npmrc_files.empty?
+
+        escaped_key = Regexp.escape(key)
+        presence = /^\s*["']?#{escaped_key}["']?\s*=/
+        value_pattern = /^\s*["']?#{escaped_key}["']?\s*=\s*["']?([^#;\s"']+)["']?\s*(?:[#;].*)?$/
+
+        values = npmrc_files.filter_map do |file|
+          last_line = file.content.to_s.lines.reverse_each.find { |line| line.match?(presence) }
+          next unless last_line
+
+          match = last_line.match(value_pattern)
+          match ? match[1] : ""
+        end
+
+        values.last
+      end
+
       # True when the running npm requires `--allow-git` and `--allow-remote` to resolve
       # git and tarball dependencies (npm 12+).
-      sig { returns(T::Boolean) }
-      def self.npm_supports_allow_flags?
+      # When mode is :npmrc, inspects project `.npmrc` files: if the given setting (e.g. "allow-git")
+      # is already explicitly configured in `.npmrc`, returns false so the repo's policy is preserved.
+      sig do
+        params(
+          setting: T.nilable(String),
+          mode: Symbol,
+          dependency_files: T.nilable(T::Array[DependencyFile])
+        ).returns(T::Boolean)
+      end
+      def self.npm_supports_allow_flags?(
+        setting = nil,
+        mode: NPM_ALLOW_FLAGS_DEFAULT_MODE,
+        dependency_files: self.dependency_files
+      )
         version = npm_version
         return false if version.nil?
+        return false unless version >= Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
 
-        version >= Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
+        if mode == NPM_ALLOW_FLAGS_MODE_NPMRC && setting &&
+           npmrc_configured_setting(setting, dependency_files)
+          return false
+        end
+
+        true
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
