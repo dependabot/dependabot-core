@@ -642,29 +642,74 @@ module Dependabot
         end
 
         # Returns every workspace filter (nil for the +path+ we've already
-        # chdir'd into, or a workspace path relative to it) that declares
-        # +dependency+. Checked once per manifest, since Bun merges same-name
-        # declarations into a single Dependency. Falls back to an unfiltered
-        # check at +path+ if it isn't declared anywhere (e.g. a
+        # chdir'd into, or a workspace path relative to it) for manifests in
+        # the project rooted at +path+ that declare +dependency+. Manifests
+        # are matched by scanning their actual dependency fields (as
+        # BunLockfileUpdater does), rather than dependency.requirements,
+        # since Bun always records catalog entries against the root
+        # package.json even when a nested workspace is the only consumer
+        # (via "catalog:"). Falls back to an unfiltered check at +path+ if
+        # it isn't declared anywhere in this project (e.g. a
         # sub-dependency).
         sig { params(path: String).returns(T::Array[T.nilable(String)]) }
         def workspace_filters(path)
-          root_manifest = path == "." ? "package.json" : "#{path}/package.json"
+          manifests = package_jsons_in_project(path)
+          root_file = manifests.find { |file| File.dirname(file.name) == path }
 
-          workspace_filters = dependency.requirements.filter_map do |requirement|
-            file = requirement.file
-            next if file.nil? || file == root_manifest
+          workspace_filters = manifests.filter_map do |file|
+            next if file == root_file
+            next unless package_json_declares?(file)
 
-            workspace_file = dependency_files.find { |f| f.name == file }
-            next unless workspace_file
-
-            workspace_filter(workspace_file, path: path)
+            workspace_filter(file, path: path)
           end.uniq
 
-          declared_at_root = dependency.requirements.any? { |r| r.file == root_manifest }
+          declared_at_root = root_file && package_json_declares?(root_file)
           return workspace_filters if !declared_at_root && workspace_filters.any?
 
           [nil, *workspace_filters]
+        end
+
+        # Every package.json belonging to the same Bun project as +path+:
+        # its own manifest, plus any workspace members governed by the same
+        # lockfile. Manifests under a *nested* project with its own
+        # lockfile are excluded, so that sibling nested projects (each
+        # checked separately, chdir'd into their own path) don't leak their
+        # declarations into each other's filters.
+        sig { params(path: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def package_jsons_in_project(path)
+          project_lockfile_dir = lockfile_dir_for(path)
+
+          dependency_files.select do |file|
+            next false unless file.name.end_with?("package.json")
+
+            dir = File.dirname(file.name)
+            next false unless path == "." || dir == path || dir.start_with?("#{path}/")
+
+            lockfile_dir_for(dir) == project_lockfile_dir
+          end
+        end
+
+        # The directory of the bun.lock that governs +dir+: the lockfile
+        # whose own directory is the longest ancestor match, since a nested
+        # lockfile takes precedence over the root one for its own subtree.
+        sig { params(dir: String).returns(T.nilable(String)) }
+        def lockfile_dir_for(dir)
+          lockfile_dirs = dependency_files_builder.bun_locks.map { |lockfile| File.dirname(lockfile.name) }
+          lockfile_dirs.select { |lockfile_dir| lockfile_governs_dir?(lockfile_dir, dir) }.max_by(&:length)
+        end
+
+        sig { params(lockfile_dir: String, dir: String).returns(T::Boolean) }
+        def lockfile_governs_dir?(lockfile_dir, dir)
+          lockfile_dir == "." || dir == lockfile_dir || dir.start_with?("#{lockfile_dir}/")
+        end
+
+        sig { params(package_json_file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def package_json_declares?(package_json_file)
+          declared = T.let(false, T::Boolean)
+          Dependabot::Package::NpmPackageJson.from_file(package_json_file).each_dependency do |name, _req, _type|
+            declared ||= name == dependency.name
+          end
+          declared
         end
 
         # Path-based --filter target, relative to +path+, for the workspace
