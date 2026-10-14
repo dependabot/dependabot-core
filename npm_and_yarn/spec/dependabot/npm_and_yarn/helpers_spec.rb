@@ -249,6 +249,14 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::command_observer" do
+    %w(eallowgit eallowremote etarget e404 err_invalid_auth).each do |scenario|
+      it "ignores the npm 12 #{scenario} error" do
+        expect(described_class.command_observer(fixture("npm_errors", "npm12", "#{scenario}.txt"))).to eq({})
+      end
+    end
+  end
+
   describe "::npm_version_numeric" do
     context "with a package-lock.json" do
       it "returns 12 for lockfileVersion 3" do
