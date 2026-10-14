@@ -233,9 +233,13 @@ module Dependabot
         ).void
       end
       def apply_file_change(file, working_files_by_path, changed_files_by_path, initial_paths, created_paths)
+        # Fetched manifests omit tracked artifacts such as vendored files.
+        unless file.operation == Dependabot::DependencyFile::Operation::CREATE || created_paths.include?(file.path)
+          initial_paths.add(file.path)
+        end
+
         if file.deleted?
           working_files_by_path.delete(file.path)
-          created_paths.delete(file.path)
           if initial_paths.include?(file.path)
             changed_files_by_path[file.path] =
               file
