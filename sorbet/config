@@ -9,8 +9,8 @@
 # Shared example modules inherit matcher/mock methods through ExampleGroup.
 --enable-experimental-requires-ancestor
 
-# Sorbet's RSpec support is experimental, so common specs are checked incrementally
-# while the remaining spec trees are ignored.
+# Sorbet's RSpec support is experimental, so spec trees are checked incrementally
+# while unenrolled spec trees are ignored.
 --ignore=apm/spec/
 --ignore=bazel/spec/
 --ignore=bun/spec/
@@ -20,11 +20,7 @@
 --ignore=composer/spec/
 --ignore=conda/spec/
 --ignore=deno/spec/
---ignore=devcontainers/spec/
---ignore=docker/spec/
---ignore=dotnet_sdk/spec/
 --ignore=elm/spec/
---ignore=git_submodules/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
 --ignore=gradle/spec/

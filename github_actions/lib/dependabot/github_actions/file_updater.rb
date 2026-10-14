@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -63,16 +64,18 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def relocked_files(updated_workflow_files)
-        changed_repository_workflows = changed_workflow_files.select do |file|
+        changed_repository_workflows, changed_actions = changed_workflow_files.partition do |file|
           File.dirname(repo_relative_path(file)) == WORKFLOW_DIRECTORY
         end
-        return [] if changed_repository_workflows.empty?
+        # A bumped composite changes the lock entries of every workflow reaching it.
+        affected_workflows = changed_repository_workflows | workflows_reaching(changed_actions)
+        return [] if affected_workflows.empty?
 
         lock = lockfile
         reader = lockfile_reader
         return [] unless lock && reader
 
-        changed_onboarded = changed_repository_workflows.select { |f| reader.onboarded?(repo_relative_path(f)) }
+        changed_onboarded = affected_workflows.select { |f| reader.onboarded?(repo_relative_path(f)) }
         return [] if changed_onboarded.empty?
 
         # Gate only once the lock is authoritative for a workflow we're changing, so an
@@ -85,11 +88,71 @@ module Dependabot
         content = Lockfile::CliEngine.new(credentials, hostname: source_hostname).relock(
           workflow_files: rewritten_onboarded_workflow_files(reader, updated_workflow_files),
           lockfile: lock,
-          action_files: dependency_files.select { |f| ACTION_FILE_NAMES.include?(File.basename(f.name)) },
+          action_files: rewritten_action_files(updated_workflow_files),
           workflow_paths: changed_onboarded.map { |file| repo_relative_path(file) }
         )
 
         [updated_file(file: lock, content: content)]
+      end
+
+      # Every action definition, with a bumped composite's rewritten content.
+      sig do
+        params(updated_workflow_files: T::Array[Dependabot::DependencyFile])
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def rewritten_action_files(updated_workflow_files)
+        updated_by_path = updated_workflow_files.to_h { |file| [repo_relative_path(file), file] }
+        dependency_files
+          .select { |file| ACTION_FILE_NAMES.include?(File.basename(file.name)) }
+          .map { |file| updated_by_path.fetch(repo_relative_path(file), file) }
+      end
+
+      # Repository workflows whose step-level `$/` chain (through nested composites)
+      # reaches a changed action. Only `$/` matters: gh-actions-lock refuses
+      # `./` refs in locked workflows.
+      sig do
+        params(changed_actions: T::Array[Dependabot::DependencyFile])
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def workflows_reaching(changed_actions)
+        return [] if changed_actions.empty?
+
+        targets = changed_actions.map { |file| repo_relative_path(file) }
+        dependency_files.select do |file|
+          File.dirname(repo_relative_path(file)) == WORKFLOW_DIRECTORY && !lockfile?(file) &&
+            reaches?(file, targets, Set.new)
+        end
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile, targets: T::Array[String], seen: T::Set[String])
+          .returns(T::Boolean)
+      end
+      def reaches?(file, targets, seen)
+        self_repository_files(file).any? do |target|
+          path = repo_relative_path(target)
+          seen.add?(path) && (targets.include?(path) || reaches?(target, targets, seen))
+        end
+      end
+
+      # Action definitions a workflow or composite references via step-level `$/`.
+      # Job-level `$/` reusable workflows own their lock entries, so they are not followed.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+      def self_repository_files(file)
+        content = file.content.to_s
+        return [] unless content.include?("$/")
+
+        WorkflowFile.new(content).uses_declarations.filter_map do |declaration|
+          next unless declaration.steps_sequence && declaration.value.start_with?("$/")
+
+          target = Pathname.new("./#{declaration.value.delete_prefix('$/')}").cleanpath.to_s
+          dependency_files.find do |candidate|
+            path = repo_relative_path(candidate)
+            File.dirname(path) == target && ACTION_FILE_NAMES.include?(File.basename(path))
+          end
+        end
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
+        []
       end
 
       # The onboarded closure as the engine should see it: every workflow the lock

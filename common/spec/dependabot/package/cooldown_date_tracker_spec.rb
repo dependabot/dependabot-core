@@ -1,19 +1,29 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/package/cooldown_date_tracker"
 
 RSpec.describe Dependabot::Package::CooldownDateTracker do
+  extend T::Sig
+
+  sig { returns(Dependabot::Package::CooldownDateTracker) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:tracker) { described_class.new(dependency: dependency, ignored_versions: []) }
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(name: "dummy", version: "1.0.0", requirements: [], package_manager: "dummy")
   end
+
+  sig { returns(Dependabot::Package::PackageRelease) }
   let(:release) do
     Dependabot::Package::PackageRelease.new(version: TestVersion.new("2.0.0"), released_at: Time.utc(2023, 1, 1))
   end
+
+  sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
   let(:releases) { [release] }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#filter" do
     context "when no undated cooldown candidates are recorded" do
