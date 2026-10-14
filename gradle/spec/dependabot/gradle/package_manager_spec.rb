@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/gradle/package_manager"
@@ -6,8 +6,12 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Gradle::PackageManager do
+  extend T::Sig
+
+  sig { returns(Dependabot::Gradle::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:package_manager) { described_class.new(version) }
 
+  sig { returns(String) }
   let(:version) { "3.9.5" }
 
   describe "#version" do

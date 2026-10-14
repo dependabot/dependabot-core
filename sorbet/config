@@ -23,7 +23,6 @@
 --ignore=elm/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
---ignore=gradle/spec/
 --ignore=helm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
