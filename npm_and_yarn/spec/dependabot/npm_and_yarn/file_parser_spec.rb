@@ -195,6 +195,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       expect(parser.ecosystem.package_manager.name).to eq("npm")
     end
 
+    context "with npm-shrinkwrap.json fixtures" do
+      let(:installed_npm) { "11.17.0" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return(installed_npm)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      context "when both npm-shrinkwrap.json and package-lock.json exist" do
+        let(:files) { project_dependency_files("npm8/shrinkwrap_and_package_lock") }
+
+        it "gives npm-shrinkwrap.json precedence and routes the project to npm 11" do
+          parser.ecosystem
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+            .with("npm", "11", env: nil)
+          expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("11")
+        end
+      end
+
+      context "when only a nested npm-shrinkwrap.json exists next to a root package-lock.json" do
+        let(:installed_npm) { "12.2.0" }
+        let(:files) { project_dependency_files("npm8/nested_shrinkwrap_root_package_lock") }
+
+        it "does not route the whole project to npm 11" do
+          parser.ecosystem
+
+          expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+            .with("npm", "11", env: nil)
+          expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).not_to eq("11")
+        end
+      end
+
+      context "when engines.npm is open-ended" do
+        let(:installed_npm) { "12.2.0" }
+        let(:files) { project_dependency_files("npm8/shrinkwrap_engines_open_ended") }
+
+        it "keeps the project on npm 11 instead of the npm 12 the range selects" do
+          parser.ecosystem
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
+            .with("npm", "11", env: nil)
+          expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+            .with("npm", "12", env: nil)
+        end
+      end
+
+      context "when engines.npm requires npm 12 or higher" do
+        let(:files) { project_dependency_files("npm8/shrinkwrap_engines_npm12") }
+
+        it "raises instead of ignoring the shrinkwrap or the engines range" do
+          expect { parser.ecosystem }.to raise_error(Dependabot::ToolFeatureNotSupported)
+          expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+        end
+      end
+
+      context "when packageManager pins npm 12 or higher" do
+        let(:files) { project_dependency_files("npm8/shrinkwrap_pinned_npm12") }
+
+        it "raises instead of running npm 12 against the shrinkwrap" do
+          expect { parser.ecosystem }.to raise_error(Dependabot::ToolFeatureNotSupported)
+          expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+        end
+      end
+    end
+
     context "when the manifest specifies an npm engine range" do
       let(:files) do
         [

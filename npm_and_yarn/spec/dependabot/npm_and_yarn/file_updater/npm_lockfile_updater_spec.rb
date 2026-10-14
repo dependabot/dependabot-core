@@ -72,6 +72,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     Dependabot::Experiments.reset!
   end
 
+  describe "npm 12 allow flags through #updated_lockfile" do
+    let(:files) { project_dependency_files("npm8/npmrc_allow_policies") }
+    let(:dependency_name) { "etag" }
+    let(:version) { "1.9.0" }
+    let(:previous_version) { "1.8.1" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^1.9.0", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^1.8.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:npm_commands) { [] }
+    let(:written_npmrcs) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+        .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, **|
+        npm_commands << command
+        written_npmrcs << File.read(".npmrc") if File.exist?(".npmrc")
+        ""
+      end
+    end
+
+    context "when the committed .npmrc sets both policies" do
+      it "does not override either policy with the permissive default flag" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands.join(" ")).not_to include("--allow-git", "--allow-remote")
+      end
+    end
+
+    context "when the committed .npmrc sets no policies" do
+      let(:files) { project_dependency_files("npm8/npmrc_allow_policies").reject { |f| f.name == ".npmrc" } }
+
+      it "adds both permissive flags" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands).to all(include("--allow-git=all").and(include("--allow-remote=all")))
+      end
+    end
+
+    context "when scoped credentials replace the committed .npmrc" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "npm.pkg.github.com",
+            "token" => "my_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      it "keeps the committed policies in the .npmrc npm runs with and omits the permissive flags" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands.join(" ")).not_to include("--allow-git", "--allow-remote")
+        expect(written_npmrcs).to all(include("allow-git=none", "allow-remote=${ALLOW_REMOTE}"))
+      end
+    end
+  end
+
   describe "npm 8 specific" do
     # NOTE: This used to raise in npm 6
     context "when there is a private git dep we don't have access to" do
@@ -983,6 +1049,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with an EALLOWGIT error" do
+      let(:response) do
+        "npm error code EALLOWGIT\nFetching packages of type \"git\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"git\" has been disabled by npm configuration.")
+        end
+      end
+    end
+
+    context "with an EALLOWREMOTE error" do
+      let(:response) do
+        "npm error code EALLOWREMOTE\nFetching packages of type \"remote\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"remote\" has been disabled by npm configuration.")
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
@@ -1412,6 +1504,66 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
             expect(command).not_to include("--min-release-age")
             expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when running on npm 12" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+        end
+
+        it "includes --allow-git=all and --allow-remote=all flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).to include("--allow-git=all")
+            expect(command).to include("--allow-remote=all")
+            expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).to include("--allow-git=all")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+
+        it "omits --allow-git when allow-git=none is set in .npmrc" do
+          npmrc_file = Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+          custom_updater = described_class.new(
+            lockfile: package_lock,
+            dependency_files: files + [npmrc_file],
+            dependencies: dependencies,
+            credentials: credentials
+          )
+
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).to include("--allow-remote=all")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          custom_updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when running on npm 11" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+        end
+
+        it "does not include --allow-git and --allow-remote flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).not_to include("--allow-remote")
+            expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).not_to include("--allow-remote")
             ""
           end
 
