@@ -1,4 +1,5 @@
-# typed: strict
+# typed: false
+# Sorbet cannot resolve constants through the dynamically described class. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"

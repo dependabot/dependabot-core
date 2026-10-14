@@ -21,6 +21,12 @@ module RSpec
     sig { returns(::RSpec::Matchers::BuiltIn::BePredicate) }
     def be_workspaces; end
 
+    sig { returns(::RSpec::Matchers::BuiltIn::BePredicate) }
+    def be_positive; end
+
+    sig { params(version: T.anything).returns(::RSpec::Matchers::BuiltIn::BePredicate) }
+    def be_satisfied_by(version); end
+
     sig { params(name: T.any(String, Symbol)).returns(::RSpec::Matchers::BuiltIn::BePredicate) }
     def be_enabled(name); end
 

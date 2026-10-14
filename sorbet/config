@@ -27,7 +27,6 @@
 --ignore=helm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
---ignore=maven/spec/
 --ignore=nix/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
