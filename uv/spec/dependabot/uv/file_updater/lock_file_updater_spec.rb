@@ -1654,6 +1654,50 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "#updated_pyproject_content" do
+    subject(:updated_pyproject_content) { updater.send(:updated_pyproject_content) }
+
+    context "when a dependency group lists the pinned package by name only" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "myproject"
+          dependencies = [
+              "pydantic-settings==2.14.2",
+          ]
+
+          [dependency-groups]
+          browser = [
+              "pydantic-settings",
+          ]
+        TOML
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pydantic-settings",
+          version: "2.15.0",
+          requirements: [
+            { file: "pyproject.toml", requirement: "==2.15.0", groups: [], source: nil },
+            { file: "pyproject.toml", requirement: "*", groups: ["browser"], source: nil }
+          ],
+          previous_requirements: [
+            { file: "pyproject.toml", requirement: "==2.14.2", groups: [], source: nil },
+            { file: "pyproject.toml", requirement: "*", groups: ["browser"], source: nil }
+          ],
+          previous_version: "2.14.2",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates the pin and leaves the name-only entry alone" do
+        expect(updated_pyproject_content).to include('"pydantic-settings==2.15.0"')
+        expect(updated_pyproject_content).to include(%(browser = [\n    "pydantic-settings",\n]))
+        expect(updated_pyproject_content).not_to include("pydantic-settings*")
+      end
+    end
+  end
+
   describe "#replace_dep" do
     subject(:replace_dep) do
       updater.send(
