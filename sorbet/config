@@ -20,7 +20,6 @@
 --ignore=composer/spec/
 --ignore=conda/spec/
 --ignore=deno/spec/
---ignore=devcontainers/spec/
 --ignore=elm/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
