@@ -95,6 +95,27 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when an unpinned repository uses a lockfileVersion 3 package-lock.json" do
+      let(:lockfiles) { { npm: v3_lockfile } }
+      let(:package_json) { {} }
+      let(:v3_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: '{"name": "unpinned-project", "lockfileVersion": 3, "packages": {}}'
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version).and_return("12.2.0")
+      end
+
+      it "infers npm 12 from the lockfile" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("12")
+      end
+    end
+
     context "when only yarn lockfile exists" do
       let(:lockfiles) { { yarn: yarn_lockfile } }
 
@@ -482,6 +503,33 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           expect(Dependabot::NpmAndYarn::Helpers).to have_received(:package_manager_install)
             .with("npm", "11.4.0", env: nil)
         end
+      end
+    end
+
+    context "when an unpinned repository uses a lockfileVersion 3 package-lock.json" do
+      let(:package_json) { {} }
+      let(:lockfiles) { { npm: v3_lockfile } }
+      let(:v3_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: '{"name": "unpinned-project", "lockfileVersion": 3, "packages": {}}'
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+          package_manager_version: "12.2.0",
+          package_manager_install: nil
+        )
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "detects npm 12 and uses the image's npm without installing a version" do
+        expect(helper.setup("npm")).to eq(12)
+        expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil
       end
     end
 
