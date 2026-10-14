@@ -36,6 +36,5 @@
 --ignore=terraform/spec/
 --ignore=opentofu/spec/
 --ignore=updater/spec/
---ignore=uv/spec/
 --ignore=vcpkg/spec/
 --ignore=.git
