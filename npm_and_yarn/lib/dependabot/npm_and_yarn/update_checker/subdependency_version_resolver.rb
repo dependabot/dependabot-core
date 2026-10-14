@@ -19,7 +19,7 @@ require "sorbet-runtime"
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
-      class SubdependencyVersionResolver
+      class SubdependencyVersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         sig { returns(Dependency) }
@@ -51,7 +51,8 @@ module Dependabot
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
             repo_contents_path: T.nilable(String),
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
         def initialize(
@@ -61,7 +62,8 @@ module Dependabot
           ignored_versions:,
           latest_allowable_version:,
           repo_contents_path:,
-          security_advisories: []
+          security_advisories: [],
+          update_cooldown: nil
         )
           @dependency = dependency
           @credentials = credentials
@@ -70,6 +72,7 @@ module Dependabot
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
           @security_advisories = security_advisories
+          @update_cooldown = update_cooldown
           @pnpm_update = T.let(nil, T.nilable(PnpmTransitiveUpdate))
         end
 
@@ -84,6 +87,8 @@ module Dependabot
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
               updated_content = update_subdependency_in_lockfile(lockfile)
+              return nil unless updated_content
+
               updated_lockfile = lockfile.dup
               updated_lockfile.content = updated_content
               updated_lockfile
@@ -100,7 +105,7 @@ module Dependabot
 
         private
 
-        sig { params(lockfile: Dependabot::DependencyFile).returns(String) }
+        sig { params(lockfile: Dependabot::DependencyFile).returns(T.nilable(String)) }
         def update_subdependency_in_lockfile(lockfile)
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
           path = Pathname.new(lockfile.name).dirname.to_s
@@ -114,10 +119,10 @@ module Dependabot
                           elsif !Helpers.parse_npm8?(lockfile)
                             run_npm6_updater(path, lockfile_name)
                           else
-                            run_npm_updater(path, lockfile_name)
+                            run_npm_updater(path, lockfile)
                           end
 
-          updated_files.fetch(lockfile_name)
+          updated_files&.fetch(lockfile_name)
         end
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
@@ -314,33 +319,83 @@ module Dependabot
           end
         end
 
-        sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
-        def run_npm_updater(path, lockfile_name)
+        sig do
+          params(path: String, lockfile: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, String]))
+        end
+        def run_npm_updater(path, lockfile)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              lockfile_name = Pathname.new(lockfile.name).basename.to_s
               original_content = File.read(lockfile_name)
+              age_args = npm_min_release_age_args
+              age_arg = age_args.first
+              attempted_args = T.let([], T::Array[T.nilable(String)])
 
-              NativeHelpers.run_npm8_subdependency_update_command(
-                [dependency.name],
-                min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
-              )
+              loop do
+                attempted_args << age_arg
+                content = run_npm_update_with_fallback(lockfile_name, original_content, age_arg)
+                result = { lockfile_name => content }
+                return result if age_args.one?
 
-              updated_content = File.read(lockfile_name)
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                begin
-                  NativeHelpers.run_npm_audit_fix_command(
-                    min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
-                  )
-                  dependency.metadata[:audit_fix_used] = true
-                rescue SharedHelpers::HelperSubprocessFailed
-                  Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+                candidate_lockfile = lockfile.dup
+                candidate_lockfile.content = content
+                candidate = version_from_updated_lockfiles([candidate_lockfile])
+                return result unless candidate
+
+                days = Helpers.cooldown_release_age_days(@update_cooldown, [updated_dependency(version: candidate)])
+                candidate_arg = Helpers.npm_min_release_age_arg(
+                  days, dependency_files, security_updates_only: security_updates_only?
+                )
+                return result if candidate_arg == age_arg
+
+                # There are at most four semver windows. A repeated gate cannot
+                # produce a version the writer can reproduce under its own gate.
+                if attempted_args.include?(candidate_arg)
+                  Dependabot.logger.info("No consistent npm cooldown resolution for #{dependency.name}")
+                  return
                 end
-                updated_content = File.read(lockfile_name)
-              end
 
-              { lockfile_name => updated_content }
+                age_arg = candidate_arg
+                File.write(lockfile_name, original_content)
+              end
             end
           end
+        end
+
+        sig do
+          params(lockfile_name: String, original_content: String, age_arg: T.nilable(String)).returns(String)
+        end
+        def run_npm_update_with_fallback(lockfile_name, original_content, age_arg)
+          NativeHelpers.run_npm8_subdependency_update_command([dependency.name], min_release_age_arg: age_arg)
+          updated_content = File.read(lockfile_name)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            begin
+              NativeHelpers.run_npm_audit_fix_command(min_release_age_arg: age_arg)
+              dependency.metadata[:audit_fix_used] = true
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+            end
+            updated_content = File.read(lockfile_name)
+          end
+          updated_content
+        end
+
+        sig { returns(T::Array[T.nilable(String)]) }
+        def npm_min_release_age_args
+          cooldown = @update_cooldown
+          windows = if cooldown&.included?(dependency.name)
+                      [cooldown.default_days, cooldown.semver_major_days,
+                       cooldown.semver_minor_days, cooldown.semver_patch_days]
+                        .map { |days| [days, cooldown.default_days].min }.uniq.sort
+                    else
+                      [nil]
+                    end
+          arguments = windows.map do |days|
+            Helpers.npm_min_release_age_arg(days, dependency_files, security_updates_only: security_updates_only?)
+          end.uniq
+          return [nil] if arguments == [nil] || !Helpers.npm_supports_min_release_age?
+
+          arguments
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
@@ -372,11 +427,13 @@ module Dependabot
           security_advisories.any?
         end
 
-        sig { returns(Dependabot::Dependency) }
-        def updated_dependency
+        sig do
+          params(version: T.nilable(T.any(String, Gem::Version))).returns(Dependabot::Dependency)
+        end
+        def updated_dependency(version: latest_allowable_version)
           Dependabot::Dependency.new(
             name: dependency.name,
-            version: T.cast(latest_allowable_version, T.nilable(T.any(String, Dependabot::Version))),
+            version: version&.to_s,
             previous_version: dependency.version,
             requirements: [],
             package_manager: dependency.package_manager

@@ -351,40 +351,8 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      it "calls run_npm_updater" do
-        expect(resolver).to receive(:run_npm_updater).and_call_original
+      it "resolves the highest compatible transitive version" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
-      end
-
-      context "when resolving a security update" do
-        let(:resolver) do
-          described_class.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            latest_allowable_version: latest_allowable_version,
-            repo_contents_path: nil,
-            security_advisories: [
-              Dependabot::SecurityAdvisory.new(
-                dependency_name: "acorn",
-                package_manager: "npm_and_yarn",
-                vulnerable_versions: ["< 5.7.4"]
-              )
-            ]
-          )
-        end
-
-        it "passes --min-release-age=0 so the .npmrc cooldown is bypassed" do
-          allow(Dependabot::NpmAndYarn::NativeHelpers)
-            .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
-
-          latest_resolvable_version
-
-          expect(Dependabot::NpmAndYarn::NativeHelpers)
-            .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], min_release_age_arg: "--min-release-age=0")
-        end
       end
 
       it "calls npm audit fix as a fallback" do

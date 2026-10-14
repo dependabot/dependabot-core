@@ -8,6 +8,9 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/npm_and_yarn/version"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/experiments"
 require "sorbet-runtime"
 
@@ -134,6 +137,68 @@ module Dependabot
         return nil if user_gate && cooldown <= user_gate
 
         cooldown
+      end
+
+      # A native gate is global, so use the shortest window that approved the
+      # selected updates and omit it if any dependency was excluded. A stricter
+      # gate can reject the selected version or hang npm (#15937).
+      sig do
+        params(
+          cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+          dependencies: T::Array[Dependabot::Dependency]
+        ).returns(T.nilable(Integer))
+      end
+      def self.cooldown_release_age_days(cooldown, dependencies)
+        return nil if cooldown.nil? || dependencies.empty?
+        return nil unless dependencies.all? { |dependency| cooldown.included?(dependency.name) }
+
+        days = dependencies.map { |dependency| selection_cooldown_days(cooldown, dependency) }.min
+        days&.positive? ? days : nil
+      end
+
+      sig do
+        params(
+          cooldown: Dependabot::Package::ReleaseCooldownOptions,
+          dependency: Dependabot::Dependency
+        ).returns(Integer)
+      end
+      def self.selection_cooldown_days(cooldown, dependency)
+        new_version = version_for_cooldown(dependency.version)
+        return cooldown.default_days if new_version.nil?
+
+        semver_days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+          cooldown, version_for_cooldown(dependency.previous_version), new_version
+        )
+        # An absent lockfile version is selected under default_days even when its
+        # previous_version is later inferred from the manifest requirement.
+        [semver_days, cooldown.default_days].min
+      end
+      private_class_method :selection_cooldown_days
+
+      sig { params(version: T.nilable(String)).returns(T.nilable(Version)) }
+      def self.version_for_cooldown(version)
+        Version.new(version) if version && Version.correct?(version)
+      end
+      private_class_method :version_for_cooldown
+
+      # Callers gate this argument on npm 11.10+. Security fixes bypass age gates;
+      # regular updates never weaken a stronger or non-numeric .npmrc policy.
+      sig do
+        params(
+          release_age_days: T.nilable(Integer),
+          dependency_files: T::Array[DependencyFile],
+          security_updates_only: T::Boolean
+        ).returns(T.nilable(String))
+      end
+      def self.npm_min_release_age_arg(release_age_days, dependency_files, security_updates_only:)
+        return "--min-release-age=0" if security_updates_only
+
+        configured = max_configured_release_age(
+          dependency_files,
+          [ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")]
+        )
+        effective = higher_release_age_gate(release_age_days, configured)
+        "--min-release-age=#{effective}" if effective
       end
 
       # Describes where a native release-age gate can be configured: the file it
