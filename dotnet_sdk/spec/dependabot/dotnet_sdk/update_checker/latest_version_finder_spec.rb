@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dotnet_sdk/requirement"
 require "dependabot/dotnet_sdk/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
@@ -149,7 +150,7 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: "dotnet-sdk",
           package_manager: "dotnet_sdk",
-          vulnerable_versions: ["<= 8.0.200"]
+          vulnerable_versions: [Dependabot::DotnetSdk::Requirement.new("<= 8.0.200")]
         )
       ]
     end
@@ -177,7 +178,7 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "dotnet-sdk",
             package_manager: "dotnet_sdk",
-            vulnerable_versions: [">= 1.0.0"]
+            vulnerable_versions: [Dependabot::DotnetSdk::Requirement.new(">= 1.0.0")]
           )
         ]
       end
@@ -203,7 +204,7 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "dotnet-sdk",
             package_manager: "dotnet_sdk",
-            vulnerable_versions: ["<= 8.0.200"]
+            vulnerable_versions: [Dependabot::DotnetSdk::Requirement.new("<= 8.0.200")]
           )
         ]
       end

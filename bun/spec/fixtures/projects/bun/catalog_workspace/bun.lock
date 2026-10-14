@@ -1,0 +1,33 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "catalog-workspace",
+    },
+    "packages/app": {
+      "name": "app",
+      "dependencies": {
+        "is-number": "catalog:",
+      },
+      "devDependencies": {
+        "etag": "catalog:testing",
+      },
+    },
+  },
+  "catalog": {
+    "is-number": "^6.0.0",
+  },
+  "catalogs": {
+    "testing": {
+      "etag": "1.0.1",
+    },
+  },
+  "packages": {
+    "app": ["app@workspace:packages/app"],
+
+    "etag": ["etag@1.0.1", "", {}, "sha512-UT24BZefQnjqe7po1hLOvkRz16uzIRkfFhtNfcj0mKc3PBakEv9eS7Ms68d5ueHygFtxftF9gzFiiay0eZJrOQ=="],
+
+    "is-number": ["is-number@6.0.0", "", {}, "sha512-Wu1VHeILBK8KAWJUAiSZQX94GmOE45Rg6/538fKwiloUu21KncEkYGPqob2oSZ5mUT73vLGrHQjKw3KMPwfDzg=="],
+  }
+}

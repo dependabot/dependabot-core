@@ -92,6 +92,13 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
     end
   end
 
+  describe "#pinned_hostname" do
+    it "skips non-string dependency keys instead of crashing" do
+      lock = "version: v0.0.3\ndependencies:\n  123: {}\n  o/r@v1:\n    ref: v1\n"
+      expect(described_class.new(lock).pinned_hostname("o/r@v1", home: "github.com")).to eq("github.com")
+    end
+  end
+
   describe "invalid YAML" do
     it "raises DependencyFileNotParseable" do
       expect { described_class.new("\tnot: [valid").version }
