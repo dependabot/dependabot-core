@@ -215,8 +215,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:register_npm_version_selector).and_call_original
       end
 
-      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
-
       it "activates the selected npm major for the update process" do
         parser.ecosystem
 

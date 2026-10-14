@@ -122,6 +122,8 @@ module Dependabot
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
         def version_from_updated_lockfiles(updated_lockfiles)
+          return unless npm_updates_allowed?(updated_lockfiles)
+
           updated_files = dependency_files -
                           dependency_files_builder.lockfiles +
                           updated_lockfiles
@@ -141,6 +143,23 @@ module Dependabot
           candidate if pnpm_update.within_bound?(
             candidate: candidate, before: dependency_files_builder.lockfiles, after: updated_lockfiles
           )
+        end
+
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
+        def npm_updates_allowed?(updated_lockfiles)
+          allowed = updated_lockfiles.all? do |updated|
+            next true unless updated.name.end_with?("package-lock.json", "npm-shrinkwrap.json")
+
+            original = dependency_files_builder.lockfiles.find { |lockfile| lockfile.path == updated.path }
+            NativeHelpers.npm_subdependency_update_allowed?(
+              lockfile: T.must(original),
+              updated_content: T.must(updated.content),
+              dependency: updated_dependency,
+              ignored_versions: ignored_versions
+            )
+          end
+          Dependabot.logger.info("npm resolved #{dependency.name} outside the allowed versions") unless allowed
+          allowed
         end
 
         sig { returns(PnpmTransitiveUpdate) }

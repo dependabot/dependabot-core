@@ -157,6 +157,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
     end
   end
 
+  describe "#parsed.installed_entries" do
+    subject(:installed) { reader.parsed.installed_entries }
+
+    context "with nested legacy installations" do
+      let(:data) do
+        {
+          "lockfileVersion" => 1,
+          "requires" => true,
+          "dependencies" => {
+            "@scope/parent" => {
+              "version" => "1.0.0",
+              "requires" => { "@scope/child" => "^2.0.0" },
+              "dependencies" => { "@scope/child" => { "version" => "2.0.0" } }
+            }
+          }
+        }
+      end
+
+      it "preserves installation paths and separates requirements from installed entries" do
+        expect(installed.keys).to eq(
+          ["", "node_modules/@scope/parent", "node_modules/@scope/parent/node_modules/@scope/child"]
+        )
+        expect(installed.fetch("node_modules/@scope/parent").dependency_names).to eq(["@scope/child"])
+        expect(installed.fetch("").dependency_names).to be_empty
+      end
+    end
+
+    context "with a v2 lockfile containing stale legacy installations" do
+      let(:data) { super().merge("lockfileVersion" => 2, "dependencies" => { "stale" => entry }) }
+
+      it "uses only the packages table" do
+        expect(installed.keys).to eq(["node_modules/example"])
+      end
+
+      context "when the packages table is empty" do
+        let(:data) { super().merge("packages" => {}) }
+
+        it { is_expected.to be_empty }
+      end
+    end
+  end
+
   describe "#legacy_dependencies" do
     let(:data) { { "dependencies" => { "example" => entry }, "packages" => { "ignored" => {} } } }
 
