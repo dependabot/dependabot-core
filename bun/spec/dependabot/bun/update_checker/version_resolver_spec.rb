@@ -812,6 +812,93 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
     end
   end
 
+  describe "#latest_resolvable_version with the same dependency declared in two sibling nested projects" do
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
+
+    let(:project_name) { "bun/sibling_nested_lockfile_dependency" }
+    let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: "1.0.1",
+        requirements: [
+          {
+            file: "packages/a/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          },
+          {
+            file: "packages/b/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }
+        ],
+        package_manager: "bun"
+      )
+    end
+
+    it { is_expected.to eq(latest_allowable_version) }
+
+    it "doesn't leak one nested project's filter into the other's check" do
+      allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+      latest_resolvable_version
+
+      # Each nested project has its own lockfile and is checked separately,
+      # chdir'd into its own path. Without restricting candidate manifests
+      # to the current project's subtree, the sibling's requirement would
+      # turn into a filter like "./packages/b" while chdir'd into
+      # "packages/a", pointing Bun at the non-existent
+      # "packages/a/packages/b".
+      expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+        ["update", "etag@1.8.1", "--save-text-lockfile", "--ignore-scripts"],
+        fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+      ).twice
+    end
+  end
+
+  describe "#latest_resolvable_version with a dependency only consumed via a workspace catalog" do
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
+
+    let(:project_name) { "bun/catalog_workspace" }
+    let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: "1.0.1",
+        requirements: [{
+          requirement: "1.0.1",
+          file: "package.json",
+          groups: ["dependencies"],
+          source: nil,
+          metadata: { catalog: "testing" }
+        }],
+        package_manager: "bun"
+      )
+    end
+
+    it { is_expected.to eq(latest_allowable_version) }
+
+    it "scopes the check to the workspace that consumes the catalog entry" do
+      allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+      latest_resolvable_version
+
+      # Bun::FileParser records catalog dependencies against the root
+      # package.json even when only a nested workspace consumes them via
+      # "catalog:", so requirement.file alone can't identify the declaring
+      # workspace here. The root package.json itself doesn't depend on
+      # "etag", so an unfiltered root update would fail with "is not a
+      # dependency of this workspace".
+      expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+        ["update", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+        fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+      )
+    end
+  end
+
   describe "#latest_resolvable_version with the same dependency declared in two workspaces" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
