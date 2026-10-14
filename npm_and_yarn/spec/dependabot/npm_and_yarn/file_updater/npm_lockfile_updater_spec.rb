@@ -72,6 +72,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     Dependabot::Experiments.reset!
   end
 
+  describe "npm 12 allow flags through #updated_lockfile" do
+    let(:files) { project_dependency_files("npm8/npmrc_allow_policies") }
+    let(:dependency_name) { "etag" }
+    let(:version) { "1.9.0" }
+    let(:previous_version) { "1.8.1" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^1.9.0", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^1.8.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:npm_commands) { [] }
+    let(:written_npmrcs) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+        .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, **|
+        npm_commands << command
+        written_npmrcs << File.read(".npmrc") if File.exist?(".npmrc")
+        ""
+      end
+    end
+
+    context "when the committed .npmrc sets both policies" do
+      it "does not override either policy with the permissive default flag" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands.join(" ")).not_to include("--allow-git", "--allow-remote")
+      end
+    end
+
+    context "when the committed .npmrc sets no policies" do
+      let(:files) { project_dependency_files("npm8/npmrc_allow_policies").reject { |f| f.name == ".npmrc" } }
+
+      it "adds both permissive flags" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands).to all(include("--allow-git=all").and(include("--allow-remote=all")))
+      end
+    end
+
+    context "when scoped credentials replace the committed .npmrc" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "npm.pkg.github.com",
+            "token" => "my_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      it "keeps the committed policies in the .npmrc npm runs with and omits the permissive flags" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands.join(" ")).not_to include("--allow-git", "--allow-remote")
+        expect(written_npmrcs).to all(include("allow-git=none", "allow-remote=${ALLOW_REMOTE}"))
+      end
+    end
+  end
+
   describe "npm 8 specific" do
     # NOTE: This used to raise in npm 6
     context "when there is a private git dep we don't have access to" do
