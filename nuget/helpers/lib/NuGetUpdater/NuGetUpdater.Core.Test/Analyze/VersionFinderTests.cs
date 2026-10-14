@@ -6,6 +6,7 @@ using NuGet;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.Packaging.Core;
+using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
@@ -229,6 +230,43 @@ public class VersionFinderTests : TestBase
         // assert
         var actual = versions.Select(v => v.ToString()).ToArray();
         var expected = new[] { "2.0.0" };
+        AssertEx.Equal(expected, actual);
+    }
+
+    [Fact]
+    public async Task CandidateVersionsAreNotFilteredByTargetFramework()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+
+        // act
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            CancellationToken.None);
+
+        // assert
+        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        var expected = new[] { "2.0.0", "3.0.0" };
         AssertEx.Equal(expected, actual);
     }
 
@@ -532,6 +570,62 @@ public class VersionFinderTests : TestBase
     }
 
     [Fact]
+    public async Task CooldownMetadataLookupReceivesCancellationToken()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var packageMetadataResource = new CapturingPackageMetadataResource();
+        var resourceProvider = new TestResourceProvider<PackageMetadataResource>(
+            packageMetadataResource);
+        using var context = new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(
+                source,
+                [
+                    resourceProvider,
+                ]));
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+            Cooldown = new Cooldown
+            {
+                DefaultDays = 0,
+                Include = ["Some.Package"],
+                Exclude = [],
+            },
+        };
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        var source = context.PackageSources.Single();
+
+        var allowedSources = await VersionFinder.GetCooldownAllowedSourcesAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            NuGetVersion.Parse("1.0.0"),
+            NuGetVersion.Parse("1.1.0"),
+            [source],
+            context,
+            new TestLogger(),
+            cancellationSource.Token);
+
+        AssertEx.Equal([source], allowedSources);
+        Assert.Equal(cancellationSource.Token, resourceProvider.ReceivedToken);
+        Assert.Equal(cancellationSource.Token, packageMetadataResource.ReceivedToken);
+    }
+
+    [Fact]
     public async Task VersionListsAreEnumeratedOncePerSourceAndPrereleaseOption()
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
@@ -781,9 +875,15 @@ public class VersionFinderTests : TestBase
         public string Name => typeof(TResource).Name;
         public IEnumerable<string> Before => [];
         public IEnumerable<string> After => [];
+        public CancellationToken ReceivedToken { get; private set; }
 
-        public Task<Tuple<bool, INuGetResource?>> TryCreate(SourceRepository source, CancellationToken token) =>
-            Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(
+            SourceRepository source,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        }
     }
 
     private sealed class CountingMetadataResource(
@@ -932,5 +1032,33 @@ public class VersionFinderTests : TestBase
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
             CancellationToken token) => throw new NotImplementedException();
+    }
+
+    private sealed class CapturingPackageMetadataResource : PackageMetadataResource
+    {
+        public CancellationToken ReceivedToken { get; private set; }
+
+        public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+            PackageIdentity package,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult<IPackageSearchMetadata>(
+                new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+                {
+                    Identity = package,
+                    Published = DateTimeOffset.UtcNow.AddDays(-1),
+                });
+        }
     }
 }
