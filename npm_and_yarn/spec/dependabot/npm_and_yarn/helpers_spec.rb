@@ -336,6 +336,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(described_class.npm_allow_flags(files)).to eq(["--allow-git=all"])
       end
 
+      it "omits both flags for a project fixture whose .npmrc sets both policies" do
+        files = project_dependency_files("npm8/npmrc_allow_policies")
+        expect(described_class.npm_allow_flags(files)).to be_empty
+      end
+
       it "omits both flags when both allow-git and allow-remote are explicitly set in .npmrc" do
         files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\nallow-remote=none\n")]
         expect(described_class.npm_allow_flags(files)).to be_empty

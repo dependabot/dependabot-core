@@ -59,6 +59,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
+      context "with a project fixture that sets npm 12 allow policies" do
+        let(:dependency_files) { project_dependency_files("npm8/npmrc_allow_policies") }
+
+        it "keeps the policies, including env-substituted values, and drops the env-based auth token" do
+          expect(npmrc_content).to eq("allow-git=none\nallow-remote=${ALLOW_REMOTE}\n")
+        end
+
+        context "when credentials have a scope" do
+          let(:credentials) do
+            [Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "npm.pkg.github.com",
+                "token" => "my_token",
+                "scope" => "@my-company"
+              }
+            )]
+          end
+
+          it "keeps the policies in the generated .npmrc" do
+            expect(npmrc_content).to eq(<<~NPMRC.chomp)
+              @my-company:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+              allow-git=none
+              allow-remote=${ALLOW_REMOTE}
+            NPMRC
+          end
+        end
+      end
+
       context "when npm 12 allow policies use environment substitution" do
         let(:dependency_files) do
           [

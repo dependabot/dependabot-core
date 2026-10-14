@@ -397,46 +397,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "when both npm-shrinkwrap.json and package-lock.json exist" do
-      let(:dependency_files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "package-lock.json",
-            content: { "lockfileVersion" => 1, "dependencies" => { "etag" => { "version" => "1.0.0" } } }.to_json
-          ),
-          Dependabot::DependencyFile.new(
-            name: "npm-shrinkwrap.json",
-            content: { "lockfileVersion" => 1, "dependencies" => { "etag" => { "version" => "2.0.0" } } }.to_json
-          )
-        ]
-      end
+      let(:dependency_files) { project_dependency_files("npm8/shrinkwrap_and_package_lock") }
 
       it "reads the dependency from the shrinkwrap npm actually uses" do
-        expect(lockfile_details).to have_attributes(version: "2.0.0")
+        expect(lockfile_details).to have_attributes(version: "1.8.1")
       end
 
       context "when the dependency only exists in the ignored package-lock.json" do
         let(:dependency_name) { "stale-only" }
-        let(:dependency_files) do
-          [
-            Dependabot::DependencyFile.new(
-              name: "package-lock.json",
-              content: {
-                "lockfileVersion" => 1, "dependencies" => { "stale-only" => { "version" => "1.0.0" } }
-              }.to_json
-            ),
-            Dependabot::DependencyFile.new(
-              name: "npm-shrinkwrap.json",
-              content: { "lockfileVersion" => 1, "dependencies" => { "etag" => { "version" => "2.0.0" } } }.to_json
-            )
-          ]
-        end
 
         it "does not fall through to the ignored package-lock.json" do
           expect(lockfile_details).to be_nil
         end
 
         it "does not parse dependencies from the ignored package-lock.json" do
-          expect(lockfile_parser.parse.map(&:name)).to contain_exactly("etag")
+          expect(lockfile_parser.parse.map { |d| [d.name, d.version] }).to eq([["etag", "1.8.1"]])
         end
       end
     end
