@@ -983,6 +983,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with an EALLOWGIT error" do
+      let(:response) do
+        "npm error code EALLOWGIT\nFetching packages of type \"git\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"git\" has been disabled by npm configuration.")
+        end
+      end
+    end
+
+    context "with an EALLOWREMOTE error" do
+      let(:response) do
+        "npm error code EALLOWREMOTE\nFetching packages of type \"remote\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"remote\" has been disabled by npm configuration.")
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
@@ -1412,6 +1438,66 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
             expect(command).not_to include("--min-release-age")
             expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when running on npm 12" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+        end
+
+        it "includes --allow-git=all and --allow-remote=all flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).to include("--allow-git=all")
+            expect(command).to include("--allow-remote=all")
+            expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).to include("--allow-git=all")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+
+        it "omits --allow-git when allow-git=none is set in .npmrc" do
+          npmrc_file = Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+          custom_updater = described_class.new(
+            lockfile: package_lock,
+            dependency_files: files + [npmrc_file],
+            dependencies: dependencies,
+            credentials: credentials
+          )
+
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).to include("--allow-remote=all")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          custom_updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when running on npm 11" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+        end
+
+        it "does not include --allow-git and --allow-remote flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).not_to include("--allow-remote")
+            expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).not_to include("--allow-remote")
             ""
           end
 
