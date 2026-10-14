@@ -78,6 +78,23 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when unpinned repository uses npm-shrinkwrap.json" do
+      let(:lockfiles) { { npm: shrinkwrap_lockfile } }
+      let(:package_json) { {} }
+      let(:shrinkwrap_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "npm-shrinkwrap.json",
+          content: '{"name": "shrinkwrapped-project", "lockfileVersion": 1, "dependencies": {}}'
+        )
+      end
+
+      it "infers npm 11 from the shrinkwrap lockfile" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("11")
+      end
+    end
+
     context "when only yarn lockfile exists" do
       let(:lockfiles) { { yarn: yarn_lockfile } }
 

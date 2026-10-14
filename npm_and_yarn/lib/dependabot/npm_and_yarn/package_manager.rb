@@ -562,6 +562,8 @@ module Dependabot
       def numeric_lockfile_version(name, lockfile)
         case name
         when NpmPackageManager::NAME
+          return Helpers::NPM_V11 if shrinkwrap_lockfile?(lockfile)
+
           Helpers.npm_version_numeric(lockfile)
         when YarnPackageManager::NAME
           Helpers.yarn_version_numeric(lockfile)
@@ -569,6 +571,12 @@ module Dependabot
           Helpers.pnpm_version_numeric(lockfile)
         end
       end
+
+      sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(T::Boolean) }
+      def shrinkwrap_lockfile?(lockfile)
+        lockfile&.name&.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME) || false
+      end
+      private :shrinkwrap_lockfile?
     end
   end
 end

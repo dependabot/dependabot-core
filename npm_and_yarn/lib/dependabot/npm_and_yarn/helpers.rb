@@ -220,10 +220,6 @@ module Dependabot
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(T.nilable(Integer)) }
       def self.detect_npm_version(lockfile)
-        # npm 12 no longer reads or writes npm-shrinkwrap.json. Route unpinned shrinkwrap
-        # repos to npm 11 where npm-shrinkwrap.json is still supported.
-        return NPM_V11 if shrinkwrap_lockfile?(lockfile)
-
         lockfile_content = lockfile&.content
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
@@ -232,12 +228,6 @@ module Dependabot
         NPM_DEFAULT_VERSION # Fallback to default if the lockfile content cannot be parsed
       end
       private_class_method :detect_npm_version
-
-      sig { params(lockfile: T.nilable(DependencyFile)).returns(T::Boolean) }
-      def self.shrinkwrap_lockfile?(lockfile)
-        lockfile&.name&.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME) || false
-      end
-      private_class_method :shrinkwrap_lockfile?
 
       sig { params(lockfile_content: String).returns(T.nilable(Integer)) }
       def self.version_from_lockfile_content(lockfile_content)
