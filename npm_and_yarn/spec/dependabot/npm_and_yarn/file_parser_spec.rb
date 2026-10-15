@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only files fixtures and callback-local helper methods.
+
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/dependency_file"

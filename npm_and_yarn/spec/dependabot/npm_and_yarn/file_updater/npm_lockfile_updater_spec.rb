@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture in parent subjects and hooks.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/npm_and_yarn/file_updater/npm_lockfile_updater"
@@ -1426,7 +1428,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           )
 
           mixed_updater = described_class.new(
-            lockfile: mixed_files.find { |f| f.name == "package-lock.json" },
+            lockfile: T.must(mixed_files.find { |f| f.name == "package-lock.json" }),
             dependency_files: mixed_files,
             dependencies: [mixed_regular_dep, mixed_optional_dep],
             credentials: credentials
@@ -1450,7 +1452,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           end
 
           result = mixed_updater.updated_lockfile.content
-          parsed_result = JSON.parse(result)
+          parsed_result = JSON.parse(T.must(result))
 
           # Verify the dependency was updated
           expect(parsed_result.dig("packages", "node_modules/@rollup/rollup-linux-x64-gnu", "version"))

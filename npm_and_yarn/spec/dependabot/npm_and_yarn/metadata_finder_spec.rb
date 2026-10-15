@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the registry-response fixtures defined only in child contexts.
+
 require "octokit"
 require "spec_helper"
 require "dependabot/credential"

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only fixtures or the example helper defined in a callback.
+
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/helpers"
 require "spec_helper"

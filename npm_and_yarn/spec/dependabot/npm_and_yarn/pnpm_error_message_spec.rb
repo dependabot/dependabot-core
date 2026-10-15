@@ -1,5 +1,7 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
+
+# Sorbet cannot resolve the child-context-only message fixture used by the parent subject.
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/pnpm_error_message"

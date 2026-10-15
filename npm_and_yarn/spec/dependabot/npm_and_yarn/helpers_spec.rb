@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve nested constants or instance fixtures in loop-generated examples.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
@@ -584,7 +586,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     context "when dependencies in set already have :all_versions metadata" do
       it "returns flattened list of dependencies populated with :all_versions metadata" do
-        dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+        dependency_set = Dependabot::FileParsers::Base::DependencySet.new
         dependency_set << foo_a << bar_a << foo_c << bar_c << foo_b << bar_b
 
         expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq(
@@ -608,7 +610,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
 
       it "correctly merges existing metadata into new metadata" do
-        dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+        dependency_set = Dependabot::FileParsers::Base::DependencySet.new
         dependency_set << foo_a
         dependency_set << Dependabot::Dependency.new(
           name: "foo",

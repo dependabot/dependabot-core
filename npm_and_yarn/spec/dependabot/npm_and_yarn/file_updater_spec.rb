@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only fixtures and dynamically nested exception constants.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -2887,7 +2889,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             package_json: files.find { |f| f.name == "package.json" },
             dependencies: dependencies
           )
-          parsed = JSON.parse(updater_instance.updated_package_json.content)
+          parsed = JSON.parse(T.must(updater_instance.updated_package_json.content))
           expect(parsed.dig("overrides", "lodash")).to eq("3.10.1")
           expect(parsed.dig("devDependencies", "lodash")).to eq("^3.0")
         end
