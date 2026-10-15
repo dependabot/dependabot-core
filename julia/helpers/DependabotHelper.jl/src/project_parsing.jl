@@ -343,8 +343,8 @@ end
 A resolve for another Julia version rewrites `julia_version` and the stdlib entries,
 leaving a manifest the project's own Julia may not load. Pkg can resolve for that
 version instead, given its `julia_version` and the stdlib versions it shipped from
-HistoricalStdlibVersions.jl, as BinaryBuilder does. From Julia 1.13.3, Pkg also writes
-the manifest in that version's format and with its project hash. A manifest without a
+HistoricalStdlibVersions.jl, as BinaryBuilder does. Pkg also writes the manifest in
+that version's format and with its project hash. A manifest without a
 `julia_version` is resolved for the running Julia, and one written by a newer Julia
 is not updated.
 """
