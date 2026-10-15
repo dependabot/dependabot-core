@@ -137,6 +137,50 @@ public class CloneWorkerTests
     }
 
     [Fact]
+    public async Task SubmoduleCloneFailureDoesNotFailTheJob_CouldNotReadUsername()
+    {
+        // the repository under update was cloned successfully; only an unrelated submodule was inaccessible
+        await TestCloneAsync(
+            provider: "github",
+            repoMoniker: "test/repo",
+            testGitCommandHandler: new TestGitCommandHandlerWithOutputs("", """
+                Cloning into '/home/dependabot/dependabot-updater/repo'...
+                Submodule 'packages/private-sub' (https://github.com/test/private-sub.git) registered for path 'packages/private-sub'
+                Cloning into '/home/dependabot/dependabot-updater/repo/packages/private-sub'...
+                fatal: could not read Username for 'https://github.com': No such device or address
+                fatal: clone of 'https://github.com/test/private-sub.git' into submodule path '/home/dependabot/dependabot-updater/repo/packages/private-sub' failed
+                Failed to clone 'packages/private-sub'. Retry scheduled
+                Cloning into '/home/dependabot/dependabot-updater/repo/packages/private-sub'...
+                fatal: could not read Username for 'https://github.com': No such device or address
+                fatal: clone of 'https://github.com/test/private-sub.git' into submodule path '/home/dependabot/dependabot-updater/repo/packages/private-sub' failed
+                Failed to clone 'packages/private-sub' a second time, aborting
+                """),
+            expectedApiMessages: [],
+            expectedExitCode: 0
+        );
+    }
+
+    [Fact]
+    public async Task SubmoduleCloneFailureDoesNotFailTheJob_AuthenticationFailed()
+    {
+        await TestCloneAsync(
+            provider: "github",
+            repoMoniker: "test/repo",
+            testGitCommandHandler: new TestGitCommandHandlerWithOutputs("", """
+                Cloning into '/home/dependabot/dependabot-updater/repo'...
+                Submodule 'packages/private-sub' (https://github.com/test/private-sub.git) registered for path 'packages/private-sub'
+                Cloning into '/home/dependabot/dependabot-updater/repo/packages/private-sub'...
+                remote: Invalid username or token.
+                fatal: Authentication failed for 'https://github.com/test/private-sub.git/'
+                fatal: clone of 'https://github.com/test/private-sub.git' into submodule path '/home/dependabot/dependabot-updater/repo/packages/private-sub' failed
+                Failed to clone 'packages/private-sub' a second time, aborting
+                """),
+            expectedApiMessages: [],
+            expectedExitCode: 0
+        );
+    }
+
+    [Fact]
     public async Task JobFileParseErrorIsReported_InvalidJson()
     {
         // arrange
