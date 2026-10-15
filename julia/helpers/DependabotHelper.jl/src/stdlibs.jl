@@ -121,7 +121,7 @@ function registry_versions_with_julia_compat(uuid::Base.UUID)
     for reg in Pkg.Registry.reachable_registries()
         entry = get(reg, uuid, nothing)
         entry === nothing && continue
-        info = registry_info(reg, entry)
+        info = Pkg.Registry.registry_info(reg, entry)
         for (v, version_info) in info.version_info
             version_info.yanked && continue
             # The registry stores compat compressed by version range; Pkg 1.13

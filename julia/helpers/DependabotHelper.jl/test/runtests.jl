@@ -900,23 +900,19 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         released = Set(Base.thisminor(v) for v in first.(Pkg.Types.STDLIBS_BY_VERSION) if v"1.10" <= v < Base.thisminor(VERSION))
         @test isempty(setdiff(released, covered))
 
-        # Pkg writes a manifest the way the release it resolves for does from Julia 1.13.3
-        pkg_writes_older_manifests = isdefined(Pkg.Types, :manifest_format_for)
-        @test pkg_writes_older_manifests || VERSION < v"1.13.3"
-        if pkg_writes_older_manifests
-            for (version, written) in manifests
-                julia_version = VersionNumber(version)
-                julia_version > VERSION && continue
-                # The environment as that release set it up, before the update
-                project_dir = JuliaVersionManifests.environment(written["project"], written["manifest"])
-                JuliaVersionManifests.update_project!(project_dir)
-                result = DependabotHelper.update_manifest(Dict(
-                    "project_path" => project_dir,
-                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4"))
-                ))
-                @test !haskey(result, "error")
-                @test result["manifest_content"] == written["expected"]
-            end
+        # Pkg writes the manifest the way the release it resolves for does
+        for (version, written) in manifests
+            julia_version = VersionNumber(version)
+            julia_version > VERSION && continue
+            # The environment as that release set it up, before the update
+            project_dir = JuliaVersionManifests.environment(written["project"], written["manifest"])
+            JuliaVersionManifests.update_project!(project_dir)
+            result = DependabotHelper.update_manifest(Dict(
+                "project_path" => project_dir,
+                "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4"))
+            ))
+            @test !haskey(result, "error")
+            @test result["manifest_content"] == written["expected"]
         end
 
         # A manifest is resolved for the Julia that wrote it
