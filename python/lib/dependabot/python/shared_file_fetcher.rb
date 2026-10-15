@@ -21,8 +21,18 @@ module Dependabot
 
       abstract!
 
-      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
-      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+      # pip accepts both the short and the long form of these options, with either whitespace or an
+      # `=` separating the value. Two details are load bearing:
+      #
+      # * The leading `-` is factored out of each alternation so the pattern keeps a literal prefix
+      #   to search for; `(?:-r|--requirement)` drops it and makes scanning a large requirements
+      #   file several times slower.
+      # * The separator is matched possessively so a line of nothing but `-r` and spaces cannot
+      #   backtrack through the trailing `.*`, which would be quadratic in the number of spaces.
+      CHILD_REQUIREMENT_REGEX = /^-(?:r\s*+|-requirement(?:\s++|=))(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-(?:c\s*+|-constraint(?:\s++|=))(?<path>.*\.(?:txt|in))/
+      EDITABLE_REGEX = /^-(?:e\s++|-editable(?:\s++|=))/
+      EDITABLE_PATH_REGEX = /(?<name>#{EDITABLE_REGEX}['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
       MAX_FILE_SIZE = 500_000
 
@@ -367,7 +377,7 @@ module Dependabot
 
         editable_reqs =
           content
-          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/)
+          .scan(EDITABLE_PATH_REGEX)
           .filter_map do |match_array|
             n, p = match_array
             unless p.to_s.include?("://") || p.to_s.include?("git@")
