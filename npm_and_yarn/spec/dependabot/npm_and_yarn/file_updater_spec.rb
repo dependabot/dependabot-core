@@ -295,6 +295,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         updated_files.find { |f| f.name == "npm-shrinkwrap.json" }
       end
 
+      around do |example|
+        manifest = files.find { |file| file.name == "package.json" && !file.support_file }
+        directory = manifest.directory
+        previous_selector = Dependabot::NpmAndYarn::Helpers.npm_version_selector
+        previous_directory_selector =
+          Dependabot::NpmAndYarn::Helpers.npm_version_selector_for(directory)
+
+        begin
+          example.run
+        ensure
+          Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(
+            directory,
+            previous_directory_selector
+          )
+          Dependabot::NpmAndYarn::Helpers.npm_version_selector = previous_selector
+        end
+      end
+
+      before do
+        Dependabot::NpmAndYarn::FileParser.new(
+          dependency_files: files,
+          source: nil,
+          credentials: credentials
+        ).ecosystem
+      end
+
+      it "selects a shrinkwrap-compatible npm version" do
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to eq("11")
+      end
+
       it "updates the shrinkwrap" do
         parsed_shrinkwrap = JSON.parse(updated_shrinkwrap.content)
         expect(parsed_shrinkwrap["packages"]["node_modules/fetch-factory"]["version"])
@@ -389,7 +419,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(parsed_package_lock["packages"]["node_modules/is-number"]["version"])
               .to eq("4.0.0")
             expect(parsed_package_lock["packages"]["node_modules/is-number"]["resolved"])
-              .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              .to eq("git+https://github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
             expect(updated_yarn_lock.content).to include("is-number")
             expect(updated_yarn_lock.content).to include("0c6b15a88b")
@@ -407,7 +437,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               expect(parsed_package_lock["packages"]["node_modules/is-number"]["version"])
                 .to eq("4.0.0")
               expect(parsed_package_lock["packages"]["node_modules/is-number"]["resolved"])
-                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                .to eq("git+https://github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
               # NOTE: Yarn installs the latest version of is-number because the
               # lockfile has an invalid resolved url and the package json has no
@@ -432,7 +462,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               expect(parsed_package_lock["packages"]["node_modules/is-number"]["version"])
                 .to eq("4.0.0")
               expect(parsed_package_lock["packages"]["node_modules/is-number"]["resolved"])
-                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                .to eq("git+https://github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
             end
           end
 
@@ -527,7 +557,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 .to eq("3.0.0")
               expect(parsed_package_lock["packages"]["node_modules/is-number"]["resolved"])
                 .to eq(
-                  "git+ssh://git@github.com/jonschlinkert/is-number.git#af885e2e890b9ef0875edd2b117305119ee5bdc5"
+                  "git+https://github.com/jonschlinkert/is-number.git#af885e2e890b9ef0875edd2b117305119ee5bdc5"
                 )
 
               expect(updated_yarn_lock.content)
@@ -546,7 +576,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   .to eq("3.0.0")
                 expect(parsed_package_lock["packages"]["node_modules/is-number"]["resolved"])
                   .to eq(
-                    "git+ssh://git@github.com/jonschlinkert/is-number.git#af885e2e890b9ef0875edd2b117305119ee5bdc5"
+                    "git+https://github.com/jonschlinkert/is-number.git#af885e2e890b9ef0875edd2b117305119ee5bdc5"
                   )
               end
             end
@@ -833,7 +863,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(parsed_package_lock["packages"]["node_modules/is-number"]["version"])
               .to eq("4.0.0")
             expect(parsed_package_lock["packages"]["node_modules/is-number"]["resolved"])
-              .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              .to eq("git+https://github.com/jonschlinkert/is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
             expect(updated_yarn_lock.content)
               .to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
@@ -1491,6 +1521,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
         let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
 
+        before do
+          package_json = files.find { |file| file.name == "package.json" }
+          Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(package_json.directory, "8")
+        end
+
+        after do
+          package_json = files.find { |file| file.name == "package.json" }
+          Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(package_json.directory, nil)
+          Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil
+        end
+
         it "updates the lockfile" do
           expect(updated_files.map(&:name))
             .to match_array(%w(package-lock.json))
@@ -2082,6 +2123,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           context "when specified as a full URL" do
             let(:files) { project_dependency_files("npm8/git_dependency") }
 
+            before do
+              package_json = files.find { |file| file.name == "package.json" }
+              Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(package_json.directory, "8")
+            end
+
+            after do
+              package_json = files.find { |file| file.name == "package.json" }
+              Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(package_json.directory, nil)
+              Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil
+            end
+
             it "only updates the lockfile" do
               expect(updated_files.map(&:name))
                 .to match_array(%w(package-lock.json))
@@ -2442,6 +2494,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           context "when using full git URL" do
             let(:files) { project_dependency_files("npm8/git_dependency_ref") }
+
+            before do
+              package_json = files.find { |file| file.name == "package.json" }
+              Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(package_json.directory, "8")
+            end
+
+            after do
+              package_json = files.find { |file| file.name == "package.json" }
+              Dependabot::NpmAndYarn::Helpers.register_npm_version_selector(package_json.directory, nil)
+              Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil
+            end
 
             it "updates the package.json and the lockfile" do
               expect(updated_files.map(&:name))
