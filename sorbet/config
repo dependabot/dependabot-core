@@ -17,7 +17,6 @@
 --ignore=bundler/spec/
 --ignore=cargo/spec/
 --ignore=composer/spec/
---ignore=deno/spec/
 --ignore=elm/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
