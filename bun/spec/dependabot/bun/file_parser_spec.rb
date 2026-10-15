@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture and instance calls in generated examples.
+
 require "spec_helper"
 require "dependabot/bun"
 

@@ -13,7 +13,6 @@
 # while unenrolled spec trees are ignored.
 --ignore=apm/spec/
 --ignore=bazel/spec/
---ignore=bun/spec/
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
 --ignore=cargo/spec/
