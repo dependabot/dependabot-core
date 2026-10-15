@@ -226,6 +226,12 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(ecosystem.package_manager.name).to eq("julia")
         expect(ecosystem.language.name).to eq("julia")
       end
+
+      it "reports the running Julia as the language version" do
+        allow(Dependabot::Julia::PackageManager).to receive(:detected_version).and_return("99.99.99")
+
+        expect(parser.ecosystem.language.version.to_s).to eq("99.99.99")
+      end
     end
 
     context "when workspace has multiple Project.toml files with same dependency" do
