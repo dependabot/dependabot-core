@@ -60,6 +60,7 @@ module Dependabot
 
       PACKAGE_MANAGER_LOOKUP = T.let(
         {
+          "apm" => "apm",
           "bazel" => "bazel",
           "bun" => "bun",
           "bundler" => "bundler",

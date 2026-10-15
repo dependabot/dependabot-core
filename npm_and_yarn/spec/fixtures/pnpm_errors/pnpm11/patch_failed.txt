@@ -1,0 +1,8 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +2
+++
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /home/dependabot/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 2, reused 2, downloaded 0, added 2, done
+[ERR_PNPM_PATCH_FAILED] Could not apply patch /tmp/p2/patches/is-odd@3.0.0.patch to /tmp/p2/node_modules/.pnpm/is-odd@3.0.0_patch_hash=901ddcd4bce2a95d0f8a323155c711d423ff237147f752959d46b1565a261059/node_modules/is-odd

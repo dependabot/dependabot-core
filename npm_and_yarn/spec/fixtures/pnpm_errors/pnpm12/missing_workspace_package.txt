@@ -1,0 +1,9 @@
+Error:   × installing dependencies
+  ├─▶ Failed to resolve dependency tree: Failed to resolve dependency: In /
+  │   tmp/w: "@waystone/tsconfig@workspace:*" is in the dependencies but no
+  │   package named "@waystone/tsconfig" is present in the workspace
+  │   
+  │   Failed to resolve @waystone/tsconfig@workspace:*
+  ╰─▶ Failed to resolve dependency: In /tmp/w: "@waystone/
+      tsconfig@workspace:*" is in the dependencies but no package named
+      "@waystone/tsconfig" is present in the workspace

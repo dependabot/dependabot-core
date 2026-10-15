@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only resolved_url fixture used by the parent parser.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/npm_and_yarn/registry_parser"

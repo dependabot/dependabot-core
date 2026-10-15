@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/sbt/requirement"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/sbt/update_checker"
@@ -183,7 +184,7 @@ RSpec.describe Dependabot::Sbt::UpdateChecker do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "sbt",
-          vulnerable_versions: ["< 33.2.0-jre"]
+          vulnerable_versions: [Dependabot::Sbt::Requirement.new("< 33.2.0-jre")]
         )
       ]
     end

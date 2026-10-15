@@ -1,0 +1,67 @@
+# A dependency whose only available update is a major bump is excluded from a
+# minor/patch group by its update-types rules, so it must be raised as an
+# individual pull request.
+#
+# This has to keep working once the group already has an open pull request:
+# deferring the group to its own refresh job must not suppress the dependencies
+# that the group's update-types rules reject.
+
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=1 create_pull_request
+pr-created expected-individual.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- expected-individual.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.0.0" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "2.0.0"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  cooldown:
+    default-days: 0
+  source:
+    directory: "/"
+    provider: example
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: dev
+      rules:
+        update-types:
+          - minor
+          - patch
+  experiments:
+    individual-prs-for-semver-excluded-dependencies: true
+  existing-group-pull-requests:
+    - dependency-group-name: dev
+      pr-number: 123
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.5
+          directory: "/"

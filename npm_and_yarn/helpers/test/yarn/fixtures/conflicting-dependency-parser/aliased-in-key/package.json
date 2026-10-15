@@ -1,0 +1,7 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": {
+    "my-fetch-factory@npm:fetch-factory": "0.0.2"
+  }
+}

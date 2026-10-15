@@ -122,7 +122,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
+          npm: shrinkwrap || package_lock,
           yarn: yarn_lock,
           pnpm: pnpm_lock
         }
@@ -153,12 +153,11 @@ module Dependabot
         )
       end
 
+      # Only the source-root shrinkwrap shadows the root package-lock.json; nested (e.g. Lerna package) ones don't
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shrinkwrap
         @shrinkwrap ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
-          end,
+          dependency_files.find { |f| f.name == NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME },
           T.nilable(Dependabot::DependencyFile)
         )
       end
