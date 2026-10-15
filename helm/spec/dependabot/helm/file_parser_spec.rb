@@ -220,6 +220,27 @@ RSpec.describe Dependabot::Helm::FileParser do
       )
     end
 
+    context "with image references nested in arrays" do
+      let(:values_content) do
+        <<~YAML
+          web:
+            image: nginx:1.27.0
+          template:
+            spec:
+              containers:
+                - name: worker
+                  image: busybox:1.36.0
+        YAML
+      end
+
+      it "finds images at map and array paths" do
+        dependencies = parser.parse
+
+        expect(dependencies.map { |dependency| [dependency.name, dependency.version] })
+          .to contain_exactly(["nginx", "1.27.0"], ["busybox", "1.36.0"])
+      end
+    end
+
     context "with separate registry and repository fields" do
       let(:values_content) do
         <<~YAML
