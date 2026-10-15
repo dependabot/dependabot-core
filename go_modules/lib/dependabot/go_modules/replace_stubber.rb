@@ -1,7 +1,8 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/go_modules/go_mod_manifest"
 
 module Dependabot
   module GoModules
@@ -22,13 +23,13 @@ module Dependabot
       end
 
       sig do
-        params(manifest: T::Hash[String, T.untyped], directory: T.nilable(String)).returns(T::Hash[String, String])
+        params(manifest: GoModManifest, directory: T.nilable(String)).returns(T::Hash[String, String])
       end
       def stub_paths(manifest, directory)
-        (manifest["Replace"] || [])
-          .filter_map { |r| r["New"]["Path"] }
-          .select { |p| stub_replace_path?(p, directory) }
-          .to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
+        manifest.replacements
+                .map { |replacement| replacement.new.path }
+                .select { |p| stub_replace_path?(p, directory) }
+                .to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
       end
 
       private

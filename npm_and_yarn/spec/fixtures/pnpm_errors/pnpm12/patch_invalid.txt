@@ -1,0 +1,14 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /home/dependabot/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +2
+++
+Progress: resolved 2, reused 0, downloaded 2, added 2, done
+Error: ERR_PNPM_INVALID_PATCH
+
+  × installing dependencies
+  ╰─▶ Applying patch "/tmp/w3/patches/is-odd@3.0.0.patch" failed: error
+      parsing patches: error parsing patch at byte 30: hunk header does not
+      match hunk
+

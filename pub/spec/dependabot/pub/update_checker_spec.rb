@@ -689,7 +689,11 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             JSON.generate(
               "dependencies" => [{
                 "name" => dependency_name,
-                "smallestUpdate" => [{ "name" => dependency_name, "version" => "4.0.0" }]
+                "version" => dependency_version,
+                "compatible" => [],
+                "singleBreaking" => [],
+                "multiBreaking" => [],
+                "smallestUpdate" => [{ "name" => dependency_name, "version" => "4.0.0", "kind" => "direct" }]
               }]
             )
           )

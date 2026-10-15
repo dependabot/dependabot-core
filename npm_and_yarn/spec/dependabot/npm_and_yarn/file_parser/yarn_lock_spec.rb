@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet resolves instance fixtures and matchers in loop-generated examples as class methods.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser/yarn_lock"
 

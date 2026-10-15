@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -240,6 +240,53 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         :dependencies
       ).and_return([dependency])
       allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when no requirement unlock can fix the vulnerability" do
+      before do
+        allow(stub_update_checker).to receive_messages(
+          version_class: Dependabot::Bundler::Version,
+          latest_version: "5.0.0",
+          lowest_security_fix_version: "4.1.0",
+          lowest_resolvable_security_fix_version: nil,
+          can_update?: false
+        )
+        allow(job).to receive(:allowed_update?).with(dependency).and_return(true)
+      end
+
+      it "records the available fix and current version instead of an unknown error" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "security_update_not_possible",
+          error_details: {
+            "dependency-name": dependency.name,
+            "latest-resolvable-version": "4.0.0",
+            "lowest-non-vulnerable-version": "4.1.0",
+            "conflicting-dependencies": []
+          }
+        )
+        expect(mock_service).not_to receive(:create_pull_request)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+
+        perform
+      end
+
+      context "without a resolved version" do
+        before do
+          allow(dependency).to receive(:version).and_return(nil)
+          allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+        end
+
+        it "keeps reporting that the dependency file is unsupported" do
+          expect(mock_service).to receive(:record_update_job_error).with(
+            error_type: "dependency_file_not_supported",
+            error_details: { "dependency-name": dependency.name }
+          )
+          expect(mock_service).not_to receive(:create_pull_request)
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+
+          perform
+        end
+      end
     end
 
     context "when an error occurs" do

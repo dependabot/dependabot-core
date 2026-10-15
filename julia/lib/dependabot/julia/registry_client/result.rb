@@ -434,6 +434,8 @@ module Dependabot
           extend T::Sig
 
           const :release_date, T.nilable(String)
+          # Registered in General after the last GeneralMetadata.jl build, so no date is published yet
+          const :pending, T::Boolean, default: false
 
           sig { params(value: Object, context: String).returns(T.any(ReleaseDate, Failure)) }
           def self.from_object(value, context:)
@@ -441,7 +443,10 @@ module Dependabot
             failure = Result.failure_from(hash, context)
             return failure if failure
 
-            new(release_date: ValueParser.nilable_string(hash, "release_date", context))
+            new(
+              release_date: ValueParser.nilable_string(hash, "release_date", context),
+              pending: ValueParser.optional_boolean(hash, "release_date_pending", context)
+            )
           end
 
           sig { params(value: Object, context: String).returns(T.any(ReleaseDate, Failure)) }

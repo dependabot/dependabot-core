@@ -1,0 +1,17 @@
+default_host: github.com
+
+dependencies:
+  apm:
+    - microsoft/edge-ai#v1.0.0
+    - octo-org/octo-skills#v2.3.1
+    - gitlab.com/acme/prompts#v0.5.0
+    - big-corp/pinned-branch#main
+    - ./local-relative-pkg
+    - git: https://github.com/example/object-form
+      ref: v9.9.9
+  mcp:
+    - example/mcp-server#v1.0.0
+
+devDependencies:
+  apm:
+    - qa-org/qa-helpers#v3.1.4

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files fixture used by the parent subject.
+
 require "spec_helper"
 require "dependabot/bun"
 require "dependabot/dependency_graphers"

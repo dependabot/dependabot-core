@@ -3,7 +3,11 @@ using System.Text;
 using System.Text.Json;
 
 using NuGet;
+using NuGet.Configuration;
 using NuGet.Frameworks;
+using NuGet.Packaging.Core;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
@@ -226,6 +230,43 @@ public class VersionFinderTests : TestBase
         // assert
         var actual = versions.Select(v => v.ToString()).ToArray();
         var expected = new[] { "2.0.0" };
+        AssertEx.Equal(expected, actual);
+    }
+
+    [Fact]
+    public async Task CandidateVersionsAreNotFilteredByTargetFramework()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+
+        // act
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            CancellationToken.None);
+
+        // assert
+        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        var expected = new[] { "2.0.0", "3.0.0" };
         AssertEx.Equal(expected, actual);
     }
 
@@ -460,6 +501,120 @@ public class VersionFinderTests : TestBase
     }
 
     [Fact]
+    public async Task ExcludedCandidatesAreNotDownloaded()
+    {
+        var currentTime = new DateTimeOffset(2025, 4, 1, 0, 0, 0, TimeSpan.Zero);
+        var excludedDownloadRequests = 0;
+        using var tempDir = new TemporaryDirectory();
+        using var http = TestHttpServer.CreateTestServer(url =>
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            if (uri.AbsolutePath == "/base/some.package/1.0.2/some.package.1.0.2.nupkg")
+            {
+                Interlocked.Increment(ref excludedDownloadRequests);
+                return (403, Encoding.UTF8.GetBytes("""{"message":"Package unavailable."}"""));
+            }
+
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                      "version": "3.0.0",
+                      "resources": [
+                        {
+                          "@id": "{{baseUrl}}/base",
+                          "@type": "PackageBaseAddress/3.0.0"
+                        },
+                        {
+                          "@id": "{{baseUrl}}/registrations",
+                          "@type": "RegistrationsBaseUrl/3.6.0"
+                        }
+                      ]
+                    }
+                    """)),
+                "/base/some.package/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {"versions":["1.0.0","1.0.1","1.0.2"]}
+                    """)),
+                "/base/some.package/1.0.1/some.package.1.0.1.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net8.0").GetZipStream().ReadAllBytes()),
+                "/registrations/some.package/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                      "count": 1,
+                      "items": [
+                        {
+                          "count": 3,
+                          "lower": "1.0.0",
+                          "upper": "1.0.2",
+                          "items": [
+                            {
+                              "catalogEntry": {
+                                "id": "Some.Package",
+                                "version": "1.0.0",
+                                "published": "{{currentTime.AddDays(-30):O}}"
+                              }
+                            },
+                            {
+                              "catalogEntry": {
+                                "id": "Some.Package",
+                                "version": "1.0.1",
+                                "published": "{{currentTime.AddDays(-20):O}}"
+                              }
+                            },
+                            {
+                              "catalogEntry": {
+                                "id": "Some.Package",
+                                "version": "1.0.2",
+                                "published": "{{currentTime.AddDays(-2):O}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}"))
+            };
+        });
+        await File.WriteAllTextAsync(Path.Combine(tempDir.DirectoryPath, "NuGet.Config"), $"""
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="test_feed" value="{http.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+              </packageSources>
+            </configuration>
+            """, TestContext.Current.CancellationToken);
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            Cooldown = new Cooldown
+            {
+                DefaultDays = 10,
+            },
+        };
+        using var context = new NuGetContext(tempDir.DirectoryPath);
+        VersionResult? result = null;
+
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            result = await VersionFinder.GetVersionsAsync(
+                [NuGetFramework.Parse("net8.0")],
+                dependencyInfo,
+                NuGetVersion.Parse(dependencyInfo.Version),
+                currentTime,
+                context,
+                new TestLogger(),
+                TestContext.Current.CancellationToken);
+        });
+
+        Assert.Equal(0, Volatile.Read(ref excludedDownloadRequests));
+        Assert.Null(exception);
+        Assert.NotNull(result);
+        AssertEx.Equal(["1.0.1"], result.GetVersions().Select(v => v.ToString()).ToArray());
+    }
+
+    [Fact]
     public async Task MisbehavingNuGetFeedDoesNotPreventFindingVersions()
     {
         using var http = TestHttpServer.CreateTestStringServer(url =>
@@ -526,5 +681,498 @@ public class VersionFinderTests : TestBase
         Assert.NotNull(versionsResult);
         var versions = versionsResult.GetVersions();
         Assert.Empty(versions);
+    }
+
+    [Fact]
+    public async Task CooldownMetadataLookupReceivesCancellationToken()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var packageMetadataResource = new CapturingPackageMetadataResource();
+        var resourceProvider = new TestResourceProvider<PackageMetadataResource>(
+            packageMetadataResource);
+        using var context = new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(
+                source,
+                [
+                    resourceProvider,
+                ]));
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+            Cooldown = new Cooldown
+            {
+                DefaultDays = 0,
+                Include = ["Some.Package"],
+                Exclude = [],
+            },
+        };
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        var source = context.PackageSources.Single();
+
+        var allowedSources = await VersionFinder.GetCooldownAllowedSourcesAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            NuGetVersion.Parse("1.0.0"),
+            NuGetVersion.Parse("1.1.0"),
+            [source],
+            context,
+            new TestLogger(),
+            cancellationSource.Token);
+
+        AssertEx.Equal([source], allowedSources);
+        Assert.Equal(cancellationSource.Token, resourceProvider.ReceivedToken);
+        Assert.Equal(cancellationSource.Token, packageMetadataResource.ReceivedToken);
+    }
+
+    [Fact]
+    public async Task VersionListsAreEnumeratedOncePerSourceAndPrereleaseOption()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="source-one" value="https://one.example.com/v3/index.json" />
+                    <add key="source-two" value="https://two.example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var metadataResource = new CountingMetadataResource([
+            NuGetVersion.Parse("1.0.0"),
+            .. Enumerable.Range(1, 3_303)
+                .Select(index => NuGetVersion.Parse($"2.0.0-preview.{index}")),
+        ]);
+        var cache = new PackageVersionsCache();
+
+        for (var index = 0; index < 20; index++)
+        {
+            using var context = CreateNuGetContext(tempDir.DirectoryPath, metadataResource, cache);
+            var packageName = index % 2 == 0 ? "Some.Package" : "some.package";
+            await GetVersionsWithNoCandidatesAsync(
+                context,
+                packageName,
+                "1.0.0",
+                TestContext.Current.CancellationToken);
+            await GetVersionsWithNoCandidatesAsync(
+                context,
+                packageName,
+                "1.0.0-beta",
+                TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(0, metadataResource.ExistsCallCount);
+        Assert.Equal(4, metadataResource.GetVersionsCallCount);
+    }
+
+    [Fact]
+    public async Task VersionListCacheIsScopedToTheNuGetConfigurationDirectory()
+    {
+        const string nugetConfig = """
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="source" value="https://example.com/v3/index.json" />
+              </packageSources>
+            </configuration>
+            """;
+        using var firstDirectory = await TemporaryDirectory.CreateWithContentsAsync(("NuGet.Config", nugetConfig));
+        using var secondDirectory = await TemporaryDirectory.CreateWithContentsAsync(("NuGet.Config", nugetConfig));
+        var metadataResource = new CountingMetadataResource([NuGetVersion.Parse("1.0.0")]);
+        var cache = new PackageVersionsCache();
+
+        using (var firstContext = CreateNuGetContext(firstDirectory.DirectoryPath, metadataResource, cache))
+        {
+            await GetVersionsWithNoCandidatesAsync(
+                firstContext,
+                "Some.Package",
+                "1.0.0",
+                TestContext.Current.CancellationToken);
+        }
+
+        using (var secondContext = CreateNuGetContext(secondDirectory.DirectoryPath, metadataResource, cache))
+        {
+            await GetVersionsWithNoCandidatesAsync(
+                secondContext,
+                "Some.Package",
+                "1.0.0",
+                TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(2, metadataResource.GetVersionsCallCount);
+    }
+
+    [Fact]
+    public async Task FailedVersionEnumerationsAreNotCached()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="source" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var metadataResource = new CountingMetadataResource(
+            [NuGetVersion.Parse("1.0.0")],
+            failuresBeforeSuccess: 1);
+        var cache = new PackageVersionsCache();
+
+        using var context = CreateNuGetContext(tempDir.DirectoryPath, metadataResource, cache);
+        var firstResult = await GetVersionsWithNoCandidatesAsync(
+            context,
+            "Some.Package",
+            "1.0.0",
+            TestContext.Current.CancellationToken);
+        var secondResult = await GetVersionsWithNoCandidatesAsync(
+            context,
+            "Some.Package",
+            "1.0.0",
+            TestContext.Current.CancellationToken);
+        var thirdResult = await GetVersionsWithNoCandidatesAsync(
+            context,
+            "Some.Package",
+            "1.0.0",
+            TestContext.Current.CancellationToken);
+
+        Assert.Empty(firstResult.GetVersions());
+        Assert.Empty(secondResult.GetVersions());
+        Assert.Empty(thirdResult.GetVersions());
+        Assert.Equal(2, metadataResource.GetVersionsCallCount);
+    }
+
+    [Fact]
+    public async Task CanceledVersionEnumerationIsEvictedAndRetried()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="source" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var metadataResource = new CancelThenSucceedMetadataResource([NuGetVersion.Parse("1.0.0")]);
+        var cache = new PackageVersionsCache();
+
+        using var context = CreateNuGetContext(tempDir.DirectoryPath, metadataResource, cache);
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        var canceledResult = GetVersionsWithNoCandidatesAsync(
+            context,
+            "Some.Package",
+            "1.0.0",
+            cancellationSource.Token);
+        await metadataResource.FirstRequestStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await cancellationSource.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledResult);
+        var retryResult = await GetVersionsWithNoCandidatesAsync(
+            context,
+            "Some.Package",
+            "1.0.0",
+            TestContext.Current.CancellationToken);
+
+        Assert.Empty(retryResult.GetVersions());
+        Assert.Equal(2, metadataResource.GetVersionsCallCount);
+    }
+
+    [Fact]
+    public async Task CancelingConcurrentWaiterDoesNotEvictSharedVersionEnumeration()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="source" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var metadataResource = new BlockingMetadataResource();
+        var cache = new PackageVersionsCache();
+
+        using var firstContext = CreateNuGetContext(tempDir.DirectoryPath, metadataResource, cache);
+        var firstResult = GetVersionsWithNoCandidatesAsync(
+            firstContext,
+            "Some.Package",
+            "1.0.0",
+            TestContext.Current.CancellationToken);
+        await metadataResource.RequestStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        using var secondContext = CreateNuGetContext(tempDir.DirectoryPath, metadataResource, cache);
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        var canceledWaiter = GetVersionsWithNoCandidatesAsync(
+            secondContext,
+            "Some.Package",
+            "1.0.0",
+            cancellationSource.Token);
+        await Task.Yield();
+        await cancellationSource.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledWaiter);
+        metadataResource.Versions.SetResult([NuGetVersion.Parse("1.0.0")]);
+        await firstResult;
+
+        using var thirdContext = CreateNuGetContext(tempDir.DirectoryPath, metadataResource, cache);
+        await GetVersionsWithNoCandidatesAsync(
+            thirdContext,
+            "Some.Package",
+            "1.0.0",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, metadataResource.GetVersionsCallCount);
+    }
+
+    private static NuGetContext CreateNuGetContext(
+        string currentDirectory,
+        MetadataResource metadataResource,
+        PackageVersionsCache cache)
+    {
+        return new NuGetContext(
+            currentDirectory,
+            sourceRepositoryFactory: source => new SourceRepository(
+                source,
+                [new TestResourceProvider<MetadataResource>(metadataResource)]),
+            packageVersionsCache: cache);
+    }
+
+    private static Task<VersionResult> GetVersionsWithNoCandidatesAsync(
+        NuGetContext context,
+        string packageName,
+        string currentVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = packageName,
+            Version = currentVersion,
+            IsVulnerable = false,
+        };
+
+        return VersionFinder.GetVersionsAsync(
+            projectTfms: [],
+            dependencyInfo,
+            NuGetVersion.Parse(currentVersion),
+            versionFilter: _ => false,
+            DateTimeOffset.UtcNow,
+            context,
+            new TestLogger(),
+            cancellationToken);
+    }
+
+    private sealed class TestResourceProvider<TResource>(TResource resource) : INuGetResourceProvider
+        where TResource : class, INuGetResource
+    {
+        public Type ResourceType => typeof(TResource);
+        public string Name => typeof(TResource).Name;
+        public IEnumerable<string> Before => [];
+        public IEnumerable<string> After => [];
+        public CancellationToken ReceivedToken { get; private set; }
+
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(
+            SourceRepository source,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        }
+    }
+
+    private sealed class CountingMetadataResource(
+        IEnumerable<NuGetVersion> versions,
+        int failuresBeforeSuccess = 0) : MetadataResource
+    {
+        public int ExistsCallCount { get; private set; }
+        public int GetVersionsCallCount { get; private set; }
+
+        public override Task<bool> Exists(
+            PackageIdentity identity,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            ExistsCallCount++;
+            throw new InvalidOperationException("VersionFinder should not perform a separate existence check.");
+        }
+
+        public override Task<bool> Exists(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            ExistsCallCount++;
+            throw new InvalidOperationException("VersionFinder should not perform a separate existence check.");
+        }
+
+        public override Task<IEnumerable<NuGetVersion>> GetVersions(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            GetVersionsCallCount++;
+            if (GetVersionsCallCount <= failuresBeforeSuccess)
+            {
+                throw new InvalidDataException("Simulated feed failure.");
+            }
+
+            return Task.FromResult(versions);
+        }
+
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+            IEnumerable<string> packageIds,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) =>
+            Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion>>>([]);
+    }
+
+    private sealed class CancelThenSucceedMetadataResource(IEnumerable<NuGetVersion> versions) : MetadataResource
+    {
+        public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int GetVersionsCallCount { get; private set; }
+
+        public override Task<bool> Exists(
+            PackageIdentity identity,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override Task<bool> Exists(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override async Task<IEnumerable<NuGetVersion>> GetVersions(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            GetVersionsCallCount++;
+            if (GetVersionsCallCount == 1)
+            {
+                FirstRequestStarted.SetResult();
+                await Task.Delay(Timeout.Infinite, token);
+            }
+
+            return versions;
+        }
+
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+            IEnumerable<string> packageIds,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+    }
+
+    private sealed class BlockingMetadataResource : MetadataResource
+    {
+        public TaskCompletionSource RequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<IEnumerable<NuGetVersion>> Versions { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int GetVersionsCallCount { get; private set; }
+
+        public override Task<bool> Exists(
+            PackageIdentity identity,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override Task<bool> Exists(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override Task<IEnumerable<NuGetVersion>> GetVersions(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            GetVersionsCallCount++;
+            RequestStarted.SetResult();
+            return Versions.Task;
+        }
+
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+            IEnumerable<string> packageIds,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+    }
+
+    private sealed class CapturingPackageMetadataResource : PackageMetadataResource
+    {
+        public CancellationToken ReceivedToken { get; private set; }
+
+        public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+            PackageIdentity package,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult<IPackageSearchMetadata>(
+                new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+                {
+                    Identity = package,
+                    Published = DateTimeOffset.UtcNow.AddDays(-1),
+                });
+        }
     }
 }

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve instance fixtures and matchers in loop-generated examples.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
@@ -386,6 +388,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to_return(status: 404)
     end
 
+    ["# pnpm settings go here\n# packages:\n#   - 'packages/*'\n", "just a string\n"].each do |workspace_yaml|
+      context "when pnpm-workspace.yaml is not a mapping (#{workspace_yaml.lines.first.strip})" do
+        before do
+          listing = JSON.parse(fixture("github", "contents_js_pnpm.json"))
+          listing << listing.find { |entry| entry["name"] == "pnpm-lock.yaml" }
+                            .merge("name" => "pnpm-workspace.yaml", "path" => "pnpm-workspace.yaml")
+          stub_request(:get, url + "?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 200, body: listing.to_json, headers: json_header)
+          stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "pnpm_lock_quotes_content.json"),
+              headers: json_header
+            )
+          stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: {
+                name: "pnpm-workspace.yaml",
+                path: "pnpm-workspace.yaml",
+                type: "file",
+                encoding: "base64",
+                content: Base64.encode64(workspace_yaml)
+              }.to_json,
+              headers: json_header
+            )
+        end
+
+        it "fetches the files and treats the workspace as having no packages" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to include("package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml")
+        end
+      end
+    end
+
     context "when source points to nested project" do
       let(:repo) { "dependabot-fixtures/projects/pnpm/workspace_v9" }
       let(:directory) { "/packages/package1" }
@@ -628,7 +668,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the npm lockfile" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 11 } }
+        { package_managers: { "npm" => 12 } }
       )
     end
   end
@@ -665,7 +705,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the package manager version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 11, "yarn" => 1 } }
+        { package_managers: { "npm" => 12, "yarn" => 1 } }
       )
     end
   end
@@ -2689,6 +2729,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "does not include the committed .npmrc as a separate file" do
       npmrc_files = file_fetcher_instance.files.select { |f| f.name == ".npmrc" }
       expect(npmrc_files.count).to eq(1)
+    end
+
+    context "when the committed .npmrc sets npm 12 allow policies" do
+      before do
+        stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: JSON.dump({ "content" => Base64.encode64("allow-git=none\nallow-remote=root\nfoo=bar\n") }),
+            headers: json_header
+          )
+      end
+
+      it "keeps the allow policies in the generated .npmrc" do
+        npmrc_file = file_fetcher_instance.files.find { |f| f.name == ".npmrc" }
+        expect(npmrc_file.content).to eq(<<~NPMRC.chomp)
+          @my-company:registry=https://npm.pkg.github.com
+          allow-git=none
+          allow-remote=root
+        NPMRC
+      end
     end
   end
 

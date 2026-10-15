@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only error_message fixture used by the parent hook.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"

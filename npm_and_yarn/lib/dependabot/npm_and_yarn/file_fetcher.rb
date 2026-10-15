@@ -235,9 +235,11 @@ module Dependabot
         content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
         return unless content
 
+        policy_lines = NpmAndYarn::FileUpdater::NpmrcBuilder.policy_lines(npmrc&.content)
+
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: content,
+          content: [content, *policy_lines].reject(&:empty?).join("\n"),
           directory: directory
         )
       end
@@ -360,7 +362,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
+          npm: shrinkwrap || package_lock,
           yarn: yarn_lock,
           pnpm: pnpm_lock
         }
@@ -799,7 +801,9 @@ module Dependabot
       def parsed_pnpm_workspace_yaml
         return {} unless pnpm_workspace_yaml
 
-        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        parsed = YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        # A file with only comments (or a bare scalar) parses to something other than a mapping
+        parsed.is_a?(Hash) ? parsed : {}
       rescue Psych::SyntaxError, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, T.must(pnpm_workspace_yaml).path
       end

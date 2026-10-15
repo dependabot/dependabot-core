@@ -20,6 +20,7 @@ class RakeHelpers
   # because it's an empty gem as a placeholder to prevent namesquatting.
   GEMSPECS = %w(
     common/dependabot-common.gemspec
+    apm/dependabot-apm.gemspec
     bazel/dependabot-bazel.gemspec
     bun/dependabot-bun.gemspec
     bundler/dependabot-bundler.gemspec

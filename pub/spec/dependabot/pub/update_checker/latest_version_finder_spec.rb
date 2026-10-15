@@ -57,9 +57,9 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
 
         expect(report).not_to be_nil
 
-        expect(report["name"]).to eq(dependency_name)
-        expect(report["version"]).to be_a(String)
-        expect(report["latest"]).to be_a(String)
+        expect(report.name).to eq(dependency_name)
+        expect(report.version).to be_a(String)
+        expect(report.latest).to be_a(String)
       end
     end
 
@@ -108,7 +108,15 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
     before do
       allow(Dependabot::Pub::Package::PackageDetailsFetcher).to receive(:new).and_return(package_details_fetcher)
       allow(package_details_fetcher).to receive_messages(
-        report: [{ "name" => dependency_name, "version" => dependency_version, "latest" => latest_version }],
+        report: [Dependabot::Pub::DependencyServicesResult::ReportEntry.new(
+          name: dependency_name,
+          version: dependency_version,
+          latest: latest_version,
+          compatible: [],
+          single_breaking: [],
+          multi_breaking: [],
+          smallest_update: nil
+        )],
         package_details_metadata: package_releases
       )
     end
@@ -196,6 +204,59 @@ RSpec.describe Dependabot::Pub::UpdateChecker::LatestVersionFinder do
 
       it "holds back the update to the current version" do
         expect(finder.latest_version).to eq(dependency_version)
+      end
+    end
+
+    describe "typed report candidates" do
+      let(:report_entry) do
+        {
+          "name" => dependency_name,
+          "version" => dependency_version,
+          "latest" => nil,
+          "compatible" => [],
+          "singleBreaking" => [],
+          "multiBreaking" => []
+        }
+      end
+      let(:reports) do
+        Dependabot::Pub::DependencyServicesResult
+          .report_from_json(JSON.dump("dependencies" => [report_entry])).dependencies
+      end
+      let(:fetcher) { instance_double(Dependabot::Pub::Package::PackageDetailsFetcher, report: reports) }
+
+      before do
+        allow(Dependabot::Pub::Package::PackageDetailsFetcher).to receive(:new).and_return(fetcher)
+      end
+
+      it "returns no candidates for valid empty solutions" do
+        expect(latest_version_finder.latest_version).to be_nil
+        expect(latest_version_finder.latest_resolvable_version).to be_nil
+        expect(latest_version_finder.latest_resolvable_version_with_no_unlock).to be_nil
+        expect(latest_version_finder.latest_version_resolvable_with_full_unlock).to be_nil
+        expect(latest_version_finder.full_unlock_updates).to eq([])
+        expect(latest_version_finder.latest_resolvable_update).to be_nil
+      end
+
+      context "with a removed dependency" do
+        let(:report_entry) do
+          super().merge("singleBreaking" => [{ "name" => dependency_name, "version" => nil, "kind" => "transitive" }])
+        end
+
+        it "retains the removal without treating it as a new version" do
+          expect(latest_version_finder.latest_resolvable_update).to have_attributes(version: nil, kind: "transitive")
+          expect(latest_version_finder.latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "without the requested dependency" do
+        let(:report_entry) { super().merge("name" => "other") }
+
+        it "raises an explicit helper failure" do
+          expect { latest_version_finder.current_report }.to raise_error(
+            Dependabot::SharedHelpers::HelperSubprocessFailed,
+            "dependency_services report does not include the requested dependency"
+          )
+        end
       end
     end
   end
