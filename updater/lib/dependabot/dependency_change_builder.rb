@@ -95,7 +95,8 @@ module Dependabot
       updated_files = generate_dependency_files
 
       unless updated_files.any?
-        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
+        raise DependencyFileContentNotChanged,
+              "FileUpdater failed to update any files for: #{dependency_info_for_error}"
       end
 
       enforce_blocked_transitive_versions!
@@ -249,6 +250,7 @@ module Dependabot
         credentials: job.credentials,
         options: job.experiments.merge(
           security_updates_only: job.security_updates_only?,
+          source_hostname: job.source.hostname,
           update_cooldown: job.security_updates_only? ? nil : job.cooldown
         )
       )

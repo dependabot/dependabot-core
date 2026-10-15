@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 # rubocop:disable RSpec/Output -- This is a subprocess helper, not a spec. It must write to stdout/stderr.

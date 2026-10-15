@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child requirements and generated Poetry examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "toml-rb"

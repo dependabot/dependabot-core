@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only project_name and latest_allowable_version fixtures.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -1863,6 +1865,23 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it { is_expected.to be(true) }
+
+      context "when running on npm 12" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+        end
+
+        it "includes allow flags in the check command" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |cmd|
+            expect(cmd).to include("--allow-git=all")
+            expect(cmd).to include("--allow-remote=all")
+            ""
+          end
+
+          expect(resolver.latest_version_resolvable_with_full_unlock?).to be(true)
+        end
+      end
     end
   end
 

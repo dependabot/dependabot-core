@@ -1,0 +1,7 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": {
+    "sane": "^2.0.0"
+  }
+}
