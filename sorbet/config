@@ -26,7 +26,6 @@
 --ignore=hex/spec/
 --ignore=julia/spec/
 --ignore=nix/spec/
---ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
 --ignore=pre_commit/spec/
 --ignore=pub/spec/

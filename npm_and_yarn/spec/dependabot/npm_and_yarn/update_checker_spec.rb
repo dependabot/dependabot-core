@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only fixtures and dynamically nested error constants.
+
 require "spec_helper"
 
 require "dependabot/dependency_file"

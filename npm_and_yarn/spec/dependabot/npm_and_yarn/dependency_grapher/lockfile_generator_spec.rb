@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files and package_manager fixtures.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/dependency_grapher"
 require "dependabot/npm_and_yarn/dependency_grapher/lockfile_generator"

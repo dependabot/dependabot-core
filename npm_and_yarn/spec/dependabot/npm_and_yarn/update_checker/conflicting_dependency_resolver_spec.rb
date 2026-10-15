@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files fixture used by the parent resolver.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -10,12 +12,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
   let(:resolver) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 

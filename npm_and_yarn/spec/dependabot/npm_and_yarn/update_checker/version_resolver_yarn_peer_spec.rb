@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only peer_warning fixture used by the parent hook.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/npm_and_yarn/update_checker/version_resolver"

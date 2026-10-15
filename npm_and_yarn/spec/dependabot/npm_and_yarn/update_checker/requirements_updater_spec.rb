@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet does not rewrite the its-generated example blocks as RSpec instance examples.
+
 require "spec_helper"
 
 require "dependabot/npm_and_yarn/update_checker/requirements_updater"
