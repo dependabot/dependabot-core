@@ -1614,6 +1614,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.npm_supports_min_release_age?).to be(true)
     end
 
+    it "is true for npm 12" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(true)
+    end
+
     it "is false for npm older than 11.10.0" do
       allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.9.0"))
       expect(described_class.npm_supports_min_release_age?).to be(false)
