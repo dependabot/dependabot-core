@@ -700,6 +700,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  describe "classifying real npm 12 error output" do
+    subject(:updated_npm_lock) { updater.updated_lockfile_reponse(Exception.new(npm_output)) }
+
+    let(:files) { project_dependency_files("npm8/simple") }
+    let(:npm_output) { fixture("npm_errors", "npm12", "#{scenario}.txt") }
+
+    before do
+      # Nothing resolves before the update either, which is when missing-package errors become resolvability errors
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: npm_output, error_context: {})
+      )
+    end
+
+    {
+      "eallowgit" => [Dependabot::DependencyFileNotResolvable, /"git" has been disabled/],
+      "eallowremote" => [Dependabot::DependencyFileNotResolvable, /"remote" has been disabled/],
+      "err_invalid_auth" => [Dependabot::PrivateSourceAuthenticationFailure, /_auth/],
+      "etarget" => [Dependabot::DependencyFileNotResolvable, /etag@\^99\.0\.0/],
+      "e404" => [Dependabot::DependencyFileNotResolvable, /this-pkg-does-not-exist-xyz-123/]
+    }.each do |scenario_name, (error_class, message)|
+      context "with #{scenario_name}" do
+        let(:scenario) { scenario_name }
+
+        it "raises #{error_class}" do
+          expect { updated_npm_lock }.to raise_error(error_class, message)
+        end
+      end
+    end
+  end
+
   context "with a private registry that is inaccessible due to missing or invalid auth" do
     subject(:updated_npm_lock) { updater.updated_lockfile_reponse(exception) }
 

@@ -234,6 +234,20 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       end
     end
 
+    context "with ERESOLVE error from npm 12" do
+      it "raises DependencyFileNotResolvable with a user-friendly message" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: fixture("npm_errors", "npm12", "eresolve.txt"),
+                       error_context: {}
+                     ))
+
+        expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("conflicting peer dependencies")
+        end
+      end
+    end
+
     context "with network error" do
       it "raises PrivateSourceTimedOut with the registry hostname" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)

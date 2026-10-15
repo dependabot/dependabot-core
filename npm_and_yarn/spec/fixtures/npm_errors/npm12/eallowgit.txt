@@ -1,0 +1,4 @@
+npm error code EALLOWGIT
+npm error Fetching packages of type "git" have been disabled
+npm error Refusing to fetch "left-pad@git+https://github.com/left-pad/left-pad.git"
+npm error A complete log of this run can be found in: /home/dependabot/.npm/_logs/2026-10-14T20_24_35_588Z-debug-0.log

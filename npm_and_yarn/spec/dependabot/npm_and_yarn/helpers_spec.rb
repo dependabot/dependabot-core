@@ -16,7 +16,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/modern")]
     end
 
-    after { described_class.npm_version_selector = nil }
+    around do |example|
+      previous_selector = described_class.npm_version_selector
+      previous_legacy_selector = described_class.npm_version_selector_for("/legacy")
+      previous_modern_selector = described_class.npm_version_selector_for("/modern")
+
+      begin
+        example.run
+      ensure
+        described_class.npm_version_selector = previous_selector
+        described_class.register_npm_version_selector("/legacy", previous_legacy_selector)
+        described_class.register_npm_version_selector("/modern", previous_modern_selector)
+      end
+    end
+
+    it "returns the selector registered for a directory" do
+      described_class.register_npm_version_selector("/legacy", "9")
+
+      expect(described_class.npm_version_selector_for("/legacy")).to eq("9")
+      expect(described_class.npm_version_selector_for("/modern")).to be_nil
+    end
 
     it "restores the selector registered for each manifest directory" do
       described_class.register_npm_version_selector("/legacy", "9")
@@ -246,6 +265,14 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.2.0"))
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
+    end
+  end
+
+  describe "::command_observer" do
+    %w(eallowgit eallowremote etarget e404 err_invalid_auth).each do |scenario|
+      it "ignores the npm 12 #{scenario} error" do
+        expect(described_class.command_observer(fixture("npm_errors", "npm12", "#{scenario}.txt"))).to eq({})
+      end
     end
   end
 

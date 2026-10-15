@@ -56,10 +56,15 @@ module Dependabot
           npm_version_selectors[directory] = version
         end
 
+        sig { params(directory: String).returns(T.nilable(String)) }
+        def npm_version_selector_for(directory)
+          npm_version_selectors[directory]
+        end
+
         sig { params(files: T::Array[Dependabot::DependencyFile]).void }
         def activate_npm_version_selector(files)
           manifest = files.find { |file| file.name == "package.json" && !file.support_file }
-          self.npm_version_selector = manifest && npm_version_selectors[manifest.directory]
+          self.npm_version_selector = manifest && npm_version_selector_for(manifest.directory)
         end
 
         private

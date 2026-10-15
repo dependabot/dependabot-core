@@ -1,0 +1,4 @@
+npm error code ETARGET
+npm error notarget No matching version found for etag@^99.0.0.
+npm error notarget In most cases you or one of your dependencies are requesting a package version that doesn't exist.
+npm error A complete log of this run can be found in: /home/dependabot/.npm/_logs/2026-10-14T20_24_36_054Z-debug-0.log
