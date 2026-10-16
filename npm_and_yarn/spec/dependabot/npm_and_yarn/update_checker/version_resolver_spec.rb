@@ -17,7 +17,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       latest_allowable_version: latest_allowable_version,
       latest_version_finder: latest_version_finder,
       repo_contents_path: repo_contents_path,
-      dependency_group: group
+      dependency_group: group,
+      security_updates_only: security_updates_only,
+      update_cooldown: update_cooldown
     )
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
@@ -34,13 +36,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   end
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
   let(:group) { nil }
+  let(:security_updates_only) { false }
+  let(:update_cooldown) { nil }
   let(:latest_version_finder) do
     Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: [],
-      security_advisories: []
+      security_advisories: [],
+      security_updates_only: security_updates_only,
+      cooldown_options: update_cooldown
     )
   end
   let(:react_dom_registry_listing_url) do
@@ -122,6 +128,65 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
     it "rejects an unsatisfied candidate without reading deprecated release metadata" do
       expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+    end
+
+    context "when peer-compatible fallbacks are inside the native cooldown" do
+      let(:workspace_content) { "minimumReleaseAge: 10080\n" }
+      let(:dependency_files) do
+        super() + [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: workspace_content)]
+      end
+      let(:react_dom_registry_response) do
+        response = JSON.parse(super())
+        response["versions"].merge!(
+          "15.6.2" => { "peerDependencies" => current_peers },
+          "16.2.0" => { "peerDependencies" => current_peers },
+          "16.4.0" => { "peerDependencies" => current_peers }
+        )
+        response["time"] = {
+          "15.2.0" => (Time.now.utc - (100 * 24 * 60 * 60)).iso8601,
+          "15.6.2" => (Time.now.utc - (10 * 24 * 60 * 60)).iso8601,
+          "16.2.0" => (Time.now.utc - (24 * 60 * 60)).iso8601,
+          "16.3.1" => (Time.now.utc - (10 * 24 * 60 * 60)).iso8601,
+          "16.4.0" => (Time.now.utc - (24 * 60 * 60)).iso8601
+        }
+        response.to_json
+      end
+
+      it "uses the mature peer-compatible fallback" do
+        expect(resolved_version.to_s).to eq("15.6.2")
+      end
+
+      context "when pnpm exempts a young fallback below the selected target" do
+        let(:workspace_content) { "minimumReleaseAge: 10080\nminimumReleaseAgeExclude: ['react-dom@16.2.0']\n" }
+
+        it "allows the native exemption" do
+          expect(resolved_version.to_s).to eq("16.2.0")
+        end
+
+        context "when Dependabot also has a cooldown" do
+          let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 2) }
+
+          it "retains the independent Dependabot window" do
+            expect(resolved_version.to_s).to eq("15.6.2")
+          end
+        end
+      end
+
+      context "when pnpm exempts a release above the selected target" do
+        let(:workspace_content) { "minimumReleaseAge: 10080\nminimumReleaseAgeExclude: ['react-dom@16.4.0']\n" }
+
+        it "does not exceed the latest allowable version" do
+          expect(resolved_version.to_s).to eq("15.6.2")
+        end
+      end
+
+      context "when resolving a security update" do
+        let(:security_updates_only) { true }
+
+        it "bypasses the native window without exceeding the target" do
+          expect(resolved_version.to_s).to eq("16.2.0")
+        end
+      end
     end
 
     [nil, false, {}].each do |value|
@@ -253,6 +318,33 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         expect(updates.map(&:keys)).to eq([%i(dependency version previous_version)] * 2)
         expect(updates.map { |update| [update[:dependency].name, update[:version].to_s, update[:previous_version]] })
           .to eq([["react", "16.3.1", "15.2.0"], ["react-dom", "16.3.1", "15.2.0"]])
+      end
+
+      context "when the required peer companion is too young" do
+        let(:dependency_files) do
+          super() + [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")]
+        end
+        let(:react_dom_registry_response) do
+          response = JSON.parse(super())
+          response["time"] = {
+            "15.2.0" => (Time.now.utc - (10 * 24 * 60 * 60)).iso8601,
+            "16.3.1" => (Time.now.utc - (24 * 60 * 60)).iso8601
+          }
+          response.to_json
+        end
+
+        it "does not unlock a companion within the native window" do
+          expect(resolver.dependency_updates_from_full_unlock).to be_nil
+        end
+
+        context "when resolving a security update" do
+          let(:security_updates_only) { true }
+
+          it "still unlocks the young companion" do
+            expect(resolver.dependency_updates_from_full_unlock.map { |update| update[:dependency].name })
+              .to eq(%w(react react-dom))
+          end
+        end
       end
     end
   end
@@ -1499,6 +1591,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             result = resolver.latest_resolvable_version
             expect(result).to eq(Gem::Version.new("1.2.0"))
           end
+
+          context "when the highest trusted fallback is too young" do
+            let(:dependency_files) do
+              super() +
+                [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")]
+            end
+            let(:left_pad_registry_response) do
+              response = JSON.parse(super())
+              response["time"]["1.2.0"] = (Time.now.utc - (24 * 60 * 60)).iso8601
+              response.to_json
+            end
+
+            it "skips the young trusted release" do
+              expect(resolver.latest_resolvable_version.to_s).to eq("1.1.3")
+            end
+
+            context "when resolving a security update" do
+              let(:security_updates_only) { true }
+
+              it "allows the young trusted release" do
+                expect(resolver.latest_resolvable_version.to_s).to eq("1.2.0")
+              end
+            end
+          end
         end
 
         context "when multiple older versions also fail trust downgrade" do
@@ -1664,6 +1780,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
 
         it { is_expected.to be(true) }
+
+        context "when a required monorepo companion is cooling down" do
+          let(:project_name) { "npm6/monorepo_dep_multiple_no_lockfile" }
+          let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+          let(:vue_template_compiler_registry_response) do
+            response = JSON.parse(super())
+            response["time"]["2.5.21"] = (Time.now.utc - (24 * 60 * 60)).iso8601
+            response.to_json
+          end
+
+          it { is_expected.to be(false) }
+
+          context "when resolving a security update" do
+            let(:security_updates_only) { true }
+
+            it { is_expected.to be(true) }
+          end
+        end
       end
     end
 

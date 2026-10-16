@@ -401,6 +401,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ignored_versions: ignored_versions,
         raise_on_ignored: false,
         security_advisories: security_advisories,
+        security_updates_only: false,
         cooldown_options: nil
       ).and_call_original
 
@@ -898,6 +899,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           ignored_versions: ignored_versions,
           raise_on_ignored: false,
           security_advisories: security_advisories,
+          security_updates_only: false,
           cooldown_options: nil
         ).and_call_original
 
@@ -1040,6 +1042,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           repo_contents_path: nil,
           dependency_group: nil,
           raise_on_ignored: false,
+          security_updates_only: false,
           update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
@@ -1458,6 +1461,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           repo_contents_path: nil,
           dependency_group: nil,
           raise_on_ignored: false,
+          security_updates_only: false,
           update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
@@ -2272,6 +2276,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(updated_deps.length).to eq(2)
         expect(updated_deps.last.version).to eq("3.5.14")
       end
+
+      context "with a pnpm native cooldown and a young types companion" do
+        let(:dependency_files) do
+          project_dependency_files("pnpm/ts_fully_typed") +
+            [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")]
+        end
+        let(:dependency_requirements) do
+          [{ file: "package.json", requirement: "3.4", groups: ["dependencies"], source: nil }]
+        end
+        let(:types_listing_url) { "https://registry.npmjs.org/@types%2Fjquery" }
+        let(:types_response) do
+          response = JSON.parse(super())
+          response["time"]["3.5.14"] = (Time.now.utc - (24 * 60 * 60)).iso8601
+          response.to_json
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+          stub_request(:head, %r{\Ahttps://registry\.npmjs\.org/@types/jquery/-/jquery-})
+            .to_return(status: 200)
+        end
+
+        it "includes the young companion in the full-unlock security update" do
+          updates = checker.updated_dependencies(requirements_to_unlock: :all)
+
+          expect(updates.map { |dep| [dep.name, dep.version] })
+            .to include(["@types/jquery", "3.5.14"])
+        end
+      end
     end
   end
 
@@ -2490,8 +2523,369 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "pnpm minimumReleaseAge cooldown" do
+    before do
+      allow(Dependabot.logger).to receive(:info).and_call_original
+    end
+
+    let(:workspace_yaml) { "minimumReleaseAge: 10080\n" }
+    let(:workspace_yaml_name) { "pnpm-workspace.yaml" }
+    let(:dependency_files) do
+      project_dependency_files("npm6/no_lockfile") +
+        project_dependency_files("pnpm/simple").select { |file| file.name == "pnpm-lock.yaml" } +
+        [Dependabot::DependencyFile.new(name: workspace_yaml_name, content: workspace_yaml)]
+    end
+
+    it "creates a cooldown from the window, converted from minutes to days" do
+      expect(Dependabot.logger).to receive(:info).with(
+        "pnpm-workspace.yaml minimumReleaseAge (10080 minutes, 7 days) is applied as the cooldown because " \
+        "no dependabot.yml cooldown is configured."
+      )
+      expect(checker.update_cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+      expect(checker.update_cooldown.default_days).to eq(7)
+    end
+
+    [
+      ["neither source is set", nil, nil, nil],
+      ["only pnpm sets a short window", 1440, nil, 1],
+      ["only dependabot.yml sets a short cooldown", nil, 1, 1],
+      ["pnpm sets the higher of two short windows", 2880, 1, 2],
+      ["dependabot.yml sets the higher of two short windows", 1440, 2, 2],
+      ["both sources set the same short window", 1440, 1, 1],
+      ["pnpm explicitly disables the window", 0, nil, nil],
+      ["pnpm disables its window but dependabot.yml sets a cooldown", 0, 1, 1],
+      ["dependabot.yml explicitly disables the cooldown", nil, 0, 0],
+      ["an existing three-day cooldown exceeds the native window", 1440, 3, 3],
+      ["a zero native window accompanies an existing three-day cooldown", 0, 3, 3]
+    ].each do |description, minutes, cooldown_days, expected_days|
+      context "when #{description}" do
+        let(:workspace_yaml) { minutes.nil? ? "packages: []\n" : "minimumReleaseAge: #{minutes}\n" }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: cooldown_days) unless cooldown_days.nil?
+        end
+
+        it "applies the native floor to the cooldown supplied to the checker" do
+          expect(checker.update_cooldown&.default_days).to eq(expected_days)
+        end
+      end
+    end
+
+    [
+      ["last value is higher", "minimumReleaseAge: 1440\nminimumReleaseAge: 4320\n", 3],
+      ["last value is lower", "minimumReleaseAge: 4320\nminimumReleaseAge: 1440\n", 1],
+      ["last value disables the gate", "minimumReleaseAge: 4320\nminimumReleaseAge: 0\n", nil],
+      ["last value is non-numeric", "minimumReleaseAge: 4320\nminimumReleaseAge: soon\n", nil],
+      ["value is quoted with a comment", "\"minimumReleaseAge\": '2880' # two days\n", 2]
+    ].each do |description, content, expected_days|
+      context "when the #{description}" do
+        let(:workspace_yaml) { content }
+
+        it "uses the same parsing as the lockfile updater" do
+          expect(checker.update_cooldown&.default_days).to eq(expected_days)
+        end
+      end
+    end
+
+    context "when workspace files configure different windows" do
+      let(:dependency_files) do
+        super() + [Dependabot::DependencyFile.new(
+          name: "../pnpm-workspace.yaml",
+          content: "minimumReleaseAge: 20160\n"
+        )]
+      end
+
+      it "uses the longest window across the files" do
+        expect(checker.update_cooldown.default_days).to eq(14)
+      end
+
+      context "when one file has an unreadable window" do
+        let(:workspace_yaml) { "minimumReleaseAge: soon\n" }
+
+        it "does not discard the other file's numeric window" do
+          expect(checker.update_cooldown.default_days).to eq(14)
+        end
+      end
+    end
+
+    context "when the window is not a whole number of days" do
+      let(:workspace_yaml) { "minimumReleaseAge: 1500\n" }
+
+      it "rounds up so a version younger than the window is not picked" do
+        expect(checker.update_cooldown.default_days).to eq(2)
+      end
+    end
+
+    context "when the workspace uses flow-style YAML" do
+      let(:workspace_yaml) { "{ minimumReleaseAge: 5760 }" }
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+
+      it "raises the supplied cooldown to the native window" do
+        expect(checker.update_cooldown.default_days).to eq(4)
+      end
+    end
+
+    context "when npm configuration accompanies a pnpm workspace" do
+      let(:workspace_yaml) { "minimumReleaseAge: 2880\n" }
+      let(:dependency_files) do
+        super() + [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=30\n")]
+      end
+
+      it "does not apply npm's release-age policy to pnpm" do
+        expect(checker.update_cooldown.default_days).to eq(2)
+      end
+
+      context "when pnpm has no native window and npm disables its gate" do
+        let(:workspace_yaml) { "packages: []\n" }
+        let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+        let(:dependency_files) do
+          project_dependency_files("pnpm/simple") +
+            [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=0\n")]
+        end
+
+        it "does not disable the supplied pnpm cooldown" do
+          expect(checker.update_cooldown).to equal(update_cooldown)
+        end
+      end
+    end
+
+    context "when the workspace file is in an ancestor directory" do
+      let(:workspace_yaml_name) { "../pnpm-workspace.yaml" }
+
+      it "reads it" do
+        expect(checker.update_cooldown.default_days).to eq(7)
+      end
+    end
+
+    context "when the value is not a plain number" do
+      let(:workspace_yaml) { "minimumReleaseAge: soon\n" }
+
+      it "leaves the window to pnpm" do
+        expect(checker.update_cooldown).to be_nil
+      end
+    end
+
+    context "when this is a security update" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency.name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 99.0.0"]
+          )
+        ]
+      end
+
+      it "does not apply the window, so a fix is never held back by it" do
+        expect(Dependabot.logger).to receive(:info).with(
+          "pnpm-workspace.yaml minimumReleaseAge (10080 minutes, 7 days) is bypassed for this security update."
+        )
+        expect(checker.update_cooldown).to be_nil
+      end
+    end
+
+    context "when a dependabot.yml cooldown is longer" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14) }
+
+      it "keeps the longer cooldown and logs no warning" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(Dependabot.logger).to receive(:info).with(
+          "pnpm-workspace.yaml minimumReleaseAge (10080 minutes, 7 days) is already satisfied by all " \
+          "dependabot.yml update_cooldown values; the dependabot.yml cooldown is used."
+        )
+        expect(checker.update_cooldown.default_days).to eq(14)
+      end
+    end
+
+    context "when a dependabot.yml cooldown is shorter" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1, semver_patch_days: 0)
+      end
+
+      it "raises every field to the window and says so" do
+        allow(Dependabot.logger).to receive(:warn)
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/minimumReleaseAge \(10080 minutes, 7 days\) acts as a minimum floor/)
+        %w(default_days semver_major_days semver_minor_days semver_patch_days).each do |field|
+          expect(Dependabot.logger).to receive(:warn).with(
+            "pnpm-workspace.yaml minimumReleaseAge (10080 minutes, 7 days) overrides dependabot.yml #{field} " \
+            "(1 days) because it would cause pnpm to reject the selected version."
+          )
+        end
+
+        expect(checker.update_cooldown.default_days).to eq(7)
+        expect(checker.update_cooldown.semver_major_days).to eq(7)
+        expect(checker.update_cooldown.semver_minor_days).to eq(7)
+        expect(checker.update_cooldown.semver_patch_days).to eq(7)
+      end
+    end
+
+    context "when only some cooldown fields are below the pnpm window" do
+      let(:workspace_yaml) { "minimumReleaseAge: 4320\n" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 10, semver_major_days: 14, semver_minor_days: 5, semver_patch_days: 1
+        )
+      end
+
+      it "raises only the fields below the native floor" do
+        expect(checker.update_cooldown.default_days).to eq(10)
+        expect(checker.update_cooldown.semver_major_days).to eq(14)
+        expect(checker.update_cooldown.semver_minor_days).to eq(5)
+        expect(checker.update_cooldown.semver_patch_days).to eq(3)
+      end
+    end
+
+    context "when include/exclude patterns accompany a native window" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 14, include: ["lodash"], exclude: ["etag"]
+        )
+      end
+
+      it "reports the native floor independently of Dependabot patterns and logs why" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          "pnpm-workspace.yaml minimumReleaseAge applies independently of dependabot.yml cooldown " \
+          "include/exclude patterns; native minimumReleaseAgeExclude exemptions are preserved."
+        )
+        expect(checker.update_cooldown.include).to be_empty
+        expect(checker.update_cooldown.exclude).to be_empty
+        expect(checker.update_cooldown.default_days).to eq(14)
+      end
+    end
+
+    context "when selecting a version with both cooldown sources" do
+      let(:workspace_yaml) { "minimumReleaseAge: 2880\n" }
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1) }
+      let(:registry_response) do
+        response = JSON.parse(super())
+        response["time"]["1.7.0"] = (Time.now.utc - (36 * 60 * 60)).iso8601
+        response["time"]["1.6.0"] = (Time.now.utc - (4 * 24 * 60 * 60)).iso8601
+        response.to_json
+      end
+
+      before do
+        stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-1.6.0.tgz")
+          .to_return(status: 200)
+      end
+
+      it "does not select a version younger than the higher native window" do
+        expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.6.0"))
+      end
+
+      context "when the dependabot.yml cooldown is higher" do
+        let(:workspace_yaml) { "minimumReleaseAge: 1440\n" }
+        let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 2) }
+
+        it "does not select a version younger than the higher Dependabot cooldown" do
+          expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.6.0"))
+        end
+      end
+
+      context "when pnpm sets a one-day window and the caller supplies no cooldown" do
+        let(:workspace_yaml) { "minimumReleaseAge: 1440\n" }
+        let(:update_cooldown) { nil }
+
+        it "allows a version released less than three days ago" do
+          expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+        end
+      end
+
+      context "when only dependabot.yml sets a one-day cooldown" do
+        let(:workspace_yaml) { "packages: []\n" }
+
+        it "allows a version released less than three days ago" do
+          expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+        end
+      end
+
+      [
+        "etag", "et*", "etag@1.7.0", "etag@1.5.0 || 1.7.0"
+      ].each do |exemption|
+        context "when pnpm exempts #{exemption}" do
+          let(:workspace_yaml) do
+            "minimumReleaseAge: 10080\nminimumReleaseAgeExclude:\n  - '#{exemption}'\n"
+          end
+          let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0) }
+          let(:registry_response) do
+            response = JSON.parse(super())
+            response["time"]["1.6.0"] = (Time.now.utc - (10 * 24 * 60 * 60)).iso8601
+            response.to_json
+          end
+
+          it "allows the exempt young release" do
+            expect(checker.latest_version.to_s).to eq("1.7.0")
+          end
+
+          context "when Dependabot has its own cooldown" do
+            let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 2) }
+
+            it "still enforces the Dependabot cooldown on the exempt release" do
+              expect(checker.latest_version.to_s).to eq("1.6.0")
+            end
+          end
+
+          context "when Dependabot excludes the package" do
+            let(:update_cooldown) do
+              Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10, exclude: ["etag"])
+            end
+
+            it "does not reintroduce Dependabot's excluded cooldown" do
+              expect(checker.latest_version.to_s).to eq("1.7.0")
+            end
+          end
+        end
+      end
+
+      context "when pnpm exempts a different version" do
+        let(:workspace_yaml) { "{ minimumReleaseAge: 4320, minimumReleaseAgeExclude: ['etag@1.6.0'] }" }
+        let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0) }
+
+        it "keeps the native floor on the unexempt young release" do
+          expect(checker.latest_version.to_s).to eq("1.6.0")
+        end
+
+        context "when another workspace file still requires a release-age window" do
+          let(:workspace_yaml) { "{ minimumReleaseAge: 10080, minimumReleaseAgeExclude: [etag] }" }
+          let(:dependency_files) do
+            super() + [Dependabot::DependencyFile.new(
+              name: "../pnpm-workspace.yaml", content: "minimumReleaseAge: 2880\n"
+            )]
+          end
+
+          it "does not extend one file's exemption to another file's policy" do
+            expect(checker.latest_version.to_s).to eq("1.6.0")
+          end
+        end
+      end
+
+      context "when only Dependabot excludes the package" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10, exclude: ["etag"])
+        end
+
+        it "still applies pnpm's native window" do
+          expect(checker.latest_version.to_s).to eq("1.6.0")
+        end
+      end
+    end
+  end
+
   describe "npmrc min-release-age cooldown" do
     let(:dependency_files) { project_dependency_files("npm6/npmrc_min_release_age") }
+
+    context "when the project selects pnpm only through engines" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "package.json", content: { "engines" => { "pnpm" => ">=10" } }.to_json),
+          Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=30\n")
+        ]
+      end
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+
+      it "does not apply npm's native gate" do
+        expect(checker.update_cooldown).to equal(update_cooldown)
+      end
+    end
 
     it "creates a cooldown from the npmrc min-release-age value" do
       expect(checker.update_cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)

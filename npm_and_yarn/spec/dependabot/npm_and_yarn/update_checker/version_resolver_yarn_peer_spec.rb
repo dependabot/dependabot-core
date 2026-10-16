@@ -20,7 +20,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       repo_contents_path: nil
     )
   end
-  let(:finder) { instance_double(Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder, possible_releases: []) }
+  let(:finder) do
+    instance_double(Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder, releases_outside_cooldown: [])
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "react-dom",
