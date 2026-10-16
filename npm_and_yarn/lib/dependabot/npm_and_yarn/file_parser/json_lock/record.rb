@@ -69,6 +69,22 @@ module Dependabot
             entries(object.fetch("dependencies", {}), "#{@context}.dependencies")
           end
 
+          sig { returns(T::Hash[String, Record]) }
+          def package_entries
+            entries(object.fetch("packages", {}), "#{@context}.packages")
+          end
+
+          sig { params(modern: T::Boolean).returns(T::Array[String]) }
+          def dependency_names(modern:)
+            fields = T.let(
+              modern ? %w(dependencies devDependencies optionalDependencies peerDependencies) : %w(requires),
+              T::Array[String]
+            )
+            fields.flat_map do |field|
+              object_value(object.fetch(field, {}), "#{@context}.#{field}").keys
+            end.uniq
+          end
+
           sig { params(name: String).returns(T.nilable(Record)) }
           def legacy_entry(name)
             dependencies = object["dependencies"]

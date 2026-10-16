@@ -1,0 +1,32 @@
+__metadata:
+  version: 8
+
+"legacy-parent@npm:1.0.0":
+  version: 1.0.0
+  resolution: "legacy-parent@npm:1.0.0"
+  dependencies:
+    version-scoped-test-dependency: "npm:^1.1.7"
+
+"current-parent@npm:1.0.0":
+  version: 1.0.0
+  resolution: "current-parent@npm:1.0.0"
+  dependencies:
+    version-scoped-test-dependency: "npm:^2.0.2"
+
+"modern-parent@npm:1.0.0":
+  version: 1.0.0
+  resolution: "modern-parent@npm:1.0.0"
+  dependencies:
+    version-scoped-test-dependency: "npm:^5.0.2"
+
+"version-scoped-test-dependency@npm:^1.1.7":
+  version: 1.1.12
+  resolution: "version-scoped-test-dependency@npm:1.1.12"
+
+"version-scoped-test-dependency@npm:^2.0.2":
+  version: 2.1.2
+  resolution: "version-scoped-test-dependency@npm:2.1.2"
+
+"version-scoped-test-dependency@npm:^5.0.2":
+  version: 5.0.2
+  resolution: "version-scoped-test-dependency@npm:5.0.2"

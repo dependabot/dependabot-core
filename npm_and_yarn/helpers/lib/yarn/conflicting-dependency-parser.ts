@@ -4,6 +4,7 @@
  *  - directory containing a package.json and a yarn.lock
  *  - dependency name
  *  - target dependency version
+ *  - optional installed dependency version to scope the check
  *
  * Outputs:
  *  - An array of objects with conflicting dependencies
@@ -60,23 +61,31 @@ export async function findConflictingDependencies(
   directory: string,
   depName: string,
   targetVersion: string,
-  enableNormalizedTraversal = false
+  enableNormalizedTraversal = false,
+  currentVersion?: string
 ): Promise<ConflictingDependency[]> {
   if (!enableNormalizedTraversal) {
-    return findLegacyConflictingDependencies(directory, depName, targetVersion);
+    return findLegacyConflictingDependencies(
+      directory,
+      depName,
+      targetVersion,
+      currentVersion
+    );
   }
 
   return findNormalizedConflictingDependencies(
     directory,
     depName,
-    targetVersion
+    targetVersion,
+    currentVersion
   );
 }
 
 async function findNormalizedConflictingDependencies(
   directory: string,
   depName: string,
-  targetVersion: string
+  targetVersion: string,
+  currentVersion?: string
 ): Promise<ConflictingDependency[]> {
   const lockfileJson = await parseNormalized(directory);
   const packageJson = fs
@@ -118,6 +127,7 @@ async function findNormalizedConflictingDependencies(
         topLevelEdge,
         depName,
         targetVersion,
+        currentVersion,
         topLevelSpec,
         lockfileJson
       ).values()
@@ -162,6 +172,7 @@ async function findNormalizedConflictingDependencies(
             dependency,
             depName,
             targetVersion,
+            currentVersion,
             { ...topLevelSpec },
             lockfileJson,
             { ...transitiveSpec }
@@ -274,6 +285,7 @@ function findConflictingParentDependencies(
   edge: DependencyEdge,
   targetDep: string,
   targetversion: string,
+  currentVersion: string | undefined,
   topLevelSpec: TopLevelSpec,
   lockfile: NormalizedLockfileEntry[],
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
@@ -304,7 +316,8 @@ function findConflictingParentDependencies(
     for (const subDep of pkg.dependencies) {
       if (
         realNameOf(subDep) === targetDep &&
-        conflictsWith(targetversion, subDep)
+        conflictsWith(targetversion, subDep) &&
+        resolvesToCurrentVersion(lockfile, subDep, currentVersion)
       ) {
         // Only add the conflicting parent once per version preventing
         // duplicate dependencies from circular graphs.
@@ -334,6 +347,7 @@ function findConflictingParentDependencies(
           subDep,
           targetDep,
           targetversion,
+          currentVersion,
           topLevelSpec,
           lockfile,
           nextTransitiveSpec,
@@ -346,4 +360,19 @@ function findConflictingParentDependencies(
   }
 
   return conflictingParents;
+}
+
+function resolvesToCurrentVersion(
+  lockfile: NormalizedLockfileEntry[],
+  edge: DependencyEdge,
+  currentVersion?: string
+): boolean {
+  if (!currentVersion) return true;
+
+  const entries = findEntries(lockfile, edge);
+  // Unresolved edges must remain blockers rather than being silently ignored.
+  return (
+    entries.length === 0 ||
+    entries.some((entry) => entry.version === currentVersion)
+  );
 }

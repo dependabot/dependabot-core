@@ -696,7 +696,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            target_version: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -762,7 +763,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
               repo_contents_path: nil,
-              security_advisories: security_advisories
+              security_advisories: security_advisories,
+              target_version: "1.0.1"
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -931,7 +933,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            target_version: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)

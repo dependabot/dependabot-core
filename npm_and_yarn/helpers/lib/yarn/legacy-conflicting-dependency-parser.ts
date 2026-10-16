@@ -34,7 +34,8 @@ interface TransitiveSpec {
 export async function findLegacyConflictingDependencies(
   directory: string,
   depName: string,
-  targetVersion: string
+  targetVersion: string,
+  currentVersion?: string
 ): Promise<ConflictingDependency[]> {
   const lockfileJson = await parse(directory);
   const packageJson = fs
@@ -67,6 +68,7 @@ export async function findLegacyConflictingDependencies(
           topLevelRequirement,
           depName,
           targetVersion,
+          currentVersion,
           topLevelSpec,
           lockfileJson
         ).values()
@@ -120,6 +122,7 @@ function findConflictingParentDependencies(
   requirement: string,
   targetDep: string,
   targetVersion: string,
+  currentVersion: string | undefined,
   topLevelSpec: TopLevelSpec,
   lockfileJson: Record<string, LockfileEntry>,
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
@@ -153,6 +156,9 @@ function findConflictingParentDependencies(
       for (const [subDepName, spec] of Object.entries(pkg.dependencies)) {
         if (
           subDepName === targetDep &&
+          (!currentVersion ||
+            !lockfileJson[`${subDepName}@${spec}`] ||
+            lockfileJson[`${subDepName}@${spec}`].version === currentVersion) &&
           !semver.satisfies(targetVersion, spec)
         ) {
           const key = [parentDepName, pkg.version].join("@");
@@ -174,6 +180,7 @@ function findConflictingParentDependencies(
             spec,
             targetDep,
             targetVersion,
+            currentVersion,
             topLevelSpec,
             lockfileJson,
             transitiveSpec,

@@ -31,8 +31,8 @@ module Dependabot
         end
 
         # Finds any dependencies in the `yarn.lock` or `package-lock.json` that
-        # have a subdependency on the given dependency that does not satisfly
-        # the target_version.
+        # have a subdependency resolving to the given dependency's installed
+        # version whose requirement does not allow the target_version.
         #
         # @param dependency [Dependabot::Dependency] the dependency to check
         # @param target_version [String] the version to check
@@ -140,9 +140,10 @@ module Dependabot
         )
           args = T.let(
             [Dir.pwd, dependency.name, target_version.to_s],
-            T::Array[T.any(String, T::Boolean)]
+            T::Array[T.nilable(T.any(String, T::Boolean))]
           )
           args << enable_normalized_yarn_traversal if function == "yarn:findConflictingDependencies"
+          args << dependency.version
 
           T.cast(
             SharedHelpers.run_helper_subprocess(
