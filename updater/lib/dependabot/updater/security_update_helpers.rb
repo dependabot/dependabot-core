@@ -21,6 +21,23 @@ module Dependabot
 
       public
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          _block: T.proc.params(dependency: Dependabot::Dependency).returns(Dependabot::UpdateCheckers::Base)
+        ).returns(Dependabot::Dependency)
+      end
+      def vulnerable_version(dependency, &_block)
+        all_versions = dependency.metadata_array(:all_versions)
+        return dependency unless all_versions
+        return dependency if all_versions.one?
+
+        dependency.metadata_dependencies(:all_versions)&.find do |dep|
+          checker = yield(dep)
+          checker.version_class.correct?(dep.version) && checker.vulnerable?
+        end || dependency
+      end
+
       sig { params(dependency: Dependabot::Dependency).void }
       def record_security_update_not_needed_error(dependency)
         Dependabot.logger.info(

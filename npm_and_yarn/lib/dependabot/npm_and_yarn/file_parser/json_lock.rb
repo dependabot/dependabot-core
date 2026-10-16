@@ -3,6 +3,7 @@
 
 require "json"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/package/npm_lockfile_details"
@@ -47,6 +48,43 @@ module Dependabot
         end
 
         sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T.nilable(Version))
+        end
+        def updated_dependency_version(dependency:, original:)
+          paths = self.class.new(original).versions_by_path(dependency.name)
+                      .select { |_, version| version == dependency.version }.keys
+          updated_versions = versions_by_path(dependency.name)
+
+          paths.map do |path|
+            version = updated_versions[path]
+            unless version
+              Dependabot.logger.info(
+                "Cannot verify updated npm resolution for #{path}; keeping current version"
+              )
+            end
+            Version.new(version || T.must(dependency.version))
+          end.min
+        end
+
+        sig { params(dependency_name: String).returns(T::Hash[String, String]) }
+        def versions_by_path(dependency_name)
+          records = if Helpers.parse_npm8?(@dependency_file)
+                      parsed.package_entries
+                    else
+                      legacy_records_by_path(parsed)
+                    end
+
+          records.filter_map do |path, record|
+            next if path.empty?
+            next unless package_name_for(path, record) == dependency_name
+
+            version = record.version
+            [path, version] if version
+          end.to_h
+        end
+
+        sig do
           params(dependency_name: String, _requirement: T.nilable(String), manifest_name: String)
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
@@ -72,6 +110,17 @@ module Dependabot
         end
 
         private
+
+        sig { params(record: Record, prefix: String).returns(T::Hash[String, Record]) }
+        def legacy_records_by_path(record, prefix = "")
+          records = T.let({}, T::Hash[String, Record])
+          record.legacy_entries.each do |name, details|
+            path = "#{prefix}node_modules/#{name}"
+            records[path] = details
+            records.merge!(legacy_records_by_path(details, "#{path}/"))
+          end
+          records
+        end
 
         sig do
           params(object_with_dependencies: Record)

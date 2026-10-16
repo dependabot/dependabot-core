@@ -138,7 +138,7 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          scoped_version = yarn_version_from_updated_lockfiles(updated_lockfiles)
+          scoped_version = version_from_targeted_lockfile_entries(updated_lockfiles)
           candidate = scoped_version || audit_fix_best_version(parsed_dep, current_version) || combined
           return candidate unless pnpm_update.pin_dropped
 
@@ -148,16 +148,19 @@ module Dependabot
         end
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
-        def yarn_version_from_updated_lockfiles(updated_lockfiles)
+        def version_from_targeted_lockfile_entries(updated_lockfiles)
           return unless dependency.version
 
           updated_lockfiles.filter_map do |lockfile|
-            next unless lockfile.name.end_with?("yarn.lock")
+            next unless lockfile.name.end_with?("yarn.lock", "package-lock.json", "npm-shrinkwrap.json")
+
+            parser = lockfile.name.end_with?("yarn.lock") ? FileParser::YarnLock : FileParser::JsonLock
+            next if parser == FileParser::JsonLock && !security_updates_only?
 
             original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
             next unless original
 
-            FileParser::YarnLock.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
+            parser.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
           end.min
         end
 

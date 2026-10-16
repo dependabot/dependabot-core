@@ -69,6 +69,11 @@ module Dependabot
             entries(object.fetch("dependencies", {}), "#{@context}.dependencies")
           end
 
+          sig { returns(T::Hash[String, Record]) }
+          def package_entries
+            entries(object.fetch("packages", {}), "#{@context}.packages")
+          end
+
           sig { params(name: String).returns(T.nilable(Record)) }
           def legacy_entry(name)
             dependencies = object["dependencies"]

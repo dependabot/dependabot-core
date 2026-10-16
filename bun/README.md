@@ -2,6 +2,10 @@
 
 Bun support for [`dependabot-core`][core-repo].
 
+Transitive update resolution follows the original lockfile entries for the
+installed version being updated, so unrelated installed versions are not
+reported as the result of the update.
+
 ### Running locally
 
 1. Start a development shell

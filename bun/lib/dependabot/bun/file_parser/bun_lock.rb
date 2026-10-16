@@ -3,6 +3,7 @@
 
 require "yaml"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/helpers"
@@ -89,6 +90,29 @@ module Dependabot
           end
 
           dependency_set
+        end
+
+        sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T.nilable(Version))
+        end
+        def updated_dependency_version(dependency:, original:)
+          original_records = self.class.new(original).records || {}
+          paths = original_records.select do |_, record|
+            record.name == dependency.name && record.version == dependency.version
+          end.keys
+          updated_records = records || {}
+
+          paths.map do |path|
+            record = updated_records[path]
+            version = record.version if record && record.name == dependency.name
+            unless version
+              Dependabot.logger.info(
+                "Cannot verify updated Bun resolution for #{path}; keeping current version"
+              )
+            end
+            Version.new(version || T.must(dependency.version))
+          end.min
         end
 
         sig do
