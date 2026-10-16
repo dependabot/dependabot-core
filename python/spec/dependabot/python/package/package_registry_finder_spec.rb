@@ -346,5 +346,147 @@ RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
         end
       end
     end
+
+    context "with both a base index and a private extra index" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://public-proxy.example.com/simple",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private.example.com/simple",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "searches the private index before the base index" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://public-proxy.example.com/simple/"
+          ]
+        )
+      end
+
+      context "when no index replaces the base" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private.example.com/simple",
+              "replaces-base" => false
+            }
+          )]
+        end
+
+        it "searches the default index last" do
+          expect(registry_urls).to eq(
+            [
+              "https://private.example.com/simple/",
+              "https://pypi.org/simple/"
+            ]
+          )
+        end
+      end
+    end
+
+    context "when the Pipfile declares the public index as its first source" do
+      let(:pipfile_fixture_name) { "public_and_private_source" }
+      let(:dependency_files) { [pipfile] }
+
+      it "searches the private index before the public index" do
+        expect(registry_urls).to eq(
+          [
+            "https://some.internal.registry.com/pypi/",
+            "https://pypi.org/simple/"
+          ]
+        )
+      end
+    end
+
+    context "when a private main index has a public extra index" do
+      let(:requirements_fixture_name) { "private_index_public_extra.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "keeps the private main index first" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://pypi.org/simple/"
+          ]
+        )
+      end
+    end
+
+    context "when the public extra index is spelled differently" do
+      let(:requirements_fixture_name) { "private_index_public_extra_alias.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "still treats it as public and keeps the private main index first" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://PYPI.org:443/simple/"
+          ]
+        )
+      end
+    end
+
+    context "when two custom private indexes are configured in a file" do
+      let(:requirements_fixture_name) { "two_private_indexes.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "keeps the explicitly configured main index ahead of the extra" do
+        expect(registry_urls).to eq(
+          [
+            "https://main.example.com/simple/",
+            "https://extra.example.com/simple/"
+          ]
+        )
+      end
+
+      context "when the main index comes from a replaces-base credential" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://replaces-base.example.com/simple",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "demotes the replaces-base index below the extras" do
+          expect(registry_urls).to eq(
+            [
+              "https://extra.example.com/simple/",
+              "https://replaces-base.example.com/simple/"
+            ]
+          )
+        end
+      end
+    end
+
+    context "when the public extra index has unescaped credentials" do
+      let(:requirements_fixture_name) { "private_index_public_extra_creds.txt" }
+      let(:dependency_files) { [requirements_file] }
+
+      it "still treats it as public and keeps the private main index first" do
+        expect(registry_urls).to eq(
+          [
+            "https://private.example.com/simple/",
+            "https://user%40company:pass@pypi.org/simple/"
+          ]
+        )
+      end
+    end
   end
 end
