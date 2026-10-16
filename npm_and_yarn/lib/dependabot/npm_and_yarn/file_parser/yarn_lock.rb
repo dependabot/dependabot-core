@@ -117,6 +117,7 @@ module Dependabot
             next unless version
 
             requirements.split(", ").each do |requirement|
+              next if alias_package?(requirement) && extract_real_name_from_yarn_alias(requirement) != dependency_name
               next unless requirement.start_with?("#{dependency_name}@") ||
                           requirement.include?("@npm:#{dependency_name}@")
 

@@ -106,6 +106,99 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
     end
   end
 
+  context "with an alias installing a different package under the target's name" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "yarn.lock"
+
+        content = T.must(file.content) + <<~YAML
+
+          "brace-expansion@npm:other-package@^2.0.2":
+            version: 2.1.2
+            resolution: "other-package@npm:2.1.2"
+        YAML
+        file.dup.tap { |copy| copy.content = content }
+      end
+    end
+
+    it "does not treat the alias requirement as a requirement on the targeted package" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+    end
+
+    it "collects only descriptors that install the real targeted package" do
+      lockfile = T.must(dependency_files.find { |file| file.name == "yarn.lock" })
+      expect(Dependabot::NpmAndYarn::FileParser::YarnLock.new(lockfile).versions_by_requirement(dependency.name)).to eq(
+        "brace-expansion@npm:^1.1.7" => "1.1.12",
+        "brace-expansion@npm:^2.0.2" => "2.1.2",
+        "brace-expansion@npm:^5.0.2" => "5.0.2"
+      )
+    end
+  end
+
+  context "with another lockfile containing only an unrelated older version" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      lockfile = T.must(files.find { |file| file.name == "yarn.lock" })
+      parsed = YAML.safe_load(T.must(lockfile.content))
+      legacy_entries = parsed.select do |descriptor, _|
+        descriptor == "__metadata" || descriptor.start_with?("legacy-parent@", "brace-expansion@npm:^1")
+      end
+      files + [
+        Dependabot::DependencyFile.new(
+          name: "unrelated/package.json",
+          content: JSON.generate(
+            "name" => "unrelated",
+            "packageManager" => "yarn@4.9.1",
+            "dependencies" => { "legacy-parent" => "1.0.0" }
+          )
+        ),
+        Dependabot::DependencyFile.new(name: "unrelated/yarn.lock", content: YAML.dump(legacy_entries))
+      ]
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(true)
+      allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_yarn_audit_fix_command).and_return("")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands).and_return("")
+    end
+
+    it "skips unscoped updates and audit fallback for the unrelated lockfile during resolution" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_command).exactly(2).times
+      expect(Dependabot::NpmAndYarn::NativeHelpers).not_to have_received(:run_yarn_audit_fix_command)
+      expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:run_yarn_commands)
+    end
+
+    it "preserves the unrelated lockfile when generating security update files" do
+      updated_dependency = Dependabot::Dependency.new(
+        name: dependency.name,
+        version: "2.1.4",
+        previous_version: dependency.version,
+        requirements: [],
+        previous_requirements: [],
+        package_manager: dependency.package_manager
+      )
+      updater = Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater.new(
+        dependencies: [updated_dependency],
+        dependency_files: dependency_files,
+        credentials: [],
+        repo_contents_path: nil,
+        security_updates_only: true
+      )
+      targeted = T.must(dependency_files.find { |file| file.name == "yarn.lock" })
+      unrelated = T.must(dependency_files.find { |file| file.name == "unrelated/yarn.lock" })
+
+      expect(updater.updated_yarn_lock_content(targeted)).to include("brace-expansion@npm:2.1.4")
+      expect(updater.updated_yarn_lock_content(unrelated)).to eq(unrelated.content)
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_command).exactly(2).times
+      expect(Dependabot::NpmAndYarn::NativeHelpers).not_to have_received(:run_yarn_audit_fix_command)
+      expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:run_yarn_commands)
+    end
+  end
+
   context "when the targeted resolution cannot be updated" do
     sig { returns(String) }
     let(:updated_version) { "2.1.2" }

@@ -32,21 +32,19 @@ module Dependabot
           yarn_lock:, dependency:, target_version:, env: nil, install_args: Helpers.yarn_berry_args
         )
           current_version = dependency.previous_version || dependency.version
+          return unless current_version
+
           prefix = "#{dependency.name}@npm:"
           versions = FileParser::YarnLock.new(yarn_lock).versions_by_requirement(dependency.name)
+          # A truthy unchanged version prevents callers from attempting an unscoped fallback.
+          return current_version unless versions.value?(current_version)
+
           descriptors = versions.select do |descriptor, version|
             version == current_version && descriptor.start_with?(prefix)
           end.keys
           return if descriptors.empty?
 
-          target = Version.new(target_version)
-          descriptors.each do |descriptor|
-            requirement = descriptor.delete_prefix(prefix)
-            unless Requirement.requirements_array(requirement).any? { |range| range.satisfied_by?(target) }
-              raise DependencyFileNotResolvable,
-                    "Cannot update #{descriptor} from #{current_version} to #{target_version}: incompatible requirement"
-            end
-          end
+          validate_subdependency_descriptors!(descriptors, prefix, current_version, target_version)
 
           resolutions = descriptors.to_h { |descriptor| [descriptor, "npm:#{target_version}"] }
           resolution_command = Helpers.yarn_major_version == 2 ? "install" : "install --mode=update-lockfile"
@@ -63,6 +61,21 @@ module Dependabot
           Helpers.run_yarn_command("install #{install_args}".strip, fingerprint: "install", env: env)
           target_version
         end
+
+        sig do
+          params(descriptors: T::Array[String], prefix: String, current_version: String, target_version: String).void
+        end
+        def self.validate_subdependency_descriptors!(descriptors, prefix, current_version, target_version)
+          target = Version.new(target_version)
+          descriptors.each do |descriptor|
+            requirement = descriptor.delete_prefix(prefix)
+            unless Requirement.requirements_array(requirement).any? { |range| range.satisfied_by?(target) }
+              raise DependencyFileNotResolvable,
+                    "Cannot update #{descriptor} from #{current_version} to #{target_version}: incompatible requirement"
+            end
+          end
+        end
+        private_class_method :validate_subdependency_descriptors!
 
         sig do
           params(

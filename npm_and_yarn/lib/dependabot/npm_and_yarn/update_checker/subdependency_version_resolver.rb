@@ -247,6 +247,8 @@ module Dependabot
                 target_version: @target_version,
                 env: Helpers.yarn_berry_supports_minimal_age_gate? ? { "YARN_NPM_MINIMAL_AGE_GATE" => "0" } : nil
               )
+              return { lockfile_name => original_content } if scoped && scoped == dependency.version
+
               unless scoped
                 Helpers.run_yarn_command(
                   "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,

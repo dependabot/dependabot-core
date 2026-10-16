@@ -13,6 +13,9 @@ update the vulnerable version within its existing requirements, preserving the
 manifest and unrelated lockfile resolutions.
 Temporary rules take precedence over existing broad resolutions; the original
 manifest is restored before the final install.
+Descriptor matching uses the real package name rather than aliases installing
+other packages. Lockfiles without the targeted installed version are left
+unchanged, without unscoped updates or audit-fix fallback.
 
 Security PR refreshes select the vulnerable installed version, just like creation.
 npm security resolution checks track the original nodes in the updated lockfile instead

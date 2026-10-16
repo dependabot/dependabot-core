@@ -189,7 +189,9 @@ module Dependabot
                   )
                 end
               elsif Helpers.yarn_berry?(yarn_lock)
-                run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
+                run_yarn_berry_subdependency_updater(
+                  yarn_lock: DependencyFile.new(name: File.basename(yarn_lock.name), content: yarn_lock.content)
+                )
               else
                 run_yarn_subdependency_updater(yarn_lock: yarn_lock)
               end
