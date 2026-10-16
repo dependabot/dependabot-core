@@ -8,6 +8,7 @@ reported as the result of the update.
 Checks follow the original consumers through ancestor resolutions when Bun hoists
 or deduplicates a package, and retain the vulnerable version if no replacement can
 be verified.
+Verification uses installed alias names and includes optional and peer consumers.
 
 ### Running locally
 

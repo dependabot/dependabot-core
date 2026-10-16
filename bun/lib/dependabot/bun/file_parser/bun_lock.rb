@@ -104,7 +104,7 @@ module Dependabot
           updated_records = records || {}
 
           paths.flat_map do |path|
-            resolution_paths(original_records, path, dependency.name).map do |candidates|
+            resolution_paths(original_records, path).map do |candidates|
               version = resolved_version(updated_records, candidates, dependency.name)
               unless version
                 Dependabot.logger.info(
@@ -137,10 +137,14 @@ module Dependabot
         end
 
         sig do
-          params(records: T::Hash[String, Record], target: String, name: String)
+          params(records: T::Hash[String, Record], target: String)
             .returns(T::Array[T::Array[String]])
         end
-        def resolution_paths(records, target, name)
+        def resolution_paths(records, target)
+          segments = target.scan(%r{(?:@[^/]+/)?[^/]+})
+          name = segments.pop
+          raise_invalid!("invalid package path: #{target}") unless name.is_a?(String)
+
           incoming = records.filter_map do |path, record|
             next unless record.dependency_names.include?(name)
 
@@ -149,8 +153,6 @@ module Dependabot
           end
           return incoming unless incoming.empty?
 
-          segments = target.scan(%r{(?:@[^/]+/)?[^/]+})
-          segments.pop
           [resolution_candidates(segments.join("/"), name)]
         end
 

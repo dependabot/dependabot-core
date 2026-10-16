@@ -132,6 +132,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
   end
 
   context "when consumers of a hoisted target resolve different versions after updating" do
+    sig { returns(String) }
+    let(:edge_type) { "dependencies" }
+
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     let(:dependency_files) do
       files = T.let(super(), T::Array[Dependabot::DependencyFile])
@@ -142,7 +145,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
         packages = content.fetch("packages")
         packages["brace-expansion"] = packages.delete("current-parent/brace-expansion")
         packages["another-parent"] =
-          ["another-parent@1.0.0", "", { "dependencies" => { "brace-expansion" => "^2.0.2" } }, ""]
+          ["another-parent@1.0.0", "", { edge_type => { "brace-expansion" => "^2.0.2" } }, ""]
         file.dup.tap { |copy| copy.content = JSON.generate(content) }
       end
     end
@@ -156,6 +159,81 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
 
     it "checks every original incoming dependency edge" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+    end
+
+    context "with an optional consumer" do
+      sig { returns(String) }
+      let(:edge_type) { "optionalDependencies" }
+
+      it "does not report success while the optional consumer remains vulnerable" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+      end
+    end
+
+    context "with a peer consumer" do
+      sig { returns(String) }
+      let(:edge_type) { "peerDependencies" }
+
+      it "does not report success while the peer consumer remains vulnerable" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+      end
+    end
+  end
+
+  context "with an aliased transitive dependency" do
+    sig { returns(String) }
+    let(:installation_name) { "my-brace" }
+
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "bun.lock"
+
+        content = JSON.parse(T.must(file.content))
+        packages = content.fetch("packages")
+        packages["current-parent"][2]["dependencies"] = {
+          installation_name => "npm:brace-expansion@^2.0.2"
+        }
+        packages["current-parent/#{installation_name}"] = packages.delete("current-parent/brace-expansion")
+        file.dup.tap { |copy| copy.content = JSON.generate(content) }
+      end
+    end
+
+    it "verifies the updated alias using its installed name" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+    end
+
+    context "when the alias is hoisted" do
+      sig { returns(String) }
+      let(:updated_content) do
+        content = JSON.parse(super())
+        packages = content.fetch("packages")
+        packages[installation_name] = packages.delete("current-parent/#{installation_name}")
+        JSON.generate(content)
+      end
+
+      it "follows the aliased incoming dependency edge" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+      end
+
+      context "with a scoped alias" do
+        sig { returns(String) }
+        let(:installation_name) { "@scope/my-brace" }
+
+        it "keeps the scope in the lookup name" do
+          expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+        end
+      end
+    end
+
+    context "when the alias now names a different package" do
+      sig { returns(String) }
+      let(:updated_content) { super().gsub("brace-expansion@2.1.4", "other-package@2.1.4") }
+
+      it "does not verify an update to the wrong real package" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+      end
     end
   end
 end

@@ -21,6 +21,7 @@ module Dependabot
         def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
           @dealias_packages = dealias_packages
+          @modern_lockfile = T.let(nil, T.nilable(T::Boolean))
         end
 
         sig { returns(Record) }
@@ -89,7 +90,7 @@ module Dependabot
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def details(dependency_name, _requirement, manifest_name)
-          modern = Helpers.parse_npm8?(@dependency_file)
+          modern = modern_lockfile?
           details = if modern
                       # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
                       # workspace folder so we need to fallback to checking top-level
@@ -111,9 +112,16 @@ module Dependabot
 
         private
 
+        sig { returns(T::Boolean) }
+        def modern_lockfile?
+          return @modern_lockfile unless @modern_lockfile.nil?
+
+          @modern_lockfile = Helpers.parse_npm8?(@dependency_file)
+        end
+
         sig { params(record: Record).returns(T::Hash[String, Record]) }
         def records_by_path(record)
-          Helpers.parse_npm8?(@dependency_file) ? record.package_entries : legacy_records_by_path(record)
+          modern_lockfile? ? record.package_entries : legacy_records_by_path(record)
         end
 
         sig do
@@ -121,8 +129,9 @@ module Dependabot
             .returns(T::Array[T::Array[String]])
         end
         def resolution_paths(records, target, name)
+          modern = modern_lockfile?
           incoming = records.filter_map do |path, record|
-            next unless record.dependency_names(modern: Helpers.parse_npm8?(@dependency_file)).include?(name)
+            next unless record.dependency_names(modern: modern).include?(name)
 
             candidates = resolution_candidates(path, name)
             candidates if candidates.find { |candidate| records.key?(candidate) } == target
