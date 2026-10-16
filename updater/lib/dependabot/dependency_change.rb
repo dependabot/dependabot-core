@@ -184,7 +184,10 @@ module Dependabot
       if grouped_update?
         # We only want PRs for the same group that have the same versions
         job.existing_group_pull_requests.any? do |pr|
-          next false if pr.dependency_group_name != dependency_group&.name
+          next false unless T.must(dependency_group).matches_identity?(
+            group_name: pr.dependency_group_name,
+            dependency_names: (pr.dependencies || []).map(&:name)
+          )
 
           dependencies = T.must(pr.dependencies)
           directories_in_use = dependencies.all?(&:directory)
