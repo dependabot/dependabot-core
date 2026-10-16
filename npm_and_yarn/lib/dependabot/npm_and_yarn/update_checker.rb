@@ -4,6 +4,8 @@
 require "dependabot/git_commit_checker"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
@@ -72,6 +74,9 @@ module Dependabot
         Helpers.credentials = credentials
         Helpers.activate_npm_version_selector(dependency_files)
         apply_npmrc_min_release_age
+        # Native per-version exemptions must not erase Dependabot's own cooldown.
+        @selection_cooldown = T.let(@update_cooldown, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        apply_pnpm_minimum_release_age
       end
 
       sig { returns(T::Boolean) }
@@ -458,7 +463,8 @@ module Dependabot
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
           security_advisories: security_advisories,
-          cooldown_options: @update_cooldown
+          security_updates_only: security_update?,
+          cooldown_options: @selection_cooldown
         )
       end
 
@@ -474,7 +480,8 @@ module Dependabot
             repo_contents_path: repo_contents_path,
             dependency_group: dependency_group,
             raise_on_ignored: raise_on_ignored,
-            update_cooldown: @update_cooldown
+            security_updates_only: security_update?,
+            update_cooldown: @selection_cooldown
           )
       end
 
@@ -586,6 +593,8 @@ module Dependabot
       # no per-package filtering.
       sig { void }
       def apply_npmrc_min_release_age
+        return if Helpers.pnpm_project?(dependency_files)
+
         npmrc_days = npmrc_min_release_age_days
         return unless npmrc_days&.positive?
 
@@ -600,16 +609,99 @@ module Dependabot
           return
         end
 
-        if @update_cooldown.nil?
+        existing = @update_cooldown
+        if existing.nil?
           Dependabot.logger.info(
             ".npmrc min-release-age (#{npmrc_days} days) is applied as the cooldown because " \
             "no dependabot.yml cooldown is configured."
           )
-          @update_cooldown = Dependabot::Package::ReleaseCooldownOptions.new(default_days: npmrc_days)
         else
-          existing = @update_cooldown
           log_npmrc_cooldown_conflicts(existing, npmrc_days)
-          @update_cooldown = merge_cooldown_with_npmrc_floor(existing, npmrc_days)
+        end
+        @update_cooldown = Helpers.cooldown_with_native_release_age(existing, npmrc_days)
+      end
+
+      # Applies a repo's own pnpm `minimumReleaseAge` (minutes, in pnpm-workspace.yaml) as a floor for every
+      # cooldown field, so Dependabot does not pick a version that pnpm's own gate then refuses (strict mode
+      # fails the update) or admits only by adding it to `minimumReleaseAgeExclude` (non-strict mode). The higher
+      # of the native window and the dependabot.yml cooldown wins, except for native exemptions.
+      # Like the npm floor, it is not applied to security updates.
+      sig { void }
+      def apply_pnpm_minimum_release_age
+        minutes = pnpm_minimum_release_age_minutes
+        return unless minutes&.positive?
+
+        # Cooldown fields are whole days, so round up rather than admit a version younger than the window
+        days = (minutes.to_f / Helpers::MINUTES_PER_DAY).ceil
+        if security_update?
+          Dependabot.logger.info(
+            "pnpm-workspace.yaml minimumReleaseAge (#{minutes} minutes, #{days} days) is bypassed " \
+            "for this security update."
+          )
+          return
+        end
+
+        existing = @update_cooldown
+        if existing.nil?
+          Dependabot.logger.info(
+            "pnpm-workspace.yaml minimumReleaseAge (#{minutes} minutes, #{days} days) is applied as the cooldown " \
+            "because no dependabot.yml cooldown is configured."
+          )
+        else
+          log_pnpm_cooldown_floor(existing, minutes, days)
+        end
+
+        @update_cooldown = Helpers.cooldown_with_native_release_age(existing, days)
+      end
+
+      # Package-wide exemptions apply here; version exemptions are evaluated by the latest-version finder.
+      sig { returns(T.nilable(Integer)) }
+      def pnpm_minimum_release_age_minutes
+        Helpers.pnpm_release_age_policies(dependency_files)
+               .reject { |policy| policy.excluded?(dependency.name) }
+               .map(&:minutes).max
+      end
+
+      sig { params(existing: Dependabot::Package::ReleaseCooldownOptions, minutes: Integer, days: Integer).void }
+      def log_pnpm_cooldown_floor(existing, minutes, days)
+        if existing.include.any? || existing.exclude.any?
+          Dependabot.logger.warn(
+            "pnpm-workspace.yaml minimumReleaseAge applies independently of dependabot.yml cooldown " \
+            "include/exclude patterns; native minimumReleaseAgeExclude exemptions are preserved."
+          )
+        end
+
+        all_days = [existing.default_days, existing.semver_major_days,
+                    existing.semver_minor_days, existing.semver_patch_days]
+        unless all_days.any? { |configured| configured < days }
+          Dependabot.logger.info(
+            "pnpm-workspace.yaml minimumReleaseAge (#{minutes} minutes, #{days} days) is already satisfied by all " \
+            "dependabot.yml update_cooldown values; the dependabot.yml cooldown is used."
+          )
+          return
+        end
+
+        Dependabot.logger.warn(
+          "pnpm-workspace.yaml minimumReleaseAge (#{minutes} minutes, #{days} days) acts as a minimum floor for " \
+          "every dependabot.yml update_cooldown value."
+        )
+        log_pnpm_cooldown_overrides(existing, minutes, days)
+      end
+
+      sig { params(existing: Dependabot::Package::ReleaseCooldownOptions, minutes: Integer, days: Integer).void }
+      def log_pnpm_cooldown_overrides(existing, minutes, days)
+        {
+          default_days: existing.default_days,
+          semver_major_days: existing.semver_major_days,
+          semver_minor_days: existing.semver_minor_days,
+          semver_patch_days: existing.semver_patch_days
+        }.each do |field, configured_days|
+          next unless configured_days < days
+
+          Dependabot.logger.warn(
+            "pnpm-workspace.yaml minimumReleaseAge (#{minutes} minutes, #{days} days) overrides dependabot.yml " \
+            "#{field} (#{configured_days} days) because it would cause pnpm to reject the selected version."
+          )
         end
       end
 
@@ -653,27 +745,6 @@ module Dependabot
         end
       end
 
-      sig do
-        params(
-          existing: Dependabot::Package::ReleaseCooldownOptions,
-          npmrc_days: Integer
-        ).returns(Dependabot::Package::ReleaseCooldownOptions)
-      end
-      def merge_cooldown_with_npmrc_floor(existing, npmrc_days)
-        Dependabot::Package::ReleaseCooldownOptions.new(
-          default_days: [existing.default_days, npmrc_days].max,
-          semver_major_days: [existing.semver_major_days, npmrc_days].max,
-          semver_minor_days: [existing.semver_minor_days, npmrc_days].max,
-          semver_patch_days: [existing.semver_patch_days, npmrc_days].max,
-          include: [],
-          exclude: []
-        )
-      end
-
-      NPMRC_MIN_RELEASE_AGE_SETTING =
-        Helpers::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
-      private_constant :NPMRC_MIN_RELEASE_AGE_SETTING
-
       # Resolves each .npmrc with the same parsing as the lockfile updater (the last matching
       # line wins) and keeps the largest numeric value across files, so the version chosen
       # here is never younger than a gate npm can enforce. A non-numeric value only discards
@@ -681,8 +752,9 @@ module Dependabot
       # instead treats such a value as an unreadable gate it must never override.)
       sig { returns(T.nilable(Integer)) }
       def npmrc_min_release_age_days
-        npmrc_files = dependency_files.select { |file| File.basename(file.name) == ".npmrc" }
-        configured = npmrc_files.filter_map { |file| numeric_min_release_age(file) }.max
+        configured = Helpers.max_numeric_configured_release_age(
+          dependency_files, [Helpers::NPMRC_MIN_RELEASE_AGE_SETTING]
+        )
 
         if configured.nil?
           Dependabot.logger.debug("No numeric min-release-age found in any .npmrc file.")
@@ -691,15 +763,6 @@ module Dependabot
 
         Dependabot.logger.debug("Found min-release-age=#{configured} days in .npmrc.")
         configured
-      end
-
-      sig { params(npmrc: Dependabot::DependencyFile).returns(T.nilable(Integer)) }
-      def numeric_min_release_age(npmrc)
-        value = Helpers.max_configured_release_age([npmrc], [NPMRC_MIN_RELEASE_AGE_SETTING])
-        return value if value.is_a?(Integer)
-
-        Dependabot.logger.debug("Ignoring non-numeric min-release-age value in #{npmrc.name}.") if value
-        nil
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

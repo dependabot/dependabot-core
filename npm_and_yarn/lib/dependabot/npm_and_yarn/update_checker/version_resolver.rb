@@ -119,6 +119,7 @@ module Dependabot
             repo_contents_path: T.nilable(String),
             dependency_group: T.nilable(Dependabot::DependencyGroup),
             raise_on_ignored: T::Boolean,
+            security_updates_only: T::Boolean,
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
@@ -131,6 +132,7 @@ module Dependabot
           repo_contents_path:,
           dependency_group: nil,
           raise_on_ignored: false,
+          security_updates_only: false,
           update_cooldown: nil
         )
           @dependency               = dependency
@@ -143,6 +145,7 @@ module Dependabot
           @latest_version_finder[dependency] = latest_version_finder
           @repo_contents_path = repo_contents_path
           @raise_on_ignored = raise_on_ignored
+          @security_updates_only = security_updates_only
           @update_cooldown = update_cooldown
 
           @types_package = T.let(nil, T.nilable(Dependabot::Dependency))
@@ -286,6 +289,7 @@ module Dependabot
               cooldown_options: update_cooldown,
               ignored_versions: [],
               security_advisories: [],
+              security_updates_only: @security_updates_only,
               raise_on_ignored: raise_on_ignored
             )
         end
@@ -297,7 +301,8 @@ module Dependabot
         def find_version_without_trust_downgrade
           current_version = version_for_dependency(dependency)
           candidate_versions = latest_version_finder(dependency)
-                               .possible_versions
+                               .releases_outside_cooldown
+                               .map(&:version)
                                .select { |v| v < version_class.new(latest_allowable_version.to_s) }
                                .select { |v| current_version.nil? || v > current_version }
                                .sort
@@ -389,39 +394,33 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def part_of_tightly_locked_monorepo?
-          monorepo_dep_names =
-            TIGHTLY_COUPLED_MONOREPOS.values
-                                     .find { |deps| deps.include?(dependency.name) }
-          return false unless monorepo_dep_names
-
-          deps_to_update =
-            top_level_dependencies
-            .select { |d| monorepo_dep_names.include?(d.name) }
-
-          deps_to_update.count > 1
+          monorepo_dependencies.count > 1
         end
 
-        sig { returns(T::Array[T::Hash[String, T.nilable(String)]]) }
-        def updated_monorepo_dependencies
+        sig { returns(T::Array[Dependabot::Dependency]) }
+        def monorepo_dependencies
           monorepo_dep_names =
             TIGHTLY_COUPLED_MONOREPOS.values
                                      .find { |deps| deps.include?(dependency.name) }
+          return [] unless monorepo_dep_names
 
-          deps_to_update =
-            top_level_dependencies
-            .select { |d| monorepo_dep_names&.include?(d.name) }
+          top_level_dependencies.select { |dep| monorepo_dep_names.include?(dep.name) }
+        end
 
+        sig { returns(T.nilable(T::Array[T::Hash[String, T.nilable(String)]])) }
+        def updated_monorepo_dependencies
           updates = []
-          deps_to_update.each do |dep|
+          monorepo_dependencies.each do |dep|
             next if git_dependency?(dep)
             next if dep.version &&
                     version_class.new(dep.version) >= latest_allowable_version
 
             updated_version =
               latest_version_finder(dep)
-              .possible_versions
+              .releases_outside_cooldown
+              .map(&:version)
               .find { |v| v == latest_allowable_version }
-            next unless updated_version
+            return nil unless updated_version
 
             updates << {
               dependency: dep,
@@ -675,10 +674,12 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T::Array[T.any(String, Gem::Version)]) }
         def satisfying_versions
+          maximum_version = version_class.new(latest_allowable_version.to_s)
           latest_version_finder(dependency)
-            .possible_releases
+            .releases_outside_cooldown
             .select do |release|
               version = release.version
+              next false if version > maximum_version
               next false unless satisfies_peer_reqs_on_dep?(version)
               next true if version == version_for_dependency(dependency)
 
@@ -724,7 +725,7 @@ module Dependabot
           dependency_version = version_for_dependency(dep)
           release =
             latest_version_finder(dep)
-            .possible_releases
+            .releases_outside_cooldown
             .find do |candidate|
               version = candidate.version
 

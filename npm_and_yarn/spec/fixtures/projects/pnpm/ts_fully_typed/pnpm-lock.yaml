@@ -1,0 +1,20 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  jquery:
+    specifier: '3.4'
+    version: 3.4.0
+
+devDependencies:
+  '@types/jquery':
+    specifier: 3.3.10
+    version: 3.3.10
+
+packages:
+  /jquery@3.4.0:
+    resolution: {tarball: https://registry.npmjs.org/jquery/-/jquery-3.4.0.tgz}
+    dev: false
+
+  /@types/jquery@3.3.10:
+    resolution: {tarball: https://registry.npmjs.org/@types/jquery/-/jquery-3.3.10.tgz}
+    dev: true
