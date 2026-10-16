@@ -359,6 +359,12 @@ RSpec.describe Dependabot::Hex::FileParser do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "with a mix.exs that generates warnings" do
+      let(:mixfile_fixture_name) { "deps_warning" }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with an umbrella app" do
       let(:mixfile_fixture_name) { "umbrella" }
       let(:lockfile_fixture_name) { "umbrella" }
