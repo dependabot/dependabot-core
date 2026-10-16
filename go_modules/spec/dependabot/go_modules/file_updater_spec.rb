@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/go_modules/file_fetcher"
 require "dependabot/go_modules/file_updater"
 require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
@@ -435,6 +436,281 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
 
       it "returns at least one updated file" do
         expect(updated_files).not_to be_empty
+      end
+    end
+  end
+
+  shared_examples "workspace directory configurations" do |experiment_enabled|
+    let(:project_name) { "workspace" }
+    let(:dependency_name) { "github.com/fatih/color" }
+    let(:dependency_previous_version) { "v1.7.0" }
+    let(:dependency_version) { "v1.16.0" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+    let(:files_by_directory) do
+      configured_directories.to_h do |directory|
+        source = Dependabot::Source.new(
+          provider: "github", repo: "example/workspace", directory: directory, directories: configured_directories
+        )
+        fetcher = Dependabot::GoModules::FileFetcher.new(
+          source: source, credentials: credentials, repo_contents_path: repo_contents_path
+        )
+        allow(fetcher).to receive(:clone_repo_contents).and_return(repo_contents_path)
+        [directory, fetcher.files]
+      end
+    end
+
+    before do
+      Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
+      allow(Open3).to receive(:capture3).and_call_original
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    {
+      "root and all member directories are listed" => [
+        %w(/ /libs /services), %w(/go.mod /libs/go.mod /services/go.mod)
+      ],
+      "root and selected members are listed, with other members omitted" => [
+        %w(/ /libs), %w(/go.mod /libs/go.mod /services/go.mod)
+      ],
+      "only root is listed" => [
+        %w(/), %w(/go.mod /libs/go.mod /services/go.mod)
+      ],
+      "only selected members are listed, with root and other members omitted" => [
+        %w(/libs), %w(/libs/go.mod)
+      ]
+    }.each do |description, (directories, expected_module_paths)|
+      context "when #{description}" do
+        let(:configured_directories) { directories }
+
+        it "updates exactly the modules selected by the directory and workspace scopes" do
+          updated_files = files_by_directory.flat_map do |_directory, dependency_files|
+            described_class.new(
+              dependency_files: dependency_files,
+              dependencies: [dependency],
+              credentials: credentials,
+              repo_contents_path: repo_contents_path
+            ).updated_dependency_files
+          end
+          updated_modules = updated_files.select { |file| File.basename(file.name) == "go.mod" }
+
+          expect(updated_modules.map(&:path).uniq).to match_array(expected_module_paths)
+          updated_modules.each do |file|
+            expect(file.content).to include("#{dependency_name} #{dependency_version}")
+          end
+          module_filenames = %w(go.mod go.sum)
+          (%w(/go.mod /libs/go.mod /services/go.mod) - expected_module_paths).each do |path|
+            module_filenames.each do |name|
+              relative_path = File.join(File.dirname(path), name).delete_prefix("/")
+              expect(File.read(File.join(repo_contents_path, relative_path)))
+                .to eq(fixture("projects", project_name, relative_path))
+              expect(updated_files.map(&:path)).not_to include("/#{relative_path}")
+            end
+          end
+          if configured_directories.include?("/")
+            expect(Open3).to have_received(:capture3).with("go work sync").once
+          else
+            expect(Open3).not_to have_received(:capture3).with("go work sync")
+          end
+        end
+      end
+    end
+  end
+
+  context "with workspace directory configurations and the experiment enabled" do
+    it_behaves_like "workspace directory configurations", true
+  end
+
+  context "with workspace directory configurations and the experiment disabled" do
+    it_behaves_like "workspace directory configurations", false
+  end
+
+  context "when updating one module of a workspace whose go.work was fetched as an ancestor file" do
+    let(:project_name) { "workspace" }
+    let(:directory) { "/libs" }
+    let(:go_work_body) { fixture("projects", project_name, "go.work") }
+    let(:ancestor_go_work) do
+      Dependabot::DependencyFile.new(
+        name: "../go.work", content: go_work_body, directory: directory, support_file: true
+      )
+    end
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "go.mod", content: fixture("projects", project_name, "libs", "go.mod"), directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "go.sum", content: fixture("projects", project_name, "libs", "go.sum"), directory: directory
+        ),
+        ancestor_go_work
+      ]
+    end
+    let(:dependency_name) { "github.com/fatih/color" }
+    let(:dependency_previous_version) { "v1.7.0" }
+    let(:dependency_version) { "v1.16.0" }
+    let(:updated_files) { updater.updated_dependency_files }
+
+    before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
+
+    after { Dependabot::Experiments.reset! }
+
+    it "does not switch to workspace mode and updates only the module's files when nothing else changes" do
+      expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+    end
+
+    context "when the experiment is disabled" do
+      before { Dependabot::Experiments.reset! }
+
+      let(:files) { super() + member_files }
+      let(:member_files) do
+        [Dependabot::DependencyFile.new(
+          name: "../services/go.mod",
+          content: fixture("projects", project_name, "services", "go.mod"),
+          directory: directory,
+          support_file: true
+        )]
+      end
+
+      it "keeps the previous behaviour: no `go work sync` and only the module's files" do
+        allow(Open3).to receive(:capture3).and_call_original
+
+        expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+        expect(Open3).not_to have_received(:capture3).with("go work sync")
+      end
+    end
+
+    context "when the module's own go.mod and go.sum are support files (e.g. in a git submodule)" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", project_name, "libs", "go.mod"),
+            directory: directory,
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "go.sum",
+            content: fixture("projects", project_name, "libs", "go.sum"),
+            directory: directory,
+            support_file: true
+          )
+        ]
+      end
+
+      it "does not treat them as workspace files" do
+        allow(Open3).to receive(:capture3).and_call_original
+
+        updater.updated_dependency_files
+
+        expect(Open3).not_to have_received(:capture3).with("go work sync")
+      end
+    end
+
+    context "when the other workspace members were fetched as support files" do
+      let(:member_files) do
+        {
+          "../go.mod" => %w(go.mod),
+          "../go.sum" => %w(go.sum),
+          "../services/go.mod" => %w(services go.mod),
+          "../services/go.sum" => %w(services go.sum)
+        }.map do |name, fixture_path|
+          Dependabot::DependencyFile.new(
+            name: name,
+            content: fixture("projects", project_name, *fixture_path),
+            directory: directory,
+            support_file: true
+          )
+        end
+      end
+      let(:files) { super() + member_files }
+
+      it "updates only the job's module without running go work sync" do
+        allow(Open3).to receive(:capture3).and_call_original
+
+        expect(updated_files.map(&:path)).to contain_exactly("/libs/go.mod", "/libs/go.sum")
+        expect(Open3).not_to have_received(:capture3).with("go work sync")
+      end
+
+      it "leaves the other members' manifests unchanged on disk" do
+        updater.updated_dependency_files
+
+        member_files.each do |file|
+          expect(File.read(File.join(repo_contents_path, file.path))).to eq(file.content)
+        end
+      end
+    end
+
+    context "when the update raises the module's Go version above go.work" do
+      let(:dependency_name) { "golang.org/x/sys" }
+      let(:dependency_previous_version) { "v0.0.0-20200922070232-aee5d888a860" }
+      let(:dependency_version) { "v0.33.0" }
+      let(:previous_requirements) { [] }
+      let(:requirements) { [] }
+
+      context "when the experiment is disabled" do
+        before { Dependabot::Experiments.register(:enable_go_work_version_sync, false) }
+
+        it "does not collect the ancestor go.work even when go get raises its Go version" do
+          allow(File).to receive(:read).and_call_original
+
+          expect(updated_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+          expect(File.read(File.join(repo_contents_path, "go.work"))).to start_with("go 1.23")
+          expect(File).not_to have_received(:read).with("../go.work")
+        end
+      end
+
+      it "returns the bumped go.work as a regular (non-support) file at the repo root" do
+        updated_go_work = updated_files.find { |f| f.name == "../go.work" }
+
+        expect(updated_go_work&.content).to start_with("go 1.23")
+        expect(updated_go_work&.support_file?).to be(false)
+        expect(updated_go_work&.path).to eq("/go.work")
+      end
+
+      it "keeps the original go.work file untouched" do
+        updater.updated_dependency_files
+
+        expect(ancestor_go_work.content).to eq(go_work_body)
+        expect(ancestor_go_work.support_file?).to be(true)
+      end
+
+      it "updates the next directory after a checkout reset without changing the unselected root module" do
+        next_file_contents = {
+          "go.mod" => fixture("projects", project_name, "services", "go.mod"),
+          "go.sum" => fixture("projects", project_name, "services", "go.sum"),
+          "../go.work" => go_work_body
+        }
+        updated_files.each do |file|
+          relative_name = Pathname.new(file.path).relative_path_from(Pathname.new("/services")).to_s
+          next_file_contents[relative_name] = file.content
+        end
+        next_files = next_file_contents.map do |name, content|
+          Dependabot::DependencyFile.new(
+            name: name, content: content, directory: "/services", support_file: name == "../go.work"
+          )
+        end
+
+        expect(Dependabot::SharedHelpers).to receive(:reset_git_repo).with(repo_contents_path)
+                                                                     .and_wrap_original do |reset, path|
+          reset.call(path)
+          expect(File.read(File.join(path, "go.work"))).to eq(go_work_body)
+        end
+
+        next_updater = described_class.new(
+          dependency_files: next_files,
+          dependencies: [dependency],
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
+        )
+        next_updated_files = next_updater.updated_dependency_files
+
+        expect(next_updated_files.find { |file| file.name == "go.mod" }.content)
+          .to include("golang.org/x/sys v0.33.0")
+        expect(next_updated_files.map(&:path)).not_to include("/go.mod", "/go.sum", "/libs/go.mod", "/libs/go.sum")
+        %w(go.mod go.sum).each do |name|
+          expect(File.read(File.join(repo_contents_path, name))).to eq(fixture("projects", project_name, name))
+        end
       end
     end
   end

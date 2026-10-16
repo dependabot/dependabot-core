@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/experiments"
 require "dependabot/go_modules/go_work_parser"
 
 module Dependabot
@@ -58,6 +59,7 @@ module Dependabot
         else
           fetched_files << T.must(go_mod) if go_mod
           fetched_files << T.must(go_sum) if go_sum
+          fetched_files.concat(ancestor_workspace_files)
         end
 
         fetched_files << T.must(go_env) if go_env
@@ -117,6 +119,39 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_work
         @go_work ||= T.let(fetch_file_if_present("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def ancestor_workspace_files
+        return [] unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
+
+        @ancestor_workspace_files ||= T.let(
+          find_ancestor_workspace_files,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def find_ancestor_workspace_files
+        segments = directory.split("/").reject(&:empty?)
+        (1..segments.length).each do |depth|
+          prefix = "../" * depth
+          ancestor_go_work = fetch_file_if_present("#{prefix}go.work")
+          next unless ancestor_go_work
+
+          # Go uses the nearest go.work, so stop here even if it doesn't list this module.
+          work_dir_path = segments.first(segments.length - depth).join("/")
+          work_dir = Pathname.new(work_dir_path.empty? ? "." : work_dir_path)
+          use_paths = GoWorkParser.use_paths(T.must(ancestor_go_work.content))
+                                  .map { |path| work_dir.join(path).cleanpath.to_s }
+          return [] unless use_paths.include?(segments.join("/"))
+
+          files = [ancestor_go_work, fetch_file_if_present("#{prefix}go.work.sum")].compact
+          files.each { |file| file.support_file = true }
+          return files
+        end
+
+        []
       end
 
       sig { returns(T::Array[String]) }

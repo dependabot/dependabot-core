@@ -812,6 +812,48 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         operation: Dependabot::DependencyFile::Operation::UPDATE
       )
     end
+
+    context "when directories share an ancestor go.work" do
+      let(:original_file) do
+        Dependabot::DependencyFile.new(
+          name: "../go.work", directory: "/libs", content: "go 1.21\n", support_file: true
+        )
+      end
+      let(:raw_updated_file) do
+        Dependabot::DependencyFile.new(
+          name: "../go.work", directory: "/libs", content: "go 1.23\n", support_file: false
+        )
+      end
+      let(:second_alias) do
+        Dependabot::DependencyFile.new(
+          name: "../../go.work", directory: "/services/api", content: original_file.content, support_file: true
+        )
+      end
+
+      before do
+        allow(source).to receive(:directories).and_return(%w(/libs /services/api))
+        allow(dependency_snapshot).to receive(:all_dependency_files).and_return([original_file, second_alias])
+        allow(dependency_snapshot).to receive(:current_directory=).with("/services/api") do
+          allow(dependency_snapshot).to receive(:dependency_files).and_return([second_alias])
+        end
+      end
+
+      it "rebases the bumped go.work for the next directory and keeps it in the final change set" do
+        test_instance.compile_all_dependency_changes_for_directories(group)
+
+        expect(test_instance).to have_received(:compile_all_dependency_changes_for).with(
+          group,
+          dependency_files: [have_attributes(
+            name: "../../go.work", directory: "/services/api", content: "go 1.23\n", support_file: true
+          )],
+          workspace_files: [have_attributes(path: "/go.work", content: "go 1.23\n", support_file: false)]
+        )
+        expect(first_change.updated_dependency_files).to contain_exactly(
+          have_attributes(path: "/go.work", content: "go 1.23\n", support_file: false)
+        )
+        expect(second_alias).to have_attributes(content: "go 1.21\n", support_file: true)
+      end
+    end
   end
 
   describe "#compile_updates_for blocked versions ignored metric" do
