@@ -84,8 +84,11 @@ module Dependabot
               version_strings = fetch_module_versions(dependency_name)
 
               # If no versions found, the path may be a sub-package rather than a module root.
-              # Try progressively shorter paths to find the actual module.
-              version_strings = resolve_module_versions_from_subpath(dependency_name) if version_strings.nil?
+              # Try progressively shorter paths to find the actual module, unless the path is a
+              # module of its own that has never been tagged and so only has pseudo-versions.
+              if version_strings.nil? && !untagged_module?(dependency_name)
+                version_strings = resolve_module_versions_from_subpath(dependency_name)
+              end
 
               return [package_release(version: T.must(dependency.version))] if version_strings.nil?
 
@@ -177,8 +180,24 @@ module Dependabot
           ).versions
         end
 
+        # A module without tags (e.g. golang.org/x/crypto/x509roots/fallback) lists no versions
+        # but still resolves at @latest to a pseudo-version, while a sub-package path does not.
+        sig { params(module_path: String).returns(T::Boolean) }
+        def untagged_module?(module_path)
+          SharedHelpers.run_shell_command(
+            "go list -m -json #{module_path}@latest",
+            fingerprint: "go list -m -json <dependency_name>@latest"
+          )
+          true
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise unless e.message.include?("no matching versions")
+
+          false
+        end
+
         # When a full import path (e.g. github.com/owner/repo/cmd/tool) is not a module,
-        # try progressively shorter paths to find the actual module root.
+        # try progressively shorter paths to find the actual module root. The search stops
+        # at an untagged module so that its tagged parent is not mistaken for the root.
         sig { params(full_path: String).returns(T.nilable(T::Array[String])) }
         def resolve_module_versions_from_subpath(full_path)
           parts = full_path.split("/")
@@ -189,12 +208,15 @@ module Dependabot
           (parts.length - 1).downto(min_parts).each do |i|
             candidate = T.must(parts[0...i]).join("/")
             Dependabot.logger.debug("Trying shorter module path: #{candidate}")
-            versions = fetch_module_versions(candidate)
-            return versions if versions&.any?
-          rescue SharedHelpers::HelperSubprocessFailed => e
-            raise if e.is_a?(ModuleInfo::InvalidOutput)
+            versions = begin
+              fetch_module_versions(candidate)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise if e.is_a?(ModuleInfo::InvalidOutput)
 
-            next
+              next
+            end
+            return versions if versions&.any?
+            return nil if versions.nil? && untagged_module?(candidate)
           end
 
           nil
