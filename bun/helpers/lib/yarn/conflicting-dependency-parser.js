@@ -4,6 +4,7 @@
  *  - directory containing a package.json and a yarn.lock
  *  - dependency name
  *  - target dependency version
+ *  - optional installed dependency version to scope the check
  *
  * Outputs:
  *  - An array of objects with conflicting dependencies
@@ -15,7 +16,12 @@ const semver = require("semver");
 const { parse } = require("./lockfile-parser");
 const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
 
-async function findConflictingDependencies(directory, depName, targetVersion) {
+async function findConflictingDependencies(
+  directory,
+  depName,
+  targetVersion,
+  currentVersion,
+) {
   const lockfileJson = await parse(directory);
   const packageJson = fs
     .readFileSync(path.join(directory, "package.json"))
@@ -42,11 +48,12 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
           topLevelRequirement,
           depName,
           targetVersion,
+          currentVersion,
           topLevelSpec,
-          lockfileJson
-        ).values()
+          lockfileJson,
+        ).values(),
       );
-    }
+    },
   );
 
   return conflictingParents.map((parentSpec) => {
@@ -95,11 +102,12 @@ function findConflictingParentDependencies(
   requirement,
   targetDep,
   targetversion,
+  currentVersion,
   topLevelSpec,
   lockfileJson,
   transitiveSpec = {},
   checkedEntries = new Set(),
-  conflictingParents = new Map()
+  conflictingParents = new Map(),
 ) {
   // Prevent infinite loops for circular dependencies by only checking each
   // lockfile entry once
@@ -111,9 +119,8 @@ function findConflictingParentDependencies(
   checkedEntries.add(checkedEntry);
 
   for (const [entry, pkg] of Object.entries(lockfileJson)) {
-    const [_, parentDepName, parentDepRequirement] = entry.match(
-      LOCKFILE_ENTRY_REGEX
-    );
+    const [_, parentDepName, parentDepRequirement] =
+      entry.match(LOCKFILE_ENTRY_REGEX);
     // Decorate the top-level dependency spec with an installed version as we
     // only have the requirement from the package.json manifest
     if (
@@ -133,6 +140,9 @@ function findConflictingParentDependencies(
       for (const [subDepName, spec] of Object.entries(pkg.dependencies)) {
         if (
           subDepName === targetDep &&
+          (!currentVersion ||
+            !lockfileJson[`${subDepName}@${spec}`] ||
+            lockfileJson[`${subDepName}@${spec}`].version === currentVersion) &&
           !semver.satisfies(targetversion, spec)
         ) {
           // Only add the conflicting parent once per version preventing
@@ -159,11 +169,12 @@ function findConflictingParentDependencies(
             spec,
             targetDep,
             targetversion,
+            currentVersion,
             topLevelSpec,
             lockfileJson,
             transitiveSpec,
             checkedEntries,
-            conflictingParents
+            conflictingParents,
           );
         }
       }

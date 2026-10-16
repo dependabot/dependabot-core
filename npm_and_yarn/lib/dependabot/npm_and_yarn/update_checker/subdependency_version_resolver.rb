@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
 require "dependabot/npm_and_yarn/update_checker/pnpm_transitive_update"
+require "dependabot/npm_and_yarn/file_updater/berry_lockfile_handler"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/security_advisory"
 require "dependabot/shared_helpers"
@@ -51,7 +52,8 @@ module Dependabot
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
             repo_contents_path: T.nilable(String),
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            target_version: T.nilable(String)
           ).void
         end
         def initialize(
@@ -61,13 +63,15 @@ module Dependabot
           ignored_versions:,
           latest_allowable_version:,
           repo_contents_path:,
-          security_advisories: []
+          security_advisories: [],
+          target_version: nil
         )
           @dependency = dependency
           @credentials = credentials
           @dependency_files = dependency_files
           @ignored_versions = ignored_versions
           @latest_allowable_version = latest_allowable_version
+          @target_version = target_version
           @repo_contents_path = repo_contents_path
           @security_advisories = security_advisories
           @pnpm_update = T.let(nil, T.nilable(PnpmTransitiveUpdate))
@@ -78,8 +82,7 @@ module Dependabot
           raise "Not a subdependency!" if dependency.requirements.any?
           return if bundled_dependency?
 
-          base_dir = T.must(dependency_files.first).directory
-          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
@@ -91,10 +94,10 @@ module Dependabot
 
             version_from_updated_lockfiles(updated_lockfiles)
           end
-        rescue SharedHelpers::HelperSubprocessFailed
+        rescue SharedHelpers::HelperSubprocessFailed => e
           # TODO: Move error handling logic from the FileUpdater to this class
 
-          # Return nil (no update possible) if an unknown error occurred
+          Dependabot.logger.error("Failed to resolve #{dependency.name}: #{e.message}")
           nil
         end
 
@@ -135,12 +138,30 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          candidate = audit_fix_best_version(parsed_dep, current_version) || combined
+          scoped_version = yarn_version_from_updated_lockfiles(updated_lockfiles, combined)
+          candidate = scoped_version || audit_fix_best_version(parsed_dep, current_version) || combined
           return candidate unless pnpm_update.pin_dropped
 
           candidate if pnpm_update.within_bound?(
             candidate: candidate, before: dependency_files_builder.lockfiles, after: updated_lockfiles
           )
+        end
+
+        sig do
+          params(updated_lockfiles: T::Array[Dependabot::DependencyFile], combined: Gem::Version)
+            .returns(T.nilable(Gem::Version))
+        end
+        def yarn_version_from_updated_lockfiles(updated_lockfiles, combined)
+          return unless dependency.version && combined < version_class.new(dependency.version)
+
+          updated_lockfiles.filter_map do |lockfile|
+            next unless lockfile.name.end_with?("yarn.lock")
+
+            original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
+            next unless original
+
+            FileParser::YarnLock.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
+          end.min
         end
 
         sig { returns(PnpmTransitiveUpdate) }
@@ -220,10 +241,18 @@ module Dependabot
             Dir.chdir(path) do
               original_content = File.read(lockfile_name)
 
-              Helpers.run_yarn_command(
-                "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
-                fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
+              scoped = @target_version && FileUpdater::BerryLockfileHandler.update_subdependency(
+                yarn_lock: DependencyFile.new(name: lockfile_name, content: original_content),
+                dependency: dependency,
+                target_version: @target_version,
+                env: Helpers.yarn_berry_supports_minimal_age_gate? ? { "YARN_NPM_MINIMAL_AGE_GATE" => "0" } : nil
               )
+              unless scoped
+                Helpers.run_yarn_command(
+                  "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
+                  fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
+                )
+              end
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)

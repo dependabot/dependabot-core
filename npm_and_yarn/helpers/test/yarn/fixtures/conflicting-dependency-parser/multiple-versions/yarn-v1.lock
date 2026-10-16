@@ -1,0 +1,25 @@
+# yarn lockfile v1
+
+legacy-parent@1.0.0:
+  version "1.0.0"
+  dependencies:
+    brace-expansion "^1.1.7"
+
+current-parent@1.0.0:
+  version "1.0.0"
+  dependencies:
+    brace-expansion "^2.0.2"
+
+modern-parent@1.0.0:
+  version "1.0.0"
+  dependencies:
+    brace-expansion "^5.0.2"
+
+"brace-expansion@^1.1.7":
+  version "1.1.12"
+
+"brace-expansion@^2.0.2":
+  version "2.1.2"
+
+"brace-expansion@^5.0.2":
+  version "5.0.2"

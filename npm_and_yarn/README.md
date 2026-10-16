@@ -2,6 +2,16 @@
 
 Yarn and npm support for [`dependabot-core`][core-repo].
 
+### Transitive dependency conflicts
+
+Conflict detection checks requirements resolving to the installed version being
+updated, so unrelated installed versions do not block a compatible update.
+Exact pins and incompatible requirements on the targeted version remain blockers.
+
+Yarn Berry security updates use temporary descriptor-specific resolutions to
+update the vulnerable version within its existing requirements, preserving the
+manifest and unrelated lockfile resolutions.
+
 ### Running locally
 
 1. Start a development shell
