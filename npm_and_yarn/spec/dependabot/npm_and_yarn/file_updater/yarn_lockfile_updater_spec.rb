@@ -491,17 +491,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           )
         end
 
-        it "passes YARN_NPM_MINIMAL_AGE_GATE=0 to yarn commands in run_yarn_berry_subdependency_updater" do
-          allow(File).to receive(:read).and_return("")
-          allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_yarn_audit_fix_command).and_return("")
-
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands) do |*_commands, **kwargs|
-            expect(kwargs[:env]).to include("YARN_NPM_MINIMAL_AGE_GATE" => "0")
+        it "passes YARN_NPM_MINIMAL_AGE_GATE=0 to both scoped security update installs" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_major_version).and_return(4)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
+            content = yarn_lock.content
+                               .gsub("lodash@npm:^#{previous_version}", "lodash@npm:#{version}")
+                               .gsub(previous_version, version)
+            File.write("yarn.lock", content)
             ""
           end
 
-          yarn_lock_file = files.find { |f| f.name == "yarn.lock" }
-          updater.send(:run_yarn_berry_subdependency_updater, yarn_lock: yarn_lock_file)
+          expect(updated_yarn_lock_content).to include('resolution: "lodash@npm:3.10.2"')
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_command).with(
+            "install --mode=update-lockfile",
+            fingerprint: "install",
+            env: { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
+          ).twice
         end
       end
 
