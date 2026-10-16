@@ -253,6 +253,43 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
+    context "with a patternless fallback group" do
+      let(:dependency_groups_config) do
+        [
+          { "name" => "libcnb", "rules" => { "patterns" => ["libcnb*"] } },
+          { "name" => "rust-dependencies", "rules" => { "update-types" => %w(minor patch) } }
+        ]
+      end
+
+      let(:dependencies) do
+        %w(libcnb serde).map do |name|
+          Dependabot::Dependency.new(
+            name: name,
+            package_manager: "cargo",
+            version: "0.30.0",
+            requirements: [{ file: "Cargo.toml", requirement: "0.30", groups: [], source: nil }],
+            directory: "/"
+          )
+        end
+      end
+
+      before do
+        dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+      end
+
+      it "assigns matching dependencies to the wildcard group" do
+        group = dependency_group_engine.find_group(name: "libcnb")
+
+        expect(group.dependencies.map(&:name)).to eq(["libcnb"])
+      end
+
+      it "assigns unmatched dependencies to the fallback group" do
+        group = dependency_group_engine.find_group(name: "rust-dependencies")
+
+        expect(group.dependencies.map(&:name)).to include("serde")
+      end
+    end
+
     context "with pattern specificity enforcement" do
       let(:dependency_groups_config) do
         [
