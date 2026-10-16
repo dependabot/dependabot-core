@@ -11,6 +11,8 @@ be verified.
 Verification uses installed alias names and includes optional and peer consumers.
 Dependency metadata is read from the appropriate registry or non-registry tuple
 layout, including Git consumers of registry packages.
+Incoming consumers are indexed once per lockfile, rather than rescanned for every
+installed copy of the targeted version.
 
 ### Running locally
 

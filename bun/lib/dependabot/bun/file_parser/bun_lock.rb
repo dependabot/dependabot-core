@@ -101,10 +101,13 @@ module Dependabot
           paths = original_records.select do |_, record|
             record.name == dependency.name && record.version == dependency.version
           end.keys
+          return if paths.empty?
+
+          incoming = incoming_resolutions(original_records)
           updated_records = records || {}
 
           paths.flat_map do |path|
-            resolution_paths(original_records, path).map do |candidates|
+            resolution_paths(incoming, path).map do |candidates|
               version = resolved_version(updated_records, candidates, dependency.name)
               unless version
                 Dependabot.logger.info(
@@ -137,23 +140,32 @@ module Dependabot
         end
 
         sig do
-          params(records: T::Hash[String, Record], target: String)
+          params(records: T::Hash[String, Record]).returns(T::Hash[String, T::Array[T::Array[String]]])
+        end
+        def incoming_resolutions(records)
+          incoming = T.let({}, T::Hash[String, T::Array[T::Array[String]]])
+          records.each do |path, record|
+            record.dependency_names.each do |name|
+              candidates = resolution_candidates(path, name)
+              target = candidates.find { |candidate| records.key?(candidate) }
+              next unless target
+
+              (incoming[target] ||= []) << candidates
+            end
+          end
+          incoming
+        end
+
+        sig do
+          params(incoming: T::Hash[String, T::Array[T::Array[String]]], target: String)
             .returns(T::Array[T::Array[String]])
         end
-        def resolution_paths(records, target)
+        def resolution_paths(incoming, target)
           segments = target.scan(%r{(?:@[^/]+/)?[^/]+})
           name = segments.pop
           raise_invalid!("invalid package path: #{target}") unless name.is_a?(String)
 
-          incoming = records.filter_map do |path, record|
-            next unless record.dependency_names.include?(name)
-
-            candidates = resolution_candidates(path, name)
-            candidates if candidates.find { |candidate| records.key?(candidate) } == target
-          end
-          return incoming unless incoming.empty?
-
-          [resolution_candidates(segments.join("/"), name)]
+          incoming.fetch(target) { [resolution_candidates(segments.join("/"), name)] }
         end
 
         sig { params(parent_path: String, name: String).returns(T::Array[String]) }

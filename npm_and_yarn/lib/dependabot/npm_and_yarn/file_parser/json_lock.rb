@@ -56,12 +56,15 @@ module Dependabot
           original_lock = self.class.new(original)
           paths = original_lock.versions_by_path(dependency.name)
                                .select { |_, version| version == dependency.version }.keys
+          return if paths.empty?
+
           original_records = records_by_path(original_lock.parsed)
+          incoming = incoming_resolutions(original_records, dependency.name)
           updated_records = records_by_path(parsed)
           updated_versions = versions_by_path(dependency.name)
 
           paths.flat_map do |path|
-            resolution_paths(original_records, path, dependency.name).map do |candidates|
+            resolution_paths(incoming, path, dependency.name).map do |candidates|
               updated_path = candidates.find { |candidate| updated_records.key?(candidate) }
               version = updated_path ? updated_versions[updated_path] : nil
               unless version
@@ -125,20 +128,30 @@ module Dependabot
         end
 
         sig do
-          params(records: T::Hash[String, Record], target: String, name: String)
-            .returns(T::Array[T::Array[String]])
+          params(records: T::Hash[String, Record], name: String)
+            .returns(T::Hash[String, T::Array[T::Array[String]]])
         end
-        def resolution_paths(records, target, name)
+        def incoming_resolutions(records, name)
           modern = modern_lockfile?
-          incoming = records.filter_map do |path, record|
+          incoming = T.let({}, T::Hash[String, T::Array[T::Array[String]]])
+          records.each do |path, record|
             next unless record.dependency_names(modern: modern).include?(name)
 
             candidates = resolution_candidates(path, name)
-            candidates if candidates.find { |candidate| records.key?(candidate) } == target
-          end
-          return incoming unless incoming.empty?
+            target = candidates.find { |candidate| records.key?(candidate) }
+            next unless target
 
-          [resolution_candidates(target.rpartition("/node_modules/").first, name)]
+            (incoming[target] ||= []) << candidates
+          end
+          incoming
+        end
+
+        sig do
+          params(incoming: T::Hash[String, T::Array[T::Array[String]]], target: String, name: String)
+            .returns(T::Array[T::Array[String]])
+        end
+        def resolution_paths(incoming, target, name)
+          incoming.fetch(target) { [resolution_candidates(target.rpartition("/node_modules/").first, name)] }
         end
 
         sig { params(parent_path: String, name: String).returns(T::Array[String]) }

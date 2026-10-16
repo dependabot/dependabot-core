@@ -39,4 +39,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
     expect(Dependabot::NpmAndYarn::Helpers).to have_received(:parse_npm8?).with(original).once
     expect(Dependabot::NpmAndYarn::Helpers).to have_received(:parse_npm8?).with(updated).once
   end
+
+  it "scans each original record's dependency metadata once across multiple targets" do
+    original_reader = described_class.new(original)
+    updated_reader = described_class.new(updated)
+    records = original_reader.parsed.package_entries
+    allow(original_reader.parsed).to receive(:package_entries).and_return(records)
+    allow(described_class).to receive(:new).with(original).and_return(original_reader)
+    records.each_value { |record| allow(record).to receive(:dependency_names).and_call_original }
+
+    version = updated_reader.updated_dependency_version(dependency: dependency, original: original)
+
+    expect(version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+    records.each_value { |record| expect(record).to have_received(:dependency_names).once }
+  end
 end
