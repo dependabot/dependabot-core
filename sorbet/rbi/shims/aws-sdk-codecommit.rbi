@@ -24,6 +24,9 @@ module Aws
 
       class UserInfo
         sig { returns(T.nilable(String)) }
+        attr_reader :name
+
+        sig { returns(T.nilable(String)) }
         attr_reader :email
 
         sig { returns(T.nilable(String)) }
