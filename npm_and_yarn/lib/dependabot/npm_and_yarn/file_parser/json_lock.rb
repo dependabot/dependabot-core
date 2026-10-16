@@ -52,30 +52,30 @@ module Dependabot
             .returns(T.nilable(Version))
         end
         def updated_dependency_version(dependency:, original:)
-          paths = self.class.new(original).versions_by_path(dependency.name)
-                      .select { |_, version| version == dependency.version }.keys
+          original_lock = self.class.new(original)
+          paths = original_lock.versions_by_path(dependency.name)
+                               .select { |_, version| version == dependency.version }.keys
+          original_records = records_by_path(original_lock.parsed)
+          updated_records = records_by_path(parsed)
           updated_versions = versions_by_path(dependency.name)
 
-          paths.map do |path|
-            version = updated_versions[path]
-            unless version
-              Dependabot.logger.info(
-                "Cannot verify updated npm resolution for #{path}; keeping current version"
-              )
+          paths.flat_map do |path|
+            resolution_paths(original_records, path, dependency.name).map do |candidates|
+              updated_path = candidates.find { |candidate| updated_records.key?(candidate) }
+              version = updated_path ? updated_versions[updated_path] : nil
+              unless version
+                Dependabot.logger.info(
+                  "Cannot verify updated npm resolution for #{path}; keeping current version"
+                )
+              end
+              Version.new(version || T.must(dependency.version))
             end
-            Version.new(version || T.must(dependency.version))
           end.min
         end
 
         sig { params(dependency_name: String).returns(T::Hash[String, String]) }
         def versions_by_path(dependency_name)
-          records = if Helpers.parse_npm8?(@dependency_file)
-                      parsed.package_entries
-                    else
-                      legacy_records_by_path(parsed)
-                    end
-
-          records.filter_map do |path, record|
+          records_by_path(parsed).filter_map do |path, record|
             next if path.empty?
             next unless package_name_for(path, record) == dependency_name
 
@@ -110,6 +110,38 @@ module Dependabot
         end
 
         private
+
+        sig { params(record: Record).returns(T::Hash[String, Record]) }
+        def records_by_path(record)
+          Helpers.parse_npm8?(@dependency_file) ? record.package_entries : legacy_records_by_path(record)
+        end
+
+        sig do
+          params(records: T::Hash[String, Record], target: String, name: String)
+            .returns(T::Array[T::Array[String]])
+        end
+        def resolution_paths(records, target, name)
+          incoming = records.filter_map do |path, record|
+            next unless record.dependency_names(modern: Helpers.parse_npm8?(@dependency_file)).include?(name)
+
+            candidates = resolution_candidates(path, name)
+            candidates if candidates.find { |candidate| records.key?(candidate) } == target
+          end
+          return incoming unless incoming.empty?
+
+          [resolution_candidates(target.rpartition("/node_modules/").first, name)]
+        end
+
+        sig { params(parent_path: String, name: String).returns(T::Array[String]) }
+        def resolution_candidates(parent_path, name)
+          segments = parent_path.split("/node_modules/")
+          candidates = T.let([], T::Array[String])
+          while segments.any?
+            candidates << "#{segments.join('/node_modules/')}/node_modules/#{name}"
+            segments.pop
+          end
+          candidates << "node_modules/#{name}"
+        end
 
         sig { params(record: Record, prefix: String).returns(T::Hash[String, Record]) }
         def legacy_records_by_path(record, prefix = "")

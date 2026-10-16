@@ -103,15 +103,16 @@ module Dependabot
           end.keys
           updated_records = records || {}
 
-          paths.map do |path|
-            record = updated_records[path]
-            version = record.version if record && record.name == dependency.name
-            unless version
-              Dependabot.logger.info(
-                "Cannot verify updated Bun resolution for #{path}; keeping current version"
-              )
+          paths.flat_map do |path|
+            resolution_paths(original_records, path, dependency.name).map do |candidates|
+              version = resolved_version(updated_records, candidates, dependency.name)
+              unless version
+                Dependabot.logger.info(
+                  "Cannot verify updated Bun resolution for #{path}; keeping current version"
+                )
+              end
+              Version.new(version || T.must(dependency.version))
             end
-            Version.new(version || T.must(dependency.version))
           end.min
         end
 
@@ -124,6 +125,45 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(records: T::Hash[String, Record], candidates: T::Array[String], name: String)
+            .returns(T.nilable(String))
+        end
+        def resolved_version(records, candidates, name)
+          path = candidates.find { |candidate| records.key?(candidate) }
+          record = records[path] if path
+          record.version if record && record.name == name
+        end
+
+        sig do
+          params(records: T::Hash[String, Record], target: String, name: String)
+            .returns(T::Array[T::Array[String]])
+        end
+        def resolution_paths(records, target, name)
+          incoming = records.filter_map do |path, record|
+            next unless record.dependency_names.include?(name)
+
+            candidates = resolution_candidates(path, name)
+            candidates if candidates.find { |candidate| records.key?(candidate) } == target
+          end
+          return incoming unless incoming.empty?
+
+          segments = target.scan(%r{(?:@[^/]+/)?[^/]+})
+          segments.pop
+          [resolution_candidates(segments.join("/"), name)]
+        end
+
+        sig { params(parent_path: String, name: String).returns(T::Array[String]) }
+        def resolution_candidates(parent_path, name)
+          segments = parent_path.scan(%r{(?:@[^/]+/)?[^/]+})
+          candidates = T.let([], T::Array[String])
+          while segments.any?
+            candidates << "#{segments.join('/')}/#{name}"
+            segments.pop
+          end
+          candidates << name
+        end
 
         sig { returns(T::Hash[Object, Object]) }
         def parse_document

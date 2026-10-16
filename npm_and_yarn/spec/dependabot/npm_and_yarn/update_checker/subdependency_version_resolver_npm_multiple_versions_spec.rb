@@ -97,6 +97,102 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
     end
   end
 
+  context "when the targeted node is hoisted" do
+    sig { returns(String) }
+    let(:updated_content) do
+      content = JSON.parse(super())
+      packages = content.fetch("packages")
+      packages["node_modules/brace-expansion"] =
+        packages.delete("node_modules/current-parent/node_modules/brace-expansion")
+      JSON.generate(content)
+    end
+
+    it "follows the parent's updated resolution" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+    end
+
+    context "with a scoped parent" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files.map do |file|
+          file.dup.tap { |copy| copy.content = T.must(file.content).gsub("current-parent", "@scope/current-parent") }
+        end
+      end
+
+      sig { returns(String) }
+      let(:updated_content) do
+        content = JSON.parse(T.must(lockfile.content).gsub('"2.1.2"', '"2.1.4"'))
+        packages = content.fetch("packages")
+        packages["node_modules/brace-expansion"] =
+          packages.delete("node_modules/@scope/current-parent/node_modules/brace-expansion")
+        JSON.generate(content)
+      end
+
+      it "preserves the scope while following ancestor resolutions" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      end
+    end
+
+    context "with a replacement at an intermediate ancestor" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files.map do |file|
+          file.dup.tap do |copy|
+            copy.content = T.must(file.content).gsub(
+              "node_modules/current-parent", "node_modules/outer/node_modules/current-parent"
+            )
+          end
+        end
+      end
+
+      sig { returns(String) }
+      let(:updated_content) do
+        content = JSON.parse(T.must(lockfile.content).gsub('"2.1.2"', '"2.1.4"'))
+        packages = content.fetch("packages")
+        packages["node_modules/outer/node_modules/brace-expansion"] =
+          packages.delete("node_modules/outer/node_modules/current-parent/node_modules/brace-expansion")
+        packages["node_modules/brace-expansion"] = { "version" => "5.0.12" }
+        JSON.generate(content)
+      end
+
+      it "prefers the closest replacement over an unrelated root version" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      end
+    end
+  end
+
+  context "when consumers of a hoisted target resolve different versions after updating" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "package-lock.json"
+
+        content = JSON.parse(T.must(file.content))
+        packages = content.fetch("packages")
+        packages["node_modules/brace-expansion"] =
+          packages.delete("node_modules/current-parent/node_modules/brace-expansion")
+        packages["node_modules/another-parent"] = {
+          "version" => "1.0.0", "dependencies" => { "brace-expansion" => "^2.0.2" }
+        }
+        file.dup.tap { |copy| copy.content = JSON.generate(content) }
+      end
+    end
+
+    sig { returns(String) }
+    let(:updated_content) do
+      content = JSON.parse(super())
+      content.fetch("packages")["node_modules/another-parent/node_modules/brace-expansion"] = { "version" => "2.1.2" }
+      JSON.generate(content)
+    end
+
+    it "checks every original incoming dependency edge" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.2"))
+    end
+  end
+
   context "when one of several targeted nodes remains vulnerable" do
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     let(:dependency_files) do
@@ -159,6 +255,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
 
     it "tracks the original nested dependency path" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+    end
+
+    context "when the targeted legacy node is hoisted" do
+      sig { returns(String) }
+      let(:updated_content) do
+        content = JSON.parse(super())
+        dependencies = content.fetch("dependencies")
+        dependencies["brace-expansion"] =
+          dependencies.fetch("current-parent").fetch("dependencies").delete("brace-expansion")
+        JSON.generate(content)
+      end
+
+      it "follows the legacy requires edge to its replacement" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      end
     end
   end
 

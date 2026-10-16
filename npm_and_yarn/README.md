@@ -15,6 +15,9 @@ manifest and unrelated lockfile resolutions.
 Security PR refreshes select the vulnerable installed version, just like creation.
 npm security resolution checks track the original nodes in the updated lockfile instead
 of reporting an unrelated lower or higher installed version.
+Checks follow the original consumers through ancestor resolutions when npm hoists
+or deduplicates a package, and retain the vulnerable version if no replacement can
+be verified.
 
 ### Running locally
 

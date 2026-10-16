@@ -69,4 +69,93 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
       )
     end
   end
+
+  context "when the targeted entry is hoisted" do
+    sig { returns(String) }
+    let(:updated_content) do
+      content = JSON.parse(super())
+      packages = content.fetch("packages")
+      packages["brace-expansion"] = packages.delete("current-parent/brace-expansion")
+      JSON.generate(content)
+    end
+
+    it "follows the parent's updated resolution" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+    end
+
+    context "with a scoped parent" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files.map do |file|
+          file.dup.tap { |copy| copy.content = T.must(file.content).gsub("current-parent", "@scope/current-parent") }
+        end
+      end
+
+      sig { returns(String) }
+      let(:updated_content) do
+        content = JSON.parse(T.must(lockfile.content).gsub("brace-expansion@2.1.2", "brace-expansion@2.1.4"))
+        packages = content.fetch("packages")
+        packages["brace-expansion"] = packages.delete("@scope/current-parent/brace-expansion")
+        JSON.generate(content)
+      end
+
+      it "preserves the scope while following ancestor resolutions" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+      end
+    end
+
+    context "with a replacement at an intermediate ancestor" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files.map do |file|
+          file.dup.tap do |copy|
+            copy.content = T.must(file.content).gsub('"current-parent', '"outer/current-parent')
+          end
+        end
+      end
+
+      sig { returns(String) }
+      let(:updated_content) do
+        content = JSON.parse(T.must(lockfile.content).gsub("brace-expansion@2.1.2", "brace-expansion@2.1.4"))
+        packages = content.fetch("packages")
+        packages["outer/brace-expansion"] = packages.delete("outer/current-parent/brace-expansion")
+        packages["brace-expansion"] = ["brace-expansion@5.0.12", "", {}, ""]
+        JSON.generate(content)
+      end
+
+      it "prefers the closest replacement over an unrelated root version" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+      end
+    end
+  end
+
+  context "when consumers of a hoisted target resolve different versions after updating" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "bun.lock"
+
+        content = JSON.parse(T.must(file.content))
+        packages = content.fetch("packages")
+        packages["brace-expansion"] = packages.delete("current-parent/brace-expansion")
+        packages["another-parent"] =
+          ["another-parent@1.0.0", "", { "dependencies" => { "brace-expansion" => "^2.0.2" } }, ""]
+        file.dup.tap { |copy| copy.content = JSON.generate(content) }
+      end
+    end
+
+    sig { returns(String) }
+    let(:updated_content) do
+      content = JSON.parse(super())
+      content.fetch("packages")["another-parent/brace-expansion"] = ["brace-expansion@2.1.2", "", {}, ""]
+      JSON.generate(content)
+    end
+
+    it "checks every original incoming dependency edge" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+    end
+  end
 end
