@@ -219,6 +219,25 @@ RSpec.describe Dependabot::DependabotError do
     end
   end
 
+  describe ".with_backtrace" do
+    subject(:error) { described_class.with_backtrace("some error") }
+
+    it "sanitizes the message like the constructor does" do
+      expect(error.message).to eq("some error")
+    end
+
+    it "captures the backtrace of the calling code" do
+      expect(error.backtrace).to be_an(Array)
+      expect(error.backtrace.first).to include("dependabot_error_spec.rb")
+    end
+
+    it "captures a different backtrace for each call site" do
+      other_error = described_class.with_backtrace("some error")
+
+      expect(error.backtrace.first).not_to eq(other_error.backtrace.first)
+    end
+  end
+
   describe Dependabot::MisconfiguredTooling do
     let(:error) { described_class.new("Maven Wrapper", tool_message) }
     let(:tool_message) do
