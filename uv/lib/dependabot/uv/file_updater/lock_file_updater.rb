@@ -148,6 +148,7 @@ module Dependabot
 
           T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
             next unless new_r.file == file.name && T.must(old_r).file == file.name
+            next if new_r.requirement == T.must(old_r).requirement
 
             updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
           end
