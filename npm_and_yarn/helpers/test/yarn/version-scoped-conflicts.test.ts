@@ -4,6 +4,7 @@ import path from "path";
 import { findConflictingDependencies as findYarnConflicts } from "../../lib/yarn/conflicting-dependency-parser.js";
 import { findConflictingDependencies as findNpmConflicts } from "../../lib/npm/conflicting-dependency-parser.js";
 
+const dependencyName = "version-scoped-test-dependency";
 const fixtureDirectory = path.join(
   __dirname,
   "fixtures/conflicting-dependency-parser/multiple-versions"
@@ -35,13 +36,13 @@ describe.each([
     return manager === "npm"
       ? findNpmConflicts(
           directory,
-          "brace-expansion",
+          dependencyName,
           targetVersion,
           currentVersion
         )
       : findYarnConflicts(
           directory,
-          "brace-expansion",
+          dependencyName,
           targetVersion,
           normalized,
           currentVersion
@@ -55,7 +56,7 @@ describe.each([
   it("still reports requirements on the installed version that reject the target", async () => {
     expect(await findConflicts("3.0.0", "2.1.2")).toEqual([
       {
-        explanation: "current-parent@1.0.0 requires brace-expansion@^2.0.2",
+        explanation: `current-parent@1.0.0 requires ${dependencyName}@^2.0.2`,
         name: "current-parent",
         version: "1.0.0",
         requirement: "^2.0.2",
@@ -110,7 +111,7 @@ describe.each([
 
     expect(await findConflicts("2.1.4", "2.1.2")).toEqual([
       {
-        explanation: "current-parent@1.0.0 requires brace-expansion@2.1.2",
+        explanation: `current-parent@1.0.0 requires ${dependencyName}@2.1.2`,
         name: "current-parent",
         version: "1.0.0",
         requirement: "2.1.2",
