@@ -138,7 +138,7 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          scoped_version = yarn_version_from_updated_lockfiles(updated_lockfiles, combined)
+          scoped_version = yarn_version_from_updated_lockfiles(updated_lockfiles)
           candidate = scoped_version || audit_fix_best_version(parsed_dep, current_version) || combined
           return candidate unless pnpm_update.pin_dropped
 
@@ -147,12 +147,9 @@ module Dependabot
           )
         end
 
-        sig do
-          params(updated_lockfiles: T::Array[Dependabot::DependencyFile], combined: Gem::Version)
-            .returns(T.nilable(Gem::Version))
-        end
-        def yarn_version_from_updated_lockfiles(updated_lockfiles, combined)
-          return unless dependency.version && combined < version_class.new(dependency.version)
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
+        def yarn_version_from_updated_lockfiles(updated_lockfiles)
+          return unless dependency.version
 
           updated_lockfiles.filter_map do |lockfile|
             next unless lockfile.name.end_with?("yarn.lock")

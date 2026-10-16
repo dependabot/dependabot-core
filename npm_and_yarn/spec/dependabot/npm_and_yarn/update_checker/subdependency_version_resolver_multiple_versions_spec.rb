@@ -45,7 +45,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-    allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_berry_supports_minimal_age_gate?).and_return(true)
+    allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+      yarn_major_version: 4,
+      yarn_berry_supports_minimal_age_gate?: true
+    )
     allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
       lockfile = T.must(dependency_files.find { |file| file.name == "yarn.lock" })
       manifest = JSON.parse(File.read("package.json"))
@@ -66,6 +69,41 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
       fingerprint: "install",
       env: { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
     ).twice
+  end
+
+  context "with Yarn 2" do
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+        yarn_major_version: 2,
+        yarn_berry_supports_minimal_age_gate?: false
+      )
+    end
+
+    it "uses supported arguments for both resolution installs" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_command)
+        .with("install", fingerprint: "install", env: nil).twice
+    end
+  end
+
+  context "with an unrelated pinned version above the current version" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "yarn.lock"
+
+        lockfile = file.dup
+        lockfile.content = T.must(file.content)
+                            .gsub("^1.1.7", "2.1.3")
+                            .gsub("1.1.12", "2.1.3")
+        lockfile
+      end
+    end
+
+    it "reports the targeted resolution rather than the unrelated pinned version" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+    end
   end
 
   context "when the targeted resolution cannot be updated" do
@@ -175,7 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
     }
     stub_request(:get, "https://registry.npmjs.org/brace-expansion")
       .to_return(status: 200, body: registry_response.to_json, headers: { "Content-Type" => "application/json" })
-    stub_request(:head, %r{https://registry.npmjs.org/brace-expansion/-/brace-expansion-[\d.]+\.tgz})
+    stub_request(:head, %r{\Ahttps://registry\.npmjs\.org/brace-expansion/-/brace-expansion-[\d.]+\.tgz\z})
       .to_return(status: 200)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)

@@ -29,7 +29,7 @@ module Dependabot
           ).returns(T.nilable(String))
         end
         def self.update_subdependency(
-          yarn_lock:, dependency:, target_version:, env: nil, install_args: "--mode=update-lockfile"
+          yarn_lock:, dependency:, target_version:, env: nil, install_args: Helpers.yarn_berry_args
         )
           current_version = dependency.previous_version || dependency.version
           prefix = "#{dependency.name}@npm:"
@@ -49,8 +49,9 @@ module Dependabot
           end
 
           resolutions = descriptors.to_h { |descriptor| [descriptor, "npm:#{target_version}"] }
+          resolution_command = Helpers.yarn_major_version == 2 ? "install" : "install --mode=update-lockfile"
           with_temporary_resolutions(yarn_lock, resolutions) do
-            Helpers.run_yarn_command("install --mode=update-lockfile", fingerprint: "install", env: env)
+            Helpers.run_yarn_command(resolution_command, fingerprint: "install", env: env)
             restore_subdependency_descriptors(
               yarn_lock: yarn_lock,
               dependency_name: dependency.name,
