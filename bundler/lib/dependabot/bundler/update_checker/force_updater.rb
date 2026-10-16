@@ -211,12 +211,6 @@ module Dependabot
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
-        sig { returns(String) }
-        def sanitized_lockfile_body
-          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          T.must(T.must(lockfile).content).gsub(re, "")
-        end
-
         sig { void }
         def write_temporary_dependency_files
           dependency_files.each do |file|
@@ -224,8 +218,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, file.content)
           end
-
-          File.write(T.must(lockfile).name, sanitized_lockfile_body) if lockfile
         end
 
         sig { override.returns(String) }
