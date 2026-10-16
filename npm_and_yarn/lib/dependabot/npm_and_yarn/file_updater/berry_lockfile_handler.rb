@@ -75,7 +75,9 @@ module Dependabot
           manifest_path = File.join(File.dirname(yarn_lock.name), "package.json")
           original_manifest = File.read(manifest_path)
           manifest = JSON.parse(original_manifest)
-          manifest["resolutions"] = manifest.fetch("resolutions", {}).merge(resolutions)
+          manifest["resolutions"] = resolutions.merge(manifest.fetch("resolutions", {})) do |_key, temporary, _existing|
+            temporary
+          end
           begin
             File.write(manifest_path, JSON.pretty_generate(manifest))
             yield

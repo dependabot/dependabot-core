@@ -50,7 +50,8 @@ module Dependabot
 
           sig { returns(T::Array[String]) }
           def dependency_names
-            details = entry[2]
+            # Only registry tuples have a registry field before their metadata.
+            details = entry[version ? 2 : 1]
             return [] if details.nil?
 
             invalid!("#{@context} details must be an object") unless details.is_a?(Hash)

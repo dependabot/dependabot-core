@@ -12,6 +12,65 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
     File.join("spec", "fixtures", "projects", "yarn_berry", "security_update", "yarn.lock")
   end
 
+  describe ".update_subdependency" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) { project_dependency_files("yarn_berry/multiple_brace_expansion_versions") }
+
+    sig { returns(T::Hash[String, String]) }
+    let(:existing_resolutions) do
+      {
+        "brace-expansion" => "npm:^2.0.2",
+        "unrelated" => "npm:1.0.0",
+        "brace-expansion@npm:^2.0.2" => "npm:2.1.2"
+      }
+    end
+    # rubocop:enable RSpec/ScatteredLet
+
+    it "puts temporary pins before existing broad rules and restores the original manifest" do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_major_version).and_return(4)
+      install_count = 0
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
+        manifest = JSON.parse(File.read("package.json"))
+        if install_count.zero?
+          expect(manifest.fetch("resolutions").to_a).to eq(
+            [
+              ["brace-expansion@npm:^2.0.2", "npm:2.1.4"],
+              ["brace-expansion", "npm:^2.0.2"],
+              ["unrelated", "npm:1.0.0"]
+            ]
+          )
+          File.write("yarn.lock", File.read("yarn.lock").gsub("2.1.2", "2.1.4"))
+        else
+          expect(manifest.fetch("resolutions")).to eq(existing_resolutions)
+        end
+        install_count += 1
+        ""
+      end
+
+      files = dependency_files
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        files.each { |file| File.write(file.name, T.must(file.content)) }
+        manifest = JSON.parse(File.read("package.json")).merge("resolutions" => existing_resolutions)
+        original_manifest = JSON.pretty_generate(manifest)
+        File.write("package.json", original_manifest)
+
+        result = described_class.update_subdependency(
+          yarn_lock: T.must(dependency_files.find { |file| file.name == "yarn.lock" }),
+          dependency: Dependabot::Dependency.new(
+            name: "brace-expansion", version: "2.1.2", requirements: [], package_manager: "npm_and_yarn"
+          ),
+          target_version: "2.1.4"
+        )
+
+        expect(result).to eq("2.1.4")
+        expect(File.read("yarn.lock")).to include("brace-expansion@npm:2.1.4")
+        expect(File.read("package.json")).to eq(original_manifest)
+        expect(install_count).to eq(2)
+      end
+    end
+  end
+
   describe ".parse" do
     it "parses a valid yarn berry lockfile" do
       parsed = described_class.parse(fixture_path)

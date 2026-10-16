@@ -15,16 +15,24 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
   sig { returns(Dependabot::DependencyFile) }
   let(:lockfile) { T.must(dependency_files.find { |file| file.name == "bun.lock" }) }
 
+  sig { returns(Dependabot::Dependency) }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "brace-expansion", version: "2.1.2", requirements: [], package_manager: "bun"
+    )
+  end
+
+  sig { returns(T.any(String, Dependabot::Bun::Version)) }
+  let(:latest_allowable_version) { "5.0.12" }
+
   sig { returns(Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver) }
   let(:resolver) do
     described_class.new(
-      dependency: Dependabot::Dependency.new(
-        name: "brace-expansion", version: "2.1.2", requirements: [], package_manager: "bun"
-      ),
+      dependency: dependency,
       dependency_files: dependency_files,
       credentials: [],
       ignored_versions: [],
-      latest_allowable_version: "5.0.12",
+      latest_allowable_version: latest_allowable_version,
       repo_contents_path: nil
     )
   end
@@ -41,6 +49,33 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
 
   it "reports the updated target instead of an unrelated lower version" do
     expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+  end
+
+  context "with mixed Git and registry dependencies" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) { project_dependency_files("bun/github_dependency_no_ref") }
+
+    sig { returns(String) }
+    let(:latest_allowable_version) { "6.20.1" }
+
+    sig { returns(Dependabot::Dependency) }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "undici-types", version: "6.20.0", requirements: [], package_manager: "bun"
+      )
+    end
+
+    sig { returns(String) }
+    let(:updated_content) { T.must(lockfile.content).gsub("undici-types@6.20.0", "undici-types@6.20.1") }
+
+    before do
+      fetcher = instance_double(Dependabot::GitMetadataFetcher, tags: [])
+      allow(Dependabot::GitMetadataFetcher).to receive(:new).and_return(fetcher)
+    end
+
+    it "resolves a registry update without rejecting the Git tuple" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("6.20.1"))
+    end
   end
 
   context "when the targeted version is unchanged" do
@@ -159,6 +194,26 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
 
     it "checks every original incoming dependency edge" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+    end
+
+    context "with a Git consumer" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files.map do |file|
+          next file unless file.name == "bun.lock"
+
+          content = JSON.parse(T.must(file.content))
+          packages = content.fetch("packages")
+          metadata = packages.fetch("another-parent")[2]
+          packages["another-parent"] = ["another-parent@github:example/parent#123abcd", metadata, "parent-123abcd"]
+          file.dup.tap { |copy| copy.content = JSON.generate(content) }
+        end
+      end
+
+      it "follows dependency edges from Git metadata rather than skipping the package" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.2"))
+      end
     end
 
     context "with an optional consumer" do

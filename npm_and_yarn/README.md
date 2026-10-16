@@ -11,6 +11,8 @@ Exact pins and incompatible requirements on the targeted version remain blockers
 Yarn Berry security updates use temporary descriptor-specific resolutions to
 update the vulnerable version within its existing requirements, preserving the
 manifest and unrelated lockfile resolutions.
+Temporary rules take precedence over existing broad resolutions; the original
+manifest is restored before the final install.
 
 Security PR refreshes select the vulnerable installed version, just like creation.
 npm security resolution checks track the original nodes in the updated lockfile instead
