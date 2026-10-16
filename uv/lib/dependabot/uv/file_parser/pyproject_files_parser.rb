@@ -251,7 +251,11 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_poetry?
-          pyproject_document.poetry?
+          return false unless pyproject_document.poetry?
+          return true unless using_pep621? || using_pep735?
+
+          POETRY_DEPENDENCY_TYPES.any? { |type| pyproject_document.poetry_dependencies(type).any? } ||
+            pyproject_document.poetry_groups.values.any?(&:any?)
         end
 
         sig { returns(T::Boolean) }
