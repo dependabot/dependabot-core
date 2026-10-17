@@ -585,6 +585,63 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     end
   end
 
+  describe "#updated_dependencies" do
+    context "without a lockfile when the latest release removed a required feature" do
+      let(:dependency_name) { "bitflags" }
+      let(:requirement) { "=0.8.0" }
+      let(:latest_version) { Dependabot::Cargo::Version.new("1.3.2") }
+      let(:crates_response) { "{}" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("manifests", "feature_removed").sub('version = "0.8"', "version = \"#{requirement}\"")
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Cargo::FileParser.new(dependency_files: dependency_files, source: nil)
+                                     .parse.find { |candidate| candidate.name == dependency_name }
+      end
+
+      before do
+        latest_version_finder = instance_double(
+          Dependabot::Cargo::UpdateChecker::LatestVersionFinder,
+          latest_version: latest_version
+        )
+        allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+          .to receive(:new).and_return(latest_version_finder)
+      end
+
+      it "reports the same version that the updated requirement selects" do
+        updates = checker.updated_dependencies(requirements_to_unlock: :own)
+
+        expect(updates).to contain_exactly(
+          have_attributes(
+            version: "0.8.2",
+            requirements: [have_attributes(requirement: "=0.8.2")]
+          )
+        )
+      end
+
+      context "when the requirement already allows the latest resolvable release" do
+        let(:requirement) { "0.8" }
+
+        it "does not update to an unresolvable release" do
+          expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+        end
+      end
+
+      context "when no release is eligible for an update" do
+        let(:latest_version) { nil }
+
+        it "does not produce an update" do
+          expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+        end
+      end
+    end
+  end
+
   describe "#requirements_update_strategy" do
     subject(:strategy) { checker.requirements_update_strategy }
 
