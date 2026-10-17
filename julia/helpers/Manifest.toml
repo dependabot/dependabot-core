@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.13.2"
+julia_version = "1.13.3-DEV"
 manifest_format = "2.1"
 project_hash = "e3d0f225729528f64477be5e8d0222693cb9dfea"
 
@@ -43,10 +43,10 @@ version = "1.11.0"
 
 [[deps.HistoricalStdlibVersions]]
 deps = ["Pkg", "PrecompileTools"]
-git-tree-sha1 = "e2c444d79d406f80f316b779761eef0cf17fc137"
+git-tree-sha1 = "950bb57e80f4f64790b0af726bc3b2b2147a8b56"
 registries = "General"
 uuid = "6df8b67a-e8a0-4029-b4b7-ac196fe72102"
-version = "2.0.7"
+version = "2.0.8"
 
 [[deps.JSON]]
 deps = ["Dates", "Logging", "Parsers", "PrecompileTools", "StructUtils", "UUIDs", "Unicode"]
