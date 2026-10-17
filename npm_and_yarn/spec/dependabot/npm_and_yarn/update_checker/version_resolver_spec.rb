@@ -130,6 +130,87 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
     end
 
+    context "when the injected window trips the verification of existing lockfile entries" do
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+
+      before do
+        violation = "ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION  The lockfile entries failed verification"
+        peer_error = "react-dom@16.3.1 requires a peer of react@^16.0.0 but none is installed."
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+          if command.include?("--config.minimum-release-age=")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: violation, error_context: {})
+          end
+          next "" unless command.include?("@16.3.1")
+
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: peer_error, error_context: {})
+        end
+      end
+
+      it "still reports the peer conflict by retrying without the age override" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "when resolving a security update under a native window" do
+      let(:security_updates_only) { true }
+      let(:dependency_files) do
+        super() + [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")]
+      end
+
+      before do
+        window_error = "ERR_PNPM_NO_MATURE_MATCHING_VERSION  Version 16.3.1 (released 1 day ago) of react does not " \
+                       "meet the minimumReleaseAge constraint"
+        peer_error = "react-dom@16.3.1 requires a peer of react@^16.0.0 but none is installed."
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+          unless command.include?("--config.minimum-release-age=0")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: window_error, error_context: {})
+          end
+          next "" unless command.include?("@16.3.1")
+
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: peer_error, error_context: {})
+        end
+      end
+
+      it "bypasses the native window so the peer conflict is still found" do
+        expect(resolved_version).to eq(Gem::Version.new("15.2.0"))
+      end
+    end
+
+    context "when the dependency has no locked version" do
+      let(:commands) { [] }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1, semver_major_days: 14)
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react-dom",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [{ file: "package.json", requirement: "^15.2.0", groups: ["dependencies"], source: nil }]
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.10.1"))
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+          commands << command
+          ""
+        end
+      end
+
+      it "uses the window selection used, which has no current version to compare" do
+        resolved_version
+
+        expect(commands).to include(a_string_matching(/@16\.3\.1 --lockfile-only .*minimum-release-age=1440/))
+        expect(commands).not_to include(a_string_matching(/minimum-release-age=20160/))
+      end
+    end
+
     context "when peer-compatible fallbacks are inside the native cooldown" do
       let(:workspace_content) { "minimumReleaseAge: 10080\n" }
       let(:dependency_files) do
@@ -1843,17 +1924,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
           let(:pnpm_version) { "12.10.1" }
           let(:blocked_versions) { [] }
+          let(:release_age_probes) { commands.grep(/--lockfile-only/) }
 
           before do
             allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version)
               .and_return(Dependabot::NpmAndYarn::Version.new(pnpm_version))
           end
 
-          it "passes the cooldown to the probe as pnpm's release-age window" do
+          it "runs the probe under the lockfile updater's release-age gate" do
             resolver.latest_resolvable_version
 
-            expect(commands).to include(
-              "update left-pad@1.3.0 --lockfile-only --config.minimum-release-age=4320"
+            expect(release_age_probes).to include(
+              a_string_matching(/\Aupdate left-pad@1\.3\.0 --lockfile-only .*--config\.minimum-release-age=4320/)
             )
           end
 
@@ -1877,16 +1959,65 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             it "leaves the longer window to pnpm" do
               resolver.latest_resolvable_version
 
-              expect(commands).to include("update left-pad@1.3.0 --lockfile-only")
+              expect(release_age_probes).not_to include(a_string_matching(/--config\.minimum-release-age=/))
+            end
+          end
+
+          context "when pnpm-workspace.yaml sets a window pnpm cannot read as a number" do
+            let(:dependency_files) do
+              super() + [
+                Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: soon\n")
+              ]
+            end
+
+            it "does not override it" do
+              resolver.latest_resolvable_version
+
+              expect(release_age_probes).not_to include(a_string_matching(/--config\.minimum-release-age=/))
+            end
+          end
+
+          context "when pnpm 10 reads a longer window from .npmrc" do
+            let(:pnpm_version) { "10.16.0" }
+            let(:dependency_files) do
+              super() + [Dependabot::DependencyFile.new(name: ".npmrc", content: "minimum-release-age=20160\n")]
+            end
+
+            it "does not weaken it" do
+              resolver.latest_resolvable_version
+
+              expect(release_age_probes).not_to include(a_string_matching(/--config\.minimum-release-age=/))
             end
           end
 
           context "when this is a security update" do
             let(:security_updates_only) { true }
 
-            it "passes no window" do
+            it "bypasses the window, as the lockfile updater does" do
               resolver.latest_resolvable_version
 
+              expect(release_age_probes).to include(
+                a_string_matching(/\Aupdate left-pad@1\.3\.0 --lockfile-only --config\.minimum-release-age=0/)
+              )
+            end
+          end
+
+          context "when the window trips the verification of existing lockfile entries" do
+            let(:pnpm_version) { "11.0.0" }
+
+            before do
+              violation = "ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION  The lockfile entries failed verification"
+              allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+                commands << command
+                next "" unless command.include?("--config.minimum-release-age=")
+
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: violation, error_context: {})
+              end
+            end
+
+            it "retries the probe without the age override" do
+              expect(resolver.latest_resolvable_version.to_s).to eq("1.3.0")
+              expect(release_age_probes).to include(a_string_matching(/--config\.minimum-release-age=4320/))
               expect(commands).to include("update left-pad@1.3.0 --lockfile-only")
             end
           end

@@ -9,6 +9,7 @@ require "dependabot/logger"
 require "dependabot/package/npm_registry_package"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
 require "dependabot/npm_and_yarn/helpers"
@@ -861,14 +862,13 @@ module Dependabot
           ).returns(T::Array[PeerDependencyConflict])
         end
         def run_pnpm_checker(path:, version:)
-          release_age_arg = pnpm_release_age_probe_arg(version)
-          flags = ["--lockfile-only", release_age_arg].compact.join(" ")
+          gate = pnpm_release_age_gate(version)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              output = Helpers.run_pnpm_command(
-                "update #{dependency.name}@#{version} #{flags}",
-                fingerprint: "update <dependency_name>@<version> #{flags.sub(/(?<=release-age=)\d+/, '<minutes>')}"
-              )
+              output = gate.run_command_under_release_age_gate(
+                "update #{dependency.name}@#{version} --lockfile-only",
+                "update <dependency_name>@<version> --lockfile-only"
+              ).to_s
               if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
                 raise SharedHelpers::HelperSubprocessFailed.new(
                   message: output,
@@ -884,34 +884,43 @@ module Dependabot
           []
         end
 
-        # The Dependabot cooldown is only enforced by pnpm during lockfile generation, so the probe has to pass it
-        # as pnpm's own window, or a release-age block would first show up when the files are updated. A native
-        # window at least as long is left to pnpm, as it is for the file updater.
-        sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T.nilable(String)) }
-        def pnpm_release_age_probe_arg(version)
-          return if @security_updates_only || version.nil?
-
-          minutes = cooldown_window_minutes_for(version_class.new(version.to_s))
-          return unless minutes
-
-          pnpm = Helpers.pnpm_version
-          return if pnpm.nil? || pnpm < version_class.new(Helpers::PNPM_MINIMUM_RELEASE_AGE_VERSION)
-
-          "--config.minimum-release-age=#{minutes}"
+        # The probe runs under the lockfile updater's release-age gate, so a version is judged the way the update
+        # will judge it: with the Dependabot cooldown and the repository's own window combined, the security
+        # bypass, and the handling of lockfile entries that fail verification. One gate is kept per window.
+        sig do
+          params(version: T.nilable(T.any(String, Gem::Version))).returns(FileUpdater::PnpmLockfileUpdater)
+        end
+        def pnpm_release_age_gate(version)
+          days = probe_cooldown_days(version)
+          @pnpm_release_age_gates ||= T.let(
+            {},
+            T.nilable(T::Hash[T.nilable(Integer), FileUpdater::PnpmLockfileUpdater])
+          )
+          @pnpm_release_age_gates[days] ||= FileUpdater::PnpmLockfileUpdater.new(
+            dependencies: [dependency],
+            dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials,
+            security_updates_only: @security_updates_only,
+            release_age_days: days
+          )
         end
 
-        sig { params(candidate: Dependabot::Version).returns(T.nilable(Integer)) }
-        def cooldown_window_minutes_for(candidate)
+        # The window the update checker applied when it selected `version`, calculated from the same current
+        # version, so the probe cannot be stricter than selection was.
+        sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T.nilable(Integer)) }
+        def probe_cooldown_days(version)
+          return if @security_updates_only || version.nil?
+
           cooldown = update_cooldown
           return if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(cooldown, dependency.name)
 
-          current_version = version_for_dependency(dependency)
-          current = current_version && version_class.new(current_version.to_s)
+          candidate = version_class.new(version.to_s)
+          current = dependency.numeric_version
           return if current && candidate <= current
 
           days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(T.must(cooldown), current, candidate)
-          native_minutes = Helpers.pnpm_release_age_policies(dependency_files).map(&:minutes).max
-          Helpers.higher_release_age_gate(days * Helpers::MINUTES_PER_DAY, native_minutes)
+          days.positive? ? days : nil
         end
 
         sig do

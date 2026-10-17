@@ -76,6 +76,14 @@ module Dependabot
           handle_pnpm_lock_updater_error(e, pnpm_lock)
         end
 
+        # Runs a pnpm command under the same release-age gate as the lockfile update: the Dependabot cooldown,
+        # the repository's own window, the security-update bypass, and the lockfile-verification handling. The
+        # update checker uses it for its probes so a version is judged the way the update will judge it.
+        sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
+        def run_command_under_release_age_gate(cmd, fingerprint = nil)
+          run_pnpm_command_with_release_age_gate(cmd, fingerprint)
+        end
+
         private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
@@ -103,7 +111,7 @@ module Dependabot
 
         # pnpm introduced the `minimumReleaseAge` release-age gate in 10.16 and the
         # `minimumReleaseAgeStrict` toggle in 11.0; older versions ignore them.
-        PNPM_MINIMUM_RELEASE_AGE_VERSION = Helpers::PNPM_MINIMUM_RELEASE_AGE_VERSION
+        PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
         PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION = "11.0"
         # pnpm 10.x ignores minimumReleaseAge when shared-workspace-lockfile is
         # disabled (pnpm/pnpm#10008); the fix ships in pnpm 11.

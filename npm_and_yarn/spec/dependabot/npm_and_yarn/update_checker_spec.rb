@@ -2532,7 +2532,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:workspace_yaml_name) { "pnpm-workspace.yaml" }
     let(:dependency_files) do
       project_dependency_files("npm6/no_lockfile") +
-        project_dependency_files("pnpm/simple").select { |file| file.name == "pnpm-lock.yaml" } +
+        project_dependency_files("pnpm/peer_dependency").select { |file| file.name == "pnpm-lock.yaml" } +
         [Dependabot::DependencyFile.new(name: workspace_yaml_name, content: workspace_yaml)]
     end
 
@@ -2638,7 +2638,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:workspace_yaml) { "packages: []\n" }
         let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
         let(:dependency_files) do
-          project_dependency_files("pnpm/simple") +
+          project_dependency_files("pnpm/peer_dependency") +
             [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=0\n")]
         end
 
