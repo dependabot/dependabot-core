@@ -129,9 +129,6 @@ module Dependabot
       # expect.
       MINUTES_PER_DAY = 1440
 
-      # Minimum pnpm version that supports the `minimumReleaseAge` setting.
-      PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
-
       # Resolves the release-age gate value a lockfile updater should enforce for a
       # regular update, applying "highest precedence wins" between the Dependabot
       # cooldown floor and any explicit native gate the user configured (both given
