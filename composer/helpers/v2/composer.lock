@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a7b4083425a736c2f45060fbcefa0749",
+    "content-hash": "050679b8d11222018d9060a093d2f5a1",
     "packages": [
         {
             "name": "composer/ca-bundle",
@@ -2667,11 +2667,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.15",
+            "version": "2.3.0",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/b158556ffd26825cf615a1c1f72fb5157a2301b7",
-                "reference": "b158556ffd26825cf615a1c1f72fb5157a2301b7",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/b1f9890d9af53a25c58129e78f0aadd31f90d7f4",
+                "reference": "b1f9890d9af53a25c58129e78f0aadd31f90d7f4",
                 "shasum": ""
             },
             "require": {
@@ -2727,7 +2727,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-23T12:23:07+00:00"
+            "time": "2026-10-06T06:15:36+00:00"
         },
         {
             "name": "psr/event-dispatcher",
