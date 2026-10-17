@@ -43,10 +43,10 @@ version = "1.11.0"
 
 [[deps.HistoricalStdlibVersions]]
 deps = ["Pkg", "PrecompileTools"]
-git-tree-sha1 = "950bb57e80f4f64790b0af726bc3b2b2147a8b56"
+git-tree-sha1 = "69670706011d31710657c23c9e1a1b89252cd2c0"
 registries = "General"
 uuid = "6df8b67a-e8a0-4029-b4b7-ac196fe72102"
-version = "2.0.8"
+version = "2.0.9"
 
 [[deps.JSON]]
 deps = ["Dates", "Logging", "Parsers", "PrecompileTools", "StructUtils", "UUIDs", "Unicode"]
