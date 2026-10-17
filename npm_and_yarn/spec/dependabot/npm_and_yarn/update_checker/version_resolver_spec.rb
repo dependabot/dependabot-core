@@ -1729,6 +1729,169 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           end
         end
       end
+
+      describe "when pnpm's release-age window blocks a version" do
+        let(:project_name) { "pnpm/pnpm-lock" }
+        let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "left-pad",
+            version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+        let(:left_pad_registry_listing_url) { "https://registry.npmjs.org/left-pad" }
+        let(:left_pad_registry_response) { fixture("npm_responses", "left-pad.json") }
+        let(:blocked_versions) { ["@1.3.0"] }
+        let(:commands) { [] }
+
+        before do
+          stub_request(:get, left_pad_registry_listing_url)
+            .to_return(status: 200, body: left_pad_registry_response)
+          stub_request(:get, left_pad_registry_listing_url + "/latest")
+            .to_return(status: 200, body: "{}")
+          release_age_message = fixture("pnpm_errors", "pnpm12", "no_mature_matching_version.txt")
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **|
+            commands << command
+            if blocked_versions.any? { |version| command.include?(version) }
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: release_age_message,
+                error_context: {}
+              )
+            end
+            ""
+          end
+        end
+
+        it "falls back to the next eligible version" do
+          expect(resolver.latest_resolvable_version.to_s).to eq("1.2.0")
+        end
+
+        context "when several versions are blocked" do
+          let(:blocked_versions) { ["@1.3.0", "@1.2.0"] }
+
+          it "skips them to the first version pnpm accepts" do
+            expect(resolver.latest_resolvable_version.to_s).to eq("1.1.3")
+          end
+        end
+
+        context "when every candidate is blocked" do
+          let(:blocked_versions) { ["@1."] }
+
+          it "returns nil so the update is reported as not possible" do
+            expect(resolver.latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when the fallback limit is exceeded" do
+          let(:blocked_versions) { ["@1.3.0", "@1.2.0", "@1.1.3"] }
+
+          before do
+            stub_const(
+              "Dependabot::NpmAndYarn::UpdateChecker::VersionResolver::MAX_TRUST_DOWNGRADE_FALLBACK_ATTEMPTS", 2
+            )
+          end
+
+          it "stops after the limited number of candidates" do
+            expect(resolver.latest_resolvable_version).to be_nil
+            expect(commands.size).to eq(3)
+          end
+        end
+
+        context "when the highest fallback is inside the Dependabot cooldown" do
+          let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+          let(:left_pad_registry_response) do
+            response = JSON.parse(super())
+            response["time"]["1.2.0"] = (Time.now.utc - (24 * 60 * 60)).iso8601
+            response["time"]["1.3.0"] = (Time.now.utc - (10 * 24 * 60 * 60)).iso8601
+            response.to_json
+          end
+
+          it "never probes the version the cooldown excludes" do
+            expect(resolver.latest_resolvable_version.to_s).to eq("1.1.3")
+            expect(commands.grep(/@1\.2\.0/)).to be_empty
+          end
+        end
+
+        context "when this is a security update" do
+          let(:security_updates_only) { true }
+
+          it "keeps the target, because the window is bypassed" do
+            expect(resolver.latest_resolvable_version.to_s).to eq("1.3.0")
+          end
+        end
+
+        context "when a different pnpm error occurs" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "ERR_PNPM_OTHER", error_context: {})
+            )
+          end
+
+          it "lets the version through as before" do
+            expect(resolver.latest_resolvable_version.to_s).to eq("1.3.0")
+          end
+        end
+
+        context "with a Dependabot cooldown" do
+          let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+          let(:pnpm_version) { "12.10.1" }
+          let(:blocked_versions) { [] }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version)
+              .and_return(Dependabot::NpmAndYarn::Version.new(pnpm_version))
+          end
+
+          it "passes the cooldown to the probe as pnpm's release-age window" do
+            resolver.latest_resolvable_version
+
+            expect(commands).to include(
+              "update left-pad@1.3.0 --lockfile-only --config.minimum-release-age=4320"
+            )
+          end
+
+          context "when pnpm is too old to support the window" do
+            let(:pnpm_version) { "10.15.0" }
+
+            it "leaves the probe unchanged" do
+              resolver.latest_resolvable_version
+
+              expect(commands).to include("update left-pad@1.3.0 --lockfile-only")
+            end
+          end
+
+          context "when pnpm-workspace.yaml already sets a window at least as long" do
+            let(:dependency_files) do
+              super() + [
+                Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")
+              ]
+            end
+
+            it "leaves the longer window to pnpm" do
+              resolver.latest_resolvable_version
+
+              expect(commands).to include("update left-pad@1.3.0 --lockfile-only")
+            end
+          end
+
+          context "when this is a security update" do
+            let(:security_updates_only) { true }
+
+            it "passes no window" do
+              resolver.latest_resolvable_version
+
+              expect(commands).to include("update left-pad@1.3.0 --lockfile-only")
+            end
+          end
+        end
+      end
     end
   end
 
