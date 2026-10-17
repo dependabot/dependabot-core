@@ -103,7 +103,7 @@ module Dependabot
 
         # pnpm introduced the `minimumReleaseAge` release-age gate in 10.16 and the
         # `minimumReleaseAgeStrict` toggle in 11.0; older versions ignore them.
-        PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
+        PNPM_MINIMUM_RELEASE_AGE_VERSION = Helpers::PNPM_MINIMUM_RELEASE_AGE_VERSION
         PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION = "11.0"
         # pnpm 10.x ignores minimumReleaseAge when shared-workspace-lockfile is
         # disabled (pnpm/pnpm#10008); the fix ships in pnpm 11.

@@ -40,9 +40,16 @@ module Dependabot
         )
 
         # Maximum number of older versions to check when the latest version
-        # triggers a pnpm trust downgrade. Prevents excessive subprocess spawning
-        # for packages with many published versions.
+        # triggers a pnpm trust downgrade or release-age block. Prevents excessive
+        # subprocess spawning for packages with many published versions.
         MAX_TRUST_DOWNGRADE_FALLBACK_ATTEMPTS = 5
+
+        # No version of a package pnpm has to resolve is old enough for the minimumReleaseAge window.
+        PNPM_RELEASE_AGE_ERROR = /ERR_PNPM_NO_MATURE_MATCHING_VERSION/
+
+        # Why pnpm refuses a version, as named in the logs.
+        TRUST_DOWNGRADE = "trust downgrade"
+        RELEASE_AGE_BLOCK = "release-age block"
 
         # Error message returned by `yarn add` (for Yarn classic):
         # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
@@ -161,7 +168,7 @@ module Dependabot
             nil, T.nilable(T::Array[PeerDependencyConflict])
           )
           @peer_dependency_errors = T.let(nil, T.nilable(T::Array[PeerDependencyConflict]))
-          @trust_downgrade_detected = T.let(false, T::Boolean)
+          @pnpm_block_reason = T.let(nil, T.nilable(String))
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -174,12 +181,12 @@ module Dependabot
           # Trigger peer dependency check which also detects trust downgrades
           has_unmet_peers = relevant_unmet_peer_dependencies.any?
 
-          if @trust_downgrade_detected
+          if @pnpm_block_reason
             Dependabot.logger.info(
-              "pnpm trust downgrade detected for #{dependency.name}@#{latest_allowable_version}, " \
+              "pnpm #{@pnpm_block_reason} detected for #{dependency.name}@#{latest_allowable_version}, " \
               "trying older versions"
             )
-            return find_version_without_trust_downgrade
+            return find_version_not_blocked_by_pnpm
           end
 
           return latest_allowable_version unless has_unmet_peers
@@ -269,16 +276,24 @@ module Dependabot
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
-        sig { returns(T::Boolean) }
-        def trust_downgrade_detected?
-          @trust_downgrade_detected
-        end
-
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def trust_downgrade_error?(error)
           PnpmErrorMessage.normalize(error.message).include?("ERR_PNPM_TRUST_DOWNGRADE")
         end
 
+        # A release-age block means this version needs a release pnpm's window excludes, so the next eligible
+        # version can still work. Security updates bypass the window, so they never treat it as a block.
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def release_age_block_detected?(error)
+          return false if @security_updates_only
+          return false unless PnpmErrorMessage.normalize(error.message).match?(PNPM_RELEASE_AGE_ERROR)
+
+          Dependabot.logger.warn(
+            "pnpm release-age block detected during peer dependency check; version will be skipped"
+          )
+          @pnpm_block_reason = RELEASE_AGE_BLOCK
+          true
+        end
         sig { params(dep: Dependabot::Dependency).returns(PackageLatestVersionFinder) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -294,11 +309,11 @@ module Dependabot
             )
         end
 
-        # Iterates through versions below the latest_allowable_version (which had a trust
-        # downgrade) to find the highest version that doesn't trigger a pnpm trust downgrade.
-        # Returns nil if no such version exists (or the only option is the current version).
+        # Iterates through versions below the latest_allowable_version (which pnpm blocked through a trust
+        # downgrade or the release-age window) to find the highest one pnpm accepts. Returns nil if no such
+        # version exists (or the only option is the current version).
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
-        def find_version_without_trust_downgrade
+        def find_version_not_blocked_by_pnpm
           current_version = version_for_dependency(dependency)
           candidate_versions = latest_version_finder(dependency)
                                .releases_outside_cooldown
@@ -310,45 +325,49 @@ module Dependabot
                                .first(MAX_TRUST_DOWNGRADE_FALLBACK_ATTEMPTS)
 
           candidate_versions.each do |candidate|
-            next if version_has_trust_downgrade?(candidate)
+            next if version_blocked_by_pnpm?(candidate)
 
             Dependabot.logger.info(
-              "Found #{dependency.name}@#{candidate} without trust downgrade"
+              "Found #{dependency.name}@#{candidate} not blocked by pnpm"
             )
             return candidate
           end
 
           Dependabot.logger.info(
-            "No version of #{dependency.name} found without pnpm trust downgrade " \
+            "No version of #{dependency.name} found that pnpm does not block " \
             "(checked #{candidate_versions.length} versions)"
           )
           nil
         end
 
-        # Checks whether a specific version triggers pnpm trust downgrade by running
-        # the peer dependency check and inspecting the trust_downgrade_detected flag.
+        # Why pnpm blocked the version last probed, if it did.
+        sig { returns(T.nilable(String)) }
+        def current_pnpm_block_reason
+          @pnpm_block_reason
+        end
+
+        # Checks whether a specific version is blocked by pnpm's trust policy or release-age window by running
+        # the peer dependency check and inspecting the block reason.
         # Saves and restores instance state to avoid polluting the caller's context.
         sig { params(version: Gem::Version).returns(T::Boolean) }
-        def version_has_trust_downgrade?(version)
-          saved_trust_downgrade = @trust_downgrade_detected
+        def version_blocked_by_pnpm?(version)
+          saved_block_reason = @pnpm_block_reason
           saved_peer_errors = @peer_dependency_errors
 
-          @trust_downgrade_detected = false
+          @pnpm_block_reason = nil
           @peer_dependency_errors = nil
 
           fetch_peer_dependency_errors(version: version)
 
-          result = trust_downgrade_detected?
-          if result
+          reason = current_pnpm_block_reason
+          if reason
             Dependabot.logger.info(
-              "pnpm trust downgrade also detected for #{dependency.name}@#{version}, skipping"
+              "pnpm #{reason} also detected for #{dependency.name}@#{version}, skipping"
             )
           end
-          result
+          !reason.nil?
         ensure
-          # T.must needed because Sorbet considers locals potentially nil in ensure blocks;
-          # @peer_dependency_errors doesn't need it since its type is already nilable.
-          @trust_downgrade_detected = T.must(saved_trust_downgrade)
+          @pnpm_block_reason = saved_block_reason
           @peer_dependency_errors = saved_peer_errors
         end
 
@@ -568,9 +587,11 @@ module Dependabot
             Dependabot.logger.warn(
               "pnpm trust downgrade detected during peer dependency check; version will be skipped"
             )
-            @trust_downgrade_detected = true
+            @pnpm_block_reason = TRUST_DOWNGRADE
             return []
           end
+
+          return [] if release_age_block_detected?(e)
 
           # Fall back to allowing the version through. Whatever error
           # occurred should be properly handled by the FileUpdater. We
@@ -811,9 +832,11 @@ module Dependabot
             Dependabot.logger.warn(
               "pnpm trust downgrade detected in run_checker; version will be skipped"
             )
-            @trust_downgrade_detected = true
+            @pnpm_block_reason = TRUST_DOWNGRADE
             return []
           end
+
+          return [] if release_age_block_detected?(e)
 
           handle_peer_dependency_errors(e.message)
         end
@@ -838,11 +861,13 @@ module Dependabot
           ).returns(T::Array[PeerDependencyConflict])
         end
         def run_pnpm_checker(path:, version:)
+          release_age_arg = pnpm_release_age_probe_arg(version)
+          flags = ["--lockfile-only", release_age_arg].compact.join(" ")
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               output = Helpers.run_pnpm_command(
-                "update #{dependency.name}@#{version} --lockfile-only",
-                fingerprint: "update <dependency_name>@<version> --lockfile-only"
+                "update #{dependency.name}@#{version} #{flags}",
+                fingerprint: "update <dependency_name>@<version> #{flags.sub(/(?<=release-age=)\d+/, '<minutes>')}"
               )
               if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
                 raise SharedHelpers::HelperSubprocessFailed.new(
@@ -857,6 +882,36 @@ module Dependabot
             end
           end
           []
+        end
+
+        # The Dependabot cooldown is only enforced by pnpm during lockfile generation, so the probe has to pass it
+        # as pnpm's own window, or a release-age block would first show up when the files are updated. A native
+        # window at least as long is left to pnpm, as it is for the file updater.
+        sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T.nilable(String)) }
+        def pnpm_release_age_probe_arg(version)
+          return if @security_updates_only || version.nil?
+
+          minutes = cooldown_window_minutes_for(version_class.new(version.to_s))
+          return unless minutes
+
+          pnpm = Helpers.pnpm_version
+          return if pnpm.nil? || pnpm < version_class.new(Helpers::PNPM_MINIMUM_RELEASE_AGE_VERSION)
+
+          "--config.minimum-release-age=#{minutes}"
+        end
+
+        sig { params(candidate: Dependabot::Version).returns(T.nilable(Integer)) }
+        def cooldown_window_minutes_for(candidate)
+          cooldown = update_cooldown
+          return if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(cooldown, dependency.name)
+
+          current_version = version_for_dependency(dependency)
+          current = current_version && version_class.new(current_version.to_s)
+          return if current && candidate <= current
+
+          days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(T.must(cooldown), current, candidate)
+          native_minutes = Helpers.pnpm_release_age_policies(dependency_files).map(&:minutes).max
+          Helpers.higher_release_age_gate(days * Helpers::MINUTES_PER_DAY, native_minutes)
         end
 
         sig do
