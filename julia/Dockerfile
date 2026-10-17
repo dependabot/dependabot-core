@@ -12,12 +12,14 @@ USER dependabot
 
 # Install Julia, pinned to the 1.13 release channel rather than juliaup's default
 # `release` channel so a new minor Julia release cannot change the image under us.
+# Temporarily the build of the Julia 1.13.3 backports pull request (JuliaLang/julia#63883),
+# whose Pkg the helper needs, until 1.13.3 is released.
 # Retry the whole install because juliaup's own downloads can time out.
 # Clear partial installation state so the non-interactive installer can retry.
 RUN attempts=8; delay=10; \
     for attempt in $(seq 1 $attempts); do \
       rm -rf ~/.juliaup ~/.julia/juliaup; \
-      if curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel 1.13; then \
+      if curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel pr63883; then \
         break; \
       fi; \
       if [ "$attempt" -eq "$attempts" ]; then \
