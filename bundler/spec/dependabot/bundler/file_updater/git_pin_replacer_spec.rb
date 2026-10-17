@@ -68,5 +68,70 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
         expect(rewrite).to include(%(tag: %(new_ref)))
       end
     end
+
+    context "with a dependency declared inside a git block" do
+      let(:content) do
+        <<~GEMFILE
+          git "https://x.com/monorepo", tag: "v1", glob: "gems/*/*.gemspec" do
+            gem "business"
+          end
+        GEMFILE
+      end
+
+      it "replaces the tag on the git block" do
+        expect(rewrite).to include(%(git "https://x.com/monorepo", tag: "new_ref", glob: "gems/*/*.gemspec" do))
+      end
+    end
+
+    context "with a dependency declared inside a git block alongside other gems" do
+      let(:content) do
+        <<~GEMFILE
+          git "https://x.com/monorepo", ref: "a1b78a9" do
+            gem "statesman"
+            gem "business"
+          end
+
+          git "https://x.com/other", tag: "v0.11.6" do
+            gem "que"
+          end
+        GEMFILE
+      end
+
+      it "replaces the ref on the git block that declares the dependency" do
+        expect(rewrite).to include(%(git "https://x.com/monorepo", ref: "new_ref" do))
+      end
+
+      it "leaves other git blocks alone" do
+        expect(rewrite).to include(%(git "https://x.com/other", tag: "v0.11.6" do))
+      end
+    end
+
+    context "with a dependency declared inside a github block" do
+      let(:content) do
+        <<~GEMFILE
+          github "org/monorepo", tag: 'v1' do
+            gem "business"
+          end
+        GEMFILE
+      end
+
+      it "replaces the tag on the github block" do
+        expect(rewrite).to include(%(github "org/monorepo", tag: 'new_ref' do))
+      end
+    end
+
+    context "with a dependency declared inside a non-git block" do
+      let(:content) do
+        <<~GEMFILE
+          group :development, tag: "v1" do
+            gem "business"
+          end
+        GEMFILE
+      end
+
+      it "leaves the block alone" do
+        expect(rewrite).to eq(content)
+      end
+    end
   end
 end
