@@ -262,19 +262,20 @@ module Dependabot
       def registry_source_details_from(source_string)
         parts = source_string.split("//").first.split("/")
 
-        # Registry module source addresses are case-insensitive, so we normalize
-        # to lowercase to avoid treating case-variant declarations as different sources.
+        # The hostname is case-insensitive, so we normalize it to lowercase. The
+        # module identifier is sent to the registry as-is, and private registries
+        # can be case-sensitive, so we keep the case as written in the source.
         if parts.count == 3
           {
             type: "registry",
             registry_hostname: "registry.terraform.io",
-            module_identifier: source_string.split("//").first.downcase
+            module_identifier: source_string.split("//").first
           }
         elsif parts.count == 4
           {
             type: "registry",
             registry_hostname: parts.first.downcase,
-            module_identifier: parts[1..3].join("/").downcase
+            module_identifier: parts[1..3].join("/")
           }
         else
           msg = "Invalid registry source specified: '#{source_string}'"

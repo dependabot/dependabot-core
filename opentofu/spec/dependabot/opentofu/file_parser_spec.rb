@@ -1092,6 +1092,32 @@ RSpec.describe Dependabot::Opentofu::FileParser do
       end
     end
 
+    context "with private registry modules with mixed case in the source" do
+      let(:files) { project_dependency_files("private_modules_with_mixed_case") }
+
+      it "keeps the case of the module identifier as written" do
+        dependency = dependencies.find { |d| d.name == "Namespace/RDS/aws" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.requirements.first[:source]).to eq(
+          type: "registry",
+          registry_hostname: "registry.example.org",
+          module_identifier: "Namespace/RDS/aws"
+        )
+      end
+
+      it "lowercases the registry hostname" do
+        dependency = dependencies.find { |d| d.name == "namespace/Redis/aws" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.requirements.first[:source]).to eq(
+          type: "registry",
+          registry_hostname: "registry.example.org",
+          module_identifier: "namespace/Redis/aws"
+        )
+      end
+    end
+
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
 
