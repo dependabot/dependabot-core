@@ -85,6 +85,8 @@ jobs:
           go-version-file: 'go_modules/helpers/go.mod'
 
       - name: Install Dependabot CLI
+        env:
+          GOTOOLCHAIN: auto
         run: go install github.com/dependabot/cli/cmd/dependabot@latest
 
       - name: Restore Smoke Test
