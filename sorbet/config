@@ -26,7 +26,6 @@
 --ignore=nuget/spec/
 --ignore=pre_commit/spec/
 --ignore=pub/spec/
---ignore=rust_toolchain/spec/
 --ignore=swift/spec/
 --ignore=terraform/spec/
 --ignore=opentofu/spec/

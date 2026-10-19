@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -71,10 +71,12 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
   let(:security_advisories) { [] }
   let(:raise_on_ignored) { false }
 
-  let(:latest_version_finder) { instance_double(described_class::LatestVersionFinder) }
+  let(:latest_version_finder) do
+    instance_double(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder)
+  end
 
   before do
-    allow(described_class::LatestVersionFinder)
+    allow(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder)
       .to receive(:new)
       .and_return(latest_version_finder)
   end
@@ -237,7 +239,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
 
   describe "#latest_version_finder" do
     it "creates a LatestVersionFinder with correct parameters" do
-      allow(described_class::LatestVersionFinder)
+      allow(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder)
         .to receive(:new)
         .with(
           dependency: dependency,
@@ -252,7 +254,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
 
       update_checker.send(:latest_version_finder)
 
-      expect(described_class::LatestVersionFinder).to have_received(:new).with(
+      expect(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
         dependency: dependency,
         dependency_files: dependency_files,
         credentials: credentials,
@@ -268,7 +270,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
       finder2 = update_checker.send(:latest_version_finder)
 
       expect(finder1).to be(finder2)
-      expect(described_class::LatestVersionFinder).to have_received(:new).once
+      expect(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder).to have_received(:new).once
     end
   end
 
@@ -332,7 +334,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
     let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
 
     it "passes cooldown options to latest_version_finder" do
-      allow(described_class::LatestVersionFinder)
+      allow(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder)
         .to receive(:new)
         .with(
           dependency: dependency,
@@ -347,7 +349,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
 
       update_checker.send(:latest_version_finder)
 
-      expect(described_class::LatestVersionFinder).to have_received(:new).with(
+      expect(Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
         dependency: dependency,
         dependency_files: dependency_files,
         credentials: credentials,
