@@ -18,7 +18,7 @@ require "dependabot/terraform/package_manager"
 
 module Dependabot
   module Terraform
-    class FileParser < Dependabot::FileParsers::Base
+    class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
@@ -269,18 +269,27 @@ module Dependabot
           {
             type: "registry",
             registry_hostname: "registry.terraform.io",
-            module_identifier: source_string.split("//").first
+            module_identifier: canonical_module_identifier(source_string.split("//").first)
           }
         elsif parts.count == 4
           {
             type: "registry",
             registry_hostname: parts.first.downcase,
-            module_identifier: parts[1..3].join("/")
+            module_identifier: canonical_module_identifier(parts[1..3].join("/"))
           }
         else
           msg = "Invalid registry source specified: '#{source_string}'"
           raise DependencyFileNotEvaluatable, msg
         end
+      end
+
+      # Declarations of the same module that only differ in case must share one
+      # source, otherwise `Dependency#source_details` raises "Multiple sources!".
+      # The first declaration found decides the case that is used for all of them.
+      sig { params(identifier: String).returns(String) }
+      def canonical_module_identifier(identifier)
+        @module_identifiers ||= T.let({}, T.nilable(T::Hash[String, String]))
+        @module_identifiers[identifier.downcase] ||= identifier
       end
 
       sig { params(name: String, source: T::Hash[Symbol, T.untyped]).returns(String) }

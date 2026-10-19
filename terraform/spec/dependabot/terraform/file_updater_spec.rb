@@ -601,6 +601,43 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
+    context "with a registry module declared with different case in multiple files" do
+      let(:project_name) { "module_with_mixed_case_sources" }
+      let(:source) do
+        {
+          type: "registry",
+          registry_hostname: "registry.example.org",
+          module_identifier: "Namespace/RDS/aws"
+        }
+      end
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "Namespace/RDS/aws",
+            version: "1.1.0",
+            previous_version: "1.0.0",
+            requirements: [
+              { requirement: "1.1.0", groups: [], file: "main.tf", source: source },
+              { requirement: "1.1.0", groups: [], file: "other.tf", source: source }
+            ],
+            previous_requirements: [
+              { requirement: "1.0.0", groups: [], file: "main.tf", source: source },
+              { requirement: "1.0.0", groups: [], file: "other.tf", source: source }
+            ],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the version in every declaration" do
+        main = updated_dependency_files.find { |file| file.name == "main.tf" }
+        other = updated_dependency_files.find { |file| file.name == "other.tf" }
+
+        expect(main.content).to include('source  = "registry.example.org/Namespace/RDS/aws"', 'version = "1.1.0"')
+        expect(other.content).to include('source  = "registry.example.org/namespace/rds/aws"', 'version = "1.1.0"')
+      end
+    end
+
     context "with an hcl2-based registry dependency with a v-prefix" do
       let(:project_name) { "registry_012_with_v_prefix" }
       let(:dependencies) do

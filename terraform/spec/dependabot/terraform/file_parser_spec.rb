@@ -1085,6 +1085,29 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a module declared with different case in multiple files" do
+      let(:files) { project_dependency_files("module_with_mixed_case_sources") }
+
+      it "uses the case of the first declaration for all declarations" do
+        expect(dependencies.length).to eq(1)
+
+        dependency = dependencies.first
+        expect(dependency.name).to eq("Namespace/RDS/aws")
+        expect(dependency.requirements.length).to eq(2)
+        dependency.requirements.each do |req|
+          expect(req[:source]).to eq(
+            type: "registry",
+            registry_hostname: "registry.example.org",
+            module_identifier: "Namespace/RDS/aws"
+          )
+        end
+      end
+
+      it "does not raise a multiple sources error" do
+        expect { dependencies.first.source_string("module_identifier") }.not_to raise_error
+      end
+    end
+
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
 
