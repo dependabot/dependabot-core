@@ -2,6 +2,8 @@
 
 Yarn and npm support for [`dependabot-core`][core-repo].
 
+Security PR refreshes select the vulnerable installed version, just like creation.
+
 ### Running locally
 
 1. Start a development shell
