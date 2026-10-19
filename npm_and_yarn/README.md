@@ -9,6 +9,13 @@ updated, so unrelated installed versions do not block a compatible update.
 Exact pins and incompatible requirements on the targeted version remain blockers.
 
 Security PR refreshes select the vulnerable installed version, just like creation.
+npm security resolution checks track the original nodes in the updated lockfile instead
+of reporting an unrelated lower or higher installed version.
+Checks follow the original consumers through ancestor resolutions when npm hoists
+or deduplicates a package, and retain the vulnerable version if no replacement can
+be verified.
+Incoming consumers are indexed once per lockfile, rather than rescanned for every
+installed copy of the targeted version.
 
 ### Running locally
 

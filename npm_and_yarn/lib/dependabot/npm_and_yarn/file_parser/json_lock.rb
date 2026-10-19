@@ -3,6 +3,7 @@
 
 require "json"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/package/npm_lockfile_details"
@@ -20,6 +21,7 @@ module Dependabot
         def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
           @dealias_packages = dealias_packages
+          @modern_lockfile = T.let(nil, T.nilable(T::Boolean))
         end
 
         sig { returns(Record) }
@@ -47,11 +49,51 @@ module Dependabot
         end
 
         sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T.nilable(Version))
+        end
+        def updated_dependency_version(dependency:, original:)
+          original_lock = self.class.new(original)
+          paths = original_lock.versions_by_path(dependency.name)
+                               .select { |_, version| version == dependency.version }.keys
+          return if paths.empty?
+
+          original_records = records_by_path(original_lock.parsed)
+          incoming = incoming_resolutions(original_records, dependency.name)
+          updated_records = records_by_path(parsed)
+          updated_versions = versions_by_path(dependency.name)
+
+          paths.flat_map do |path|
+            resolution_paths(incoming, path, dependency.name).map do |candidates|
+              updated_path = candidates.find { |candidate| updated_records.key?(candidate) }
+              version = updated_path ? updated_versions[updated_path] : nil
+              unless version
+                Dependabot.logger.info(
+                  "Cannot verify updated npm resolution for #{path}; keeping current version"
+                )
+              end
+              Version.new(version || T.must(dependency.version))
+            end
+          end.min
+        end
+
+        sig { params(dependency_name: String).returns(T::Hash[String, String]) }
+        def versions_by_path(dependency_name)
+          records_by_path(parsed).filter_map do |path, record|
+            next if path.empty?
+            next unless package_name_for(path, record) == dependency_name
+
+            version = record.version
+            [path, version] if version
+          end.to_h
+        end
+
+        sig do
           params(dependency_name: String, _requirement: T.nilable(String), manifest_name: String)
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
         def details(dependency_name, _requirement, manifest_name)
-          modern = Helpers.parse_npm8?(@dependency_file)
+          modern = modern_lockfile?
           details = if modern
                       # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
                       # workspace folder so we need to fallback to checking top-level
@@ -72,6 +114,67 @@ module Dependabot
         end
 
         private
+
+        sig { returns(T::Boolean) }
+        def modern_lockfile?
+          return @modern_lockfile unless @modern_lockfile.nil?
+
+          @modern_lockfile = Helpers.parse_npm8?(@dependency_file)
+        end
+
+        sig { params(record: Record).returns(T::Hash[String, Record]) }
+        def records_by_path(record)
+          modern_lockfile? ? record.package_entries : legacy_records_by_path(record)
+        end
+
+        sig do
+          params(records: T::Hash[String, Record], name: String)
+            .returns(T::Hash[String, T::Array[T::Array[String]]])
+        end
+        def incoming_resolutions(records, name)
+          modern = modern_lockfile?
+          incoming = T.let({}, T::Hash[String, T::Array[T::Array[String]]])
+          records.each do |path, record|
+            next unless record.dependency_names(modern: modern).include?(name)
+
+            candidates = resolution_candidates(path, name)
+            target = candidates.find { |candidate| records.key?(candidate) }
+            next unless target
+
+            (incoming[target] ||= []) << candidates
+          end
+          incoming
+        end
+
+        sig do
+          params(incoming: T::Hash[String, T::Array[T::Array[String]]], target: String, name: String)
+            .returns(T::Array[T::Array[String]])
+        end
+        def resolution_paths(incoming, target, name)
+          incoming.fetch(target) { [resolution_candidates(target.rpartition("/node_modules/").first, name)] }
+        end
+
+        sig { params(parent_path: String, name: String).returns(T::Array[String]) }
+        def resolution_candidates(parent_path, name)
+          segments = parent_path.split("/node_modules/")
+          candidates = T.let([], T::Array[String])
+          while segments.any?
+            candidates << "#{segments.join('/node_modules/')}/node_modules/#{name}"
+            segments.pop
+          end
+          candidates << "node_modules/#{name}"
+        end
+
+        sig { params(record: Record, prefix: String).returns(T::Hash[String, Record]) }
+        def legacy_records_by_path(record, prefix = "")
+          records = T.let({}, T::Hash[String, Record])
+          record.legacy_entries.each do |name, details|
+            path = "#{prefix}node_modules/#{name}"
+            records[path] = details
+            records.merge!(legacy_records_by_path(details, "#{path}/"))
+          end
+          records
+        end
 
         sig do
           params(object_with_dependencies: Record)

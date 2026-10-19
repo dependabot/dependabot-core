@@ -78,8 +78,7 @@ module Dependabot
           raise "Not a subdependency!" if dependency.requirements.any?
           return if bundled_dependency?
 
-          base_dir = T.must(dependency_files.first).directory
-          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
@@ -91,10 +90,10 @@ module Dependabot
 
             version_from_updated_lockfiles(updated_lockfiles)
           end
-        rescue SharedHelpers::HelperSubprocessFailed
+        rescue SharedHelpers::HelperSubprocessFailed => e
           # TODO: Move error handling logic from the FileUpdater to this class
 
-          # Return nil (no update possible) if an unknown error occurred
+          Dependabot.logger.error("Failed to resolve #{dependency.name}: #{e.message}")
           nil
         end
 
@@ -135,12 +134,28 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          candidate = audit_fix_best_version(parsed_dep, current_version) || combined
+          scoped_version = version_from_targeted_lockfile_entries(updated_lockfiles)
+          candidate = scoped_version || audit_fix_best_version(parsed_dep, current_version) || combined
           return candidate unless pnpm_update.pin_dropped
 
           candidate if pnpm_update.within_bound?(
             candidate: candidate, before: dependency_files_builder.lockfiles, after: updated_lockfiles
           )
+        end
+
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
+        def version_from_targeted_lockfile_entries(updated_lockfiles)
+          return unless dependency.version
+          return unless security_updates_only?
+
+          updated_lockfiles.filter_map do |lockfile|
+            next unless lockfile.name.end_with?("package-lock.json", "npm-shrinkwrap.json")
+
+            original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
+            next unless original
+
+            FileParser::JsonLock.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
+          end.min
         end
 
         sig { returns(PnpmTransitiveUpdate) }
