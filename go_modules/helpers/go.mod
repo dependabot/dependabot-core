@@ -1,6 +1,6 @@
 module github.com/dependabot/dependabot-core/go_modules/helpers
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/Masterminds/vcs v1.13.3
