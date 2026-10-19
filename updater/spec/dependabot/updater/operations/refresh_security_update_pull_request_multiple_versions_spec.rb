@@ -19,11 +19,17 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) { original_bundler_files(fixture: "bundler_simple") }
 
+  sig { returns(String) }
+  let(:allowed_dependency_type) { "all" }
+
+  sig { returns(T::Boolean) }
+  let(:vulnerable_production) { true }
+
   sig { returns(Dependabot::Job) }
   let(:job) do
     definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
     definition["job"].merge!(
-      "allowed-updates" => [{ "dependency-type" => "all", "update-type" => "security" }],
+      "allowed-updates" => [{ "dependency-type" => allowed_dependency_type, "update-type" => "security" }],
       "dependencies" => ["dummy-pkg-a"],
       "security-updates-only" => true,
       "updating-a-pull-request" => true,
@@ -41,14 +47,22 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   sig { returns(Dependabot::Dependency) }
   let(:safe_dependency) do
     Dependabot::Dependency.new(
-      name: "dummy-pkg-a", version: "1.1.12", requirements: [], package_manager: "bundler"
+      name: "dummy-pkg-a",
+      version: "1.1.12",
+      requirements: [],
+      package_manager: "bundler",
+      subdependency_metadata: [{ production: true }]
     )
   end
 
   sig { returns(Dependabot::Dependency) }
   let(:vulnerable_dependency) do
     Dependabot::Dependency.new(
-      name: "dummy-pkg-a", version: "2.1.2", requirements: [], package_manager: "bundler"
+      name: "dummy-pkg-a",
+      version: "2.1.2",
+      requirements: [],
+      package_manager: "bundler",
+      subdependency_metadata: [{ production: vulnerable_production }]
     )
   end
 
@@ -149,5 +163,44 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       notices: []
     )
     expect(checker_class).to have_received(:new).with(hash_including(dependency: vulnerable_dependency)).twice
+  end
+
+  context "when only production updates are allowed" do
+    sig { returns(String) }
+    let(:allowed_dependency_type) { "production" }
+
+    it "refreshes a vulnerable production copy" do
+      allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_return(dependency_change)
+      expect(error_handler).not_to receive(:handle_dependency_error)
+      expect(service).to receive(:create_pull_request).with(dependency_change, "mock-sha")
+
+      described_class.new(
+        service: service,
+        job: job,
+        dependency_snapshot: snapshot,
+        error_handler: error_handler
+      ).perform
+    end
+
+    context "when only the development copy is vulnerable" do
+      sig { returns(T::Boolean) }
+      let(:vulnerable_production) { false }
+
+      it "closes the pull request without updating the excluded copy" do
+        expect(job.allowed_update?(combined_dependency)).to be(true)
+        expect(job.allowed_update?(vulnerable_dependency)).to be(false)
+        expect(error_handler).not_to receive(:handle_dependency_error)
+        expect(service).to receive(:close_pull_request).with(["dummy-pkg-a"], :up_to_date)
+        expect(service).not_to receive(:create_pull_request)
+        expect(vulnerable_checker).not_to receive(:updated_dependencies)
+
+        described_class.new(
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot,
+          error_handler: error_handler
+        ).perform
+      end
+    end
   end
 end
