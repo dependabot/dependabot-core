@@ -119,7 +119,14 @@ module Dependabot
           ).parse.find { |d| d.name == dependency.name }&.version
           return unless updated_version
 
-          version_class.new(updated_version)
+          scoped_versions = updated_lockfiles.filter_map do |lockfile|
+            original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
+            next unless original && dependency.version
+
+            FileParser::BunLock.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
+          end
+
+          scoped_versions.min || version_class.new(updated_version)
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }

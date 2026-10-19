@@ -50,23 +50,29 @@ module Dependabot
 
           sig { returns(T::Array[String]) }
           def dependency_names
-            details = entry[2]
+            # Only registry tuples have a registry field before their metadata.
+            details = entry[version ? 2 : 1]
             return [] if details.nil?
 
             invalid!("#{@context} details must be an object") unless details.is_a?(Hash)
-            dependencies = T.cast(details["dependencies"], Object)
+            fields = T.let(%w(dependencies optionalDependencies peerDependencies), T::Array[String])
+            fields.flat_map { |field| dependency_names_for(T.cast(details[field], Object), field) }.uniq
+          end
+
+          private
+
+          sig { params(dependencies: Object, field: String).returns(T::Array[String]) }
+          def dependency_names_for(dependencies, field)
             return [] if dependencies.nil?
 
-            invalid!("#{@context}.dependencies must be an object") unless dependencies.is_a?(Hash)
+            invalid!("#{@context}.#{field} must be an object") unless dependencies.is_a?(Hash)
             dependencies.keys.map do |raw_name|
               child = T.cast(raw_name, Object)
-              invalid!("#{@context}.dependencies keys must be strings") unless child.is_a?(String)
+              invalid!("#{@context}.#{field} keys must be strings") unless child.is_a?(String)
 
               child
             end
           end
-
-          private
 
           sig { returns(T::Array[Object]) }
           def entry
