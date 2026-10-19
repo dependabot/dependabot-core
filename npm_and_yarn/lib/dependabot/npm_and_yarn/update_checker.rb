@@ -488,7 +488,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version,
             repo_contents_path: repo_contents_path,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            target_version: security_update? ? lowest_security_fix_version&.to_s : nil
           )
       end
 

@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/package/npm_lockfile_details"
@@ -86,6 +87,43 @@ module Dependabot
           end
 
           dependency_set
+        end
+
+        sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T.nilable(Version))
+        end
+        def updated_dependency_version(dependency:, original:)
+          requirements = self.class.new(original).versions_by_requirement(dependency.name)
+                             .select { |_, version| version == dependency.version }.keys
+          updated_versions = versions_by_requirement(dependency.name)
+
+          requirements.map do |requirement|
+            version = updated_versions[requirement]
+            unless version
+              Dependabot.logger.info(
+                "Cannot verify updated Yarn resolution for #{requirement}; keeping current version"
+              )
+            end
+            Version.new(version || T.must(dependency.version))
+          end.min
+        end
+
+        sig { params(dependency_name: String).returns(T::Hash[String, String]) }
+        def versions_by_requirement(dependency_name)
+          versions = T.let({}, T::Hash[String, String])
+          parsed.each_with_object(versions) do |(requirements, record), result|
+            version = record.version
+            next unless version
+
+            requirements.split(", ").each do |requirement|
+              next if alias_package?(requirement) && extract_real_name_from_yarn_alias(requirement) != dependency_name
+              next unless requirement.start_with?("#{dependency_name}@") ||
+                          requirement.include?("@npm:#{dependency_name}@")
+
+              result[requirement] = version
+            end
+          end
         end
 
         sig do
