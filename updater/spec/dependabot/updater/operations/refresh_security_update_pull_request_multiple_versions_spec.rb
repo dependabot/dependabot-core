@@ -168,6 +168,54 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     expect(checker_class).to have_received(:new).with(hash_including(dependency: vulnerable_dependency)).twice
   end
 
+  context "when only development updates are allowed" do
+    sig { returns(String) }
+    let(:allowed_dependency_type) { "development" }
+
+    sig { returns(T::Boolean) }
+    let(:vulnerable_production) { false }
+
+    it "refreshes the vulnerable development copy despite the safe production copy" do
+      allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_return(dependency_change)
+      expect(job.allowed_update?(combined_dependency)).to be(false)
+      expect(job.allowed_update?(vulnerable_dependency)).to be(true)
+      expect(error_handler).not_to receive(:handle_dependency_error)
+      expect(service).not_to receive(:close_pull_request)
+      expect(service).to receive(:create_pull_request).with(dependency_change, "mock-sha")
+
+      described_class.new(
+        service: service,
+        job: job,
+        dependency_snapshot: snapshot,
+        error_handler: error_handler
+      ).perform
+
+      expect(Dependabot::DependencyChangeBuilder).to have_received(:create_from)
+        .with(hash_including(change_source: vulnerable_dependency))
+    end
+
+    context "when the vulnerable copy is also production-only" do
+      sig { returns(T::Boolean) }
+      let(:vulnerable_production) { true }
+
+      it "closes the pull request when no installed copy is allowed" do
+        expect(job.allowed_update?(combined_dependency)).to be(false)
+        expect(job.allowed_update?(vulnerable_dependency)).to be(false)
+        expect(error_handler).not_to receive(:handle_dependency_error)
+        expect(service).to receive(:close_pull_request).with(["dummy-pkg-a"], :up_to_date)
+        expect(service).not_to receive(:create_pull_request)
+        expect(vulnerable_checker).not_to receive(:updated_dependencies)
+
+        described_class.new(
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot,
+          error_handler: error_handler
+        ).perform
+      end
+    end
+  end
+
   context "when only production updates are allowed" do
     sig { returns(String) }
     let(:allowed_dependency_type) { "production" }

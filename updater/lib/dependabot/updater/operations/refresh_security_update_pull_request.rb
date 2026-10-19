@@ -124,7 +124,13 @@ module Dependabot
           # updates if the current version is no longer vulnerable. This happens
           # when a security update is applied by the user directly and the existing
           # pull request is rebased.
-          if dependencies.none? { |d| job.allowed_update?(d) }
+          updates_allowed = dependencies.any? do |dependency|
+            next true if job.allowed_update?(dependency)
+            next false if dependency.metadata_array(:all_versions)&.one?
+
+            dependency.metadata_dependencies(:all_versions)&.any? { |dep| job.allowed_update?(dep) }
+          end
+          unless updates_allowed
             lead_dependency = dependencies.first
             if lead_dependency && job.current_version_vulnerable?(lead_dependency)
               Dependabot.logger.info(
