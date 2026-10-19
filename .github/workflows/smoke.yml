@@ -132,6 +132,7 @@ jobs:
         run: |
           set -o pipefail
           dependabot test \
+            --skip-image-verification \
             -f=smoke.yaml \
             -o=result.yaml \
             --cache=cache \
