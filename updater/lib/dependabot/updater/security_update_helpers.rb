@@ -24,18 +24,23 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
+          job: Dependabot::Job,
           _block: T.proc.params(dependency: Dependabot::Dependency).returns(Dependabot::UpdateCheckers::Base)
         ).returns(Dependabot::Dependency)
       end
-      def vulnerable_version(dependency, &_block)
+      def vulnerable_version(dependency, job:, &_block)
         all_versions = dependency.metadata_array(:all_versions)
         return dependency unless all_versions
         return dependency if all_versions.one?
 
+        first_vulnerable = T.let(nil, T.nilable(Dependabot::Dependency))
         dependency.metadata_dependencies(:all_versions)&.find do |dep|
           checker = yield(dep)
-          checker.version_class.correct?(dep.version) && checker.vulnerable?
-        end || dependency
+          next false unless checker.version_class.correct?(dep.version) && checker.vulnerable?
+
+          first_vulnerable ||= dep
+          job.allowed_update?(dep)
+        end || first_vulnerable || dependency
       end
 
       sig { params(dependency: Dependabot::Dependency).void }

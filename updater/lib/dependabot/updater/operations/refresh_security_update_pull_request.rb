@@ -165,7 +165,7 @@ module Dependabot
 
           return close_pull_request(reason: :update_no_longer_possible) unless lead_dependency
 
-          lead_dependency = vulnerable_version(lead_dependency) { |dep| update_checker_for(dep) }
+          lead_dependency = vulnerable_version(lead_dependency, job: job) { |dep| update_checker_for(dep) }
           unless job.allowed_update?(lead_dependency)
             Dependabot.logger.info(
               "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"

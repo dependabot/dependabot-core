@@ -242,6 +242,69 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       allow(job).to receive(:package_manager).and_return("bundler")
     end
 
+    context "when an excluded vulnerable development copy appears before an allowed production copy" do
+      let(:production_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          version: "4.0.0",
+          requirements: [],
+          package_manager: "bundler",
+          subdependency_metadata: [{ production: true }]
+        )
+      end
+
+      let(:development_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          version: "4.0.1",
+          requirements: [],
+          package_manager: "bundler",
+          subdependency_metadata: [{ production: false }]
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          version: "4.0.0",
+          requirements: [],
+          package_manager: "bundler",
+          metadata: { all_versions: [development_dependency, production_dependency] }
+        )
+      end
+
+      let(:job_definition) do
+        super().tap do |definition|
+          definition["job"].merge!(
+            "allowed-updates" => [{ "dependency-type" => "production", "update-type" => "security" }],
+            "security-updates-only" => true,
+            "security-advisories" => [{
+              "dependency-name" => "dummy-pkg-a",
+              "affected-versions" => [">= 4.0.0, < 4.1.0"],
+              "patched-versions" => [],
+              "unaffected-versions" => []
+            }]
+          )
+        end
+      end
+
+      before do
+        allow(stub_update_checker).to receive(:dependency).and_return(production_dependency)
+      end
+
+      it "creates a pull request for the allowed vulnerable production copy" do
+        expect(job.allowed_update?(development_dependency)).to be(false)
+        expect(job.allowed_update?(production_dependency)).to be(true)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:create_pull_request)
+
+        perform
+
+        expect(Dependabot::DependencyChangeBuilder).to have_received(:create_from)
+          .with(hash_including(change_source: production_dependency))
+      end
+    end
+
     context "when no requirement unlock can fix the vulnerability" do
       before do
         allow(stub_update_checker).to receive_messages(

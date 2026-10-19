@@ -2,7 +2,7 @@
 
 Yarn and npm support for [`dependabot-core`][core-repo].
 
-Security PR refreshes select the vulnerable installed version, just like creation.
+Security PR refreshes select a vulnerable installed version allowed by the update configuration, just like creation.
 
 ### Running locally
 

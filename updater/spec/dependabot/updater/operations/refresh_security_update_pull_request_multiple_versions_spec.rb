@@ -25,6 +25,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   sig { returns(T::Boolean) }
   let(:vulnerable_production) { true }
 
+  sig { returns(T::Array[Dependabot::Dependency]) }
+  let(:installed_dependencies) { [safe_dependency, vulnerable_dependency] }
+
   sig { returns(Dependabot::Job) }
   let(:job) do
     definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
@@ -73,7 +76,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       version: "1.1.12",
       requirements: [],
       package_manager: "bundler",
-      metadata: { all_versions: [safe_dependency, vulnerable_dependency] }
+      metadata: { all_versions: installed_dependencies }
     )
   end
 
@@ -200,6 +203,49 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           dependency_snapshot: snapshot,
           error_handler: error_handler
         ).perform
+      end
+    end
+
+    context "when an excluded vulnerable development copy appears first" do
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      let(:installed_dependencies) { [development_dependency, vulnerable_dependency] }
+
+      sig { returns(Dependabot::Dependency) }
+      let(:development_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          version: "2.1.1",
+          requirements: [],
+          package_manager: "bundler",
+          subdependency_metadata: [{ production: false }]
+        )
+      end
+
+      sig { returns(RSpec::Mocks::InstanceVerifyingDouble) }
+      let(:development_checker) do
+        instance_double(Dependabot::UpdateCheckers::Base, version_class: Gem::Version, vulnerable?: true)
+      end
+
+      before do
+        allow(checker_class).to receive(:new)
+          .with(hash_including(dependency: development_dependency)).and_return(development_checker)
+      end
+
+      it "refreshes the allowed vulnerable production copy" do
+        allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_return(dependency_change)
+        expect(error_handler).not_to receive(:handle_dependency_error)
+        expect(service).not_to receive(:close_pull_request)
+        expect(service).to receive(:create_pull_request).with(dependency_change, "mock-sha")
+
+        described_class.new(
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot,
+          error_handler: error_handler
+        ).perform
+
+        expect(Dependabot::DependencyChangeBuilder).to have_received(:create_from)
+          .with(hash_including(change_source: vulnerable_dependency))
       end
     end
   end

@@ -114,7 +114,7 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
-          dependency = vulnerable_version(dependency) { |dep| update_checker_for(dep) }
+          dependency = vulnerable_version(dependency, job: job) { |dep| update_checker_for(dep) }
           checker = update_checker_for(dependency)
 
           log_checking_for_update(dependency)
