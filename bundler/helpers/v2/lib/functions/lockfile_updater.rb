@@ -180,8 +180,12 @@ module Functions
       defn = Bundler::Definition.build(
         gemfile_name,
         lockfile_name,
-        gems: dependencies_to_unlock
+        gems: dependencies_to_unlock,
+        conservative: true
       )
+
+      # Prefer locked versions even when Bundler prunes an indirect dependency.
+      defn.gem_version_promoter.level = :patch
 
       # Bundler unlocks the sub-dependencies of gems it is passed even
       # if those sub-deps are top-level dependencies. We only want true
