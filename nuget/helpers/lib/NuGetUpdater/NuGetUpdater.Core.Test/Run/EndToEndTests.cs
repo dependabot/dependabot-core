@@ -1464,6 +1464,100 @@ public class EndToEndTests
         Assert.Equal("2.0.0", GetResolvedLockFileVersion(updatedFiles["/src/library/packages.lock.json"], "Some.Package"));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LockFilesOfReferencingProjectsAreUpdated(bool restoreLockedMode)
+    {
+        // `Some.Package` is only directly referenced by `src/library`, but `test/client` reaches it through a `<ProjectReference>` so that
+        // lock file also has to be updated or a locked restore of `test/client` will fail with NU1004
+
+        // arrange
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Directory.Build.props", $"""
+                <Project>
+                  <PropertyGroup>
+                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                    <RestoreLockedMode>{restoreLockedMode}</RestoreLockedMode>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("repo.slnx", """
+                <Solution>
+                  <Project Path="src/library/library.csproj" />
+                  <Project Path="test/client/client.csproj" />
+                </Solution>
+                """),
+            ("src/library/library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("test/client/client.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="..\..\src\library\library.csproj" />
+                  </ItemGroup>
+                </Project>
+                """)
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+        ], repoContentsPath);
+        await CreateLockFilesAsync(repoContentsPath, "test/client/client.csproj");
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "Directory.Build.props",
+                "Directory.Packages.props",
+                "repo.slnx",
+                "src/library/library.csproj",
+                "src/library/packages.lock.json",
+                "test/client/client.csproj",
+                "test/client/packages.lock.json",
+            ]);
+
+        // act
+        var updatedFiles = await RunVersionUpdateAndGetUpdatedFilesAsync(repoContentsPath);
+
+        // assert
+        Assert.Contains("""<PackageVersion Include="Some.Package" Version="2.0.0" />""", updatedFiles["/Directory.Packages.props"]);
+        Assert.Equal("2.0.0", GetResolvedLockFileVersion(updatedFiles["/src/library/packages.lock.json"], "Some.Package"));
+
+        Assert.True(updatedFiles.ContainsKey("/test/client/packages.lock.json"), "Lock file of the referencing project was not updated.");
+        var clientLockFile = updatedFiles["/test/client/packages.lock.json"];
+        Assert.Equal("2.0.0", GetResolvedLockFileVersion(clientLockFile, "Some.Package"));
+        var libraryDependencyInClient = JsonDocument.Parse(clientLockFile).RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0")
+            .GetProperty("library")
+            .GetProperty("dependencies")
+            .GetProperty("Some.Package")
+            .GetString();
+        Assert.Equal("[2.0.0, )", libraryDependencyInClient);
+    }
+
     private static async Task CreateLockFilesAsync(string repoContentsPath, params string[] projectPaths)
     {
         foreach (var projectPath in projectPaths)
