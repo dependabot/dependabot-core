@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture in parent subjects and hooks.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/npm_and_yarn/file_updater/npm_lockfile_updater"
@@ -70,6 +72,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   after do
     Dependabot::Experiments.reset!
+  end
+
+  describe "npm 12 allow flags through #updated_lockfile" do
+    let(:files) { project_dependency_files("npm8/npmrc_allow_policies") }
+    let(:dependency_name) { "etag" }
+    let(:version) { "1.9.0" }
+    let(:previous_version) { "1.8.1" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^1.9.0", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^1.8.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:npm_commands) { [] }
+    let(:written_npmrcs) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+        .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, **|
+        npm_commands << command
+        written_npmrcs << File.read(".npmrc") if File.exist?(".npmrc")
+        ""
+      end
+    end
+
+    context "when the committed .npmrc sets both policies" do
+      it "does not override either policy with the permissive default flag" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands.join(" ")).not_to include("--allow-git", "--allow-remote")
+      end
+    end
+
+    context "when the committed .npmrc sets no policies" do
+      let(:files) { project_dependency_files("npm8/npmrc_allow_policies").reject { |f| f.name == ".npmrc" } }
+
+      it "adds both permissive flags" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands).to all(include("--allow-git=all").and(include("--allow-remote=all")))
+      end
+    end
+
+    context "when scoped credentials replace the committed .npmrc" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "npm.pkg.github.com",
+            "token" => "my_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      it "keeps the committed policies in the .npmrc npm runs with and omits the permissive flags" do
+        updater.updated_lockfile
+
+        expect(npm_commands).not_to be_empty
+        expect(npm_commands.join(" ")).not_to include("--allow-git", "--allow-remote")
+        expect(written_npmrcs).to all(include("allow-git=none", "allow-remote=${ALLOW_REMOTE}"))
+      end
+    end
   end
 
   describe "npm 8 specific" do
@@ -634,6 +702,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  describe "classifying real npm 12 error output" do
+    subject(:updated_npm_lock) { updater.updated_lockfile_reponse(Exception.new(npm_output)) }
+
+    let(:files) { project_dependency_files("npm8/simple") }
+    let(:npm_output) { fixture("npm_errors", "npm12", "#{scenario}.txt") }
+
+    before do
+      # Nothing resolves before the update either, which is when missing-package errors become resolvability errors
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: npm_output, error_context: {})
+      )
+    end
+
+    {
+      "eallowgit" => [Dependabot::DependencyFileNotResolvable, /"git" has been disabled/],
+      "eallowremote" => [Dependabot::DependencyFileNotResolvable, /"remote" has been disabled/],
+      "err_invalid_auth" => [Dependabot::PrivateSourceAuthenticationFailure, /_auth/],
+      "etarget" => [Dependabot::DependencyFileNotResolvable, /etag@\^99\.0\.0/],
+      "e404" => [Dependabot::DependencyFileNotResolvable, /this-pkg-does-not-exist-xyz-123/]
+    }.each do |scenario_name, (error_class, message)|
+      context "with #{scenario_name}" do
+        let(:scenario) { scenario_name }
+
+        it "raises #{error_class}" do
+          expect { updated_npm_lock }.to raise_error(error_class, message)
+        end
+      end
+    end
+  end
+
   context "with a private registry that is inaccessible due to missing or invalid auth" do
     subject(:updated_npm_lock) { updater.updated_lockfile_reponse(exception) }
 
@@ -983,6 +1081,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with an EALLOWGIT error" do
+      let(:response) do
+        "npm error code EALLOWGIT\nFetching packages of type \"git\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"git\" has been disabled by npm configuration.")
+        end
+      end
+    end
+
+    context "with an EALLOWREMOTE error" do
+      let(:response) do
+        "npm error code EALLOWREMOTE\nFetching packages of type \"remote\" have been disabled"
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Fetching packages of type \"remote\" has been disabled by npm configuration.")
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
@@ -1304,7 +1428,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           )
 
           mixed_updater = described_class.new(
-            lockfile: mixed_files.find { |f| f.name == "package-lock.json" },
+            lockfile: T.must(mixed_files.find { |f| f.name == "package-lock.json" }),
             dependency_files: mixed_files,
             dependencies: [mixed_regular_dep, mixed_optional_dep],
             credentials: credentials
@@ -1328,7 +1452,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           end
 
           result = mixed_updater.updated_lockfile.content
-          parsed_result = JSON.parse(result)
+          parsed_result = JSON.parse(T.must(result))
 
           # Verify the dependency was updated
           expect(parsed_result.dig("packages", "node_modules/@rollup/rollup-linux-x64-gnu", "version"))
@@ -1419,6 +1543,66 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
 
+      context "when running on npm 12" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+        end
+
+        it "includes --allow-git=all and --allow-remote=all flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).to include("--allow-git=all")
+            expect(command).to include("--allow-remote=all")
+            expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).to include("--allow-git=all")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+
+        it "omits --allow-git when allow-git=none is set in .npmrc" do
+          npmrc_file = Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+          custom_updater = described_class.new(
+            lockfile: package_lock,
+            dependency_files: files + [npmrc_file],
+            dependencies: dependencies,
+            credentials: credentials
+          )
+
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).to include("--allow-remote=all")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).to include("--allow-remote=all")
+            ""
+          end
+
+          custom_updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when running on npm 11" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version)
+            .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+        end
+
+        it "does not include --allow-git and --allow-remote flags in install command" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+            expect(command).not_to include("--allow-git")
+            expect(command).not_to include("--allow-remote")
+            expect(command).to include("--ignore-scripts")
+            expect(options[:fingerprint]).not_to include("--allow-git")
+            expect(options[:fingerprint]).not_to include("--allow-remote")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
       context "when update_cooldown sets a release-age floor (regular update)" do
         let(:updater) do
           described_class.new(
@@ -1457,6 +1641,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
               end
 
               updater.send(:run_npm_install_lockfile_only, install_args)
+            end
+          end
+
+          context "when one .npmrc has a numeric gate and another has a non-numeric gate" do
+            let(:files) do
+              project_dependency_files("npm8/simple") +
+                [
+                  Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=3"),
+                  Dependabot::DependencyFile.new(name: "packages/app/.npmrc", content: "min-release-age=soon")
+                ]
+            end
+
+            it "treats the gate as unreadable and never overrides it with the cooldown" do
+              commands = []
+              allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, **|
+                commands << command
+                ""
+              end
+
+              updater.updated_lockfile
+
+              expect(commands).not_to be_empty
+              expect(commands.join(" ")).not_to include("--min-release-age")
             end
           end
 

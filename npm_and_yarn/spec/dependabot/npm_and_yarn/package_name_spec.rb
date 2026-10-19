@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# These examples exercise invalid constructor inputs and dynamically nested exception constants.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/package_name"
 

@@ -1,0 +1,10 @@
+{
+  "name": "shrinkwrap_engines_npm12",
+  "version": "1.0.0",
+  "engines": {
+    "npm": ">=12"
+  },
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}

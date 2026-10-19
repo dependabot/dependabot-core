@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files fixture used by the parent subject.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
@@ -393,6 +395,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       it "does not fall back to the root lockfile" do
         expect(lockfile_details).to have_attributes(version: nil, resolved: nil, resolution: nil)
+      end
+    end
+
+    context "when both npm-shrinkwrap.json and package-lock.json exist" do
+      let(:dependency_files) { project_dependency_files("npm8/shrinkwrap_and_package_lock") }
+
+      it "reads the dependency from the shrinkwrap npm actually uses" do
+        expect(lockfile_details).to have_attributes(version: "1.8.1")
+      end
+
+      context "when the dependency only exists in the ignored package-lock.json" do
+        let(:dependency_name) { "stale-only" }
+
+        it "does not fall through to the ignored package-lock.json" do
+          expect(lockfile_details).to be_nil
+        end
+
+        it "does not parse dependencies from the ignored package-lock.json" do
+          expect(lockfile_parser.parse.map { |d| [d.name, d.version] }).to eq([["etag", "1.8.1"]])
+        end
       end
     end
 

@@ -1,10 +1,13 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/berry_lockfile_handler"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
+  extend T::Sig
+
+  sig { returns(String) }
   let(:fixture_path) do
     File.join("spec", "fixtures", "projects", "yarn_berry", "security_update", "yarn.lock")
   end
@@ -13,7 +16,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
     it "parses a valid yarn berry lockfile" do
       parsed = described_class.parse(fixture_path)
       expect(parsed).to be_a(Hash)
-      expect(parsed.keys).to include("__metadata")
+      expect(T.must(parsed).keys).to include("__metadata")
     end
 
     it "returns nil for a non-existent file" do
@@ -48,6 +51,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
   end
 
   describe ".version_matches?" do
+    sig { returns(T::Hash[String, T::Hash[String, T.any(String, Integer)]]) }
     let(:parsed) do
       {
         "axios@npm:^1.15.0" => { "version" => "1.15.0", "resolution" => "axios@npm:1.15.0" },
@@ -74,6 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
     end
 
     context "with composite keys" do
+      sig { returns(T::Hash[String, T::Hash[String, T.any(String, Integer)]]) }
       let(:parsed) do
         {
           "lodash@npm:1.3.1, lodash@npm:^1.3.1" => { "version" => "1.3.1" }
@@ -88,6 +93,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
   end
 
   describe ".find_exact_key" do
+    sig { returns(T::Hash[String, T::Hash[String, T.any(String, Integer)]]) }
     let(:parsed) do
       {
         "axios@npm:1.15.2" => { "version" => "1.15.2" },
@@ -132,8 +138,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
   end
 
   describe ".replace_declaration" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:tmp_dir) { Dir.mktmpdir }
+    sig { returns(String) }
     let(:lockfile_path) { File.join(tmp_dir, "yarn.lock") }
+    # rubocop:enable RSpec/ScatteredLet
 
     after { FileUtils.rm_rf(tmp_dir) }
 

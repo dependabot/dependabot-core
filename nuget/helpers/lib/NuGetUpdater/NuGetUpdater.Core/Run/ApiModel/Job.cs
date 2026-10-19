@@ -172,7 +172,7 @@ public sealed record Job
         {
             return desiredDependency.Name.Equals(existingDependency.DependencyName, StringComparison.OrdinalIgnoreCase) &&
                 (!considerVersions ||
-                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion.ToString(), StringComparison.OrdinalIgnoreCase));
+                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion?.ToString(), StringComparison.OrdinalIgnoreCase));
         }
 
         bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
@@ -243,7 +243,9 @@ public sealed record Job
                     // try to match to existing PR
                     var dependencyVersion = NuGetVersion.Parse(dependency.Version);
                     var existingPullRequests = GetAllExistingPullRequests()
-                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) && d.DependencyVersion >= dependencyVersion))
+                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) &&
+                            d.DependencyVersion is not null &&
+                            d.DependencyVersion >= dependencyVersion))
                         .ToArray();
                     if (existingPullRequests.Length > 0)
                     {
