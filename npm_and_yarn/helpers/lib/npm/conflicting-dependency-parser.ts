@@ -4,6 +4,7 @@
  *  - directory containing a package.json and a yarn.lock
  *  - dependency name
  *  - target dependency version
+ *  - optional installed dependency version to scope the check
  *
  * Outputs:
  *  - An array of objects with conflicting dependencies
@@ -22,7 +23,8 @@ interface ConflictingDependency {
 export async function findConflictingDependencies(
   directory: string,
   depName: string,
-  targetVersion: string
+  targetVersion: string,
+  currentVersion?: string
 ): Promise<ConflictingDependency[]> {
   const arb = new Arborist({
     path: directory,
@@ -33,6 +35,8 @@ export async function findConflictingDependencies(
   return await arb.loadVirtual().then((tree) => {
     const parents: ConflictingDependency[] = [];
     for (const node of tree.inventory.query("name", depName)) {
+      if (currentVersion && node.version !== currentVersion) continue;
+
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
           findTopLevelEdges(edge).forEach((topLevel) => {

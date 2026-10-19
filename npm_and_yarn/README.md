@@ -2,6 +2,12 @@
 
 Yarn and npm support for [`dependabot-core`][core-repo].
 
+### Transitive dependency conflicts
+
+Conflict detection checks requirements resolving to the installed version being
+updated, so unrelated installed versions do not block a compatible update.
+Exact pins and incompatible requirements on the targeted version remain blockers.
+
 Security PR refreshes select the vulnerable installed version, just like creation.
 
 ### Running locally
