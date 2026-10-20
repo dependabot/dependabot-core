@@ -183,7 +183,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
-    context "with a FROM line written by a nutcase" do
+    context "with a mixed-case FROM instruction" do
       let(:dockerfile_fixture_name) { "case" }
 
       describe "the first dependency" do
