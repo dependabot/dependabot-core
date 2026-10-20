@@ -12,6 +12,7 @@ require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
 require "dependabot/npm_and_yarn/update_checker/pnpm_transitive_update"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/yarn_berry_transitive_update"
 require "dependabot/security_advisory"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -219,6 +220,9 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               original_content = File.read(lockfile_name)
+              if (targeted_content = targeted_yarn_berry_lockfile_content(lockfile_name))
+                return { lockfile_name => targeted_content }
+              end
 
               Helpers.run_yarn_command(
                 "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
@@ -241,6 +245,19 @@ module Dependabot
               { lockfile_name => updated_content }
             end
           end
+        end
+
+        sig { params(lockfile_name: String).returns(T.nilable(String)) }
+        def targeted_yarn_berry_lockfile_content(lockfile_name)
+          target_version = allowable_version
+          return if security_advisories.empty? || target_version.nil?
+
+          YarnBerryTransitiveUpdate.updated_lockfile_content(
+            dependency_name: dependency.name,
+            current_version: dependency.version,
+            target_version: target_version.to_s,
+            lockfile_name: lockfile_name
+          )
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }

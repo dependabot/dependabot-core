@@ -10,6 +10,7 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/yarn_berry_transitive_update"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -339,6 +340,10 @@ module Dependabot
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = T.must(sub_dependencies.first)
+          if (targeted_content = targeted_yarn_berry_lockfile_content(dep, yarn_lock))
+            return { yarn_lock.name => targeted_content }
+          end
+
           update = "#{dep.name}@#{dep.version}"
 
           commands = [
@@ -357,6 +362,22 @@ module Dependabot
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        sig do
+          params(dep: Dependabot::Dependency, yarn_lock: Dependabot::DependencyFile).returns(T.nilable(String))
+        end
+        def targeted_yarn_berry_lockfile_content(dep, yarn_lock)
+          version = dep.version
+          return unless @security_updates_only && version
+
+          YarnBerryTransitiveUpdate.updated_lockfile_content(
+            dependency_name: dep.name,
+            current_version: dep.previous_version,
+            target_version: version,
+            lockfile_name: yarn_lock.name,
+            env: yarn_time_gate_env
+          )
         end
 
         # Fallback for transitive deps where add/dedupe/remove is a no-op. Threads

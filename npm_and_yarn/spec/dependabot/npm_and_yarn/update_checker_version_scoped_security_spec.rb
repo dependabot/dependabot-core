@@ -3,6 +3,8 @@
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater"
+require_relative "../../support/npm_registry"
 
 # Sorbet fixture signatures must stay beside their lets and use concrete types.
 # rubocop:disable-next RSpec/ScatteredLet, RSpec/DescribedClass
@@ -26,6 +28,9 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
 
   sig { returns(T::Hash[String, String]) }
   let(:dist_tags) { { "latest" => "5.0.12", "maintenance" => "1.1.21", "_maintenance" => "1.1.21" } }
+
+  sig { returns(String) }
+  let(:registry_url) { "https://registry.npmjs.org" }
 
   sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) do
@@ -65,7 +70,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
   end
 
   before do
-    stub_request(:get, "https://registry.npmjs.org/#{dependency_name.gsub('/', '%2F')}").to_return(
+    stub_request(:get, "#{registry_url}/#{dependency_name.gsub('/', '%2F')}").to_return(
       status: 200,
       body: JSON.generate(
         "name" => dependency_name,
@@ -76,8 +81,10 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
         end
       )
     )
-    stub_request(:head, %r{\Ahttps://registry\.npmjs\.org/#{Regexp.escape(dependency_name)}/-/[^/]+\.tgz\z})
+    stub_request(:head, %r{\A#{Regexp.escape(registry_url)}/#{Regexp.escape(dependency_name)}/-/[^/]+\.tgz\z})
       .to_return(status: 200)
+    stub_request(:get, %r{\A#{Regexp.escape(registry_url)}/#{Regexp.escape(dependency_name)}/\d[^/]*\z})
+      .to_return(status: 200, body: "{}")
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
@@ -121,19 +128,64 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     sig { returns(T::Array[String]) }
     let(:releases) { %w(1.1.18 1.1.21 1.2.0 2.1.7 5.0.12) }
 
-    it "selects and resolves the secure backport instead" do
-      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
-        lockfile = YAML.safe_load_file("yarn.lock")
-        record = lockfile.fetch("brace-expansion@npm:^1.1.17")
-        record["version"] = "1.1.21"
-        record["resolution"] = "brace-expansion@npm:1.1.21"
-        File.write("yarn.lock", YAML.dump(lockfile))
-        ""
+    sig { returns(NpmRegistry) }
+    let(:registry) do
+      versions = releases + %w(2.1.2 5.0.2)
+      packages = { dependency_name => versions.map { |version| { "name" => dependency_name, "version" => version } } }
+      { "legacy-parent" => "^1.1.17", "current-parent" => "^2.0.2", "modern-parent" => "^5.0.2" }.each do |name, range|
+        packages[name] = [{ "name" => name, "version" => "1.0.0", "dependencies" => { dependency_name => range } }]
       end
+      NpmRegistry.new(packages: packages)
+    end
 
+    sig { returns(String) }
+    let(:registry_url) { registry.url.sub("http:", "https:") }
+
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      T.cast(super(), T::Array[Dependabot::DependencyFile]) + [
+        Dependabot::DependencyFile.new(
+          name: ".yarnrc.yml",
+          content: YAML.dump(
+            "npmRegistryServer" => registry.url,
+            "unsafeHttpWhitelist" => ["127.0.0.1"],
+            "enableGlobalCache" => false,
+            "enableScripts" => false
+          )
+        )
+      ]
+    end
+
+    after { registry.close }
+
+    it "selects and resolves the secure backport using real Yarn" do
       expect(checker.latest_version.to_s).to eq("1.1.21")
       expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
       expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+    end
+
+    it "writes the selected secure version without changing other installed versions" do
+      updated_dependency = Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "1.1.21",
+        previous_version: "1.1.18",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+      updater = Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater.new(
+        dependencies: [updated_dependency],
+        dependency_files: dependency_files,
+        credentials: [],
+        repo_contents_path: nil,
+        security_updates_only: true
+      )
+      content = updater.updated_yarn_lock_content(T.must(dependency_files.find { |file| file.name == "yarn.lock" }))
+      parsed = YAML.safe_load(content)
+
+      expect(parsed.fetch("brace-expansion@npm:^1.1.17").fetch("version")).to eq("1.1.21")
+      expect(parsed.fetch("brace-expansion@npm:^2.0.2").fetch("version")).to eq("2.1.2")
+      expect(parsed.fetch("brace-expansion@npm:^5.0.2").fetch("version")).to eq("5.0.2")
     end
   end
 

@@ -636,7 +636,7 @@ module Dependabot
       # Setup yarn and run a single yarn command returning stdout/stderr
       sig do
         params(
-          command: String,
+          command: T.any(String, T::Array[String]),
           fingerprint: T.nilable(String),
           env: T.nilable(T::Hash[String, String])
         ).returns(String)
@@ -732,14 +732,14 @@ module Dependabot
       # Run single yarn command returning stdout/stderr
       sig do
         params(
-          command: String,
+          command: T.any(String, T::Array[String]),
           fingerprint: T.nilable(String),
           env: T.nilable(T::Hash[String, String])
         ).returns(String)
       end
       def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
         Dependabot::SharedHelpers.run_shell_command(
-          "yarn #{command}",
+          command.is_a?(Array) ? ["yarn", *command] : "yarn #{command}",
           fingerprint: "yarn #{fingerprint || command}",
           env: env
         )
