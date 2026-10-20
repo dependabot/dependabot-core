@@ -9,13 +9,26 @@ require "dependabot/npm_and_yarn/update_checker"
 RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
   extend T::Sig
 
+  sig { returns(String) }
+  let(:dependency_name) { "brace-expansion" }
+
+  sig { returns(String) }
+  let(:installed_requirement) { "^1.1.17" }
+
   sig { returns(T::Array[Dependabot::DependencyFile]) }
-  let(:dependency_files) { project_dependency_files("yarn_berry/version_scoped_security") }
+  let(:dependency_files) do
+    project_dependency_files("yarn_berry/version_scoped_security").map do |file|
+      content = T.must(file.content).gsub("brace-expansion", dependency_name)
+                 .gsub("^1.1.17", installed_requirement)
+                 .gsub("    #{dependency_name}:", "    #{JSON.generate(dependency_name)}:")
+      Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+    end
+  end
 
   sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "brace-expansion", version: "1.1.18", requirements: [], package_manager: "npm_and_yarn"
+      name: dependency_name, version: "1.1.18", requirements: [], package_manager: "npm_and_yarn"
     )
   end
 
@@ -27,7 +40,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
       credentials: [],
       security_advisories: [
         Dependabot::SecurityAdvisory.new(
-          dependency_name: "brace-expansion",
+          dependency_name: dependency_name,
           package_manager: "npm_and_yarn",
           vulnerable_versions: ["< 1.1.21", ">= 2.0.0 < 2.1.7", ">= 5.0.0 < 5.0.12"].flat_map do |requirement|
             Dependabot::NpmAndYarn::Requirement.requirements_array(requirement)
@@ -39,17 +52,17 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
 
   before do
     releases = %w(1.1.18 1.1.21 2.1.7 5.0.12)
-    stub_request(:get, "https://registry.npmjs.org/brace-expansion").to_return(
+    stub_request(:get, "https://registry.npmjs.org/#{dependency_name.gsub('/', '%2F')}").to_return(
       status: 200,
       body: JSON.generate(
-        "name" => "brace-expansion",
-        "dist-tags" => { "latest" => "5.0.12" },
+        "name" => dependency_name,
+        "dist-tags" => { "latest" => "5.0.12", "maintenance" => "1.1.21" },
         "versions" => releases.to_h do |version|
-          [version, { "name" => "brace-expansion", "version" => version }]
+          [version, { "name" => dependency_name, "version" => version }]
         end
       )
     )
-    stub_request(:head, %r{https://registry.npmjs.org/brace-expansion/-/brace-expansion-.*\.tgz})
+    stub_request(:head, %r{\Ahttps://registry\.npmjs\.org/#{Regexp.escape(dependency_name)}/-/[^/]+\.tgz\z})
       .to_return(status: 200)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
@@ -88,5 +101,69 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     ).conflicting_dependencies(dependency: dependency, target_version: "2.1.7")
 
     expect(conflicts.map { |conflict| conflict.fetch("requirement") }).to eq(["^1.1.17"])
+  end
+
+  context "when the vulnerable installation is pinned" do
+    sig { returns(String) }
+    let(:installed_requirement) { "1.1.18" }
+
+    it "retains a secure target for reporting the blocking parent" do
+      expect(checker.up_to_date?).to be(false)
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+      expect(checker.conflicting_dependencies.map { |conflict| conflict.fetch("requirement") }).to eq(["1.1.18"])
+    end
+  end
+
+  context "when the vulnerable installation is only referenced through an npm alias" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      T.cast(super(), T::Array[Dependabot::DependencyFile]).map do |file|
+        next file unless file.name == "yarn.lock"
+
+        content = T.must(file.content)
+                   .sub("\"#{dependency_name}@npm:^1.1.17\"",
+                        "\"legacy-brace@npm:#{dependency_name}@^1.1.17\"")
+                   .sub("#{JSON.generate(dependency_name)}: \"npm:^1.1.17\"",
+                        "legacy-brace: \"npm:#{dependency_name}@^1.1.17\"")
+        Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+      end
+    end
+
+    it "selects the in-range security update" do
+      expect(checker.latest_version.to_s).to eq("1.1.21")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+      expect(checker.conflicting_dependencies).to be_empty
+    end
+
+    context "with a scoped real package name" do
+      sig { returns(String) }
+      let(:dependency_name) { "@scope/brace-expansion" }
+
+      it "selects the in-range security update" do
+        expect(checker.latest_version.to_s).to eq("1.1.21")
+        expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+        expect(checker.conflicting_dependencies).to be_empty
+      end
+    end
+  end
+
+  context "when the lockfile descriptor uses a standard dist-tag" do
+    sig { returns(String) }
+    let(:installed_requirement) { "latest" }
+
+    it "does not filter numeric security fixes using the tag as a semver range" do
+      expect(checker.latest_version.to_s).to eq("5.0.12")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+    end
+  end
+
+  context "when the lockfile descriptor uses a custom dist-tag" do
+    sig { returns(String) }
+    let(:installed_requirement) { "maintenance" }
+
+    it "does not raise or discard numeric security fixes" do
+      expect(checker.latest_version.to_s).to eq("5.0.12")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+    end
   end
 end

@@ -228,13 +228,19 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def possible_previous_releases
+          releases = filter_prerelease_versions(package_details&.releases || []).sort_by(&:version).reverse
+
           requirements = yarn_security_requirements
-          (package_details&.releases || [])
-            .reject do |r|
-            (r.version.prerelease? && !related_to_current_pre?(r.version)) ||
-              requirements.any? { |ranges| ranges.none? { |range| range.satisfied_by?(r.version) } }
+          return releases if requirements.empty?
+
+          in_range_releases = releases.select do |release|
+            requirements.all? { |ranges| ranges.any? { |range| range.satisfied_by?(release.version) } }
           end
-            .sort_by(&:version).reverse
+          secure_releases = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+            filter_lower_versions(in_range_releases), security_advisories
+          )
+
+          secure_releases.any? ? in_range_releases : releases
         end
 
         sig { override.returns(T::Boolean) }
@@ -254,13 +260,27 @@ module Dependabot
               next [] unless record.version == dependency.version
 
               descriptors.split(", ").filter_map do |descriptor|
-                prefix = "#{dependency.name}@npm:"
-                next unless descriptor.start_with?(prefix)
-
-                Requirement.requirements_array(descriptor.delete_prefix(prefix))
+                yarn_security_requirement(descriptor)
               end
             end
           end
+        end
+
+        sig { params(descriptor: String).returns(T.nilable(T::Array[Requirement])) }
+        def yarn_security_requirement(descriptor)
+          package_name, selector = descriptor.split("@npm:", 2)
+          return unless selector
+
+          aliased_requirement = Requirement.parse_dep_string(selector)
+          if aliased_requirement
+            package_name = aliased_requirement[:name]
+            selector = T.must(aliased_requirement[:requirement])
+          end
+
+          return unless package_name == dependency.name
+          return if selector.match?(/\A[a-zA-Z][a-zA-Z0-9._-]*\z/) && !Version.correct?(selector)
+
+          Requirement.requirements_array(selector)
         end
 
         sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
