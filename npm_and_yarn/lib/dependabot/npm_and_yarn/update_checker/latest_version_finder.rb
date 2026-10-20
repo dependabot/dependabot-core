@@ -276,7 +276,7 @@ module Dependabot
           end
 
           return unless package_name == dependency.name
-          return if package_details&.dist_tags&.key?(selector)
+          return if Version::VERSION_TAGS.include?(selector) || package_details&.dist_tags&.key?(selector)
 
           Requirement.requirements_array(selector)
         rescue Gem::Requirement::BadRequirementError

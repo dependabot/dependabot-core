@@ -123,6 +123,17 @@ module Dependabot
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
         def version_from_updated_lockfiles(updated_lockfiles)
+          if security_advisories.any? && YarnBerryTransitiveUpdate.applicable_lockfiles?(updated_lockfiles)
+            return YarnBerryTransitiveUpdate.resolved_version(
+              original: dependency_files_builder.lockfiles, updated: updated_lockfiles, dependency: dependency
+            )
+          end
+
+          parsed_version_from_updated_lockfiles(updated_lockfiles)
+        end
+
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
+        def parsed_version_from_updated_lockfiles(updated_lockfiles)
           updated_files = dependency_files -
                           dependency_files_builder.lockfiles +
                           updated_lockfiles
@@ -405,7 +416,8 @@ module Dependabot
           @filtered_lockfiles ||= T.let(
             SubDependencyFilesFilterer.new(
               dependency_files: dependency_files,
-              updated_dependencies: [updated_dependency]
+              updated_dependencies: [updated_dependency],
+              dealias_packages: security_advisories.any?
             ).files_requiring_update,
             T.nilable(T::Array[Dependabot::DependencyFile])
           )

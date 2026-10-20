@@ -203,7 +203,8 @@ module Dependabot
           else
             SubDependencyFilesFilterer.new(
               dependency_files: dependency_files,
-              updated_dependencies: dependencies
+              updated_dependencies: dependencies,
+              dealias_packages: options.fetch(:security_updates_only, false) ? true : false
             ).files_requiring_update
           end,
           T.nilable(T::Array[DependencyFile])

@@ -15,10 +15,17 @@ module Dependabot
     class SubDependencyFilesFilterer
       extend T::Sig
 
-      sig { params(dependency_files: T::Array[DependencyFile], updated_dependencies: T::Array[Dependency]).void }
-      def initialize(dependency_files:, updated_dependencies:)
+      sig do
+        params(
+          dependency_files: T::Array[DependencyFile],
+          updated_dependencies: T::Array[Dependency],
+          dealias_packages: T::Boolean
+        ).void
+      end
+      def initialize(dependency_files:, updated_dependencies:, dealias_packages: false)
         @dependency_files = dependency_files
         @updated_dependencies = updated_dependencies
+        @dealias_packages = dealias_packages
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -53,7 +60,8 @@ module Dependabot
         @lockfile_dependencies ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependency]]))
         @lockfile_dependencies[lockfile.name] ||=
           NpmAndYarn::FileParser::LockfileParser.new(
-            dependency_files: [lockfile]
+            dependency_files: [lockfile],
+            dealias_packages: @dealias_packages && Helpers.yarn_berry?(lockfile)
           ).parse
       end
 

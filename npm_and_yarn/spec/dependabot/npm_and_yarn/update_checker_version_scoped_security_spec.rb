@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "securerandom"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater"
 require_relative "../../support/npm_registry"
@@ -61,7 +62,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "npm_and_yarn",
-          vulnerable_versions: ["< 1.1.21", ">= 1.2.0 < 2.1.7", ">= 5.0.0 < 5.0.12"].flat_map do |requirement|
+          vulnerable_versions: [">= 1.1.18 < 1.1.21", ">= 1.2.0 < 2.1.7", ">= 5.0.0 < 5.0.12"].flat_map do |requirement|
             Dependabot::NpmAndYarn::Requirement.requirements_array(requirement)
           end
         )
@@ -128,14 +129,24 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     sig { returns(T::Array[String]) }
     let(:releases) { %w(1.1.18 1.1.21 1.2.0 2.1.7 5.0.12) }
 
+    sig { returns(T::Hash[String, String]) }
+    let(:package_scripts) { {} }
+
+    sig { returns(T::Hash[String, T::Array[NpmRegistry::Manifest]]) }
+    let(:registry_overrides) { {} }
+
     sig { returns(NpmRegistry) }
     let(:registry) do
       versions = releases + %w(2.1.2 5.0.2)
-      packages = { dependency_name => versions.map { |version| { "name" => dependency_name, "version" => version } } }
+      packages = {
+        dependency_name => versions.map do |version|
+          { "name" => dependency_name, "version" => version, "scripts" => package_scripts }
+        end
+      }
       { "legacy-parent" => "^1.1.17", "current-parent" => "^2.0.2", "modern-parent" => "^5.0.2" }.each do |name, range|
         packages[name] = [{ "name" => name, "version" => "1.0.0", "dependencies" => { dependency_name => range } }]
       end
-      NpmRegistry.new(packages: packages)
+      NpmRegistry.new(packages: packages.merge(registry_overrides))
     end
 
     sig { returns(String) }
@@ -158,13 +169,8 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
 
     after { registry.close }
 
-    it "selects and resolves the secure backport using real Yarn" do
-      expect(checker.latest_version.to_s).to eq("1.1.21")
-      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
-      expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
-    end
-
-    it "writes the selected secure version without changing other installed versions" do
+    sig { returns(String) }
+    let(:updated_yarn_lock) do
       updated_dependency = Dependabot::Dependency.new(
         name: dependency_name,
         version: "1.1.21",
@@ -173,19 +179,151 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
         previous_requirements: [],
         package_manager: "npm_and_yarn"
       )
-      updater = Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater.new(
+      updater = Dependabot::NpmAndYarn::FileUpdater.new(
         dependencies: [updated_dependency],
         dependency_files: dependency_files,
         credentials: [],
-        repo_contents_path: nil,
-        security_updates_only: true
+        options: { security_updates_only: true }
       )
-      content = updater.updated_yarn_lock_content(T.must(dependency_files.find { |file| file.name == "yarn.lock" }))
-      parsed = YAML.safe_load(content)
+      T.must(T.must(updater.updated_dependency_files.find { |file| file.name == "yarn.lock" }).content)
+    end
+
+    it "selects and resolves the secure backport using real Yarn" do
+      expect(checker.latest_version.to_s).to eq("1.1.21")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+      expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+    end
+
+    it "writes the selected secure version without changing other installed versions" do
+      parsed = YAML.safe_load(updated_yarn_lock)
 
       expect(parsed.fetch("brace-expansion@npm:^1.1.17").fetch("version")).to eq("1.1.21")
       expect(parsed.fetch("brace-expansion@npm:^2.0.2").fetch("version")).to eq("2.1.2")
       expect(parsed.fetch("brace-expansion@npm:^5.0.2").fetch("version")).to eq("5.0.2")
+    end
+
+    context "with an unrelated lower installation" do
+      sig { returns(T::Array[String]) }
+      let(:releases) { %w(1.0.0 1.1.18 1.1.21 1.2.0 2.1.7 5.0.12) }
+
+      sig { returns(T::Hash[String, T::Array[NpmRegistry::Manifest]]) }
+      let(:registry_overrides) do
+        { "earlier-parent" => [{ "name" => "earlier-parent", "version" => "1.0.0",
+                                 "dependencies" => { dependency_name => "1.0.0" } }] }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        T.cast(super(), T::Array[Dependabot::DependencyFile]).map do |file|
+          content = T.must(file.content)
+          if file.name == "package.json"
+            manifest = JSON.parse(content)
+            manifest.fetch("dependencies")["earlier-parent"] = "1.0.0"
+            content = JSON.generate(manifest)
+          elsif file.name == "yarn.lock"
+            parsed = YAML.safe_load(content)
+            parsed["earlier-parent@npm:1.0.0"] = {
+              "version" => "1.0.0", "resolution" => "earlier-parent@npm:1.0.0",
+              "languageName" => "node", "linkType" => "hard", "dependencies" => { dependency_name => "npm:1.0.0" }
+            }
+            parsed["#{dependency_name}@npm:1.0.0"] = {
+              "version" => "1.0.0", "resolution" => "#{dependency_name}@npm:1.0.0",
+              "languageName" => "node", "linkType" => "hard"
+            }
+            content = YAML.dump(parsed)
+          end
+          Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+        end
+      end
+
+      it "reports the targeted version rather than the unrelated lower version" do
+        expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+      end
+    end
+
+    context "when the installation is aliased" do
+      sig { returns(T::Hash[String, T::Array[NpmRegistry::Manifest]]) }
+      let(:registry_overrides) do
+        { "legacy-parent" => [{ "name" => "legacy-parent", "version" => "1.0.0",
+                                "dependencies" => { "legacy-brace" => "npm:#{dependency_name}@^1.1.17" } }] }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        T.cast(super(), T::Array[Dependabot::DependencyFile]).map do |file|
+          next file unless file.name == "yarn.lock"
+
+          content = T.must(file.content)
+                     .sub("\"#{dependency_name}@npm:^1.1.17\"",
+                          "\"legacy-brace@npm:#{dependency_name}@^1.1.17\"")
+                     .sub("#{JSON.generate(dependency_name)}: \"npm:^1.1.17\"",
+                          "legacy-brace: \"npm:#{dependency_name}@^1.1.17\"")
+          Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+        end
+      end
+
+      it "resolves an unscoped alias using real Yarn" do
+        expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+        expect(
+          YAML.safe_load(updated_yarn_lock).fetch("legacy-brace@npm:#{dependency_name}@^1.1.17")
+                    .fetch("version")
+        ).to eq("1.1.21")
+      end
+
+      context "with a scoped package name" do
+        sig { returns(String) }
+        let(:dependency_name) { "@scope/brace-expansion" }
+
+        it "resolves a scoped alias using real Yarn" do
+          expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+          expect(
+            YAML.safe_load(updated_yarn_lock).fetch("legacy-brace@npm:#{dependency_name}@^1.1.17")
+                        .fetch("version")
+          ).to eq("1.1.21")
+        end
+      end
+    end
+
+    context "when Yarn 3 explicitly enables a dependency build" do
+      sig { returns(String) }
+      let(:script_marker) { File.join(Dir.tmpdir, "dependabot-build-#{SecureRandom.hex}") }
+
+      sig { returns(T::Hash[String, String]) }
+      let(:package_scripts) do
+        { "postinstall" => "node -e 'require(\"fs\").writeFileSync(#{script_marker.to_json}, \"built\")'" }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        T.cast(super(), T::Array[Dependabot::DependencyFile]).map do |file|
+          content = T.must(file.content)
+          if file.name == "package.json"
+            manifest = JSON.parse(content)
+            manifest["dependenciesMeta"] = { dependency_name => { "built" => true } }
+            content = JSON.generate(manifest)
+          elsif file.name == ".yarnrc.yml"
+            settings = YAML.safe_load(content)
+            settings["yarnPath"] = File.expand_path(
+              "../../fixtures/projects/yarn_berry/simple_node_modules/.yarn/releases/yarn-3.3.0.cjs", __dir__
+            )
+            content = YAML.dump(settings)
+          end
+          Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+        end
+      end
+
+      after { FileUtils.rm_f(script_marker) }
+
+      it "resolves without executing the explicitly enabled build" do
+        expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+        expect(File).not_to exist(script_marker)
+      end
+
+      it "updates the lockfile without executing the explicitly enabled build" do
+        expect(YAML.safe_load(updated_yarn_lock).fetch("brace-expansion@npm:^1.1.17").fetch("version"))
+          .to eq("1.1.21")
+        expect(File).not_to exist(script_marker)
+      end
     end
   end
 
@@ -197,6 +335,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
       expect(checker.up_to_date?).to be(false)
       expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
       expect(checker.conflicting_dependencies.map { |conflict| conflict.fetch("requirement") }).to eq(["1.1.18"])
+    end
+
+    it "does not override the pin when normalized conflict checking is disabled" do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+      expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_yarn_command)
+
+      expect(checker.lowest_resolvable_security_fix_version).to be_nil
     end
   end
 
@@ -274,6 +420,25 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
         expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
         expect(checker.conflicting_dependencies).to be_empty
       end
+    end
+  end
+
+  context "when a grouped descriptor includes a removed standard dist-tag" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      T.cast(super(), T::Array[Dependabot::DependencyFile]).map do |file|
+        next file unless file.name == "yarn.lock"
+
+        content = T.must(file.content).sub(
+          "brace-expansion@npm:^1.1.17", "brace-expansion@npm:^1.1.17, brace-expansion@npm:next"
+        )
+        Dependabot::DependencyFile.new(name: file.name, content: content, directory: file.directory)
+      end
+    end
+
+    it "keeps the semver range while skipping the missing tag" do
+      expect(checker.latest_version.to_s).to eq("1.1.21")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
     end
   end
 
