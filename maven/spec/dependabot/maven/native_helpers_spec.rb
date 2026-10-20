@@ -1,4 +1,5 @@
-# typed: strong
+# typed: false
+# Sorbet cannot infer types for values assigned inside mock callbacks. https://srb.help/7001
 # frozen_string_literal: true
 
 require "shellwords"

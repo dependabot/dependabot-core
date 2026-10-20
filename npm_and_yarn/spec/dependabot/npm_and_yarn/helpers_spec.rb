@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve nested constants or instance fixtures in loop-generated examples.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
@@ -16,7 +18,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/modern")]
     end
 
-    after { described_class.npm_version_selector = nil }
+    around do |example|
+      previous_selector = described_class.npm_version_selector
+      previous_legacy_selector = described_class.npm_version_selector_for("/legacy")
+      previous_modern_selector = described_class.npm_version_selector_for("/modern")
+
+      begin
+        example.run
+      ensure
+        described_class.npm_version_selector = previous_selector
+        described_class.register_npm_version_selector("/legacy", previous_legacy_selector)
+        described_class.register_npm_version_selector("/modern", previous_modern_selector)
+      end
+    end
+
+    it "returns the selector registered for a directory" do
+      described_class.register_npm_version_selector("/legacy", "9")
+
+      expect(described_class.npm_version_selector_for("/legacy")).to eq("9")
+      expect(described_class.npm_version_selector_for("/modern")).to be_nil
+    end
 
     it "restores the selector registered for each manifest directory" do
       described_class.register_npm_version_selector("/legacy", "9")
@@ -66,6 +87,28 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
           "npm install",
           fingerprint: "npm install dependencies",
+          output_observer: kind_of(Proc),
+          env: nil
+        )
+      end
+
+      it "allows commands to independently append npm 12 allow flags unless explicitly configured in .npmrc" do
+        allow(described_class).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+
+        npmrc = Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")
+        flags = described_class.npm_allow_flags([npmrc])
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+        described_class.run_npm_command(
+          "install #{flags.join(' ')}".strip,
+          fingerprint: "install #{flags.join(' ')}".strip
+        )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "npm install --allow-remote=all",
+          fingerprint: "npm install --allow-remote=all",
           output_observer: kind_of(Proc),
           env: nil
         )
@@ -219,11 +262,139 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "checks the local npm binary directly instead of Corepack's unqualified default" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
-        .and_return("11.9.0\n")
+        .and_return("12.2.0\n")
 
-      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("12.2.0"))
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
         .with("npm -v", fingerprint: "npm -v")
+    end
+  end
+
+  describe "::command_observer" do
+    %w(eallowgit eallowremote etarget e404 err_invalid_auth).each do |scenario|
+      it "ignores the npm 12 #{scenario} error" do
+        expect(described_class.command_observer(fixture("npm_errors", "npm12", "#{scenario}.txt"))).to eq({})
+      end
+    end
+  end
+
+  describe "::npm_version_numeric" do
+    context "with a package-lock.json" do
+      it "returns 12 for lockfileVersion 3" do
+        lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: '{"lockfileVersion": 3}'
+        )
+        expect(described_class.npm_version_numeric(lockfile)).to eq(12)
+      end
+
+      it "returns 8 for lockfileVersion 2" do
+        lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: '{"lockfileVersion": 2}'
+        )
+        expect(described_class.npm_version_numeric(lockfile)).to eq(8)
+      end
+
+      it "returns 12 for lockfileVersion 1" do
+        lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: '{"lockfileVersion": 1}'
+        )
+        # npm_version_numeric returns NPM_DEFAULT_VERSION (12) for lockfileVersion 1 (npm 6)
+        expect(described_class.npm_version_numeric(lockfile)).to eq(12)
+      end
+    end
+  end
+
+  describe "::npmrc_configured_setting" do
+    let(:npmrc_file) do
+      Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: <<~NPMRC
+          # Comments
+          allow-git=none
+          allow-remote = all ; inline comment
+          other-setting="custom_val"
+        NPMRC
+      )
+    end
+
+    it "extracts the value for a configured setting" do
+      expect(described_class.npmrc_configured_setting("allow-git", [npmrc_file])).to eq("none")
+      expect(described_class.npmrc_configured_setting("allow-remote", [npmrc_file])).to eq("all")
+      expect(described_class.npmrc_configured_setting("other-setting", [npmrc_file])).to eq("custom_val")
+    end
+
+    it "takes the last occurrence when a setting appears multiple times" do
+      duplicate_file = Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "allow-git=all\nallow-git=none\n"
+      )
+      expect(described_class.npmrc_configured_setting("allow-git", [duplicate_file])).to eq("none")
+    end
+
+    it "returns nil when the setting is not configured" do
+      expect(described_class.npmrc_configured_setting("allow-scripts", [npmrc_file])).to be_nil
+    end
+
+    it "returns nil when no .npmrc file is present" do
+      expect(described_class.npmrc_configured_setting("allow-git", [])).to be_nil
+      expect(described_class.npmrc_configured_setting("allow-git", nil)).to be_nil
+    end
+  end
+
+  describe "::npm_allow_flags" do
+    context "when running npm 12 or higher" do
+      before do
+        allow(described_class).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
+      end
+
+      it "returns both --allow-git=all and --allow-remote=all by default" do
+        expect(described_class.npm_allow_flags([])).to eq(["--allow-git=all", "--allow-remote=all"])
+      end
+
+      it "omits --allow-git when allow-git is explicitly set in .npmrc" do
+        files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\n")]
+        expect(described_class.npm_allow_flags(files)).to eq(["--allow-remote=all"])
+      end
+
+      it "omits --allow-remote when allow-remote is explicitly set in .npmrc" do
+        files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-remote=none\n")]
+        expect(described_class.npm_allow_flags(files)).to eq(["--allow-git=all"])
+      end
+
+      it "omits both flags for a project fixture whose .npmrc sets both policies" do
+        files = project_dependency_files("npm8/npmrc_allow_policies")
+        expect(described_class.npm_allow_flags(files)).to be_empty
+      end
+
+      it "omits both flags when both allow-git and allow-remote are explicitly set in .npmrc" do
+        files = [Dependabot::DependencyFile.new(name: ".npmrc", content: "allow-git=none\nallow-remote=none\n")]
+        expect(described_class.npm_allow_flags(files)).to be_empty
+      end
+    end
+
+    context "when running npm 11 or lower" do
+      before do
+        allow(described_class).to receive(:npm_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+      end
+
+      it "returns an empty array" do
+        expect(described_class.npm_allow_flags([])).to be_empty
+      end
+    end
+
+    context "when npm version cannot be determined" do
+      before do
+        allow(described_class).to receive(:npm_version).and_return(nil)
+      end
+
+      it "returns an empty array" do
+        expect(described_class.npm_allow_flags([])).to be_empty
+      end
     end
   end
 
@@ -415,7 +586,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     context "when dependencies in set already have :all_versions metadata" do
       it "returns flattened list of dependencies populated with :all_versions metadata" do
-        dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+        dependency_set = Dependabot::FileParsers::Base::DependencySet.new
         dependency_set << foo_a << bar_a << foo_c << bar_c << foo_b << bar_b
 
         expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq(
@@ -439,7 +610,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
 
       it "correctly merges existing metadata into new metadata" do
-        dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+        dependency_set = Dependabot::FileParsers::Base::DependencySet.new
         dependency_set << foo_a
         dependency_set << Dependabot::Dependency.new(
           name: "foo",
@@ -1440,6 +1611,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   describe "::npm_supports_min_release_age?" do
     it "is true for npm 11.10.0 and newer" do
       allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.16.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(true)
+    end
+
+    it "is true for npm 12" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("12.2.0"))
       expect(described_class.npm_supports_min_release_age?).to be(true)
     end
 

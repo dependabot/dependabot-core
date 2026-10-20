@@ -1,5 +1,7 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
+
+# Sorbet cannot resolve child-context-only files fixtures or instance calls in loop- and its-generated examples.
 
 require "spec_helper"
 require "dependabot/bun"
@@ -168,6 +170,268 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
+    %w(workspace_dependency_not_at_root workspace_dependency_not_at_root_v1
+       workspace_dependency_not_at_root_v3).each do |project|
+      context "with a dependency only declared in a nested workspace package.json (#{project})" do
+        let(:files) { project_dependency_files("bun/#{project}") }
+        let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.0.1" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          [{
+            file: "packages/app/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:requirements) { previous_requirements }
+
+        it "updates the dependency instead of silently dropping it" do
+          expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+          updated_lock = YAML.safe_load(updated_bun_lock.content)
+          expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        end
+
+        it "preserves the lockfile version" do
+          original_lock = YAML.safe_load(files.find { |file| file.name == "bun.lock" }.content)
+          updated_lock = YAML.safe_load(updated_bun_lock.content)
+          expect(updated_lock["lockfileVersion"]).to eq(original_lock["lockfileVersion"])
+        end
+
+        it "scopes the install to the workspace that declares the dependency" do
+          allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+          updated_files
+
+          # Without --filter, bun install would add the dependency to the
+          # root package.json instead, and the final full install would then
+          # revert it as an orphaned entry, silently dropping the update.
+          expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+            ["install", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+          )
+        end
+
+        it "does not add the dependency to the root package.json" do
+          expect(updated_files.map(&:name)).not_to include("package.json")
+        end
+      end
+    end
+
+    context "with dependencies only declared in two different nested workspace packages" do
+      let(:files) { project_dependency_files("bun/multi_workspace_dependency_not_at_root") }
+      let(:repo_contents_path) { build_tmp_repo("bun/multi_workspace_dependency_not_at_root", path: "projects") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.8.1",
+            previous_version: "1.0.1",
+            requirements: [{
+              file: "packages/app/package.json",
+              requirement: "^1.0.0",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "packages/app/package.json",
+              requirement: "^1.0.0",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+            package_manager: "bun"
+          ),
+          Dependabot::Dependency.new(
+            name: "is-number",
+            version: "2.1.0",
+            previous_version: "2.0.0",
+            requirements: [{
+              file: "packages/other/package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "packages/other/package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "bun"
+          )
+        ]
+      end
+
+      it "updates both dependencies, so a later workspace install can't silently discard an earlier one" do
+        expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+        updated_lock = YAML.safe_load(updated_bun_lock.content)
+        expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        expect(updated_lock["packages"]["is-number"].first).to eq("is-number@2.1.0")
+      end
+
+      it "issues a separately filtered install command for each workspace" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        updated_files
+
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "is-number@2.1.0", "--filter", "./packages/other", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+      end
+    end
+
+    context "with the same dependency declared in two different workspace packages" do
+      let(:files) { project_dependency_files("bun/shared_workspace_dependency") }
+      let(:repo_contents_path) { build_tmp_repo("bun/shared_workspace_dependency", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [
+          {
+            file: "packages/a/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          },
+          {
+            file: "packages/b/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }
+        ]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "updates the dependency's locked resolution for both workspaces" do
+        expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+        updated_lock = YAML.safe_load(updated_bun_lock.content)
+        expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+      end
+
+      it "issues a separately filtered install command for each declaring workspace" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        updated_files
+
+        # Bun merges same-name declarations into one Dependency, so without
+        # an install command per declaring workspace, only the first
+        # workspace would actually get updated.
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/a", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/b", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+      end
+    end
+
+    context "with a dependency declared only in a workspace package.json missing a \"name\"" do
+      let(:files) { project_dependency_files("bun/unnamed_workspace_dependency") }
+      let(:repo_contents_path) { build_tmp_repo("bun/unnamed_workspace_dependency", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{
+          file: "packages/app/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "fails explicitly instead of silently falling back to an unfiltered root install" do
+        # Unreachable in practice: Bun refuses to run any command against a
+        # repo with an unnamed workspace. Kept as a defensive guard.
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotParseable, /must declare a "name"/)
+      end
+    end
+
+    context "with a workspace package named using a glob metacharacter" do
+      let(:files) { project_dependency_files("bun/glob_metacharacter_workspace_name") }
+      let(:repo_contents_path) { build_tmp_repo("bun/glob_metacharacter_workspace_name", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{
+          file: "packages/app-star/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "scopes the install by path instead of the package's glob-like name" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        begin
+          updated_files
+        rescue Dependabot::Bun::FileUpdater::NoChangeError
+          # Bun can non-deterministically revert an already-applied bump for
+          # small fixtures; not what's under test here.
+        end
+
+        # Name is "app*". Passed directly to --filter, Bun would treat it as
+        # a glob and also match "app-plain".
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/app-star", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+        expect(Dependabot::Bun::Helpers).not_to have_received(:run_bun_command).with(
+          array_including("--filter", "./packages/app-plain"), any_args
+        )
+      end
+    end
+
+    context "with a workspace directory path containing a space" do
+      let(:files) { project_dependency_files("bun/workspace_path_with_space") }
+      let(:repo_contents_path) { build_tmp_repo("bun/workspace_path_with_space", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{
+          file: "packages/my app/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "passes the filter path as a single argument instead of splitting on the space" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        begin
+          updated_files
+        rescue Dependabot::Bun::FileUpdater::NoChangeError
+          # Bun can non-deterministically revert an already-applied bump for
+          # small fixtures; not what's under test here.
+        end
+
+        # A single interpolated string would be whitespace-split before
+        # shelling out, breaking "packages/my app" into two arguments.
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/my app", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+      end
+    end
+
     %w(simple_v0 simple_v1).each do |project|
       context "with a #{project} lockfile" do
         let(:files) { project_dependency_files("bun/#{project}") }
@@ -298,7 +562,7 @@ RSpec.describe Dependabot::Bun::FileUpdater do
           updated_files
 
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts$/),
+            start_with("install").and(end_with("--save-text-lockfile", "--ignore-scripts")),
             fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
           )
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
@@ -356,6 +620,181 @@ RSpec.describe Dependabot::Bun::FileUpdater do
         it "correctly update the lockfiles" do
           expect(updated_bun_lock.content)
             .to include("is-number@github:jonschlinkert/is-number#98e8ff1")
+        end
+      end
+    end
+
+    context "with catalog dependencies" do
+      let(:files) { project_dependency_files("bun/#{project}") }
+      let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+      let(:original_package_json) { JSON.parse(files.find { |file| file.name == "package.json" }.content) }
+      let(:updated_manifest) { JSON.parse(updated_package_json.content) }
+      let(:updated_lock) { YAML.safe_load(updated_bun_lock.content) }
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: previous_requirement,
+          groups: ["dependencies"],
+          source: nil,
+          metadata: { catalog: catalog }
+        }]
+      end
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: requirement,
+          groups: ["dependencies"],
+          source: nil,
+          metadata: { catalog: catalog }
+        }]
+      end
+
+      context "when updating the default catalog under workspaces" do
+        let(:project) { "catalog_workspace" }
+        let(:dependency_name) { "is-number" }
+        let(:catalog) { "default" }
+        let(:previous_version) { "6.0.0" }
+        let(:version) { "7.0.0" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:requirement) { "^7.0.0" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_files.map(&:name)).to match_array(%w(package.json bun.lock))
+          expect(updated_manifest).to eq(
+            original_package_json.merge(
+              "workspaces" => original_package_json["workspaces"].merge(
+                "catalog" => { "is-number" => "^7.0.0" }
+              )
+            )
+          )
+          expect(updated_lock["catalog"]).to eq("is-number" => "^7.0.0")
+          expect(updated_lock["catalogs"]).to eq("testing" => { "etag" => "1.0.1" })
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+          expect(updated_lock["workspaces"]["packages/app"]["dependencies"]).to eq("is-number" => "catalog:")
+        end
+      end
+
+      context "when updating a named catalog under workspaces" do
+        let(:project) { "catalog_workspace" }
+        let(:dependency_name) { "etag" }
+        let(:catalog) { "testing" }
+        let(:previous_version) { "1.0.1" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirement) { "1.0.1" }
+        let(:requirement) { "1.8.1" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_manifest["workspaces"]["catalogs"]).to eq("testing" => { "etag" => "1.8.1" })
+          expect(updated_manifest["workspaces"]["catalog"]).to eq(original_package_json["workspaces"]["catalog"])
+          expect(updated_lock["catalogs"]).to eq("testing" => { "etag" => "1.8.1" })
+          expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        end
+      end
+
+      context "when updating a root catalog" do
+        let(:project) { "catalog_top_level" }
+        let(:dependency_name) { "is-number" }
+        let(:catalog) { "default" }
+        let(:previous_version) { "6.0.0" }
+        let(:version) { "7.0.0" }
+        let(:previous_requirement) { "6.0.0" }
+        let(:requirement) { "7.0.0" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_manifest).to eq(original_package_json.merge("catalog" => { "is-number" => "7.0.0" }))
+          expect(updated_lock["catalog"]).to eq("is-number" => "7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "when updating catalogs.default" do
+        let(:project) { "catalog_named" }
+        let(:dependency_name) { "is-number" }
+        let(:catalog) { "default" }
+        let(:previous_version) { "6.0.0" }
+        let(:version) { "7.0.0" }
+        let(:previous_requirement) { "^6.0.0" }
+        let(:requirement) { "^7.0.0" }
+
+        it "updates the catalog entry and the lockfile" do
+          expect(updated_manifest["workspaces"]["catalogs"]).to eq(
+            original_package_json["workspaces"]["catalogs"].merge("default" => { "is-number" => "^7.0.0" })
+          )
+          expect(updated_lock["catalogs"]["default"]).to eq("is-number" => "^7.0.0")
+          expect(updated_lock["packages"]["is-number"].first).to eq("is-number@7.0.0")
+        end
+      end
+
+      context "when workspaces catalogs shadow identical root catalogs" do
+        let(:project) { "catalog_root_shadowed" }
+
+        context "with the default catalog" do
+          let(:dependency_name) { "is-number" }
+          let(:catalog) { "default" }
+          let(:previous_version) { "6.0.0" }
+          let(:version) { "7.0.0" }
+          let(:previous_requirement) { "^6.0.0" }
+          let(:requirement) { "^7.0.0" }
+
+          it "updates only the workspaces catalog, which Bun reads" do
+            expect(updated_manifest).to eq(
+              original_package_json.merge(
+                "workspaces" => original_package_json["workspaces"].merge(
+                  "catalog" => { "is-number" => "^7.0.0" }
+                )
+              )
+            )
+            expect(updated_lock["catalog"]).to eq("is-number" => "^7.0.0")
+          end
+        end
+
+        context "with a named catalog" do
+          let(:dependency_name) { "etag" }
+          let(:catalog) { "testing" }
+          let(:previous_version) { "1.0.1" }
+          let(:version) { "1.8.1" }
+          let(:previous_requirement) { "1.0.1" }
+          let(:requirement) { "1.8.1" }
+
+          it "updates only the workspaces catalog, which Bun reads" do
+            expect(updated_manifest).to eq(
+              original_package_json.merge(
+                "workspaces" => original_package_json["workspaces"].merge(
+                  "catalogs" => { "testing" => { "etag" => "1.8.1" } }
+                )
+              )
+            )
+            expect(updated_lock["catalogs"]).to eq("testing" => { "etag" => "1.8.1" })
+          end
+        end
+      end
+
+      context "when a package is in two named catalogs" do
+        let(:project) { "catalog_named" }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.7.0" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          %w(legacy current).zip(%w(1.0.1 1.7.0)).map do |catalog, requirement|
+            { file: "package.json", requirement: requirement, groups: ["dependencies"], source: nil,
+              metadata: { catalog: catalog } }
+          end
+        end
+        let(:requirements) do
+          %w(legacy current).zip(%w(1.0.1 1.8.1)).map do |catalog, requirement|
+            { file: "package.json", requirement: requirement, groups: ["dependencies"], source: nil,
+              metadata: { catalog: catalog } }
+          end
+        end
+
+        it "updates only the catalog whose requirement changed" do
+          expect(updated_manifest["workspaces"]["catalogs"]).to eq(
+            "default" => { "is-number" => "^6.0.0" },
+            "legacy" => { "etag" => "1.0.1" },
+            "current" => { "etag" => "1.8.1" }
+          )
+          expect(updated_lock["catalogs"]["legacy"]).to eq("etag" => "1.0.1")
+          expect(updated_lock["catalogs"]["current"]).to eq("etag" => "1.8.1")
         end
       end
     end

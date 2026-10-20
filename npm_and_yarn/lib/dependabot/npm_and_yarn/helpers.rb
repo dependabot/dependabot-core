@@ -21,7 +21,7 @@ module Dependabot
       class << self
         extend T::Sig
 
-        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).void }
         def dependency_files=(files)
           Thread.current[:npm_and_yarn_dependency_files] = files
         end
@@ -56,10 +56,15 @@ module Dependabot
           npm_version_selectors[directory] = version
         end
 
+        sig { params(directory: String).returns(T.nilable(String)) }
+        def npm_version_selector_for(directory)
+          npm_version_selectors[directory]
+        end
+
         sig { params(files: T::Array[Dependabot::DependencyFile]).void }
         def activate_npm_version_selector(files)
           manifest = files.find { |file| file.name == "package.json" && !file.support_file }
-          self.npm_version_selector = manifest && npm_version_selectors[manifest.directory]
+          self.npm_version_selector = manifest && npm_version_selector_for(manifest.directory)
         end
 
         private
@@ -78,14 +83,18 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V12 = 12
       NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V11
+      NPM_DEFAULT_VERSION = NPM_V12
 
       # Minimum npm version that supports the `--min-release-age` CLI flag.
       NPM_MINIMUM_RELEASE_AGE_VERSION = "11.10.0"
+
+      # Minimum npm version that defaults to blocking git and remote tarball dependencies.
+      NPM_ALLOW_FLAGS_MIN_VERSION = "12.0.0"
 
       # PNPM Version Constants
       PNPM_V10 = 10
@@ -208,29 +217,28 @@ module Dependabot
       sig { params(lockfile: T.nilable(DependencyFile)).returns(T.nilable(Integer)) }
       def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
-
-        # Return npm 10 as the default if the lockfile is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
-        parsed_lockfile = JSON.parse(lockfile_content)
+        version_from_lockfile_content(lockfile_content)
+      rescue JSON::ParserError
+        NPM_DEFAULT_VERSION # Fallback to default if the lockfile content cannot be parsed
+      end
+      private_class_method :detect_npm_version
 
+      sig { params(lockfile_content: String).returns(T.nilable(Integer)) }
+      def self.version_from_lockfile_content(lockfile_content)
+        parsed_lockfile = JSON.parse(lockfile_content)
         lockfile_version_str = parsed_lockfile["lockfileVersion"]
 
         return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
 
         lockfile_version = lockfile_version_str.to_i
-
-        # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V11 if lockfile_version >= 3
+        return NPM_V12 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
-        # Return nil if can't capture
-      rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to npm 8 if the lockfile content cannot be parsed
       end
-
-      private_class_method :detect_npm_version
+      private_class_method :version_from_lockfile_content
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
@@ -332,6 +340,50 @@ module Dependabot
           )
         end
         supported
+      end
+
+      # Resolves an explicit string setting from the repo's `.npmrc` files,
+      # reading the last matching line (highest precedence). Returns nil if unset.
+      sig { params(key: String, dependency_files: T.nilable(T::Array[DependencyFile])).returns(T.nilable(String)) }
+      def self.npmrc_configured_setting(key, dependency_files = self.dependency_files)
+        return nil unless dependency_files
+
+        npmrc_files = dependency_files.select { |f| File.basename(f.name) == ".npmrc" }
+        return nil if npmrc_files.empty?
+
+        escaped_key = Regexp.escape(key)
+        presence = /^\s*["']?#{escaped_key}["']?\s*=/
+        value_pattern = /^\s*["']?#{escaped_key}["']?\s*=\s*["']?([^#;\s"']+)["']?\s*(?:[#;].*)?$/
+
+        values = npmrc_files.filter_map do |file|
+          last_line = file.content.to_s.lines.reverse_each.find { |line| line.match?(presence) }
+          next unless last_line
+
+          match = last_line.match(value_pattern)
+          match ? match[1] : ""
+        end
+
+        values.last
+      end
+
+      # Returns the CLI flags (`--allow-git=all`, `--allow-remote=all`) to append for npm 12+,
+      # respecting explicit `.npmrc` settings (omits `--allow-git` if `allow-git` is set,
+      # and `--allow-remote` if `allow-remote` is set).
+      # If running npm < 12, returns an empty array.
+      sig do
+        params(
+          dependency_files: T.nilable(T::Array[DependencyFile]),
+          npm_ver: T.nilable(Dependabot::Version)
+        ).returns(T::Array[String])
+      end
+      def self.npm_allow_flags(dependency_files = self.dependency_files, npm_ver: nil)
+        version = npm_ver || npm_version
+        return [] if version.nil? || version < Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
+
+        flags = []
+        flags << "--allow-git=all" unless npmrc_configured_setting("allow-git", dependency_files)
+        flags << "--allow-remote=all" unless npmrc_configured_setting("allow-remote", dependency_files)
+        flags
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -783,6 +835,20 @@ module Dependabot
           "#{name} -v",
           fingerprint: "#{name} -v"
         ).strip
+      end
+
+      # Corepack can't provide the requested npm, so the image's npm would be used. Fail instead of silently
+      # updating with a different npm major than the one requested.
+      sig { params(version: String).void }
+      def self.raise_unless_local_npm_major_matches!(version)
+        local_major = Version.new(local_package_manager_version(NpmPackageManager::NAME)).segments.first
+        return if local_major.to_s == version[/\A\d+/]
+
+        raise ToolVersionNotSupported.new(
+          NpmPackageManager::NAME.upcase,
+          version,
+          NpmPackageManager::SUPPORTED_VERSIONS.map { |v| "#{v}.*" }.join(", ")
+        )
       end
 
       # The version a `-v` command printed. The launcher can print a download message (pnpm 12 fetching its native

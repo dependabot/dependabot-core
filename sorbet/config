@@ -6,42 +6,31 @@
 --disable-watchman
 --suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 --enable-experimental-rspec
+# Shared example modules inherit matcher/mock methods through ExampleGroup.
+--enable-experimental-requires-ancestor
 
-# Sorbet's RSpec support is experimental, so common specs are checked incrementally
-# while the remaining spec trees are ignored.
+# Sorbet's RSpec support is experimental, so spec trees are checked incrementally
+# while unenrolled spec trees are ignored.
 --ignore=apm/spec/
 --ignore=bazel/spec/
---ignore=bun/spec/
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
 --ignore=cargo/spec/
 --ignore=composer/spec/
---ignore=conda/spec/
---ignore=deno/spec/
---ignore=devcontainers/spec/
---ignore=docker/spec/
---ignore=dotnet_sdk/spec/
 --ignore=elm/spec/
---ignore=git_submodules/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
---ignore=gradle/spec/
 --ignore=helm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
---ignore=maven/spec/
 --ignore=nix/spec/
---ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
 --ignore=pre_commit/spec/
 --ignore=pub/spec/
---ignore=python/spec/
 --ignore=rust_toolchain/spec/
---ignore=sbt/spec/
 --ignore=swift/spec/
 --ignore=terraform/spec/
 --ignore=opentofu/spec/
 --ignore=updater/spec/
---ignore=uv/spec/
 --ignore=vcpkg/spec/
 --ignore=.git

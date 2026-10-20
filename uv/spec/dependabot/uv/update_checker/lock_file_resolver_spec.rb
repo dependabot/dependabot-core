@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/uv/requirement"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/package/release_cooldown_options"
@@ -162,7 +163,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["== 2.33.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("== 2.33.0")]
           )
         ]
       end
@@ -482,7 +483,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["<= 2.1.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("<= 2.1.0")]
           )
         ]
       end
@@ -541,12 +542,12 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("< 2.0.0")]
           ),
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["< 2.5.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("< 2.5.0")]
           )
         ]
       end
@@ -580,7 +581,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("< 2.0.0")]
           )
         ]
       end
@@ -600,7 +601,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["<= 2.1.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("<= 2.1.0")]
           )
         ]
       end
