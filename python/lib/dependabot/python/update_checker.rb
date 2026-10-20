@@ -420,6 +420,8 @@ module Dependabot
         local_description = metadata.description
         has_library_metadata = !local_description.nil?
 
+        return has_library_metadata if credentials.any? { |c| c["type"] == "python_index" && c.replaces_base? }
+
         begin
           response = Dependabot::RegistryClient.get(
             url: "https://pypi.org/pypi/#{normalised_name(name)}/json/"
