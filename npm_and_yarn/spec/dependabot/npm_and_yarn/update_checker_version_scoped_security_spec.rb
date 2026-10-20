@@ -45,6 +45,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
       dependency_files: dependency_files,
       credentials: [],
       ignored_versions: ignored_versions,
+      raise_on_ignored: true,
       security_advisories: [
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
@@ -154,6 +155,15 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
       expect(checker.up_to_date?).to be(false)
       expect(checker.lowest_security_fix_version.to_s).to eq("2.1.7")
       expect(checker.conflicting_dependencies.map { |conflict| conflict.fetch("requirement") }).to eq(["^1.1.17"])
+    end
+  end
+
+  context "when all security fixes are ignored" do
+    sig { returns(T::Array[String]) }
+    let(:ignored_versions) { %w(1.1.21 2.1.7 5.0.12) }
+
+    it "raises after filtering all security fix candidates" do
+      expect { checker.lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
     end
   end
 

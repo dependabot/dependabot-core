@@ -173,16 +173,16 @@ module Dependabot
         end
 
         sig do
-          params(releases: T::Array[Dependabot::Package::PackageRelease])
+          params(releases: T::Array[Dependabot::Package::PackageRelease], raise_on_ignored: T::Boolean)
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def filter_releases(releases)
+        def filter_releases(releases, raise_on_ignored: @raise_on_ignored)
           filtered =
             releases
             .reject do |release|
               ignore_requirements.any? { |r| r.satisfied_by?(release.version) }
             end
-          if @raise_on_ignored &&
+          if raise_on_ignored &&
              filter_lower_releases(filtered).empty? &&
              filter_lower_releases(releases).any?
             raise Dependabot::AllVersionsIgnored
@@ -239,7 +239,8 @@ module Dependabot
           secure_releases = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
             filter_lower_versions(in_range_releases), security_advisories
           )
-          secure_releases = filter_ignored_versions(secure_releases).reject { |release| release.details["deprecated"] }
+          secure_releases = filter_releases(secure_releases, raise_on_ignored: false)
+          secure_releases = secure_releases.reject { |release| release.details["deprecated"] }
 
           secure_releases.any? { |release| !yanked_version?(release.version) } ? in_range_releases : releases
         end
