@@ -116,12 +116,13 @@ module Dependabot
         # For versionRange requirements, find the highest version that satisfies
         # the explicit upper bound constraint. We don't filter out lower versions here
         # because `can_update?` will decide whether an update is actually needed.
+        # Tags still in their cooldown window are skipped, as on the non-range path.
         sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def compute_latest_version_in_range
           requirement = dependency_requirement
           return nil unless requirement
 
-          tags = git_commit_checker.local_tags_for_allowed_versions
+          tags = git_commit_checker.local_tags_for_allowed_versions(update_cooldown)
           matching_tags = tags.select { |tag| requirement.satisfied_by?(T.must(tag_version(tag))) }
 
           matching_tags.max_by { |tag| T.must(tag_version(tag)) }
