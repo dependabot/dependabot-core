@@ -21,6 +21,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
   sig { returns(T::Hash[String, T::Boolean]) }
   let(:in_range_release_details) { {} }
 
+  sig { returns(T::Array[String]) }
+  let(:releases) { %w(1.1.18 1.1.21 2.1.7 5.0.12) }
+
+  sig { returns(T::Hash[String, String]) }
+  let(:dist_tags) { { "latest" => "5.0.12", "maintenance" => "1.1.21", "_maintenance" => "1.1.21" } }
+
   sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) do
     project_dependency_files("yarn_berry/version_scoped_security").map do |file|
@@ -50,7 +56,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "npm_and_yarn",
-          vulnerable_versions: ["< 1.1.21", ">= 2.0.0 < 2.1.7", ">= 5.0.0 < 5.0.12"].flat_map do |requirement|
+          vulnerable_versions: ["< 1.1.21", ">= 1.2.0 < 2.1.7", ">= 5.0.0 < 5.0.12"].flat_map do |requirement|
             Dependabot::NpmAndYarn::Requirement.requirements_array(requirement)
           end
         )
@@ -59,12 +65,11 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
   end
 
   before do
-    releases = %w(1.1.18 1.1.21 2.1.7 5.0.12)
     stub_request(:get, "https://registry.npmjs.org/#{dependency_name.gsub('/', '%2F')}").to_return(
       status: 200,
       body: JSON.generate(
         "name" => dependency_name,
-        "dist-tags" => { "latest" => "5.0.12", "maintenance" => "1.1.21", "_maintenance" => "1.1.21" },
+        "dist-tags" => dist_tags,
         "versions" => releases.to_h do |version|
           details = { "name" => dependency_name, "version" => version }
           [version, version == "1.1.21" ? details.merge(in_range_release_details) : details]
@@ -110,6 +115,26 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     ).conflicting_dependencies(dependency: dependency, target_version: "2.1.7")
 
     expect(conflicts.map { |conflict| conflict.fetch("requirement") }).to eq(["^1.1.17"])
+  end
+
+  context "when a higher in-range release is vulnerable" do
+    sig { returns(T::Array[String]) }
+    let(:releases) { %w(1.1.18 1.1.21 1.2.0 2.1.7 5.0.12) }
+
+    it "selects and resolves the secure backport instead" do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
+        lockfile = YAML.safe_load_file("yarn.lock")
+        record = lockfile.fetch("brace-expansion@npm:^1.1.17")
+        record["version"] = "1.1.21"
+        record["resolution"] = "brace-expansion@npm:1.1.21"
+        File.write("yarn.lock", YAML.dump(lockfile))
+        ""
+      end
+
+      expect(checker.latest_version.to_s).to eq("1.1.21")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+      expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("1.1.21")
+    end
   end
 
   context "when the vulnerable installation is pinned" do
@@ -227,6 +252,16 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     it "recognizes the registry tag without parsing it as a semver range" do
       expect(checker.latest_version.to_s).to eq("5.0.12")
       expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+    end
+
+    context "when the tag has been removed from the registry" do
+      sig { returns(T::Hash[String, String]) }
+      let(:dist_tags) { { "latest" => "5.0.12" } }
+
+      it "skips the unparseable selector and retains numeric security fixes" do
+        expect(checker.latest_version.to_s).to eq("5.0.12")
+        expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+      end
     end
   end
 end

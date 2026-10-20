@@ -209,9 +209,7 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def possible_releases(filter_ignored: true)
-          releases = possible_previous_releases.reject do |r|
-            r.details["deprecated"]
-          end
+          releases = possible_previous_releases.reject { |release| release.details["deprecated"] }
 
           return filter_releases(releases) if filter_ignored
 
@@ -242,7 +240,7 @@ module Dependabot
           secure_releases = filter_releases(secure_releases, raise_on_ignored: false)
           secure_releases = secure_releases.reject { |release| release.details["deprecated"] }
 
-          secure_releases.any? { |release| !yanked_version?(release.version) } ? in_range_releases : releases
+          secure_releases.any? { |release| !yanked_version?(release.version) } ? secure_releases : releases
         end
 
         sig { override.returns(T::Boolean) }
@@ -279,9 +277,10 @@ module Dependabot
 
           return unless package_name == dependency.name
           return if package_details&.dist_tags&.key?(selector)
-          return if selector.match?(/\A[a-zA-Z][a-zA-Z0-9._-]*\z/) && !Version.correct?(selector)
 
           Requirement.requirements_array(selector)
+        rescue Gem::Requirement::BadRequirementError
+          nil
         end
 
         sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
