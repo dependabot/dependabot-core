@@ -228,7 +228,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def possible_previous_releases
-          releases = filter_prerelease_versions(package_details&.releases || []).sort_by(&:version).reverse
+          releases = filter_prerelease_versions(Array(package_details&.releases)).sort_by(&:version).reverse
 
           requirements = yarn_security_requirements
           return releases if requirements.empty?
@@ -239,8 +239,9 @@ module Dependabot
           secure_releases = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
             filter_lower_versions(in_range_releases), security_advisories
           )
+          secure_releases = filter_ignored_versions(secure_releases).reject { |release| release.details["deprecated"] }
 
-          secure_releases.any? ? in_range_releases : releases
+          secure_releases.any? { |release| !yanked_version?(release.version) } ? in_range_releases : releases
         end
 
         sig { override.returns(T::Boolean) }
@@ -259,9 +260,7 @@ module Dependabot
             FileParser::YarnLock.new(file).parsed.flat_map do |descriptors, record|
               next [] unless record.version == dependency.version
 
-              descriptors.split(", ").filter_map do |descriptor|
-                yarn_security_requirement(descriptor)
-              end
+              descriptors.split(", ").filter_map { |descriptor| yarn_security_requirement(descriptor) }
             end
           end
         end
@@ -278,6 +277,7 @@ module Dependabot
           end
 
           return unless package_name == dependency.name
+          return if package_details&.dist_tags&.key?(selector)
           return if selector.match?(/\A[a-zA-Z][a-zA-Z0-9._-]*\z/) && !Version.correct?(selector)
 
           Requirement.requirements_array(selector)

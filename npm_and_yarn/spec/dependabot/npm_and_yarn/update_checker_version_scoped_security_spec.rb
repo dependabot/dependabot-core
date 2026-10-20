@@ -15,6 +15,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
   sig { returns(String) }
   let(:installed_requirement) { "^1.1.17" }
 
+  sig { returns(T::Array[String]) }
+  let(:ignored_versions) { [] }
+
+  sig { returns(T::Hash[String, T::Boolean]) }
+  let(:in_range_release_details) { {} }
+
   sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) do
     project_dependency_files("yarn_berry/version_scoped_security").map do |file|
@@ -38,6 +44,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: [],
+      ignored_versions: ignored_versions,
       security_advisories: [
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
@@ -56,9 +63,10 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
       status: 200,
       body: JSON.generate(
         "name" => dependency_name,
-        "dist-tags" => { "latest" => "5.0.12", "maintenance" => "1.1.21" },
+        "dist-tags" => { "latest" => "5.0.12", "maintenance" => "1.1.21", "_maintenance" => "1.1.21" },
         "versions" => releases.to_h do |version|
-          [version, { "name" => dependency_name, "version" => version }]
+          details = { "name" => dependency_name, "version" => version }
+          [version, version == "1.1.21" ? details.merge(in_range_release_details) : details]
         end
       )
     )
@@ -114,6 +122,41 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     end
   end
 
+  context "when the only in-range security fix is deprecated" do
+    sig { returns(T::Hash[String, T::Boolean]) }
+    let(:in_range_release_details) { { "deprecated" => true } }
+
+    it "retains an eligible security target for blocker diagnostics" do
+      expect(checker.up_to_date?).to be(false)
+      expect(checker.lowest_security_fix_version.to_s).to eq("2.1.7")
+      expect(checker.conflicting_dependencies.map { |conflict| conflict.fetch("requirement") }).to eq(["^1.1.17"])
+    end
+  end
+
+  context "when the only in-range security fix is ignored" do
+    sig { returns(T::Array[String]) }
+    let(:ignored_versions) { ["1.1.21"] }
+
+    it "retains an eligible security target for blocker diagnostics" do
+      expect(checker.up_to_date?).to be(false)
+      expect(checker.lowest_security_fix_version.to_s).to eq("2.1.7")
+      expect(checker.conflicting_dependencies.map { |conflict| conflict.fetch("requirement") }).to eq(["^1.1.17"])
+    end
+  end
+
+  context "when the only in-range security fix is yanked" do
+    before do
+      stub_request(:head, "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.21.tgz")
+        .to_return(status: 404)
+    end
+
+    it "retains an eligible security target for blocker diagnostics" do
+      expect(checker.up_to_date?).to be(false)
+      expect(checker.lowest_security_fix_version.to_s).to eq("2.1.7")
+      expect(checker.conflicting_dependencies.map { |conflict| conflict.fetch("requirement") }).to eq(["^1.1.17"])
+    end
+  end
+
   context "when the vulnerable installation is only referenced through an npm alias" do
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     let(:dependency_files) do
@@ -162,6 +205,16 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker) do
     let(:installed_requirement) { "maintenance" }
 
     it "does not raise or discard numeric security fixes" do
+      expect(checker.latest_version.to_s).to eq("5.0.12")
+      expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
+    end
+  end
+
+  context "when the lockfile descriptor uses an underscore-prefixed dist-tag" do
+    sig { returns(String) }
+    let(:installed_requirement) { "_maintenance" }
+
+    it "recognizes the registry tag without parsing it as a semver range" do
       expect(checker.latest_version.to_s).to eq("5.0.12")
       expect(checker.lowest_security_fix_version.to_s).to eq("1.1.21")
     end
