@@ -60,7 +60,8 @@ export async function findConflictingDependencies(
   directory: string,
   depName: string,
   targetVersion: string,
-  enableNormalizedTraversal = false
+  enableNormalizedTraversal = false,
+  currentVersion?: string,
 ): Promise<ConflictingDependency[]> {
   if (!enableNormalizedTraversal) {
     return findLegacyConflictingDependencies(directory, depName, targetVersion);
@@ -69,14 +70,16 @@ export async function findConflictingDependencies(
   return findNormalizedConflictingDependencies(
     directory,
     depName,
-    targetVersion
+    targetVersion,
+    currentVersion,
   );
 }
 
 async function findNormalizedConflictingDependencies(
   directory: string,
   depName: string,
-  targetVersion: string
+  targetVersion: string,
+  currentVersion?: string,
 ): Promise<ConflictingDependency[]> {
   const lockfileJson = await parseNormalized(directory);
   const packageJson = fs
@@ -93,17 +96,17 @@ async function findNormalizedConflictingDependencies(
         string,
         string,
       ][];
-    }
+    },
   );
 
   // Normalize manifest requirements to match lockfile descriptors.
   const topLevelEdges = topLevelDependencies.map(([name, requirement]) =>
-    normalizeDependencyEdge(name, requirement, lockfileJson)
+    normalizeDependencyEdge(name, requirement, lockfileJson),
   );
   const topLevelWorkspaceNames = new Set(
     topLevelEdges
       .filter((edge) => edge.requirement.startsWith(WORKSPACE_PROTOCOL))
-      .map((edge) => edge.name)
+      .map((edge) => edge.name),
   );
 
   const manifestConflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
@@ -118,9 +121,10 @@ async function findNormalizedConflictingDependencies(
         topLevelEdge,
         depName,
         targetVersion,
+        currentVersion,
         topLevelSpec,
-        lockfileJson
-      ).values()
+        lockfileJson,
+      ).values(),
     );
   });
 
@@ -162,11 +166,12 @@ async function findNormalizedConflictingDependencies(
             dependency,
             depName,
             targetVersion,
+            currentVersion,
             { ...topLevelSpec },
             lockfileJson,
-            { ...transitiveSpec }
-          ).values()
-        )
+            { ...transitiveSpec },
+          ).values(),
+        ),
       );
     });
 
@@ -205,7 +210,7 @@ function realNameOf(edge: { name: string; realName?: string }): string {
 
 function buildExplanation(
   parentSpec: ParentSpec,
-  targetDepName: string
+  targetDepName: string,
 ): string {
   const parentName = realNameOf(parentSpec);
   const topLevelName = realNameOf(parentSpec.topLevelSpec);
@@ -274,12 +279,13 @@ function findConflictingParentDependencies(
   edge: DependencyEdge,
   targetDep: string,
   targetversion: string,
+  currentVersion: string | undefined,
   topLevelSpec: TopLevelSpec,
   lockfile: NormalizedLockfileEntry[],
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
   shortestDepthByEntry: Map<string, number> = new Map(),
   conflictingParents: Map<string, ParentSpec> = new Map(),
-  depth = 0
+  depth = 0,
 ): Map<string, ParentSpec> {
   const checkedEntry = edgeKey(edge);
   const shortestDepth = shortestDepthByEntry.get(checkedEntry);
@@ -304,7 +310,8 @@ function findConflictingParentDependencies(
     for (const subDep of pkg.dependencies) {
       if (
         realNameOf(subDep) === targetDep &&
-        conflictsWith(targetversion, subDep)
+        conflictsWith(targetversion, subDep) &&
+        resolvesToCurrentVersion(lockfile, subDep, currentVersion)
       ) {
         // Only add the conflicting parent once per version preventing
         // duplicate dependencies from circular graphs.
@@ -334,16 +341,31 @@ function findConflictingParentDependencies(
           subDep,
           targetDep,
           targetversion,
+          currentVersion,
           topLevelSpec,
           lockfile,
           nextTransitiveSpec,
           shortestDepthByEntry,
           conflictingParents,
-          depth + 1
+          depth + 1,
         );
       }
     }
   }
 
   return conflictingParents;
+}
+
+function resolvesToCurrentVersion(
+  lockfile: NormalizedLockfileEntry[],
+  edge: DependencyEdge,
+  currentVersion?: string,
+): boolean {
+  if (!currentVersion) return true;
+
+  const entries = findEntries(lockfile, edge);
+  return (
+    entries.length === 0 ||
+    entries.some((entry) => entry.version === currentVersion)
+  );
 }

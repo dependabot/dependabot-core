@@ -9,6 +9,7 @@ require "dependabot/npm_and_yarn/package/package_details_fetcher"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/file_parser/yarn_lock"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "sorbet-runtime"
@@ -227,9 +228,11 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def possible_previous_releases
+          requirements = yarn_security_requirements
           (package_details&.releases || [])
             .reject do |r|
-            r.version.prerelease? && !related_to_current_pre?(r.version)
+            (r.version.prerelease? && !related_to_current_pre?(r.version)) ||
+              requirements.any? { |ranges| ranges.none? { |range| range.satisfied_by?(r.version) } }
           end
             .sort_by(&:version).reverse
         end
@@ -240,6 +243,25 @@ module Dependabot
         end
 
         private
+
+        sig { returns(T::Array[T::Array[Requirement]]) }
+        def yarn_security_requirements
+          return [] if security_advisories.empty? || dependency.top_level?
+
+          dependency_files.select { |file| file.name.end_with?("yarn.lock") && Helpers.yarn_berry?(file) }
+                          .flat_map do |file|
+            FileParser::YarnLock.new(file).parsed.flat_map do |descriptors, record|
+              next [] unless record.version == dependency.version
+
+              descriptors.split(", ").filter_map do |descriptor|
+                prefix = "#{dependency.name}@npm:"
+                next unless descriptor.start_with?(prefix)
+
+                Requirement.requirements_array(descriptor.delete_prefix(prefix))
+              end
+            end
+          end
+        end
 
         sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
         def with_custom_registry_rescue(&_block)
