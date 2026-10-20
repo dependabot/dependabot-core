@@ -495,6 +495,67 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(checker.latest_version).to eq("c" * 40)
       end
     end
+
+    context "when the pinned commit is a tagged release under SemVer cooldown" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 1,
+          semver_minor_days: 90,
+          include: [dependency_name]
+        )
+      end
+      let(:shared_metadata_fetcher) do
+        Dependabot::GitMetadataFetcher.new(
+          url: "https://github.com/#{dependency_name}",
+          credentials: github_credentials
+        )
+      end
+
+      before do
+        ten_days_ago = (Time.now - (10 * 86_400)).strftime("%Y-%m-%d")
+        allow(Dependabot::GitMetadataFetcher).to receive(:new).and_return(shared_metadata_fetcher)
+        allow(shared_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return(
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2020-01-01"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.2.0", release_date: ten_days_ago)
+          ]
+        )
+      end
+
+      # The pin's own tag (v1.0.0) makes v1.2.0 a minor bump, so the 90-day
+      # minor cooldown holds it back rather than the 1-day default.
+      it "classifies cooldown from the pinned commit's version" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+    end
+
+    context "when a merged dependency declares the latest release before an older SHA" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "c" * 40,
+          requirements: ["c" * 40, "a" * 40].map do |sha|
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: sha, branch: nil },
+              metadata: { declaration_string: "#{dependency_name}##{sha}" }
+            }
+          end,
+          package_manager: "apm"
+        )
+      end
+
+      it "updates the outdated declaration and reports the resulting version" do
+        expect(checker.up_to_date?).to be(false)
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+
+        updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated.requirements.map { |req| req[:source][:ref] }).to eq(["c" * 40, "c" * 40])
+        expect(updated.version).to eq("c" * 40)
+      end
+    end
   end
 
   context "with a branch pin" do

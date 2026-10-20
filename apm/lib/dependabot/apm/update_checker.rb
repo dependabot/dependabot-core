@@ -104,6 +104,25 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # The inherited check compares only the merged `dependency.version` (the
+      # first declaration's SHA) with the latest release commit. When that first
+      # declaration is already at the release but a later one is pinned to an
+      # older SHA, both resolve to the same commit and the outdated declaration
+      # would never be moved, so judge SHA pins by their individual declarations.
+      sig { returns(T::Boolean) }
+      def sha1_version_up_to_date?
+        return super unless sha_pinned?
+
+        updated_sha_pin_requirements == dependency.requirements
+      end
+
+      sig { returns(T::Boolean) }
+      def preferred_version_resolvable_with_unlock?
+        return super unless sha_pinned?
+
+        !sha1_version_up_to_date?
+      end
+
       # `latest_version` deliberately reports the MAX tag reachable by ANY family
       # so the base `can_update?` gate still fires when only a higher family can
       # move. But `DependencySet` defines a merged dependency's version as its

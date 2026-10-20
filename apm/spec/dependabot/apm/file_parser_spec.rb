@@ -448,6 +448,24 @@ RSpec.describe Dependabot::Apm::FileParser do
       end
     end
 
+    context "when the manifest sets a default_host key" do
+      # APM reads no manifest-level default host, so `apm lock` resolves
+      # shorthands against github.com; the parser must agree.
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "apm.yml",
+          content: "default_host: git.internal.example\ndependencies:\n  apm:\n    - team/skills#v1.0.0\n"
+        )
+      end
+      let(:files) { [manifest] }
+
+      it "resolves shorthands against github.com" do
+        expect(dependencies.map(&:name)).to eq(["team/skills"])
+        expect(dependencies.first.source_string("url", allowed_types: ["git"]))
+          .to eq("https://github.com/team/skills")
+      end
+    end
+
     context "when the manifest has a syntax error" do
       let(:manifest) do
         Dependabot::DependencyFile.new(name: "apm.yml", content: "dependencies: [:")

@@ -75,9 +75,9 @@ module Dependabot
         # case distinct. PackageSpecifier canonicalises GitHub owner/repo casing
         # itself, so case-insensitive GitHub paths still deduplicate correctly.
         dependency_set = DependencySet.new(case_sensitive: true)
-        # Reading the host first also validates the manifest and raises
+        # Reading the manifest first validates it and raises
         # DependencyFileNotParseable before we walk it for source positions.
-        host = default_host
+        parsed_manifest
 
         # When the manifest configures a default registry, APM routes plain
         # string-shorthand entries through that registry rather than Git. We
@@ -92,7 +92,10 @@ module Dependabot
             # v1 supports the string shorthand form (e.g. "owner/repo#v1.0.0").
             # Object entries (git:/registry:/id:/path:) and `mcp` entries are
             # not yet supported and are skipped by only reading scalar entries.
-            spec = PackageSpecifier.parse(entry, default_host: host)
+            # Shorthands resolve against github.com: APM reads no manifest-level
+            # default host (only the GITHUB_HOST env var, which Dependabot does
+            # not set for the CLI), so `apm lock` resolves them there too.
+            spec = PackageSpecifier.parse(entry)
             next unless spec # local paths and unparseable specs are skipped
             next if skip_shorthand && PackageSpecifier.shorthand?(entry)
 
@@ -314,12 +317,6 @@ module Dependabot
           root.is_a?(Psych::Nodes::Mapping) ? root : nil,
           T.nilable(Psych::Nodes::Mapping)
         )
-      end
-
-      sig { returns(String) }
-      def default_host
-        host = parsed_manifest["default_host"]
-        host.is_a?(String) && !host.empty? ? host : PackageSpecifier::DEFAULT_HOST
       end
 
       # APM routes string-shorthand dependencies through a configured default

@@ -37,7 +37,9 @@ module Dependabot
     # path is treated as the repository so nested subgroups resolve to the
     # correct remote; virtual packages there are out of scope for v1, as is
     # self-hosted GHES on an arbitrary hostname that cannot be recognised from
-    # the host alone.
+    # the host alone. As in APM, explicit clone URLs never carry a virtual path,
+    # so a URL with segments beyond `owner/repo` on a GitHub-family host
+    # resolves to `nil`.
     #
     # Azure DevOps hosts (`dev.azure.com`, `ssh.dev.azure.com` and legacy
     # `*.visualstudio.com`) expose repositories at `org/project/_git/repo`, a
@@ -104,6 +106,7 @@ module Dependabot
         spec, _, ref = entry.partition("#")
         host, path = split_host_and_path(spec, default_host)
         return nil unless path
+        return nil if explicit_git_form?(spec) && embedded_sub_path?(host, path)
 
         build(host: host, path: path, ref: ref, default_host: default_host)
       end
@@ -237,6 +240,24 @@ module Dependabot
         return host unless match
 
         T.must(match[:port]).to_i == 443 ? T.must(match[:hostname]) : host
+      end
+
+      sig { params(spec: String).returns(T::Boolean) }
+      def self.explicit_git_form?(spec)
+        spec.match?(SCP_STYLE) || spec.match?(URL_STYLE)
+      end
+
+      # APM never infers a virtual package from an explicit clone URL: virtual
+      # packages must use the shorthand or the object form's `path:` key. A
+      # GitHub-family URL with segments beyond `owner/repo`, or any URL with a
+      # path after a `.git` segment, is rejected by `apm` (or names a repository
+      # that cannot exist), so such entries are skipped rather than updated.
+      sig { params(host: String, path: String).returns(T::Boolean) }
+      def self.embedded_sub_path?(host, path)
+        segments = path.split("/").reject(&:empty?)
+        return true if segments[0...-1]&.any? { |segment| segment.end_with?(".git") }
+
+        github_family?(host.downcase) && segments.length > 2
       end
 
       sig { params(entry: String).returns(T::Boolean) }

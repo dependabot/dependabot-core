@@ -65,13 +65,22 @@ module Dependabot
       end
       def latest_annotated_release_tag(cooldown_options = nil)
         candidates = allowed_versions(local_tags, filter_by_prefix: false).select { |tag| annotated_release?(tag) }
-        pinned_version = pinned_commit_version
+        pinned_version = current_version
         candidates = candidates.select { |tag| version_from_tag(tag) > pinned_version } if pinned_version
 
         filtered = apply_cooldown(candidates, cooldown_options)
         return if filtered.nil?
 
         max_local_tag(filtered)
+      end
+
+      # A SHA pin carries no version of its own, so the inherited lookup (which
+      # reads `dependency.version`) yields nil and cooldown would fall back to
+      # `default_days` for every candidate. When the pinned commit is a tagged
+      # release, use that version so SemVer-specific cooldown days apply.
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def current_version
+        super || pinned_commit_version
       end
 
       private

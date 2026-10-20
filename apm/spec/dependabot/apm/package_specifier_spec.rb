@@ -107,16 +107,15 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
     end
 
     context "with an explicit URL whose host is mixed case" do
-      let(:raw) { "https://GitHub.com/org/repo/skills/review#v1.0.0" }
+      let(:raw) { "https://GitHub.com/org/repo#v1.0.0" }
 
-      it "canonicalises the host to lowercase and treats it as a GitHub virtual package" do
+      it "canonicalises the host to lowercase" do
         expect(spec.host).to eq("github.com")
         expect(spec.owner).to eq("org")
         expect(spec.repo).to eq("repo")
-        expect(spec.sub_path).to eq("skills/review")
         expect(spec.ref).to eq("v1.0.0")
         expect(spec.git_url).to eq("https://github.com/org/repo")
-        expect(spec.name).to eq("org/repo/skills/review")
+        expect(spec.name).to eq("org/repo")
       end
     end
 
@@ -240,20 +239,27 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
       end
     end
 
-    context "with a virtual sub-path on a custom-port GitHub host" do
-      let(:raw) { "https://github.com:8443/org/repo/skills/review#v1.0.0" }
+    context "with a virtual sub-path embedded in an explicit GitHub URL" do
+      # APM only infers virtual packages from shorthand (or the object form's
+      # `path:`), rejecting a primitive path embedded in a clone URL.
+      %w(
+        https://github.com/org/repo/skills/review#v1.0.0
+        https://github.com:8443/org/repo/skills/review#v1.0.0
+        git@github.com:org/repo/skills/review.git#v1.0.0
+        ssh://git@github.com/org/repo/skills/review#v1.0.0
+      ).each do |url|
+        context "when declared as #{url}" do
+          let(:raw) { url }
 
-      it "classifies GitHub by hostname, splitting the virtual path and keeping the port" do
-        expect(spec.host).to eq("github.com:8443")
-        expect(spec.owner).to eq("org")
-        expect(spec.repo).to eq("repo")
-        expect(spec.sub_path).to eq("skills/review")
-        expect(spec.git_url).to eq("https://github.com:8443/org/repo")
-        # A non-default port is part of APM's identity, so even on the default
-        # host the authority is prefixed (with the virtual path appended),
-        # keeping `:8443` and `:9443` declarations as distinct dependencies.
-        expect(spec.name).to eq("github.com:8443/org/repo/skills/review")
+          it { is_expected.to be_nil }
+        end
       end
+    end
+
+    context "with a path after a .git segment in an explicit URL" do
+      let(:raw) { "https://gitlab.com/group/repo.git/skills/review#v1.0.0" }
+
+      it { is_expected.to be_nil }
     end
 
     context "with an HTTP URL" do
