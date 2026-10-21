@@ -115,6 +115,20 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when APM reports a rejected clone without git's error" do
+      let(:apm_output) do
+        "  [x] 1 package failed:\n    +- y -- Failed to download dependency x/y: Failed to clone repository x/y. " \
+          "Authentication failed for clone on github.com.\nNo token available.\n" \
+          "[x] Installation failed with 1 error(s)."
+      end
+
+      it "raises a GitDependenciesNotReachable error for the repository" do
+        expect { updated_lockfile_content }.to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls).to eq(["https://github.com/x/y"])
+        end
+      end
+    end
+
     context "when a pinned branch no longer exists" do
       let(:apm_output) do
         "Failed to download dependency microsoft/edge-ai: Failed to clone repository: " \
@@ -136,6 +150,35 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
       it "raises a GitDependencyReferenceNotFound error for the dependency" do
         expect { updated_lockfile_content }.to raise_error(Dependabot::GitDependencyReferenceNotFound)
+      end
+    end
+
+    context "when another package fails before the one with a missing reference" do
+      let(:apm_output) do
+        "  [x] 2 packages failed:\n" \
+          "    +- first -- Failed to download dependency acme/first: Failed to clone repository acme/first: " \
+          "timed out\n" \
+          "    +- second -- Failed to download dependency acme/second: Reference 'v9.9.9' not found in repository " \
+          "https://github.com/acme/second\n"
+      end
+
+      it "attributes the missing reference to the package it belongs to" do
+        expect { updated_lockfile_content }.to raise_error(Dependabot::GitDependencyReferenceNotFound) do |error|
+          expect(error.dependency).to eq("acme/second")
+        end
+      end
+    end
+
+    context "when a transitive dependency's reference can't be resolved" do
+      let(:apm_output) do
+        "    +- second -- Failed to resolve transitive dep acme/second (via acme/parent > second): " \
+          "Could not resolve reference 'v9.9.9' in repository acme/second: not found\n"
+      end
+
+      it "raises a GitDependencyReferenceNotFound error for the transitive dependency" do
+        expect { updated_lockfile_content }.to raise_error(Dependabot::GitDependencyReferenceNotFound) do |error|
+          expect(error.dependency).to eq("acme/second")
+        end
       end
     end
 

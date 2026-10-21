@@ -26,10 +26,22 @@ module Dependabot
 
         AUTHENTICATION_FAILED_REGEX = /Authentication failed for '(?<url>[^']+)'/
         REPOSITORY_NOT_FOUND_REGEX = /repository '(?<url>[^']+)' not found/i
-        REFERENCE_NOT_FOUND_REGEX = /
-          Failed\sto\sdownload\sdependency\s(?<name>\S+?):.*
-          (?:Remote\sbranch\s\S+\snot\sfound|Reference\s'[^']+'\snot\sfound|Could\snot\sresolve\s(?:commit|reference))
+        # APM replaces git's error with its own when a clone is rejected or the
+        # repository is missing, e.g. "Failed to clone repository x/y.
+        # Authentication failed for clone on github.com."
+        APM_AUTHENTICATION_FAILED_REGEX = /
+          Failed\sto\sclone\srepository\s(?<repo>[^\s:]+?)\.\s
+          Authentication\sfailed\sfor\s[^\n]*?\son\s(?<host>\S+?)\.(?=\s|\z)
+        /x
+        FAILURE_PREFIX = /Failed\sto\sdownload\sdependency\s|Failed\sto\sresolve\stransitive\sdep\s/
+        # One failed package: its name (with an optional transitive `(via …)`
+        # chain) and the diagnostic up to the next failure in APM's output.
+        PACKAGE_FAILURE_REGEX = /
+          (?:#{FAILURE_PREFIX})(?<name>\S+?)(?:\s\(via\s[^)]*\))?:\s
+          (?<detail>.*?)(?=\n\s*\+-\s|#{FAILURE_PREFIX}|\z)
         /mx
+        MISSING_REFERENCE_REGEX =
+          /Remote\sbranch\s\S+\snot\sfound|Reference\s'[^']+'\snot\sfound|Could\snot\sresolve\s(?:commit|reference)/x
 
         sig do
           params(
@@ -116,14 +128,36 @@ module Dependabot
         def handle_apm_lock_error(error)
           message = error.message
 
-          unreachable_url = message.match(AUTHENTICATION_FAILED_REGEX)&.[](:url) ||
-                            message.match(REPOSITORY_NOT_FOUND_REGEX)&.[](:url)
+          unreachable_url = unreachable_repository_url(message)
           raise Dependabot::GitDependenciesNotReachable, unreachable_url if unreachable_url
 
-          missing_reference = message.match(REFERENCE_NOT_FOUND_REGEX)
-          raise Dependabot::GitDependencyReferenceNotFound, T.must(missing_reference[:name]) if missing_reference
+          missing_reference = package_with_missing_reference(message)
+          raise Dependabot::GitDependencyReferenceNotFound, missing_reference if missing_reference
 
           raise Dependabot::DependencyFileNotResolvable, message
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def unreachable_repository_url(message)
+          git_url = message.match(AUTHENTICATION_FAILED_REGEX)&.[](:url) ||
+                    message.match(REPOSITORY_NOT_FOUND_REGEX)&.[](:url)
+          return git_url if git_url
+
+          apm_failure = message.match(APM_AUTHENTICATION_FAILED_REGEX)
+          "https://#{apm_failure[:host]}/#{apm_failure[:repo]}" if apm_failure
+        end
+
+        # Checks each failed package's own diagnostic, so a missing ref is
+        # attributed to the package it belongs to rather than an earlier failure.
+        sig { params(message: String).returns(T.nilable(String)) }
+        def package_with_missing_reference(message)
+          position = 0
+          while (failure = PACKAGE_FAILURE_REGEX.match(message, position))
+            return failure[:name] if failure[:detail].to_s.match?(MISSING_REFERENCE_REGEX)
+
+            position = failure.end(0)
+          end
+          nil
         end
       end
     end
