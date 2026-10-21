@@ -1140,6 +1140,27 @@ module Dependabot
 
       ERR_PNPM_NO_VERSIONS = /ERR_PNPM_NO_VERSIONS/
 
+      # pnpm 10 prints a code between thin spaces, pnpm 11 in brackets and pnpm 12 as `Error: <code>`, so each code is
+      # matched anywhere in the message and the details are read with patterns that allow any Unicode whitespace.
+      # A warning line such as `[WARN] Unsupported engine` can precede an unrelated failure and is never matched.
+
+      # A tarball dependency whose lockfile entry has no integrity hash cannot be verified, so pnpm refuses it
+      ERR_PNPM_MISSING_TARBALL_INTEGRITY = /ERR_PNPM_MISSING_TARBALL_INTEGRITY/
+      MISSING_INTEGRITY_PACKAGE = /Cannot install package "(?<spec>[^"]+)"/
+
+      # The repository pins a Node.js version that is not the one Dependabot runs
+      ERR_PNPM_BAD_RUNTIME_VERSION = /ERR_PNPM_BAD_RUNTIME_VERSION/
+      RUNTIME_VERSION_REQUIREMENT =
+        /This project requires Node\.js (?<required>.+?)\. Your current Node\.js is (?<current>\S+)/
+      RUNTIME_TOOL_NAME = "Node"
+
+      # pnpm-workspace.yaml is not a valid workspace definition, for example when `packages` is missing or empty
+      ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION = /ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION/
+      WORKSPACE_CONFIGURATION_REASON =
+        /ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION\]?[[:space:]]*(?<reason>[^\n]+)/
+      PNPM_LOCKFILE_NAME = "pnpm-lock.yaml"
+      PNPM_WORKSPACE_FILE_NAME = "pnpm-workspace.yaml"
+
       # Initializes the YarnErrorHandler with dependencies and dependency files
       sig do
         params(
@@ -1168,6 +1189,10 @@ module Dependabot
       def handle_pnpm_error(error)
         message = PnpmErrorMessage.normalize(error.message)
 
+        raise_missing_tarball_integrity(message) if message.match?(ERR_PNPM_MISSING_TARBALL_INTEGRITY)
+        raise_bad_runtime_version(message) if message.match?(ERR_PNPM_BAD_RUNTIME_VERSION)
+        raise_invalid_workspace_configuration(message) if message.match?(ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION)
+
         if message.match?(DUPLICATE_PACKAGE) || message.match?(ERR_PNPM_NO_VERSIONS) ||
            message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
 
@@ -1178,6 +1203,52 @@ module Dependabot
         return unless message.match?(ECONNRESET_ERROR) || message.match?(SOCKET_HANG_UP)
 
         raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
+      end
+
+      private
+
+      # pnpm refuses the install and the repository has to supply the missing integrity hash. Verification must stay
+      # on, so the lockfile is never regenerated or relaxed here.
+      sig { params(message: String).returns(T.noreturn) }
+      def raise_missing_tarball_integrity(message)
+        spec = message.match(MISSING_INTEGRITY_PACKAGE)&.[](:spec)
+        # A scoped package name starts with "@", so the source follows the first "@" that has a character before it
+        name, source = spec&.split(/(?<=.)@/, 2)
+        entry = name ? "its entry for #{name}#{" (#{source})" if source}" : "a tarball dependency"
+
+        Dependabot.logger.warn(message)
+        raise DependencyFileNotResolvable,
+              "#{path_of(PNPM_LOCKFILE_NAME)} cannot be used because #{entry} has no integrity hash, " \
+              "so pnpm cannot verify the downloaded tarball."
+      end
+
+      sig { params(message: String).void }
+      def raise_bad_runtime_version(message)
+        match = message.match(RUNTIME_VERSION_REQUIREMENT)
+        return unless match
+
+        Dependabot.logger.warn(message)
+        raise ToolVersionNotSupported.new(RUNTIME_TOOL_NAME, T.must(match[:required]), T.must(match[:current]))
+      end
+
+      sig { params(message: String).returns(T.noreturn) }
+      def raise_invalid_workspace_configuration(message)
+        reason = message.match(WORKSPACE_CONFIGURATION_REASON)&.[](:reason)&.strip
+
+        Dependabot.logger.warn(message)
+        raise DependencyFileNotResolvable,
+              "#{path_of(PNPM_WORKSPACE_FILE_NAME)} is not a valid pnpm workspace definition" \
+              "#{": #{reason}" unless reason.to_s.empty?}"
+      end
+
+      # The file closest to the repository root, since pnpm ran from there
+      sig { params(file_name: String).returns(String) }
+      def path_of(file_name)
+        file = dependency_files
+               .select { |f| File.basename(f.name) == file_name }
+               .min_by { |f| f.name.length }
+
+        file ? file.path : file_name
       end
     end
   end
