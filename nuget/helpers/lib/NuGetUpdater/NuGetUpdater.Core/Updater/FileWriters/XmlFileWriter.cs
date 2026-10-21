@@ -673,10 +673,12 @@ public class XmlFileWriter : IFileWriter
                             return element;
                         })
                         .ToArray();
-                    var replacementParent = newElement.Parent.AsNode.InsertNodesAfter(
+                    var parent = newElement.Parent
+                        ?? throw new InvalidOperationException("Expected package reference element to have a parent");
+                    var replacementParent = parent.AsNode.InsertNodesAfter(
                         newElement.AsNode,
                         additionalElements.Select(element => element.AsNode));
-                    ReplaceNode(projectRelativePath, newElement.Parent.AsNode, replacementParent);
+                    ReplaceNode(projectRelativePath, parent.AsNode, replacementParent);
                 }
 
                 static IXmlElementSyntax AddAssetFlagsAndCondition(
