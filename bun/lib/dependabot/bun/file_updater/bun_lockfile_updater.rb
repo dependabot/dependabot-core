@@ -218,24 +218,31 @@ module Dependabot
           raise error
         end
 
-        # Reports the first registry failure bun printed, when it is one the repository has to resolve: access that
-        # was denied, or a tarball the registry does not have. Other statuses are left to the generic handling.
+        # Reports the first registry failure bun printed that the repository has to resolve: access that was denied,
+        # or a tarball the registry does not have. A failure with any other status is skipped, so it cannot hide a
+        # later one that can be classified, and is left to the generic handling when there is none.
         sig { params(error_message: String).void }
         def raise_registry_error(error_message)
-          failure = [DOWNLOAD_FAILED, REQUEST_FAILED].filter_map { |pattern| error_message.match(pattern) }
-                                                     .min_by { |match| match.begin(0) }
-          return unless failure
+          registry_failures(error_message).each do |failure|
+            status = failure[:status]
+            url = failure[:url]
 
-          status = failure[:status]
-          url = failure[:url]
+            if ACCESS_DENIED_STATUSES.include?(status) && url
+              raise Dependabot::PrivateSourceAuthenticationFailure, registry_origin(url)
+            end
 
-          if ACCESS_DENIED_STATUSES.include?(status) && url
-            raise Dependabot::PrivateSourceAuthenticationFailure, registry_origin(url)
+            next unless status == NOT_FOUND_STATUS && failure.names.include?("spec")
+
+            raise Dependabot::DependencyNotFound, package_name_from(T.must(failure[:spec]))
           end
+        end
 
-          return unless status == NOT_FOUND_STATUS && failure.names.include?("spec")
-
-          raise Dependabot::DependencyNotFound, package_name_from(T.must(failure[:spec]))
+        # Every registry failure in the output, in the order bun printed them
+        sig { params(error_message: String).returns(T::Array[MatchData]) }
+        def registry_failures(error_message)
+          [DOWNLOAD_FAILED, REQUEST_FAILED]
+            .flat_map { |pattern| error_message.to_enum(:scan, pattern).map { T.must(Regexp.last_match) } }
+            .sort_by { |match| match.begin(0) }
         end
 
         sig { params(error_message: String, bun_lock: Dependabot::DependencyFile).void }
@@ -252,11 +259,14 @@ module Dependabot
                 "package.json lists the workspace \"#{match[:path]}\", but it does not exist in the repository."
         end
 
-        # The scheme and host of the URL, so the error names the registry and not a single tarball
+        # The scheme, host and any non-default port of the URL, so the error names the registry and not a single
+        # tarball. A registry on another port is a different endpoint.
         sig { params(url: String).returns(String) }
         def registry_origin(url)
           uri = URI.parse(url)
-          "#{uri.scheme}://#{uri.host}"
+          default_port = T.cast(uri.default_port, T.nilable(Integer))
+          port = ":#{uri.port}" if uri.port && uri.port != default_port
+          "#{uri.scheme}://#{uri.host}#{port}"
         rescue URI::InvalidURIError
           url
         end

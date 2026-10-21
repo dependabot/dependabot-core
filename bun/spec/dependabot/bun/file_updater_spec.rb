@@ -120,6 +120,22 @@ RSpec.describe Dependabot::Bun::FileUpdater do
         end
       end
 
+      {
+        "download_unsupported_then_forbidden" => "https://npm.example.com",
+        "request_unsupported_then_unauthorized" => "https://npm.pkg.example.com",
+        "download_forbidden_custom_port" => "https://npm.example.com:8443"
+      }.each do |name, source|
+        context "with #{name}" do
+          let(:scenario) { name }
+
+          it "reports the registry #{source} exactly, skipping failures it does not classify" do
+            expect { updated_files }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |raised|
+              expect(raised.source).to eq(source)
+            end
+          end
+        end
+      end
+
       context "with a security scanner failure that mentions a 403" do
         let(:scenario) { "security_scanner_forbidden" }
 
