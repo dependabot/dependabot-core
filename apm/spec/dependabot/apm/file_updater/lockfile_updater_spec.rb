@@ -55,6 +55,46 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     end
   end
 
+  context "when a previous update left packages in apm_modules" do
+    let(:repo_contents_path) { Dir.mktmpdir }
+    let(:stale_package) { File.join(repo_contents_path, "apm_modules", "microsoft", "edge-ai", "apm.yml") }
+    let(:lockfile_updater) do
+      described_class.new(
+        dependencies: [dependency],
+        lockfile: lockfile,
+        manifest_content: "dependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n",
+        credentials: [],
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    before do
+      Dir.chdir(repo_contents_path) do
+        File.write(".gitignore", "apm_modules/\n")
+        system(
+          "git init -q && git add .gitignore && git -c user.name=test -c user.email=test@example.com commit -qm init",
+          exception: true
+        )
+      end
+      FileUtils.mkdir_p(File.dirname(stale_package))
+      File.write(stale_package, "stale")
+
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+        modules_present = Dir.exist?("apm_modules")
+        FileUtils.mkdir_p("apm_modules/microsoft/edge-ai")
+        File.write("apm.lock.yaml", "apm_modules_present: #{modules_present}\n")
+        ""
+      end
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    it "runs apm lock without them and removes the packages it downloaded" do
+      expect(updated_lockfile_content).to eq("apm_modules_present: false\n")
+      expect(Dir.exist?(File.join(repo_contents_path, "apm_modules"))).to be(false)
+    end
+  end
+
   context "when apm lock fails" do
     before do
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock").and_raise(

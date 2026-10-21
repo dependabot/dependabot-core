@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "fileutils"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -20,6 +21,8 @@ module Dependabot
       # the branch's new head commit for APM to verify and re-hash.
       class LockfileUpdater
         extend T::Sig
+
+        APM_MODULES_DIRECTORY = "apm_modules"
 
         AUTHENTICATION_FAILED_REGEX = /Authentication failed for '(?<url>[^']+)'/
         REPOSITORY_NOT_FOUND_REGEX = /repository '(?<url>[^']+)' not found/i
@@ -48,6 +51,11 @@ module Dependabot
         sig { returns(String) }
         def updated_lockfile_content
           SharedHelpers.in_a_temporary_repo_directory(lockfile.directory, repo_contents_path) do
+            # `apm lock` downloads packages into apm_modules/ and resolves
+            # transitive dependencies from what is already there. The git reset
+            # between updates doesn't remove that ignored directory, so clear it
+            # to keep one update's packages from leaking into the next.
+            FileUtils.rm_rf(APM_MODULES_DIRECTORY)
             File.write(FileUpdater::MANIFEST_FILENAME, manifest_content)
             File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
@@ -56,6 +64,8 @@ module Dependabot
             end
 
             File.read(FileUpdater::LOCKFILE_FILENAME)
+          ensure
+            FileUtils.rm_rf(APM_MODULES_DIRECTORY)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_apm_lock_error(e)
