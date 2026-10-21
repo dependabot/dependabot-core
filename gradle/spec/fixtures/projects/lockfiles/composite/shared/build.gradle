@@ -1,0 +1,17 @@
+plugins {
+  id 'java-library'
+}
+
+group = 'com.example'
+
+repositories {
+  maven { url = uri(System.getenv("TEST_MAVEN_REPO")) }
+}
+
+dependencyLocking {
+  lockAllConfigurations()
+}
+
+dependencies {
+  implementation "com.example:alpha:1.0"
+}
