@@ -62,7 +62,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
 
       expect(Dependabot::CommandHelpers).to have_received(:capture3_with_timeout)
         .with([hash_including("GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"), anything,
-               "--no-onboard", "--no-narrow", "--no-interactive", "--json=findings",
+               "--no-onboard", "--no-narrow", "--ignore-local-actions", "--no-interactive", "--json=findings",
                "--hostname", "tenant.ghe.com", ".github/workflows/ci.yml", anything])
     end
   end
@@ -193,6 +193,54 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     it "fails closed" do
       expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
         .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /new-unhandled-error/)
+    end
+  end
+
+  # Blocking lock-integrity findings fix mode can't repair. They need the user to
+  # relock, so they must surface as user-actionable, not as an unknown error.
+  %w(tag-commit-mismatch incomplete-lockfile).each do |category|
+    describe "#relock with a #{category} finding (exit 1)" do
+      let(:body) do
+        {
+          "findings" => [
+            { "workflow" => ".github/workflows/ci.yml", "category" => "ref-changed",
+              "severity" => "error", "dependency" => "actions/checkout@v4.2.2" },
+            { "workflow" => ".github/workflows/ci.yml", "category" => category, "severity" => "error",
+              "dependency" => "actions/setup-node@v4.0.0", "detail" => "#{category} detail" }
+          ]
+        }
+      end
+
+      before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+      it "raises a user-actionable dependency_file_not_resolvable" do
+        engine.relock(workflow_files: [workflow], lockfile: lockfile)
+        raise "expected an error"
+      rescue Dependabot::GithubActions::Lockfile::UnresolvableDependency => e
+        expect(e.message).to include("actions/setup-node@v4.0.0", "#{category} detail")
+        expect(Dependabot.updater_error_details(e).error_type).to eq("dependency_file_not_resolvable")
+      end
+    end
+  end
+
+  describe "#relock with a blocking finding that names no dependency (exit 1)" do
+    let(:body) do
+      {
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "local-action", "severity" => "error",
+            "detail" => "./setup runs whatever is in the workspace" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "names the workflow instead of 'unknown'" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(
+          Dependabot::GithubActions::Lockfile::UnresolvableDependency,
+          %r{Could not resolve \.github/workflows/ci\.yml: \./setup}
+        )
     end
   end
 
@@ -404,6 +452,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
           described_class.binary_path,
           "--no-onboard",
           "--no-narrow",
+          "--ignore-local-actions",
           "--no-interactive",
           "--json=findings",
           ".github/workflows/ci.yml"

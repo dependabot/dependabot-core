@@ -28,6 +28,7 @@ module Dependabot
         UNRESOLVABLE_CATEGORIES = %w(
           unreachable-pin repo-replaced repo-unavailable repo-renamed not-pinned
           local-action invalid-self-repository-ref misleading-sha
+          tag-commit-mismatch incomplete-lockfile
         ).freeze
 
         # Host-identity failures from the engine: the lock is bound to a host it can't
@@ -52,7 +53,10 @@ module Dependabot
 
         # Re-pins workflows already tracked in the lockfile. `--no-onboard` refuses new
         # workflows/actions (surfaced as onboarding-required skips); `--no-narrow`
-        # keeps the exact ref Dependabot wrote.
+        # keeps the exact ref Dependabot wrote. `--ignore-local-actions` keeps `./`
+        # actions a warning: the lock can't record them, Dependabot never rewrites
+        # them, and whether their action.yml is readable here depends on whether the
+        # repo also uses `$/`.
         sig do
           params(
             workflow_files: T::Array[Dependabot::DependencyFile],
@@ -68,7 +72,7 @@ module Dependabot
           action_files: []
         )
           in_repo(workflow_files + action_files, lockfile) do |dir|
-            args = %w(--no-onboard --no-narrow --no-interactive --json=findings) +
+            args = %w(--no-onboard --no-narrow --ignore-local-actions --no-interactive --json=findings) +
                    ["--hostname", hostname] + workflow_paths
             json, exit_status = run(dir, args)
 
@@ -165,7 +169,7 @@ module Dependabot
           unresolvable = errors.find { |finding| UNRESOLVABLE_CATEGORIES.include?(finding["category"].to_s) }
           if unresolvable
             raise UnresolvableDependency.new(
-              (unresolvable["dependency"] || "unknown").to_s,
+              (unresolvable["dependency"] || unresolvable["workflow"] || "unknown").to_s,
               (unresolvable["detail"] || unresolvable["category"]).to_s
             )
           end
