@@ -1,0 +1,16 @@
+plugins {
+  id 'java'
+}
+
+repositories {
+  maven { url = uri(System.getenv("TEST_MAVEN_REPO")) }
+}
+
+dependencyLocking {
+  lockAllConfigurations()
+}
+
+dependencies {
+  implementation "com.example:alpha:1.0"
+  testRuntimeOnly "com.example:missing:2.0"
+}
