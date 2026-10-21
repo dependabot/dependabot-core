@@ -1,0 +1,5 @@
+rootProject.name = 'conditional-include'
+include 'app'
+if (providers.gradleProperty('withExtra').isPresent()) {
+  include 'extra'
+}

@@ -1,0 +1,11 @@
+subprojects {
+  apply plugin: 'java'
+
+  repositories {
+    maven { url = uri(System.getenv("TEST_MAVEN_REPO")) }
+  }
+
+  dependencyLocking {
+    lockAllConfigurations()
+  }
+}

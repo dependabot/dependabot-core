@@ -1,0 +1,6 @@
+pluginManagement {
+  includeBuild('build-logic')
+}
+
+rootProject.name = 'included-build-plugin'
+include 'app'
