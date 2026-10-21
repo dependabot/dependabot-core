@@ -373,7 +373,11 @@ module Dependabot
       # The key APM uses to identify this package in `apm.lock.yaml`. Unlike
       # `name`, it ignores the manifest's `default_host` and any port: APM keys
       # entries by `repo_url`, prefixed by the host for anything other than
-      # github.com, plus the virtual path for virtual packages.
+      # github.com, plus the virtual path for virtual packages. The virtual path
+      # is joined with `//`, which never appears in a repository path, so a
+      # virtual package only matches a lock entry with the same repository: a
+      # GitLab `acme/prompts/skills/review` repository doesn't match the
+      # `acme/prompts` repository's `skills/review` package.
       sig { returns(String) }
       def lockfile_key
         self.class.lockfile_key(
@@ -392,7 +396,7 @@ module Dependabot
         hostname = host.downcase
         repo_url = repo_url.downcase if github_family?(hostname)
         key = hostname == DEFAULT_HOST ? repo_url : "#{hostname}/#{repo_url}"
-        virtual_path ? "#{key}/#{virtual_path}" : key
+        virtual_path ? "#{key}//#{virtual_path}" : key
       end
     end
   end

@@ -40,8 +40,18 @@ module Dependabot
           (?:#{FAILURE_PREFIX})(?<name>\S+?)(?:\s\(via\s[^)]*\))?:\s
           (?<detail>.*?)(?=\n\s*\+-\s|#{FAILURE_PREFIX}|\z)
         /mx
-        MISSING_REFERENCE_REGEX =
-          /Remote\sbranch\s\S+\snot\sfound|Reference\s'[^']+'\snot\sfound|Could\snot\sresolve\s(?:commit|reference)/x
+        # Diagnostics that show a ref is missing. APM's own "Could not resolve
+        # commit/reference" wrapper is deliberately not matched: it wraps any
+        # failure, including network errors, so only the detail it carries
+        # (APM's or git's) says whether the ref exists.
+        MISSING_REFERENCE_REGEX = /
+          Remote\sbranch\s\S+\snot\sfound|
+          Reference\s'[^']+'\snot\sfound|
+          Needed\sa\ssingle\srevision|
+          unable\sto\sread\stree|
+          did\snot\smatch\sany\sfile\(s\)\sknown\sto\sgit|
+          reference\sis\snot\sa\stree
+        /x
 
         sig do
           params(

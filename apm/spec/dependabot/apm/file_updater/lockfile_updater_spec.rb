@@ -172,12 +172,38 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     context "when a transitive dependency's reference can't be resolved" do
       let(:apm_output) do
         "    +- second -- Failed to resolve transitive dep acme/second (via acme/parent > second): " \
-          "Could not resolve reference 'v9.9.9' in repository acme/second: not found\n"
+          "Could not resolve reference 'v9.9.9' in repository acme/second: " \
+          "Reference 'v9.9.9' not found in repository acme/second\n"
       end
 
       it "raises a GitDependencyReferenceNotFound error for the transitive dependency" do
         expect { updated_lockfile_content }.to raise_error(Dependabot::GitDependencyReferenceNotFound) do |error|
           expect(error.dependency).to eq("acme/second")
+        end
+      end
+    end
+
+    context "when a pinned commit can't be fetched because of a network failure" do
+      let(:apm_output) do
+        "Failed to download dependency acme/first: Could not resolve commit '#{'a' * 40}' in repository " \
+          "acme/first: fatal: unable to access 'https://github.com/acme/first/': Could not resolve host: github.com"
+      end
+
+      it "doesn't report the commit as missing" do
+        expect { updated_lockfile_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /Could not resolve host/)
+      end
+    end
+
+    context "when a pinned commit doesn't exist" do
+      let(:apm_output) do
+        "Failed to download dependency acme/first: Could not resolve commit '#{'a' * 40}' in repository " \
+          "acme/first: fatal: Needed a single revision"
+      end
+
+      it "raises a GitDependencyReferenceNotFound error for the dependency" do
+        expect { updated_lockfile_content }.to raise_error(Dependabot::GitDependencyReferenceNotFound) do |error|
+          expect(error.dependency).to eq("acme/first")
         end
       end
     end

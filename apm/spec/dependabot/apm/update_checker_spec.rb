@@ -556,6 +556,33 @@ RSpec.describe Dependabot::Apm::UpdateChecker do
         expect(updated.version).to eq("c" * 40)
       end
     end
+
+    context "when a merged dependency declares a newer release before an older SHA" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "e" * 40,
+          requirements: ["e" * 40, "a" * 40].map do |sha|
+            {
+              requirement: nil,
+              groups: [],
+              file: "apm.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: sha, branch: nil },
+              metadata: { declaration_string: "#{dependency_name}##{sha}" }
+            }
+          end,
+          package_manager: "apm"
+        )
+      end
+
+      # Reparsing keeps the first declaration's SHA as the merged version, so
+      # the unchanged newer pin must not be reported as moving to the release.
+      it "reports the version the updated manifest parses to" do
+        updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated.requirements.map { |req| req[:source][:ref] }).to eq(["e" * 40, "c" * 40])
+        expect(updated.version).to eq("e" * 40)
+      end
+    end
   end
 
   context "with a branch pin" do

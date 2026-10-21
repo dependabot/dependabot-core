@@ -120,6 +120,7 @@ RSpec.describe Dependabot::Apm::FileParser do
             dependencies:
               apm:
                 - Big-Corp/Pinned-Branch#main
+                - org/mono/skills/review#develop
                 - gitlab.com/acme/prompts/skills/review#develop
                 - octo-org/stale-branch#main
           YAML
@@ -135,6 +136,11 @@ RSpec.describe Dependabot::Apm::FileParser do
               host: github.com
               resolved_commit: 4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e
               resolved_ref: main
+            - repo_url: org/mono
+              host: github.com
+              virtual_path: skills/review
+              resolved_commit: 7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b
+              resolved_ref: develop
             - repo_url: acme/prompts
               host: gitlab.com
               virtual_path: skills/review
@@ -150,14 +156,20 @@ RSpec.describe Dependabot::Apm::FileParser do
       it "versions each by the commit the lockfile resolved its branch to" do
         expect(dependencies.to_h { |d| [d.name, d.version] }).to eq(
           "big-corp/pinned-branch" => "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e",
-          "gitlab.com/acme/prompts/skills/review" => "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f"
+          "org/mono/skills/review" => "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b"
         )
       end
 
       it "records the branch and the lockfile entry it updates" do
-        requirement = dependencies.find { |d| d.name == "gitlab.com/acme/prompts/skills/review" }.requirements.first
-        expect(requirement[:source]).to include(ref: "develop", branch: "develop")
-        expect(requirement[:metadata]).to include(lockfile_key: "gitlab.com/acme/prompts/skills/review")
+        requirement = dependencies.find { |d| d.name == "org/mono/skills/review" }.requirements.first
+        expect(requirement[:source]).to include(ref: "develop", branch: "develop", url: "https://github.com/org/mono")
+        expect(requirement[:metadata]).to include(lockfile_key: "org/mono//skills/review")
+      end
+
+      # PackageSpecifier reads the whole GitLab path as the repository, which
+      # doesn't match the lock entry's `acme/prompts` repository.
+      it "skips a virtual package whose repository doesn't match its lock entry" do
+        expect(dependencies.map(&:name)).not_to include("gitlab.com/acme/prompts/skills/review")
       end
 
       context "without a lockfile" do

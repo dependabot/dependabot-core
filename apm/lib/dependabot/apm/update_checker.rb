@@ -136,12 +136,12 @@ module Dependabot
       # version separate.
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_with_own_req_unlock
-        # Branch and SHA pins are versioned by commit, so the base behaviour of
-        # reporting the latest commit as the new version applies to them.
-        return super unless tag_pinned?
+        # A branch pin is versioned by commit, so the base behaviour of
+        # reporting the latest commit as the new version applies to it.
+        return super unless tag_pinned? || sha_pinned?
 
         new_requirements = updated_requirements
-        new_version = pinned_versions(new_requirements).min
+        new_version = sha_pinned? ? merged_sha_version(new_requirements) : pinned_versions(new_requirements).min
 
         Dependabot::Dependency.new(
           name: dependency.name,
@@ -153,6 +153,13 @@ module Dependabot
           metadata: dependency.metadata,
           subdependency_metadata: dependency.subdependency_metadata
         )
+      end
+
+      # DependencySet keeps the first declaration's version when merging SHA
+      # pins, so that's the version the updated manifest parses to.
+      sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T.nilable(String)) }
+      def merged_sha_version(requirements)
+        requirements.first&.source_string("ref")&.downcase
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }

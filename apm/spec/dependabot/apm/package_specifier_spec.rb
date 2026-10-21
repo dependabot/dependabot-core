@@ -466,8 +466,8 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
         .to eq("git.corp.example/Acme/Prompts")
     end
 
-    it "appends the virtual path" do
-      expect(lockfile_key("org/mono/skills/review#main")).to eq("org/mono/skills/review")
+    it "appends the virtual path, separated from the repository" do
+      expect(lockfile_key("org/mono/skills/review#main")).to eq("org/mono//skills/review")
     end
   end
 end
