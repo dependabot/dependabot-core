@@ -172,7 +172,7 @@ internal static class SdkProjectDiscovery
                 // For SDK-style projects  the targets `Restore`, `ResolveProjectReferences`, and `GenerateBuildDependencyFile`
                 // are necessary.  If the project has a single target framework, those magic targets will all be present and can
                 // be directly invoked, but if the project has multiple target frameworks, those targets will _NOT_ be directly
-                // present and we instead have to invoke the `Build` target and specify the three magic values as `InnerTargets`.
+                // present and we instead restore in the outer build, then invoke `Build` with the remaining `InnerTargets`.
 
                 // If the project is legacy then those three magic targets will not be present, but we shouldn't use the `Build`
                 // and `InnerTargets` trick because that's an SDK-only mechanism, so we instead only need to invoke
@@ -186,13 +186,16 @@ internal static class SdkProjectDiscovery
                 }
                 else
                 {
-                    // delegate to the inner build and call those targets
-                    args.Add("/t:Build");
-                    args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
+                    // Restore all frameworks together so inner restores don't overwrite the shared assets file.
+                    args.Add("/t:Restore,Build");
+                    args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets.Where(target => target != "Restore"))}\"");
                 }
 
                 // only execute the desired targets on transitive project references
-                args.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", requiredTargets)}\"");
+                var projectReferenceTargets = useDirectRestore
+                    ? requiredTargets
+                    : requiredTargets.Where(target => target != "Restore").ToImmutableArray();
+                args.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", projectReferenceTargets)}\"");
 
                 // inject various props and targets to help with discovery
                 var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
