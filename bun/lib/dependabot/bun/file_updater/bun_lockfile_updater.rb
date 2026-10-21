@@ -70,6 +70,24 @@ module Dependabot
           T::Hash[Regexp, Dependabot::DependabotError]
         )
 
+        # A registry rejected the request for a package or its tarball. bun prints
+        # `error: failed to download <name>@<version>: <status> <reason>` with the tarball URL on the next line, or
+        # `error: GET <url> - <status>` when the request for the package metadata fails.
+        DOWNLOAD_FAILED =
+          %r{error: failed to download (?<spec>\S+): (?<status>\d{3})[^\n]*(?:\n[[:space:]]*(?<url>https?://\S+))?}
+        REQUEST_FAILED = %r{error: GET (?<url>https?://\S+) - (?<status>\d{3})\b}
+        ACCESS_DENIED_STATUSES = %w(401 403).freeze
+        NOT_FOUND_STATUS = "404"
+
+        # A workspace that bun.lock or package.json refers to is not part of the checkout
+        WORKSPACE_NOT_ON_DISK =
+          /
+            error:\s(?:the\sroot\spackage|workspace\s"[^"]+")\s
+            depends\son\sworkspace\s"(?<name>[^"]+)"\s\((?<path>[^)]*)\),\s
+            which\sis\slisted\sin\sbun\.lock\sbut\snot\son\sdisk
+          /x
+        WORKSPACE_NOT_FOUND = /error: Workspace not found "(?<path>[^"]+)"/
+
         sig { params(bun_lock: Dependabot::DependencyFile).returns(String) }
         def run_bun_update(bun_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -186,15 +204,67 @@ module Dependabot
             ).parse
         end
 
-        sig { params(error: Dependabot::DependabotError, _bun_lock: Dependabot::DependencyFile).returns(T.noreturn) }
-        def handle_bun_lock_updater_error(error, _bun_lock)
+        sig { params(error: Dependabot::DependabotError, bun_lock: Dependabot::DependencyFile).returns(T.noreturn) }
+        def handle_bun_lock_updater_error(error, bun_lock)
           error_message = error.message
+
+          raise_registry_error(error_message)
+          raise_workspace_error(error_message, bun_lock)
 
           ERR_PATTERNS.each do |pattern, error_class|
             raise error_class, error_message if error_message.match?(pattern)
           end
 
           raise error
+        end
+
+        # Reports the first registry failure bun printed, when it is one the repository has to resolve: access that
+        # was denied, or a tarball the registry does not have. Other statuses are left to the generic handling.
+        sig { params(error_message: String).void }
+        def raise_registry_error(error_message)
+          failure = [DOWNLOAD_FAILED, REQUEST_FAILED].filter_map { |pattern| error_message.match(pattern) }
+                                                     .min_by { |match| match.begin(0) }
+          return unless failure
+
+          status = failure[:status]
+          url = failure[:url]
+
+          if ACCESS_DENIED_STATUSES.include?(status) && url
+            raise Dependabot::PrivateSourceAuthenticationFailure, registry_origin(url)
+          end
+
+          return unless status == NOT_FOUND_STATUS && failure.names.include?("spec")
+
+          raise Dependabot::DependencyNotFound, package_name_from(T.must(failure[:spec]))
+        end
+
+        sig { params(error_message: String, bun_lock: Dependabot::DependencyFile).void }
+        def raise_workspace_error(error_message, bun_lock)
+          if (match = error_message.match(WORKSPACE_NOT_ON_DISK))
+            raise Dependabot::DependencyFileNotResolvable,
+                  "#{bun_lock.path} lists the workspace \"#{match[:name]}\" (#{match[:path]}), " \
+                  "but it is not part of the repository. Every workspace in the lockfile must be present."
+          end
+
+          return unless (match = error_message.match(WORKSPACE_NOT_FOUND))
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "package.json lists the workspace \"#{match[:path]}\", but it does not exist in the repository."
+        end
+
+        # The scheme and host of the URL, so the error names the registry and not a single tarball
+        sig { params(url: String).returns(String) }
+        def registry_origin(url)
+          uri = URI.parse(url)
+          "#{uri.scheme}://#{uri.host}"
+        rescue URI::InvalidURIError
+          url
+        end
+
+        # "@scope/name@1.2.3" and "name@1.2.3" both end in the version
+        sig { params(spec: String).returns(String) }
+        def package_name_from(spec)
+          spec.sub(/@[^@]*\z/, "")
         end
 
         sig { void }

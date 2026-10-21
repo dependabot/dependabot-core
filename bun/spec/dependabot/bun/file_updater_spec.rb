@@ -79,6 +79,66 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
+    # Real bun output for failures that need a change in the repository or its registry access.
+    context "when bun fails while updating the lockfile" do
+      let(:files) { project_dependency_files("bun/simple_v2") }
+      let(:repo_contents_path) { build_tmp_repo("bun/simple_v2", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:version) { "1.8.1" }
+      let(:previous_version) { "1.0.1" }
+      let(:previous_requirements) do
+        [{ file: "package.json", requirement: "1.0.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:requirements) do
+        [{ file: "package.json", requirement: "1.8.1", groups: ["dependencies"], source: nil }]
+      end
+
+      let(:error_message) { fixture("bun_errors", "#{scenario}.txt") }
+
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: error_message, error_context: {})
+        )
+      end
+
+      {
+        "download_forbidden" => [Dependabot::PrivateSourceAuthenticationFailure, "https://npm.example.com"],
+        "request_unauthorized" => [Dependabot::PrivateSourceAuthenticationFailure, "https://npm.pkg.example.com"],
+        "download_not_found" => [Dependabot::DependencyNotFound, "@types/express"],
+        "workspace_not_on_disk" => [Dependabot::DependencyFileNotResolvable, "@example/closed"],
+        "root_workspace_outside_repo" => [Dependabot::DependencyFileNotResolvable, "../deps/live_toast"],
+        "workspace_not_found" => [Dependabot::DependencyFileNotResolvable, "packages/example-app/example"]
+      }.each do |name, (error_class, detail)|
+        context "with #{name}" do
+          let(:scenario) { name }
+
+          it "raises #{error_class} naming #{detail}" do
+            expect { updated_files }.to raise_error(error_class) do |raised|
+              expect(raised.message).to include(detail)
+            end
+          end
+        end
+      end
+
+      context "with a security scanner failure that mentions a 403" do
+        let(:scenario) { "security_scanner_forbidden" }
+
+        it "is not mistaken for a registry failure and is re-raised unchanged" do
+          expect { updated_files }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |raised|
+            expect(raised.message).to include("Security scanner failed")
+          end
+        end
+      end
+
+      context "with an error the updater does not recognize" do
+        let(:error_message) { "error: something new" }
+
+        it "re-raises the original error" do
+          expect { updated_files }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /something new/)
+        end
+      end
+    end
+
     %w(simple_v2 simple_v3).each do |project|
       context "with a Bun 1.4 #{project} lockfile" do
         let(:files) { project_dependency_files("bun/#{project}") }
