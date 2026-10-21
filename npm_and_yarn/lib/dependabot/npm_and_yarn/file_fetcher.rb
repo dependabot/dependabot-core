@@ -57,7 +57,7 @@ module Dependabot
         begin
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(@git_lfs_cloned_repo_contents_path) do
-              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
               SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
             end
             @git_lfs_cloned_repo_contents_path
@@ -864,7 +864,8 @@ module Dependabot
           Dependabot.logger.info("Repository contents path is nil")
         elsif Dir.exist?(T.must(repo_contents_path))
           Dir.chdir(T.must(repo_contents_path)) do
-            FileUtils.mkdir_p(".yarn/cache")
+            cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
+            FileUtils.mkdir_p(cache_dir)
           end
         else
           Dependabot.logger.info("Repository contents path does not exist")
