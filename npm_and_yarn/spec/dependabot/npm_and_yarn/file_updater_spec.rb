@@ -3033,6 +3033,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             "yarn.lock"
           )
         end
+
+        context "when cacheFolder is configured" do
+          let(:files) do
+            project_dependency_files(project_name).tap do |dependency_files|
+              yarnrc_yml = dependency_files.find { |file| file.name == ".yarnrc.yml" }
+              T.must(yarnrc_yml).content = "nodeLinker: node-modules\ncacheFolder: .custom-cache\n"
+            end
+          end
+
+          before do
+            custom_cache_dir = File.join(repo_contents_path, ".custom-cache")
+            FileUtils.mkdir_p(custom_cache_dir)
+            FileUtils.cp_r(Dir.glob(File.join(repo_contents_path, ".yarn/cache/*")), custom_cache_dir)
+          end
+
+          it "updates the configured cache folder" do
+            expect(updated_files.map(&:name))
+              .to include(".custom-cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip")
+          end
+        end
       end
 
       context "when updating only the lockfile" do
