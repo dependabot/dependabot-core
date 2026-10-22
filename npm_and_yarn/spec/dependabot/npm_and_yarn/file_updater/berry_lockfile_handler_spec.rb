@@ -3,6 +3,9 @@
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/berry_lockfile_handler"
+require "webrick"
+require "rubygems/package"
+require "zlib"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
   extend T::Sig
@@ -49,7 +52,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
       ).to be_nil
     end
 
-    it "puts temporary pins before existing broad rules and restores the original manifest" do
+    it "preserves existing resolution precedence and restores the original manifest" do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_major_version).and_return(4)
       install_count = 0
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
@@ -57,9 +60,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
         if install_count.zero?
           expect(manifest.fetch("resolutions").to_a).to eq(
             [
-              ["brace-expansion@npm:^2.0.2", "npm:2.1.4"],
-              ["brace-expansion", "npm:^2.0.2"],
-              ["unrelated", "npm:1.0.0"]
+              ["brace-expansion", "npm:2.1.4"],
+              ["unrelated", "npm:1.0.0"],
+              ["brace-expansion@npm:^2.0.2", "npm:2.1.2"]
             ]
           )
           File.write("yarn.lock", File.read("yarn.lock").gsub("2.1.2", "2.1.4"))
@@ -90,6 +93,95 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
         expect(File.read("package.json")).to eq(original_manifest)
         expect(install_count).to eq(2)
       end
+    end
+
+    it "updates rewritten incoming requests with real Yarn while preserving earlier parent-specific resolutions" do
+      files = project_dependency_files("yarn_berry/rewritten_resolutions")
+      versions = %w(1.1.12 2.1.2 5.0.2)
+      server = WEBrick::HTTPServer.new(
+        Port: 0, BindAddress: "127.0.0.1", Logger: WEBrick::Log.new(File::NULL), AccessLog: []
+      )
+      registry = "http://127.0.0.1:#{server.config.fetch(:Port)}"
+      server.mount_proc("/") do |request, response|
+        response.body = if request.path.end_with?(".tgz")
+                          version = File.basename(request.path, ".tgz")
+                          package_tarball("brace-expansion", version)
+                        else
+                          JSON.generate(
+                            "name" => "brace-expansion",
+                            "versions" => versions.to_h do |version|
+                              [version, {
+                                "name" => "brace-expansion", "version" => version,
+                                "dist" => { "tarball" => "#{registry}/#{version}.tgz" }
+                              }]
+                            end
+                          )
+                        end
+      end
+      server_thread = Thread.new { server.start }
+
+      begin
+        Dependabot::SharedHelpers.in_a_temporary_directory do
+          files.each do |file|
+            FileUtils.mkdir_p(File.dirname(file.name))
+            File.write(file.name, T.must(file.content))
+          end
+          yarn_path = File.expand_path(
+            "../../../fixtures/projects/yarn_berry/simple_node_modules/.yarn/releases/yarn-3.3.0.cjs",
+            __dir__
+          )
+          File.write(
+            ".yarnrc.yml",
+            YAML.dump(
+              "yarnPath" => yarn_path,
+              "npmRegistryServer" => registry,
+              "unsafeHttpWhitelist" => ["127.0.0.1"]
+            )
+          )
+          Dependabot::NpmAndYarn::Helpers.run_yarn_command("install --mode=update-lockfile")
+          lockfile = Dependabot::DependencyFile.new(name: "yarn.lock", content: File.read("yarn.lock"))
+          original_manifest = File.read("package.json")
+          expect(T.must(lockfile.content)).to include("brace-expansion@npm:^2.0.2")
+          expect(T.must(lockfile.content)).to include("brace-expansion@npm:^5.0.2")
+          expect(T.must(lockfile.content)).not_to include("brace-expansion@npm:^2.0.0")
+          versions << "2.1.4"
+
+          expect(
+            described_class.update_subdependency(
+              yarn_lock: lockfile,
+              dependency: Dependabot::Dependency.new(
+                name: "brace-expansion", version: "2.1.2", requirements: [], package_manager: "npm_and_yarn"
+              ),
+              target_version: "2.1.4"
+            )
+          ).to eq("2.1.4")
+
+          updated_file = lockfile.dup
+          updated_file.content = File.read("yarn.lock")
+          expect(
+            Dependabot::NpmAndYarn::FileParser::YarnLock.new(updated_file)
+                        .versions_by_requirement("brace-expansion")
+          ).to eq(
+            "brace-expansion@npm:^1.1.7" => "1.1.12",
+            "brace-expansion@npm:^2.0.2" => "2.1.4",
+            "brace-expansion@npm:^5.0.2" => "5.0.2"
+          )
+          expect(File.read("package.json")).to eq(original_manifest)
+        end
+      ensure
+        server.shutdown
+        server_thread.join
+      end
+    end
+
+    sig { params(name: String, version: String).returns(String) }
+    def package_tarball(name, version)
+      content = JSON.generate("name" => name, "version" => version)
+      archive = StringIO.new
+      Gem::Package::TarWriter.new(archive) do |tar|
+        tar.add_file_simple("package/package.json", 0o644, content.bytesize) { |file| file.write(content) }
+      end
+      Zlib.gzip(archive.string)
     end
   end
 

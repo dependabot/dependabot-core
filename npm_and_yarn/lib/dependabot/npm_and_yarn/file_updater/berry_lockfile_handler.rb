@@ -113,8 +113,17 @@ module Dependabot
           manifest_path = File.join(File.dirname(yarn_lock.name), "package.json")
           original_manifest = File.read(manifest_path)
           manifest = JSON.parse(original_manifest)
-          manifest["resolutions"] = resolutions.merge(manifest.fetch("resolutions", {})) do |_key, temporary, _existing|
-            temporary
+          existing_resolutions = manifest.fetch("resolutions", {}).to_h do |selector, reference|
+            descriptor = resolutions.keys.find do |candidate|
+              name, requirement = split_descriptor(candidate)
+              selector.match?(%r{(?:\A|/)#{Regexp.escape(name)}(?:@[^/]*)?\z}) &&
+                [reference, "npm:#{reference}"].include?(requirement)
+            end
+            [selector, descriptor ? resolutions.fetch(descriptor) : reference]
+          end
+          # Existing selectors match the original incoming requests; lockfile descriptors may already be rewritten.
+          manifest["resolutions"] = existing_resolutions.merge(resolutions) do |_selector, existing, _temporary|
+            existing
           end
           begin
             File.write(manifest_path, JSON.pretty_generate(manifest))
