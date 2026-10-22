@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/pull_request_creator/message_builder"
 
 # This class describes a change to the project's Dependencies which has been
@@ -103,7 +104,8 @@ module Dependabot
             "updated-at" => ic.updated_at
           }.compact
         end,
-        notices: notices
+        notices: notices,
+        security_fix: security_fix?
       ).message
 
       @pr_message = message
@@ -196,6 +198,20 @@ module Dependabot
     end
 
     private
+
+    # Whether this change should be marked as a security fix, adding the
+    # `[security]` prefix to the pull request title and a note in its body.
+    #
+    # Opt-in via the `add_security_pr_prefix` experiment because marking a public
+    # pull request as a security fix reveals the repository is vulnerable before
+    # the fix is merged. When disabled this returns false, leaving the pull
+    # request unmarked.
+    sig { returns(T::Boolean) }
+    def security_fix?
+      return false unless Dependabot::Experiments.enabled?(:add_security_pr_prefix)
+
+      updated_dependencies.any? { |dep| job.security_fix?(dep) }
+    end
 
     # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
     # allow rebases to continue working for those, but for multi-directory configs we do compare with the directory.

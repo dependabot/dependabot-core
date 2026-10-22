@@ -86,7 +86,8 @@ module Dependabot
           pr_message_max_length: T.nilable(Integer),
           pr_message_encoding: T.nilable(Encoding),
           ignore_conditions: T::Array[T::Hash[String, String]],
-          notices: T.nilable(T::Array[Dependabot::Notice])
+          notices: T.nilable(T::Array[Dependabot::Notice]),
+          security_fix: T::Boolean
         )
           .void
       end
@@ -104,7 +105,8 @@ module Dependabot
         pr_message_max_length: nil,
         pr_message_encoding: nil,
         ignore_conditions: [],
-        notices: nil
+        notices: nil,
+        security_fix: false
       )
         @dependencies               = dependencies
         @files                      = files
@@ -120,6 +122,7 @@ module Dependabot
         @pr_message_encoding        = pr_message_encoding
         @ignore_conditions          = ignore_conditions
         @notices                    = notices
+        @security_fix               = security_fix
       end
 
       sig { params(pr_message_max_length: Integer).returns(Integer) }
@@ -463,6 +466,8 @@ module Dependabot
           msg += " **This update includes a security fix.**"
         elsif vulnerabilities_fixed[T.must(dependency).name]&.any?
           msg += " **This update includes security fixes.**"
+        elsif security_fix?
+          msg += " **This update includes a security fix.**"
         end
 
         msg
@@ -900,10 +905,21 @@ module Dependabot
               dependencies: dependencies,
               credentials: credentials,
               commit_message_options: commit_message_options,
-              security_fix: vulnerabilities_fixed.values.flatten.any?
+              security_fix: security_fix?
             ),
             T.nilable(Dependabot::PullRequestCreator::PrNamePrefixer)
           )
+      end
+
+      # Whether this pull request should be marked as a security fix (the
+      # `[security]` title prefix and the body note). Callers can set this
+      # explicitly to mark the pull request without supplying the detailed
+      # `vulnerabilities_fixed` payload, which would otherwise also publish the
+      # advisory version ranges. Defaults to whether that payload is present so
+      # existing callers keep their behaviour.
+      sig { returns(T::Boolean) }
+      def security_fix?
+        @security_fix || vulnerabilities_fixed.values.flatten.any?
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
