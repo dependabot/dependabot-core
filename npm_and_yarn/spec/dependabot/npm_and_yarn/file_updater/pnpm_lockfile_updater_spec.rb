@@ -284,6 +284,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    # Real pnpm output for repositories Dependabot cannot update. pnpm 10 prints the code between thin spaces,
+    # pnpm 11 in brackets and pnpm 12 in a bordered block.
+    context "with failures that need a change in the repository" do
+      {
+        %w(pnpm10 missing_tarball_integrity) => Dependabot::DependencyFileNotResolvable,
+        %w(pnpm11 missing_tarball_integrity) => Dependabot::DependencyFileNotResolvable,
+        %w(pnpm10 invalid_workspace_configuration) => Dependabot::DependencyFileNotResolvable,
+        %w(pnpm12 bad_runtime_version) => Dependabot::ToolVersionNotSupported,
+        %w(pnpm12 bad_runtime_version_exact) => Dependabot::ToolVersionNotSupported
+      }.each do |(version_dir, scenario), error_class|
+        context "with #{scenario} (#{version_dir} output)" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", version_dir, "#{scenario}.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises #{error_class}" do
+            expect { updated_pnpm_lock_content }.to raise_error(error_class)
+          end
+        end
+      end
+    end
+
     context "when there is a unsupported engine response from registry" do
       let(:dependency_name) { "@blocknote/core" }
       let(:version) { "0.15.4" }
