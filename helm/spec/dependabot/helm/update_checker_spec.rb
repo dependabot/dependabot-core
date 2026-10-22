@@ -196,12 +196,61 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           )
       end
 
-      it { is_expected.to eq(Dependabot::Helm::Version.new("17.10")) }
+      it { is_expected.to eq("17.10") }
 
       context "when the docker image is can't be updated" do
         let(:version) { "latest" }
 
         it { is_expected.to be_nil }
+      end
+
+      context "when the tag has a suffix" do
+        let(:repo_fixture_name) { "suffixed_tags.json" }
+        let(:dependency_name) { "example/app" }
+        let(:version) { "1.0.0-alpine" }
+        let(:repo_url) { "https://registry.hub.docker.com/v2/example/app/" }
+
+        it "ignores newer tags with no suffix, another suffix or a date" do
+          expect(latest_version).to eq("1.1.0-alpine")
+        end
+
+        context "when another suffix has a newer version" do
+          let(:version) { "1.0.0-debian" }
+
+          it { is_expected.to eq("1.2.0-debian") }
+        end
+
+        context "when the tag has no suffix" do
+          let(:version) { "1.0.0" }
+
+          it { is_expected.to eq("1.2.0") }
+        end
+
+        context "when the tag is already the latest" do
+          let(:version) { "1.1.0-alpine" }
+
+          it { is_expected.to be_nil }
+        end
+      end
+
+      context "when the tag has a v prefix" do
+        let(:repo_fixture_name) { "v_prefixed_tags.json" }
+        let(:dependency_name) { "example/app" }
+        let(:version) { "v0.1.0" }
+        let(:repo_url) { "https://registry.hub.docker.com/v2/example/app/" }
+
+        it { is_expected.to eq("v0.2.0") }
+      end
+
+      context "when the tag has a word prefix" do
+        let(:repo_fixture_name) { "word_prefixed_tags.json" }
+        let(:dependency_name) { "example/app" }
+        let(:version) { "jdk-17.0.1" }
+        let(:repo_url) { "https://registry.hub.docker.com/v2/example/app/" }
+
+        it "ignores newer tags with no prefix or another prefix" do
+          expect(latest_version).to eq("jdk-17.0.2")
+        end
       end
     end
 
@@ -286,6 +335,48 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       let(:ignored_versions) { [">= 0"] }
 
       it { is_expected.to be_falsey }
+    end
+
+    context "with a docker-image dependency" do
+      let(:dependency_type) { { type: :docker_image } }
+      let(:version) { "1.0.0-alpine" }
+
+      before { allow(checker).to receive(:latest_version).and_return(latest) }
+
+      context "when a newer tag was found" do
+        let(:latest) { "1.1.0-alpine" }
+
+        it { is_expected.to be_truthy }
+      end
+
+      context "when no newer tag was found" do
+        let(:latest) { nil }
+
+        it { is_expected.to be_falsey }
+      end
+    end
+  end
+
+  describe "#up_to_date?" do
+    subject { checker.up_to_date? }
+
+    context "with a docker-image dependency" do
+      let(:dependency_type) { { type: :docker_image } }
+      let(:version) { "1.0.0-alpine" }
+
+      before { allow(checker).to receive(:latest_version).and_return(latest) }
+
+      context "when a newer tag was found" do
+        let(:latest) { "1.1.0-alpine" }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when no newer tag was found" do
+        let(:latest) { nil }
+
+        it { is_expected.to be(true) }
+      end
     end
   end
 
