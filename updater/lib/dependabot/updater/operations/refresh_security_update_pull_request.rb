@@ -166,7 +166,8 @@ module Dependabot
 
           return close_pull_request(reason: :update_no_longer_possible) unless lead_dependency
 
-          if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+          if %w(npm_and_yarn bun).include?(lead_dependency.package_manager) &&
+             Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
             eligible_dependency = find_vulnerable_version(lead_dependency) do |dep|
               update_checker_for(dep) if job.allowed_update?(dep)
             end
