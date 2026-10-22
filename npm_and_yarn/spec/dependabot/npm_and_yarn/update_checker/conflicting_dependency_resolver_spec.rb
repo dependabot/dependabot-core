@@ -165,6 +165,52 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       end
     end
 
+    context "with unquoted Yarn v1 descriptors for multiple installed versions" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) { project_dependency_files("yarn/multiple_brace_expansion_versions") }
+      sig { returns(String) }
+      let(:dependency_name) { "brace-expansion" }
+      sig { returns(String) }
+      let(:current_version) { "2.1.2" }
+      sig { returns(String) }
+      let(:target_version) { "2.1.4" }
+
+      it "does not report unrelated installed versions as conflicts" do
+        expect(conflicting_dependencies).to be_empty
+      end
+
+      context "when the targeted version is pinned" do
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        let(:dependency_files) do
+          files = T.let(super(), T::Array[Dependabot::DependencyFile])
+          files.map do |file|
+            file.dup.tap { |copy| copy.content = T.must(file.content).gsub("^2.0.2", "2.1.2") }
+          end
+        end
+
+        it "retains the incompatible requirement on the targeted version" do
+          expect(conflicting_dependencies).to contain_exactly(
+            {
+              "explanation" => "current-parent@1.0.0 requires brace-expansion@2.1.2",
+              "name" => "current-parent",
+              "version" => "1.0.0",
+              "requirement" => "2.1.2"
+            }
+          )
+        end
+      end
+
+      context "when the experiment is disabled" do
+        sig { returns(T::Boolean) }
+        let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+        it "retains the legacy unscoped conflict checks" do
+          expect(conflicting_dependencies.map { |conflict| conflict.fetch("name") })
+            .to contain_exactly("legacy-parent", "modern-parent")
+        end
+      end
+    end
+
     context "with yarn berry lockfiles" do
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:dependency_files) { project_dependency_files("yarn_berry/subdependency_out_of_range_gt") }
@@ -268,9 +314,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         allow(dependency_files_builder).to receive(:write_temporary_dependency_files).and_raise(helper_error)
       end
 
-      it "uses the legacy fallback without consulting the Yarn experiment" do
-        expect(Dependabot::Experiments).not_to receive(:enabled?)
-
+      it "uses the legacy preparation fallback even when the experiment is enabled" do
         expect(conflicting_dependencies).to be_empty
       end
     end

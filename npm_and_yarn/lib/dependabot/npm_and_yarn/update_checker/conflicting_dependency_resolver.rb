@@ -56,7 +56,10 @@ module Dependabot
               dependency_files: dependency_files,
               credentials: credentials
             )
-            dependency_files_builder.write_temporary_dependency_files
+            dependency_files_builder.write_temporary_dependency_files(
+              preserve_yarn_lockfile_entries:
+                Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            )
 
             if dependency_files_builder.yarn_locks.any?
               enable_normalized_yarn_traversal =

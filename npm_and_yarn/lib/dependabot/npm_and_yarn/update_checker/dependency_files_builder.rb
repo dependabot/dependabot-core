@@ -26,9 +26,9 @@ module Dependabot
           @credentials = credentials
         end
 
-        sig { void }
-        def write_temporary_dependency_files
-          write_lockfiles
+        sig { params(preserve_yarn_lockfile_entries: T::Boolean).void }
+        def write_temporary_dependency_files(preserve_yarn_lockfile_entries: false)
+          write_lockfiles(preserve_yarn_lockfile_entries:)
 
           if Helpers.yarn_berry?(yarn_locks.first)
             if yarnrc_yml_file
@@ -126,10 +126,11 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { void }
-        def write_lockfiles
+        sig { params(preserve_yarn_lockfile_entries: T::Boolean).void }
+        def write_lockfiles(preserve_yarn_lockfile_entries:)
           write_dependency_files(yarn_locks) do |file|
-            prepared_yarn_lockfile_content(T.must(file.content))
+            content = T.must(file.content)
+            preserve_yarn_lockfile_entries ? content : prepared_yarn_lockfile_content(content)
           end
 
           write_dependency_files([*package_locks, *shrinkwraps, *pnpm_locks]) do |file|
