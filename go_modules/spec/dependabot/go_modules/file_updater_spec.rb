@@ -675,6 +675,31 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         expect(ancestor_go_work.support_file?).to be(true)
       end
 
+      it "still collects the ancestor go.work bump for a later update in the same directory, " \
+         "even after a prior update returned it as a non-support file" do
+        later_ancestor_go_work = Dependabot::DependencyFile.new(
+          name: "../go.work", content: go_work_body, directory: directory, support_file: false
+        )
+        later_updater = described_class.new(
+          dependency_files: [
+            Dependabot::DependencyFile.new(
+              name: "go.mod", content: fixture("projects", project_name, "libs", "go.mod"), directory: directory
+            ),
+            Dependabot::DependencyFile.new(
+              name: "go.sum", content: fixture("projects", project_name, "libs", "go.sum"), directory: directory
+            ),
+            later_ancestor_go_work
+          ],
+          dependencies: [dependency],
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
+        )
+
+        later_go_work = later_updater.updated_dependency_files.find { |f| f.name == "../go.work" }
+
+        expect(later_go_work&.content).to start_with("go 1.23")
+      end
+
       it "updates the next directory after a checkout reset without changing the unselected root module" do
         next_file_contents = {
           "go.mod" => fixture("projects", project_name, "services", "go.mod"),
