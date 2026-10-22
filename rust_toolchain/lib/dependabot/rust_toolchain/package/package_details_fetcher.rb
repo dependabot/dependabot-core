@@ -1,9 +1,11 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "base64"
 require "sorbet-runtime"
 require "uri"
 
+require "dependabot/credential"
 require "dependabot/package/package_details"
 require "dependabot/registry_client"
 require "dependabot/update_checkers/base"
@@ -23,11 +25,13 @@ module Dependabot
 
         sig do
           params(
-            dependency: Dependabot::Dependency
+            dependency: Dependabot::Dependency,
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency:)
+        def initialize(dependency:, credentials: [])
           @dependency = dependency
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
         end
 
         sig { returns(Dependabot::Package::PackageDetails) }
@@ -55,8 +59,8 @@ module Dependabot
         def fetch_and_parse_manifests
           # Cache bust by appending a timestamp query param so CDN treats each request uniquely
           # This avoids relying on headers that might be ignored by intermediate caches.
-          busted_url = "#{MANIFESTS_URL}?t=#{Time.now.to_i}"
-          response = Dependabot::RegistryClient.get(url: busted_url)
+          busted_url = "#{manifests_url}?t=#{Time.now.to_i}"
+          response = Dependabot::RegistryClient.get(url: busted_url, headers: auth_headers)
           manifests_content = response.body
 
           channels = T.let([], T::Array[Dependabot::RustToolchain::Version])
@@ -90,6 +94,39 @@ module Dependabot
           when /^\d+\.\d+(\.\d+)?$/
             Version.new(channel_part)
           end
+        end
+
+        sig { returns(String) }
+        def manifests_url
+          replaces_base = @credentials.find do |cred|
+            cred["type"] == "rust_registry" && cred.replaces_base?
+          end
+          return MANIFESTS_URL unless replaces_base
+
+          url = replaces_base["url"]
+          return MANIFESTS_URL unless url
+
+          url.chomp("/") + "/manifests.txt"
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def auth_headers
+          replaces_base = @credentials.find do |cred|
+            cred["type"] == "rust_registry" && cred.replaces_base?
+          end
+          return {} unless replaces_base
+
+          token = replaces_base["token"]
+          return { "Authorization" => "Bearer #{token}" } if token
+
+          username = replaces_base["username"]
+          password = replaces_base["password"]
+          if username && password
+            encoded = Base64.strict_encode64("#{username}:#{password}")
+            return { "Authorization" => "Basic #{encoded}" }
+          end
+
+          {}
         end
 
         sig { returns(Dependabot::Dependency) }
