@@ -240,6 +240,87 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
     end
   end
 
+  # Characterization tests for the agreed scenario:
+  #
+  #   cooldown = 7 days
+  #   latest tag v3.0.0 was force-moved (re-pointed) within the same version:
+  #     commit-2 -> released  8 days ago, now the HEAD of v3.0.0 (OUTSIDE cooldown)
+  #     commit-3 -> released 15 days ago, the pinned commit
+  #
+  # Pre-commit resolves the two pin styles differently:
+  #   - bare SHA pin         => commit-driven, follows the moving tag => commit-2
+  #   - SHA + frozen comment => version-driven; the tag stays the same version
+  #     (v3.0.0), so the version filter never offers the newer commit => stays on
+  #     commit-3.
+  #
+  # These specs document the current behavior as-is; see the PR discussion for
+  # context on where this divergence may have originated.
+  describe "moving tag (same version v3.0.0) SHA characterization" do
+    let(:commit_three) { "c" * 40 } # pinned, 15 days old
+    let(:commit_two) { "b" * 40 }   # v3.0.0 HEAD after the move, 8 days old
+    let(:reference) { commit_three }
+    let(:dependency_version) { commit_three }
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+    end
+
+    before do
+      allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+        .to receive(:local_tag_for_pinned_sha).and_return(nil)
+      allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+        .to receive(:head_commit_for_pinned_ref).and_return(commit_two)
+    end
+
+    context "when commit-3 is pinned with NO version comment (bare SHA)" do
+      it "moves to commit-2 (cooldown is skipped for SHAs; follows the moving tag)" do
+        expect(checker.latest_version).to eq(commit_two)
+      end
+    end
+
+    context "when commit-3 is pinned WITH a frozen version comment (# frozen: v3.0.0)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: commit_three,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source,
+            metadata: { comment: "# frozen: v3.0.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+
+      before do
+        # v3.0.0 is the latest tag and has been re-pointed to commit-2. Because
+        # the version label is unchanged, the version filter (3.0.0 > 3.0.0 == false)
+        # offers no newer candidate.
+        v3_tag = {
+          tag: "v3.0.0",
+          version: Dependabot::PreCommit::Version.new("3.0.0"),
+          commit_sha: commit_two
+        }
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions).and_return([v3_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision).and_return([v3_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: reference, branch: nil })
+      end
+
+      it "stays on commit-3 and reports the dependency as up to date" do
+        # The newer commit-2 (8 days old, outside cooldown) is never surfaced
+        # because resolution is version-driven and the version did not change.
+        expect(checker.latest_version.to_s).to eq("3.0.0")
+        expect(checker.up_to_date?).to be(true)
+      end
+    end
+  end
+
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
 
