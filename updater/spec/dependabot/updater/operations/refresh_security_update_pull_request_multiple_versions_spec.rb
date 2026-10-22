@@ -208,6 +208,60 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       ).perform
     end
 
+    context "when a vulnerable development copy precedes a vulnerable production copy" do
+      sig { returns(Dependabot::Dependency) }
+      let(:development_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          version: "2.1.1",
+          requirements: [],
+          package_manager: "bundler",
+          subdependency_metadata: [{ production: false }]
+        )
+      end
+
+      sig { returns(Dependabot::Dependency) }
+      let(:combined_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          version: "2.1.1",
+          requirements: [],
+          package_manager: "bundler",
+          metadata: { all_versions: [development_dependency, vulnerable_dependency] }
+        )
+      end
+
+      before do
+        allow(checker_class).to receive(:new)
+          .with(hash_including(dependency: development_dependency)).and_return(vulnerable_checker)
+      end
+
+      it "refreshes the eligible production copy instead of closing the pull request" do
+        expect(job.current_version_vulnerable?(development_dependency)).to be(true)
+        expect(job.allowed_update?(development_dependency)).to be(false)
+        expect(job.allowed_update?(vulnerable_dependency)).to be(true)
+        allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_return(dependency_change)
+        expect(error_handler).not_to receive(:handle_dependency_error)
+        expect(service).not_to receive(:close_pull_request)
+        expect(service).to receive(:create_pull_request).with(dependency_change, "mock-sha")
+
+        described_class.new(
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot,
+          error_handler: error_handler
+        ).perform
+
+        expect(Dependabot::DependencyChangeBuilder).to have_received(:create_from).with(
+          job: job,
+          dependency_files: dependency_files,
+          updated_dependencies: [updated_dependency],
+          change_source: vulnerable_dependency,
+          notices: []
+        )
+      end
+    end
+
     context "when only the development copy is vulnerable" do
       sig { returns(T::Boolean) }
       let(:vulnerable_production) { false }

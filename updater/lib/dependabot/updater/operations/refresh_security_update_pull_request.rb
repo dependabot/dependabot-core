@@ -167,13 +167,16 @@ module Dependabot
           return close_pull_request(reason: :update_no_longer_possible) unless lead_dependency
 
           if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
-            lead_dependency = vulnerable_version(lead_dependency) { |dep| update_checker_for(dep) }
-            unless job.allowed_update?(lead_dependency)
+            eligible_dependency = find_vulnerable_version(lead_dependency) do |dep|
+              update_checker_for(dep) if job.allowed_update?(dep)
+            end
+            unless eligible_dependency
               Dependabot.logger.info(
-                "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
+                "No allowed vulnerable versions remain for #{lead_dependency.name}"
               )
               return close_pull_request(reason: :up_to_date)
             end
+            lead_dependency = eligible_dependency
           end
 
           checker = update_checker_for(lead_dependency)
