@@ -977,6 +977,62 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
+    shared_examples "a single-directory group title" do |directory, title_directory|
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
+      end
+      let(:metadata) { { directory: directory } }
+      let(:gemfile) do
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("ruby", "gemfiles", "Gemfile"),
+          directory: directory
+        )
+      end
+
+      %w(directory directories).each do |source_option|
+        context "with the #{source_option} source option" do
+          let(:source) do
+            options = source_option == "directory" ? { directory: directory } : { directories: [directory] }
+            Dependabot::Source.new(provider: "github", repo: "gocardless/bump", **options)
+          end
+
+          it "keeps the single-dependency title independent of the source option" do
+            expect(pr_name).to eq(
+              "Bump business from 1.4.0 to 1.5.0#{title_directory} in the all-the-things group"
+            )
+          end
+
+          context "with two dependencies" do
+            let(:dependency2) do
+              Dependabot::Dependency.new(
+                name: "business2",
+                version: "1.5.0",
+                previous_version: "1.4.0",
+                package_manager: "dummy",
+                requirements: [],
+                previous_requirements: [],
+                metadata: metadata
+              )
+            end
+            let(:dependencies) { [dependency, dependency2] }
+
+            it "keeps the multiple-dependency title independent of the source option" do
+              expect(pr_name).to eq("Bump the all-the-things group#{title_directory} with 2 updates")
+            end
+          end
+        end
+      end
+    end
+
+    context "when a dependency group only updates the root directory" do
+      it_behaves_like "a single-directory group title", "/", ""
+    end
+
+    context "when a dependency group only updates a subdirectory" do
+      it_behaves_like "a single-directory group title", "/directory", " in /directory"
+    end
+
     context "when dealing with a multi-directory group with one dependency" do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
@@ -2360,6 +2416,67 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
         end
+      end
+
+      shared_examples "a single-directory group body intro" do |directory, intro_directory|
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
+        end
+        let(:metadata) { { directory: directory } }
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("ruby", "gemfiles", "Gemfile"),
+            directory: directory
+          )
+        end
+
+        %w(directory directories).each do |source_option|
+          context "with the #{source_option} source option" do
+            let(:source) do
+              options = source_option == "directory" ? { directory: directory } : { directories: [directory] }
+              Dependabot::Source.new(provider: "github", repo: "gocardless/bump", **options)
+            end
+
+            it "keeps the single-dependency body intro independent of the source option" do
+              expect(pr_message).to start_with(
+                "Bumps the all-the-things group#{intro_directory} with 1 update: " \
+                "[business](https://github.com/gocardless/business)."
+              )
+            end
+
+            context "with two dependencies" do
+              let(:dependency2) do
+                Dependabot::Dependency.new(
+                  name: "business2",
+                  version: "1.5.0",
+                  previous_version: "1.4.0",
+                  package_manager: "dummy",
+                  requirements: [],
+                  previous_requirements: [],
+                  metadata: metadata
+                )
+              end
+              let(:dependencies) { [dependency, dependency2] }
+
+              it "keeps the multiple-dependency body intro independent of the source option" do
+                expect(pr_message).to start_with(
+                  "Bumps the all-the-things group#{intro_directory} with 2 updates: " \
+                  "[business](https://github.com/gocardless/business) and " \
+                  "[business2](https://github.com/gocardless/business2)."
+                )
+              end
+            end
+          end
+        end
+      end
+
+      context "when a dependency group only updates the root directory" do
+        it_behaves_like "a single-directory group body intro", "/", ""
+      end
+
+      context "when a dependency group only updates a subdirectory" do
+        it_behaves_like "a single-directory group body intro", "/directory", " in /directory"
       end
 
       context "when dealing with a multi-directory dependency group" do
