@@ -119,3 +119,48 @@ describe.each([
     ]);
   });
 });
+
+describe("Yarn manifest resolutions rewriting an unrelated request", () => {
+  let directory: string;
+
+  beforeEach(() => {
+    directory = fs.mkdtempSync(path.join(os.tmpdir(), "version-scoped-"));
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(fixtureDirectory, "package.json"), "utf8")
+    );
+    manifest.resolutions = {
+      [`legacy-parent/${dependencyName}`]: "^5.0.2",
+    };
+    fs.writeFileSync(
+      path.join(directory, "package.json"),
+      JSON.stringify(manifest)
+    );
+    // The rewritten ^1.1.7 request has no lockfile entry of its own.
+    const lockfile = fs
+      .readFileSync(path.join(fixtureDirectory, "yarn-v1.lock"), "utf8")
+      .replace(
+        /"version-scoped-test-dependency@\^1\.1\.7":\n {2}version "1\.1\.12"\n\n/,
+        ""
+      );
+    fs.writeFileSync(path.join(directory, "yarn.lock"), lockfile);
+  });
+
+  afterEach(() => fs.rmSync(directory, { recursive: true }));
+
+  it("does not treat the rewritten parent as a blocker", async () => {
+    expect(
+      await findYarnConflicts(directory, dependencyName, "2.1.4", true, "2.1.2")
+    ).toEqual([]);
+  });
+
+  it("still treats the current parent as a blocker for an incompatible target", async () => {
+    const conflicts = await findYarnConflicts(
+      directory,
+      dependencyName,
+      "5.0.9",
+      true,
+      "2.1.2"
+    );
+    expect(conflicts.map((c) => c.name)).toEqual(["current-parent"]);
+  });
+});
