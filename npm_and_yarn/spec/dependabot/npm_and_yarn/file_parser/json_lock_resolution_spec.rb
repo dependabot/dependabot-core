@@ -53,4 +53,65 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::JsonLock do
     expect(version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
     records.each_value { |record| expect(record).to have_received(:dependency_names).once }
   end
+
+  context "with an aliased installation of the targeted package" do
+    sig { returns(Dependabot::DependencyFile) }
+    let(:original) do
+      lockfile = T.let(super(), Dependabot::DependencyFile)
+      content = JSON.parse(T.must(lockfile.content))
+      packages = content.fetch("packages")
+      packages.fetch("node_modules/current-parent").fetch("dependencies")["my-brace"] =
+        "npm:brace-expansion@^2.0.2"
+      packages["node_modules/current-parent/node_modules/my-brace"] =
+        { "name" => "brace-expansion", "version" => "2.1.2" }
+      lockfile.dup.tap { |copy| copy.content = JSON.generate(content) }
+    end
+
+    sig { returns(Dependabot::DependencyFile) }
+    let(:updated) do
+      lockfile = T.let(super(), Dependabot::DependencyFile)
+      content = JSON.parse(T.must(lockfile.content))
+      content.fetch("packages").fetch("node_modules/current-parent/node_modules/my-brace")["version"] = "2.1.2"
+      lockfile.dup.tap { |copy| copy.content = JSON.generate(content) }
+    end
+
+    it "does not overlook an unchanged alias when ordinary installations update" do
+      version = described_class.new(updated).updated_dependency_version(dependency: dependency, original: original)
+
+      expect(version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.2"))
+    end
+
+    context "when the alias is hoisted" do
+      sig { returns(Dependabot::DependencyFile) }
+      let(:updated) do
+        lockfile = T.let(super(), Dependabot::DependencyFile)
+        content = JSON.parse(T.must(lockfile.content))
+        packages = content.fetch("packages")
+        packages["node_modules/my-brace"] = packages.delete("node_modules/current-parent/node_modules/my-brace")
+        lockfile.dup.tap { |copy| copy.content = JSON.generate(content) }
+      end
+
+      it "follows the alias installation name rather than the real package name" do
+        version = described_class.new(updated).updated_dependency_version(dependency: dependency, original: original)
+
+        expect(version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.2"))
+      end
+
+      context "when the hoisted alias is also updated" do
+        sig { returns(Dependabot::DependencyFile) }
+        let(:updated) do
+          lockfile = T.let(super(), Dependabot::DependencyFile)
+          content = JSON.parse(T.must(lockfile.content))
+          content.fetch("packages").fetch("node_modules/my-brace")["version"] = "2.1.4"
+          lockfile.dup.tap { |copy| copy.content = JSON.generate(content) }
+        end
+
+        it "verifies the updated alias at its replacement path" do
+          version = described_class.new(updated).updated_dependency_version(dependency: dependency, original: original)
+
+          expect(version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+        end
+      end
+    end
+  end
 end

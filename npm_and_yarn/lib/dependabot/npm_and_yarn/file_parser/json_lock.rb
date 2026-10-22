@@ -59,12 +59,12 @@ module Dependabot
           return if paths.empty?
 
           original_records = records_by_path(original_lock.parsed)
-          incoming = incoming_resolutions(original_records, dependency.name)
+          incoming = incoming_resolutions(original_records, paths)
           updated_records = records_by_path(parsed)
           updated_versions = versions_by_path(dependency.name)
 
           paths.flat_map do |path|
-            resolution_paths(incoming, path, dependency.name).map do |candidates|
+            resolution_paths(incoming, path, installation_name_for(path)).map do |candidates|
               updated_path = candidates.find { |candidate| updated_records.key?(candidate) }
               version = updated_path ? updated_versions[updated_path] : nil
               unless version
@@ -81,7 +81,7 @@ module Dependabot
         def versions_by_path(dependency_name)
           records_by_path(parsed).filter_map do |path, record|
             next if path.empty?
-            next unless package_name_for(path, record) == dependency_name
+            next unless (record.name || installation_name_for(path)) == dependency_name
 
             version = record.version
             [path, version] if version
@@ -128,20 +128,21 @@ module Dependabot
         end
 
         sig do
-          params(records: T::Hash[String, Record], name: String)
+          params(records: T::Hash[String, Record], target_paths: T::Array[String])
             .returns(T::Hash[String, T::Array[T::Array[String]]])
         end
-        def incoming_resolutions(records, name)
+        def incoming_resolutions(records, target_paths)
           modern = modern_lockfile?
+          installation_names = target_paths.map { |path| installation_name_for(path) }.uniq
           incoming = T.let({}, T::Hash[String, T::Array[T::Array[String]]])
           records.each do |path, record|
-            next unless record.dependency_names(modern: modern).include?(name)
+            (record.dependency_names(modern: modern) & installation_names).each do |name|
+              candidates = resolution_candidates(path, name)
+              target = candidates.find { |candidate| records.key?(candidate) }
+              next unless target
 
-            candidates = resolution_candidates(path, name)
-            target = candidates.find { |candidate| records.key?(candidate) }
-            next unless target
-
-            (incoming[target] ||= []) << candidates
+              (incoming[target] ||= []) << candidates
+            end
           end
           incoming
         end
@@ -213,7 +214,7 @@ module Dependabot
 
         sig { params(package_path: String, details: Record).returns(String) }
         def package_name_for(package_path, details)
-          package_name = T.must(package_path.split("node_modules/").last)
+          package_name = installation_name_for(package_path)
           return package_name unless dealias_packages?
 
           real_package_name = details.name
@@ -230,8 +231,13 @@ module Dependabot
           real_package_name = details.name
           return false if real_package_name.nil?
 
-          package_name = T.must(package_path.split("node_modules/").last)
+          package_name = installation_name_for(package_path)
           real_package_name != package_name
+        end
+
+        sig { params(package_path: String).returns(String) }
+        def installation_name_for(package_path)
+          T.must(package_path.split("node_modules/").last)
         end
 
         sig { params(manifest_name: String, dependency_name: String).returns(String) }
