@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve captured content in parameterized example groups. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"

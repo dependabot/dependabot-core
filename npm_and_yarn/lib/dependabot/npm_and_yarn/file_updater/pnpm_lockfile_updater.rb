@@ -3,6 +3,7 @@
 
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
@@ -75,6 +76,14 @@ module Dependabot
           handle_pnpm_lock_updater_error(e, pnpm_lock)
         end
 
+        # Runs a pnpm command under the same release-age gate as the lockfile update: the Dependabot cooldown,
+        # the repository's own window, the security-update bypass, and the lockfile-verification handling. The
+        # update checker uses it for its probes so a version is judged the way the update will judge it.
+        sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
+        def run_command_under_release_age_gate(cmd, fingerprint = nil)
+          run_pnpm_command_with_release_age_gate(cmd, fingerprint)
+        end
+
         private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
@@ -125,6 +134,9 @@ module Dependabot
         TRUST_LOCKFILE_ON = "--config.trust-lockfile=true"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
+        # pnpm 11 and 12 name the dependency's specifier, not the repository URL
+        ERR_PNPM_GIT_RESOLVE_FAILED = /ERR_PNPM_GIT_RESOLVE_FAILED/
+        GIT_RESOLVE_FAILED_SPECIFIER = /Failed to resolve git dependency "(?<specifier>[^"]+)"/
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
         FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print]]+GET (?<dependency_url>.*): Forbidden - 403/
         MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print]]+GET (?<dependency_url>.*): (?:Not Found)? - 404/
@@ -143,9 +155,26 @@ module Dependabot
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
 
+        # No version of a package that pnpm has to resolve is old enough for the minimumReleaseAge window. pnpm 10,
+        # 11 and 12 all report a pick that is too young this way. Entries already in the lockfile that fail
+        # verification are a different error (MINIMUM_RELEASE_AGE_VIOLATION), about the repo's own policy and not
+        # about the update, and are not matched here.
+        ERR_PNPM_RELEASE_AGE_NOT_MET = /ERR_PNPM_NO_MATURE_MATCHING_VERSION/
+        # The package pnpm rejected: `<name>@<version> was published at ...` (11, 12) or
+        # `Version <v> (released ...) of <name> does not meet ...` (10)
+        RELEASE_AGE_REJECTED_PACKAGE = T.let(
+          Regexp.union(
+            %r{(?<name>@?[\w.-]+(?:/[\w.-]+)?)@[\w.+-]+ was published at},
+            /Version \S+ \(released [^)]*\) of (?<name>\S+) does not meet/
+          ),
+          Regexp
+        )
+
         ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
 
-        ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
+        # pnpm 11 and 12 report a patch that does not apply as PATCH_FAILED, and pnpm 12 reports one it cannot
+        # parse as INVALID_PATCH
+        ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_(?:NOT_APPLIED|FAILED)|ERR_PNPM_INVALID_PATCH/
 
         # this intermittent issue is related with Node v20
         ERR_INVALID_THIS = /ERR_INVALID_THIS/
@@ -163,12 +192,32 @@ module Dependabot
         INVALID_PACKAGE_SPEC = /Invalid package manager specification/
 
         # Metadata inconsistent error codes
-        ERR_PNPM_META_FETCH_FAIL = /ERR_PNPM_META_FETCH_FAIL/
-        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON/
+        # pnpm 12 reports a registry request that fails as RESOLVING_NPM_RESOLVER_NETWORK_ERROR and metadata it
+        # cannot decode as RESOLVING_NPM_RESOLVER_DECODE_ERROR
+        ERR_PNPM_META_FETCH_FAIL = /ERR_PNPM_META_FETCH_FAIL|ERR_PNPM_RESOLVING_NPM_RESOLVER_NETWORK_ERROR/
+        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON|ERR_PNPM_RESOLVING_NPM_RESOLVER_DECODE_ERROR/
 
         # Directory related error codes
-        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
-        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
+        # pnpm 12 prints these two without their ERR_PNPM_* code, so they are matched on the message as well
+        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /Could not install from "(?<dir>[^"]*)" as it does not exist/
+        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = T.let(
+          Regexp.union(
+            /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/,
+            /is in the dependencies but no package named ".*" is present in the workspace/
+          ),
+          Regexp
+        )
+
+        # pnpm 12 only reads lockfileVersion 9.x
+        INCOMPATIBLE_LOCKFILE_VERSION =
+          /lockfileVersion of (?<found>[\d.]+) is incompatible.*supports lockfileVersion (?<supported>[\w.]+)/m
+
+        # pnpm-workspace.yaml has a setting this pnpm does not know (a typo, or one from another major version).
+        # pnpm only fails on it when the project pins pnpm; otherwise it warns and ignores the setting.
+        ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS = /ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS/
+        UNRECOGNIZED_SETTINGS_LIST = /not recognized by this version of pnpm: (?<settings>[^\n]*)/
+        # Quoted names, not the `"<name>"?` suggestions that follow "did you mean"
+        UNRECOGNIZED_SETTING_NAME = /"(?<name>[^"]+)"(?=\s*(?:\(did you mean|,|\.|$))/
 
         # Unparsable package.json file
         ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
@@ -445,6 +494,8 @@ module Dependabot
         # old to enforce it.
         sig { returns(T.nilable(String)) }
         def release_age_gate_config
+          raise_if_cooldown_cannot_be_applied!
+
           if !security_updates_only? && @release_age_days&.positive? && !pnpm_supports_minimum_release_age?
             Dependabot.logger.warn(
               "pnpm #{pnpm_version || '(unknown version)'} does not support minimumReleaseAge " \
@@ -463,6 +514,25 @@ module Dependabot
           return minimum_release_age_gate_args(minutes) if security_updates_only?
 
           minimum_release_age_gate_args(minutes)
+        end
+
+        # A cooldown that Dependabot cannot pass to pnpm must not be dropped silently. A pnpm version that is
+        # unreadable even after a retry is not the same as one that is too old to have the setting (that case
+        # is logged and carries on), so stop rather than propose versions the cooldown would hold back.
+        sig { void }
+        def raise_if_cooldown_cannot_be_applied!
+          return if security_updates_only? || !@release_age_days&.positive?
+          return unless pnpm_version.nil?
+
+          # Probe again, for the cause: a failed command raises its own error, which is what the user needs to see
+          # (a download that failed is not a misconfiguration). A version that comes back this time is used.
+          @pnpm_version = Helpers.pnpm_version!
+        rescue ArgumentError => e
+          raise Dependabot::MisconfiguredTooling.new(
+            "pnpm",
+            "`pnpm -v` did not print a version Dependabot could read (#{e.message}), so the cooldown cannot be " \
+            "applied to the dependencies pnpm resolves."
+          )
         end
 
         # The pnpm `minimumReleaseAge` value (in minutes) to enforce for this
@@ -679,7 +749,7 @@ module Dependabot
           !version.nil? && version < Version.new(PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION)
         end
 
-        # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
+        # Tries a deep `pnpm update <dep>` (see NativeHelpers::PNPM_DEEP_UPDATE_DEPTH) for each dependency as a
         # first-tier fallback when the regular update is a no-op (typically
         # transitive deps not listed in any package.json), without relying on
         # audit fixes that may modify manifests on older pnpm versions. It is
@@ -695,7 +765,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed
           Dependabot.logger.info(
-            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
+            "pnpm deep update failed or partially fixed — continuing with any changes made"
           )
         end
 
@@ -760,7 +830,7 @@ module Dependabot
             .returns(T.noreturn)
         end
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
-          error_message = error.message
+          error_message = PnpmErrorMessage.normalize(error.message)
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
             raise_resolvability_error(error_message, pnpm_lock)
@@ -770,6 +840,11 @@ module Dependabot
             url = error_message.match(UNREACHABLE_GIT)&.named_captures&.fetch("url")&.gsub("git+ssh://git@", "https://")&.delete_suffix(".git")
 
             raise Dependabot::GitDependenciesNotReachable, T.must(url)
+          end
+
+          if error_message.match?(ERR_PNPM_GIT_RESOLVE_FAILED) &&
+             (match = error_message.match(GIT_RESOLVE_FAILED_SPECIFIER))
+            raise Dependabot::GitDependenciesNotReachable, git_dependency_url(T.must(match[:specifier]))
           end
 
           if error_message.match?(UNREACHABLE_GIT_V8)
@@ -786,6 +861,8 @@ module Dependabot
             dependency_url = T.must(error_message.match(regexp)&.named_captures&.[]("dependency_url"))
             raise_package_access_error(error_message, dependency_url, pnpm_lock)
           end
+
+          raise_release_age_not_met_error(error_message) if error_message.match?(ERR_PNPM_RELEASE_AGE_NOT_MET)
 
           # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
           if error_message.match?(ERR_PNPM_TARBALL_INTEGRITY)
@@ -812,6 +889,18 @@ module Dependabot
             msg = "No package named \"#{dependency_names}\" present in workspace."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS)
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, unrecognized_workspace_settings_message(error_message)
+          end
+
+          if (match = error_message.match(INCOMPATIBLE_LOCKFILE_VERSION))
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotSupported,
+                  "#{pnpm_lock.path} has lockfileVersion #{match[:found]}, but the pnpm version Dependabot runs " \
+                  "only supports lockfileVersion #{match[:supported]}."
           end
 
           if error_message.match?(ERR_PNPM_BROKEN_METADATA_JSON)
@@ -885,6 +974,73 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
 
+        # The update is not possible because pnpm would have to pick a version inside the release-age window. The
+        # package pnpm rejects is often a transitive dependency, or one that is not in this update, so the error
+        # names the dependencies of the update it rejected when it is one of them, and all of them otherwise. The
+        # rejected package is in the log either way.
+        sig { params(error_message: String).returns(T.noreturn) }
+        def raise_release_age_not_met_error(error_message)
+          rejected = error_message.scan(RELEASE_AGE_REJECTED_PACKAGE).flatten.compact.uniq
+          names = dependencies.map(&:name)
+          blocked = names & rejected
+
+          Dependabot.logger.warn(
+            "pnpm found no version old enough for the release-age window (rejected: #{rejected.join(', ')}), " \
+            "so the update is not possible: #{error_message}"
+          )
+          raise Dependabot::UpdateNotPossible, blocked.empty? ? names : blocked
+        end
+
+        # The repository URL for a git dependency's specifier, which can be `github:owner/repo#ref`, `owner/repo`,
+        # or an ssh or https URL.
+        sig { params(specifier: String).returns(String) }
+        def git_dependency_url(specifier)
+          source = specifier.sub(/#.*\z/m, "")
+
+          case source
+          when %r{\Agithub:(?<repo>[^/]+/[^/]+)\z}, %r{\A(?<repo>[\w.-]+/[\w.-]+)\z}
+            "https://github.com/#{T.must(Regexp.last_match)[:repo]}".delete_suffix(".git")
+          else
+            # ssh URLs and scp-style `git@host:owner/repo` specifiers separate the host from the path with ":" or "/"
+            source.delete_prefix("git+")
+                  .sub(%r{\A(?:ssh://)?git@(?<host>[^:/]+)[:/]}, 'https://\k<host>/')
+                  .delete_suffix(".git")
+          end
+        end
+
+        # pnpm 7 and 8 enforce `engines.pnpm`. When Dependabot ran one of them because that is the pnpm that wrote
+        # the lockfile (see Helpers.matching_pnpm_major_for_files), the repository asks for a newer pnpm than the one
+        # that can read its lockfile, and no pnpm Dependabot runs satisfies both.
+        sig do
+          params(
+            match_pkg_mgr: T.nilable(MatchData),
+            match_version: T.nilable(MatchData),
+            pnpm_lock: Dependabot::DependencyFile
+          ).void
+        end
+        def raise_old_lockfile_engine_conflict(match_pkg_mgr, match_version, pnpm_lock)
+          # The same error code is used when only the Node version is refused (`Your Node version is incompatible`)
+          return unless match_pkg_mgr && match_pkg_mgr[:pkg_mgr] == PNPMPackageManager::NAME
+          return unless match_version && Helpers.matching_pnpm_major_for_files(dependency_files)
+
+          raise Dependabot::DependencyFileNotSupported,
+                "package.json requires pnpm #{match_version[:supported_ver]} (engines.pnpm), but " \
+                "#{pnpm_lock.path} is lockfileVersion #{Helpers.pnpm_lockfile_version(pnpm_lock)}, which " \
+                "Dependabot's default pnpm cannot read. Dependabot ran pnpm #{match_version[:detected_ver]}, the " \
+                "version that matches the lockfile, and pnpm refused it because of the engines requirement. " \
+                "Regenerate the lockfile with a pnpm version that satisfies the requirement."
+        end
+
+        sig { params(error_message: String).returns(String) }
+        def unrecognized_workspace_settings_message(error_message)
+          settings = error_message.match(UNRECOGNIZED_SETTINGS_LIST)&.[](:settings).to_s
+          names = settings.scan(UNRECOGNIZED_SETTING_NAME).flatten
+          listed = names.empty? ? "settings" : names.map { |name| "\"#{name}\"" }.join(", ")
+
+          "pnpm-workspace.yaml has #{listed} that this version of pnpm does not recognize. " \
+            "Fix the spelling or remove them."
+        end
+
         sig { params(error_message: String, pnpm_lock: Dependabot::DependencyFile).returns(T.noreturn) }
         def raise_resolvability_error(error_message, pnpm_lock)
           dependency_names = dependencies.map(&:name).join(", ")
@@ -905,12 +1061,14 @@ module Dependabot
         sig do
           params(
             error_message: String,
-            _pnpm_lock: Dependabot::DependencyFile
+            pnpm_lock: Dependabot::DependencyFile
           ).returns(T.nilable(T.noreturn))
         end
-        def raise_unsupported_engine_error(error_message, _pnpm_lock)
+        def raise_unsupported_engine_error(error_message, pnpm_lock)
           match_pkg_mgr = error_message.match(PACAKGE_MANAGER)
           match_version = error_message.match(VERSION_REQUIREMENT)
+
+          raise_old_lockfile_engine_conflict(match_pkg_mgr, match_version, pnpm_lock)
 
           unless match_pkg_mgr && match_version &&
                  match_pkg_mgr.named_captures && match_version.named_captures
@@ -1070,6 +1228,27 @@ module Dependabot
 
       ERR_PNPM_NO_VERSIONS = /ERR_PNPM_NO_VERSIONS/
 
+      # pnpm 10 prints a code between thin spaces, pnpm 11 in brackets and pnpm 12 as `Error: <code>`, so each code is
+      # matched anywhere in the message and the details are read with patterns that allow any Unicode whitespace.
+      # A warning line such as `[WARN] Unsupported engine` can precede an unrelated failure and is never matched.
+
+      # A tarball dependency whose lockfile entry has no integrity hash cannot be verified, so pnpm refuses it
+      ERR_PNPM_MISSING_TARBALL_INTEGRITY = /ERR_PNPM_MISSING_TARBALL_INTEGRITY/
+      MISSING_INTEGRITY_PACKAGE = /Cannot install package "(?<spec>[^"]+)"/
+
+      # The repository pins a Node.js version that is not the one Dependabot runs
+      ERR_PNPM_BAD_RUNTIME_VERSION = /ERR_PNPM_BAD_RUNTIME_VERSION/
+      RUNTIME_VERSION_REQUIREMENT =
+        /This project requires Node\.js (?<required>.+?)\. Your current Node\.js is (?<current>\S+)/
+      RUNTIME_TOOL_NAME = "Node"
+
+      # pnpm-workspace.yaml is not a valid workspace definition, for example when `packages` is missing or empty
+      ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION = /ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION/
+      WORKSPACE_CONFIGURATION_REASON =
+        /ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION\]?[[:space:]]*(?<reason>[^\n]+)/
+      PNPM_LOCKFILE_NAME = "pnpm-lock.yaml"
+      PNPM_WORKSPACE_FILE_NAME = "pnpm-workspace.yaml"
+
       # Initializes the YarnErrorHandler with dependencies and dependency files
       sig do
         params(
@@ -1096,16 +1275,68 @@ module Dependabot
       # Handles errors with specific to yarn error codes
       sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
       def handle_pnpm_error(error)
-        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS) ||
-           error.message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
+        message = PnpmErrorMessage.normalize(error.message)
+
+        raise_missing_tarball_integrity(message) if message.match?(ERR_PNPM_MISSING_TARBALL_INTEGRITY)
+        raise_bad_runtime_version(message) if message.match?(ERR_PNPM_BAD_RUNTIME_VERSION)
+        raise_invalid_workspace_configuration(message) if message.match?(ERR_PNPM_INVALID_WORKSPACE_CONFIGURATION)
+
+        if message.match?(DUPLICATE_PACKAGE) || message.match?(ERR_PNPM_NO_VERSIONS) ||
+           message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
 
           raise DependencyFileNotResolvable, "Error resolving dependency"
         end
 
         ## Clean error message from ANSI escape codes
-        return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
+        return unless message.match?(ECONNRESET_ERROR) || message.match?(SOCKET_HANG_UP)
 
         raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
+      end
+
+      private
+
+      # pnpm refuses the install and the repository has to supply the missing integrity hash. Verification must stay
+      # on, so the lockfile is never regenerated or relaxed here.
+      sig { params(message: String).returns(T.noreturn) }
+      def raise_missing_tarball_integrity(message)
+        spec = message.match(MISSING_INTEGRITY_PACKAGE)&.[](:spec)
+        # A scoped package name starts with "@", so the source follows the first "@" that has a character before it
+        name, source = spec&.split(/(?<=.)@/, 2)
+        entry = name ? "its entry for #{name}#{" (#{source})" if source}" : "a tarball dependency"
+
+        Dependabot.logger.warn(message)
+        raise DependencyFileNotResolvable,
+              "#{path_of(PNPM_LOCKFILE_NAME)} cannot be used because #{entry} has no integrity hash, " \
+              "so pnpm cannot verify the downloaded tarball."
+      end
+
+      sig { params(message: String).void }
+      def raise_bad_runtime_version(message)
+        match = message.match(RUNTIME_VERSION_REQUIREMENT)
+        return unless match
+
+        Dependabot.logger.warn(message)
+        raise ToolVersionNotSupported.new(RUNTIME_TOOL_NAME, T.must(match[:required]), T.must(match[:current]))
+      end
+
+      sig { params(message: String).returns(T.noreturn) }
+      def raise_invalid_workspace_configuration(message)
+        reason = message.match(WORKSPACE_CONFIGURATION_REASON)&.[](:reason)&.strip
+
+        Dependabot.logger.warn(message)
+        raise DependencyFileNotResolvable,
+              "#{path_of(PNPM_WORKSPACE_FILE_NAME)} is not a valid pnpm workspace definition" \
+              "#{": #{reason}" unless reason.to_s.empty?}"
+      end
+
+      # The file closest to the repository root, since pnpm ran from there
+      sig { params(file_name: String).returns(String) }
+      def path_of(file_name)
+        file = dependency_files
+               .select { |f| File.basename(f.name) == file_name }
+               .min_by { |f| f.name.length }
+
+        file ? file.path : file_name
       end
     end
   end

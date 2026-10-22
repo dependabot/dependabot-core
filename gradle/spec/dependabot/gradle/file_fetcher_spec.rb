@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
   def stub_no_plugin_source_files(*project_dirs)
     project_dirs.each do |project_dir|
-      described_class::PLUGIN_SOURCE_SET_DIRS.each do |source_dir|
+      Dependabot::Gradle::FileFetcher::PLUGIN_SOURCE_SET_DIRS.each do |source_dir|
         path = project_dir == "." ? source_dir : File.join(project_dir, source_dir)
         stub_no_content_request("#{path}?ref=sha")
       end

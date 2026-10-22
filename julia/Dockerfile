@@ -12,8 +12,22 @@ USER dependabot
 
 # Install Julia, pinned to the 1.13 release channel rather than juliaup's default
 # `release` channel so a new minor Julia release cannot change the image under us.
-RUN curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel 1.13 \
-    && . ~/.bashrc
+# Retry the whole install because juliaup's own downloads can time out.
+# Clear partial installation state so the non-interactive installer can retry.
+RUN attempts=8; delay=10; \
+    for attempt in $(seq 1 $attempts); do \
+      rm -rf ~/.juliaup ~/.julia/juliaup; \
+      if curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel 1.13; then \
+        break; \
+      fi; \
+      if [ "$attempt" -eq "$attempts" ]; then \
+        echo "juliaup install failed after ${attempts} attempts" >&2; exit 1; \
+      fi; \
+      echo "juliaup install attempt ${attempt}/${attempts} failed; retrying in ${delay}s..." >&2; \
+      sleep "$delay"; delay=$((delay * 2)); \
+    done \
+    && . ~/.bashrc \
+    && /home/dependabot/.juliaup/bin/julia --version
 
 ENV PATH="/home/dependabot/.juliaup/bin:$PATH"
 

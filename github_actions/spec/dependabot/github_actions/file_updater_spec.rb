@@ -2133,6 +2133,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         expect(fake_engine).to have_received(:relock).with(
           workflow_files: anything,
           lockfile: lockfile,
+          action_files: [],
           workflow_paths: [".github/workflows/workflow.yml"]
         )
       end
@@ -2142,6 +2143,24 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         expect(fake_engine).to have_received(:relock) do |workflow_files:, **|
           expect(workflow_files.find { |file| file.name == workflow.name }).to equal(workflow)
+        end
+      end
+
+      context "with a ghe.com home host" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: [dependency],
+            credentials: credentials,
+            options: { source_hostname: "tenant.ghe.com" }
+          )
+        end
+
+        it "relocks against the home host" do
+          updated_files
+
+          expect(Dependabot::GithubActions::Lockfile::CliEngine)
+            .to have_received(:new).with(credentials, hostname: "tenant.ghe.com")
         end
       end
 
@@ -2275,6 +2294,106 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         it "keeps the legacy workflow-only update path" do
           expect(updated_files.map(&:name)).to eq(["action.yml"])
           expect(fake_engine).not_to have_received(:relock)
+        end
+      end
+
+      context "when updating a composite action directory reached through $/" do
+        let(:directory) { "/.github/actions/inner" }
+        let(:workflow_file) do
+          Dependabot::DependencyFile.new(name: "action.yml", directory: directory, content: workflow_file_body)
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "../../workflows/actions.lock",
+            directory: directory,
+            content: super().content
+          )
+        end
+        let(:caller_body) { "jobs:\n  a:\n    steps:\n      - uses: $/.github/actions/inner\n" }
+        let(:caller_workflow) do
+          Dependabot::DependencyFile.new(
+            name: "../../workflows/workflow.yml",
+            directory: directory,
+            content: caller_body,
+            support_file: true
+          )
+        end
+        let(:files) { [workflow_file, lockfile, caller_workflow] }
+
+        before do
+          dependency.requirements.first[:file] = "action.yml"
+          T.must(dependency.previous_requirements).first[:file] = "action.yml"
+        end
+
+        it "relocks the workflows reaching it with the bumped composite" do
+          expect(updated_files.map(&:path)).to contain_exactly(
+            "/.github/actions/inner/action.yml",
+            "/.github/workflows/actions.lock"
+          )
+          expect(fake_engine).to have_received(:relock) do |workflow_files:, action_files:, workflow_paths:, **|
+            expect(workflow_paths).to eq([".github/workflows/workflow.yml"])
+            expect(workflow_files).to eq([caller_workflow])
+            expect(action_files.map(&:content)).to eq([updated_files.first.content])
+          end
+        end
+
+        context "when reached through a nested $/ composite" do
+          let(:caller_body) { "jobs:\n  a:\n    steps:\n      - uses: $/.github/actions/outer\n" }
+          let(:outer_action) do
+            Dependabot::DependencyFile.new(
+              name: "../outer/action.yaml",
+              directory: directory,
+              content: "runs:\n  using: composite\n  steps:\n    - uses: $/.github/actions/inner/\n",
+              support_file: true
+            )
+          end
+          let(:files) { [workflow_file, lockfile, caller_workflow, outer_action] }
+
+          it "relocks the outer workflow" do
+            updated_files
+
+            expect(fake_engine).to have_received(:relock)
+              .with(hash_including(workflow_paths: [".github/workflows/workflow.yml"]))
+          end
+        end
+
+        context "when reached through a reusable workflow" do
+          let(:caller_body) { "jobs:\n  a:\n    uses: $/.github/workflows/reusable.yml\n" }
+          let(:reusable_workflow) do
+            Dependabot::DependencyFile.new(
+              name: "../../workflows/reusable.yml",
+              directory: directory,
+              content: "on: workflow_call\njobs:\n  a:\n    steps:\n      - uses: $/.github/actions/inner\n",
+              support_file: true
+            )
+          end
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: "../../workflows/actions.lock",
+              directory: directory,
+              content: super().content.sub(
+                "dependencies:",
+                "  \".github/workflows/reusable.yml\":\n    - \"actions/setup-node@master\"\ndependencies:"
+              )
+            )
+          end
+          let(:files) { [workflow_file, lockfile, caller_workflow, reusable_workflow] }
+
+          it "relocks the reusable workflow but not its caller" do
+            updated_files
+
+            expect(fake_engine).to have_received(:relock)
+              .with(hash_including(workflow_paths: [".github/workflows/reusable.yml"]))
+          end
+        end
+
+        context "when no workflow reaches it" do
+          let(:caller_body) { "jobs:\n  a:\n    steps:\n      - uses: $/.github/actions/other\n" }
+
+          it "leaves the lock untouched" do
+            expect(updated_files.map(&:name)).to eq(["action.yml"])
+            expect(fake_engine).not_to have_received(:relock)
+          end
         end
       end
 

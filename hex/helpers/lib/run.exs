@@ -97,8 +97,8 @@ defmodule DependencyHelper do
     set_credentials(tail)
   end
 
-  defp set_credentials(["hex_repository", repo, url, auth_key, fingerprint | tail]) do
-    case fetch_public_key(repo, url, auth_key, fingerprint) do
+  defp set_credentials(["hex_repository", repo, url, auth_key, fingerprint, public_key | tail]) do
+    case resolve_public_key(repo, url, auth_key, fingerprint, public_key) do
       {:ok, public_key} ->
         update_repos(repo, %{auth_key: auth_key, public_key: public_key, url: url})
 
@@ -120,21 +120,21 @@ defmodule DependencyHelper do
     |> Hex.Config.update_repos()
   end
 
+  # Some registries (e.g. JFrog Artifactory) don't serve /public_key, so a
+  # configured key is used instead of downloading it.
+  defp resolve_public_key(repo, url, auth_key, fingerprint, public_key)
+       when public_key in [nil, ""] do
+    fetch_public_key(repo, url, auth_key, fingerprint)
+  end
+
+  defp resolve_public_key(repo, _url, _auth_key, fingerprint, public_key) do
+    verify_public_key(repo, public_key, fingerprint)
+  end
+
   defp fetch_public_key(repo, repo_url, auth_key, fingerprint) do
     case Hex.Repo.get_public_key(%{trusted: true, url: repo_url, auth_key: auth_key}) do
       {:ok, {200, _headers, key}} ->
-        try do
-          if public_key_matches?(key, fingerprint) do
-            {:ok, key}
-          else
-            {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
-          end
-        rescue
-          e in FunctionClauseError ->
-            {:error,
-             "Failed to decode public key for repo \"#{repo}\": " <>
-               "#{Exception.message(e)} (#{inspect(e.__struct__)})"}
-        end
+        verify_public_key(repo, key, fingerprint)
 
       {:ok, {code, _headers, _body}} ->
         {:error, "Downloading public key for repo \"#{repo}\" failed with code: #{inspect(code)}"}
@@ -142,6 +142,19 @@ defmodule DependencyHelper do
       other ->
         {:error, "Downloading public key for repo \"#{repo}\" failed: #{inspect(other)}"}
     end
+  end
+
+  defp verify_public_key(repo, key, fingerprint) do
+    if public_key_matches?(key, fingerprint) do
+      {:ok, key}
+    else
+      {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
+    end
+  rescue
+    e in FunctionClauseError ->
+      {:error,
+       "Failed to decode public key for repo \"#{repo}\": " <>
+         "#{Exception.message(e)} (#{inspect(e.__struct__)})"}
   end
 
   defp public_key_matches?(_public_key, _fingerprint = ""), do: true

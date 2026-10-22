@@ -745,6 +745,89 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
+
+      context "when the actions lockfile pins the action" do
+        let(:pin_hostname) { "" }
+        let(:lock_version) { "v0.0.3" }
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: Dependabot::GithubActions::LOCKFILE_NAME,
+            directory: Dependabot::GithubActions::WORKFLOW_DIRECTORY,
+            content: <<~YAML
+              version: '#{lock_version}'
+              dependencies:
+                'inactions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81':
+                  #{pin_hostname}
+                  ref: '01aecccf739ca6ff86c0539fbc67a7a5007bbc81'
+            YAML
+          )
+        end
+        let(:files) { [workflow_files, lockfile] }
+        let(:url) { dependencies.first.requirements.first.dig(:source, :url) }
+
+        before { stub_request(:get, service_pack_url).to_return(status: 503) }
+
+        it "keeps an omitted-hostname pin on the home host when the tenant blips" do
+          expect(url).to eq("https://ghes.other.com/inactions/checkout")
+        end
+
+        context "with an explicit github.com hostname" do
+          let(:pin_hostname) { "hostname: 'github.com'" }
+
+          before { mock_service_pack_request("inactions/checkout") }
+
+          it "binds to github.com without probing the tenant" do
+            expect(url).to eq("https://github.com/inactions/checkout")
+            expect(a_request(:get, service_pack_url)).not_to have_been_made
+          end
+        end
+
+        context "with an omitted hostname in a v0.0.2 lockfile" do
+          let(:lock_version) { "v0.0.2" }
+
+          before { mock_service_pack_request("inactions/checkout") }
+
+          it "keeps the legacy github.com binding" do
+            expect(url).to eq("https://github.com/inactions/checkout")
+            expect(a_request(:get, service_pack_url)).not_to have_been_made
+          end
+        end
+
+        context "with a hostname that is neither home nor github.com" do
+          let(:pin_hostname) { "hostname: 'other.ghe.com'" }
+
+          before { mock_service_pack_request("inactions/checkout") }
+
+          it "ignores the pinned hostname" do
+            expect(url).not_to include("other.ghe.com")
+            expect(a_request(:get, service_pack_url)).to have_been_made
+          end
+        end
+
+        context "with a ref that differs only in case" do
+          let(:pin_hostname) { "hostname: 'github.com'" }
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: Dependabot::GithubActions::LOCKFILE_NAME,
+              directory: Dependabot::GithubActions::WORKFLOW_DIRECTORY,
+              content: <<~YAML
+                version: 'v0.0.3'
+                dependencies:
+                  'InActions/Checkout@01AECCCF739CA6FF86C0539FBC67A7A5007BBC81':
+                    hostname: 'github.com'
+                    ref: '01AECCCF739CA6FF86C0539FBC67A7A5007BBC81'
+              YAML
+            )
+          end
+
+          before { mock_service_pack_request("inactions/checkout") }
+
+          it "does not inherit that pin's hostname" do
+            expect(url).to eq("https://github.com/inactions/checkout")
+            expect(a_request(:get, service_pack_url)).to have_been_made
+          end
+        end
+      end
     end
 
     context "with an inaccessible source" do

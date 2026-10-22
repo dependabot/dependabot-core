@@ -67,6 +67,23 @@ module Dependabot
           Array(workflows[path]).include?(action_ref)
         end
 
+        # The host a pinned `owner/repo@ref` is bound to. An omitted `hostname` means
+        # `home` in v0.0.3 and github.com in older schemas. Nil when unpinned or when
+        # bound to a host other than `home` or github.com.
+        sig { params(action_ref: String, home: String).returns(T.nilable(String)) }
+        def pinned_hostname(action_ref, home:)
+          nwo, _, ref = action_ref.rpartition("@")
+          entry = dependencies.find do |key, _|
+            key_nwo, _, key_ref = key.to_s.rpartition("@")
+            key_ref == ref && key_nwo.casecmp?(nwo)
+          end&.last
+          return unless entry.is_a?(Hash)
+
+          hostname = entry["hostname"].to_s
+          hostname = version == "v0.0.3" ? home : GITHUB_COM if hostname.empty?
+          hostname if [home, GITHUB_COM].include?(hostname)
+        end
+
         # Asserts every `dependencies` entry carries {REQUIRED_DEPENDENCY_KEYS}. A
         # missing key makes the engine silently treat the whole lockfile as empty.
         # Deferred to the relock gate (not the constructor) so a malformed lock

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the registry-response fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bun/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"

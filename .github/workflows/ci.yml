@@ -22,6 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: apm, name: apm, ecosystem: apm }
           - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }
@@ -178,6 +179,8 @@ jobs:
           go-version-file: 'silent/tests/go.mod'
 
       - name: Install Dependabot CLI
+        env:
+          GOTOOLCHAIN: auto
         run: go install github.com/dependabot/cli/cmd/dependabot@latest
 
       - name: Run integration tests

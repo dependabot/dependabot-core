@@ -1,0 +1,9 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "objnest": "4.1.4",
+    "objnest-alias": "npm:objnest@4.1.4"
+  }
+}

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "rspec/its"
@@ -11,6 +11,8 @@ require "simplecov"
 require "simplecov_json_formatter"
 require "stackprof"
 require "uri"
+
+extend T::Sig # rubocop:disable Style/MixinUsage
 
 # SimpleCov _must_ be started before any dependabot code is loaded
 SimpleCov.start do
@@ -99,7 +101,10 @@ VCR.configure do |config|
     interaction.response.headers.transform_keys!(&:downcase).delete("set-cookie")
     interaction.request.headers.transform_keys!(&:downcase).delete("authorization")
     uri = URI.parse(interaction.request.uri)
-    interaction.request.uri.sub!(%r{:\/\/.*#{Regexp.escape(uri.host)}}, "://#{uri.host}")
+    host = uri.host
+    raise TypeError, "no implicit conversion of nil into String" if host.nil?
+
+    interaction.request.uri.sub!(%r{:\/\/.*#{Regexp.escape(host)}}, "://#{host}")
   end
 
   # Prevent access tokens being written to VCR cassettes
@@ -112,17 +117,26 @@ VCR.configure do |config|
   # Let's you set default VCR mode with VCR=all for re-recording
   # episodes. We use :none here to avoid recording new cassettes
   # in CI if it doesn't already exist for a test
-  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :none
+  vcr_mode = ENV.fetch("VCR", nil)
+  record_mode = vcr_mode ? vcr_mode.to_sym : :none
   config.default_cassette_options = { record: record_mode }
 end
 
+sig { params(name: String).returns(String) }
 def fixture(*name)
-  File.read(File.join("spec", "fixtures", File.join(*name)))
+  File.read(File.join("spec", "fixtures", File.join(name)))
 end
 
 # Creates a temporary directory and writes the provided files into it.
 #
 # @param files [DependencyFile] the files to be written into the temporary directory
+sig do
+  params(
+    files: T::Array[Dependabot::DependencyFile],
+    tmp_dir_path: String,
+    tmp_dir_prefix: T.nilable(T.any(String, T::Array[String]))
+  ).returns(String)
+end
 def write_tmp_repo(
   files,
   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
@@ -156,6 +170,14 @@ end
 # @param project [String] the project directory, located in
 # "spec/fixtures/projects"
 # @return [String] the path to the new temp repo.
+sig do
+  params(
+    project: String,
+    path: String,
+    tmp_dir_path: String,
+    tmp_dir_prefix: T.nilable(T.any(String, T::Array[String]))
+  ).returns(String)
+end
 def build_tmp_repo(
   project,
   path: "projects",
@@ -180,6 +202,7 @@ def build_tmp_repo(
   tmp_repo_path.to_s
 end
 
+sig { params(project: String, directory: String).returns(T::Array[Dependabot::DependencyFile]) }
 def project_dependency_files(project, directory: "/")
   project_path = File.expand_path(File.join("spec/fixtures/projects", project, directory))
 
@@ -201,6 +224,7 @@ def project_dependency_files(project, directory: "/")
 end
 
 # Spec helper to provide GitHub credentials if set via an environment variable
+sig { returns(T::Array[T::Hash[String, T.nilable(String)]]) }
 def github_credentials
   if ENV["DEPENDABOT_TEST_ACCESS_TOKEN"].nil? && ENV["LOCAL_GITHUB_ACCESS_TOKEN"].nil?
     []
@@ -215,6 +239,7 @@ def github_credentials
 end
 
 # Load a command from the fixtures/commands directory
+sig { params(name: String).returns(String) }
 def command_fixture(name)
   path = File.join("spec", "fixtures", "commands", name)
   raise "Command fixture '#{name}' does not exist" unless File.exist?(path)
@@ -224,7 +249,15 @@ end
 
 # Define an anonymous subclass of Dependabot::Requirement for testing purposes
 TestRequirement = Class.new(Dependabot::Requirement) do
+  sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Dependabot::Requirement]) }
+  def self.requirements_array(requirement_string)
+    raise ArgumentError, "TestRequirement requires a constraint string" if requirement_string.nil?
+
+    [new(requirement_string)]
+  end
+
   # Initialize with comma-separated requirement constraints
+  sig { params(constraint_string: String).void }
   def initialize(constraint_string)
     requirements = constraint_string.split(",").map(&:strip)
     super(requirements)

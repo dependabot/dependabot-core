@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/native_helpers"
 require "dependabot/go_modules/update_checker/latest_version_finder"
+require "dependabot/go_modules/module_info"
 
 RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
   let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
@@ -465,6 +466,154 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "returns the latest resolvable version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.0.0"))
+      end
+    end
+  end
+
+  describe "#latest_version with module response decoding" do
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:version_query) { "go list -m -versions -json #{dependency_name}" }
+    let(:version_fingerprint) { "go list -m -versions -json <dependency_name>" }
+    let(:timestamp_fingerprint) { "go list -m -json <dependency_name>" }
+    let(:newest_query) { "go list -m -json #{dependency_name}@v1.3.0" }
+    let(:middle_query) { "go list -m -json #{dependency_name}@v1.2.0" }
+    let(:oldest_query) { "go list -m -json #{dependency_name}@v1.1.0" }
+    let(:newest_response) { '{"Time":"2024-06-14T00:00:00Z"}' }
+    let(:middle_response) { '{"Time":"2024-06-01T00:00:00Z"}' }
+    let(:oldest_response) { '{"Time":"2024-05-01T00:00:00Z"}' }
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.utc(2024, 6, 15))
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(a_string_starting_with("git "), any_args).and_call_original
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with("go mod edit -json").and_return("{}")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(version_query, fingerprint: version_fingerprint).and_return('{"Versions":["v1.1.0","v1.2.0","v1.3.0"]}')
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(newest_query, fingerprint: timestamp_fingerprint).and_return(newest_response)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(middle_query, fingerprint: timestamp_fingerprint).and_return(middle_response)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(oldest_query, fingerprint: timestamp_fingerprint).and_return(oldest_response)
+    end
+
+    it "updates cached release objects lazily and stops at the first eligible candidate" do
+      releases = finder.available_versions
+      newest, middle, oldest = releases
+      details = newest.details
+
+      expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.2.0"))
+      expect(finder.available_versions).to equal(releases)
+      expect(finder.available_versions.first).to equal(newest)
+      expect(newest.released_at).to eq(Time.utc(2024, 6, 14))
+      expect(middle.released_at).to eq(Time.utc(2024, 6, 1))
+      expect(oldest.released_at).to be_nil
+      expect(newest.details).to equal(details)
+      expect(newest.details).to eq("version_string" => "v1.3.0")
+      expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+        .with(oldest_query, fingerprint: timestamp_fingerprint)
+    end
+
+    it "does not repeat requests for a cached selection" do
+      2.times { expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.2.0")) }
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with(version_query, fingerprint: version_fingerprint).once
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with(newest_query, fingerprint: timestamp_fingerprint).once
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with(middle_query, fingerprint: timestamp_fingerprint).once
+    end
+
+    context "without cooldown" do
+      let(:cooldown_options) { nil }
+
+      it "does not query timestamps" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.3.0"))
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+          .with(a_string_starting_with("go list -m -json "), anything)
+      end
+    end
+
+    it "does not add timestamp requests to security selection" do
+      expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+      expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+        .with(a_string_starting_with("go list -m -json "), anything)
+    end
+
+    ["{}", '{"Time":null}'].each do |body|
+      context "with an absent timestamp #{body}" do
+        let(:newest_response) { body }
+
+        it "clears a previous date on the same cached object and permits the update" do
+          newest = finder.available_versions.first
+          newest.released_at = Time.utc(2024, 6, 14)
+
+          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.3.0"))
+          expect(finder.available_versions.first).to equal(newest)
+          expect(newest.released_at).to be_nil
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(middle_query, fingerprint: timestamp_fingerprint)
+        end
+      end
+    end
+
+    context "when the timestamp command fails" do
+      before do
+        failure = Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "network failure", error_context: {})
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(newest_query, fingerprint: timestamp_fingerprint).and_raise(failure)
+        allow(Dependabot.logger).to receive(:info).and_call_original
+      end
+
+      it "retains the existing date and logs the ordinary failure" do
+        newest = finder.available_versions.first
+        newest.released_at = Time.utc(2024, 6, 14)
+
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.3.0"))
+        expect(newest.released_at).to eq(Time.utc(2024, 6, 14))
+        expect(Dependabot.logger).to have_received(:info)
+          .with("Error while fetching release date info: network failure")
+      end
+    end
+
+    [
+      '{"do-not-echo-this":',
+      "null",
+      '{"Time":false}',
+      '{"Time":"do-not-echo-this"}',
+      '{"Time":"2024-06-14T00:00:00Z","Versions":[null]}'
+    ].each do |body|
+      context "with malformed timestamp output #{body}" do
+        let(:newest_response) { body }
+
+        it "propagates the error without altering cached metadata or selecting another candidate" do
+          newest = finder.available_versions.first
+          newest.released_at = Time.utc(2024, 6, 14)
+
+          expect { finder.latest_version }.to raise_error(Dependabot::GoModules::ModuleInfo::InvalidOutput)
+          expect(newest.released_at).to eq(Time.utc(2024, 6, 14))
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(middle_query, fingerprint: timestamp_fingerprint)
+        end
+      end
+    end
+
+    context "when every candidate remains in cooldown" do
+      let(:middle_response) { newest_response }
+      let(:oldest_response) { newest_response }
+
+      it "preserves repeated date queries when the selected version remains nil" do
+        2.times { expect(finder.latest_version).to be_nil }
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(version_query, fingerprint: version_fingerprint).once
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(newest_query, fingerprint: timestamp_fingerprint).twice
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(middle_query, fingerprint: timestamp_fingerprint).twice
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(oldest_query, fingerprint: timestamp_fingerprint).twice
       end
     end
   end
