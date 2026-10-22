@@ -48,6 +48,27 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(package_details.releases.length).to eq(8)
     end
 
+    it "includes release dates for cooldown filtering" do
+      package_details = finder.fetch
+
+      expect(package_details.releases).to all(have_attributes(released_at: be_a(Time)))
+      expect(package_details.releases.find { |release| release.version.to_s == "nightly-2018-05-10" })
+        .to have_attributes(released_at: Time.utc(2018, 5, 10))
+      expect(package_details.releases.find { |release| release.version.to_s == "1.32.0" })
+        .to have_attributes(released_at: Time.utc(2019, 1, 15))
+    end
+
+    it "parses release dates as UTC midnight regardless of the local timezone" do
+      original_timezone = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "America/New_York"
+
+      package_details = finder.fetch
+      expect(package_details.releases.find { |release| release.version.to_s == "nightly-2018-05-10" })
+        .to have_attributes(released_at: Time.utc(2018, 5, 10))
+    ensure
+      ENV["TZ"] = original_timezone
+    end
+
     it "parses stable channel versions correctly" do
       package_details = finder.fetch
       stable_releases = package_details.releases.select { |r| r.version.channel.stability == "stable" }
