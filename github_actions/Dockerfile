@@ -2,6 +2,8 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 ARG TARGETARCH
+# TODO: bump to the next gh-actions-lock release (adds `--ignore-local-actions`,
+# required by Lockfile::CliEngine) and update both checksums from its assets.
 ARG GH_ACTIONS_LOCK_VERSION=v0.2.0
 ARG GH_ACTIONS_LOCK_AMD64_CHECKSUM=79ec84c191667fd935a277e6fd3662cf5d3669cccc9e99998731d8f306f373b6
 ARG GH_ACTIONS_LOCK_ARM64_CHECKSUM=c79a279d6b0b635dc89ab6d38d0ecf98ff83abcee7bb483cd53353b74cd4f6df
