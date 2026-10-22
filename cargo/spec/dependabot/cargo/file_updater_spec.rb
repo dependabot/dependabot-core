@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
           end
 
           it "includes the new requirement" do
-            expect(described_class::ManifestUpdater)
+            expect(Dependabot::Cargo::FileUpdater::ManifestUpdater)
               .to receive(:new)
               .with(dependencies: [dependency], manifest: manifest)
               .and_call_original
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(described_class::LockfileUpdater)
+          expect(Dependabot::Cargo::FileUpdater::LockfileUpdater)
             .to receive(:new)
             .with(
               credentials: credentials,

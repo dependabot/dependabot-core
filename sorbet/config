@@ -15,7 +15,6 @@
 --ignore=bazel/spec/
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
---ignore=cargo/spec/
 --ignore=composer/spec/
 --ignore=elm/spec/
 --ignore=github_actions/spec/
