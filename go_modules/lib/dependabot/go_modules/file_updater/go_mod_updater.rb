@@ -202,7 +202,11 @@ module Dependabot
           return [] unless Dependabot::Experiments.enabled?(:enable_go_work_version_sync)
 
           dependency_files.select do |file|
-            file.support_file? &&
+            # Ancestor workspace files are fetched as support files, but once a prior
+            # grouped update changes one, `FileUpdater` marks it as a non-support file
+            # so it is included in the PR. Match by name instead of `support_file?` so
+            # later updates in the same directory still treat it as the ancestor workspace.
+            file.name.start_with?("../") &&
               ANCESTOR_WORKSPACE_FILENAMES.include?(File.basename(file.name))
           end
         end
