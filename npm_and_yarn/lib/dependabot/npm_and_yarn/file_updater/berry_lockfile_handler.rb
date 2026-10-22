@@ -102,6 +102,20 @@ module Dependabot
         end
         private_class_method :subdependency_resolution
 
+        # Yarn 2/3 ignore `name@npm:range` resolution selectors, while `name@range` works on every Berry
+        # version. Alias descriptors (`alias@npm:pkg@range`) keep their original form.
+        sig { params(descriptor: String).returns(String) }
+        def self.resolution_selector(descriptor)
+          name, reference = split_descriptor(descriptor)
+          return descriptor unless name && reference&.start_with?("npm:")
+
+          range = reference.delete_prefix("npm:")
+          return descriptor if range.match?(%r{\A(?:@[^/@]+/)?[^/@]+@})
+
+          "#{name}@#{range}"
+        end
+        private_class_method :resolution_selector
+
         sig do
           params(
             yarn_lock: Dependabot::DependencyFile,
@@ -122,9 +136,9 @@ module Dependabot
             [selector, descriptor ? resolutions.fetch(descriptor) : reference]
           end
           # Existing selectors match the original incoming requests; lockfile descriptors may already be rewritten.
-          manifest["resolutions"] = existing_resolutions.merge(resolutions) do |_selector, existing, _temporary|
-            existing
-          end
+          manifest["resolutions"] = existing_resolutions.merge(
+            resolutions.transform_keys { |descriptor| resolution_selector(descriptor) }
+          ) { |_selector, existing, _temporary| existing }
           begin
             File.write(manifest_path, JSON.pretty_generate(manifest))
             yield
