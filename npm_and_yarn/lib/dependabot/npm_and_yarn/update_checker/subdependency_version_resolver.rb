@@ -83,7 +83,11 @@ module Dependabot
           return if bundled_dependency?
 
           SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
-            dependency_files_builder.write_temporary_dependency_files
+            dependency_files_builder.write_temporary_dependency_files(
+              preserve_yarn_lockfile_entries: !@target_version.nil? &&
+                Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies) &&
+                dependency_files_builder.yarn_locks.any? { |lockfile| Helpers.yarn_berry?(lockfile) }
+            )
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
               updated_content = update_subdependency_in_lockfile(lockfile)
@@ -428,11 +432,7 @@ module Dependabot
         sig { returns(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) }
         def dependency_files_builder
           @dependency_files_builder ||= T.let(
-            DependencyFilesBuilder.new(
-              dependency: dependency,
-              dependency_files: dependency_files,
-              credentials: credentials
-            ),
+            DependencyFilesBuilder.new(dependency:, dependency_files:, credentials:),
             T.nilable(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder)
           )
         end

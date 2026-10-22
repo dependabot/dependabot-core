@@ -29,13 +29,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
       credentials: [],
       ignored_versions: [],
       latest_allowable_version: "5.0.12",
-      target_version: "2.1.4",
+      target_version: target_version,
       repo_contents_path: nil
     )
   end
 
   sig { returns(String) }
   let(:updated_version) { "2.1.4" }
+
+  sig { returns(T.nilable(String)) }
+  let(:target_version) { "2.1.4" }
 
   sig { returns(String) }
   let(:updated_lockfile_content) do
@@ -118,6 +121,62 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
       fingerprint: "install",
       env: { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
     ).twice
+  end
+
+  context "with unquoted Berry descriptors" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "yarn.lock"
+
+        file.dup.tap { |copy| copy.content = T.must(file.content).gsub(/^"(brace-expansion@[^"]+)":$/, '\1:') }
+      end
+    end
+
+    it "preserves installed versions for the scoped resolution" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_command).with(
+        "install --mode=update-lockfile",
+        fingerprint: "install",
+        env: { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
+      ).twice
+    end
+
+    context "when the experiment is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+      end
+
+      it "retains pruning and the legacy combined-version result" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
+          expect(File.read("yarn.lock")).not_to include("brace-expansion@npm:^2.0.2")
+          File.write("yarn.lock", updated_lockfile_content)
+          ""
+        end
+
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("1.1.12"))
+      end
+    end
+
+    context "without a scoped target version" do
+      sig { returns(T.nilable(String)) }
+      let(:target_version) { nil }
+
+      it "retains pruning and uses the ordinary update command" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).with(
+          "up -R brace-expansion --mode=update-lockfile",
+          fingerprint: "up -R <dependency_name> --mode=update-lockfile"
+        ) do
+          expect(File.read("yarn.lock")).not_to include("brace-expansion@npm:^2.0.2")
+          File.write("yarn.lock", updated_lockfile_content)
+          ""
+        end
+
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      end
+    end
   end
 
   context "with Yarn 2" do
