@@ -7,9 +7,7 @@ require "dependabot/dependency_change_builder"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_security_update_pull_request"
-require "dependabot/bun"
-require "dependabot/cargo"
-require "dependabot/npm_and_yarn"
+require "dependabot/bundler"
 
 # Sorbet fixture signatures must stay beside their lets.
 # rubocop:disable-next RSpec/ScatteredLet
@@ -31,7 +29,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   let(:vulnerable_production) { true }
 
   sig { returns(String) }
-  let(:affected_versions) { ">= 2.0.0 < 2.1.4" }
+  let(:affected_versions) { ">= 2.0.0, < 2.1.4" }
 
   sig { returns(Dependabot::Job) }
   let(:job) do
@@ -134,7 +132,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   end
 
   sig { returns(RSpec::Mocks::ClassVerifyingDouble) }
-  let(:checker_class) { class_double(Dependabot::NpmAndYarn::UpdateChecker) }
+  let(:checker_class) { class_double(Dependabot::UpdateCheckers::Base) }
 
   sig { returns(Dependabot::DependencyChange) }
   let(:dependency_change) do
@@ -154,6 +152,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   let(:error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
 
   before do
+    # Updater CI only includes Bundler, so use its version primitives to test cross-ecosystem orchestration.
+    allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_call_original
+    allow(Dependabot::Utils).to receive(:version_class_for_package_manager)
+      .with(package_manager).and_return(Dependabot::Bundler::Version)
+    allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager).and_call_original
+    allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
+      .with(package_manager).and_return(Dependabot::Bundler::Requirement)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).with(package_manager).and_return(checker_class)
@@ -279,9 +284,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     sig { returns(String) }
     let(:package_manager) { "bun" }
 
-    sig { returns(RSpec::Mocks::ClassVerifyingDouble) }
-    let(:checker_class) { class_double(Dependabot::Bun::UpdateChecker) }
-
     it "refreshes the vulnerable installed copy" do
       allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_return(dependency_change)
       expect(error_handler).not_to receive(:handle_dependency_error)
@@ -299,9 +301,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     sig { returns(String) }
     let(:package_manager) { "cargo" }
 
-    sig { returns(String) }
-    let(:affected_versions) { ">= 2.0.0, < 2.1.4" }
-
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     let(:dependency_files) do
       [Dependabot::DependencyFile.new(
@@ -309,9 +308,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         content: "[package]\nname = \"refresh-security-fixture\"\n"
       )]
     end
-
-    sig { returns(RSpec::Mocks::ClassVerifyingDouble) }
-    let(:checker_class) { class_double(Dependabot::Cargo::UpdateChecker) }
 
     sig { returns(Dependabot::Dependency) }
     let(:first_locked_dependency) do
