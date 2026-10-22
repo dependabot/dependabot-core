@@ -16,6 +16,7 @@ import semver from "semver";
 import {
   parseNormalized,
   normalizeDependencyEdge,
+  normalizeDescriptor,
   findEntries,
   edgeKey,
   type DependencyEdge,
@@ -115,6 +116,9 @@ async function findNormalizedConflictingDependencies(
       .map((edge) => edge.name)
   );
 
+  const resolutions: Record<string, string> =
+    JSON.parse(packageJson).resolutions || {};
+
   const manifestConflictingParents = topLevelEdges.flatMap((topLevelEdge) => {
     const topLevelSpec: TopLevelSpec = {
       name: topLevelEdge.name,
@@ -129,7 +133,12 @@ async function findNormalizedConflictingDependencies(
         targetVersion,
         currentVersion,
         topLevelSpec,
-        lockfileJson
+        lockfileJson,
+        {} as TransitiveSpec,
+        new Map(),
+        new Map(),
+        0,
+        resolutions
       ).values()
     );
   });
@@ -175,7 +184,11 @@ async function findNormalizedConflictingDependencies(
             currentVersion,
             { ...topLevelSpec },
             lockfileJson,
-            { ...transitiveSpec }
+            { ...transitiveSpec },
+            new Map(),
+            new Map(),
+            0,
+            resolutions
           ).values()
         )
       );
@@ -291,7 +304,8 @@ function findConflictingParentDependencies(
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
   shortestDepthByEntry: Map<string, number> = new Map(),
   conflictingParents: Map<string, ParentSpec> = new Map(),
-  depth = 0
+  depth = 0,
+  resolutions: Record<string, string> = {}
 ): Map<string, ParentSpec> {
   const checkedEntry = edgeKey(edge);
   const shortestDepth = shortestDepthByEntry.get(checkedEntry);
@@ -317,7 +331,13 @@ function findConflictingParentDependencies(
       if (
         realNameOf(subDep) === targetDep &&
         conflictsWith(targetversion, subDep) &&
-        resolvesToCurrentVersion(lockfile, subDep, currentVersion)
+        resolvesToCurrentVersion(
+          lockfile,
+          subDep,
+          currentVersion,
+          pkg,
+          resolutions
+        )
       ) {
         // Only add the conflicting parent once per version preventing
         // duplicate dependencies from circular graphs.
@@ -353,7 +373,8 @@ function findConflictingParentDependencies(
           nextTransitiveSpec,
           shortestDepthByEntry,
           conflictingParents,
-          depth + 1
+          depth + 1,
+          resolutions
         );
       }
     }
@@ -362,14 +383,63 @@ function findConflictingParentDependencies(
   return conflictingParents;
 }
 
+// Finds the manifest `resolutions` rule that rewrites a parent's request, if
+// any. Parent-specific selectors take precedence over descriptor-specific ones,
+// which take precedence over package-wide ones.
+function resolutionFor(
+  resolutions: Record<string, string>,
+  parentName: string,
+  edge: DependencyEdge
+): string | undefined {
+  const depName = realNameOf(edge);
+  const requirement = realRequirementOf(edge);
+  let best: { rank: number; value: string } | undefined;
+
+  for (const [key, value] of Object.entries(resolutions)) {
+    if (typeof value !== "string") continue;
+
+    const selector = key.replace(/^(\*\*\/)+/, "");
+    const match = selector.match(
+      /^(?:((?:@[^/@]+\/)?[^/@]+)\/)?((?:@[^/@]+\/)?[^/@]+)(?:@(.+))?$/
+    );
+    if (!match) continue;
+    const [, parent, target, range] = match;
+
+    if (target !== depName) continue;
+    if (parent !== undefined && parent !== parentName) continue;
+    if (range !== undefined && range.replace(/^npm:/, "") !== requirement) {
+      continue;
+    }
+
+    const rank = parent !== undefined ? 2 : range !== undefined ? 1 : 0;
+    if (!best || rank > best.rank) best = { rank, value };
+  }
+
+  return best?.value;
+}
+
 function resolvesToCurrentVersion(
   lockfile: NormalizedLockfileEntry[],
   edge: DependencyEdge,
-  currentVersion?: string
+  currentVersion?: string,
+  parent?: DependencyEdge,
+  resolutions: Record<string, string> = {}
 ): boolean {
   if (!currentVersion) return true;
 
-  const entries = findEntries(lockfile, edge);
+  let entries = findEntries(lockfile, edge);
+  if (entries.length === 0 && parent) {
+    // An absent descriptor can mean that a manifest resolution rewrote the
+    // request, so look the edge up using the rewritten requirement.
+    const resolution = resolutionFor(resolutions, realNameOf(parent), edge);
+    if (resolution !== undefined) {
+      entries = findEntries(
+        lockfile,
+        normalizeDescriptor(edge.name, resolution)
+      );
+    }
+  }
+
   // Unresolved edges must remain blockers rather than being silently ignored.
   return (
     entries.length === 0 ||
