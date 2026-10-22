@@ -97,11 +97,19 @@ module Dependabot
             .returns(T.nilable(Version))
         end
         def updated_dependency_version(dependency:, original:)
+          updated_dependency_versions(dependency:, original:).min
+        end
+
+        sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T::Array[Version])
+        end
+        def updated_dependency_versions(dependency:, original:)
           original_records = self.class.new(original).records || {}
           paths = original_records.select do |_, record|
             record.name == dependency.name && record.version == dependency.version
           end.keys
-          return if paths.empty?
+          return [] if paths.empty?
 
           incoming = incoming_resolutions(original_records)
           updated_records = records || {}
@@ -116,7 +124,7 @@ module Dependabot
               end
               Version.new(version || T.must(dependency.version))
             end
-          end.min
+          end
         end
 
         sig do

@@ -450,14 +450,26 @@ module Dependabot
       sig { returns(SubdependencyVersionResolver) }
       def subdependency_version_resolver
         @subdependency_version_resolver ||=
-          SubdependencyVersionResolver.new(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            latest_allowable_version: latest_version,
-            repo_contents_path: repo_contents_path
-          )
+          if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            SubdependencyVersionResolver.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
+              latest_allowable_version: latest_version,
+              repo_contents_path: repo_contents_path,
+              security_advisories: security_advisories
+            )
+          else
+            SubdependencyVersionResolver.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
+              latest_allowable_version: latest_version,
+              repo_contents_path: repo_contents_path
+            )
+          end
       end
 
       sig { returns(T::Boolean) }

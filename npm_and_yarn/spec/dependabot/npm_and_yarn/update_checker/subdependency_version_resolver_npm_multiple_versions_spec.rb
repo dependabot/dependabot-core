@@ -30,15 +30,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
       credentials: [],
       ignored_versions: [],
       latest_allowable_version: "5.0.12",
-      security_advisories: [
-        Dependabot::SecurityAdvisory.new(
-          dependency_name: dependency.name,
-          package_manager: dependency.package_manager,
-          vulnerable_versions: Dependabot::NpmAndYarn::Requirement.requirements_array(">= 2.0.0 < 2.1.4")
-        )
-      ],
+      security_advisories: security_advisories,
       repo_contents_path: nil
     )
+  end
+
+  sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+  let(:security_advisories) do
+    [
+      Dependabot::SecurityAdvisory.new(
+        dependency_name: dependency.name,
+        package_manager: dependency.package_manager,
+        vulnerable_versions: Dependabot::NpmAndYarn::Requirement.requirements_array(">= 2.0.0 < 2.1.4")
+      )
+    ]
   end
 
   sig { returns(Dependabot::DependencyFile) }
@@ -224,6 +229,132 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
 
     it "does not report the partial update as fixing the targeted version" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.2"))
+    end
+  end
+
+  context "when a higher targeted result remains vulnerable" do
+    sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+    let(:security_advisories) do
+      advisories = T.let(super(), T::Array[Dependabot::SecurityAdvisory])
+      advisories + [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency.name,
+          package_manager: dependency.package_manager,
+          vulnerable_versions: Dependabot::NpmAndYarn::Requirement.requirements_array(">= 3.0.0 < 4.0.0")
+        )
+      ]
+    end
+
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    let(:dependency_files) do
+      files = T.let(super(), T::Array[Dependabot::DependencyFile])
+      files.map do |file|
+        next file unless file.name == "package-lock.json"
+
+        content = JSON.parse(T.must(file.content))
+        packages = content.fetch("packages")
+        packages["node_modules/another-parent"] = {
+          "version" => "1.0.0", "dependencies" => { "brace-expansion" => "^2.0.2 || ^3.0.0" }
+        }
+        packages["node_modules/another-parent/node_modules/brace-expansion"] = { "version" => "2.1.2" }
+        file.dup.tap { |copy| copy.content = JSON.generate(content) }
+      end
+    end
+
+    sig { returns(String) }
+    let(:updated_content) do
+      content = JSON.parse(super())
+      content.fetch("packages").fetch("node_modules/another-parent/node_modules/brace-expansion")["version"] = "3.0.0"
+      JSON.generate(content)
+    end
+
+    it "does not accept a safe minimum as a complete security fix" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.2"))
+    end
+
+    it "retains each originally targeted resolution in the lockfile reader" do
+      updated = lockfile.dup
+      updated.content = updated_content
+
+      versions = Dependabot::NpmAndYarn::FileParser::JsonLock.new(updated)
+                                                             .updated_dependency_versions(
+                                                               dependency: dependency, original: lockfile
+                                                             )
+
+      expect(versions).to contain_exactly(
+        Dependabot::NpmAndYarn::Version.new("2.1.4"), Dependabot::NpmAndYarn::Version.new("3.0.0")
+      )
+    end
+
+    it "rejects the partial fix through the public update checker despite a safe latest release" do
+      versions = %w(1.1.12 2.1.2 2.1.4 3.0.0 5.0.2 5.0.12)
+      response = {
+        "name" => dependency.name,
+        "dist-tags" => { "latest" => "5.0.12" },
+        "versions" => versions.to_h { |version| [version, { "name" => dependency.name, "version" => version }] }
+      }
+      stub_request(:get, "https://registry.npmjs.org/brace-expansion")
+        .to_return(status: 200, body: response.to_json, headers: { "Content-Type" => "application/json" })
+      stub_request(:head, %r{\Ahttps://registry\.npmjs\.org/brace-expansion/-/brace-expansion-[\d.]+\.tgz\z})
+        .to_return(status: 200)
+      checker = Dependabot::NpmAndYarn::UpdateChecker.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: [],
+        security_advisories: security_advisories
+      )
+      allow(checker).to receive(:conflicting_dependencies).and_return([])
+
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+    end
+
+    context "when all targeted results are safe" do
+      sig { returns(String) }
+      let(:updated_content) { super().gsub('"3.0.0"', '"3.0.1"') }
+
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency.name,
+            package_manager: dependency.package_manager,
+            vulnerable_versions: Dependabot::NpmAndYarn::Requirement.requirements_array(
+              ">= 2.0.0 < 2.1.4 || = 3.0.0"
+            )
+          )
+        ]
+      end
+
+      it "accepts different safe resulting versions" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      end
+    end
+
+    context "when the vulnerable result is in a different lockfile" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files + files.map do |file|
+          Dependabot::DependencyFile.new(name: "nested/#{file.name}", content: file.content)
+        end
+      end
+
+      sig { returns(String) }
+      let(:updated_content) { T.must(lockfile.content).gsub('"2.1.2"', '"2.1.4"') }
+
+      before do
+        allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_npm8_subdependency_update_command) do
+          content = Dir.pwd.end_with?("/nested") ? updated_content.gsub('"2.1.4"', '"3.0.0"') : updated_content
+          File.write("package-lock.json", content)
+          ""
+        end
+      end
+
+      it "checks all targeted results across lockfiles before reducing them to one version" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.2"))
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to have_received(:run_npm8_subdependency_update_command).twice
+      end
     end
   end
 

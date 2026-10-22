@@ -94,6 +94,14 @@ module Dependabot
             .returns(T.nilable(Version))
         end
         def updated_dependency_version(dependency:, original:)
+          updated_dependency_versions(dependency:, original:).min
+        end
+
+        sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T::Array[Version])
+        end
+        def updated_dependency_versions(dependency:, original:)
           requirements = self.class.new(original).versions_by_requirement(dependency.name)
                              .select { |_, version| version == dependency.version }.keys
           updated_versions = versions_by_requirement(dependency.name)
@@ -106,7 +114,7 @@ module Dependabot
               )
             end
             Version.new(version || T.must(dependency.version))
-          end.min
+          end
         end
 
         sig { params(dependency_name: String).returns(T::Hash[String, String]) }

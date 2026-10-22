@@ -90,9 +90,8 @@ module Dependabot
             )
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
-              updated_content = update_subdependency_in_lockfile(lockfile)
               updated_lockfile = lockfile.dup
-              updated_lockfile.content = updated_content
+              updated_lockfile.content = update_subdependency_in_lockfile(lockfile)
               updated_lockfile
             end
 
@@ -129,21 +128,16 @@ module Dependabot
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
         def version_from_updated_lockfiles(updated_lockfiles)
-          updated_files = dependency_files -
-                          dependency_files_builder.lockfiles +
-                          updated_lockfiles
+          updated_files = dependency_files - dependency_files_builder.lockfiles + updated_lockfiles
 
-          parsed_dep = NpmAndYarn::FileParser.new(
-            dependency_files: updated_files,
-            source: nil,
-            credentials: credentials
-          ).parse.find { |d| d.name == dependency.name }
+          parsed_dep = FileParser.new(dependency_files: updated_files, source: nil, credentials: credentials)
+                                 .parse.find { |d| d.name == dependency.name }
           return unless parsed_dep&.version
 
-          combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
           scoped_version = version_from_targeted_lockfile_entries(updated_lockfiles)
-          candidate = scoped_version || audit_fix_best_version(parsed_dep, current_version) || combined
+          candidate = scoped_version || audit_fix_best_version(parsed_dep, current_version) ||
+                      version_class.new(parsed_dep.version)
           return candidate unless pnpm_update.pin_dropped
 
           candidate if pnpm_update.within_bound?(
@@ -155,17 +149,23 @@ module Dependabot
         def version_from_targeted_lockfile_entries(updated_lockfiles)
           return unless Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
 
-          updated_lockfiles.filter_map do |lockfile|
-            next unless lockfile.name.end_with?("yarn.lock", "package-lock.json", "npm-shrinkwrap.json")
+          versions = updated_lockfiles.flat_map do |lockfile|
+            next [] unless lockfile.name.end_with?("yarn.lock", "package-lock.json", "npm-shrinkwrap.json")
 
             parser = lockfile.name.end_with?("yarn.lock") ? FileParser::YarnLock : FileParser::JsonLock
-            next if parser == FileParser::JsonLock && !security_updates_only?
+            next [] if parser == FileParser::JsonLock && !security_updates_only?
 
             original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
-            next unless original && dependency.version
+            next [] unless original
 
-            parser.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
-          end.min
+            parser.new(lockfile).updated_dependency_versions(dependency: dependency, original: original)
+          end
+          safe_versions = UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories)
+          if safe_versions != versions
+            Dependabot.logger.info("Security update for #{dependency.name} leaves a targeted resolution vulnerable")
+            return version_class.new(T.must(dependency.version))
+          end
+          versions.min
         end
 
         sig { returns(PnpmTransitiveUpdate) }
