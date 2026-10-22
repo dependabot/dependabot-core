@@ -36,6 +36,10 @@ module Dependabot
         # engine wraps every lookup error, so only a 404 counts; 5xx/429/403/timeouts stay EngineError.
         HOST_IDENTITY_ERROR = /verifying repository identity .*: HTTP 404\b|repository IDs|not the selected host/
 
+        # Write-time refusals (an incomplete lock graph, or a `uses:` cycle the lock
+        # can't record). Deterministic and user-actionable, so retrying never helps.
+        WRITE_REFUSED_ERROR = /refusing to write /
+
         # `hostname` is the repository's home host. The engine binds every pin with an
         # omitted lockfile `hostname` to it, so it must never be guessed.
         sig { params(credentials: T::Array[Dependabot::Credential], hostname: String).void }
@@ -131,7 +135,10 @@ module Dependabot
         sig { params(dir: String, args: T::Array[String]).returns([JsonObject, Integer]) }
         def run(dir, args)
           stdout, stderr, exit_status = invoke(dir, args)
-          raise DependencyFileNotResolvable, stderr.strip if exit_status > 1 && stderr.match?(HOST_IDENTITY_ERROR)
+          if exit_status > 1 && stderr.match?(Regexp.union(HOST_IDENTITY_ERROR, WRITE_REFUSED_ERROR))
+            raise DependencyFileNotResolvable, stderr.strip
+          end
+
           raise EngineError, "gh-actions-lock failed (exit #{exit_status}): #{stderr.strip}" if exit_status > 1
 
           json = case (parsed = JSON.parse(stdout))

@@ -116,6 +116,24 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
+  {
+    "a uses: cycle" => "committing pins: refusing to write .github/workflows/ci.yml: o/a@v1 uses o/b@v1, " \
+                       "which uses o/a@v1; the lockfile can't record actions that use each other, " \
+                       "so pin one of them to a different commit\n",
+    "an incomplete lock graph" => "committing pins: refusing to write .github/workflows/ci.yml: its lock " \
+                                  "graph is incomplete: o/a@v1 is missing; run `gh actions-lock --relock` " \
+                                  "to rebuild it\n"
+  }.each do |reason, stderr|
+    describe "#relock when the engine refuses the write for #{reason}" do
+      before { stub_subprocess(stdout: "", exitstatus: 2, stderr: stderr) }
+
+      it "raises a user-actionable DependencyFileNotResolvable, not EngineError" do
+        expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /refusing to write/)
+      end
+    end
+  end
+
   describe "#relock when stdout is valid non-object JSON" do
     before { stub_subprocess(stdout: "[]", exitstatus: 0, stderr: "") }
 
