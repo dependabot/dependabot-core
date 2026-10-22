@@ -54,6 +54,12 @@ RSpec.describe Dependabot::Apm::Version do
       it { is_expected.to be(true) }
     end
 
+    context "with a numeric prerelease identifier that has a leading zero" do
+      let(:version_string) { "1.0.0-01" }
+
+      it { is_expected.to be(false) }
+    end
+
     context "with a commit SHA" do
       let(:version_string) { "0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e" }
 
