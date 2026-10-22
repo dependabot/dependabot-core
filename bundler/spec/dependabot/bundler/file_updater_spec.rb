@@ -459,6 +459,21 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
+      %w(2 4).each do |bundler_version|
+        context "with an imported gemspec depending on bundler whose Ruby floor predates Bundler #{bundler_version}" do
+          let(:project_name) { "imports_gemspec_requires_bundler_no_ruby_bundler_#{bundler_version}" }
+
+          it "locks the updated gem to the latest version" do
+            expect(Dependabot::Bundler::NativeHelpers)
+              .to receive(:run_bundler_subprocess)
+              .with(hash_including(bundler_version: bundler_version))
+              .at_least(:once)
+              .and_call_original
+            expect(file.content).to include("business (1.5.0)")
+          end
+        end
+      end
+
       context "when the Gemfile specifies a Ruby version" do
         let(:project_name) { "explicit_ruby_in_lockfile" }
 

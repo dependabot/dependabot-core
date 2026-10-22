@@ -39,4 +39,16 @@ RSpec.describe BundlerDefinitionRubyVersionPatch do
       expect(spec.version).to eq("2.0.1")
     end
   end
+
+  context "when a gemspec depends on bundler and the Ruby version predates the running bundler" do
+    let(:project_name) { "gemspec_requires_bundler_old_ruby" }
+
+    it "resolves without applying the running bundler's Ruby requirement" do
+      in_tmp_folder do
+        definition = Bundler::Definition.build("Gemfile", "Gemfile.lock", gems: ["business"])
+        definition.resolve_remotely!
+        expect(definition.resolve["business"].first.version).to eq("1.18.0")
+      end
+    end
+  end
 end
