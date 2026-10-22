@@ -243,7 +243,15 @@ module Dependabot
           return false if days <= 0
 
           release = package_details_fetcher.fetch_release_metadata(release: release)
-          return missing_release_date_in_cooldown?(release) unless release.released_at
+          unless release.released_at
+            if current_version.nil? || release.version > current_version
+              Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+                dependency,
+                cooldown_days: days
+              )
+            end
+            return missing_release_date_in_cooldown?(release)
+          end
 
           cooldown_window?(release: release, days: days)
         end

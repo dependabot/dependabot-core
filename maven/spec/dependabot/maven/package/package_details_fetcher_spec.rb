@@ -114,6 +114,19 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
       expect(hydrated_release.details).to eq(release.details)
     end
 
+    [300, 304].each do |status|
+      it "ignores the versioned pom Last-Modified header for a #{status} response" do
+        stub_request(:head, version_pom_url).to_return(
+          status: status,
+          headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = fetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release).to equal(release)
+      end
+    end
+
     context "when a release date is already present" do
       let(:released_at) { Time.utc(2026, 8, 1) }
 
