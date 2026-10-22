@@ -12,7 +12,8 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: dependencies,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
     )
   end
 
@@ -27,6 +28,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
 
   let(:dependency_files) { [module_file] }
   let(:dependencies) { [dependency] }
+  let(:repo_contents_path) { nil }
 
   let(:module_file) do
     Dependabot::DependencyFile.new(
@@ -516,22 +518,22 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
   describe "lockfile generation and updating" do
     context "with a MODULE.bazel project with existing lockfile" do
       let(:dependency_files) { bazel_project_dependency_files("simple_module_with_lockfile") }
-
-      it "updates both MODULE.bazel and MODULE.bazel.lock" do
-        # Mock the BzlmodFileUpdater to return both MODULE.bazel and lockfile updates
-        bzlmod_updater = instance_double(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater)
-        allow(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater).to receive(:new).and_return(bzlmod_updater)
-
-        module_file = Dependabot::DependencyFile.new(
-          name: "MODULE.bazel",
-          content: module_file_content.sub('version = "0.1.1"', 'version = "0.2.0"')
+      let(:repo_contents_path) do
+        write_tmp_repo(
+          dependency_files + [Dependabot::DependencyFile.new(name: "Cargo.toml", content: "[workspace]\n")]
         )
-        lockfile = Dependabot::DependencyFile.new(
-          name: "MODULE.bazel.lock",
-          content: updated_lockfile_content
-        )
+      end
 
-        allow(bzlmod_updater).to receive(:updated_module_files).and_return([module_file, lockfile])
+      after { FileUtils.rm_rf(repo_contents_path) }
+
+      it "updates the lockfile with repository files available to module extensions" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/\Abazel(?:isk)? mod tidy --lockfile_mode=update\z/, anything) do
+            expect(File.read("Cargo.toml")).to eq("[workspace]\n")
+            expect(File.read("MODULE.bazel")).to include('bazel_dep(name = "rules_cc", version = "0.2.0")')
+            File.write("MODULE.bazel.lock", updated_lockfile_content)
+          end
 
         updated_files = file_updater.updated_dependency_files
 
