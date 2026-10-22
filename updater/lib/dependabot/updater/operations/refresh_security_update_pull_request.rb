@@ -168,7 +168,9 @@ module Dependabot
 
           if %w(npm_and_yarn bun).include?(lead_dependency.package_manager) &&
              Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
-            eligible_dependency = find_vulnerable_version(lead_dependency) do |dep|
+            eligible_dependency = find_vulnerable_version(
+              lead_dependency, preferred_major: existing_pull_request_major(lead_dependency)
+            ) do |dep|
               update_checker_for(dep) if job.allowed_update?(dep)
             end
             unless eligible_dependency
@@ -301,6 +303,16 @@ module Dependabot
           Dependabot.logger.info(
             "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
+        end
+
+        # Major version of the copy the existing PR updates to, used to keep a refresh on the same copy.
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+        def existing_pull_request_major(dependency)
+          job.existing_pull_requests.each do |pr|
+            pr_dep = pr.dependencies.find { |dep| dep.name.casecmp?(dependency.name) }
+            return pr_dep.version&.split(".")&.first if pr_dep&.version
+          end
+          nil
         end
 
         sig do
