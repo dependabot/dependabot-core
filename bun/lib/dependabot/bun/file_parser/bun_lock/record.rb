@@ -51,20 +51,45 @@ module Dependabot
 
           sig { returns(T::Array[String]) }
           def dependency_names
-            scoped = Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
-            # Only registry tuples have a registry field before their metadata.
-            details = entry[scoped && !version ? 1 : 2]
-            return [] if details.nil?
+            dependency_fields.flat_map { |field| dependency_names_for(dependency_details[field], field) }.uniq
+          end
 
-            invalid!("#{@context} details must be an object") unless details.is_a?(Hash)
-            fields = T.let(
-              scoped ? %w(dependencies optionalDependencies peerDependencies) : %w(dependencies),
-              T::Array[String]
-            )
-            fields.flat_map { |field| dependency_names_for(T.cast(details[field], Object), field) }.uniq
+          sig { params(name: String).returns(T::Array[String]) }
+          def requirements_for(name)
+            dependency_fields.filter_map do |field|
+              dependencies = dependency_details[field]
+              next if dependencies.nil?
+
+              invalid!("#{@context}.#{field} must be an object") unless dependencies.is_a?(Hash)
+              requirement = T.cast(dependencies[name], Object)
+              next if requirement.nil?
+
+              invalid!("#{@context}.#{field}.#{name} must be a string") unless requirement.is_a?(String)
+              requirement
+            end
           end
 
           private
+
+          sig { returns(T::Array[String]) }
+          def dependency_fields
+            if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+              %w(dependencies optionalDependencies peerDependencies)
+            else
+              %w(dependencies)
+            end
+          end
+
+          sig { returns(T::Hash[Object, Object]) }
+          def dependency_details
+            scoped = Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            # Only registry tuples have a registry field before their metadata.
+            details = entry[scoped && !version ? 1 : 2]
+            return {} if details.nil?
+
+            invalid!("#{@context} details must be an object") unless details.is_a?(Hash)
+            details
+          end
 
           sig { params(dependencies: Object, field: String).returns(T::Array[String]) }
           def dependency_names_for(dependencies, field)

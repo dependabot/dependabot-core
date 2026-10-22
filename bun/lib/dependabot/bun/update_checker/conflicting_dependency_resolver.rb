@@ -32,7 +32,7 @@ module Dependabot
           @credentials = credentials
         end
 
-        # Finds any dependencies in the `yarn.lock` or `package-lock.json` that
+        # Finds any dependencies in the `bun.lock` that
         # have a subdependency resolving to the given dependency's installed
         # version whose requirement does not allow the target_version.
         #
@@ -50,6 +50,13 @@ module Dependabot
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
         def conflicting_dependencies(dependency:, target_version:)
+          if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            version = Version.new(target_version.to_s) if target_version
+            return dependency_files.select { |file| file.name.end_with?("bun.lock") }.flat_map do |file|
+              FileParser::BunLock.new(file).conflicting_dependencies(dependency: dependency, target_version: version)
+            end.uniq
+          end
+
           SharedHelpers.in_a_temporary_directory do
             dependency_files_builder = DependencyFilesBuilder.new(
               dependency: dependency,
@@ -59,8 +66,6 @@ module Dependabot
             dependency_files_builder.write_temporary_dependency_files
 
             args = T.let([Dir.pwd, dependency.name, target_version.to_s], T::Array[T.nilable(String)])
-            args << dependency.version if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
-
             T.cast(
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
