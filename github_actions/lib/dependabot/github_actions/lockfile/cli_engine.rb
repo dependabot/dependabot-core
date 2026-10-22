@@ -79,8 +79,9 @@ module Dependabot
             skipped = onboarding_skips(json, lockfile)
             log_skips(skipped)
 
-            # `findings` is the PRE-fix diagnosis; at exit 0 fix-mode already resolved
-            # them. Writes are all-or-nothing, so exit 1 means nothing was written.
+            # At exit 1 `findings` is the pre-fix diagnosis of what blocked the fix;
+            # at exit 0 it reports the post-fix state. Writes are all-or-nothing, so
+            # exit 1 means nothing was written.
             raise_on_findings(json) if exit_status == 1
 
             File.read(File.join(dir, LOCKFILE_PATH))
@@ -124,8 +125,9 @@ module Dependabot
 
         # Invokes the binary and returns [parsed JSON, exit code]. Exit is tri-state:
         # 0 = valid, 1 = blocking findings (still well-formed JSON on stdout, parse it),
-        # 2+ = tool failure (no usable JSON). JSON and exit are not interchangeable in
-        # fix-mode: findings/valid are PRE-fix, exit is POST-fix, so callers gate on exit.
+        # 2+ = tool failure (no usable JSON). In fix-mode, findings/valid describe the
+        # post-fix state after a successful fix but the pre-fix state at exit 1, so
+        # callers gate on exit.
         sig { params(dir: String, args: T::Array[String]).returns([JsonObject, Integer]) }
         def run(dir, args)
           stdout, stderr, exit_status = invoke(dir, args)
