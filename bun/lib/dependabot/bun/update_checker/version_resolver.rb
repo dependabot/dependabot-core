@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
 require "dependabot/logger"
+require "dependabot/package/npm_package_json"
 require "dependabot/package/npm_registry_package"
 require "dependabot/bun/dependency_files_filterer"
 require "dependabot/bun/file_parser"
@@ -615,13 +616,119 @@ module Dependabot
         def run_bun_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              Helpers.run_bun_command(
-                "update #{dependency.name}@#{version} --save-text-lockfile --ignore-scripts",
-                fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
-              )
+              workspace_filters(path).flat_map { |filter| run_bun_update(filter: filter, version: version) }
             end
           end
+        end
+
+        sig do
+          params(
+            filter: T.nilable(String),
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T::Array[PeerDependencyConflict])
+        end
+        def run_bun_update(filter:, version:)
+          command = T.let(["update", "#{dependency.name}@#{version}"], T::Array[String])
+          command += ["--filter", filter] if filter
+          command += ["--save-text-lockfile", "--ignore-scripts"]
+
+          Helpers.run_bun_command(
+            command,
+            fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+          )
           []
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_peer_dependency_errors(e.message)
+        end
+
+        # Returns every workspace filter (nil for the +path+ we've already
+        # chdir'd into, or a workspace path relative to it) for manifests in
+        # the project rooted at +path+ that declare +dependency+. Manifests
+        # are matched by scanning their actual dependency fields (as
+        # BunLockfileUpdater does), rather than dependency.requirements,
+        # since Bun always records catalog entries against the root
+        # package.json even when a nested workspace is the only consumer
+        # (via "catalog:"). Falls back to an unfiltered check at +path+ if
+        # it isn't declared anywhere in this project (e.g. a
+        # sub-dependency).
+        sig { params(path: String).returns(T::Array[T.nilable(String)]) }
+        def workspace_filters(path)
+          manifests = package_jsons_in_project(path)
+          root_file = manifests.find { |file| File.dirname(file.name) == path }
+
+          workspace_filters = manifests.filter_map do |file|
+            next if file == root_file
+            next unless package_json_declares?(file)
+
+            workspace_filter(file, path: path)
+          end.uniq
+
+          declared_at_root = root_file && package_json_declares?(root_file)
+          return workspace_filters if !declared_at_root && workspace_filters.any?
+
+          [nil, *workspace_filters]
+        end
+
+        # Every package.json belonging to the same Bun project as +path+:
+        # its own manifest, plus any workspace members governed by the same
+        # lockfile. Manifests under a *nested* project with its own
+        # lockfile are excluded, so that sibling nested projects (each
+        # checked separately, chdir'd into their own path) don't leak their
+        # declarations into each other's filters.
+        sig { params(path: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def package_jsons_in_project(path)
+          project_lockfile_dir = lockfile_dir_for(path)
+
+          dependency_files.select do |file|
+            next false unless file.name.end_with?("package.json")
+
+            dir = File.dirname(file.name)
+            next false unless path == "." || dir == path || dir.start_with?("#{path}/")
+
+            lockfile_dir_for(dir) == project_lockfile_dir
+          end
+        end
+
+        # The directory of the bun.lock that governs +dir+: the lockfile
+        # whose own directory is the longest ancestor match, since a nested
+        # lockfile takes precedence over the root one for its own subtree.
+        sig { params(dir: String).returns(T.nilable(String)) }
+        def lockfile_dir_for(dir)
+          lockfile_dirs = dependency_files_builder.bun_locks.map { |lockfile| File.dirname(lockfile.name) }
+          lockfile_dirs.select { |lockfile_dir| lockfile_governs_dir?(lockfile_dir, dir) }.max_by(&:length)
+        end
+
+        sig { params(lockfile_dir: String, dir: String).returns(T::Boolean) }
+        def lockfile_governs_dir?(lockfile_dir, dir)
+          lockfile_dir == "." || dir == lockfile_dir || dir.start_with?("#{lockfile_dir}/")
+        end
+
+        sig { params(package_json_file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def package_json_declares?(package_json_file)
+          declared = T.let(false, T::Boolean)
+          Dependabot::Package::NpmPackageJson.from_file(package_json_file).each_dependency do |name, _req, _type|
+            declared ||= name == dependency.name
+          end
+          declared
+        end
+
+        # Path-based --filter target, relative to +path+, for the workspace
+        # at +file+ (e.g. "./packages/app"). Bun's --filter also accepts a
+        # package's declared "name", but names can contain glob
+        # metacharacters that would match unrelated workspaces, so a path is
+        # used instead.
+        sig { params(file: Dependabot::DependencyFile, path: String).returns(String) }
+        def workspace_filter(file, path:)
+          unless Dependabot::Package::NpmPackageJson.from_file(file).name
+            raise Dependabot::DependencyFileNotParseable.new(
+              file.path,
+              "#{file.name} must declare a \"name\" to be targeted for a workspace-scoped check"
+            )
+          end
+
+          workspace_dir = File.dirname(file.name)
+          workspace_dir = workspace_dir.delete_prefix("#{path}/") unless path == "."
+          "./#{workspace_dir}"
         end
 
         sig do
