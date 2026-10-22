@@ -238,6 +238,40 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
     it "tracks the targeted shrinkwrap node" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
     end
+
+    context "with a shadowed package lock in the same directory" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        shrinkwrap = T.must(files.find { |file| file.name == "npm-shrinkwrap.json" })
+        files + [Dependabot::DependencyFile.new(name: "package-lock.json", content: shrinkwrap.content)]
+      end
+
+      it "ignores the unchanged package lock when verifying the security fix" do
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to have_received(:run_npm8_subdependency_update_command).once
+      end
+
+      context "with lockfiles in a subdirectory" do
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        let(:dependency_files) do
+          files = T.let(super(), T::Array[Dependabot::DependencyFile])
+          files.map do |file|
+            Dependabot::DependencyFile.new(name: "nested/#{file.name}", content: file.content)
+          end + [Dependabot::DependencyFile.new(name: "package.json", content: '{"private":true}')]
+        end
+
+        sig { returns(Dependabot::DependencyFile) }
+        let(:lockfile) { T.must(dependency_files.find { |file| file.name == "nested/npm-shrinkwrap.json" }) }
+
+        it "applies shrinkwrap precedence within the lockfile directory" do
+          expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command).once
+        end
+      end
+    end
   end
 
   context "with an npm 6 lockfile" do

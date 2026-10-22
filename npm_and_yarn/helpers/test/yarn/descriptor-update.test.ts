@@ -14,9 +14,14 @@ interface PackageFixture {
   dependencies?: Record<string, string>;
 }
 
-it.each(["^2.0.2", ">=2.0.2 <3"])(
-  "updates only the selected Yarn descriptor for %s using the Ruby updater",
-  async (requirement) => {
+it.each([
+  { requirement: "^2.0.2", alias: null },
+  { requirement: ">=2.0.2 <3", alias: null },
+  { requirement: "^2.0.2", alias: "my-brace" },
+  { requirement: ">=2.0.2 <3", alias: "@scope/my-brace" },
+])(
+  "updates only the selected Yarn descriptors for $requirement with alias $alias using the Ruby updater",
+  async ({ requirement, alias }) => {
     const directory = fs.mkdtempSync(
       path.join(os.tmpdir(), "yarn-descriptor-")
     );
@@ -40,6 +45,13 @@ it.each(["^2.0.2", ">=2.0.2 <3"])(
         (version) => ({ name: "brace-expansion", version })
       ),
     ];
+    if (alias) {
+      packages.push({
+        name: "aliased-parent",
+        version: "1.0.0",
+        dependencies: { [alias]: `npm:brace-expansion@${requirement}` },
+      });
+    }
     const tarballs = new Map<string, Buffer>();
     const requests: string[] = [];
     let patchedVersionsAvailable = false;
@@ -130,6 +142,12 @@ it.each(["^2.0.2", ">=2.0.2 <3"])(
         ),
         path.join(project, "package.json")
       );
+      if (alias) {
+        const manifestPath = path.join(project, "package.json");
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+        manifest.dependencies["aliased-parent"] = "1.0.0";
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+      }
       const runCommand = async (command: string, args: string[]) => {
         try {
           return await execute(command, args, {
@@ -199,7 +217,7 @@ it.each(["^2.0.2", ">=2.0.2 <3"])(
       ]);
 
       const entries = (await parseNormalized(project)).filter(
-        (entry) => entry.name === "brace-expansion"
+        (entry) => (entry.realName ?? entry.name) === "brace-expansion"
       );
       expect(
         entries.map(({ requirement, version }) => ({ requirement, version }))
@@ -210,7 +228,17 @@ it.each(["^2.0.2", ">=2.0.2 <3"])(
           { requirement: "^5.0.2", version: "5.0.2" },
         ])
       );
-      expect(entries).toHaveLength(3);
+      expect(entries).toHaveLength(alias ? 4 : 3);
+      if (alias) {
+        expect(entries).toContainEqual(
+          expect.objectContaining({
+            name: alias,
+            realName: "brace-expansion",
+            requirement: `npm:brace-expansion@${requirement}`,
+            version: "2.1.4",
+          })
+        );
+      }
       expect(requests).not.toContain(
         "/brace-expansion/-/brace-expansion-1.1.18.tgz"
       );
@@ -230,5 +258,5 @@ it.each(["^2.0.2", ">=2.0.2 <3"])(
       fs.rmSync(directory, { recursive: true, force: true });
     }
   },
-  60_000
+  120_000
 );

@@ -123,6 +123,66 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
       end
     end
 
+    context "with an alias installing the targeted package" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      let(:dependency_files) do
+        files = T.let(super(), T::Array[Dependabot::DependencyFile])
+        files.map do |file|
+          next file unless file.name == "yarn.lock"
+
+          content = T.must(file.content) + <<~YAML
+
+            "my-brace@npm:brace-expansion@^2.0.2":
+              version: 2.1.2
+              resolution: "brace-expansion@npm:2.1.2"
+          YAML
+          file.dup.tap { |copy| copy.content = content }
+        end
+      end
+
+      it "pins and restores both ordinary and aliased descriptors using the real package name" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
+          manifest = JSON.parse(File.read("package.json"))
+          if manifest.key?("resolutions")
+            expect(manifest.fetch("resolutions")).to eq(
+              "brace-expansion@npm:^2.0.2" => "npm:2.1.4",
+              "my-brace@npm:brace-expansion@^2.0.2" => "npm:brace-expansion@2.1.4"
+            )
+            content = File.read("yarn.lock")
+                          .gsub("2.1.2", "2.1.4")
+                          .gsub("^2.0.2", "2.1.4")
+            File.write("yarn.lock", content)
+          else
+            expect(File.read("yarn.lock")).to include(
+              "brace-expansion@npm:^2.0.2",
+              "my-brace@npm:brace-expansion@^2.0.2"
+            )
+          end
+          ""
+        end
+        expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+      end
+
+      context "when the alias pins the vulnerable version" do
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        let(:dependency_files) do
+          files = T.let(super(), T::Array[Dependabot::DependencyFile])
+          files.map do |file|
+            content = T.must(file.content).gsub(
+              "my-brace@npm:brace-expansion@^2.0.2", "my-brace@npm:brace-expansion@2.1.2"
+            )
+            file.dup.tap { |copy| copy.content = content }
+          end
+        end
+
+        it "rejects a target outside the alias requirement before installing" do
+          expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_yarn_command)
+          expect { resolver.latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /incompatible requirement/)
+        end
+      end
+    end
+
     it "does not treat the alias requirement as a requirement on the targeted package" do
       expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
     end

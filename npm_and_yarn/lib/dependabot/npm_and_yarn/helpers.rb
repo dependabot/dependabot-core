@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "pathname"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -402,6 +403,14 @@ module Dependabot
         detected_npm = detect_npm_version(package_lock)
         # For conversion reading properly from npm 6 lockfile we need to check if detected version is npm 6
         detected_npm.nil? || detected_npm != NPM_V6
+      end
+
+      sig { params(file: DependencyFile, files: T::Array[DependencyFile]).returns(T::Boolean) }
+      def self.shadowed_package_lock?(file, files)
+        return false unless file.name.end_with?("package-lock.json")
+
+        shrinkwrap_name = Pathname.new(File.join(File.dirname(file.name), "npm-shrinkwrap.json")).cleanpath.to_path
+        files.any? { |candidate| candidate.name == shrinkwrap_name }
       end
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }

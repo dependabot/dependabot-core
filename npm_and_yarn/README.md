@@ -14,12 +14,16 @@ manifest and unrelated lockfile resolutions.
 Temporary rules take precedence over existing broad resolutions; the original
 manifest is restored before the final install.
 Descriptor matching uses the real package name rather than aliases installing
-other packages. Lockfiles without the targeted installed version are left
+other packages. Ordinary and aliased installations of the targeted version are
+updated together, preserving alias names and their real package targets.
+Lockfiles without the targeted installed version are left
 unchanged, without unscoped updates or audit-fix fallback.
 
 Security PR refreshes select the vulnerable installed version, just like creation.
 npm security resolution checks track the original nodes in the updated lockfile instead
 of reporting an unrelated lower or higher installed version.
+When both npm lockfiles exist in the same directory, resolution checks use
+`npm-shrinkwrap.json` and ignore the shadowed `package-lock.json`, matching npm.
 Checks follow the original consumers through ancestor resolutions when npm hoists
 or deduplicates a package, and retain the vulnerable version if no replacement can
 be verified.

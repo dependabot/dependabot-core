@@ -59,7 +59,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def lockfiles
-        dependency_files.select { |file| lockfile?(file) }
+        dependency_files.select { |file| lockfile?(file) && !Helpers.shadowed_package_lock?(file, dependency_files) }
       end
 
       sig { params(file: DependencyFile).returns(T::Boolean) }
