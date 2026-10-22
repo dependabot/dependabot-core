@@ -198,7 +198,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
 
   # Blocking lock-integrity findings fix mode can't repair. They need the user to
   # relock, so they must surface as user-actionable, not as an unknown error.
-  %w(tag-commit-mismatch incomplete-lockfile).each do |category|
+  %w(tag-commit-mismatch incomplete-lockfile ref-missing invalid-workflow).each do |category|
     describe "#relock with a #{category} finding (exit 1)" do
       let(:body) do
         {

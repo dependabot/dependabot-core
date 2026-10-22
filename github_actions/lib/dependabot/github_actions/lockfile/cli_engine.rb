@@ -28,7 +28,7 @@ module Dependabot
         UNRESOLVABLE_CATEGORIES = %w(
           unreachable-pin repo-replaced repo-unavailable repo-renamed not-pinned
           local-action invalid-self-repository-ref misleading-sha
-          tag-commit-mismatch incomplete-lockfile
+          tag-commit-mismatch incomplete-lockfile ref-missing invalid-workflow
         ).freeze
 
         # Host-identity failures from the engine: the lock is bound to a host it can't
