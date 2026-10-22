@@ -38,11 +38,16 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
+          preferred_major: T.nilable(String),
           _block: T.proc.params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::UpdateCheckers::Base))
         ).returns(T.nilable(Dependabot::Dependency))
       end
-      def find_vulnerable_version(dependency, &_block)
+      def find_vulnerable_version(dependency, preferred_major: nil, &_block)
         versions = dependency.metadata_dependencies(:all_versions) || [dependency]
+        if preferred_major
+          # Try the copy an existing PR targets first so a refresh does not switch to another copy.
+          versions = versions.partition { |dep| dep.version.to_s.split(".").first == preferred_major }.flatten
+        end
         versions.find do |dep|
           checker = yield(dep)
           next false unless checker
