@@ -62,7 +62,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
             [
               ["brace-expansion", "npm:2.1.4"],
               ["unrelated", "npm:1.0.0"],
-              ["brace-expansion@npm:^2.0.2", "npm:2.1.2"]
+              ["brace-expansion@npm:^2.0.2", "npm:2.1.2"],
+              ["brace-expansion@^2.0.2", "npm:2.1.4"]
             ]
           )
           File.write("yarn.lock", File.read("yarn.lock").gsub("2.1.2", "2.1.4"))
