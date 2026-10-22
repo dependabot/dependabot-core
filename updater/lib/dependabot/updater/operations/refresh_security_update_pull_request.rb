@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/experiments"
 require "dependabot/notices"
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
@@ -165,12 +166,14 @@ module Dependabot
 
           return close_pull_request(reason: :update_no_longer_possible) unless lead_dependency
 
-          lead_dependency = vulnerable_version(lead_dependency) { |dep| update_checker_for(dep) }
-          unless job.allowed_update?(lead_dependency)
-            Dependabot.logger.info(
-              "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
-            )
-            return close_pull_request(reason: :up_to_date)
+          if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            lead_dependency = vulnerable_version(lead_dependency) { |dep| update_checker_for(dep) }
+            unless job.allowed_update?(lead_dependency)
+              Dependabot.logger.info(
+                "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
+              )
+              return close_pull_request(reason: :up_to_date)
+            end
           end
 
           checker = update_checker_for(lead_dependency)

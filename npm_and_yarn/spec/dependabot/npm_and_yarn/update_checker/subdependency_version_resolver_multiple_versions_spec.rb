@@ -45,6 +45,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
     allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
       yarn_major_version: 4,
       yarn_berry_supports_minimal_age_gate?: true
@@ -59,6 +61,53 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
                 end
       File.write("yarn.lock", content)
       ""
+    end
+  end
+
+  context "when the experiment is disabled" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+    end
+
+    it "uses the unscoped Yarn update and combined installed version" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("1.1.12"))
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_command).with(
+        "up -R brace-expansion --mode=update-lockfile",
+        fingerprint: "up -R <dependency_name> --mode=update-lockfile"
+      ).once
+    end
+
+    it "generates security updates using the legacy add, dedupe, and remove commands" do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands) do
+        File.write("yarn.lock", updated_lockfile_content)
+        ""
+      end
+      updated_dependency = Dependabot::Dependency.new(
+        name: dependency.name,
+        version: "2.1.4",
+        previous_version: dependency.version,
+        requirements: [],
+        previous_requirements: [],
+        package_manager: dependency.package_manager
+      )
+      updater = Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater.new(
+        dependencies: [updated_dependency],
+        dependency_files: dependency_files,
+        credentials: [],
+        repo_contents_path: nil,
+        security_updates_only: true
+      )
+      lockfile = T.must(dependency_files.find { |file| file.name == "yarn.lock" })
+
+      expect(updater.updated_yarn_lock_content(lockfile)).to include("brace-expansion@npm:2.1.4")
+      expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:run_yarn_command)
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_yarn_commands).with(
+        ["add brace-expansion@2.1.4 --mode=update-lockfile", "add <update> --mode=update-lockfile"],
+        ["dedupe brace-expansion --mode=update-lockfile", "dedupe <dep_name> --mode=update-lockfile"],
+        ["remove brace-expansion --mode=update-lockfile", "remove <dep_name> --mode=update-lockfile"],
+        env: { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
+      )
     end
   end
 

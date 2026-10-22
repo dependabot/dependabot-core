@@ -19,6 +19,34 @@ RSpec.describe Dependabot::Bun::FileParser::BunLock do
   sig { returns(T::Hash[String, Object]) }
   let(:data) { { "lockfileVersion" => 0, "packages" => { "example" => entry } } }
 
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
+  end
+
+  context "when the experiment is disabled" do
+    sig { returns(Object) }
+    let(:entry) do
+      [
+        "example@1.2.0", "",
+        {
+          "dependencies" => { "child" => "^1" },
+          "optionalDependencies" => { "optional" => "^1" },
+          "peerDependencies" => { "peer" => "^1" }
+        }
+      ]
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+    end
+
+    it "retains the original dependency edge kinds used for graphing" do
+      expect(T.must(reader.records).fetch("example").dependency_names).to eq(["child"])
+    end
+  end
+
   it "exposes typed package records" do
     record = T.must(reader.records).fetch("example")
     expect(record).to have_attributes(name: "example", version: "1.2.0", dependency_names: ["child"])

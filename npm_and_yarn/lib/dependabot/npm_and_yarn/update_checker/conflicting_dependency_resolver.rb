@@ -143,7 +143,7 @@ module Dependabot
             T::Array[T.nilable(T.any(String, T::Boolean))]
           )
           args << enable_normalized_yarn_traversal if function == "yarn:findConflictingDependencies"
-          args << dependency.version
+          args << dependency.version if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
 
           T.cast(
             SharedHelpers.run_helper_subprocess(

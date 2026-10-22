@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/helpers"
@@ -57,11 +58,14 @@ module Dependabot
             )
             dependency_files_builder.write_temporary_dependency_files
 
+            args = T.let([Dir.pwd, dependency.name, target_version.to_s], T::Array[T.nilable(String)])
+            args << dependency.version if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
             T.cast(
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "yarn:findConflictingDependencies",
-                args: [Dir.pwd, dependency.name, target_version.to_s, dependency.version]
+                args: args
               ),
               T::Array[Dependabot::UpdateCheckers::Conflict]
             )

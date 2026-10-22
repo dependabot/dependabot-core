@@ -48,6 +48,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
   let(:updated_content) { T.must(lockfile.content).gsub('"2.1.2"', '"2.1.4"') }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_audit_fix_fallback).and_return(false)
     allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_npm8_subdependency_update_command) do
       File.write("package-lock.json", updated_content)
@@ -57,6 +59,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
 
   it "reports the version reached by the targeted npm nodes" do
     expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
+  end
+
+  context "when the experiment is disabled" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+    end
+
+    it "reports the combined installed version" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("1.1.12"))
+    end
   end
 
   context "with the audit-fix fallback enabled" do
@@ -251,6 +264,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::SubdependencyVersionResolv
         expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("2.1.4"))
         expect(Dependabot::NpmAndYarn::NativeHelpers)
           .to have_received(:run_npm8_subdependency_update_command).once
+      end
+
+      context "when the experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+        end
+
+        it "retains the original lockfile selection and combined version" do
+          expect(resolver.latest_resolvable_version).to eq(Dependabot::NpmAndYarn::Version.new("1.1.12"))
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command).twice
+        end
       end
 
       context "with lockfiles in a subdirectory" do

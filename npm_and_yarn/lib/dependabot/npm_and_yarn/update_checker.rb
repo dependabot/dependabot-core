@@ -489,7 +489,10 @@ module Dependabot
             latest_allowable_version: latest_version,
             repo_contents_path: repo_contents_path,
             security_advisories: security_advisories,
-            target_version: security_update? ? lowest_security_fix_version&.to_s : nil
+            target_version: if security_update? &&
+                               Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+                              lowest_security_fix_version&.to_s
+                            end
           )
       end
 

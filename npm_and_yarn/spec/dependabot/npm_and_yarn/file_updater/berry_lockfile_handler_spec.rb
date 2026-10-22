@@ -27,6 +27,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
     end
     # rubocop:enable RSpec/ScatteredLet
 
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
+    end
+
+    it "does not install or read files when the experiment is disabled" do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+      expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_yarn_command)
+
+      expect(
+        described_class.update_subdependency(
+          yarn_lock: Dependabot::DependencyFile.new(name: "yarn.lock", content: ""),
+          dependency: Dependabot::Dependency.new(
+            name: "brace-expansion", version: "2.1.2", requirements: [], package_manager: "npm_and_yarn"
+          ),
+          target_version: "2.1.4",
+          install_args: ""
+        )
+      ).to be_nil
+    end
+
     it "puts temporary pins before existing broad rules and restores the original manifest" do
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_major_version).and_return(4)
       install_count = 0

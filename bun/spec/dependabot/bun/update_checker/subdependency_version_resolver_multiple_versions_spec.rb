@@ -41,6 +41,8 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
   let(:updated_content) { T.must(lockfile.content).gsub("brace-expansion@2.1.2", "brace-expansion@2.1.4") }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
     allow(Dependabot::Bun::Helpers).to receive(:run_bun_command) do
       File.write("bun.lock", updated_content)
       ""
@@ -49,6 +51,17 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
 
   it "reports the updated target instead of an unrelated lower version" do
     expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("2.1.4"))
+  end
+
+  context "when the experiment is disabled" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+    end
+
+    it "reports the combined installed version" do
+      expect(resolver.latest_resolvable_version).to eq(Dependabot::Bun::Version.new("1.1.12"))
+    end
   end
 
   context "with mixed Git and registry dependencies" do

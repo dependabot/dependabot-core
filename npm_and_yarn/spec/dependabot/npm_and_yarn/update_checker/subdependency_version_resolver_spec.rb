@@ -36,6 +36,8 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
 

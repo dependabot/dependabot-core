@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/experiments"
 require "dependabot/bun/file_parser/bun_lock"
 require "dependabot/package/npm_lockfile_details"
 
@@ -50,12 +51,16 @@ module Dependabot
 
           sig { returns(T::Array[String]) }
           def dependency_names
+            scoped = Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
             # Only registry tuples have a registry field before their metadata.
-            details = entry[version ? 2 : 1]
+            details = entry[scoped && !version ? 1 : 2]
             return [] if details.nil?
 
             invalid!("#{@context} details must be an object") unless details.is_a?(Hash)
-            fields = T.let(%w(dependencies optionalDependencies peerDependencies), T::Array[String])
+            fields = T.let(
+              scoped ? %w(dependencies optionalDependencies peerDependencies) : %w(dependencies),
+              T::Array[String]
+            )
             fields.flat_map { |field| dependency_names_for(T.cast(details[field], Object), field) }.uniq
           end
 

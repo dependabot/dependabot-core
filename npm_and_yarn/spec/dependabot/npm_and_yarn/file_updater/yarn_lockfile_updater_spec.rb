@@ -65,6 +65,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
   before do
     FileUtils.mkdir_p(tmp_path)
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
 
@@ -492,6 +494,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         end
 
         it "passes YARN_NPM_MINIMAL_AGE_GATE=0 to both scoped security update installs" do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_major_version).and_return(4)
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
             content = yarn_lock.content

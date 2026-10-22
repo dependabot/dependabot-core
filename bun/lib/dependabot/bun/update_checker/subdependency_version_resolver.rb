@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/helpers"
@@ -118,6 +119,8 @@ module Dependabot
             credentials: credentials
           ).parse.find { |d| d.name == dependency.name }&.version
           return unless updated_version
+          return version_class.new(updated_version) unless
+            Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
 
           scoped_versions = updated_lockfiles.filter_map do |lockfile|
             original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }

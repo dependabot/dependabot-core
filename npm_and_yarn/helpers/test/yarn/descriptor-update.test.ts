@@ -204,6 +204,7 @@ it.each([
         "-e",
         `
         require "dependabot/npm_and_yarn/file_updater/berry_lockfile_handler"
+        Dependabot::Experiments.register(:enable_yarn_berry_conflicting_dependencies, true)
         dependency = Dependabot::Dependency.new(
           name: "brace-expansion", version: "2.1.2",
           requirements: [], package_manager: "npm_and_yarn"

@@ -142,10 +142,36 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   let(:error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).with("bundler").and_return(checker_class)
     allow(checker_class).to receive(:new).with(hash_including(dependency: safe_dependency)).and_return(safe_checker)
     allow(checker_class).to receive(:new)
       .with(hash_including(dependency: vulnerable_dependency)).and_return(vulnerable_checker)
+  end
+
+  context "when the experiment is disabled" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+      allow(checker_class).to receive(:new)
+        .with(hash_including(dependency: combined_dependency)).and_return(safe_checker)
+      allow(safe_checker).to receive_messages(up_to_date?: true, latest_version: Gem::Version.new("5.0.12"))
+    end
+
+    it "checks the combined dependency without selecting a vulnerable copy" do
+      expect(error_handler).not_to receive(:handle_dependency_error)
+      expect(service).to receive(:close_pull_request).with(["dummy-pkg-a"], :up_to_date)
+
+      described_class.new(
+        service: service,
+        job: job,
+        dependency_snapshot: snapshot,
+        error_handler: error_handler
+      ).perform
+
+      expect(checker_class).not_to have_received(:new).with(hash_including(dependency: vulnerable_dependency))
+    end
   end
 
   it "refreshes the vulnerable installed version rather than the safe combined version" do

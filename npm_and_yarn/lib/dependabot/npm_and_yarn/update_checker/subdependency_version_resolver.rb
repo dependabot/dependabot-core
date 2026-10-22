@@ -149,7 +149,7 @@ module Dependabot
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
         def version_from_targeted_lockfile_entries(updated_lockfiles)
-          return unless dependency.version
+          return unless Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
 
           updated_lockfiles.filter_map do |lockfile|
             next unless lockfile.name.end_with?("yarn.lock", "package-lock.json", "npm-shrinkwrap.json")
@@ -158,7 +158,7 @@ module Dependabot
             next if parser == FileParser::JsonLock && !security_updates_only?
 
             original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
-            next unless original
+            next unless original && dependency.version
 
             parser.new(lockfile).updated_dependency_version(dependency: dependency, original: original)
           end.min

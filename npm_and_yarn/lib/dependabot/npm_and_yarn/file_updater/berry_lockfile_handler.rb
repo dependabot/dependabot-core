@@ -6,6 +6,7 @@ require "yaml"
 require "json"
 
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/experiments"
 require "dependabot/npm_and_yarn/file_parser/yarn_lock"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/requirement"
@@ -31,6 +32,8 @@ module Dependabot
         def self.update_subdependency(
           yarn_lock:, dependency:, target_version:, env: nil, install_args: Helpers.yarn_berry_args
         )
+          return unless Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
           current_version = dependency.previous_version || dependency.version
           return unless current_version
 
@@ -38,9 +41,7 @@ module Dependabot
           # A truthy unchanged version prevents callers from attempting an unscoped fallback.
           return current_version unless versions.value?(current_version)
 
-          descriptors = versions.select do |descriptor, version|
-            version == current_version && split_descriptor(descriptor).last&.start_with?("npm:")
-          end.keys
+          descriptors = subdependency_descriptors(versions, current_version)
           return if descriptors.empty?
 
           validate_subdependency_descriptors!(descriptors, dependency.name, current_version, target_version)
@@ -62,6 +63,14 @@ module Dependabot
           Helpers.run_yarn_command("install #{install_args}".strip, fingerprint: "install", env: env)
           target_version
         end
+
+        sig { params(versions: T::Hash[String, String], current_version: String).returns(T::Array[String]) }
+        def self.subdependency_descriptors(versions, current_version)
+          versions.select do |descriptor, version|
+            version == current_version && split_descriptor(descriptor).last&.start_with?("npm:")
+          end.keys
+        end
+        private_class_method :subdependency_descriptors
 
         sig do
           params(

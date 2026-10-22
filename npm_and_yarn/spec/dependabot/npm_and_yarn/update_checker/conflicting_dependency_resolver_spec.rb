@@ -65,6 +65,33 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:dependency_files) { project_dependency_files("npm6/subdependency_out_of_range_gt") }
 
+      it "passes the installed version to the npm helper when enabled" do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return([])
+
+        expect(conflicting_dependencies).to be_empty
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess).with(
+          command: Dependabot::NpmAndYarn::NativeHelpers.helper_path,
+          function: "npm:findConflictingDependencies",
+          args: [a_kind_of(String), dependency_name, target_version, current_version]
+        )
+      end
+
+      context "when the experiment is disabled" do
+        sig { returns(T::Boolean) }
+        let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+        it "passes the original unscoped npm helper arguments" do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return([])
+
+          expect(conflicting_dependencies).to be_empty
+          expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess).with(
+            command: Dependabot::NpmAndYarn::NativeHelpers.helper_path,
+            function: "npm:findConflictingDependencies",
+            args: [a_kind_of(String), dependency_name, target_version]
+          )
+        end
+      end
+
       it "returns the right array of blocking dependencies" do
         expect(conflicting_dependencies).to contain_exactly(
           {
@@ -98,9 +125,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(helper_error)
         end
 
-        it "uses the legacy fallback without consulting the Yarn experiment" do
-          expect(Dependabot::Experiments).not_to receive(:enabled?)
-
+        it "uses the legacy error fallback" do
           expect(conflicting_dependencies).to be_empty
         end
       end
@@ -130,7 +155,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
             .with(
               hash_including(
                 function: "yarn:findConflictingDependencies",
-                args: [a_kind_of(String), dependency_name, target_version, false, current_version]
+                args: [a_kind_of(String), dependency_name, target_version, false]
               )
             )
             .and_call_original
@@ -173,7 +198,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
             .with(
               hash_including(
                 function: "yarn:findConflictingDependencies",
-                args: [a_kind_of(String), dependency_name, target_version, false, current_version]
+                args: [a_kind_of(String), dependency_name, target_version, false]
               )
             )
             .and_call_original
@@ -190,8 +215,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           .select { |file| file.name == "package.json" }
       end
 
-      it "uses the legacy Yarn helper without consulting the Yarn experiment" do
-        expect(Dependabot::Experiments).not_to receive(:enabled?)
+      it "uses the legacy Yarn traversal" do
         expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .with(
             hash_including(
@@ -209,8 +233,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:dependency_files) { project_dependency_files("pnpm/multiple_sub_dependencies") }
 
-      it "uses the legacy Yarn helper without consulting the Yarn experiment" do
-        expect(Dependabot::Experiments).not_to receive(:enabled?)
+      it "uses the legacy Yarn traversal" do
         expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .with(
             hash_including(
