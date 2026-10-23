@@ -75,6 +75,36 @@ RSpec.describe Dependabot::Gradle::FileParser do
     end
   end
 
+  describe "parse with a gradle.lockfile" do
+    subject(:dependencies) { parser.parse }
+
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "app/gradle.lockfile",
+        content: <<~LOCK
+          # This is a Gradle generated file for dependency locking.
+          com.fasterxml.jackson.core:jackson-core:2.22.3=compileClasspath,runtimeClasspath
+          com.google.inject:guice:9.9.9=runtimeClasspath
+          empty=annotationProcessor
+        LOCK
+      )
+    end
+    let(:files) { [buildfile, lockfile] }
+
+    it "adds lockfile-only dependencies as sub-dependencies" do
+      jackson = dependencies.find { |d| d.name == "com.fasterxml.jackson.core:jackson-core" }
+      expect(jackson.version).to eq("2.22.3")
+      expect(jackson.requirements).to eq([])
+      expect(jackson).not_to be_top_level
+    end
+
+    it "does not override dependencies declared in build files" do
+      declared = parser.parse.select { |d| d.name == "com.google.inject:guice" }
+      expect(declared.length).to eq(1)
+      expect(declared.first.requirements).not_to be_empty
+    end
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
@@ -265,7 +295,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           .to contain_exactly(
             "io.airlift:aircompressor",
             "org.apache.commons:commons-lang3",
-            "com.google.guava:guava",
+            "com.google.inject:guice",
             "org.example:custom-lib"
           )
       end
@@ -281,7 +311,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
 
       it "does not pick up the multiline substituted version for guava" do
-        dependency = dependencies.find { |d| d.name == "com.google.guava:guava" }
+        dependency = dependencies.find { |d| d.name == "com.google.inject:guice" }
         expect(dependency.version).to eq("30.0-jre")
       end
     end
