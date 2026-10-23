@@ -494,6 +494,93 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when Pkg cannot update the manifest because of what the manifest contains" do
+      {
+        "a path package that is not in the checkout" =>
+          "Failed to update manifest: Julia 1.12.6 could not update the manifest: expected package " \
+          "`Example [7876af07]` to exist at path " \
+          "`/home/dependabot/dependabot-updater/repo/test/C:\\Users\\someone\\.julia\\dev\\Example`",
+        "a package no registry has" =>
+          "Failed to update manifest: Julia 1.12.6 could not update the manifest: expected package " \
+          "`Example [7876af07]` to be registered",
+        "a git source that needs credentials" =>
+          "Failed to update manifest: Julia 1.12.6 could not update the manifest: Username for " \
+          "'https://github.com': failed to clone from https://github.com/owner/Example.jl.git, error: " \
+          "GitError(Code:EUSER, Class:Callback, Aborting, user cancelled credential request.)",
+        "a git source that cannot be reached" =>
+          "Failed to update manifest: Julia 1.12.6 could not update the manifest: failed to clone from " \
+          "git@github.com:owner/Example.jl.git, error: GitError(Code:ERROR, Class:Net, failed to resolve " \
+          "address for github.com: Temporary failure in name resolution)",
+        "an entry the manifest does not have" =>
+          "Failed to update manifest: could not find entry with uuid 7876af07-990d-54b4-ab0e-23690620f79a " \
+          "in manifest /home/dependabot/dependabot-updater/repo/Manifest.toml"
+      }.each do |description, message|
+        context "with #{description}" do
+          before do
+            allow(registry_client_double).to receive(:update_manifest).and_return(
+              Dependabot::Julia::RegistryClient::Result::Failure.new(message: message)
+            )
+          end
+
+          it "reports it in a notice and still returns the Project.toml update" do
+            updated_files = updater.updated_dependency_files
+
+            expect(updated_files.map(&:name)).to eq(["Project.toml"])
+            expect(updater.notices.length).to eq(1)
+            notice = updater.notices.first
+            expect(notice.type).to eq("julia_manifest_not_updated")
+            expect(notice.mode).to eq(Dependabot::Notice::NoticeMode::WARN)
+            expect(notice.description).to include(message)
+          end
+        end
+      end
+
+      context "when the compat entry already admits the new version, so only the manifest would change" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Example",
+            version: "0.4.1",
+            previous_version: "0.4.0",
+            package_manager: "julia",
+            requirements: [{ requirement: "0.4", file: "Project.toml", groups: ["deps"], source: nil }],
+            previous_requirements: [{ requirement: "0.4", file: "Project.toml", groups: ["deps"], source: nil }],
+            metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+          )
+        end
+        let(:message) do
+          "Failed to update manifest: Julia 1.12.6 could not update the manifest: expected package " \
+            "`Example [7876af07]` to be registered"
+        end
+
+        before do
+          allow(registry_client_double).to receive(:update_manifest).and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(message: message)
+          )
+        end
+
+        it "raises an error that says why, since a notice would never be shown" do
+          expect { updater.updated_dependency_files }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, message)
+        end
+      end
+
+      context "with an error Pkg does not describe that way" do
+        before do
+          allow(registry_client_double).to receive(:update_manifest).and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(
+              message: "Failed to update manifest: MethodError: no method matching foo(::Int64)"
+            )
+          )
+        end
+
+        it "still raises it" do
+          expect { updater.updated_dependency_files }
+            .to raise_error(RuntimeError, /Failed to update manifest: MethodError/)
+          expect(updater.notices).to be_empty
+        end
+      end
+    end
+
     context "when adding a new compat entry to existing [compat] section" do
       let(:project_file_content) do
         <<~TOML
