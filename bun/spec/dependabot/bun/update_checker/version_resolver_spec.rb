@@ -206,6 +206,33 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when bunfig.toml freezes the lockfile" do
+      let(:repo_contents_path) do
+        build_tmp_repo(project_name, path: "projects").tap do |path|
+          File.write(File.join(path, "bunfig.toml"), "[install]\nfrozenLockfile = true\n")
+          Dir.chdir(path) do
+            Dependabot::SharedHelpers.run_shell_command("git add bunfig.toml")
+            Dependabot::SharedHelpers.run_shell_command("git commit -m bunfig")
+          end
+        end
+      end
+      let(:bunfig_during_checks) { [] }
+
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command) do
+          bunfig_during_checks << File.read("bunfig.toml")
+          ""
+        end
+      end
+
+      it "checks the candidate with the freeze off, so the lockfile can change" do
+        resolved_version
+
+        expect(bunfig_during_checks).not_to be_empty
+        expect(bunfig_during_checks).to all(eq("[install]\nfrozenLockfile = false\n"))
+      end
+    end
+
     context "with an unrelated execution error" do
       before do
         allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_raise(TypeError, "unrelated error")
