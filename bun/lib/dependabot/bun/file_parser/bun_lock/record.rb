@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/experiments"
 require "dependabot/bun/file_parser/bun_lock"
 require "dependabot/package/npm_lockfile_details"
 
@@ -50,23 +51,58 @@ module Dependabot
 
           sig { returns(T::Array[String]) }
           def dependency_names
-            details = entry[2]
-            return [] if details.nil?
+            dependency_fields.flat_map { |field| dependency_names_for(dependency_details[field], field) }.uniq
+          end
 
-            invalid!("#{@context} details must be an object") unless details.is_a?(Hash)
-            dependencies = T.cast(details["dependencies"], Object)
-            return [] if dependencies.nil?
+          sig { params(name: String).returns(T::Array[String]) }
+          def requirements_for(name)
+            dependency_fields.filter_map do |field|
+              dependencies = dependency_details[field]
+              next if dependencies.nil?
 
-            invalid!("#{@context}.dependencies must be an object") unless dependencies.is_a?(Hash)
-            dependencies.keys.map do |raw_name|
-              child = T.cast(raw_name, Object)
-              invalid!("#{@context}.dependencies keys must be strings") unless child.is_a?(String)
+              invalid!("#{@context}.#{field} must be an object") unless dependencies.is_a?(Hash)
+              requirement = T.cast(dependencies[name], Object)
+              next if requirement.nil?
 
-              child
+              invalid!("#{@context}.#{field}.#{name} must be a string") unless requirement.is_a?(String)
+              requirement
             end
           end
 
           private
+
+          sig { returns(T::Array[String]) }
+          def dependency_fields
+            if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+              %w(dependencies optionalDependencies peerDependencies)
+            else
+              %w(dependencies)
+            end
+          end
+
+          sig { returns(T::Hash[Object, Object]) }
+          def dependency_details
+            scoped = Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            # Only registry tuples have a registry field before their metadata.
+            details = entry[scoped && !version ? 1 : 2]
+            return {} if details.nil?
+
+            invalid!("#{@context} details must be an object") unless details.is_a?(Hash)
+            details
+          end
+
+          sig { params(dependencies: Object, field: String).returns(T::Array[String]) }
+          def dependency_names_for(dependencies, field)
+            return [] if dependencies.nil?
+
+            invalid!("#{@context}.#{field} must be an object") unless dependencies.is_a?(Hash)
+            dependencies.keys.map do |raw_name|
+              child = T.cast(raw_name, Object)
+              invalid!("#{@context}.#{field} keys must be strings") unless child.is_a?(String)
+
+              child
+            end
+          end
 
           sig { returns(T::Array[Object]) }
           def entry

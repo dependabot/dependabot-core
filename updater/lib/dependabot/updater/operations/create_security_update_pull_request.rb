@@ -114,7 +114,7 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
-          dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
+          dependency = vulnerable_version(dependency) { |dep| update_checker_for(dep) }
           checker = update_checker_for(dependency)
 
           log_checking_for_update(dependency)
@@ -217,23 +217,6 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
-        sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
-        def vulnerable_version(dependency)
-          all_versions = dependency.metadata_array(:all_versions)
-          return dependency unless all_versions
-          return dependency if all_versions.one?
-
-          vulnerable_dependency = dependency.metadata_dependencies(:all_versions)&.find do |dep|
-            checker = update_checker_for(dep)
-            checker.version_class.correct?(dep.version) && checker.vulnerable?
-          end
-
-          # this will lead to a security update not found error
-          return dependency unless vulnerable_dependency
-
-          vulnerable_dependency
-        end
-
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::UpdateCheckers::Base) }
         def update_checker_for(dependency)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(

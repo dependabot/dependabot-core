@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/helpers"
@@ -39,6 +40,9 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        attr_reader :security_advisories
+
         sig do
           params(
             dependency: Dependency,
@@ -46,7 +50,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            security_advisories: T::Array[Dependabot::SecurityAdvisory]
           ).void
         end
         def initialize(
@@ -55,7 +60,8 @@ module Dependabot
           dependency_files:,
           ignored_versions:,
           latest_allowable_version:,
-          repo_contents_path:
+          repo_contents_path:,
+          security_advisories: []
         )
           @dependency = dependency
           @credentials = credentials
@@ -63,6 +69,7 @@ module Dependabot
           @ignored_versions = ignored_versions
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
+          @security_advisories = security_advisories
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -118,8 +125,27 @@ module Dependabot
             credentials: credentials
           ).parse.find { |d| d.name == dependency.name }&.version
           return unless updated_version
+          return version_class.new(updated_version) unless
+            Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
 
-          version_class.new(updated_version)
+          version_from_targeted_lockfile_entries(updated_lockfiles) || version_class.new(updated_version)
+        end
+
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
+        def version_from_targeted_lockfile_entries(updated_lockfiles)
+          versions = updated_lockfiles.flat_map do |lockfile|
+            original = dependency_files_builder.lockfiles.find { |file| file.name == lockfile.name }
+            next [] unless original && dependency.version
+
+            FileParser::BunLock.new(lockfile).updated_dependency_versions(dependency: dependency, original: original)
+          end
+          safe_versions = UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories)
+          if safe_versions != versions
+            Dependabot.logger.info("Security update for #{dependency.name} leaves a targeted resolution vulnerable")
+            return version_class.new(T.must(dependency.version))
+          end
+
+          versions.min
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }

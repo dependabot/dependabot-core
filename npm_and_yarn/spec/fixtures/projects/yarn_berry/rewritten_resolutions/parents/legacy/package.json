@@ -1,0 +1,7 @@
+{
+  "name": "legacy-parent",
+  "version": "1.0.0",
+  "dependencies": {
+    "brace-expansion": "^1.1.7"
+  }
+}

@@ -3,9 +3,12 @@
 
 require "yaml"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/helpers"
+require "dependabot/bun/requirement"
+require "dependabot/update_checkers/vulnerability_audit"
 require "sorbet-runtime"
 
 module Dependabot
@@ -92,6 +95,66 @@ module Dependabot
         end
 
         sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T.nilable(Version))
+        end
+        def updated_dependency_version(dependency:, original:)
+          updated_dependency_versions(dependency:, original:).min
+        end
+
+        sig do
+          params(dependency: Dependabot::Dependency, original: Dependabot::DependencyFile)
+            .returns(T::Array[Version])
+        end
+        def updated_dependency_versions(dependency:, original:)
+          original_records = self.class.new(original).records || {}
+          paths = original_records.select do |_, record|
+            record.name == dependency.name && record.version == dependency.version
+          end.keys
+          return [] if paths.empty?
+
+          incoming = incoming_resolutions(original_records)
+          updated_records = records || {}
+
+          paths.flat_map do |path|
+            resolution_paths(incoming, path).map do |candidates|
+              version = resolved_version(updated_records, candidates, dependency.name)
+              unless version
+                Dependabot.logger.info(
+                  "Cannot verify updated Bun resolution for #{path}; keeping current version"
+                )
+              end
+              Version.new(version || T.must(dependency.version))
+            end
+          end
+        end
+
+        sig do
+          params(dependency: Dependabot::Dependency, target_version: T.nilable(Version))
+            .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
+        end
+        def conflicting_dependencies(dependency:, target_version:)
+          packages = records
+          raise_invalid!("expected 'packages' to be an object") unless packages
+
+          packages.flat_map do |path, record|
+            version = record.version || record.lookup_details.resolution
+            next [] unless version && !version.start_with?("workspace:")
+
+            blocking_requirements(
+              path: path, record: record, packages: packages, dependency: dependency, target_version: target_version
+            ).map do |requirement|
+              {
+                "name" => record.name,
+                "version" => version,
+                "requirement" => requirement,
+                "explanation" => "#{record.name}@#{version} requires #{dependency.name}@#{requirement}"
+              }
+            end
+          end.uniq
+        end
+
+        sig do
           params(dependency_name: String, _requirement: T.nilable(String), _manifest_name: String)
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
@@ -100,6 +163,86 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(
+            path: String,
+            record: Record,
+            packages: T::Hash[String, Record],
+            dependency: Dependabot::Dependency,
+            target_version: T.nilable(Version)
+          ).returns(T::Array[String])
+        end
+        def blocking_requirements(path:, record:, packages:, dependency:, target_version:)
+          record.dependency_names.flat_map do |name|
+            installed = resolved_version(packages, resolution_candidates(path, name), dependency.name)
+            next [] unless installed
+            next [] if dependency.version && installed != dependency.version
+
+            record.requirements_for(name).reject { |requirement| allows_version?(requirement, target_version) }
+          end
+        end
+
+        sig { params(requirement: String, version: T.nilable(Version)).returns(T::Boolean) }
+        def allows_version?(requirement, version)
+          return false unless version
+
+          constraint = requirement.sub(/\Anpm:.+@/, "")
+          Requirement.requirements_array(constraint).any? { |range| range.satisfied_by?(version) }
+        rescue Gem::Requirement::BadRequirementError => e
+          Dependabot.logger.info("Cannot evaluate Bun requirement #{requirement.inspect}: #{e.message}")
+          false
+        end
+
+        sig do
+          params(records: T::Hash[String, Record], candidates: T::Array[String], name: String)
+            .returns(T.nilable(String))
+        end
+        def resolved_version(records, candidates, name)
+          path = candidates.find { |candidate| records.key?(candidate) }
+          record = records[path] if path
+          record.version if record && record.name == name
+        end
+
+        sig do
+          params(records: T::Hash[String, Record]).returns(T::Hash[String, T::Array[T::Array[String]]])
+        end
+        def incoming_resolutions(records)
+          incoming = T.let({}, T::Hash[String, T::Array[T::Array[String]]])
+          records.each do |path, record|
+            record.dependency_names.each do |name|
+              candidates = resolution_candidates(path, name)
+              target = candidates.find { |candidate| records.key?(candidate) }
+              next unless target
+
+              (incoming[target] ||= []) << candidates
+            end
+          end
+          incoming
+        end
+
+        sig do
+          params(incoming: T::Hash[String, T::Array[T::Array[String]]], target: String)
+            .returns(T::Array[T::Array[String]])
+        end
+        def resolution_paths(incoming, target)
+          segments = target.scan(%r{(?:@[^/]+/)?[^/]+})
+          name = segments.pop
+          raise_invalid!("invalid package path: #{target}") unless name.is_a?(String)
+
+          incoming.fetch(target) { [resolution_candidates(segments.join("/"), name)] }
+        end
+
+        sig { params(parent_path: String, name: String).returns(T::Array[String]) }
+        def resolution_candidates(parent_path, name)
+          segments = parent_path.scan(%r{(?:@[^/]+/)?[^/]+})
+          candidates = T.let([], T::Array[String])
+          while segments.any?
+            candidates << "#{segments.join('/')}/#{name}"
+            segments.pop
+          end
+          candidates << name
+        end
 
         sig { returns(T::Hash[Object, Object]) }
         def parse_document

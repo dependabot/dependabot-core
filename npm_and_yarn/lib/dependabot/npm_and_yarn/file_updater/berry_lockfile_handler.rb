@@ -3,8 +3,13 @@
 
 require "sorbet-runtime"
 require "yaml"
+require "json"
 
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/experiments"
+require "dependabot/npm_and_yarn/file_parser/yarn_lock"
+require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/requirement"
 
 # Handles yarn berry lockfile manipulation — parsing descriptors, finding
 # entries, and rewriting keys from exact versions back to ranges. This is
@@ -14,6 +19,190 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       class BerryLockfileHandler
         extend T::Sig
+
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            dependency: Dependabot::Dependency,
+            target_version: String,
+            env: T.nilable(T::Hash[String, String]),
+            install_args: String
+          ).returns(T.nilable(String))
+        end
+        def self.update_subdependency(
+          yarn_lock:, dependency:, target_version:, env: nil, install_args: Helpers.yarn_berry_args
+        )
+          return unless Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
+          current_version = dependency.previous_version || dependency.version
+          return unless current_version
+
+          versions = FileParser::YarnLock.new(yarn_lock).versions_by_requirement(dependency.name)
+          # A truthy unchanged version prevents callers from attempting an unscoped fallback.
+          return current_version unless versions.value?(current_version)
+
+          descriptors = subdependency_descriptors(versions, current_version)
+          return if descriptors.empty?
+
+          validate_subdependency_descriptors!(descriptors, dependency.name, current_version, target_version)
+
+          resolutions = descriptors.to_h do |descriptor|
+            [descriptor, subdependency_resolution(descriptor, dependency.name, target_version)]
+          end
+          resolution_command = Helpers.yarn_major_version == 2 ? "install" : "install --mode=update-lockfile"
+          with_temporary_resolutions(yarn_lock, resolutions) do
+            Helpers.run_yarn_command(resolution_command, fingerprint: "install", env: env)
+            restore_subdependency_descriptors(
+              yarn_lock: yarn_lock,
+              dependency_name: dependency.name,
+              target_version: target_version,
+              descriptors: descriptors,
+              original_versions: versions
+            )
+          end
+          Helpers.run_yarn_command("install #{install_args}".strip, fingerprint: "install", env: env)
+          target_version
+        end
+
+        sig { params(versions: T::Hash[String, String], current_version: String).returns(T::Array[String]) }
+        def self.subdependency_descriptors(versions, current_version)
+          versions.select do |descriptor, version|
+            version == current_version && split_descriptor(descriptor).last&.start_with?("npm:")
+          end.keys
+        end
+        private_class_method :subdependency_descriptors
+
+        sig do
+          params(
+            descriptors: T::Array[String],
+            dependency_name: String,
+            current_version: String,
+            target_version: String
+          ).void
+        end
+        def self.validate_subdependency_descriptors!(descriptors, dependency_name, current_version, target_version)
+          target = Version.new(target_version)
+          descriptors.each do |descriptor|
+            requirement = T.must(split_descriptor(descriptor).last)
+                           .delete_prefix("npm:").delete_prefix("#{dependency_name}@")
+            unless Requirement.requirements_array(requirement).any? { |range| range.satisfied_by?(target) }
+              raise DependencyFileNotResolvable,
+                    "Cannot update #{descriptor} from #{current_version} to #{target_version}: incompatible requirement"
+            end
+          end
+        end
+        private_class_method :validate_subdependency_descriptors!
+
+        sig { params(descriptor: String, dependency_name: String, target_version: String).returns(String) }
+        def self.subdependency_resolution(descriptor, dependency_name, target_version)
+          reference = T.must(split_descriptor(descriptor).last)
+          return "npm:#{dependency_name}@#{target_version}" if reference.start_with?("npm:#{dependency_name}@")
+
+          "npm:#{target_version}"
+        end
+        private_class_method :subdependency_resolution
+
+        # Yarn 2/3 ignore `name@npm:range` resolution selectors, while `name@range` works on every Berry
+        # version. Alias descriptors (`alias@npm:pkg@range`) keep their original form.
+        sig { params(descriptor: String).returns(String) }
+        def self.resolution_selector(descriptor)
+          name, reference = split_descriptor(descriptor)
+          return descriptor unless name && reference&.start_with?("npm:")
+
+          range = reference.delete_prefix("npm:")
+          return descriptor if range.match?(%r{\A(?:@[^/@]+/)?[^/@]+@})
+
+          "#{name}@#{range}"
+        end
+        private_class_method :resolution_selector
+
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            resolutions: T::Hash[String, String],
+            _blk: T.proc.void
+          ).void
+        end
+        def self.with_temporary_resolutions(yarn_lock, resolutions, &_blk)
+          manifest_path = File.join(File.dirname(yarn_lock.name), "package.json")
+          original_manifest = File.read(manifest_path)
+          manifest = JSON.parse(original_manifest)
+          existing_resolutions = manifest.fetch("resolutions", {}).to_h do |selector, reference|
+            descriptor = resolutions.keys.find do |candidate|
+              name, requirement = split_descriptor(candidate)
+              selector.match?(%r{(?:\A|/)#{Regexp.escape(name)}(?:@[^/]*)?\z}) &&
+                [reference, "npm:#{reference}"].include?(requirement)
+            end
+            [selector, descriptor ? resolutions.fetch(descriptor) : reference]
+          end
+          # Existing selectors match the original incoming requests; lockfile descriptors may already be rewritten.
+          manifest["resolutions"] = existing_resolutions.merge(
+            resolutions.transform_keys { |descriptor| resolution_selector(descriptor) }
+          ) { |_selector, existing, _temporary| existing }
+          begin
+            File.write(manifest_path, JSON.pretty_generate(manifest))
+            yield
+          ensure
+            File.write(manifest_path, original_manifest)
+          end
+        end
+        private_class_method :with_temporary_resolutions
+
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            dependency_name: String,
+            target_version: String,
+            descriptors: T::Array[String],
+            original_versions: T::Hash[String, String]
+          ).void
+        end
+        def self.restore_subdependency_descriptors(
+          yarn_lock:, dependency_name:, target_version:, descriptors:, original_versions:
+        )
+          parsed = parse(yarn_lock.name)
+          raise DependencyFileNotResolvable, "Cannot parse updated #{yarn_lock.name}" unless parsed
+
+          descriptor_groups = descriptors.group_by do |descriptor|
+            name, = split_descriptor(descriptor)
+            "#{name}@#{subdependency_resolution(descriptor, dependency_name, target_version)}"
+          end
+          descriptor_groups.each do |exact_descriptor, original_descriptors|
+            key = parsed.keys.find { |entry| entry.to_s.split(", ").include?(exact_descriptor) }
+            unless key
+              verify_updated_subdependency_descriptors!(
+                yarn_lock, dependency_name, target_version, original_descriptors
+              )
+              next
+            end
+
+            requirements = key.split(", ")
+            requirements.delete(exact_descriptor) unless original_versions.key?(exact_descriptor)
+            record = parsed.delete(key)
+            parsed[(requirements | original_descriptors).sort.join(", ")] = record
+          end
+          File.write(yarn_lock.name, YAML.dump(parsed))
+        end
+        private_class_method :restore_subdependency_descriptors
+
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            dependency_name: String,
+            target_version: String,
+            descriptors: T::Array[String]
+          ).void
+        end
+        def self.verify_updated_subdependency_descriptors!(yarn_lock, dependency_name, target_version, descriptors)
+          updated_file = yarn_lock.dup
+          updated_file.content = File.read(yarn_lock.name)
+          versions = FileParser::YarnLock.new(updated_file).versions_by_requirement(dependency_name)
+          return if descriptors.all? { |descriptor| versions[descriptor] == target_version }
+
+          raise DependencyFileNotResolvable,
+                "Missing updated Yarn resolution for #{dependency_name}@#{target_version}"
+        end
+        private_class_method :verify_updated_subdependency_descriptors!
 
         # Parses a yarn berry lockfile (YAML format). Returns nil if unparseable.
         sig { params(lockfile_path: String).returns(T.nilable(T::Hash[String, T.untyped])) }

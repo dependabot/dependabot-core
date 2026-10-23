@@ -1,0 +1,21 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "multiple-versions",
+      "dependencies": {
+        "legacy-parent": "1.0.0",
+        "current-parent": "1.0.0",
+        "modern-parent": "1.0.0"
+      }
+    }
+  },
+  "packages": {
+    "legacy-parent": ["legacy-parent@1.0.0", "", { "dependencies": { "brace-expansion": "^1.1.7" } }, ""],
+    "legacy-parent/brace-expansion": ["brace-expansion@1.1.12", "", {}, ""],
+    "current-parent": ["current-parent@1.0.0", "", { "dependencies": { "brace-expansion": "^2.0.2" } }, ""],
+    "current-parent/brace-expansion": ["brace-expansion@2.1.2", "", {}, ""],
+    "modern-parent": ["modern-parent@1.0.0", "", { "dependencies": { "brace-expansion": "^5.0.2" } }, ""],
+    "modern-parent/brace-expansion": ["brace-expansion@5.0.2", "", {}, ""]
+  }
+}

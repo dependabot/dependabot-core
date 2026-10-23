@@ -17,6 +17,14 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
+RSpec.configure do |config|
+  config.before do
+    T.bind(self, RSpec::Core::ExampleGroup)
+    # Keep other flags available when an example overrides an individual experiment.
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+  end
+end
+
 sig do
   params(
     name: String,

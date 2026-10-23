@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/experiments"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "sorbet-runtime"
@@ -59,7 +60,10 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def lockfiles
-        dependency_files.select { |file| lockfile?(file) }
+        files = dependency_files.select { |file| lockfile?(file) }
+        return files unless Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
+        files.reject { |file| Helpers.shadowed_package_lock?(file, dependency_files) }
       end
 
       sig { params(file: DependencyFile).returns(T::Boolean) }

@@ -74,6 +74,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:registry_base) { "https://registry.npmjs.org" }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
@@ -697,7 +699,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            target_version: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -763,7 +766,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
               repo_contents_path: nil,
-              security_advisories: security_advisories
+              security_advisories: security_advisories,
+              target_version: nil
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -933,7 +937,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            target_version: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)

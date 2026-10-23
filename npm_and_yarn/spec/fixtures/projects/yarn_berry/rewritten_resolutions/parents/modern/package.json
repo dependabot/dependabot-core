@@ -1,0 +1,7 @@
+{
+  "name": "modern-parent",
+  "version": "1.0.0",
+  "dependencies": {
+    "brace-expansion": "npm:^2.0.2"
+  }
+}

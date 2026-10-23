@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/experiments"
 require "dependabot/notices"
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
@@ -165,6 +166,22 @@ module Dependabot
 
           return close_pull_request(reason: :update_no_longer_possible) unless lead_dependency
 
+          if %w(npm_and_yarn bun).include?(lead_dependency.package_manager) &&
+             Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+            eligible_dependency = find_vulnerable_version(
+              lead_dependency, preferred_major: existing_pull_request_major(lead_dependency)
+            ) do |dep|
+              update_checker_for(dep) if job.allowed_update?(dep)
+            end
+            unless eligible_dependency
+              Dependabot.logger.info(
+                "No allowed vulnerable versions remain for #{lead_dependency.name}"
+              )
+              return close_pull_request(reason: :up_to_date)
+            end
+            lead_dependency = eligible_dependency
+          end
+
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
           record_blocked_version_ignored(
@@ -286,6 +303,16 @@ module Dependabot
           Dependabot.logger.info(
             "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
+        end
+
+        # Major version of the copy the existing PR updates to, used to keep a refresh on the same copy.
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+        def existing_pull_request_major(dependency)
+          job.existing_pull_requests.each do |pr|
+            pr_dep = pr.dependencies.find { |dep| dep.name.casecmp?(dependency.name) }
+            return pr_dep.version&.split(".")&.first if pr_dep&.version
+          end
+          nil
         end
 
         sig do

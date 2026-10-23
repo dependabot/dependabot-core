@@ -189,6 +189,9 @@ module Dependabot
                   )
                 end
               elsif Helpers.yarn_berry?(yarn_lock)
+                if Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+                  yarn_lock = DependencyFile.new(name: File.basename(yarn_lock.name), content: yarn_lock.content)
+                end
                 run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
               else
                 run_yarn_subdependency_updater(yarn_lock: yarn_lock)
@@ -339,6 +342,8 @@ module Dependabot
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = T.must(sub_dependencies.first)
+          return { yarn_lock.name => File.read(yarn_lock.name) } if update_yarn_berry_security_subdependency(yarn_lock)
+
           update = "#{dep.name}@#{dep.version}"
 
           commands = [
@@ -357,6 +362,20 @@ module Dependabot
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        sig { params(yarn_lock: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def update_yarn_berry_security_subdependency(yarn_lock)
+          return unless @security_updates_only
+
+          dep = T.must(sub_dependencies.first)
+          BerryLockfileHandler.update_subdependency(
+            yarn_lock: yarn_lock,
+            dependency: dep,
+            target_version: T.must(dep.version),
+            env: yarn_time_gate_env,
+            install_args: yarn_berry_args
+          )
         end
 
         # Fallback for transitive deps where add/dedupe/remove is a no-op. Threads

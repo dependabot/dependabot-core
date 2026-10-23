@@ -1,0 +1,7 @@
+{
+  "name": "current-parent",
+  "version": "1.0.0",
+  "dependencies": {
+    "brace-expansion": "^2.0.0"
+  }
+}

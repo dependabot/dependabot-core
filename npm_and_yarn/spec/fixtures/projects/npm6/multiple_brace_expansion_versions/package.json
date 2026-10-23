@@ -1,0 +1,9 @@
+{
+  "name": "multiple-versions",
+  "version": "1.0.0",
+  "dependencies": {
+    "legacy-parent": "1.0.0",
+    "current-parent": "1.0.0",
+    "modern-parent": "1.0.0"
+  }
+}
