@@ -40,6 +40,46 @@ RSpec.describe Dependabot::NpmAndYarn::NativeHelpers do
           .with("audit --fix", fingerprint: "audit --fix")
       end
     end
+
+    context "with a release-age argument" do
+      let(:pnpm_version) { "11.25.0" }
+
+      it "appends it to the command and the fingerprint" do
+        described_class.run_pnpm_audit_fix_command(min_release_age_arg: "--config.minimum-release-age=0")
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+          .with(
+            "audit --fix=update --config.minimum-release-age=0",
+            fingerprint: "audit --fix=update --config.minimum-release-age=0"
+          )
+      end
+    end
+  end
+
+  describe ".run_pnpm_deep_update_command" do
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+    end
+
+    it "runs the deep update without a release-age argument by default" do
+      described_class.run_pnpm_deep_update_command("lodash", recursive: true)
+
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+        .with(
+          "-r --include-workspace-root update lodash --depth 9999 --lockfile-only",
+          fingerprint: "-r --include-workspace-root update <dependency_name> --depth 9999 --lockfile-only"
+        )
+    end
+
+    it "appends a release-age argument to the command and the fingerprint" do
+      described_class.run_pnpm_deep_update_command("lodash", min_release_age_arg: "--config.minimum-release-age=0")
+
+      expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+        .with(
+          "update lodash --depth 9999 --lockfile-only --config.minimum-release-age=0",
+          fingerprint: "update <dependency_name> --depth 9999 --lockfile-only --config.minimum-release-age=0"
+        )
+    end
   end
 
   describe ".run_npm8_subdependency_update_command" do

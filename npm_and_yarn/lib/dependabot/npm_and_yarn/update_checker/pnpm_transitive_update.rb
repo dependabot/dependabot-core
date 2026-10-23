@@ -23,13 +23,24 @@ module Dependabot
       # install would, at every depth. That resolution can land above an
       # ignored or cooling-down version, so a result reached without the pin is
       # checked against the bound edge by edge before it is proposed.
+      #
+      # `min_release_age_arg` is appended to every command, so a security update
+      # can bypass the repo's `minimumReleaseAge` the same way the lockfile
+      # updater does.
       class PnpmTransitiveUpdate
         extend T::Sig
 
-        sig { params(dependency: Dependency, latest_allowable_version: T.nilable(Gem::Version)).void }
-        def initialize(dependency:, latest_allowable_version:)
+        sig do
+          params(
+            dependency: Dependency,
+            latest_allowable_version: T.nilable(Gem::Version),
+            min_release_age_arg: T.nilable(String)
+          ).void
+        end
+        def initialize(dependency:, latest_allowable_version:, min_release_age_arg: nil)
           @dependency = dependency
           @latest_allowable_version = latest_allowable_version
+          @min_release_age_arg = min_release_age_arg
           @pin_dropped = T.let(false, T::Boolean)
         end
 
@@ -38,15 +49,15 @@ module Dependabot
 
         sig { void }
         def run
-          Helpers.run_pnpm_command(command, fingerprint: fingerprint)
+          Helpers.run_pnpm_command(with_release_age(command), fingerprint: with_release_age(fingerprint))
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise if Helpers.pnpm_indirect_dependency_names(e.message).empty?
 
           Dependabot.logger.info("pnpm refused to pin #{@dependency.name}; retrying the update without a version")
           @pin_dropped = true
           Helpers.run_pnpm_command(
-            "update #{@dependency.name} --lockfile-only --no-save -r",
-            fingerprint: "update <dependency_name> --lockfile-only --no-save -r"
+            with_release_age("update #{@dependency.name} --lockfile-only --no-save -r"),
+            fingerprint: with_release_age("update <dependency_name> --lockfile-only --no-save -r")
           )
         end
 
@@ -84,6 +95,11 @@ module Dependabot
         end
 
         private
+
+        sig { params(command: String).returns(String) }
+        def with_release_age(command)
+          [command, @min_release_age_arg].compact.join(" ")
+        end
 
         sig { returns(String) }
         def command

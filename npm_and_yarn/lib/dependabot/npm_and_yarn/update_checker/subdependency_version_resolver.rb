@@ -22,6 +22,13 @@ module Dependabot
       class SubdependencyVersionResolver
         extend T::Sig
 
+        # Bypasses the repo's pnpm `minimumReleaseAge` for security fixes, as the
+        # pnpm lockfile updater does. pnpm also checks every entry already in the
+        # lockfile against the gate, so without this a fix that an earlier update
+        # in the same security group resolved inside the window fails every later
+        # transitive check.
+        PNPM_SECURITY_RELEASE_AGE_ARG = "--config.minimum-release-age=0"
+
         sig { returns(Dependency) }
         attr_reader :dependency
 
@@ -145,7 +152,11 @@ module Dependabot
 
         sig { returns(PnpmTransitiveUpdate) }
         def pnpm_update
-          @pnpm_update ||= PnpmTransitiveUpdate.new(dependency: dependency, latest_allowable_version: allowable_version)
+          @pnpm_update ||= PnpmTransitiveUpdate.new(
+            dependency: dependency,
+            latest_allowable_version: allowable_version,
+            min_release_age_arg: pnpm_min_release_age_arg
+          )
         end
 
         sig { returns(T.nilable(Gem::Version)) }
@@ -274,7 +285,11 @@ module Dependabot
         def run_pnpm_deep_update_fallback
           pnpm_update.resolved_without_pin
           recursive = Dir.glob("**/pnpm-workspace.yaml").any?
-          NativeHelpers.run_pnpm_deep_update_command(dependency.name, recursive: recursive)
+          NativeHelpers.run_pnpm_deep_update_command(
+            dependency.name,
+            recursive: recursive,
+            min_release_age_arg: pnpm_min_release_age_arg
+          )
           dependency.metadata[:deep_update_used] = true
         rescue SharedHelpers::HelperSubprocessFailed
           Dependabot.logger.info(
@@ -291,11 +306,9 @@ module Dependabot
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
-            NativeHelpers.run_pnpm_audit_fix_command
-            Helpers.run_pnpm_command(
-              "install --lockfile-only",
-              fingerprint: "install --lockfile-only"
-            )
+            NativeHelpers.run_pnpm_audit_fix_command(min_release_age_arg: pnpm_min_release_age_arg)
+            install = ["install --lockfile-only", pnpm_min_release_age_arg].compact.join(" ")
+            Helpers.run_pnpm_command(install, fingerprint: install)
 
             manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }
             if manifest_changed
@@ -370,6 +383,11 @@ module Dependabot
         sig { returns(T::Boolean) }
         def security_updates_only?
           security_advisories.any?
+        end
+
+        sig { returns(T.nilable(String)) }
+        def pnpm_min_release_age_arg
+          security_updates_only? ? PNPM_SECURITY_RELEASE_AGE_ARG : nil
         end
 
         sig { returns(Dependabot::Dependency) }

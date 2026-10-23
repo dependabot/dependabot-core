@@ -338,6 +338,128 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           latest_resolvable_version
         end
       end
+
+      it "keeps the repo's release-age gate on the fallbacks for regular updates" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive_messages(run_pnpm_deep_update_command: "", run_pnpm_audit_fix_command: "")
+
+        latest_resolvable_version
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers).to have_received(:run_pnpm_deep_update_command)
+          .with("lodash", hash_including(min_release_age_arg: nil))
+        expect(Dependabot::NpmAndYarn::NativeHelpers).to have_received(:run_pnpm_audit_fix_command)
+          .with(min_release_age_arg: nil)
+      end
+
+      context "when resolving a security update" do
+        let(:resolver) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            latest_allowable_version: latest_allowable_version,
+            repo_contents_path: nil,
+            security_advisories: [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: "lodash",
+                package_manager: "npm_and_yarn",
+                vulnerable_versions: ["< 3.10.2"]
+              )
+            ]
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive_messages(run_pnpm_deep_update_command: "", run_pnpm_audit_fix_command: "")
+        end
+
+        it "bypasses the repo's release-age gate on the pinned update and its retry" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("update lodash@3.10.2 --lockfile-only --no-save -r --config.minimum-release-age=0", anything)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP  \"lodash\" (requested \"3.10.2\") is not a " \
+                         "direct dependency, so the requested version cannot be recorded.",
+                error_context: {}
+              )
+            )
+
+          latest_resolvable_version
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+            .with(
+              "update lodash --lockfile-only --no-save -r --config.minimum-release-age=0",
+              { fingerprint: "update <dependency_name> --lockfile-only --no-save -r --config.minimum-release-age=0" }
+            )
+        end
+
+        it "bypasses the repo's release-age gate on the fallbacks" do
+          latest_resolvable_version
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers).to have_received(:run_pnpm_deep_update_command)
+            .with("lodash", hash_including(min_release_age_arg: "--config.minimum-release-age=0"))
+          expect(Dependabot::NpmAndYarn::NativeHelpers).to have_received(:run_pnpm_audit_fix_command)
+            .with(min_release_age_arg: "--config.minimum-release-age=0")
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+            .with(
+              "install --lockfile-only --config.minimum-release-age=0",
+              { fingerprint: "install --lockfile-only --config.minimum-release-age=0" }
+            )
+        end
+      end
+    end
+
+    # pnpm checks every entry already in the lockfile against the repo's
+    # minimumReleaseAge. The fixture's gate is long enough that every entry
+    # fails it, the way a fix resolved earlier in the same security group
+    # fails a shorter one.
+    context "with a pnpm lockfile whose entries are inside the repo's minimumReleaseAge" do
+      let(:project_name) { "pnpm/subdependency_inside_release_age" }
+      let(:dependency_files) { project_dependency_files(project_name) }
+      let(:security_advisories) { [] }
+      let(:resolver) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          latest_allowable_version: latest_allowable_version,
+          repo_contents_path: build_tmp_repo(project_name, path: "projects"),
+          security_advisories: security_advisories
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.1.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:latest_allowable_version) { "5.7.4" }
+
+      it "finds no update for a regular update" do
+        expect(latest_resolvable_version).to be_nil
+      end
+
+      context "when resolving a security update" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "acorn",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["< 5.7.4"]
+            )
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+      end
     end
 
     context "with a npm8 package-lock.json" do

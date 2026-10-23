@@ -112,10 +112,13 @@ module Dependabot
         [command, command]
       end
 
-      sig { returns(String) }
-      def self.run_pnpm_audit_fix_command
+      sig { params(min_release_age_arg: T.nilable(String)).returns(String) }
+      def self.run_pnpm_audit_fix_command(min_release_age_arg: nil)
         command, fingerprint = pnpm_audit_fix_command
-        Helpers.run_pnpm_command(command, fingerprint: fingerprint)
+        Helpers.run_pnpm_command(
+          [command, min_release_age_arg].compact.join(" "),
+          fingerprint: [fingerprint, min_release_age_arg].compact.join(" ")
+        )
       end
 
       sig { params(output: String).returns(Integer) }
@@ -146,10 +149,19 @@ module Dependabot
         [cmd, fingerprint]
       end
 
-      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
-      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+      sig do
+        params(
+          dependency_name: String,
+          recursive: T::Boolean,
+          min_release_age_arg: T.nilable(String)
+        ).returns(String)
+      end
+      def self.run_pnpm_deep_update_command(dependency_name, recursive: false, min_release_age_arg: nil)
         cmd, fingerprint = pnpm_deep_update_command(dependency_name, recursive: recursive)
-        Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+        Helpers.run_pnpm_command(
+          [cmd, min_release_age_arg].compact.join(" "),
+          fingerprint: [fingerprint, min_release_age_arg].compact.join(" ")
+        )
       end
 
       sig { params(env: T.nilable(T::Hash[String, String])).returns(String) }
