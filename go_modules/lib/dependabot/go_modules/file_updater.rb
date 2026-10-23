@@ -103,6 +103,8 @@ module Dependabot
               )
           end
 
+          updated_files.concat(updated_ancestor_workspace_files)
+
           vendor_updater.updated_files(base_directory: T.must(directory))
                         .each do |file|
             updated_files << file
@@ -110,6 +112,20 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_ancestor_workspace_files
+        file_updater.updated_ancestor_workspace_files.filter_map do |name, content|
+          original = dependency_files.find { |file| file.name == name }
+          next if original.nil? || original.content == content
+
+          # Fetched as support files, but once changed they are real changes and must not be
+          # filtered out like other contextual support files.
+          updated = T.let(updated_file(file: original, content: content), Dependabot::DependencyFile)
+          updated.support_file = false
+          updated
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
