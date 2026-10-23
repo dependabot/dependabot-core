@@ -61,6 +61,10 @@ module Dependabot
             if dependency_files_builder.yarn_locks.any?
               enable_normalized_yarn_traversal =
                 Dependabot::Experiments.enabled?(:enable_yarn_berry_conflicting_dependencies)
+
+              # Normalized traversal needs the target's lockfile entries to tell
+              # its locked instances apart.
+              dependency_files_builder.write_original_yarn_lockfiles if enable_normalized_yarn_traversal
             end
 
             find_conflicting_dependencies(

@@ -119,6 +119,23 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         expect(conflicting_dependencies).not_to be_empty
       end
 
+      context "when the lockfile holds several versions of the dependency" do
+        let(:dependency_files) { project_dependency_files("yarn/subdependency_multiple_versions") }
+        let(:target_version) { "1.0.9" }
+
+        it "only reports requirements locked to the current version" do
+          expect(conflicting_dependencies).to be_empty
+        end
+
+        context "when the yarn berry conflicting dependencies experiment is disabled" do
+          let(:enable_yarn_berry_conflicting_dependencies) { false }
+
+          it "keeps reporting every instance's requirements" do
+            expect(conflicting_dependencies.map { |c| c["name"] }).to eq(["mid"])
+          end
+        end
+      end
+
       context "when the yarn berry conflicting dependencies experiment is disabled" do
         let(:enable_yarn_berry_conflicting_dependencies) { false }
 
