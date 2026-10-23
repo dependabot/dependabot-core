@@ -1,0 +1,8 @@
+{
+  "name": "bun-v2-project",
+  "packageManager": "bun@1.4.2",
+  "dependencies": {
+    "etag": "1.0.1",
+    "is-number": "7.0.0"
+  }
+}

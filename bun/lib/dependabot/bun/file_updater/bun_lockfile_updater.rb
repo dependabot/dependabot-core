@@ -94,13 +94,15 @@ module Dependabot
             File.write(".npmrc", npmrc_content(bun_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_bun_updater
+              Helpers.with_lockfile_changes_allowed do
+                run_bun_updater
 
-              write_final_package_json_files
+                write_final_package_json_files
 
-              run_bun_install
+                run_bun_install
 
-              File.read(bun_lock.name)
+                File.read(bun_lock.name)
+              end
             end
           end
         end

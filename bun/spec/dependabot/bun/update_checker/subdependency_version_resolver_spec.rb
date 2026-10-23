@@ -62,4 +62,25 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
       fingerprint: "update <dependency_name> --save-text-lockfile --ignore-scripts"
     )
   end
+
+  context "when bunfig.toml freezes the lockfile" do
+    let(:bunfig_during_update) { [] }
+
+    before do
+      allow(dependency_files_builder).to receive(:write_temporary_dependency_files) do
+        File.write("bun.lock", "dummy lockfile")
+        File.write("bunfig.toml", "[install]\nfrozenLockfile = true\n")
+      end
+      allow(Dependabot::Bun::Helpers).to receive(:run_bun_command) do
+        bunfig_during_update << File.read("bunfig.toml")
+        ""
+      end
+    end
+
+    it "runs bun update with the freeze off, so the lockfile can change" do
+      latest_resolvable_version
+
+      expect(bunfig_during_update).to eq(["[install]\nfrozenLockfile = false\n"])
+    end
+  end
 end
