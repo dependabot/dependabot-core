@@ -260,7 +260,7 @@ module Dependabot
         target = lowest_security_fix_version
         return versions unless target && version_class.correct?(target)
 
-        lines = [target, dependency.version].compact
+        lines = [target, dependency.version].compact.select { |v| version_class.correct?(v) }
         same_line = versions.select { |v| lines.any? { |line| same_release_line?(v, line) } }
         same_line.any? ? same_line : versions
       end

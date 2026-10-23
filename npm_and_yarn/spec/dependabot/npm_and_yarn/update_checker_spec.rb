@@ -2096,6 +2096,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
+      context "when the representative version is a git commit SHA" do
+        let(:dependency_version) { "d9a1b2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9" }
+        let(:vulnerable_versions) { ["< 1.0.9", ">= 2.0.0, < 2.0.9"] }
+
+        it "ignores the SHA when selecting release lines" do
+          expect { blockers }.not_to raise_error
+        end
+      end
+
       context "when the fix crosses minor versions of a 0.x release" do
         let(:dependency_files) { project_dependency_files("yarn/subdependency_all_versions_zero_major") }
         let(:dependency_version) { "0.1.5" }
