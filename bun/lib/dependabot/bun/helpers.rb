@@ -83,6 +83,54 @@ module Dependabot
         raise
       end
 
+      BUNFIG_FILE = "bunfig.toml"
+      FROZEN_LOCKFILE_SETTING = /\A(?<key>\s*(?<dotted>install\.)?frozenLockfile\s*=\s*)true\b/
+      TOML_TABLE_HEADER = /\A\s*\[\[?\s*(?<name>[\w.-]+)\s*\]\]?\s*(?:#.*)?\z/
+
+      # A repository can set `frozenLockfile = true` in its bunfig.toml so that a plain `bun install` never rewrites
+      # bun.lock. Bun has no flag to undo that, and refuses any install or update that would change the lockfile, which
+      # is the whole job here. Runs the block with the setting turned off in the bunfig.toml of the current directory,
+      # then puts the file back as it was.
+      sig do
+        type_parameters(:T)
+          .params(_block: T.proc.returns(T.type_parameter(:T)))
+          .returns(T.type_parameter(:T))
+      end
+      def self.with_lockfile_changes_allowed(&_block)
+        original = File.read(BUNFIG_FILE) if File.file?(BUNFIG_FILE)
+        thawed = original && without_frozen_lockfile(original)
+        return yield if thawed.nil? || thawed == original
+
+        File.write(BUNFIG_FILE, thawed)
+        begin
+          yield
+        ensure
+          File.write(BUNFIG_FILE, original)
+        end
+      end
+
+      # Only `frozenLockfile` under [install], or as `install.frozenLockfile` outside any table, is the setting bun
+      # reads. A key of that name in another table is left alone, and so is everything else in the file.
+      sig { params(bunfig: String).returns(String) }
+      def self.without_frozen_lockfile(bunfig)
+        table = T.let(nil, T.nilable(String))
+
+        bunfig.lines.map do |line|
+          if (header = line.match(TOML_TABLE_HEADER))
+            table = header[:name]
+            next line
+          end
+
+          setting = line.match(FROZEN_LOCKFILE_SETTING)
+          next line unless setting
+
+          in_install_table = setting[:dotted].nil? ? table == "install" : table.nil?
+          next line unless in_install_table
+
+          line.sub(FROZEN_LOCKFILE_SETTING, "\\k<key>false")
+        end.join
+      end
+
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|
