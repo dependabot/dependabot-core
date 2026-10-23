@@ -43,11 +43,12 @@ module Dependabot
         sig do
           params(
             dependency: Dependabot::Dependency,
-            target_version: T.nilable(T.any(String, Dependabot::Version))
+            target_version: T.nilable(T.any(String, Dependabot::Version)),
+            affected_versions: T.nilable(T::Array[String])
           )
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
-        def conflicting_dependencies(dependency:, target_version:)
+        def conflicting_dependencies(dependency:, target_version:, affected_versions: nil)
           enable_normalized_yarn_traversal = T.let(false, T::Boolean)
 
           SharedHelpers.in_a_temporary_directory do
@@ -71,7 +72,8 @@ module Dependabot
               dependency_files_builder:,
               dependency:,
               target_version:,
-              enable_normalized_yarn_traversal:
+              enable_normalized_yarn_traversal:,
+              affected_versions: affected_versions || [dependency.version].compact
             )
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -87,7 +89,8 @@ module Dependabot
             dependency_files_builder: DependencyFilesBuilder,
             dependency: Dependabot::Dependency,
             target_version: T.nilable(T.any(String, Dependabot::Version)),
-            enable_normalized_yarn_traversal: T::Boolean
+            enable_normalized_yarn_traversal: T::Boolean,
+            affected_versions: T::Array[String]
           )
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
@@ -95,7 +98,8 @@ module Dependabot
           dependency_files_builder:,
           dependency:,
           target_version:,
-          enable_normalized_yarn_traversal:
+          enable_normalized_yarn_traversal:,
+          affected_versions:
         )
           # TODO: Look into using npm/arborist for parsing yarn lockfiles (there's currently partial yarn support)
           #
@@ -108,21 +112,24 @@ module Dependabot
               function: "npm:findConflictingDependencies",
               dependency:,
               target_version:,
-              enable_normalized_yarn_traversal: false
+              enable_normalized_yarn_traversal: false,
+              affected_versions:
             )
           elsif dependency_files_builder.yarn_locks.none? || !enable_normalized_yarn_traversal
             run_conflicting_dependency_helper(
               function: "yarn:findConflictingDependencies",
               dependency:,
               target_version:,
-              enable_normalized_yarn_traversal: false
+              enable_normalized_yarn_traversal: false,
+              affected_versions:
             )
           else
             run_conflicting_dependency_helper(
               function: "yarn:findConflictingDependencies",
               dependency:,
               target_version:,
-              enable_normalized_yarn_traversal:
+              enable_normalized_yarn_traversal:,
+              affected_versions:
             )
           end
         end
@@ -132,7 +139,8 @@ module Dependabot
             function: String,
             dependency: Dependabot::Dependency,
             target_version: T.nilable(T.any(String, Dependabot::Version)),
-            enable_normalized_yarn_traversal: T::Boolean
+            enable_normalized_yarn_traversal: T::Boolean,
+            affected_versions: T::Array[String]
           )
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
@@ -140,15 +148,16 @@ module Dependabot
           function:,
           dependency:,
           target_version:,
-          enable_normalized_yarn_traversal:
+          enable_normalized_yarn_traversal:,
+          affected_versions:
         )
           args = T.let(
             [Dir.pwd, dependency.name, target_version.to_s],
-            T::Array[T.any(String, T::Boolean)]
+            T::Array[T.any(String, T::Boolean, T::Array[String])]
           )
           if function == "yarn:findConflictingDependencies"
             args << enable_normalized_yarn_traversal
-            args << dependency.version.to_s if enable_normalized_yarn_traversal && dependency.version
+            args << affected_versions if enable_normalized_yarn_traversal && affected_versions.any?
           end
 
           T.cast(

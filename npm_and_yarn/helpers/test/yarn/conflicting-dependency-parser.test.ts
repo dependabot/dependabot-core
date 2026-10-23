@@ -71,7 +71,7 @@ old@1.0.0:
       "abind",
       "1.0.9",
       true,
-      "1.0.5"
+      ["1.0.5"]
     );
     expect(result).toEqual([]);
 
@@ -82,6 +82,16 @@ old@1.0.0:
       true
     );
     expect(unscoped.map((c) => c.name)).toEqual(["mid"]);
+
+    // A requirement locked to any affected version still blocks the update.
+    const multiple = await findConflictingDependencies(
+      tempDir,
+      "abind",
+      "1.0.9",
+      true,
+      ["1.0.5", "2.0.1"]
+    );
+    expect(multiple.map((c) => c.name)).toEqual(["mid"]);
   });
 
   it("finds conflicting dependencies", async () => {

@@ -111,7 +111,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           .with(
             hash_including(
               function: "yarn:findConflictingDependencies",
-              args: [a_kind_of(String), dependency_name, target_version, true, current_version]
+              args: [a_kind_of(String), dependency_name, target_version, true, [current_version]]
             )
           )
           .and_call_original
@@ -133,6 +133,23 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
           it "keeps reporting every instance's requirements" do
             expect(conflicting_dependencies.map { |c| c["name"] }).to eq(["mid"])
           end
+        end
+      end
+
+      context "when several locked versions are affected" do
+        subject(:conflicting_dependencies) do
+          resolver.conflicting_dependencies(
+            dependency: dependency,
+            target_version: target_version,
+            affected_versions: %w(1.0.5 1.0.6)
+          )
+        end
+
+        let(:dependency_files) { project_dependency_files("yarn/subdependency_multiple_vulnerable_versions") }
+        let(:target_version) { "1.0.9" }
+
+        it "reports blockers of every affected version" do
+          expect(conflicting_dependencies.map { |c| c["name"] }).to eq(["pin"])
         end
       end
 

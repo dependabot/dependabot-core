@@ -217,7 +217,8 @@ module Dependabot
           credentials: credentials
         ).conflicting_dependencies(
           dependency: dependency,
-          target_version: lowest_security_fix_version
+          target_version: lowest_security_fix_version,
+          affected_versions: affected_lockfile_versions
         )
         return conflicts unless vulnerability_audit_performed?
 
@@ -244,6 +245,15 @@ module Dependabot
             dependency: dependency,
             security_advisories: security_advisories
           )
+      end
+
+      # Locked versions that conflict analysis should treat as the instances
+      # being updated; other locked instances of the dependency are unaffected.
+      sig { returns(T::Array[String]) }
+      def affected_lockfile_versions
+        versions = vulnerable_versions.map(&:to_s)
+        versions = dependency.all_versions.map(&:to_s) if versions.empty?
+        versions.uniq
       end
 
       sig { returns(T::Array[T.any(String, Gem::Version)]) }
