@@ -688,13 +688,29 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Docker::Tag)) }
       def latest_tag
+        return @latest_tag if defined?(@latest_tag)
+
+        @latest_tag = find_latest_tag
+      end
+
+      sig { returns(T.nilable(Dependabot::Docker::Tag)) }
+      def find_latest_tag
         return unless latest_digest
 
-        tags_from_registry
-          .select(&:canonical?)
-          .sort_by { |t| comparable_version_from(t) }
-          .reverse
-          .find { |t| digest_of(t.name) == latest_digest }
+        found = tags_from_registry
+                .select(&:canonical?)
+                .sort_by { |t| comparable_version_from(t) }
+                .reverse
+                .find { |t| digest_of(t.name) == latest_digest }
+
+        unless found
+          Dependabot.logger.info(
+            "No canonical tag matches the digest of `latest` for #{dependency.name}; " \
+            "pre-release detection based on `latest` is unavailable"
+          )
+        end
+
+        found
       end
 
       sig { returns(T.nilable(String)) }
