@@ -80,6 +80,39 @@ RSpec.describe Dependabot::Dependency do
     end
   end
 
+  describe "#names_for_matching" do
+    subject(:names_for_matching) { dependency.names_for_matching }
+
+    let(:dependency) do
+      described_class.new(
+        name: "dotnet/sdk",
+        requirements: [{ file: "Dockerfile", requirement: nil, groups: [], source: { registry: "mcr.microsoft.com" } }],
+        package_manager: package_manager
+      )
+    end
+
+    context "when no name aliases builder is registered" do
+      let(:package_manager) { "dummy" }
+
+      it { is_expected.to eq(["dotnet/sdk"]) }
+    end
+
+    context "when a name aliases builder is registered" do
+      let(:package_manager) { "names-for-matching-test" }
+
+      before do
+        described_class.register_name_aliases_builder(
+          package_manager,
+          ->(dep) { ["dotnet/sdk", "mcr.microsoft.com/#{dep.name}"] }
+        )
+      end
+
+      it "returns the name followed by its unique aliases" do
+        expect(names_for_matching).to eq(["dotnet/sdk", "mcr.microsoft.com/dotnet/sdk"])
+      end
+    end
+  end
+
   describe "#==" do
     let(:args) do
       {

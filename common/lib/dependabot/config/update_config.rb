@@ -34,15 +34,15 @@ module Dependabot
 
       sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
       def ignored_versions_for(dependency, security_updates_only: false)
-        normalizer = name_normaliser_for(dependency)
-        dep_name = T.must(normalizer).call(dependency.name)
+        normalizer = T.must(name_normaliser_for(dependency))
+        dep_names = dependency.names_for_matching.map { |name| normalizer.call(name) }
 
         if dependency.version.nil? && dependency.requirements.any?
           dependency = extract_base_version_from_requirement(dependency)
         end
 
         @ignore_conditions
-          .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
+          .select { |ic| dep_names.any? { |n| self.class.wildcard_match?(normalizer.call(ic.dependency_name), n) } }
           .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
           .flatten
           .compact

@@ -304,6 +304,33 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
+    context "with a dependency that has name aliases" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dotnet/sdk",
+          requirements: [
+            { file: "Dockerfile", requirement: nil, groups: [], source: { registry: "mcr.microsoft.com" } }
+          ],
+          version: "10.0.401",
+          package_manager: "update-config-alias-test"
+        )
+      end
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "mcr.microsoft.com/dotnet/*", versions: [">= 0"])]
+      end
+
+      before do
+        Dependabot::Dependency.register_name_aliases_builder(
+          "update-config-alias-test",
+          ->(dep) { ["mcr.microsoft.com/#{dep.name}"] }
+        )
+      end
+
+      it "matches ignore conditions against the aliases" do
+        expect(ignored_versions).to eq([">= 0"])
+      end
+    end
+
     context "when the dependency version isn't known" do
       let(:dependency) do
         Dependabot::Dependency.new(

@@ -1401,6 +1401,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     instance_double(
       Dependabot::Dependency,
       name: name,
+      names_for_matching: [name],
       version: version,
       previous_version: previous_version,
       metadata: metadata,
