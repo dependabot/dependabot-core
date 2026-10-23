@@ -275,15 +275,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
-  describe "#latest_tag caching (via prerelease?)" do
-    let(:canonical_tag) { Dependabot::Docker::Tag.new("17.10") }
-    let(:other_tag) { Dependabot::Docker::Tag.new("17.04") }
-
+  describe "#latest_version pre-release detection against the `latest` tag" do
     before do
-      allow(checker).to receive_messages(
-        latest_digest: "latest-digest",
-        tags_from_registry: [canonical_tag, other_tag]
-      )
+      allow(checker).to receive(:latest_digest).and_return("latest-digest")
       allow(checker).to receive(:find_latest_tag).and_call_original
       allow(Dependabot.logger).to receive(:info)
     end
@@ -293,9 +287,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         allow(checker).to receive(:digest_of) { |tag| tag == "17.10" ? "latest-digest" : "other" }
       end
 
-      it "scans once and does not log the no-match diagnostic" do
-        3.times { checker.send(:prerelease?, other_tag) }
-
+      it "selects the matching version, scanning once without the no-match log" do
+        expect(checker.latest_version).to eq("17.10")
         expect(checker).to have_received(:find_latest_tag).once
         expect(Dependabot.logger).not_to have_received(:info).with(/No canonical tag matches/)
       end
@@ -304,10 +297,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when no canonical tag matches the latest digest" do
       before { allow(checker).to receive(:digest_of).and_return("other") }
 
-      it "scans once, caches the nil result and logs once" do
-        results = Array.new(3) { checker.send(:prerelease?, other_tag) }
-
-        expect(results).to all(be(false))
+      it "selects the newest version, scanning once and logging once" do
+        expect(checker.latest_version).to eq("17.10")
         expect(checker).to have_received(:find_latest_tag).once
         expect(Dependabot.logger).to have_received(:info).with(/No canonical tag matches/).once
       end
