@@ -2042,6 +2042,40 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       )
     end
 
+    describe "affected locked versions" do
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
+      let(:dependency_version) { "1.1.5" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [],
+          package_manager: "npm_and_yarn",
+          metadata: { all_versions: %w(1.1.5 1.1.6 2.0.1 5.0.3).map { |v| Dependabot::Dependency.new(name: dependency_name, version: v, requirements: [], package_manager: "npm_and_yarn") } }
+        )
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.1.21", ">= 2.0.0, < 2.1.7", ">= 5.0.0, < 5.0.12"]
+          )
+        ]
+      end
+
+      it "passes only the locked versions in the target's release line" do
+        allow(checker).to receive(:lowest_security_fix_version).and_return(Dependabot::NpmAndYarn::Version.new("1.1.21"))
+        resolver = instance_double(described_class::ConflictingDependencyResolver)
+        allow(described_class::ConflictingDependencyResolver).to receive(:new).and_return(resolver)
+        expect(resolver).to receive(:conflicting_dependencies)
+          .with(dependency: dependency, target_version: anything, affected_versions: %w(1.1.5 1.1.6))
+          .and_return([])
+
+        checker.send(:conflicting_dependencies)
+      end
+    end
+
     context "with a conflicting dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
