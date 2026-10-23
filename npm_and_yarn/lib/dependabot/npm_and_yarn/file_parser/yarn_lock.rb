@@ -92,18 +92,19 @@ module Dependabot
           params(
             dependency_name: String,
             requirement: T.nilable(String),
-            _manifest_name: String
+            _manifest_name: String,
+            strict: T::Boolean
           )
             .returns(T.nilable(Dependabot::Package::NpmLockfileDetails))
         end
-        def details(dependency_name, requirement, _manifest_name)
+        def details(dependency_name, requirement, _manifest_name, strict: false)
           details_candidates =
             parsed
             .select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
 
           # If there's only one entry for this dependency, use it, even if
           # the requirement in the lockfile doesn't match
-          details = if details_candidates.one?
+          details = if details_candidates.one? && !strict
                       T.must(details_candidates.first).last
                     else
                       details_candidates.find do |descriptor_key, _|
