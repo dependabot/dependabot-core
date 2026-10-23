@@ -296,6 +296,30 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
+    context "when bunfig.toml sets frozenLockfile = true" do
+      let(:files) { project_dependency_files("bun/frozen_lockfile") }
+      let(:repo_contents_path) { build_tmp_repo("bun/frozen_lockfile", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{ file: "package.json", requirement: "1.0.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:requirements) do
+        [{ file: "package.json", requirement: "1.8.1", groups: ["dependencies"], source: nil }]
+      end
+
+      it "still updates the lockfile, because Dependabot has to change it" do
+        expect(YAML.safe_load(updated_bun_lock.content)["packages"]["etag"].first).to eq("etag@1.8.1")
+      end
+
+      it "leaves bunfig.toml in the repository untouched" do
+        updated_files
+
+        expect(File.read(File.join(repo_contents_path, "bunfig.toml"))).to include("frozenLockfile = true")
+      end
+    end
+
     context "with dependencies only declared in two different nested workspace packages" do
       let(:files) { project_dependency_files("bun/multi_workspace_dependency_not_at_root") }
       let(:repo_contents_path) { build_tmp_repo("bun/multi_workspace_dependency_not_at_root", path: "projects") }
