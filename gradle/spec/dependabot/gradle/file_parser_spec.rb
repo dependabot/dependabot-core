@@ -295,7 +295,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           .to contain_exactly(
             "io.airlift:aircompressor",
             "org.apache.commons:commons-lang3",
-            "com.google.inject:guice",
+            "com.google.guava:guava",
             "org.example:custom-lib"
           )
       end
@@ -311,7 +311,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
 
       it "does not pick up the multiline substituted version for guava" do
-        dependency = dependencies.find { |d| d.name == "com.google.inject:guice" }
+        dependency = dependencies.find { |d| d.name == "com.google.guava:guava" }
         expect(dependency.version).to eq("30.0-jre")
       end
     end
