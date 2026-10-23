@@ -106,6 +106,19 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         )
       end
 
+      it "passes the current version so only the matching instance is checked" do
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "yarn:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version, true, current_version]
+            )
+          )
+          .and_call_original
+
+        expect(conflicting_dependencies).not_to be_empty
+      end
+
       context "when the yarn berry conflicting dependencies experiment is disabled" do
         let(:enable_yarn_berry_conflicting_dependencies) { false }
 

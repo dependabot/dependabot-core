@@ -24,6 +24,66 @@ describe("findConflictingDependencies", () => {
   });
   afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
+  it("ignores requirements locked to other instances of the dependency", async () => {
+    fs.writeFileSync(
+      path.join(tempDir, "package.json"),
+      JSON.stringify({
+        name: "root",
+        version: "1.0.0",
+        dependencies: { old: "1.0.0", mid: "1.0.0", new: "1.0.0" },
+      })
+    );
+    fs.writeFileSync(
+      path.join(tempDir, "yarn.lock"),
+      `# yarn lockfile v1
+
+
+abind@^1.0.0:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/abind/-/abind-1.0.5.tgz"
+
+abind@^2.0.0:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/abind/-/abind-2.0.1.tgz"
+
+mid@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/mid/-/mid-1.0.0.tgz"
+  dependencies:
+    abind "^2.0.0"
+
+new@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/new/-/new-1.0.0.tgz"
+  dependencies:
+    abind "^1.0.0"
+
+old@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/old/-/old-1.0.0.tgz"
+  dependencies:
+    abind "^1.0.0"
+`
+    );
+
+    const result = await findConflictingDependencies(
+      tempDir,
+      "abind",
+      "1.0.9",
+      true,
+      "1.0.5"
+    );
+    expect(result).toEqual([]);
+
+    const unscoped = await findConflictingDependencies(
+      tempDir,
+      "abind",
+      "1.0.9",
+      true
+    );
+    expect(unscoped.map((c) => c.name)).toEqual(["mid"]);
+  });
+
   it("finds conflicting dependencies", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);
 

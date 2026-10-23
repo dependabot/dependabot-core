@@ -60,7 +60,8 @@ export async function findConflictingDependencies(
   directory: string,
   depName: string,
   targetVersion: string,
-  enableNormalizedTraversal = false
+  enableNormalizedTraversal = false,
+  currentVersion?: string
 ): Promise<ConflictingDependency[]> {
   if (!enableNormalizedTraversal) {
     return findLegacyConflictingDependencies(directory, depName, targetVersion);
@@ -69,14 +70,16 @@ export async function findConflictingDependencies(
   return findNormalizedConflictingDependencies(
     directory,
     depName,
-    targetVersion
+    targetVersion,
+    currentVersion
   );
 }
 
 async function findNormalizedConflictingDependencies(
   directory: string,
   depName: string,
-  targetVersion: string
+  targetVersion: string,
+  currentVersion?: string
 ): Promise<ConflictingDependency[]> {
   const lockfileJson = await parseNormalized(directory);
   const packageJson = fs
@@ -119,7 +122,12 @@ async function findNormalizedConflictingDependencies(
         depName,
         targetVersion,
         topLevelSpec,
-        lockfileJson
+        lockfileJson,
+        {} as TransitiveSpec,
+        new Map(),
+        new Map(),
+        0,
+        currentVersion
       ).values()
     );
   });
@@ -164,7 +172,11 @@ async function findNormalizedConflictingDependencies(
             targetVersion,
             { ...topLevelSpec },
             lockfileJson,
-            { ...transitiveSpec }
+            { ...transitiveSpec },
+            new Map(),
+            new Map(),
+            0,
+            currentVersion
           ).values()
         )
       );
@@ -270,6 +282,21 @@ function conflictsWith(targetVersion: string, edge: DependencyEdge): boolean {
   return !semver.satisfies(targetVersion, requirement);
 }
 
+// Lockfiles can hold several instances of the target dependency (e.g. 1.x, 2.x
+// and 5.x). Only requirements locked to the instance being updated can block it.
+function resolvesToCurrentVersion(
+  lockfile: NormalizedLockfileEntry[],
+  edge: DependencyEdge,
+  currentVersion?: string
+): boolean {
+  if (!currentVersion) return true;
+
+  const entries = findEntries(lockfile, edge);
+  if (entries.length === 0) return true;
+
+  return entries.some((entry) => entry.version === currentVersion);
+}
+
 function findConflictingParentDependencies(
   edge: DependencyEdge,
   targetDep: string,
@@ -279,7 +306,8 @@ function findConflictingParentDependencies(
   transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
   shortestDepthByEntry: Map<string, number> = new Map(),
   conflictingParents: Map<string, ParentSpec> = new Map(),
-  depth = 0
+  depth = 0,
+  currentVersion?: string
 ): Map<string, ParentSpec> {
   const checkedEntry = edgeKey(edge);
   const shortestDepth = shortestDepthByEntry.get(checkedEntry);
@@ -304,6 +332,7 @@ function findConflictingParentDependencies(
     for (const subDep of pkg.dependencies) {
       if (
         realNameOf(subDep) === targetDep &&
+        resolvesToCurrentVersion(lockfile, subDep, currentVersion) &&
         conflictsWith(targetversion, subDep)
       ) {
         // Only add the conflicting parent once per version preventing
@@ -339,7 +368,8 @@ function findConflictingParentDependencies(
           nextTransitiveSpec,
           shortestDepthByEntry,
           conflictingParents,
-          depth + 1
+          depth + 1,
+          currentVersion
         );
       }
     }
