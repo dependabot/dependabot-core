@@ -688,9 +688,9 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Docker::Tag)) }
       def latest_tag
-        return @latest_tag if defined?(@latest_tag)
-
-        @latest_tag = find_latest_tag
+        # Wrapped in an array so a nil result is cached too
+        @latest_tag ||= T.let([find_latest_tag], T.nilable(T::Array[T.nilable(Dependabot::Docker::Tag)]))
+        @latest_tag.first
       end
 
       sig { returns(T.nilable(Dependabot::Docker::Tag)) }

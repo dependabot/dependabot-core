@@ -275,6 +275,45 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
+  describe "#latest_tag caching (via prerelease?)" do
+    let(:canonical_tag) { Dependabot::Docker::Tag.new("17.10") }
+    let(:other_tag) { Dependabot::Docker::Tag.new("17.04") }
+
+    before do
+      allow(checker).to receive_messages(
+        latest_digest: "latest-digest",
+        tags_from_registry: [canonical_tag, other_tag]
+      )
+      allow(checker).to receive(:find_latest_tag).and_call_original
+      allow(Dependabot.logger).to receive(:info)
+    end
+
+    context "when a canonical tag matches the latest digest" do
+      before do
+        allow(checker).to receive(:digest_of) { |tag| tag == "17.10" ? "latest-digest" : "other" }
+      end
+
+      it "scans once and does not log the no-match diagnostic" do
+        3.times { checker.send(:prerelease?, other_tag) }
+
+        expect(checker).to have_received(:find_latest_tag).once
+        expect(Dependabot.logger).not_to have_received(:info).with(/No canonical tag matches/)
+      end
+    end
+
+    context "when no canonical tag matches the latest digest" do
+      before { allow(checker).to receive(:digest_of).and_return("other") }
+
+      it "scans once, caches the nil result and logs once" do
+        results = Array.new(3) { checker.send(:prerelease?, other_tag) }
+
+        expect(results).to all(be(false))
+        expect(checker).to have_received(:find_latest_tag).once
+        expect(Dependabot.logger).to have_received(:info).with(/No canonical tag matches/).once
+      end
+    end
+  end
+
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
 
