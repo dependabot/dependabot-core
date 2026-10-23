@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/nix/file_parser"
 require "dependabot/nix/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -685,6 +686,89 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         expect(updated.first[:source][:ref]).to eq("nixos-26.05")
         expect(updated.first[:source][:url])
           .to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")
+      end
+    end
+  end
+
+  # The dependency is built by the parser from a real lock entry, so the parser and the checker are tested together.
+  describe "with an indirect nixpkgs input that the registry resolved to a NixOS release tarball" do
+    let(:dependency) do
+      Dependabot::Nix::FileParser.new(
+        dependency_files: [
+          Dependabot::DependencyFile.new(
+            name: "flake.nix",
+            content: File.read(File.join(__dir__, "fixtures", "flake.nix"))
+          ),
+          Dependabot::DependencyFile.new(
+            name: "flake.lock",
+            content: File.read(File.join(__dir__, "fixtures", "flake_with_indirect_tarball.lock"))
+          )
+        ],
+        source: Dependabot::Source.new(provider: "github", repo: "example/nix-project", directory: "/")
+      ).parse.find { |d| d.name == "nixpkgs" }
+    end
+    let(:git_revision_url) { "https://channels.nixos.org/nixos-unstable/git-revision" }
+    let(:new_revision) { "5f6e1b0c3a2d4e9f8b7a6c5d4e3f2a1b0c9d8e7f" }
+
+    before do
+      stub_request(:get, git_revision_url).to_return(status: 200, body: "#{new_revision}\n")
+    end
+
+    it "treats the input as a rolling channel and finds its newest revision" do
+      expect(checker.latest_version).to eq(new_revision)
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be true
+    end
+
+    it "keeps the requirement, because a rolling channel has no newer name" do
+      expect(checker.updated_requirements).to eq(dependency.requirements)
+    end
+
+    context "when the channel is still on the locked revision" do
+      let(:new_revision) { "44a91898084f46797b5fac650c7e8c9ac38c43d4" }
+
+      it "reports no update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be false
+      end
+    end
+
+    context "when a newer versioned channel exists" do
+      let(:dependency) do
+        parsed = super()
+        Dependabot::Dependency.new(
+          name: parsed.name,
+          version: parsed.version,
+          package_manager: "nix",
+          requirements: parsed.requirements.map do |requirement|
+            requirement.merge(
+              source: requirement.fetch(:source).merge(
+                ref: "nixos-25.05",
+                url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.zst"
+              )
+            )
+          end
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: {
+            channel: "nixos-26.05",
+            url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.zst",
+            commit_sha: new_revision
+          }
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "bumps the channel and keeps the zst suffix" do
+        expect(checker.updated_requirements.first[:source]).to include(
+          ref: "nixos-26.05",
+          url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.zst"
+        )
+        expect(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to have_received(:new).with(hash_including(extension: "zst"))
       end
     end
   end

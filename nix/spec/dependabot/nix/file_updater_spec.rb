@@ -804,6 +804,130 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         expect(updated_files.first.name).to eq("flake.lock")
       end
     end
+
+    # An indirect input resolved by the registry to a NixOS release tarball: flake.nix says
+    # `nixpkgs/<channel>` and the lock holds the registry id, the ref and the tarball it resolved to.
+    context "with an indirect input locked to a NixOS release tarball (channel bumped)" do
+      let(:flake_nix_content) do
+        <<~NIX
+          {
+            inputs = {
+              nixpkgs.url = "nixpkgs/nixos-25.05";
+            };
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+      let(:flake_lock_content) { indirect_tarball_lock_content(revision: "old_rev_aaa", ref: "nixos-25.05") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "new_rev_bbb",
+          previous_version: "old_rev_aaa",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.zst",
+              branch: nil,
+              ref: "nixos-26.05"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.zst",
+              branch: nil,
+              ref: "nixos-25.05"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      let(:updated_lock_content) { flake_lock_content.gsub("old_rev_aaa", "new_rev_bbb") }
+
+      it "returns both flake.nix and flake.lock" do
+        expect(updated_files.map(&:name)).to contain_exactly("flake.nix", "flake.lock")
+      end
+
+      it "rewrites the channel in the indirect reference" do
+        nix_file = updated_files.find { |f| f.name == "flake.nix" }
+        expect(nix_file.content).to include('"nixpkgs/nixos-26.05"')
+        expect(nix_file.content).not_to include("nixos-25.05")
+      end
+
+      it "runs nix flake update for the input" do
+        updated_files
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(%w(nix flake update nixpkgs), fingerprint: "nix flake update <input_name>")
+      end
+    end
+
+    context "with an indirect input locked to a NixOS release tarball (lock refresh only)" do
+      let(:flake_nix_content) do
+        <<~NIX
+          {
+            inputs = {
+              nixpkgs.url = "nixpkgs/nixos-unstable";
+            };
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+      let(:flake_lock_content) { indirect_tarball_lock_content(revision: "old_rev_aaa", ref: "nixos-unstable") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "new_rev_bbb",
+          previous_version: "old_rev_aaa",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst",
+              branch: nil,
+              ref: "nixos-unstable"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst",
+              branch: nil,
+              ref: "nixos-unstable"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      let(:updated_lock_content) { flake_lock_content.gsub("old_rev_aaa", "new_rev_bbb") }
+
+      it "returns only the updated flake.lock and leaves flake.nix alone" do
+        expect(updated_files.map(&:name)).to eq(["flake.lock"])
+      end
+
+      it "runs nix flake update for the input, following the root input to its lock node" do
+        updated_files
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(%w(nix flake update nixpkgs), fingerprint: "nix flake update <input_name>")
+      end
+    end
   end
 
   describe "with the real Nix command" do
@@ -936,6 +1060,28 @@ RSpec.describe Dependabot::Nix::FileUpdater do
 
   def lock_command(input_path:, ref:)
     ["nix", "flake", "lock", "--override-input", input_path, ref]
+  end
+
+  # The lock for `inputs.nixpkgs.url = "nixpkgs/<ref>"` once the registry has resolved it to a release tarball. The
+  # root input points at a differently named node, as Nix writes it when several inputs share a name.
+  def indirect_tarball_lock_content(revision:, ref:)
+    JSON.pretty_generate(
+      "nodes" => {
+        "nixpkgs_3" => {
+          "locked" => {
+            "lastModified" => 1_700_000_000,
+            "narHash" => "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "rev" => revision,
+            "type" => "tarball",
+            "url" => "https://releases.nixos.org/nixos/unstable/#{revision}/nixexprs.tar.zst"
+          },
+          "original" => { "id" => "nixpkgs", "ref" => ref, "type" => "indirect" }
+        },
+        "root" => { "inputs" => { "nixpkgs" => "nixpkgs_3" } }
+      },
+      "root" => "root",
+      "version" => 7
+    )
   end
 
   def tarball_lock_content(revision:, url:)
