@@ -2108,6 +2108,25 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
+      context "when the experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+        end
+
+        it "keeps reporting blockers of every locked version" do
+          expect(blockers).to contain_exactly("pin", "mid")
+        end
+      end
+
+      context "when the dependency has no version" do
+        let(:dependency_version) { nil }
+
+        it "still scopes to the target's release line" do
+          expect(blockers).to contain_exactly("pin")
+        end
+      end
+
       context "when no locked version is vulnerable" do
         let(:vulnerable_versions) { ["< 0.1.0"] }
         let(:lowest_fix) { "3.0.0" }
