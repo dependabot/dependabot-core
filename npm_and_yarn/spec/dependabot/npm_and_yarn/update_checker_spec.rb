@@ -2087,6 +2087,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(blockers).to contain_exactly("pin")
       end
 
+      context "when the fix crosses major versions into another vulnerable instance" do
+        let(:vulnerable_versions) { ["< 2.0.9"] }
+        let(:lowest_fix) { "2.0.9" }
+
+        it "keeps blockers of the source release line" do
+          expect(blockers).to contain_exactly("old", "pin")
+        end
+      end
+
+      context "when the fix crosses minor versions of a 0.x release" do
+        let(:dependency_files) { project_dependency_files("yarn/subdependency_all_versions_zero_major") }
+        let(:dependency_version) { "0.1.5" }
+        let(:locked_versions) { %w(0.1.5 0.2.1 0.3.0) }
+        let(:vulnerable_versions) { ["< 0.2.9"] }
+        let(:lowest_fix) { "0.2.9" }
+
+        it "keeps the source minor line and excludes unrelated minors" do
+          expect(blockers).to contain_exactly("old")
+        end
+      end
+
       context "when no locked version is vulnerable" do
         let(:vulnerable_versions) { ["< 0.1.0"] }
         let(:lowest_fix) { "3.0.0" }

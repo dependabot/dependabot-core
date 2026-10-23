@@ -249,18 +249,19 @@ module Dependabot
 
       # Locked versions that conflict analysis should treat as the instances
       # being updated. A lockfile can hold several vulnerable majors of the
-      # same package (e.g. 1.x, 2.x and 5.x); the target fix only replaces the
-      # instances in its own release line, so the others are left out.
+      # same package (e.g. 1.x, 2.x and 5.x); only instances in the current
+      # version's release line or the target's release line are being updated,
+      # so the others are left out.
       sig { returns(T::Array[String]) }
       def affected_lockfile_versions
-        versions = vulnerable_versions.map(&:to_s)
-        versions = dependency.all_versions.map(&:to_s) if versions.empty?
-        versions = versions.uniq
+        versions = vulnerable_versions.map(&:to_s).uniq
+        return dependency.all_versions.map(&:to_s).uniq if versions.empty?
 
         target = lowest_security_fix_version
         return versions unless target && version_class.correct?(target)
 
-        same_line = versions.select { |v| same_release_line?(v, target) }
+        lines = [target, dependency.version].compact
+        same_line = versions.select { |v| lines.any? { |line| same_release_line?(v, line) } }
         same_line.any? ? same_line : versions
       end
 
