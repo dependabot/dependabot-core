@@ -94,6 +94,87 @@ old@1.0.0:
     expect(multiple.map((c) => c.name)).toEqual(["mid"]);
   });
 
+  describe("scoping to affected versions", () => {
+    const blocker = {
+      explanation: "objnest@4.1.4 requires abind@^1.0.0",
+      name: "objnest",
+      version: "4.1.4",
+      requirement: "^1.0.0",
+    };
+
+    it.each([
+      ["a yarn berry lockfile", "berry-simple"],
+      ["a yarn v1 npm alias", "aliased"],
+    ])("keeps blockers of an affected version in %s", async (_, fixture) => {
+      helpers.copyDependencies(
+        `conflicting-dependency-parser/${fixture}`,
+        tempDir
+      );
+
+      const result = await findConflictingDependencies(
+        tempDir,
+        "abind",
+        "2.0.0",
+        true,
+        ["1.0.5"]
+      );
+      expect(result).toEqual([blocker]);
+    });
+
+    it.each([
+      ["a yarn berry lockfile", "berry-simple"],
+      ["a yarn v1 npm alias", "aliased"],
+    ])(
+      "ignores blockers when no locked instance is affected in %s",
+      async (_, fixture) => {
+        helpers.copyDependencies(
+          `conflicting-dependency-parser/${fixture}`,
+          tempDir
+        );
+
+        const result = await findConflictingDependencies(
+          tempDir,
+          "abind",
+          "2.0.0",
+          true,
+          ["9.9.9"]
+        );
+        expect(result).toEqual([]);
+      }
+    );
+
+    it("does not scope when no affected versions are given", async () => {
+      helpers.copyDependencies(
+        "conflicting-dependency-parser/berry-simple",
+        tempDir
+      );
+
+      for (const versions of [undefined, []]) {
+        const result = await findConflictingDependencies(
+          tempDir,
+          "abind",
+          "2.0.0",
+          true,
+          versions
+        );
+        expect(result).toEqual([blocker]);
+      }
+    });
+
+    it("ignores affected versions in legacy traversal", async () => {
+      helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);
+
+      const result = await findConflictingDependencies(
+        tempDir,
+        "abind",
+        "2.0.0",
+        false,
+        ["9.9.9"]
+      );
+      expect(result).toEqual([blocker]);
+    });
+  });
+
   it("finds conflicting dependencies", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);
 

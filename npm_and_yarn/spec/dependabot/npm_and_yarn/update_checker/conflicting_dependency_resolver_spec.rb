@@ -64,6 +64,19 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         )
       end
 
+      it "does not pass affected versions to the npm helper" do
+        expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(
+            hash_including(
+              function: "npm:findConflictingDependencies",
+              args: [a_kind_of(String), dependency_name, target_version]
+            )
+          )
+          .and_call_original
+
+        conflicting_dependencies
+      end
+
       context "with no blocking dependencies" do
         let(:target_version) { "1.0.0" }
 
