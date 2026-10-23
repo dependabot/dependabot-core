@@ -2042,37 +2042,58 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       )
     end
 
-    describe "affected locked versions" do
-      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
-      let(:dependency_version) { "1.1.5" }
+    describe "with several locked versions of the dependency" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_all_versions") }
+      let(:dependency_name) { "abind" }
+      let(:dependency_version) { "1.0.5" }
+      let(:locked_versions) { %w(1.0.5 1.0.6 2.0.1) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: dependency_version,
           requirements: [],
           package_manager: "npm_and_yarn",
-          metadata: { all_versions: %w(1.1.5 1.1.6 2.0.1 5.0.3).map { |v| Dependabot::Dependency.new(name: dependency_name, version: v, requirements: [], package_manager: "npm_and_yarn") } }
+          metadata: {
+            all_versions: locked_versions.map do |v|
+              Dependabot::Dependency.new(
+                name: dependency_name, version: v, requirements: [], package_manager: "npm_and_yarn"
+              )
+            end
+          }
         )
       end
+      let(:vulnerable_versions) { ["< 1.0.9"] }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "npm_and_yarn",
-            vulnerable_versions: ["< 1.1.21", ">= 2.0.0, < 2.1.7", ">= 5.0.0, < 5.0.12"]
+            vulnerable_versions: vulnerable_versions
           )
         ]
       end
+      let(:lowest_fix) { "1.0.9" }
+      let(:registry_response) { "{}" }
+      let(:blockers) { checker.conflicting_dependencies.map { |c| c["name"] } }
 
-      it "passes only the locked versions in the target's release line" do
-        allow(checker).to receive(:lowest_security_fix_version).and_return(Dependabot::NpmAndYarn::Version.new("1.1.21"))
-        resolver = instance_double(described_class::ConflictingDependencyResolver)
-        allow(described_class::ConflictingDependencyResolver).to receive(:new).and_return(resolver)
-        expect(resolver).to receive(:conflicting_dependencies)
-          .with(dependency: dependency, target_version: anything, affected_versions: %w(1.1.5 1.1.6))
-          .and_return([])
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
+        allow(checker).to receive(:lowest_security_fix_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new(lowest_fix))
+      end
 
-        checker.send(:conflicting_dependencies)
+      it "keeps blockers of every vulnerable version and drops those of unaffected versions" do
+        expect(blockers).to contain_exactly("pin")
+      end
+
+      context "when no locked version is vulnerable" do
+        let(:vulnerable_versions) { ["< 0.1.0"] }
+        let(:lowest_fix) { "3.0.0" }
+
+        it "falls back to checking every locked version" do
+          expect(blockers).to contain_exactly("old", "pin", "mid")
+        end
       end
     end
 
