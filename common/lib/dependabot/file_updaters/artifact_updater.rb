@@ -40,11 +40,13 @@ module Dependabot
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(T.must(target_directory))
 
           # Pass the path as a single argument and use NUL-separated output so
-          # paths containing whitespace are preserved
+          # paths containing whitespace are preserved. Keep stderr separate so
+          # warnings (e.g. a missing target directory) aren't parsed as entries
           status = T.let(
             SharedHelpers.run_shell_command(
               ["git", "status", "--untracked-files=all", "--porcelain=v1", "-z", "--", relative_dir.to_s],
-              fingerprint: "git status --untracked-files=all --porcelain=v1 -z -- <relative_dir>"
+              fingerprint: "git status --untracked-files=all --porcelain=v1 -z -- <relative_dir>",
+              stderr_to_stdout: false
             ),
             String
           )
@@ -134,7 +136,8 @@ module Dependabot
 
         encoding = SharedHelpers.run_shell_command(
           ["file", "-b", "--mime-encoding", "--", path],
-          fingerprint: "file -b --mime-encoding -- <path>"
+          fingerprint: "file -b --mime-encoding -- <path>",
+          stderr_to_stdout: false
         ).strip
 
         !TEXT_ENCODINGS.include?(encoding)
