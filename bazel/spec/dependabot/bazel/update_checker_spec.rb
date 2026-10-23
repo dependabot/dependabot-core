@@ -829,6 +829,23 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           expect(checker.send(:cooldown_period?, release_time, "0.34.0")).to be false
         end
       end
+
+      context "when the current dependency version is not a valid version" do
+        let(:dependency_version) { "RULES_ANDROID_VERSION" }
+        let(:dependency_requirements) do
+          [{
+            file: "MODULE.bazel",
+            requirement: "RULES_ANDROID_VERSION",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "evaluates the cooldown without a current version instead of raising" do
+          recent_release = Time.now - (12 * 60 * 60)
+          expect(checker.send(:cooldown_period?, recent_release, "0.34.0")).to be true
+        end
+      end
     end
 
     describe "#publication_detail" do
