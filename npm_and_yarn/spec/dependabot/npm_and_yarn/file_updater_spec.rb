@@ -3053,6 +3053,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               .to include(".custom-cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip")
           end
         end
+
+        context "when cacheFolder contains spaces" do
+          let(:files) do
+            project_dependency_files(project_name).tap do |dependency_files|
+              yarnrc_yml = dependency_files.find { |file| file.name == ".yarnrc.yml" }
+              T.must(yarnrc_yml).content = "nodeLinker: node-modules\ncacheFolder: \".custom cache\"\n"
+            end
+          end
+
+          before do
+            custom_cache_dir = File.join(repo_contents_path, ".custom cache")
+            FileUtils.mkdir_p(custom_cache_dir)
+            FileUtils.cp_r(Dir.glob(File.join(repo_contents_path, ".yarn/cache/*")), custom_cache_dir)
+          end
+
+          it "updates the configured cache folder" do
+            expect(updated_files.map(&:name))
+              .to include(".custom cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip")
+          end
+        end
+      end
+
+      describe "with installStatePath containing spaces" do
+        let(:project_name) { "yarn_berry/simple_nopnp" }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+        let(:files) do
+          project_dependency_files(project_name) + [
+            Dependabot::DependencyFile.new(
+              name: ".yarnrc.yml",
+              content: "installStatePath: \".yarn/custom state.gz\"\n"
+            )
+          ]
+        end
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            File.open(".gitignore", "a") { |f| f.puts("\n!.yarn/custom state.gz") }
+            Dependabot::SharedHelpers.run_shell_command("git commit -am allow-custom-install-state")
+          end
+        end
+
+        it "includes the configured install state file" do
+          expect(updated_files.map(&:name))
+            .to contain_exactly("package.json", "yarn.lock", ".yarn/custom state.gz")
+        end
       end
 
       context "when updating only the lockfile" do

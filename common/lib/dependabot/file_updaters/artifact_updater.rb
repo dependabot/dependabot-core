@@ -39,15 +39,16 @@ module Dependabot
           # rubocop:disable-next Performance/DeletePrefix
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(T.must(target_directory))
 
+          # Pass the path as a single argument and use NUL-separated output so
+          # paths containing whitespace are preserved
           status = T.let(
             SharedHelpers.run_shell_command(
-              "git status --untracked-files all --porcelain v1 #{relative_dir}",
-              fingerprint: "git status --untracked-files all --porcelain v1 <relative_dir>"
+              ["git", "status", "--untracked-files=all", "--porcelain=v1", "-z", "--", relative_dir.to_s],
+              fingerprint: "git status --untracked-files=all --porcelain=v1 -z -- <relative_dir>"
             ),
             String
           )
-          changed_paths = status.split("\n").map(&:split)
-          changed_paths.filter_map do |type, path|
+          parse_status(status).filter_map do |type, path|
             project_root = Pathname.new(File.expand_path(File.join(Dir.pwd, base_directory)))
             file_path = Pathname.new(path).expand_path.relative_path_from(project_root)
 
@@ -62,7 +63,7 @@ module Dependabot
             operation = Dependabot::DependencyFile::Operation::DELETE if type == "D"
             operation = Dependabot::DependencyFile::Operation::CREATE if type == "??"
 
-            encoded_content, encoding = get_encoded_file_contents(T.must(path), operation)
+            encoded_content, encoding = get_encoded_file_contents(path, operation)
 
             create_dependency_file(
               name: file_path.to_s,
@@ -81,6 +82,26 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
+
+      # Parses `git status --porcelain=v1 -z` output into [type, path] pairs.
+      # Each entry is "XY <path>"; renames and copies are followed by an extra
+      # entry holding the original path, which we skip.
+      sig { params(status: String).returns(T::Array[[String, String]]) }
+      def parse_status(status)
+        entries = status.split("\0")
+        changes = T.let([], T::Array[[String, String]])
+
+        until entries.empty?
+          entry = T.must(entries.shift)
+          next if entry.empty?
+
+          code = T.must(entry[0, 2])
+          changes << [code.strip, T.must(entry[3..])]
+          entries.shift if code.match?(/[RC]/)
+        end
+
+        changes
+      end
 
       sig { returns(T.nilable(String)) }
       attr_reader :target_directory
@@ -111,8 +132,10 @@ module Dependabot
       def binary_file?(path)
         return false unless File.exist?(path)
 
-        command = SharedHelpers.escape_command("file -b --mime-encoding #{path}")
-        encoding = `#{command}`.strip
+        encoding = SharedHelpers.run_shell_command(
+          ["file", "-b", "--mime-encoding", "--", path],
+          fingerprint: "file -b --mime-encoding -- <path>"
+        ).strip
 
         !TEXT_ENCODINGS.include?(encoding)
       end

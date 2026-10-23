@@ -181,6 +181,43 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
       end
     end
 
+    context "when the target directory contains spaces" do
+      let(:target_directory) { "vendor/custom cache" }
+
+      before do
+        in_cloned_repository(repo_contents_path) do
+          FileUtils.mkdir_p("vendor/custom cache")
+          File.write("vendor/custom cache/tracked file.txt", "original")
+          Dependabot::SharedHelpers.run_shell_command(["git", "add", "--", "vendor/custom cache"])
+          Dependabot::SharedHelpers.run_shell_command(["git", "commit", "-m", "add custom cache"])
+
+          File.write("vendor/custom cache/tracked file.txt", "changed")
+          FileUtils.cp("vendor/cache/business-1.5.0.gem", "vendor/custom cache/new business.gem")
+
+          # Would be picked up if the path were split into "vendor/custom" and "cache"
+          FileUtils.mkdir_p("vendor/custom")
+          File.write("vendor/custom/stray.txt", "stray")
+        end
+      end
+
+      it "returns the changed files with their full names" do
+        expect(updated_files.map(&:name)).to contain_exactly(
+          "vendor/custom cache/tracked file.txt",
+          "vendor/custom cache/new business.gem"
+        )
+      end
+
+      it "reads and classifies the files correctly" do
+        updated = updated_files.find { |f| f.name == "vendor/custom cache/tracked file.txt" }
+        created = updated_files.find { |f| f.name == "vendor/custom cache/new business.gem" }
+
+        expect(updated.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+        expect(updated.content).to eq("changed")
+        expect(created.operation).to eq Dependabot::DependencyFile::Operation::CREATE
+        expect(created).to be_binary
+      end
+    end
+
     context "when given specific paths to check" do
       let(:only_paths) do
         [
