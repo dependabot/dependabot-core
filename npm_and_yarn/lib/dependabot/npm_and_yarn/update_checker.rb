@@ -217,7 +217,8 @@ module Dependabot
           credentials: credentials
         ).conflicting_dependencies(
           dependency: dependency,
-          target_version: lowest_security_fix_version
+          target_version: lowest_security_fix_version,
+          affected_versions: affected_lockfile_versions
         )
         return conflicts unless vulnerability_audit_performed?
 
@@ -244,6 +245,35 @@ module Dependabot
             dependency: dependency,
             security_advisories: security_advisories
           )
+      end
+
+      # Locked versions that conflict analysis should treat as the instances
+      # being updated. A lockfile can hold several vulnerable majors of the
+      # same package (e.g. 1.x, 2.x and 5.x); only instances in the current
+      # version's release line or the target's release line are being updated,
+      # so the others are left out.
+      sig { returns(T::Array[String]) }
+      def affected_lockfile_versions
+        versions = vulnerable_versions.map(&:to_s).uniq
+        return dependency.all_versions.map(&:to_s).uniq if versions.empty?
+
+        target = lowest_security_fix_version
+        return versions unless target && version_class.correct?(target)
+
+        lines = [target, dependency.version].compact.select { |v| version_class.correct?(v) }
+        same_line = versions.select { |v| lines.any? { |line| same_release_line?(v, line) } }
+        same_line.any? ? same_line : versions
+      end
+
+      sig { params(version: String, target: T.any(String, Gem::Version)).returns(T::Boolean) }
+      def same_release_line?(version, target)
+        return false unless version_class.correct?(version)
+
+        segments = version_class.new(version).segments
+        target_segments = version_class.new(target).segments
+        return false unless segments[0] == target_segments[0]
+
+        target_segments[0] != 0 || segments[1] == target_segments[1]
       end
 
       sig { returns(T::Array[T.any(String, Gem::Version)]) }
