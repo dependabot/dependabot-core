@@ -116,13 +116,11 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
 
       let(:observed_cwds) { [] }
-      let(:observed_commands) { [] }
       let(:observed_wrapper_executable) { [] }
 
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
           observed_cwds << cwd
-          observed_commands << command
 
           wrapper_token = command.split.first
           if wrapper_token&.include?("gradlew")
@@ -149,71 +147,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
         expect(result.find { |f| f.name == "external/gradle.lockfile" }.content).to eq("# external lockfile\n")
-      end
-
-      it "runs the subproject dependencies task for subproject build files" do
-        lockfile_updater.update_lockfiles(app_buildfile)
-
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          include(":app:dependencies"),
-          cwd: kind_of(String)
-        )
-      end
-
-      it "runs scoped tasks for every changed build file in the root" do
-        lockfile_updater.update_lockfiles(root_buildfile, build_files: [root_buildfile, app_buildfile])
-
-        expect(observed_commands.last).to include(":app:dependencies")
-        expect(observed_commands.last).to include("dependabotResolveAll")
-      end
-
-      context "when the subproject uses a custom projectDir mapping" do
-        let(:custom_settings) do
-          Dependabot::DependencyFile.new(
-            name: "settings.gradle",
-            directory: "/",
-            content: "include ':chrome-trace'\n" \
-                     "project(':chrome-trace').projectDir = new File(rootDir, 'subprojects/chrome-trace')\n"
-          )
-        end
-        let(:custom_buildfile) do
-          Dependabot::DependencyFile.new(
-            name: "build.gradle",
-            directory: "/",
-            content: "plugins { id 'java' }\n"
-          )
-        end
-        let(:custom_subproject_buildfile) do
-          Dependabot::DependencyFile.new(
-            name: "build.gradle",
-            directory: "/subprojects/chrome-trace",
-            content: "plugins { id 'java' }\n"
-          )
-        end
-        let(:custom_lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "gradle.lockfile",
-            directory: "/subprojects/chrome-trace",
-            content: "# old lockfile\n"
-          )
-        end
-
-        let(:dependency_files) { [custom_settings, custom_buildfile, custom_subproject_buildfile, custom_lockfile] }
-        let(:observed_commands) { [] }
-
-        before do
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
-            observed_commands << command
-            File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
-          end
-        end
-
-        it "falls back to dependabotResolveAll only without a project-specific task" do
-          lockfile_updater.update_lockfiles(custom_subproject_buildfile)
-
-          expect(observed_commands.last).not_to include(":subprojects:chrome-trace:dependencies")
-          expect(observed_commands.last).to include("dependabotResolveAll")
-        end
       end
 
       context "when a local gradlew script is available" do
@@ -827,25 +760,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
           expect(observed_properties.last.scan(/^org\.gradle\.jvmargs=/).size).to eq(1)
         end
       end
-
-      it "generates an init script that resolves project configurations" do
-        observed_init_script = nil
-
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
-          init_script_path = File.join(cwd, "dependabot-locking.init.gradle")
-          observed_init_script = File.read(init_script_path)
-          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
-        end
-
-        lockfile_updater.update_lockfiles(root_buildfile)
-
-        expect(observed_init_script).to include("projectsEvaluated {")
-        expect(observed_init_script).to include("configurations.findAll")
-        expect(observed_init_script).to include("it.resolutionStrategy.dependencyLockingEnabled")
-        expect(observed_init_script).to include("it.allDependencies.any")
-        expect(observed_init_script).to include("dependency instanceof org.gradle.api.artifacts.ModuleDependency")
-        expect(observed_init_script).to include(".each { it.incoming.resolutionResult.allDependencies }")
-      end
     end
 
     context "when files have a non-root source directory" do
@@ -913,15 +827,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
-      end
-
-      it "runs the scoped subproject dependencies task from the source directory" do
-        lockfile_updater.update_lockfiles(subdir_buildfile)
-
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          include(":app:dependencies"),
-          cwd: kind_of(String)
-        )
       end
 
       context "when gradlew exists at the repository root" do

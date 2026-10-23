@@ -1,0 +1,4 @@
+dependencies {
+  implementation project(':lib')
+  implementation "com.example:alpha:1.0"
+}

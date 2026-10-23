@@ -132,20 +132,17 @@ module Dependabot
         # `buildfiles`/`files`, but Gradle still needs them on disk to compile
         # plugins referenced by included/buildSrc builds, so pass them through too.
         support_files = dependency_files.select(&:support_file?)
-        lockfile_updater = LockfileUpdater.new(
-          dependency_files: files + support_files,
-          repo_contents_path: repo_contents_path
-        )
-        buildfiles_by_root = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyFile]])
+        lockfile_roots_processed = T.let(Set.new, T::Set[String])
 
         buildfiles_processed.each_value do |buildfile|
+          lockfile_updater = LockfileUpdater.new(
+            dependency_files: files + support_files,
+            repo_contents_path: repo_contents_path
+          )
           root_dir = lockfile_updater.determine_root_dir(build_file: buildfile)
-          buildfiles_by_root[root_dir] ||= []
-          T.must(buildfiles_by_root[root_dir]) << buildfile
-        end
+          next unless lockfile_roots_processed.add?(root_dir)
 
-        buildfiles_by_root.each_value do |buildfiles|
-          updated_files = lockfile_updater.update_lockfiles(T.must(buildfiles.first), build_files: buildfiles)
+          updated_files = lockfile_updater.update_lockfiles(buildfile)
 
           # Support files are only needed to populate Gradle's working directory;
           # they must never be reintroduced into the buildfiles-only result set.
