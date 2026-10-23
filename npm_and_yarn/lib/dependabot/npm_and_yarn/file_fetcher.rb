@@ -863,7 +863,8 @@ module Dependabot
         if repo_contents_path.nil?
           Dependabot.logger.info("Repository contents path is nil")
         elsif Dir.exist?(T.must(repo_contents_path))
-          Dir.chdir(T.must(repo_contents_path)) do
+          project_path = File.join(T.must(repo_contents_path), directory)
+          Dir.chdir(Dir.exist?(project_path) ? project_path : T.must(repo_contents_path)) do
             cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
             FileUtils.mkdir_p(cache_dir)
           end
