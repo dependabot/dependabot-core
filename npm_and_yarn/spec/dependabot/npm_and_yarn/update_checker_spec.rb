@@ -2105,6 +2105,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
+      context "when the lockfile keeps a v prefix on the locked version" do
+        let(:dependency_files) do
+          project_dependency_files("yarn/subdependency_all_versions").map do |file|
+            next file unless file.name == "yarn.lock"
+
+            file.content = file.content.sub('version "1.0.5"', 'version "v1.0.5"')
+            file
+          end
+        end
+
+        it "still reports blockers of the affected instance" do
+          expect(blockers).to contain_exactly("pin")
+        end
+      end
+
       context "when the fix crosses minor versions of a 0.x release" do
         let(:dependency_files) { project_dependency_files("yarn/subdependency_all_versions_zero_major") }
         let(:dependency_version) { "0.1.5" }

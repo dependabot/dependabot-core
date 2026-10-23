@@ -121,6 +121,29 @@ old@1.0.0:
       expect(result).toEqual([blocker]);
     });
 
+    it("matches affected versions when the lockfile keeps a v prefix", async () => {
+      helpers.copyDependencies(
+        "conflicting-dependency-parser/berry-simple",
+        tempDir
+      );
+      const lockPath = path.join(tempDir, "yarn.lock");
+      fs.writeFileSync(
+        lockPath,
+        fs
+          .readFileSync(lockPath, "utf8")
+          .replace("version: 1.0.5", "version: v1.0.5")
+      );
+
+      const result = await findConflictingDependencies(
+        tempDir,
+        "abind",
+        "2.0.0",
+        true,
+        ["1.0.5"]
+      );
+      expect(result).toEqual([blocker]);
+    });
+
     it.each([
       ["a yarn berry lockfile", "berry-simple"],
       ["a yarn v1 npm alias", "aliased"],

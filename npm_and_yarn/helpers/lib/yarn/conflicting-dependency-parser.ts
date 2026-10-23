@@ -294,7 +294,10 @@ function resolvesToAffectedVersion(
   const entries = findEntries(lockfile, edge);
   if (entries.length === 0) return true;
 
-  return entries.some((entry) => currentVersions.includes(entry.version));
+  // Ruby's version class strips a leading "v", while lockfiles may keep it.
+  const normalize = (version: string) => version.trim().replace(/^v/i, "");
+  const affected = new Set(currentVersions.map(normalize));
+  return entries.some((entry) => affected.has(normalize(entry.version)));
 }
 
 function findConflictingParentDependencies(
