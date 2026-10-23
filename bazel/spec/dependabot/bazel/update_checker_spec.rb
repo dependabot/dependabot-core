@@ -841,9 +841,17 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           }]
         end
 
-        it "evaluates the cooldown without a current version instead of raising" do
-          recent_release = Time.now - (12 * 60 * 60)
-          expect(checker.send(:cooldown_period?, recent_release, "0.34.0")).to be true
+        it "uses the default cooldown when the current version is invalid" do
+          allow(registry_client).to receive(:get_metadata)
+            .with("rules_go").and_return({ "versions" => ["0.34.0", "0.35.0"] })
+          allow(registry_client).to receive(:all_module_versions)
+            .with("rules_go").and_return(["0.34.0", "0.35.0"])
+          allow(registry_client).to receive(:get_version_release_date)
+            .with("rules_go", "0.34.0").and_return(Time.now - (48 * 60 * 60))
+          allow(registry_client).to receive(:get_version_release_date)
+            .with("rules_go", "0.35.0").and_return(Time.now - (12 * 60 * 60))
+
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("0.34.0"))
         end
       end
     end
