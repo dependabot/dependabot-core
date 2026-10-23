@@ -7,11 +7,16 @@ module Dependabot
   class Source
     extend T::Sig
 
+    GITHUB_PATH = %r{
+      /(?<path_type>tree|blob)/(?<branch>[^/\?\#\s<>"'()\[\]`|]+)
+      (?:/(?<directory>[^\?\#\s<>"'()\[\]`|]*))?
+    }x
+
     GITHUB_SOURCE = %r{
       (?<provider>github)
       (?:\.com)[/:]
       (?<repo>[\w.-]+/(?:[\w.-])+)
-      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+      (?:#{GITHUB_PATH})?
     }x
 
     GITHUB_ENTERPRISE_SOURCE = %r{
@@ -20,7 +25,7 @@ module Dependabot
       (?<host>[^/]+)
       [/:]
       (?<repo>[\w.-]+/(?:[\w.-])+)
-      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+      (?:#{GITHUB_PATH})?
     }x
 
     GITLAB_SOURCE = %r{
@@ -98,7 +103,7 @@ module Dependabot
       new(
         provider: T.must(captures.fetch("provider")),
         repo: T.must(captures.fetch("repo")).delete_suffix(".git").delete_suffix("."),
-        directory: captures.fetch("directory"),
+        directory: captures.fetch("provider") == "github" ? github_directory(captures) : captures.fetch("directory"),
         branch: captures.fetch("branch")
       )
     end
@@ -116,12 +121,22 @@ module Dependabot
       new(
         provider: "github",
         repo: T.must(captures.fetch("repo")).delete_suffix(".git").delete_suffix("."),
-        directory: captures.fetch("directory"),
+        directory: github_directory(captures),
         branch: captures.fetch("branch"),
         hostname: captures.fetch("host"),
         api_endpoint: File.join(base_url, "api", "v3")
       )
     end
+
+    sig { params(captures: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
+    def self.github_directory(captures)
+      path = captures.fetch("directory")&.sub(%r{/+\z}, "")
+      return if path.nil? || path.empty?
+
+      directory = captures.fetch("path_type") == "blob" ? File.dirname(path) : path
+      directory unless directory == "."
+    end
+    private_class_method :github_directory
 
     @github_enterprise_cache = T.let({}, T::Hash[String, T::Boolean])
 

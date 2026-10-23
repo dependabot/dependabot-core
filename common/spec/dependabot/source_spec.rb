@@ -69,7 +69,54 @@ RSpec.describe Dependabot::Source do
   end
 
   describe ".from_url" do
-    subject { described_class.from_url(url) }
+    subject(:source) { described_class.from_url(url) }
+
+    shared_examples "GitHub path parsing" do |hostname|
+      [
+        ["/tree/main", "main", nil],
+        ["/tree/main/", "main", nil],
+        ["/tree/main?plain=1", "main", nil],
+        ["/tree/main#readme", "main", nil],
+        ["/tree/main/packages/pkg", "main", "packages/pkg"],
+        ["/tree/main/packages/pkg/", "main", "packages/pkg"],
+        ["/tree/main/packages/pkg#readme", "main", "packages/pkg"],
+        ["/tree/main/packages/pkg?plain=1", "main", "packages/pkg"],
+        ["/tree/main/packages/pkg/?plain=1#readme", "main", "packages/pkg"],
+        ["/tree/main/pkg", "main", "pkg"],
+        ["/tree/main/packages/pkg.v2", "main", "packages/pkg.v2"],
+        ["/tree/main/dir/readme.md", "main", "dir/readme.md"],
+        ["/blob/main/packages/pkg/CHANGELOG.md", "main", "packages/pkg"],
+        ["/blob/main/packages/pkg/LICENSE", "main", "packages/pkg"],
+        ["/blob/main/packages/pkg/CHANGELOG.md#v1.0", "main", "packages/pkg"],
+        ["/blob/main/packages/pkg/CHANGELOG.md?plain=1", "main", "packages/pkg"],
+        ["/blob/main/CHANGELOG.md", "main", nil],
+        ["/blob/main/CHANGELOG.md#v1.0", "main", nil]
+      ].each do |path, branch, directory|
+        context "with the path #{path}" do
+          let(:url) { "https://#{hostname}/org/abc#{path}" }
+
+          it "parses the branch and directory" do
+            expect(source).to have_attributes(provider: "github", repo: "org/abc", branch: branch, directory: directory)
+          end
+        end
+      end
+
+      [
+        '<a href="%s">Source</a>',
+        "<a href='%s'>Source</a>",
+        "[Source](%s)",
+        "<url>%s</url>",
+        "`%s`",
+        "%s more text/another/path"
+      ].each do |markup|
+        context "with a directory link embedded in #{markup}" do
+          let(:url) { format(markup, "https://#{hostname}/org/abc/tree/main/packages/pkg") }
+
+          its(:directory) { is_expected.to eq("packages/pkg") }
+          its(:branch) { is_expected.to eq("main") }
+        end
+      end
+    end
 
     context "with a GitHub URL" do
       let(:url) { "https://github.com/org/abc" }
@@ -78,6 +125,20 @@ RSpec.describe Dependabot::Source do
       its(:repo) { is_expected.to eq("org/abc") }
       its(:directory) { is_expected.to be_nil }
       its(:branch) { is_expected.to be_nil }
+
+      it_behaves_like "GitHub path parsing", "github.com"
+
+      it "extracts separate source links from a description" do
+        description = '<a href="https://github.com/org/abc/tree/main/packages/pkg">Source</a> ' \
+                      "[Changelog](https://github.com/another/repo/blob/main/CHANGELOG.md)"
+        links = []
+        description.scan(described_class::SOURCE_REGEX) { links << Regexp.last_match.to_s }
+
+        expect(links).to eq(
+          ["github.com/org/abc/tree/main/packages/pkg", "github.com/another/repo/blob/main/CHANGELOG.md"]
+        )
+        expect(links.map { |link| described_class.from_url(link)&.directory }).to eq(["packages/pkg", nil])
+      end
 
       context "with a git protocol" do
         let(:url) { "git@github.com:org/abc" }
@@ -135,23 +196,23 @@ RSpec.describe Dependabot::Source do
         its(:directory) { is_expected.to be_nil }
       end
 
-      context "with no directory" do
-        let(:url) { "https://github.com/org/abc/tree/master/readme.md" }
+      context "with a file in the repository root" do
+        let(:url) { "https://github.com/org/abc/blob/master/readme.md" }
 
         its(:provider) { is_expected.to eq("github") }
         its(:repo) { is_expected.to eq("org/abc") }
         its(:directory) { is_expected.to be_nil }
       end
 
-      context "with a directory" do
-        let(:url) { "https://github.com/org/abc/tree/master/dir/readme.md" }
+      context "with a file in a directory" do
+        let(:url) { "https://github.com/org/abc/blob/master/dir/readme.md" }
 
         its(:provider) { is_expected.to eq("github") }
         its(:repo) { is_expected.to eq("org/abc") }
         its(:directory) { is_expected.to eq("dir") }
         its(:branch) { is_expected.to eq("master") }
 
-        context "with the filename specified by a #" do
+        context "with a tree URL and a readme fragment" do
           let(:url) { "https://github.com/org/abc/tree/master/dir#readme.md" }
 
           its(:provider) { is_expected.to eq("github") }
@@ -160,7 +221,7 @@ RSpec.describe Dependabot::Source do
         end
 
         context "when not looking at the master branch" do
-          let(:url) { "https://github.com/org/abc/tree/custom/dir/readme.md" }
+          let(:url) { "https://github.com/org/abc/blob/custom/dir/readme.md" }
 
           its(:provider) { is_expected.to eq("github") }
           its(:repo) { is_expected.to eq("org/abc") }
@@ -188,6 +249,8 @@ RSpec.describe Dependabot::Source do
       its(:repo) { is_expected.to eq("org/abc") }
       its(:directory) { is_expected.to be_nil }
       its(:branch) { is_expected.to be_nil }
+
+      it_behaves_like "GitHub path parsing", "ghes.mycorp.com"
 
       context "with a git protocol" do
         let(:url) { "ssh://git@ghes.mycorp.com:org/abc" }
@@ -245,23 +308,23 @@ RSpec.describe Dependabot::Source do
         its(:directory) { is_expected.to be_nil }
       end
 
-      context "with no directory" do
-        let(:url) { "https://ghes.mycorp.com/org/abc/tree/master/readme.md" }
+      context "with a file in the repository root" do
+        let(:url) { "https://ghes.mycorp.com/org/abc/blob/master/readme.md" }
 
         its(:provider) { is_expected.to eq("github") }
         its(:repo) { is_expected.to eq("org/abc") }
         its(:directory) { is_expected.to be_nil }
       end
 
-      context "with a directory" do
-        let(:url) { "https://ghes.mycorp.com/org/abc/tree/master/dir/readme.md" }
+      context "with a file in a directory" do
+        let(:url) { "https://ghes.mycorp.com/org/abc/blob/master/dir/readme.md" }
 
         its(:provider) { is_expected.to eq("github") }
         its(:repo) { is_expected.to eq("org/abc") }
         its(:directory) { is_expected.to eq("dir") }
         its(:branch) { is_expected.to eq("master") }
 
-        context "with the filename specified by a #" do
+        context "with a tree URL and a readme fragment" do
           let(:url) { "https://ghes.mycorp.com/org/abc/tree/master/dir#readme.md" }
 
           its(:provider) { is_expected.to eq("github") }
@@ -270,7 +333,7 @@ RSpec.describe Dependabot::Source do
         end
 
         context "when not looking at the master branch" do
-          let(:url) { "https://ghes.mycorp.com/org/abc/tree/custom/dir/readme.md" }
+          let(:url) { "https://ghes.mycorp.com/org/abc/blob/custom/dir/readme.md" }
 
           its(:provider) { is_expected.to eq("github") }
           its(:repo) { is_expected.to eq("org/abc") }
