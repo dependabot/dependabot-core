@@ -145,8 +145,6 @@ RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin
 # Ensure pyenv works and it's the python version we expect
 RUN PYENV_VERSION=$PY_3_15 pyenv exec python --version | grep "Python $PY_3_15" || exit 1
 RUN bash /opt/python/helpers/build $PY_3_15
-RUN cd $PYENV_ROOT/versions \
-  && tar -acf $PY_3_15.tar.zst $PY_3_15
 # This is the default Python, so no need to tar it
 
 FROM python-core
