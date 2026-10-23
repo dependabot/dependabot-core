@@ -108,8 +108,8 @@ module Dependabot
       end
 
       # Repository workflows whose step-level `$/` chain (through nested composites)
-      # reaches a changed action. Only `$/` matters: gh-actions-lock refuses
-      # `./` refs in locked workflows.
+      # reaches a changed action. Only `$/` matters: gh-actions-lock never follows
+      # `./` actions.
       sig do
         params(changed_actions: T::Array[Dependabot::DependencyFile])
           .returns(T::Array[Dependabot::DependencyFile])
