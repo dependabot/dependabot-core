@@ -110,7 +110,22 @@ module Dependabot
     def job_group
       return nil unless job.dependency_group_to_refresh
 
-      @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
+      group = @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
+      return group unless group&.group_by_dependency_name? && group.parent_name.nil?
+
+      dependency_names = job.dependencies&.uniq
+      return nil unless dependency_names&.one?
+
+      dependency_name = T.must(dependency_names.first)
+      subgroup_name = Dependabot::DependencyGroup.subgroup_name(
+        parent_name: group.name,
+        dependency_name: dependency_name
+      )
+      @dependency_group_engine.find_group(name: subgroup_name) || Dependabot::DependencyGroup.new(
+        name: subgroup_name,
+        rules: group.rules.merge("patterns" => [dependency_name]),
+        applies_to: group.applies_to
+      )
     end
 
     # `defer_update_types` is set by the callers that suppress individual updates for a whole group, i.e.
@@ -195,7 +210,10 @@ module Dependabot
     sig { params(group: Dependabot::DependencyGroup).returns(T::Array[Job::ExistingGroupPullRequest::Dependency]) }
     def dependencies_in_existing_pr_for_group(group)
       existing = job.existing_group_pull_requests.find do |pr|
-        pr.dependency_group_name == group.name
+        group.matches_identity?(
+          group_name: pr.dependency_group_name,
+          dependency_names: (pr.dependencies || []).map(&:name)
+        )
       end
 
       (existing&.dependencies || []).select(&:name)

@@ -91,6 +91,61 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
+  describe "dependency-name group identity" do
+    sig { override.returns(String) }
+    let(:name) { "frontend/@scope/business" }
+
+    sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
+    let(:rules) { { "patterns" => ["@scope/business"], "group-by" => "dependency-name" } }
+
+    it "serializes the configured parent while retaining the internal subgroup" do
+      expect(dependency_group.to_h).to eq("name" => "frontend")
+      expect(dependency_group.name).to eq("frontend/@scope/business")
+    end
+
+    it "matches the parent only for the same dependency across directories" do
+      expect(
+        dependency_group.matches_identity?(
+          group_name: "frontend",
+          dependency_names: %w(@scope/business @scope/business)
+        )
+      ).to be(true)
+      expect(dependency_group.matches_identity?(group_name: "frontend", dependency_names: ["other"])).to be(false)
+      expect(dependency_group.matches_identity?(group_name: "frontend", dependency_names: [])).to be(false)
+      expect(
+        dependency_group.matches_identity?(
+          group_name: "frontend",
+          dependency_names: ["@scope/business", nil]
+        )
+      ).to be(false)
+    end
+
+    it "still recognizes a previously recorded dynamic name" do
+      expect(dependency_group.matches_identity?(group_name: name, dependency_names: ["@scope/business"])).to be(true)
+    end
+
+    context "with the configured parent" do
+      sig { override.returns(String) }
+      let(:name) { "frontend" }
+
+      it "does not treat the container as an update of all its children" do
+        expect(dependency_group.parent_name).to be_nil
+        expect(dependency_group.to_h).to eq("name" => "frontend")
+        expect(dependency_group.matches_identity?(group_name: name, dependency_names: ["@scope/business"])).to be(false)
+      end
+    end
+
+    context "with an ordinary group" do
+      sig { override.returns(T::Hash[String, T.any(String, T::Array[String])]) }
+      let(:rules) { { "patterns" => ["@scope/business"] } }
+
+      it "retains the configured name and ordinary group matching" do
+        expect(dependency_group.to_h).to eq("name" => name)
+        expect(dependency_group.matches_identity?(group_name: name, dependency_names: ["other"])).to be(true)
+      end
+    end
+  end
+
   describe "#rules" do
     it "returns a list of rules" do
       expect(dependency_group.rules).to eq(rules)

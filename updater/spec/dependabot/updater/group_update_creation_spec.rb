@@ -74,12 +74,9 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   let(:source) { instance_double(Dependabot::Source, directory: source_directory) }
 
   let(:group) do
-    instance_double(
-      Dependabot::DependencyGroup,
-      name: "test-group",
-      dependencies: group_dependencies,
-      group_by_dependency_name?: false
-    )
+    Dependabot::DependencyGroup.new(name: "test-group", rules: {}).tap do |dependency_group|
+      dependency_group.dependencies.concat(group_dependencies)
+    end
   end
 
   let(:dependencies) do
@@ -1363,15 +1360,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   end
 
   describe "#skip_dependency? directory filtering" do
-    let(:group) do
-      instance_double(
-        Dependabot::DependencyGroup,
-        name: "test-group",
-        dependencies: group_dependencies,
-        group_by_dependency_name?: false
-      )
-    end
-
     context "when dependency directory matches the job source directory" do
       let(:source_directory) { "/app" }
       let(:dependency) do
@@ -1433,16 +1421,37 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
-  describe "#skip_dependency? single-directory regression" do
-    let(:source_directory) { "/" }
+  describe "dependency-name PR identity" do
     let(:group) do
-      instance_double(
-        Dependabot::DependencyGroup,
-        name: "test-group",
-        dependencies: group_dependencies,
-        group_by_dependency_name?: false
+      Dependabot::DependencyGroup.new(
+        name: "test-group/dep1", rules: { "patterns" => ["dep1"], "group-by" => "dependency-name" }
       )
     end
+    let(:dependency) { instance_double(Dependabot::Dependency, name: "dep1", directory: "/") }
+
+    it "does not skip its own handled dependency on a parent-named refresh" do
+      allow(job).to receive_messages(dependency_group_to_refresh: "test-group", dependencies: ["dep1"])
+      allow(dependency_snapshot).to receive(:handled_dependencies).and_return(Set.new(["dep1"]))
+      expect(test_instance.send(:skip_dependency?, dependency, group)).to be(false)
+    end
+
+    it "does not mistake a sibling PR for this dependency's PR" do
+      allow(source).to receive(:directories).and_return(nil)
+      sibling = Dependabot::Job::ExistingGroupPullRequest.from_hash(
+        "dependency-group-name" => "test-group", "dependencies" => [{ "dependency-name" => "dep2" }]
+      )
+      target = Dependabot::Job::ExistingGroupPullRequest.from_hash(
+        "dependency-group-name" => "test-group", "dependencies" => [{ "dependency-name" => "dep1" }]
+      )
+      allow(job).to receive(:existing_group_pull_requests).and_return([sibling])
+      expect(test_instance.send(:find_existing_group_pr, group)).to be_nil
+      allow(job).to receive(:existing_group_pull_requests).and_return([sibling, target])
+      expect(test_instance.send(:find_existing_group_pr, group)).to eq(target)
+    end
+  end
+
+  describe "#skip_dependency? single-directory regression" do
+    let(:source_directory) { "/" }
 
     context "when dependency directory matches root '/'" do
       let(:dependency) do

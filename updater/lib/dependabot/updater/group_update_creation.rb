@@ -338,7 +338,10 @@ module Dependabot
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
 
         # Check if the job is refreshing this specific group
-        refreshing_this_group = job.dependency_group_to_refresh == group.name
+        refreshing_this_group = group.matches_identity?(
+          group_name: job.dependency_group_to_refresh,
+          dependency_names: job.dependencies || []
+        )
 
         # Include all dependencies when refreshing the group.
         if handled_dependency && !refreshing_this_group
@@ -731,7 +734,10 @@ module Dependabot
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::Job::ExistingGroupPullRequest)) }
       def find_existing_group_pr(group)
         job.existing_group_pull_requests.find do |pr|
-          next false unless pr.dependency_group_name == group.name
+          next false unless group.matches_identity?(
+            group_name: pr.dependency_group_name,
+            dependency_names: (pr.dependencies || []).map(&:name)
+          )
 
           existing_pr_covers_job_directories?(pr)
         end
