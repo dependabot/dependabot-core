@@ -223,6 +223,69 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when the branch was deleted after the locked commit" do
+      let(:null_sha) { "0000000000000000000000000000000000000000" }
+      let(:activity_response) do
+        [
+          { "id" => 1, "before" => current_sha, "after" => null_sha,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-10-01T10:37:39Z",
+            "activity_type" => "branch_deletion" },
+          { "id" => 2, "before" => sha_c, "after" => current_sha,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-08-03T18:34:58Z",
+            "activity_type" => "force_push" },
+          { "id" => 3, "before" => null_sha, "after" => sha_c,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-08-03T18:33:54Z",
+            "activity_type" => "branch_creation" }
+        ]
+      end
+
+      before do
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
+          status: 200,
+          body: activity_response.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+        git_checker = instance_double(Dependabot::GitCommitChecker, head_commit_for_current_branch: nil)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+      end
+
+      it "offers no release instead of the null SHA a deletion reports" do
+        expect(fetcher.available_versions).to eq([])
+      end
+    end
+
+    context "when a deleted branch was created again" do
+      let(:null_sha) { "0000000000000000000000000000000000000000" }
+      let(:activity_response) do
+        [
+          { "id" => 1, "before" => sha_b, "after" => sha_a,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-10-20T00:00:00Z",
+            "activity_type" => "push" },
+          { "id" => 2, "before" => null_sha, "after" => sha_b,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-10-10T00:00:00Z",
+            "activity_type" => "branch_creation" },
+          { "id" => 3, "before" => current_sha, "after" => null_sha,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-10-01T00:00:00Z",
+            "activity_type" => "branch_deletion" },
+          { "id" => 4, "before" => sha_c, "after" => current_sha,
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-08-03T00:00:00Z",
+            "activity_type" => "push" }
+        ]
+      end
+
+      before do
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
+          status: 200,
+          body: activity_response.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      end
+
+      it "skips the deletion and keeps the tips of the branch that exists now" do
+        expect(fetcher.available_versions.map(&:tag)).to eq([sha_a, sha_b, current_sha])
+      end
+    end
+
     context "when the source URL is not on github.com" do
       let(:url) { "https://gitlab.com/foo/bar" }
 
