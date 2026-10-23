@@ -49,6 +49,7 @@ module Dependabot
         end
         def conflicting_dependencies(dependency:, target_version:)
           enable_normalized_yarn_traversal = T.let(false, T::Boolean)
+          current_version = current_version_for_scoping(dependency)
 
           SharedHelpers.in_a_temporary_directory do
             dependency_files_builder = DependencyFilesBuilder.new(
@@ -67,6 +68,7 @@ module Dependabot
               dependency_files_builder:,
               dependency:,
               target_version:,
+              current_version:,
               enable_normalized_yarn_traversal:
             )
           end
@@ -78,11 +80,21 @@ module Dependabot
 
         private
 
+        # With several installed copies of a package, only requirements that resolve to the copy being updated
+        # can block it.
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+        def current_version_for_scoping(dependency)
+          return unless Dependabot::Experiments.enabled?(:enable_version_scoped_conflicting_dependencies)
+
+          dependency.version
+        end
+
         sig do
           params(
             dependency_files_builder: DependencyFilesBuilder,
             dependency: Dependabot::Dependency,
             target_version: T.nilable(T.any(String, Dependabot::Version)),
+            current_version: T.nilable(String),
             enable_normalized_yarn_traversal: T::Boolean
           )
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
@@ -91,6 +103,7 @@ module Dependabot
           dependency_files_builder:,
           dependency:,
           target_version:,
+          current_version:,
           enable_normalized_yarn_traversal:
         )
           # TODO: Look into using npm/arborist for parsing yarn lockfiles (there's currently partial yarn support)
@@ -104,6 +117,7 @@ module Dependabot
               function: "npm:findConflictingDependencies",
               dependency:,
               target_version:,
+              current_version:,
               enable_normalized_yarn_traversal: false
             )
           elsif dependency_files_builder.yarn_locks.none? || !enable_normalized_yarn_traversal
@@ -111,6 +125,7 @@ module Dependabot
               function: "yarn:findConflictingDependencies",
               dependency:,
               target_version:,
+              current_version:,
               enable_normalized_yarn_traversal: false
             )
           else
@@ -118,6 +133,7 @@ module Dependabot
               function: "yarn:findConflictingDependencies",
               dependency:,
               target_version:,
+              current_version:,
               enable_normalized_yarn_traversal:
             )
           end
@@ -128,6 +144,7 @@ module Dependabot
             function: String,
             dependency: Dependabot::Dependency,
             target_version: T.nilable(T.any(String, Dependabot::Version)),
+            current_version: T.nilable(String),
             enable_normalized_yarn_traversal: T::Boolean
           )
             .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
@@ -136,13 +153,19 @@ module Dependabot
           function:,
           dependency:,
           target_version:,
+          current_version:,
           enable_normalized_yarn_traversal:
         )
           args = T.let(
             [Dir.pwd, dependency.name, target_version.to_s],
             T::Array[T.any(String, T::Boolean)]
           )
-          args << enable_normalized_yarn_traversal if function == "yarn:findConflictingDependencies"
+          if function == "yarn:findConflictingDependencies"
+            args << enable_normalized_yarn_traversal
+            args << current_version if current_version
+          elsif current_version
+            args << current_version
+          end
 
           T.cast(
             SharedHelpers.run_helper_subprocess(
