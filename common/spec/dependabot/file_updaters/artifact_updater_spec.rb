@@ -181,6 +181,15 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
       end
     end
 
+    context "when the target directory does not exist" do
+      # git warns on stderr when an intermediate directory is missing
+      let(:target_directory) { "vendor/missing/cache" }
+
+      it "returns no files" do
+        expect(updated_files).to eq([])
+      end
+    end
+
     context "when the target directory contains spaces" do
       let(:target_directory) { "vendor/custom cache" }
 
