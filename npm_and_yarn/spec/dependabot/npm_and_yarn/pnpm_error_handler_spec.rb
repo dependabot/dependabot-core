@@ -74,5 +74,82 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmErrorHandler do
         end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    {
+      %w(pnpm10 missing_tarball_integrity) => %w(
+        xlsx https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
+      ),
+      %w(pnpm11 missing_tarball_integrity) => %w(
+        @example/widget https://github.com/example/widget/releases/download/v1.0.0/build.tgz
+      )
+    }.each do |(version_dir, scenario), (package, source)|
+      context "when a tarball dependency has no integrity (#{version_dir} output)" do
+        let(:dependency_files) { project_dependency_files("pnpm/simple") }
+        let(:error_message) { fixture("pnpm_errors", version_dir, "#{scenario}.txt") }
+
+        it "raises DependencyFileNotResolvable naming the package, its source and the lockfile" do
+          expect { error_handler.handle_pnpm_error(error) }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |raised|
+              expect(raised.message).to include(package, source, "pnpm-lock.yaml")
+            end
+        end
+
+        it "does not advise regenerating the lockfile without verification" do
+          expect { error_handler.handle_pnpm_error(error) }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |raised|
+              expect(raised.message).not_to include("delete")
+            end
+        end
+      end
+    end
+
+    {
+      "bad_runtime_version" => %w(26 v24.21.0),
+      "bad_runtime_version_exact" => %w(24.21.0 v24.22.0)
+    }.each do |scenario, (required, current)|
+      context "when the repository requires a Node.js version Dependabot does not run (#{scenario})" do
+        let(:error_message) { fixture("pnpm_errors", "pnpm12", "#{scenario}.txt") }
+
+        it "raises ToolVersionNotSupported with the required and current versions" do
+          expect { error_handler.handle_pnpm_error(error) }
+            .to raise_error(Dependabot::ToolVersionNotSupported) do |raised|
+              expect(raised.tool_name).to eq("Node")
+              expect(raised.detected_version).to eq(required)
+              expect(raised.supported_versions).to eq(current)
+            end
+        end
+      end
+    end
+
+    context "when the runtime error does not state the versions" do
+      let(:error_message) { "Error: ERR_PNPM_BAD_RUNTIME_VERSION\n\n  × Something unexpected happened" }
+
+      it "leaves the error for the caller to re-raise" do
+        expect { error_handler.handle_pnpm_error(error) }.not_to raise_error
+      end
+    end
+
+    context "when the workspace configuration is invalid" do
+      let(:dependency_files) { project_dependency_files("pnpm/workspaces") }
+      let(:error_message) { fixture("pnpm_errors", "pnpm10", "invalid_workspace_configuration.txt") }
+
+      it "raises DependencyFileNotResolvable naming pnpm-workspace.yaml and pnpm's reason" do
+        expect { error_handler.handle_pnpm_error(error) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |raised|
+            expect(raised.message).to include("pnpm-workspace.yaml", "packages field missing or empty")
+          end
+      end
+    end
+
+    context "when pnpm only warns about an unsupported engine before an unrelated error" do
+      let(:error_message) do
+        "[WARN] Unsupported engine: wanted: {\"node\":\"22\"} (current: {\"node\":\"v24.22.0\"})\n" \
+          "[ERR_PNPM_SOMETHING_ELSE] Something else failed"
+      end
+
+      it "does not classify the warning" do
+        expect { error_handler.handle_pnpm_error(error) }.not_to raise_error
+      end
+    end
   end
 end
