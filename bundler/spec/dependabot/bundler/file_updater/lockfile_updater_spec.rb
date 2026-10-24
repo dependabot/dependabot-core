@@ -20,6 +20,31 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
 
   let(:updated_lockfile_content) { updater.updated_lockfile_content }
 
+  describe "with a checksum mismatch on an unrelated gem" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
+        previous_requirements: [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }],
+        package_manager: "bundler"
+      )
+    end
+
+    %w(2 4).each do |bundler_major|
+      context "with Bundler #{bundler_major}" do
+        let(:files) { bundler_project_dependency_files("checksum_mismatch_unrelated_gem_#{bundler_major}") }
+
+        it "raises an error naming the gem" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyChecksumMismatch) do |error|
+            expect(error.dependency_name).to eq("statesman (1.2.1)")
+          end
+        end
+      end
+    end
+  end
+
   describe "with lockfiles that include checksums" do
     let(:dependency) do
       Dependabot::Dependency.new(
