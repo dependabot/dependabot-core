@@ -62,11 +62,12 @@ RSpec.describe Dependabot::Uv::FileParser do
         allow(parser).to receive(:python_raw_version).and_return("3.13.1")
       end
 
-      it "preserves UV's extras in the dependency name" do
+      it "keeps extras out of the dependency name" do
         expect(dependencies.first).to have_attributes(
-          name: "requests[security]",
+          name: "requests",
           version: "2.31.0",
-          package_manager: "uv"
+          package_manager: "uv",
+          metadata: { extras: "security" }
         )
         expect(dependencies.first.requirements).to eq(
           [{
@@ -83,7 +84,7 @@ RSpec.describe Dependabot::Uv::FileParser do
           let(:helper_record) { super().merge("markers" => marker, "version" => nil, "requirement" => "<3") }
 
           it "does not filter an unmarked requirement" do
-            expect(dependencies.map(&:name)).to eq(["requests[security]"])
+            expect(dependencies.map(&:name)).to eq(["requests"])
           end
         end
       end
@@ -92,7 +93,7 @@ RSpec.describe Dependabot::Uv::FileParser do
         let(:helper_record) { super().except("markers") }
 
         it "treats the requirement as unmarked" do
-          expect(dependencies.map(&:name)).to eq(["requests[security]"])
+          expect(dependencies.map(&:name)).to eq(["requests"])
         end
       end
 
@@ -359,7 +360,8 @@ RSpec.describe Dependabot::Uv::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("psycopg2[bar,foo]")
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.metadata).to eq({ extras: "bar,foo" })
           expect(dependency.version).to eq("2.6.1")
           expect(dependency.requirements).to eq(
             [{
@@ -663,7 +665,7 @@ RSpec.describe Dependabot::Uv::FileParser do
             package_manager: "uv"
           ),
           Dependabot::Dependency.new(
-            name: "aiocache[redis]",
+            name: "aiocache",
             version: "0.10.0",
             requirements: [{
               requirement: "==0.10.0",
@@ -671,7 +673,8 @@ RSpec.describe Dependabot::Uv::FileParser do
               groups: ["dependencies"],
               source: nil
             }],
-            package_manager: "uv"
+            package_manager: "uv",
+            metadata: { extras: "redis" }
           ),
           Dependabot::Dependency.new(
             name: "luigi",
@@ -1099,6 +1102,62 @@ RSpec.describe Dependabot::Uv::FileParser do
             )
           end
         end
+      end
+    end
+
+    context "with a uv.lock file and a dependency with extras" do
+      let(:files) { [pyproject, uv_lock] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "example"
+            version = "0.1.0"
+            requires-python = ">=3.12"
+            dependencies = [
+              "Uvicorn[standard]>=0.30.1",
+            ]
+          TOML
+        )
+      end
+      let(:uv_lock) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: <<~TOML
+            version = 1
+            requires-python = ">=3.12"
+
+            [[package]]
+            name = "example"
+            version = "0.1.0"
+            source = { virtual = "." }
+            dependencies = [
+                { name = "uvicorn", extra = ["standard"] },
+            ]
+
+            [[package]]
+            name = "uvicorn"
+            version = "0.30.1"
+            source = { registry = "https://pypi.org/simple" }
+          TOML
+        )
+      end
+
+      it "merges the declaration with its lockfile entry under the bare name" do
+        expect(dependencies.map(&:name)).to contain_exactly("example", "uvicorn")
+
+        dependency = dependencies.find { |dep| dep.name == "uvicorn" }
+        expect(dependency.version).to eq("0.30.1")
+        expect(dependency.metadata).to eq({ extras: "standard" })
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: ">=0.30.1",
+            file: "pyproject.toml",
+            groups: [],
+            source: nil
+          }]
+        )
       end
     end
 
