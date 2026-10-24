@@ -22,6 +22,20 @@ module Dependabot
       # A compat entry part that admits only 0.0.0 ("<0.0.1", "< 0.0.1")
       ZERO_VERSION_BOUND_PATTERN = /\A<\s*0\.0\.1\z/
 
+      # Pkg failures that come from what the manifest contains or points to rather than from a version
+      # conflict: a path package that is not in the checkout, a package no registry has, a git source
+      # that cannot be cloned, an entry the manifest lacks. Like a resolver error they say
+      # nothing against the Project.toml changes, so they are reported in a notice.
+      MANIFEST_STATE_ERROR_PATTERNS = T.let(
+        [
+          /expected package `[^`]+` to exist at path/,
+          /expected package `[^`]+` to be registered/,
+          /failed to clone from/,
+          /could not find entry with uuid/
+        ].freeze,
+        T::Array[Regexp]
+      )
+
       STDLIB_COMPAT_PSA_URL =
         "https://discourse.julialang.org/t/psa-compat-requirements-in-the-general-registry-are-changing/104958"
 
@@ -45,6 +59,7 @@ module Dependabot
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
         super
         @notices = T.let([], T::Array[Dependabot::Notice])
+        @manifest_state_errors = T.let([], T::Array[String])
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -84,7 +99,13 @@ module Dependabot
             updated_files << updated_manifest if updated_manifest
           end
           # A manifest that could not be resolved is reported in a notice instead
-          return updated_files if updated_files.empty? && notices.any?
+          if updated_files.empty? && notices.any?
+            # With nothing else to ship the notice is never seen, so say why there is no update
+            first_error = @manifest_state_errors.first
+            raise Dependabot::DependencyFileNotResolvable, first_error if first_error
+
+            return updated_files
+          end
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -184,9 +205,10 @@ module Dependabot
       end
       def handle_julia_helper_error(result, manifest)
         error_message = result.message
-        raise error_message unless resolver_error?(error_message)
+        raise error_message unless resolver_error?(error_message) || manifest_state_error?(error_message)
 
         # The Project.toml changes still go out without this manifest
+        @manifest_state_errors << error_message if manifest_state_error?(error_message)
         add_manifest_update_notice(manifest.name, error_message)
       end
 
@@ -195,6 +217,11 @@ module Dependabot
         error_message.start_with?("Pkg resolver error:") ||
           error_message.include?("Unsatisfiable requirements") ||
           error_message.include?("ResolverError")
+      end
+
+      sig { params(error_message: String).returns(T::Boolean) }
+      def manifest_state_error?(error_message)
+        MANIFEST_STATE_ERROR_PATTERNS.any? { |pattern| error_message.match?(pattern) }
       end
 
       sig { params(manifest_path: String, error_message: String).void }
