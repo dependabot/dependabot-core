@@ -1,12 +1,17 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/deno/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::Deno::UpdateChecker::LatestVersionFinder do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T.nilable(Dependabot::Version)) }
   subject(:latest_version) { finder.latest_version }
 
+  sig { returns(Dependabot::Deno::UpdateChecker::LatestVersionFinder) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -18,6 +23,7 @@ RSpec.describe Dependabot::Deno::UpdateChecker::LatestVersionFinder do
       cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
     )
   end
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "@std/path",
@@ -26,18 +32,21 @@ RSpec.describe Dependabot::Deno::UpdateChecker::LatestVersionFinder do
       package_manager: "deno"
     )
   end
+  sig { returns(Dependabot::Package::PackageRelease) }
   let(:release) do
     Dependabot::Package::PackageRelease.new(
       version: Dependabot::Deno::Version.new("1.1.0"),
       released_at: nil
     )
   end
+  sig { returns(Dependabot::Deno::Package::PackageDetailsFetcher) }
   let(:package_details_fetcher) do
     instance_double(
       Dependabot::Deno::Package::PackageDetailsFetcher,
       available_versions: [release]
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(Dependabot::Deno::Package::PackageDetailsFetcher)

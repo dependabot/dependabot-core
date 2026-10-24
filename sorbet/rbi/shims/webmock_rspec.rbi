@@ -5,6 +5,7 @@ module RSpec
   module Core
     class ExampleGroup
       include ::WebMock::API
+      include ::WebMock::Matchers
     end
   end
 end

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve instance fixtures and matchers in loop-generated examples.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
@@ -666,7 +668,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the npm lockfile" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 11 } }
+        { package_managers: { "npm" => 12 } }
       )
     end
   end
@@ -703,7 +705,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the package manager version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 11, "yarn" => 1 } }
+        { package_managers: { "npm" => 12, "yarn" => 1 } }
       )
     end
   end
@@ -2727,6 +2729,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "does not include the committed .npmrc as a separate file" do
       npmrc_files = file_fetcher_instance.files.select { |f| f.name == ".npmrc" }
       expect(npmrc_files.count).to eq(1)
+    end
+
+    context "when the committed .npmrc sets npm 12 allow policies" do
+      before do
+        stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: JSON.dump({ "content" => Base64.encode64("allow-git=none\nallow-remote=root\nfoo=bar\n") }),
+            headers: json_header
+          )
+      end
+
+      it "keeps the allow policies in the generated .npmrc" do
+        npmrc_file = file_fetcher_instance.files.find { |f| f.name == ".npmrc" }
+        expect(npmrc_file.content).to eq(<<~NPMRC.chomp)
+          @my-company:registry=https://npm.pkg.github.com
+          allow-git=none
+          allow-remote=root
+        NPMRC
+      end
     end
   end
 

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "yaml"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -9,6 +10,8 @@ require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/experiments"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/package/npm_package_json"
 require "sorbet-runtime"
 
 module Dependabot
@@ -21,7 +24,7 @@ module Dependabot
       class << self
         extend T::Sig
 
-        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).void }
         def dependency_files=(files)
           Thread.current[:npm_and_yarn_dependency_files] = files
         end
@@ -56,10 +59,15 @@ module Dependabot
           npm_version_selectors[directory] = version
         end
 
+        sig { params(directory: String).returns(T.nilable(String)) }
+        def npm_version_selector_for(directory)
+          npm_version_selectors[directory]
+        end
+
         sig { params(files: T::Array[Dependabot::DependencyFile]).void }
         def activate_npm_version_selector(files)
           manifest = files.find { |file| file.name == "package.json" && !file.support_file }
-          self.npm_version_selector = manifest && npm_version_selectors[manifest.directory]
+          self.npm_version_selector = manifest && npm_version_selector_for(manifest.directory)
         end
 
         private
@@ -78,14 +86,18 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V12 = 12
       NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V11
+      NPM_DEFAULT_VERSION = NPM_V12
 
       # Minimum npm version that supports the `--min-release-age` CLI flag.
       NPM_MINIMUM_RELEASE_AGE_VERSION = "11.10.0"
+
+      # Minimum npm version that defaults to blocking git and remote tarball dependencies.
+      NPM_ALLOW_FLAGS_MIN_VERSION = "12.0.0"
 
       # PNPM Version Constants
       PNPM_V10 = 10
@@ -147,6 +159,117 @@ module Dependabot
         const :separator, String
       end
 
+      class PnpmReleaseAgePolicy < T::Struct
+        extend T::Sig
+
+        const :minutes, Integer
+        const :exclusions, T::Array[String]
+
+        sig { params(name: String, version: T.nilable(Dependabot::Version)).returns(T::Boolean) }
+        def excluded?(name, version: nil)
+          exclusions.any? do |selector|
+            package, separator, versions = selector.rpartition("@")
+            package = selector if separator.empty? || package.empty?
+            pattern = Regexp.new("\\A#{Regexp.escape(package).gsub('\\*', '.*')}\\z")
+            next false unless pattern.match?(name)
+            next true if package == selector
+
+            version && versions.split("||").any? { |candidate| candidate.strip == version.to_s }
+          end
+        end
+      end
+
+      NPMRC_MIN_RELEASE_AGE_SETTING =
+        ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
+      sig { params(files: T::Array[DependencyFile]).returns(T::Boolean) }
+      def self.pnpm_project?(files)
+        # Loading this eagerly creates a cycle through ShrinkwrapCompatibility.
+        require "dependabot/npm_and_yarn/package_manager"
+
+        manifest = files.find { |file| file.name == "package.json" }
+        config = if manifest
+                   Dependabot::Package::NpmPackageJson.from_file(manifest).package_manager_config
+                 else
+                   Dependabot::Package::NpmPackageManagerConfig.new
+                 end
+        lockfiles = {
+          npm: files.find { |file| File.basename(file.name) == "npm-shrinkwrap.json" } ||
+               files.find { |file| File.basename(file.name) == "package-lock.json" },
+          yarn: files.find { |file| File.basename(file.name) == "yarn.lock" },
+          pnpm: files.find { |file| File.basename(file.name) == "pnpm-lock.yaml" }
+        }
+
+        PackageManagerDetector.new(lockfiles, config).detect_package_manager == PNPMPackageManager::NAME
+      end
+
+      sig { params(content: String, filename: String).returns(T::Hash[String, T.untyped]) }
+      def self.yaml_settings(content, filename:)
+        parsed = YAML.safe_load(content, aliases: true)
+        return {} if parsed.nil?
+        return parsed if parsed.is_a?(Hash)
+
+        raise Dependabot::DependencyFileNotParseable.new(filename, "Expected a YAML mapping.")
+      end
+      private_class_method :yaml_settings
+
+      sig { params(files: T::Array[DependencyFile]).returns(T::Array[PnpmReleaseAgePolicy]) }
+      def self.pnpm_release_age_policies(files)
+        return [] unless pnpm_project?(files)
+
+        files.filter_map do |file|
+          next unless File.basename(file.name) == "pnpm-workspace.yaml"
+
+          settings = yaml_settings(file.content.to_s, filename: file.name)
+          minutes = yaml_release_age(settings, "minimumReleaseAge")
+          Dependabot.logger.debug("Ignoring non-numeric release-age value in #{file.name}.") if minutes.is_a?(Float)
+          next unless minutes.is_a?(Integer) && minutes.positive?
+
+          exclusions = settings.fetch("minimumReleaseAgeExclude", [])
+          unless exclusions.is_a?(Array) && exclusions.all?(String)
+            raise Dependabot::MisconfiguredTooling.new("pnpm", "minimumReleaseAgeExclude must be an array of strings.")
+          end
+
+          PnpmReleaseAgePolicy.new(minutes: minutes, exclusions: exclusions)
+        end
+      end
+
+      # Selection can enforce numeric gates from other files even when one gate is unreadable.
+      # Native command overrides must instead use max_configured_release_age to preserve unreadable gates.
+      sig do
+        params(
+          dependency_files: T::Array[DependencyFile],
+          settings: T::Array[ReleaseAgeGateSetting]
+        ).returns(T.nilable(Integer))
+      end
+      def self.max_numeric_configured_release_age(dependency_files, settings)
+        dependency_files.filter_map do |file|
+          value = max_configured_release_age([file], settings)
+          next value if value.is_a?(Integer)
+
+          Dependabot.logger.debug("Ignoring non-numeric release-age value in #{file.name}.") if value
+          nil
+        end.max
+      end
+
+      # A positive native gate applies globally and raises every existing cooldown field.
+      sig do
+        params(
+          cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+          days: T.nilable(Integer)
+        ).returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+      end
+      def self.cooldown_with_native_release_age(cooldown, days)
+        return cooldown unless days&.positive?
+        return Dependabot::Package::ReleaseCooldownOptions.new(default_days: days) if cooldown.nil?
+
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: [cooldown.default_days, days].max,
+          semver_major_days: [cooldown.semver_major_days, days].max,
+          semver_minor_days: [cooldown.semver_minor_days, days].max,
+          semver_patch_days: [cooldown.semver_patch_days, days].max
+        )
+      end
+
       # The largest explicitly-configured native release-age gate across the repo's
       # dependency files, or nil when none is set. Each file whose basename matches
       # one of `settings` is parsed for a bare integer value; a present-but-non-
@@ -168,25 +291,19 @@ module Dependabot
         values.max
       end
 
-      # Resolves the effective release-age value a single file sets for `setting`,
-      # or nil when the key is absent. npmrc/INI and YAML both let the *last*
-      # occurrence of a key win, so we read the last matching line rather than the
-      # first (e.g. `min-release-age=30` then `min-release-age=3` resolves to 3). A
-      # present-but-non-numeric value is reported as Float::INFINITY.
+      # YAML settings must be top-level keys; npmrc/INI uses the last matching line.
+      # A present-but-non-numeric value is reported as Float::INFINITY.
       sig { params(content: String, setting: ReleaseAgeGateSetting).returns(T.nilable(T.any(Integer, Float))) }
       def self.configured_release_age(content, setting)
+        if setting.separator == ":"
+          return yaml_release_age(yaml_settings(content, filename: setting.filename), setting.key)
+        end
+
         key = Regexp.escape(setting.key)
         separator = Regexp.escape(setting.separator)
-        # Match an optionally quoted key (`"minimumReleaseAge":`) so a valid quoted
-        # YAML key is not treated as absent.
         quoted_key = /["']?#{key}["']?/
         presence = /^\s*#{quoted_key}\s*#{separator}/
-        # Allow an optionally quoted value and an optional trailing comment
-        # (e.g. `minimumReleaseAge: "4320" # 3 days`). npmrc/INI treats both `#` and
-        # `;` as comment delimiters; YAML uses `#` only. Otherwise a quoted or
-        # commented value is treated as non-numeric (Float::INFINITY).
-        comment_chars = setting.separator == "=" ? "#;" : "#"
-        value = /^\s*#{quoted_key}\s*#{separator}\s*["']?(\d+)["']?\s*(?:[#{comment_chars}].*)?$/
+        value = /^\s*#{quoted_key}\s*#{separator}\s*["']?(\d+)["']?\s*(?:[#;].*)?$/
 
         last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
         return unless last_line
@@ -195,6 +312,17 @@ module Dependabot
         match ? T.must(match[1]).to_i : Float::INFINITY
       end
       private_class_method :configured_release_age
+
+      sig do
+        params(settings: T::Hash[String, T.untyped], key: String).returns(T.nilable(T.any(Integer, Float)))
+      end
+      def self.yaml_release_age(settings, key)
+        return unless settings.key?(key)
+
+        value = settings[key].to_s.strip
+        value.match?(/\A\d+\z/) ? value.to_i : Float::INFINITY
+      end
+      private_class_method :yaml_release_age
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
@@ -208,29 +336,28 @@ module Dependabot
       sig { params(lockfile: T.nilable(DependencyFile)).returns(T.nilable(Integer)) }
       def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
-
-        # Return npm 10 as the default if the lockfile is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
-        parsed_lockfile = JSON.parse(lockfile_content)
+        version_from_lockfile_content(lockfile_content)
+      rescue JSON::ParserError
+        NPM_DEFAULT_VERSION # Fallback to default if the lockfile content cannot be parsed
+      end
+      private_class_method :detect_npm_version
 
+      sig { params(lockfile_content: String).returns(T.nilable(Integer)) }
+      def self.version_from_lockfile_content(lockfile_content)
+        parsed_lockfile = JSON.parse(lockfile_content)
         lockfile_version_str = parsed_lockfile["lockfileVersion"]
 
         return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
 
         lockfile_version = lockfile_version_str.to_i
-
-        # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V11 if lockfile_version >= 3
+        return NPM_V12 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
-        # Return nil if can't capture
-      rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to npm 8 if the lockfile content cannot be parsed
       end
-
-      private_class_method :detect_npm_version
+      private_class_method :version_from_lockfile_content
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
@@ -284,16 +411,42 @@ module Dependabot
         message.scan(PNPM_INDIRECT_DEP_NAME).flatten
       end
 
+      # A one-off failure of `pnpm -v` (for example while Corepack fetches the binary) should not leave the version
+      # unknown, so the probe is tried this many times.
+      PNPM_VERSION_PROBE_ATTEMPTS = 2
+
       # The concrete pnpm version that will run for this update. Returns nil when
       # the version can't be determined. Used to gate version-specific config such as
       # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
-        Version.new(version_from_output(run_selected_pnpm("-v", fingerprint: "-v")))
+        pnpm_version!
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
         nil
+      end
+
+      # Like pnpm_version, but raises the error of the last attempt, so a caller that cannot go on without the
+      # version can report why it is unknown.
+      sig { returns(Dependabot::Version) }
+      def self.pnpm_version!
+        last_error = T.let(nil, T.nilable(StandardError))
+
+        PNPM_VERSION_PROBE_ATTEMPTS.times do |attempt|
+          version = version_from_output(run_selected_pnpm("-v", fingerprint: "-v"))
+          raise ArgumentError, "pnpm printed an empty version" if version.empty?
+
+          return Version.new(version)
+        rescue StandardError => e
+          last_error = e
+          Dependabot.logger.warn(
+            "Could not determine pnpm version (attempt #{attempt + 1} of #{PNPM_VERSION_PROBE_ATTEMPTS}): " \
+            "#{e.message}"
+          )
+        end
+
+        raise T.must(last_error)
       end
 
       # The concrete npm version that will run. Returns nil when it can't be determined.
@@ -332,6 +485,50 @@ module Dependabot
           )
         end
         supported
+      end
+
+      # Resolves an explicit string setting from the repo's `.npmrc` files,
+      # reading the last matching line (highest precedence). Returns nil if unset.
+      sig { params(key: String, dependency_files: T.nilable(T::Array[DependencyFile])).returns(T.nilable(String)) }
+      def self.npmrc_configured_setting(key, dependency_files = self.dependency_files)
+        return nil unless dependency_files
+
+        npmrc_files = dependency_files.select { |f| File.basename(f.name) == ".npmrc" }
+        return nil if npmrc_files.empty?
+
+        escaped_key = Regexp.escape(key)
+        presence = /^\s*["']?#{escaped_key}["']?\s*=/
+        value_pattern = /^\s*["']?#{escaped_key}["']?\s*=\s*["']?([^#;\s"']+)["']?\s*(?:[#;].*)?$/
+
+        values = npmrc_files.filter_map do |file|
+          last_line = file.content.to_s.lines.reverse_each.find { |line| line.match?(presence) }
+          next unless last_line
+
+          match = last_line.match(value_pattern)
+          match ? match[1] : ""
+        end
+
+        values.last
+      end
+
+      # Returns the CLI flags (`--allow-git=all`, `--allow-remote=all`) to append for npm 12+,
+      # respecting explicit `.npmrc` settings (omits `--allow-git` if `allow-git` is set,
+      # and `--allow-remote` if `allow-remote` is set).
+      # If running npm < 12, returns an empty array.
+      sig do
+        params(
+          dependency_files: T.nilable(T::Array[DependencyFile]),
+          npm_ver: T.nilable(Dependabot::Version)
+        ).returns(T::Array[String])
+      end
+      def self.npm_allow_flags(dependency_files = self.dependency_files, npm_ver: nil)
+        version = npm_ver || npm_version
+        return [] if version.nil? || version < Version.new(NPM_ALLOW_FLAGS_MIN_VERSION)
+
+        flags = []
+        flags << "--allow-git=all" unless npmrc_configured_setting("allow-git", dependency_files)
+        flags << "--allow-remote=all" unless npmrc_configured_setting("allow-remote", dependency_files)
+        flags
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -653,6 +850,10 @@ module Dependabot
         PNPM_V7.to_s if version >= 5.4
       end
 
+      # The pnpm major for the repository's lockfile (see matching_pnpm_major). Only a lockfile in the job's own
+      # directory is used. A lockfile in an ancestor directory (a workspace root above the job) is not: Corepack
+      # honors a `packageManager` pin in that ancestor's package.json, which the file fetcher does not fetch, so
+      # choosing a pnpm here could override a pin that is not visible.
       sig { params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T.nilable(String)) }
       def self.matching_pnpm_major_for_files(files)
         return unless files
@@ -662,12 +863,13 @@ module Dependabot
 
         matching_pnpm_major(
           lockfile_version: pnpm_lockfile_version(lockfile),
-          package_manager_pin: root_package_manager_pin(files)
+          package_manager_pin: package_manager_pin(files)
         )
       end
 
+      # The `packageManager` of the job's own package.json.
       sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
-      def self.root_package_manager_pin(files)
+      def self.package_manager_pin(files)
         manifest = files.find { |file| file.name == "package.json" }
         return unless manifest&.content
 
@@ -783,6 +985,20 @@ module Dependabot
           "#{name} -v",
           fingerprint: "#{name} -v"
         ).strip
+      end
+
+      # Corepack can't provide the requested npm, so the image's npm would be used. Fail instead of silently
+      # updating with a different npm major than the one requested.
+      sig { params(version: String).void }
+      def self.raise_unless_local_npm_major_matches!(version)
+        local_major = Version.new(local_package_manager_version(NpmPackageManager::NAME)).segments.first
+        return if local_major.to_s == version[/\A\d+/]
+
+        raise ToolVersionNotSupported.new(
+          NpmPackageManager::NAME.upcase,
+          version,
+          NpmPackageManager::SUPPORTED_VERSIONS.map { |v| "#{v}.*" }.join(", ")
+        )
       end
 
       # The version a `-v` command printed. The launcher can print a download message (pnpm 12 fetching its native

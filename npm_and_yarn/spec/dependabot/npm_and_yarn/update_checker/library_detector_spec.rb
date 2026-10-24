@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only project_name fixtures and instance calls in generated examples.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/update_checker/library_detector"

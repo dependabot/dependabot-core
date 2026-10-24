@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context pypi_response fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "octokit"
