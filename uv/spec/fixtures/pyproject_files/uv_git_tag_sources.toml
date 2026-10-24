@@ -1,0 +1,47 @@
+[project]
+name = "git-sources-project"
+version = "0.1.0"
+description = "Test uv git sources"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "malformed-package",
+    "tagged-package",
+    "acme-tagged-package",
+    "Other_Tagged_Package",
+    "array-package",
+    "branch-package",
+    "untagged-package",
+    "quoted-package",
+]
+
+[tool.uv.sources]
+# An array of sources is valid uv and cannot be rewritten textually, so no source is attached.
+# Deliberately before every usable entry: skipping it must not stop them being read.
+array-package = [{ git = "https://github.com/example/array.git", tag = "9.9.9" }]
+
+# Malformed, and deliberately first: skipping it must not stop the entries below being read
+malformed-package = { git = "https://github.com/example/malformed.git", tag = 1.2 }
+
+# A key ending with another key's name, on the same tag: an unanchored rewrite moves this one instead
+acme-tagged-package = { git = "https://github.com/example/acme-tagged.git", tag = "1.2.3" }
+
+# Pinned to an exact tag: the shape this change is about
+tagged-package = { git = "https://github.com/example/tagged.git", tag = "1.2.3" }
+
+# uv resolves the key under PEP 508 normalisation, so the file can spell it any of several ways
+Other_Tagged_Package = { git = "https://github.com/example/other.git", tag = "7.8.9" }
+
+# Pinned to a moving ref, out of scope and must keep its current behaviour
+branch-package = { git = "https://github.com/example/branch.git", branch = "main" }
+
+# No ref at all, out of scope for the same reason
+untagged-package = { git = "https://github.com/example/untagged.git" }
+
+# TOML allows a quoted inner key. It parses to a git-and-tag source, so only the rewrite's own
+# pattern can reject it - which is what keeps what the parser accepts equal to what it can rewrite.
+quoted-package = { "git" = "https://github.com/example/quoted.git", "tag" = "3.2.1" }
+
+# Anything after the sources table must be left alone by a rewrite
+[tool.other]
+tagged-package = { git = "https://github.com/example/decoy.git", tag = "1.2.3" }
