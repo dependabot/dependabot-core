@@ -61,18 +61,7 @@ module Dependabot
               next false if includes_property_reference?(updated_version(dep))
               next false unless writable_requirements?(dep)
 
-              releases = VersionFinder.new(
-                dependency: dep,
-                dependency_files: dependency_files,
-                credentials: credentials,
-                ignored_versions: ignored_versions,
-                security_advisories: [],
-                cooldown_options: update_cooldown
-              ).releases
-
-              versions = releases.map(&:version)
-
-              versions.include?(updated_version(dep)) || versions.none?
+              release_available?(dep, updated_version(dep))
             end,
             T.nilable(T::Boolean)
           )
@@ -123,13 +112,21 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies_using_property
           @dependencies_using_property ||= T.let(
+            parsed_dependencies.select do |dep|
+              dep.requirements.any? { |requirement| uses_property?(requirement) }
+            end,
+            T.nilable(T::Array[Dependabot::Dependency])
+          )
+        end
+
+        sig { returns(T::Array[Dependabot::Dependency]) }
+        def parsed_dependencies
+          @parsed_dependencies ||= T.let(
             Maven::FileParser.new(
               dependency_files: dependency_files,
               source: nil,
               options: { skip_dependency_tree: true }
-            ).parse.select do |dep|
-              dep.requirements.any? { |requirement| uses_property?(requirement) }
-            end,
+            ).parse,
             T.nilable(T::Array[Dependabot::Dependency])
           )
         end
@@ -183,11 +180,37 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
         def version_string(dep)
+          declared_version_string(dep, declaring_property_requirement(dep))
+        end
+
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            declaring_requirement: Dependabot::DependencyRequirement
+          ).returns(T.nilable(String))
+        end
+        def declared_version_string(dep, declaring_requirement)
           Maven::FileUpdater::DeclarationFinder.new(
             dependency: dep,
-            declaring_requirement: declaring_property_requirement(dep),
+            declaring_requirement: declaring_requirement,
             dependency_files: dependency_files
           ).declaration_nodes.first&.at_css("version")&.content
+        end
+
+        sig { params(dep: Dependabot::Dependency, version: String, cache_key: String).returns(T::Boolean) }
+        def release_available?(dep, version, cache_key: dep.name)
+          @release_versions ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::Version]]))
+          versions = @release_versions[cache_key] ||=
+            VersionFinder.new(
+              dependency: dep,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: [],
+              cooldown_options: update_cooldown
+            ).releases.map(&:version)
+
+          versions.include?(version) || versions.none?
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -231,7 +254,9 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(Dependabot::DependencyRequirement) }
         def declaring_property_requirement(dep)
-          declaring_requirement = dep.requirements.find { |requirement| uses_property?(requirement) }
+          declaring_requirement =
+            dep.requirements.find { |requirement| same_property_source?(requirement) } ||
+            dep.requirements.find { |requirement| uses_property?(requirement) }
 
           return declaring_requirement if declaring_requirement
 
@@ -241,8 +266,140 @@ module Dependabot
 
         sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def uses_property?(requirement)
+          return true if same_property_source?(requirement)
+
+          requirement.metadata_string("property_name") == property_name &&
+            linked_property_sources.include?(requirement.metadata_string("property_source"))
+        end
+
+        # Sibling modules often define the same property with the same value.
+        # Update them together so the modules stay in sync.
+        sig { returns(T::Array[String]) }
+        def linked_property_sources
+          @linked_property_sources ||= T.let(
+            parsed_dependencies
+              .flat_map(&:requirements)
+              .select { |requirement| requirement.metadata_string("property_name") == property_name }
+              .group_by { |requirement| requirement.metadata_string("property_source") }
+              .select { |source, requirements| linkable_property_source?(source, requirements) }
+              .keys.compact,
+            T.nilable(T::Array[String])
+          )
+        end
+
+        sig do
+          params(
+            source: T.nilable(String),
+            requirements: T::Array[Dependabot::DependencyRequirement]
+          ).returns(T::Boolean)
+        end
+        def linkable_property_source?(source, requirements)
+          return false if source.nil? || source == property_source
+          return false unless dependency_files.any? { |f| f.name == source }
+
+          selected_value = property_value_at(property_requirement.file)
+          return false if selected_value.nil?
+          # A suffixed use in the selected module also writes a suffixed value, so don't link any module then.
+          return false unless plain_property_uses?(selected_property_requirements, selected_value)
+
+          # Skip the module if any declaration there adds to the value (e.g.
+          # `${prop}-ext`): the property would be written with that version.
+          plain_values = plain_property_uses?(requirements, selected_value)
+
+          # Only the selected module may block the update; skip a linked module that can't be updated.
+          plain_values &&
+            only_dependency_property_references?(source) &&
+            parsed_dependencies.all? { |dep| linked_dependency_updatable?(dep, source) }
+        end
+
+        # Every `${prop}` resolved from the source must be a parsed dependency version. Other uses (e.g.
+        # `${prefix}${prop}` or `<other.version>${prop}-ext</other.version>`) would change without a check.
+        sig { params(source: String).returns(T::Boolean) }
+        def only_dependency_property_references?(source)
+          reference = "${#{property_name}}"
+          dependency_files.all? do |file|
+            content = file.content.to_s
+            next true unless content.include?(reference)
+            next true unless property_value_finder.property_details(
+              property_name: property_name, callsite_pom: file
+            )&.fetch(:file) == source
+
+            parsed_uses = parsed_dependencies.flat_map(&:requirements).count do |requirement|
+              requirement.file == file.name && requirement.metadata_string("property_name") == property_name
+            end
+            content.scan(reference).length == parsed_uses
+          end
+        end
+
+        sig { params(dep: Dependabot::Dependency, source: String).returns(T::Boolean) }
+        def linked_dependency_updatable?(dep, source)
+          requirement = dep.requirements.find do |req|
+            req.metadata_string("property_name") == property_name && req.metadata_string("property_source") == source
+          end
+          return true unless requirement
+          return false unless property_only_dependency?(dep)
+
+          new_version = declared_version_string(dep, requirement)&.gsub("${#{property_name}}", target_version.to_s)
+          return false if new_version.nil? || includes_property_reference?(new_version)
+
+          # Look up releases with this module's repositories.
+          module_dependency = Dependabot::Dependency.new(
+            name: dep.name, version: dep.version, requirements: [requirement], package_manager: dep.package_manager
+          )
+          release_available?(module_dependency, new_version, cache_key: "#{dep.name}@#{requirement.file}")
+        rescue Dependabot::DependabotError => e
+          Dependabot.logger.info("Not updating #{property_name} in #{source}: #{e.message}")
+          false
+        end
+
+        # A dependency only reached through a linked module must not change declarations that don't use the property.
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+        def property_only_dependency?(dep)
+          dep.requirements.any? { |req| same_property_source?(req) } ||
+            dep.requirements.all? { |req| req.metadata_string("property_name") == property_name }
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+        def selected_property_requirements
+          @selected_property_requirements ||= T.let(
+            parsed_dependencies.flat_map(&:requirements).select { |requirement| same_property_source?(requirement) },
+            T.nilable(T::Array[Dependabot::DependencyRequirement])
+          )
+        end
+
+        sig do
+          params(
+            requirements: T::Array[Dependabot::DependencyRequirement],
+            value: String
+          ).returns(T::Boolean)
+        end
+        def plain_property_uses?(requirements, value)
+          requirements.all? do |requirement|
+            requirement.requirement == value && property_value_at(requirement.file) == value
+          end
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def same_property_source?(requirement)
           requirement.metadata_string("property_name") == property_name &&
             requirement.metadata_string("property_source") == property_source
+        end
+
+        sig { params(callsite_file: T.nilable(String)).returns(T.nilable(String)) }
+        def property_value_at(callsite_file)
+          return unless callsite_file
+
+          @property_values ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+          return @property_values[callsite_file] if @property_values.key?(callsite_file)
+
+          callsite_pom = dependency_files.find { |f| f.name == callsite_file }
+          value =
+            if callsite_pom
+              property_value_finder
+                .property_details(property_name: property_name, callsite_pom: callsite_pom)
+                &.fetch(:value)
+            end
+          @property_values[callsite_file] = value.is_a?(String) ? value : nil
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -255,9 +412,10 @@ module Dependabot
               source_url: source_url,
               properties_to_update: [property_name]
             ).updated_requirements.map.with_index do |requirement, index|
-              next requirement unless requirement.metadata_string("property_name")
+              original = dep.requirements.fetch(index)
+              next requirement unless original.metadata_string("property_name")
 
-              uses_property?(requirement) ? requirement : dep.requirements.fetch(index)
+              uses_property?(original) ? requirement : original
             end
         end
 
