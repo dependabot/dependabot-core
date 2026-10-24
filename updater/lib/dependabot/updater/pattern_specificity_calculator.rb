@@ -22,14 +22,13 @@ module Dependabot
     # - Patterns without wildcards: 500
     # - Patterns with wildcards: 100 - (wildcard_count * 10) + length_bonus
     # - Universal wildcard '*': 1 (lowest)
-    # - No patterns: 500 (medium)
+    # - No patterns: 1 (lowest)
     class PatternSpecificityCalculator
       extend T::Sig
 
       EXPLICIT_MEMBER_SCORE = 1000
       EXACT_MATCH_SCORE = 1000
       NO_WILDCARDS_SCORE = 500
-      NO_PATTERNS_SCORE = 500
       WILDCARD_BASE_SCORE = 100
       WILDCARD_PENALTY = 10
       UNIVERSAL_WILDCARD_SCORE = 1
@@ -184,7 +183,7 @@ module Dependabot
         return 0 if excluded_by_group?(group, dep.name)
 
         patterns = group.patterns
-        return NO_PATTERNS_SCORE unless patterns
+        return UNIVERSAL_WILDCARD_SCORE unless patterns&.any?
 
         matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
         return 0 if matching_patterns.empty?
