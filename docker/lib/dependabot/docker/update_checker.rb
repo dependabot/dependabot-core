@@ -368,11 +368,33 @@ module Dependabot
 
         # Content checks apply regardless of experiments or tag precision.
         return false unless same_image_contents?(candidate, current_tag)
+        return false if pinned_digest_update_required?(candidate, current_tag)
 
         Dependabot.logger.info(
           "Digest check: #{candidate.name} has the same image contents as #{current_tag.name} " \
           "— skipping candidate"
         )
+        true
+      end
+
+      sig do
+        params(candidate: Dependabot::Docker::Tag, current_tag: Dependabot::Docker::Tag).returns(T::Boolean)
+      end
+      def pinned_digest_update_required?(candidate, current_tag)
+        return false unless Dependabot::Experiments.enabled?(:docker_digest_only_update_suppression)
+
+        pinned_requirements = digest_requirements.select { |req| req.source_string("tag") == current_tag.name }
+        return false if pinned_requirements.empty?
+
+        # Matching registry tags do not prove that the image pinned in the file
+        # is current. Keep the version update eligible when a digest-only refresh
+        # would be suppressed, unless every pin already matches the candidate.
+        candidate_digest = digest_of(candidate.name)
+        return true if candidate_digest.nil? || candidate_digest.empty?
+
+        pinned_requirements.any? { |req| !matching_digest?(req.source_string("digest"), candidate_digest) }
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
+        Dependabot.logger.info("Unable to compare pinned digests for #{candidate.name}: #{e.class}")
         true
       end
 
@@ -402,6 +424,11 @@ module Dependabot
         else
           candidate
         end
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
+        # Precision preservation is optional. A failed comparison must not prevent
+        # the original candidate from undergoing cooldown and content validation.
+        Dependabot.logger.info("Unable to compare tag precision for #{candidate.name}: #{e.class}")
+        candidate
       end
 
       sig do
