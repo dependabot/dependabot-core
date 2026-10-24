@@ -2971,6 +2971,182 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with no .npmrc, an unscoped private registry, and a lockfile that resolves only from the public registry" do
+    let(:credentials) do
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ), Dependabot::Credential.new(
+        {
+          "type" => "npm_registry",
+          "registry" => "npm.example.com",
+          "token" => "my_token"
+        }
+      )]
+    end
+
+    before do
+      Dependabot::Experiments.register(:enable_npmrc_credential_generation, true)
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture_to_response(project, "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture_to_response(project, "package-lock.json"),
+          headers: json_header
+        )
+    end
+
+    %w(npm6/simple npm8/simple npm9/simple).each do |fixture_project|
+      context "with a #{fixture_project} lockfile" do
+        let(:project) { "projects/#{fixture_project}" }
+
+        it "does not raise PrivateRegistryConfigNotFound or infer an .npmrc" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to eq(%w(package.json package-lock.json))
+        end
+      end
+    end
+
+    context "when the lockfile also has bundled and local file entries" do
+      let(:project) { "projects/npm6/public_registry_bundled_and_local" }
+
+      before do
+        stub_request(:get, File.join(url, "example-local-lib.tgz?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "does not raise PrivateRegistryConfigNotFound" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to eq(%w(package.json package-lock.json))
+      end
+    end
+
+    {
+      "projects/npm9/private_and_public_registry_no_npmrc" => "also resolves packages from a private registry",
+      "projects/npm8/subdependency_update_tab_indentation" => "also resolves a package from git",
+      "projects/npm6/subdependency_update_tab_indentation" => "is v1 and also has a github: dependency",
+      "projects/npm6/git_dependency" => "is v1 and also has a git+https: dependency",
+      "projects/npm9/omitted_resolved_no_npmrc" => "omits `resolved` for a remote package",
+      "projects/npm9/git_file_resolved_no_npmrc" => "also resolves a package from a git+file: URL",
+      "projects/npm9/missing_from_lockfile_no_npmrc" => "is missing a dependency declared in package.json"
+    }.each do |fixture_project, description|
+      context "when the lockfile #{description}" do
+        let(:project) { fixture_project }
+
+        it "raises PrivateRegistryConfigNotFound" do
+          expect { file_fetcher_instance.files }.to raise_error(
+            Dependabot::PrivateRegistryConfigNotFound,
+            /npm\.example\.com/
+          )
+        end
+      end
+    end
+
+    context "when an npm-shrinkwrap.json resolves from a private registry" do
+      let(:project) { "projects/npm9/simple" }
+
+      before do
+        listing = JSON.parse(fixture("github", "contents_js_npm.json"))
+        shrinkwrap_entry = JSON.parse(fixture("github", "contents_js_shrinkwrap.json"))
+                               .find { |entry| entry["name"] == "npm-shrinkwrap.json" }
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: (listing + [shrinkwrap_entry]).to_json, headers: json_header)
+
+        stub_request(:get, File.join(url, "npm-shrinkwrap.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture_to_response("projects/npm9/private_and_public_registry_no_npmrc", "package-lock.json"),
+            headers: json_header
+          )
+      end
+
+      it "raises PrivateRegistryConfigNotFound even if package-lock.json is public" do
+        expect { file_fetcher_instance.files }.to raise_error(
+          Dependabot::PrivateRegistryConfigNotFound,
+          /npm\.example\.com/
+        )
+      end
+    end
+
+    context "when a lerna package has its own lockfile" do
+      let(:project) { "projects/npm9/lerna_private_package" }
+      let(:widget) { "#{project}/packages/widget" }
+
+      def listing(*names)
+        names.map { |name| { "name" => name, "path" => name, "type" => "file", "size" => 1 } }.to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: listing("lerna.json", "package.json", "package-lock.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/widget?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: listing("package.json", "package-lock.json"), headers: json_header)
+
+        { "lerna.json" => project, "packages/widget/package.json" => widget,
+          "packages/widget/package-lock.json" => widget }.each do |path, dir|
+          stub_request(:get, File.join(url, "#{path}?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 200, body: fixture_to_response(dir, File.basename(path)), headers: json_header)
+        end
+      end
+
+      it "raises PrivateRegistryConfigNotFound even if the root package-lock.json is public" do
+        expect { file_fetcher_instance.files }.to raise_error(
+          Dependabot::PrivateRegistryConfigNotFound,
+          /npm\.example\.com/
+        )
+      end
+    end
+
+    context "when a yarn.lock is also present" do
+      let(:project) { "projects/npm9/simple" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: fixture("github", "contents_js_npm_and_yarn.json"), headers: json_header)
+
+        stub_request(:get, File.join(url, "yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture_to_response("projects/yarn/private_source", "yarn.lock"),
+            headers: json_header
+          )
+      end
+
+      it "raises PrivateRegistryConfigNotFound even if package-lock.json is public" do
+        expect { file_fetcher_instance.files }.to raise_error(
+          Dependabot::PrivateRegistryConfigNotFound,
+          /npm\.example\.com/
+        )
+      end
+    end
+  end
+
   context "with no .npmrc, no lockfile at all, and no credential scope/replaces-base" do
     let(:credentials) do
       [Dependabot::Credential.new(
