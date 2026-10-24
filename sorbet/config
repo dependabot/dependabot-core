@@ -27,7 +27,6 @@
 --ignore=pre_commit/spec/
 --ignore=pub/spec/
 --ignore=swift/spec/
---ignore=opentofu/spec/
 --ignore=updater/spec/
 --ignore=vcpkg/spec/
 --ignore=.git
