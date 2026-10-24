@@ -512,6 +512,81 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         )
         expect(uv_commands.count { |command| command.include?("certifi==2025.2.0") }).to eq(2)
       end
+
+      context "with a lockfile-only strategy and a security advisory" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+        let(:pypi_response) do
+          <<~HTML
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <a href="https://files.pythonhosted.org/certifi-2025.1.31.tar.gz">certifi-2025.1.31.tar.gz</a>
+                <a href="https://files.pythonhosted.org/certifi-2025.2.0.tar.gz">certifi-2025.2.0.tar.gz</a>
+                <a href="https://files.pythonhosted.org/certifi-2025.3.0.tar.gz">certifi-2025.3.0.tar.gz</a>
+              </body>
+            </html>
+          HTML
+        end
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "certifi",
+              package_manager: "uv",
+              vulnerable_versions: ["<2025.2.0"]
+            )
+          ]
+        end
+
+        it "updates the lockfile to the lowest fixed version without unlocking requirements" do
+          expect(checker.requirements_unlocked_or_can_be?).to be(false)
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :none).first
+          updated_files = Dependabot::Uv::FileUpdater.new(
+            dependencies: [updated_dependency],
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_dependency_files
+
+          expect(updated_dependency.version).to eq("2025.2.0")
+          expect(updated_dependency.requirements).to eq([])
+          expect(updated_files.map(&:name)).to eq(["uv.lock"])
+          expect(updated_files.first.content).to include('version = "2025.2.0"')
+          expect(uv_commands).to all(include("certifi==2025.2.0"))
+        end
+      end
+
+      context "with a lockfile-only strategy and no security advisory" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+        it "updates the lockfile to the latest resolvable version" do
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :none).first
+          expect(updated_dependency.version).to eq("2025.2.0")
+          expect(updated_dependency.requirements).to eq([])
+          expect(uv_commands).to include(a_string_including("certifi>=2025.1.31,<=2025.2.0"))
+        end
+      end
+
+      context "with a lockfile-only strategy and no newer version" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+        let(:pypi_response) do
+          <<~HTML
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <a href="https://files.pythonhosted.org/certifi-2025.1.31.tar.gz">certifi-2025.1.31.tar.gz</a>
+              </body>
+            </html>
+          HTML
+        end
+
+        it "does not report an update" do
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+          expect(uv_commands).to be_empty
+        end
+      end
     end
   end
 
