@@ -37,6 +37,8 @@ module Dependabot
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
       BUN_LOCKFILE_NAME = "bun.lock"
+      # Git or URL specs in lockfile `version`/`from` values, optionally after a `name@` prefix.
+      LOCKFILE_REMOTE_SOURCE_SPEC = %r{(?:\A|@)(?:git\+|git:|github:|gitlab:|bitbucket:|gist:|https?://)}i
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -261,9 +263,107 @@ module Dependabot
           !NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(normalized)
         end
         return if private_registry_creds.empty?
+        # The project doesn't need the private registry (e.g. an org-wide one) if its
+        # lockfile resolves every package from a public registry.
+        return if lockfile_resolves_only_from_public_registries?
 
         registry = private_registry_creds.first&.fetch("registry", nil) || "unknown"
         raise Dependabot::PrivateRegistryConfigNotFound, registry
+      end
+
+      sig { returns(T::Boolean) }
+      def lockfile_resolves_only_from_public_registries?
+        return false if other_lockfile_present?
+
+        # npm uses npm-shrinkwrap.json over package-lock.json when both exist.
+        lockfile = shrinkwrap || package_lock
+        return false unless lockfile
+
+        hosts = npm_lockfile_resolved_hosts(lockfile)
+        return false if hosts.nil? || hosts.empty?
+
+        hosts.all? { |host| NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(host) }
+      rescue Dependabot::DependencyFileNotParseable
+        false
+      end
+
+      # Other lockfiles may resolve packages from the private registry.
+      sig { returns(T::Boolean) }
+      def other_lockfile_present?
+        return true if yarn_lock || pnpm_lock || bun_lock
+
+        lerna_packages.any? { |file| File.basename(file.name) != MANIFEST_FILENAME }
+      end
+
+      # A stale lockfile doesn't show where the missing dependencies come from.
+      sig { params(parsed: FileParser::JsonLock::Record).returns(T::Boolean) }
+      def lockfile_missing_manifest_dependencies?(parsed)
+        names = %w(dependencies devDependencies optionalDependencies).flat_map do |type|
+          deps = parsed_package_json[type]
+          deps.is_a?(Hash) ? deps.keys : []
+        end
+
+        names.any? do |name|
+          key = "node_modules/#{name}"
+          parsed.package_entry(key, key).nil? && parsed.legacy_entry(name).nil?
+        end
+      end
+
+      sig { params(lockfile: DependencyFile).returns(T.nilable(T::Array[String])) }
+      def npm_lockfile_resolved_hosts(lockfile)
+        parsed = FileParser::JsonLock.new(lockfile).parsed
+        return if lockfile_missing_manifest_dependencies?(parsed)
+
+        # Lockfile v2 has both sections, and some entries (e.g. git) only have `resolved` in `packages`.
+        legacy_hosts = lockfile_resolved_hosts(parsed.legacy_entries, package_paths: false)
+        package_hosts = lockfile_resolved_hosts(parsed.package_entries, package_paths: true)
+        return if legacy_hosts.nil? || package_hosts.nil?
+
+        legacy_hosts | package_hosts
+      end
+
+      # Returns the hosts of every remote package's `resolved` URL in the lockfile, or nil if any
+      # remote package has no HTTP `resolved` URL (e.g. a git source, or `resolved` was omitted).
+      # Lockfile v1 can record git sources only in `version`/`from`, without `resolved`.
+      sig do
+        params(records: T::Hash[String, FileParser::JsonLock::Record], package_paths: T::Boolean)
+          .returns(T.nilable(T::Array[String]))
+      end
+      def lockfile_resolved_hosts(records, package_paths:)
+        hosts = T.let([], T::Array[String])
+
+        records.each do |key, entry|
+          return nil if legacy_remote_source?(entry)
+
+          unless local_lockfile_entry?(key, entry, package_path: package_paths)
+            uri = entry.registry_uri("")
+            host = uri&.host
+            return nil unless uri.is_a?(URI::HTTP) && host && !host.empty?
+
+            hosts << host.downcase
+          end
+
+          nested_hosts = lockfile_resolved_hosts(entry.dependency_entries, package_paths: false)
+          return nil if nested_hosts.nil?
+
+          hosts.concat(nested_hosts)
+        end
+
+        hosts.uniq
+      end
+
+      # Root, workspace members, links, bundled packages and local `file:` packages aren't fetched from a registry.
+      sig { params(key: String, entry: FileParser::JsonLock::Record, package_path: T::Boolean).returns(T::Boolean) }
+      def local_lockfile_entry?(key, entry, package_path:)
+        return true if package_path && !key.include?("node_modules/")
+        return true if entry.link? || entry.bundled? || entry.in_bundle?
+
+        [entry.version, entry.resolved].any? { |spec| spec&.match?(PATH_DEPENDENCY_CLEAN_REGEX) }
+      end
+
+      sig { params(entry: FileParser::JsonLock::Record).returns(T::Boolean) }
+      def legacy_remote_source?(entry)
+        [entry.version, entry.from].any? { |spec| spec&.match?(LOCKFILE_REMOTE_SOURCE_SPEC) }
       end
 
       sig { returns(T::Boolean) }
