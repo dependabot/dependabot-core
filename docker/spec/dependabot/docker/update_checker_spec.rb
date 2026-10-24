@@ -70,7 +70,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     # never suppressed as same-content and digest-only refreshes are never
     # suppressed as no-ops. Multi-platform behaviour is exercised by the dedicated
     # describe blocks, which re-stub these methods with their own platform digests.
-    allow(checker).to receive_messages(single_platform_image?: true, fetch_platform_digests: {})
+    # Keep version/cooldown/platform scenarios independent of exact manifest
+    # equality. Registry-backed digest equality and candidate selection are
+    # covered in update_checker_same_digest_spec.rb and update_checker_digest_comparison_spec.rb.
+    allow(checker).to receive_messages(
+      same_image_digest?: false,
+      single_platform_image?: true,
+      fetch_platform_digests: {}
+    )
   end
 
   it_behaves_like "an update checker"

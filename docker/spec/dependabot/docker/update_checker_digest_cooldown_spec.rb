@@ -331,6 +331,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         allow(mock_client).to receive(:tags).and_return("tags" => %w(1.0.0 1.1.0))
+        # This scenario tests a real content update, not two aliases of one image.
+        allow(mock_client).to receive(:manifest_digest).with("astral-sh/uv", "1.0.0")
+                                                       .and_return("sha256:#{'a' * 64}")
       end
 
       it "proposes the update with a missing-date warning" do
