@@ -73,6 +73,25 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       )
     end
 
+    context "with a deps.update alias" do
+      let(:mixfile_fixture_name) { "deps_update_alias" }
+      let(:lockfile_fixture_name) { "minor_version" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "plug",
+          version: "1.3.6",
+          requirements: [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }],
+          previous_version: "1.3.5",
+          previous_requirements: [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates without invoking the project alias" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.3.6")
+      end
+    end
+
     context "with no requirement" do
       let(:mixfile_fixture_name) { "no_requirement" }
       let(:lockfile_fixture_name) { "no_requirement" }
