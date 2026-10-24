@@ -1655,6 +1655,211 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "#updated_pyproject_content with a package declared with and without extras" do
+    subject(:updated_content) { updater.send(:updated_pyproject_content) }
+
+    let(:pyproject_content) do
+      <<~TOML
+        [project]
+        name = "myproject"
+        dependencies = [
+            "uvicorn[standard]",
+        ]
+
+        [dependency-groups]
+        dev = [
+            "uvicorn>=0.30.1",
+        ]
+      TOML
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "uvicorn",
+        version: "0.54.0",
+        requirements: [
+          { file: "pyproject.toml", requirement: "*", groups: [], source: nil },
+          { file: "pyproject.toml", requirement: ">=0.54.0", groups: ["dev"], source: nil }
+        ],
+        previous_requirements: [
+          { file: "pyproject.toml", requirement: "*", groups: [], source: nil },
+          { file: "pyproject.toml", requirement: ">=0.30.1", groups: ["dev"], source: nil }
+        ],
+        previous_version: "0.30.1",
+        package_manager: "uv",
+        metadata: { extras: "standard" }
+      )
+    end
+
+    it "updates only the changed declaration and leaves the unversioned one alone" do
+      expect(updated_content).to include('"uvicorn[standard]",')
+      expect(updated_content).to include('"uvicorn>=0.54.0",')
+      expect(updated_content).not_to include(">=0.30.1")
+    end
+  end
+
+  describe "#updated_dependency_files with a package declared with and without extras" do
+    subject(:updated_pyproject) do
+      updater.updated_dependency_files.find { |f| f.name == "pyproject.toml" }.content
+    end
+
+    before do
+      allow(updater).to receive(:updated_lockfile_content).and_return("#{lockfile_content}# updated\n")
+    end
+
+    let(:pyproject_content) do
+      <<~TOML
+        [project]
+        name = "myproject"
+        dependencies = [
+            "uvicorn>=0.20.0",
+            "uvicorn[standard]>= 0.30.1, < 0.31.0",
+        ]
+      TOML
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "uvicorn",
+        version: "0.54.0",
+        requirements: [
+          { file: "pyproject.toml", requirement: ">=0.54.0", groups: [], source: nil },
+          { file: "pyproject.toml", requirement: ">=0.30.1,<0.55.0", groups: [], source: nil }
+        ],
+        previous_requirements: [
+          { file: "pyproject.toml", requirement: ">=0.20.0", groups: [], source: nil },
+          { file: "pyproject.toml", requirement: "<0.31.0,>=0.30.1", groups: [], source: nil }
+        ],
+        previous_version: "0.30.1",
+        package_manager: "uv",
+        metadata: { extras: "standard" }
+      )
+    end
+
+    it "updates each declaration, including one with spaces in its specifiers" do
+      expect(updated_pyproject).to include('"uvicorn>=0.54.0",')
+      expect(updated_pyproject).to include('"uvicorn[standard]>=0.30.1,<0.55.0",')
+      expect(updated_pyproject).not_to include("0.31.0")
+    end
+  end
+
+  describe "#updated_dependency_files with differently formatted specifiers" do
+    subject(:updated_pyproject) do
+      updater.updated_dependency_files.find { |f| f.name == "pyproject.toml" }.content
+    end
+
+    before do
+      allow(updater).to receive(:updated_lockfile_content).and_return("#{lockfile_content}# updated\n")
+    end
+
+    context "when the package also appears in constraint-dependencies" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "myproject"
+          dependencies = [
+              "requests (>=2.31.0)",
+          ]
+
+          [tool.uv]
+          constraint-dependencies = ["requests<3"]
+        TOML
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.33.0",
+          requirements: [{ file: "pyproject.toml", requirement: ">=2.33.0", groups: [], source: nil }],
+          previous_requirements: [{ file: "pyproject.toml", requirement: ">=2.31.0", groups: [], source: nil }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates the declaration and leaves the constraint alone" do
+        expect(updated_pyproject).to include('"requests>=2.33.0",')
+        expect(updated_pyproject).to include('constraint-dependencies = ["requests<3"]')
+      end
+    end
+
+    context "when the package is declared in two groups" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "myproject"
+          dependencies = [
+              "requests (>=2.0,<3.0)",
+          ]
+
+          [dependency-groups]
+          dev = [
+              "requests>=2.1,<3.0",
+          ]
+        TOML
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "3.1.0",
+          requirements: [
+            { file: "pyproject.toml", requirement: ">=2.0,<4.0", groups: [], source: nil },
+            { file: "pyproject.toml", requirement: ">=2.1,<4.0", groups: ["dev"], source: nil }
+          ],
+          previous_requirements: [
+            { file: "pyproject.toml", requirement: "<3.0,>=2.0", groups: [], source: nil },
+            { file: "pyproject.toml", requirement: "<3.0,>=2.1", groups: ["dev"], source: nil }
+          ],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates both declarations" do
+        expect(updated_pyproject).to include('"requests>=2.0,<4.0",')
+        expect(updated_pyproject).to include('"requests>=2.1,<4.0",')
+        expect(updated_pyproject).not_to include("<3.0")
+      end
+    end
+
+    context "when a declaration with extras repeats a clause" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "myproject"
+          dependencies = [
+              "requests[socks]>=2.31.0,<3.0,<3.0",
+              "requests>=2.20.0",
+          ]
+        TOML
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "3.1.0",
+          requirements: [
+            { file: "pyproject.toml", requirement: ">=2.31.0,<4.0", groups: [], source: nil },
+            { file: "pyproject.toml", requirement: ">=2.20.0", groups: [], source: nil }
+          ],
+          previous_requirements: [
+            { file: "pyproject.toml", requirement: "<3.0,>=2.31.0", groups: [], source: nil },
+            { file: "pyproject.toml", requirement: ">=2.20.0", groups: [], source: nil }
+          ],
+          previous_version: "2.32.3",
+          package_manager: "uv",
+          metadata: { extras: "socks" }
+        )
+      end
+
+      it "updates the declaration with extras" do
+        expect(updated_pyproject).to include('"requests[socks]>=2.31.0,<4.0",')
+        expect(updated_pyproject).to include('"requests>=2.20.0",')
+      end
+    end
+  end
+
   describe "#replace_dep" do
     subject(:replace_dep) do
       updater.send(
@@ -2021,6 +2226,141 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(result).not_to include("~=3.24.0")
       end
     end
+
+    context "with a bare dependency name and extras in the source file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "uvicorn",
+          version: "0.54.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.54.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.30.1",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "0.30.1",
+          package_manager: "uv",
+          metadata: { extras: "standard" }
+        )
+      end
+
+      let(:new_req) { { requirement: ">=0.54.0" } }
+      let(:old_req) { { requirement: ">=0.30.1" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "uvicorn-worker>=0.30.1",
+              "uvicorn [standard]>=0.30.1",
+          ]
+        TOML
+      end
+
+      it "keeps the extras and updates only the matching declaration" do
+        result = replace_dep
+        expect(result).to include('"uvicorn [standard]>=0.54.0"')
+        expect(result).to include('"uvicorn-worker>=0.30.1"')
+      end
+
+      context "when only a longer package name starts with the dependency name" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "uvicorn-worker>=0.30.1",
+            ]
+          TOML
+        end
+
+        it "does not rewrite the other package" do
+          expect(replace_dep).to eq(content)
+        end
+      end
+    end
+
+    context "with the same dependency declared with and without extras" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "uvicorn",
+          version: "0.54.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.54.0",
+            groups: ["dev"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.29.0",
+            groups: ["dev"],
+            source: nil
+          }],
+          previous_version: "0.30.1",
+          package_manager: "uv",
+          metadata: { extras: "standard" }
+        )
+      end
+
+      let(:new_req) { { requirement: ">=0.54.0" } }
+      let(:old_req) { { requirement: ">=0.29.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "uvicorn[standard]>=0.30.1",
+          ]
+
+          [dependency-groups]
+          dev = [
+              "uvicorn>=0.29.0",
+          ]
+        TOML
+      end
+
+      it "updates only the declaration whose requirement matches" do
+        result = replace_dep
+        expect(result).to include('"uvicorn[standard]>=0.30.1"')
+        expect(result).to include('"uvicorn>=0.54.0"')
+        expect(result).not_to include(">=0.29.0")
+      end
+
+      context "when no declaration has the old requirement" do
+        let(:old_req) { { requirement: ">=0.28.0" } }
+
+        it "does not rewrite an unrelated declaration" do
+          expect(replace_dep).to eq(content)
+        end
+      end
+
+      context "when no declaration has the old requirement and none has extras" do
+        let(:old_req) { { requirement: ">=0.28.0" } }
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "uvicorn>=0.30.1",
+            ]
+
+            [tool.uv]
+            constraint-dependencies = ["uvicorn<1"]
+          TOML
+        end
+
+        it "falls back to rewriting the first declaration" do
+          result = replace_dep
+          expect(result).to include('"uvicorn>=0.54.0",')
+          expect(result).to include('["uvicorn<1"]')
+        end
+      end
+    end
   end
 
   describe "#requirements_match?" do
@@ -2047,6 +2387,33 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     context "when requirements have different whitespace" do
       let(:req1) { ">=0.115.12,<0.116" }
       let(:req2) { ">=0.115.12, <0.116" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have whitespace after the operators" do
+      let(:req1) { ">= 0.30.1, < 0.31.0" }
+      let(:req2) { "<0.31.0,>=0.30.1" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when a requirement is wrapped in parentheses" do
+      let(:req1) { " (>=2.0, <3.0)" }
+      let(:req2) { "<3.0,>=2.0" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when a requirement repeats a clause" do
+      let(:req1) { ">=0.30.1,<0.31.0,<0.31.0" }
+      let(:req2) { "<0.31.0,>=0.30.1" }
 
       it "returns true" do
         expect(requirements_match).to be true

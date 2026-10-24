@@ -148,6 +148,9 @@ module Dependabot
 
           T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
             next unless new_r.file == file.name && T.must(old_r).file == file.name
+            # A package can be declared more than once (e.g. with and without extras).
+            # Only rewrite the declarations whose requirement changed.
+            next if new_r == old_r
 
             updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
           end
@@ -188,7 +191,7 @@ module Dependabot
               Regexp.last_match(0)
             end
           end
-          unless replaced
+          if !replaced && fallback_allowed?(content, regex)
             updated_content = content.sub(regex) do
               captured_requirement = Regexp.last_match(2)
               _, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
@@ -200,6 +203,15 @@ module Dependabot
           updated_content
         end
 
+        # The name pattern also matches declarations with extras, so when the
+        # package is declared more than once and one of them has extras, an
+        # unmatched requirement could belong to any of them. Don't guess then.
+        sig { params(content: String, regex: Regexp).returns(T::Boolean) }
+        def fallback_allowed?(content, regex)
+          declarations = content.scan(regex).map { |match| T.cast(match, T::Array[String]).first.to_s }
+          declarations.one? || declarations.none? { |declaration| declaration.include?("[") }
+        end
+
         sig { params(req1: String, req2: String).returns(T::Boolean) }
         def requirements_match?(req1, req2)
           normalized_requirement(req1) == normalized_requirement(req2)
@@ -207,7 +219,9 @@ module Dependabot
 
         sig { params(req: String).returns(String) }
         def normalized_requirement(req)
-          req.split(",").map(&:strip).sort.join(",")
+          # PEP 508 allows "pkg (>=1.0)" and repeated clauses; the parsed
+          # requirement has no parentheses and no duplicates.
+          req.gsub(/\s+/, "").sub(/\A\((.*)\)\z/, '\1').split(",").uniq.sort.join(",")
         end
 
         sig { returns(String) }
@@ -645,8 +659,12 @@ module Dependabot
             lookaheads = extras_patterns.map { |e| "(?=[^\\]]*#{e})" }.join
             "#{base}\\[#{lookaheads}[^\\]]+\\]"
           else
-            # Per PEP 503, Python package names normalize -, _, and . to the same character
-            Regexp.escape(name_str).gsub(/\\[-_.]/, "[-_.]")
+            # Per PEP 503, Python package names normalize -, _, and . to the same character.
+            # Parsed names don't include extras, so allow any extras in the declaration
+            # (e.g. "pkg[extra]>=1.0") and keep them unchanged. The lookahead stops
+            # "pkg" from matching a longer name such as "pkg-plugin", and the atomic
+            # group stops the extras from being read as the requirement.
+            Regexp.escape(name_str).gsub(/\\[-_.]/, "[-_.]") + "(?![A-Za-z0-9._-])(?>(?:\\s*\\[[^\\]]*\\])?)"
           end
         end
 
