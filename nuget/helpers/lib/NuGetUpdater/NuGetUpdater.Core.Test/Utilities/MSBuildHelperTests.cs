@@ -183,6 +183,24 @@ public class MSBuildHelperTests : TestBase
     }
 
     [Fact]
+    public async Task AllPackageDependencies_OmitsPackagesOutsideRequestedTargetFramework()
+    {
+        using var temp = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net9.0")],
+            temp.DirectoryPath);
+
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            temp.DirectoryPath,
+            temp.DirectoryPath,
+            "net8.0",
+            [new Dependency("Package.A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"])],
+            new TestLogger());
+
+        Assert.Empty(actualDependencies);
+    }
+
+    [Fact]
     public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages()
     {
         using var temp = new TemporaryDirectory();
