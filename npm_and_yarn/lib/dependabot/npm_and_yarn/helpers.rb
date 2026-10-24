@@ -1182,7 +1182,10 @@ module Dependabot
 
       sig { params(pnpm_lock: DependencyFile).returns(T.nilable(String)) }
       def self.pnpm_lockfile_version(pnpm_lock)
-        match = T.must(pnpm_lock.content).match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)
+        # pnpm 11+ can write a two-document lockfile: an env document precedes the project document, which is
+        # always last.
+        project_document = T.must(pnpm_lock.content).split(/^---[ \t]*\r?$/).last.to_s
+        match = project_document.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)
         return match[:version] if match
 
         nil

@@ -344,6 +344,51 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::pnpm_lockfile_version" do
+    subject(:lockfile_version) { described_class.pnpm_lockfile_version(lockfile) }
+
+    let(:lockfile) { Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: content) }
+
+    context "with a single-document lockfile" do
+      let(:content) { "lockfileVersion: '6.0'\n\nimporters:\n  .: {}\n" }
+
+      it { is_expected.to eq("6.0") }
+    end
+
+    context "with a two-document lockfile whose env document has a different version" do
+      let(:content) do
+        "---\nlockfileVersion: '9.0'\n\nimporters:\n  .:\n    packageManagerDependencies: {}\n\n" \
+          "---\nlockfileVersion: '6.0'\n\nimporters:\n  .: {}\n"
+      end
+
+      it "reads the version of the project (last) document" do
+        expect(lockfile_version).to eq("6.0")
+      end
+    end
+
+    context "with a two-document lockfile using CRLF line endings" do
+      let(:content) do
+        "---\r\nlockfileVersion: '9.0'\r\n---\r\nlockfileVersion: '9.1'\r\n"
+      end
+
+      it { is_expected.to eq("9.1") }
+    end
+
+    context "with the multi-document grapher fixture" do
+      let(:lockfile) do
+        project_dependency_files("grapher/pnpm_multi_document").find { |f| f.name == "pnpm-lock.yaml" }
+      end
+
+      it { is_expected.to eq("9.0") }
+    end
+
+    context "without a lockfileVersion" do
+      let(:content) { "importers:\n  .: {}\n" }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "::npmrc_configured_setting" do
     let(:npmrc_file) do
       Dependabot::DependencyFile.new(
