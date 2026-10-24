@@ -541,6 +541,96 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
         expect(updated_files.first.content).to include("cachecontrol[filecache]==0.12.10")
       end
     end
+
+    context "when the package is declared with and without extras" do
+      let(:manifest_fixture_name) { "extras_and_bare.in" }
+      let(:generated_fixture_name) { "uv_pip_compile_extras_and_bare.txt" }
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.32.3" }
+      let(:dependency_previous_version) { "2.31.0" }
+      let(:dependency_requirements) do
+        [
+          { file: "requirements/test.in", requirement: ">=2.20.0", groups: [], source: nil },
+          { file: "requirements/test.in", requirement: ">=2.31.0,<2.33.0", groups: [], source: nil }
+        ]
+      end
+      let(:dependency_previous_requirements) do
+        [
+          { file: "requirements/test.in", requirement: ">=2.20.0", groups: [], source: nil },
+          { file: "requirements/test.in", requirement: "<2.32.0,>=2.31.0", groups: [], source: nil }
+        ]
+      end
+
+      it "updates the declaration with extras and compiles the new version" do
+        expect(updated_files.map(&:name)).to eq(%w(requirements/test.in requirements/test.txt))
+        expect(updated_files.first.content).to eq("requests>=2.20.0\nrequests[socks]>=2.31.0,<2.33.0\n")
+        expect(updated_files.last.content).to include("requests==2.32.3")
+      end
+    end
+  end
+
+  describe "updating .in declarations whose requirements share a prefix" do
+    let(:manifest_file) do
+      Dependabot::DependencyFile.new(name: "requirements/test.in", content: manifest_content)
+    end
+    let(:dependency_name) { "requests" }
+    let(:dependency_version) { "2.32.3" }
+    let(:dependency_previous_version) { "2.31.0" }
+    let(:dependency_previous_requirements) do
+      [
+        { file: "requirements/test.in", requirement: ">=2.20.0", groups: [], source: nil },
+        { file: "requirements/test.in", requirement: "<3,>=2.20.0", groups: [], source: nil }
+      ]
+    end
+    let(:dependency_requirements) do
+      [
+        { file: "requirements/test.in", requirement: ">=2.32.3", groups: [], source: nil },
+        { file: "requirements/test.in", requirement: ">=2.32.3,<3", groups: [], source: nil }
+      ]
+    end
+
+    context "when the shorter declaration comes first" do
+      let(:manifest_content) { "requests>=2.20.0\nrequests[socks]>=2.20.0,<3\n" }
+
+      it "pins every declaration" do
+        expect(updater.send(:freeze_dependency_requirement, manifest_file))
+          .to eq("requests==2.32.3\nrequests[socks]==2.32.3\n")
+      end
+
+      it "updates every declaration" do
+        expect(updater.send(:update_dependency_requirement, manifest_file))
+          .to eq("requests>=2.32.3\nrequests[socks]>=2.32.3,<3\n")
+      end
+    end
+
+    context "when the shorter declaration comes last" do
+      let(:manifest_content) { "requests[socks]>=2.20.0,<3\nrequests>=2.20.0\n" }
+
+      it "pins every declaration" do
+        expect(updater.send(:freeze_dependency_requirement, manifest_file))
+          .to eq("requests[socks]==2.32.3\nrequests==2.32.3\n")
+      end
+
+      it "updates every declaration" do
+        expect(updater.send(:update_dependency_requirement, manifest_file))
+          .to eq("requests[socks]>=2.32.3,<3\nrequests>=2.32.3\n")
+      end
+    end
+
+    context "when one declaration has no requirement" do
+      let(:manifest_content) { "requests\nrequests[socks]>=2.20.0,<3\n" }
+      let(:dependency_previous_requirements) do
+        [
+          { file: "requirements/test.in", requirement: nil, groups: [], source: nil },
+          { file: "requirements/test.in", requirement: "<3,>=2.20.0", groups: [], source: nil }
+        ]
+      end
+
+      it "pins every declaration" do
+        expect(updater.send(:freeze_dependency_requirement, manifest_file))
+          .to eq("requests==2.32.3\nrequests[socks]==2.32.3\n")
+      end
+    end
   end
 
   describe "#compile_options_fingerprint" do

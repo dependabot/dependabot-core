@@ -751,6 +751,37 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           .to eq(Gem::Version.new("2.6.0"))
       end
     end
+
+    context "when a pip-compile manifest declares the package with and without extras" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "requirements/test.in",
+            content: fixture("pip_compile_files", "extras_and_bare.in")
+          ),
+          Dependabot::DependencyFile.new(
+            name: "requirements/test.txt",
+            content: fixture("requirements", "uv_pip_compile_extras_and_bare.txt")
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          requirements: [
+            { file: "requirements/test.in", requirement: ">=2.20.0", groups: [], source: nil },
+            { file: "requirements/test.in", requirement: "<2.32.0,>=2.31.0", groups: [], source: nil }
+          ],
+          package_manager: "uv"
+        )
+      end
+
+      it "keeps the upper bound of the declaration with extras" do
+        expect(checker.latest_resolvable_version_with_no_unlock)
+          .to eq(Dependabot::Uv::Version.new("2.31.0"))
+      end
+    end
   end
 
   describe "#updated_requirements" do

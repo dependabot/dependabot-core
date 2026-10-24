@@ -88,6 +88,14 @@ module Dependabot
             version_string.nil? ? nil : Uv::Version.new(version_string)
         end
 
+        # Resolves with the manifests as they are. Passing the current requirement
+        # to #latest_resolvable_version instead would rewrite every declaration
+        # of the package with it, dropping the bounds of the other declarations.
+        sig { returns(T.nilable(Dependabot::Uv::Version)) }
+        def latest_resolvable_version_with_no_unlock
+          latest_resolvable_version(requirement: nil)
+        end
+
         sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
           @resolvable ||= T.let({}, T.nilable(T::Hash[Gem::Version, T::Boolean]))
@@ -106,7 +114,7 @@ module Dependabot
         def fetch_latest_resolvable_version_string(requirement:)
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              write_temporary_dependency_files(updated_req: requirement)
+              write_temporary_dependency_files(updated_req: requirement, update_requirement: !requirement.nil?)
               language_version_manager.install_required_python
 
               filenames_to_compile.each do |filename|
@@ -409,16 +417,23 @@ module Dependabot
         def update_req_file(file, updated_req)
           return T.must(file.content) unless file.name.end_with?(".in")
 
-          req = dependency.requirements.find { |r| r.file == file.name }
+          # A package can be declared more than once (e.g. with and without
+          # extras), so every declaration has to be unlocked.
+          old_requirements = dependency.requirements
+                                       .select { |r| r.file == file.name }
+                                       .filter_map(&:requirement_string)
+                                       .uniq
 
-          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" unless req&.requirement_string
+          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" if old_requirements.empty?
 
-          Uv::FileUpdater::RequirementReplacer.new(
-            content: T.must(file.content),
-            dependency_name: dependency.name,
-            old_requirement: req.requirement_string,
-            new_requirement: updated_req
-          ).updated_content
+          old_requirements.reduce(T.must(file.content)) do |content, old_requirement|
+            Uv::FileUpdater::RequirementReplacer.new(
+              content: content,
+              dependency_name: dependency.name,
+              old_requirement: old_requirement,
+              new_requirement: updated_req
+            ).updated_content
+          end
         end
 
         sig { params(name: String).returns(String) }

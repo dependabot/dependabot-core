@@ -48,9 +48,49 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       end
     end
 
+    context "when another declaration's requirement starts with the old requirement" do
+      let(:dependency_name) { "requests" }
+      let(:old_requirement) { ">=2.20.0" }
+      let(:new_requirement) { "==2.32.3" }
+
+      context "when the shorter declaration comes first" do
+        let(:requirement_content) { "requests>=2.20.0\nrequests[socks]>=2.20.0,<3\n" }
+
+        it { is_expected.to eq("requests==2.32.3\nrequests[socks]>=2.20.0,<3\n") }
+      end
+
+      context "when the shorter declaration comes last" do
+        let(:requirement_content) { "requests[socks]>=2.20.0 , <3\nrequests>=2.20.0\n" }
+
+        it { is_expected.to eq("requests[socks]>=2.20.0 , <3\nrequests==2.32.3\n") }
+      end
+
+      context "when another declaration has the same requirement and a marker" do
+        let(:requirement_content) { "requests>=2.20.0\nrequests[socks]>=2.20.0; python_version<'3.9'\n" }
+
+        it { is_expected.to eq("requests==2.32.3\nrequests[socks]==2.32.3; python_version<'3.9'\n") }
+      end
+    end
+
     context "with no requirement" do
       let(:old_requirement) { nil }
       let(:new_requirement) { "==1.11.5" }
+
+      context "when another declaration of the dependency has extras and a requirement" do
+        let(:dependency_name) { "requests" }
+
+        context "when the bare declaration comes first" do
+          let(:requirement_content) { "requests\nrequests[socks]>=2.20.0,<3\n" }
+
+          it { is_expected.to eq("requests==1.11.5\nrequests[socks]>=2.20.0,<3\n") }
+        end
+
+        context "when the bare declaration comes last" do
+          let(:requirement_content) { "requests[socks]>=2.20.0,<3\nrequests\n" }
+
+          it { is_expected.to eq("requests[socks]>=2.20.0,<3\nrequests==1.11.5\n") }
+        end
+      end
 
       context "when another requirement with the same beginning" do
         let(:dependency_name) { "pytest" }

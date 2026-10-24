@@ -5,6 +5,8 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/source"
+require "dependabot/uv/file_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
@@ -151,6 +153,44 @@ RSpec.describe Dependabot::Uv::FileUpdater do
           .to receive(:new).and_call_original
         expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         expect(updated_files).to all(be_a(Dependabot::DependencyFile))
+      end
+    end
+
+    context "when a requirements file declares a package with and without extras" do
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "uvicorn==0.30.1\nuvicorn[standard]>=0.30.1,<0.31.0\n"
+        )
+      end
+      let(:parsed_dependency) do
+        Dependabot::Uv::FileParser.new(
+          dependency_files: dependency_files,
+          source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/")
+        ).parse.find { |dep| dep.name == "uvicorn" }
+      end
+      let(:dependency) do
+        new_requirements = parsed_dependency.requirements.map do |req|
+          req.merge(requirement: req[:requirement] == "==0.30.1" ? "==0.54.0" : ">=0.30.1,<0.55.0")
+        end
+
+        Dependabot::Dependency.new(
+          name: parsed_dependency.name,
+          version: "0.54.0",
+          previous_version: parsed_dependency.version,
+          requirements: new_requirements,
+          previous_requirements: parsed_dependency.requirements,
+          package_manager: "uv",
+          metadata: parsed_dependency.metadata
+        )
+      end
+
+      it "updates each declaration" do
+        expect(parsed_dependency.requirements.map { |req| req[:requirement] })
+          .to contain_exactly("==0.30.1", "<0.31.0,>=0.30.1")
+        expect(updated_files.map(&:content)).to eq(
+          ["uvicorn==0.54.0\nuvicorn[standard]>=0.30.1,<0.55.0\n"]
+        )
       end
     end
 

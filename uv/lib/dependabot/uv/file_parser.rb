@@ -201,7 +201,7 @@ module Dependabot
         uv_lock_files.each do |file|
           LockfileDocument.from_file(file).each_dependency do |package|
             dependency_set << Dependency.new(
-              name: normalised_name(package.name),
+              name: NameNormaliser.normalise(package.name),
               version: package.version,
               requirements: [], # Lock files don't contain requirements
               package_manager: "uv"
@@ -252,10 +252,11 @@ module Dependabot
 
           dependencies <<
             Dependency.new(
-              name: normalised_name(name, dep.extras),
+              name: NameNormaliser.normalise(name),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "uv"
+              package_manager: "uv",
+              metadata: extras_metadata(dep.extras)
             )
         end
         dependencies
@@ -419,9 +420,11 @@ module Dependabot
             .join
       end
 
-      sig { params(name: String, extras: T::Array[String]).returns(String) }
-      def normalised_name(name, extras = [])
-        FileParser.normalize_dependency_name(name, extras)
+      sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+      def extras_metadata(extras)
+        return {} if extras.empty?
+
+        { extras: extras.join(",") }
       end
 
       sig { override.returns(T.untyped) }
