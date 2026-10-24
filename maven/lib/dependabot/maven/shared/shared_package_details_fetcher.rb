@@ -112,6 +112,7 @@ module Dependabot
             headers: headers
           )
           check_response(response, url)
+          check_unavailable_response(response, url)
           return unless response.status < 400
 
           Nokogiri::XML(response.body)
@@ -223,6 +224,23 @@ module Dependabot
           forbidden_urls << repository_url
         end
 
+        # A rate limit or server error means the repository could not be read, not
+        # that it has no versions. Raises for the central repo; for other repos the
+        # URL is recorded so we can raise if no repository returned any versions.
+        sig { params(response: Excon::Response, repository_url: String).void }
+        def check_unavailable_response(response, repository_url)
+          return unless response.status == 429 || response.status >= 500
+
+          if base_repository_urls.include?(strip_trailing_slashes(repository_url))
+            raise RegistryError.new(
+              response.status,
+              "RegistryError: #{response.status} response status from #{repository_url}"
+            )
+          end
+
+          unavailable_urls << repository_url unless unavailable_urls.include?(repository_url)
+        end
+
         # Raises RegistryError for failures hitting the central repo.
         sig do
           params(
@@ -289,6 +307,7 @@ module Dependabot
         sig { returns(T::Array[VersionDetails]) }
         def versions_details_from_xml
           forbidden_urls.clear
+          unavailable_urls.clear
           version_details = repositories.flat_map do |repository_details|
             url = repository_url(repository_details)
             xml = dependency_metadata(repository_details)
@@ -298,6 +317,7 @@ module Dependabot
           end
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
+          raise PrivateSourceBadResponse, unavailable_urls.first if version_details.none? && unavailable_urls.any?
 
           version_details
         end
@@ -390,15 +410,33 @@ module Dependabot
         end
 
         # Both HTTP and HTTPS variants of the central repo URL, for comparison.
-        sig { returns(T::Array[String]) }
-        def central_repo_urls
-          central_url_without_protocol = central_repo_url.gsub(%r{^.*://}, "")
+        sig { params(url: String).returns(T::Array[String]) }
+        def central_repo_urls(url = central_repo_url)
+          central_url_without_protocol = url.gsub(%r{^.*://}, "")
           %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
 
         sig { returns(T::Array[String]) }
         def forbidden_urls
           @forbidden_urls ||= T.let([], T.nilable(T::Array[String]))
+        end
+
+        # Maven Central and any registry that replaces it. Central is kept even when
+        # replaced, since a POM may still list it explicitly.
+        sig { returns(T::Array[String]) }
+        def base_repository_urls
+          replaces_base = credentials.filter_map { |c| c[URL_KEY] if c["type"] == REPOSITORY_TYPE && c.replaces_base? }
+          (central_repo_urls(DEFAULT_CENTRAL_REPO_URL) + replaces_base).map { |url| strip_trailing_slashes(url) }
+        end
+
+        sig { params(url: String).returns(String) }
+        def strip_trailing_slashes(url)
+          url.dup.tap { |u| u.delete_suffix!("/") while u.end_with?("/") }
+        end
+
+        sig { returns(T::Array[String]) }
+        def unavailable_urls
+          @unavailable_urls ||= T.let([], T.nilable(T::Array[String]))
         end
 
         # -- Auth --
