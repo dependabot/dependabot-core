@@ -260,16 +260,18 @@ module Dependabot
         buildfile = T.must(buildfiles.find { |f| f.name == file })
         content = T.must(buildfile.content)
         substitution_ranges = substitution_block_line_ranges(content, kotlin: file.end_with?(".kts"))
+        joined_matches = joined_declares_coordinates(
+          lines_with_block_comments_joined(content, substitution_ranges), buildfile, dependency.name
+        )
 
         content.lines.each_with_index.filter_map do |line, index|
           next if substitution_ranges.any? { |range| range.cover?(index) }
 
           evaluated = evaluate_properties(line, buildfile)
-          evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "")
+          evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "").gsub(%r{(?<=^|\s)/\*.*?\*/}, "")
 
           if dependency.name.include?(":")
-            dep_parts = dependency.name.split(":")
-            next unless evaluated.include?(T.must(dep_parts.first)) || evaluated.include?(T.must(dep_parts.last))
+            next unless joined_matches.fetch(index) || declares_coordinates?(evaluated, dependency.name)
           elsif file.end_with?(".properties")
             property = requirement.source_string("property")
             next unless property && evaluated.start_with?(property)
@@ -286,6 +288,110 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Checks that a line declares exactly `group:name`, either as a coordinate
+      # string ("group:name:version", or a catalog `module = "group:name"`) or as
+      # separate `group`/`name` arguments. Matching on the group or name alone
+      # would also update other artifacts that share the group or version.
+      sig { params(line: String, dependency_name: String).returns(T::Boolean) }
+      def declares_coordinates?(line, dependency_name)
+        group, name = dependency_name.split(":", 2).map { |part| Regexp.quote(part) }
+
+        line.match?(/(?<![\w.\-])#{group}:#{name}(?![\w.\-])/) ||
+          (line.match?(map_argument_regex("group", T.must(group))) &&
+            line.match?(map_argument_regex("name", T.must(name))))
+      end
+
+      # Like the parser, removes all block comments (including ones spanning
+      # several lines), which joins the code on either side of a multi-line
+      # comment into one statement. For each line of such a joined statement,
+      # returns the joined text, so a declaration split by comments can still be
+      # matched. Lines with no code of their own (inside a comment), and all
+      # lines of a statement where one line already declares a dependency by
+      # itself, get "", so a comment can't tie a line to a neighbouring
+      # declaration. Lines in dependencySubstitution
+      # blocks are left out, as the parser removes those blocks first.
+      sig { params(content: String, skipped_ranges: T::Array[T::Range[Integer]]).returns(T::Array[String]) }
+      def lines_with_block_comments_joined(content, skipped_ranges)
+        own_code, statement_of = code_without_comments_by_line(blank_lines(content, skipped_ranges))
+        joined = statement_of.each_index.group_by { |i| statement_of.fetch(i) }.transform_values do |indexes|
+          codes = indexes.map { |i| own_code.fetch(i) }
+          codes.one? || codes.any? { |code| declares_any_coordinates?(code) } ? "" : codes.join
+        end
+
+        own_code.each_with_index.map do |code, index|
+          code.strip.empty? ? "" : joined.fetch(statement_of.fetch(index))
+        end
+      end
+
+      # Lines of one joined statement share the same string, so each statement
+      # is only checked once.
+      sig do
+        params(
+          joined_lines: T::Array[String],
+          buildfile: Dependabot::DependencyFile,
+          dependency_name: String
+        ).returns(T::Array[T::Boolean])
+      end
+      def joined_declares_coordinates(joined_lines, buildfile, dependency_name)
+        matches = T.let({}.compare_by_identity, T::Hash[String, T::Boolean])
+        joined_lines.map do |joined|
+          matches.fetch(joined) do
+            matches[joined] = declares_coordinates?(evaluate_properties(joined, buildfile), dependency_name)
+          end
+        end
+      end
+
+      sig { params(content: String, ranges: T::Array[T::Range[Integer]]).returns(String) }
+      def blank_lines(content, ranges)
+        content.lines.each_with_index.map do |line, index|
+          ranges.any? { |range| range.cover?(index) } ? line[/\n\z/].to_s : line
+        end.join
+      end
+
+      # Returns each line's code with comments removed, and the index of the
+      # statement it belongs to (lines joined by a block comment share one).
+      sig { params(content: String).returns([T::Array[String], T::Array[Integer]]) }
+      def code_without_comments_by_line(content)
+        stripped = content.gsub(%r{(?<=^|\s)//.*$}, "")
+        own_code = T.let([+""], T::Array[String])
+        statement_of = T.let([0], T::Array[Integer])
+        position = 0
+
+        stripped.to_enum(:scan, %r{(?<=^|\s)/\*.*?\*/}m).each do
+          match = T.must(Regexp.last_match)
+          append_code(T.must(stripped[position...match.begin(0)]), own_code, statement_of)
+          match[0].to_s.count("\n").times do
+            own_code << +""
+            statement_of << T.must(statement_of.last)
+          end
+          position = match.end(0)
+        end
+        append_code(T.must(stripped[position..]), own_code, statement_of)
+
+        [own_code, statement_of]
+      end
+
+      sig { params(code: String, own_code: T::Array[String], statement_of: T::Array[Integer]).void }
+      def append_code(code, own_code, statement_of)
+        first, *rest = code.split("\n", -1)
+        T.must(own_code.last) << first.to_s
+        rest.each do |line|
+          own_code << +line
+          statement_of << (T.must(statement_of.last) + 1)
+        end
+      end
+
+      sig { params(line: String).returns(T::Boolean) }
+      def declares_any_coordinates?(line)
+        line.match?(/['"]#{Gradle::FileParser::PART}:#{Gradle::FileParser::PART}/o) ||
+          (line.match?(map_argument_regex("group", "[^'\"]+")) && line.match?(map_argument_regex("name", "[^'\"]+")))
+      end
+
+      sig { params(key: String, quoted_value: String).returns(Regexp) }
+      def map_argument_regex(key, quoted_value)
+        /(?:^|[\s,({])(?:#{key}|'#{key}'|"#{key}")\s*(?:=|:)\s*['"]#{quoted_value}['"]/
+      end
 
       # Returns the (0-based) line-index ranges covered by dependencySubstitution
       # blocks, so lines inside them can be excluded regardless of formatting.
