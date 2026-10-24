@@ -380,8 +380,10 @@ module Dependabot
         packages = client.all_provider_package_hashes(identifier: identifier, version: new_version)
         return nil unless packages
 
-        platform_strings = platforms.map(&:to_s)
-        return nil unless platform_strings.all? { |p| packages.key?(p) }
+        # A release can drop a platform an earlier one had (windows_arm, for example). `tofu providers lock` fails for
+        # such a platform, so lock only the ones the new version ships.
+        platform_strings = platforms.map(&:to_s) & packages.keys
+        return nil if platform_strings.empty?
 
         h1_hashes = platform_strings.flat_map { |p| packages.fetch(p).select { |h| h.start_with?("h1:") } }.uniq.sort
         zh_hashes = packages.values.flat_map { |hs| hs.select { |h| h.start_with?("zh:") } }.uniq.sort
