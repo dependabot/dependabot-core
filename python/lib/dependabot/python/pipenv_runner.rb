@@ -33,14 +33,19 @@ module Dependabot
       def run_upgrade(constraint)
         constraint = "" if constraint == "*"
 
-        # Build the full package specification with extras
-        extras_spec = extras_specification
-        package_spec = "#{dependency_name}#{extras_spec}#{constraint}"
+        output = ""
+        lockfile_sections.each do |section|
+          extras_spec = extras_specification(section)
+          package_spec = "#{dependency_name}#{extras_spec}#{constraint}"
 
-        command = "pyenv exec pipenv upgrade --verbose #{package_spec}"
-        command << " --dev" if lockfile_section == "develop"
-
-        run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><extras><constraint>")
+          command = "pyenv exec pipenv upgrade --verbose #{package_spec}"
+          command << " --dev" if section == "develop"
+          output = run(
+            command,
+            fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><extras><constraint>"
+          )
+        end
+        output
       end
 
       sig { params(constraint: T.nilable(String)).returns(T.nilable(String)) }
@@ -112,23 +117,23 @@ module Dependabot
         dependency_files&.first&.directory || "/"
       end
 
-      sig { returns(String) }
-      def extras_specification
-        extras = dependency_extras
+      sig { params(section: T.nilable(String)).returns(String) }
+      def extras_specification(section)
+        extras = dependency_extras(section)
         return "" if extras.nil? || extras.empty?
 
         "[#{extras.join(',')}]"
       end
 
-      sig { returns(T.nilable(T::Array[String])) }
-      def dependency_extras
+      sig { params(section: T.nilable(String)).returns(T.nilable(T::Array[String])) }
+      def dependency_extras(section)
         return nil unless lockfile
 
         lockfile_content = T.must(lockfile).content
         return nil unless lockfile_content
 
         parsed_lockfile = JSON.parse(lockfile_content)
-        section_data = parsed_lockfile_section(parsed_lockfile, lockfile_section)
+        section_data = parsed_lockfile_section(parsed_lockfile, section)
         return nil unless section_data
 
         dependency_data = section_data[dependency_name]
@@ -149,6 +154,16 @@ module Dependabot
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run_command(command, fingerprint: nil)
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
+      end
+
+      sig { returns(T::Array[T.nilable(String)]) }
+      def lockfile_sections
+        return [lockfile_section] unless current_dependency.requirements.any?
+
+        current_dependency.requirements
+                          .flat_map { |requirement| T.must(requirement.groups) }
+                          .map(&:to_s)
+                          .uniq
       end
 
       sig { returns(T.nilable(String)) }
