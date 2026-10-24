@@ -253,7 +253,7 @@ module Dependabot
           # Digest-only refresh (tag unchanged): respect the cooldown window
           # so a freshly-pushed digest isn't proposed before it matures. This
           # covers both comparable and non-comparable tags (e.g. "alpine"),
-          # which the version-tag cooldown (apply_cooldown) never reaches.
+          # which the version-tag cooldown (tag_within_cooldown?) never reaches.
           return true if digest_only_refresh && digest_within_cooldown?(source_tag)
 
           # When digest-only updates are suppressed and the tag hasn't changed,
@@ -312,7 +312,6 @@ module Dependabot
         candidate_tags = remove_prereleases(candidate_tags, version_tag)
         candidate_tags = filter_ignored(candidate_tags)
         candidate_tags = sort_tags(candidate_tags, version_tag)
-        candidate_tags = apply_cooldown(candidate_tags)
 
         select_best_candidate(candidate_tags, version_tag)
       end
@@ -330,18 +329,7 @@ module Dependabot
         # Iterate from highest to lowest, trying each candidate until one passes validation
         candidate_tags.reverse_each do |candidate|
           selected = select_tag_with_precision(candidate, same_precision_tags, version_tag)
-
-          # Content check (runs regardless of experiments): if the candidate tag
-          # resolves to the exact same image contents as the current tag, there
-          # is no real update to make. This catches rolling tags (e.g. "9.0")
-          # that point to the same image as a pinned tag (e.g. "9.0.11").
-          if selected.name != version_tag.name && same_image_contents?(selected, version_tag)
-            Dependabot.logger.info(
-              "Digest check: #{selected.name} has the same image contents as #{version_tag.name} " \
-              "— no update needed, staying on #{version_tag.name}"
-            )
-            next
-          end
+          next if skip_candidate?(selected, version_tag)
 
           if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
              selected.name != version_tag.name
@@ -367,6 +355,25 @@ module Dependabot
         end
 
         version_tag
+      end
+
+      sig do
+        params(candidate: Dependabot::Docker::Tag, current_tag: Dependabot::Docker::Tag).returns(T::Boolean)
+      end
+      def skip_candidate?(candidate, current_tag)
+        # Check cooldown on demand so rejecting a no-op or invalid candidate
+        # doesn't discard the remaining candidates or bypass their cooldown.
+        return true if tag_within_cooldown?(candidate)
+        return false if candidate.name == current_tag.name
+
+        # Content checks apply regardless of experiments or tag precision.
+        return false unless same_image_contents?(candidate, current_tag)
+
+        Dependabot.logger.info(
+          "Digest check: #{candidate.name} has the same image contents as #{current_tag.name} " \
+          "— skipping candidate"
+        )
+        true
       end
 
       sig do
@@ -435,32 +442,24 @@ module Dependabot
         end
       end
 
-      sig do
-        params(candidate_tags: T::Array[Dependabot::Docker::Tag])
-          .returns(T::Array[Dependabot::Docker::Tag])
-      end
-      def apply_cooldown(candidate_tags)
-        return candidate_tags if should_skip_cooldown?
+      sig { params(tag: Dependabot::Docker::Tag).returns(T::Boolean) }
+      def tag_within_cooldown?(tag)
+        return false if should_skip_cooldown?
 
-        candidate_tags.reverse_each do |tag|
-          details = publication_detail(tag)
-
-          # If we can't determine publication details, skip cooldown for this tag and use it
-          # rather than blocking the update when the registry doesn't support the required API calls
-          if !details || !details.released_at
-            Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
-              dependency,
-              cooldown_days: cooldown_days_for(tag)
-            )
-            return [tag]
-          end
-
-          return [tag] unless cooldown_period?(T.must(details.released_at), tag)
-
-          Dependabot.logger.info("Skipping tag #{tag.name} due to cooldown period")
+        released_at = publication_detail(tag)&.released_at
+        # Fail open for this tag when the registry cannot provide publication details.
+        unless released_at
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            dependency,
+            cooldown_days: cooldown_days_for(tag)
+          )
+          return false
         end
 
-        []
+        return false unless cooldown_period?(released_at, tag)
+
+        Dependabot.logger.info("Skipping tag #{tag.name} due to cooldown period")
+        true
       end
 
       sig { params(candidate_tag: Dependabot::Docker::Tag).returns(T.nilable(Dependabot::Package::PackageRelease)) }
