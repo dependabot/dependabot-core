@@ -1412,16 +1412,9 @@ module Dependabot
         candidate_created > current_created
       end
 
-      # Returns true when the candidate tag and current tag reference the exact
-      # same image contents. Only multi-arch (manifest list) images are compared
-      # here, by checking that both tags expose the identical set of platforms
-      # with matching per-platform manifest digests. For single-platform images this
-      # returns false (empty digest map), so this check is effectively a no-op and
-      # we fall back to the existing semver/precision selection logic.
-      #
-      # Single-platform current tags are ruled out up front with a cheap HEAD
-      # request, so the default path doesn't pay for a full manifest GET that
-      # would only ever return an empty digest map.
+      # Identical manifest digests identify the same image regardless of tag
+      # precision or manifest type. Different multi-arch indexes can still have
+      # identical per-platform contents, so retain that comparison as a fallback.
       sig do
         params(
           candidate_tag: Dependabot::Docker::Tag,
@@ -1429,6 +1422,8 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def same_image_contents?(candidate_tag, current_tag)
+        return true if same_image_digest?(candidate_tag, current_tag)
+
         # Only manifest lists can match here, so confirm the current tag is
         # multi-arch with a cheap HEAD request before paying for the full
         # manifest GET that fetch_platform_digests performs. Single-platform
@@ -1445,6 +1440,26 @@ module Dependabot
         # of platforms with identical per-platform manifest digests. A candidate
         # with extra platforms is a different image and must not match.
         current_digests == candidate_digests
+      end
+
+      sig do
+        params(
+          candidate_tag: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag
+        ).returns(T::Boolean)
+      end
+      def same_image_digest?(candidate_tag, current_tag)
+        current_digest = digest_of(current_tag.name)
+        return false if current_digest.nil? || current_digest.empty?
+
+        current_digest == digest_of(candidate_tag.name)
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
+        # This is an optional no-op check, not a prerequisite for a tag update.
+        # If equality cannot be established, preserve normal candidate selection.
+        Dependabot.logger.info(
+          "Unable to compare image digests for #{current_tag.name} and #{candidate_tag.name}: #{e.class}"
+        )
+        false
       end
 
       # Returns true when a tag points at a single-platform image rather than a
