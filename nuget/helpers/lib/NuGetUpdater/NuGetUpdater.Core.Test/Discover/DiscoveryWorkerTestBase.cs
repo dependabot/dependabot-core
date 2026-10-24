@@ -40,13 +40,13 @@ public class DiscoveryWorkerTestBase : TestBase
     protected static void ValidateWorkspaceResult(ExpectedWorkspaceDiscoveryResult expectedResult, WorkspaceDiscoveryResult actualResult, ExperimentsManager experimentsManager)
     {
         Assert.NotNull(actualResult);
+        ValidateDiscoveryOperationResult(expectedResult, actualResult);
         Assert.Equal(expectedResult.Path.NormalizePathToUnix(), actualResult.Path.NormalizePathToUnix());
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
         Assert.Equal(expectedResult.SolutionDirectory?.NormalizePathToUnix(), actualResult.SolutionDirectory?.NormalizePathToUnix());
-        ValidateDiscoveryOperationResult(expectedResult, actualResult);
 
         return;
 
