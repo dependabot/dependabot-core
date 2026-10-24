@@ -65,9 +65,63 @@ module Dependabot
         end
       end
 
+      module UnavailableRepositoryHelpers
+        extend T::Sig
+
+        # A rate limit or server error means the repository could not be read, not
+        # that it has no versions. Raises for the central repo; for other repos the
+        # URL is recorded so we can raise if no repository returned any versions.
+        sig do
+          params(response: Excon::Response, repository_url: String, credentials: T::Array[Dependabot::Credential]).void
+        end
+        def check_unavailable_response(response, repository_url, credentials)
+          return unless response.status == 429 || response.status >= 500
+
+          if base_repository_urls(credentials).include?(strip_trailing_slashes(repository_url))
+            Kernel.raise RegistryError.new(
+              response.status,
+              "RegistryError: #{response.status} response status from #{repository_url}"
+            )
+          end
+
+          unavailable_urls << repository_url unless unavailable_urls.include?(repository_url)
+        end
+
+        # Maven Central, or the registry that replaces it.
+        sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[String]) }
+        def base_repository_urls(credentials)
+          central_url = Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL.gsub(%r{^.*://}, "")
+          urls = %w(http:// https://).map { |protocol| protocol + central_url }
+          credentials.each do |cred|
+            next unless cred["type"] == "maven_repository" && cred.replaces_base? && cred["url"]
+
+            urls << strip_trailing_slashes(T.must(cred["url"]))
+          end
+          urls
+        end
+
+        sig { params(url: String).returns(String) }
+        def strip_trailing_slashes(url)
+          url.dup.tap { |u| u.delete_suffix!("/") while u.end_with?("/") }
+        end
+
+        sig { params(versions_found: T::Boolean).void }
+        def raise_if_repositories_unavailable(versions_found:)
+          return if versions_found || unavailable_urls.empty?
+
+          Kernel.raise PrivateSourceBadResponse, unavailable_urls.first
+        end
+
+        sig { returns(T::Array[String]) }
+        def unavailable_urls
+          @unavailable_urls ||= T.let([], T.nilable(T::Array[String]))
+        end
+      end
+
       class PackageDetailsFetcher
         extend T::Sig
         include RepositoryDetailsHelpers
+        include UnavailableRepositoryHelpers
 
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
@@ -136,6 +190,8 @@ module Dependabot
           if version_details.none? && T.must(forbidden_urls).any?
             raise PrivateSourceAuthenticationFailure, T.must(forbidden_urls).first
           end
+
+          raise_if_repositories_unavailable(versions_found: version_details.any?)
 
           package_releases
         end
@@ -282,6 +338,7 @@ module Dependabot
               )
 
               check_response(response, repository_url)
+              check_unavailable_response(response, repository_url, credentials)
               Nokogiri::XML(response.body)
             rescue URI::InvalidURIError
               Nokogiri::XML("")
