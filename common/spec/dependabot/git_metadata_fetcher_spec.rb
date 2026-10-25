@@ -416,6 +416,23 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       let(:url) { "https://github.com/dependabot/dependabot-core" }
       let(:credentials) { [] }
 
+      context "when the clone succeeds" do
+        let(:success) { instance_double(Process::Status, success?: true) }
+
+        before do
+          allow(Open3).to receive(:capture3).and_return(["", "", success], ["v1.0.0 2023-01-01\n", "", success])
+        end
+
+        it "clones without the file contents, which only the tags and their dates are read from" do
+          result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
+
+          expect(Open3).to have_received(:capture3)
+            .with(anything, a_string_matching(/\Agit clone --bare --filter\\?=blob:none \S+ \S+\z/)).once
+          expect(result.status).to eq(200)
+          expect(result.body).to eq("v1.0.0 2023-01-01")
+        end
+      end
+
       context "when git is not installed" do
         before do
           allow(Open3).to receive(:capture3).and_raise(Errno::ENOENT, "No such file or directory - git")

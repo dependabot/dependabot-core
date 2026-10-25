@@ -344,8 +344,10 @@ module Dependabot
       uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)
 
       Dir.mktmpdir do |dir|
-        # Clone the repository into a temporary directory
-        clone_command = "git clone --bare #{uri_ending_with_git} #{dir}"
+        # Clone the repository into a temporary directory. Only the tags and their dates are read, so the
+        # file contents are left out: a full clone of a large repository can run for many minutes and fail
+        # part way, while this takes seconds. A server that does not support filtering sends everything.
+        clone_command = "git clone --bare --filter=blob:none #{uri_ending_with_git} #{dir}"
         env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
         clone_command = SharedHelpers.escape_command(clone_command)
 
