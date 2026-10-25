@@ -58,7 +58,7 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[Dependency]) }
-      def parse # rubocop:disable Metrics/PerceivedComplexity
+      def parse
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
@@ -66,12 +66,8 @@ module Dependabot
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
-        dependencies.reject do |dep|
+        dependencies.filter_map { |dep| without_support_file_requirements(dep) }.reject do |dep|
           reqs = dep.requirements
-
-          # Ignore dependencies defined in support files, since we don't want PRs for those
-          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r.file } }
-          next true if support_reqs.any?
 
           # TODO: Currently, Dependabot can't handle dependencies that have both
           # a git source *and* a non-git source. Fix that!
@@ -615,6 +611,30 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.untyped]) }
       def jsr_registry_source
         { type: "registry", url: NpmAndYarn::Requirement::JSR_REGISTRY }
+      end
+
+      # Ignore dependencies defined in support files, since we don't want PRs for those. A dependency that is also
+      # defined in a file of this directory is kept, with the requirements of the files that are updated.
+      sig { params(dep: Dependabot::Dependency).returns(T.nilable(Dependabot::Dependency)) }
+      def without_support_file_requirements(dep)
+        support_reqs = dep.requirements.select { |r| support_package_files.any? { |f| f.name == r.file } }
+        return dep if support_reqs.none?
+
+        own_reqs = dep.requirements - support_reqs
+        return if own_reqs.empty?
+
+        # The versions of the declarations are merged into one, the lowest, which may be the one of a support file
+        all_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependabot::Dependency])) || []
+        own_version = all_versions.find { |v| (v.requirements - support_reqs).any? }&.version
+
+        Dependency.new(
+          name: dep.name,
+          version: own_version || dep.version,
+          requirements: own_reqs,
+          package_manager: dep.package_manager,
+          subdependency_metadata: dep.subdependency_metadata,
+          metadata: dep.metadata
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

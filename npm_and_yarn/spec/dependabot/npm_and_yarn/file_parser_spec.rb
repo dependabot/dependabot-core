@@ -131,6 +131,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
     end
 
+    context "when a dependency is declared in a support file as well" do
+      let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "1.0.0", "debug" => "2.0.0" } } }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "../shared/package.json",
+          content: JSON.dump(
+            "name" => "shared",
+            "dependencies" => { "chalk" => "2.0.0", "lodash" => "4.0.0" }
+          ),
+          support_file: true
+        )
+      end
+      let(:files) { [package_file, support_file] }
+
+      it "keeps the dependency with only the requirement of the file that is updated" do
+        chalk = parser.parse.find { |dep| dep.name == "chalk" }
+
+        expect(chalk.requirements.map { |req| [req.file, req.requirement_string] })
+          .to eq([["package.json", "1.0.0"]])
+      end
+
+      it "leaves out a dependency that is only declared in the support file" do
+        expect(parser.parse.map(&:name)).to contain_exactly("chalk", "debug")
+      end
+
+      context "when the support file has the lower version" do
+        let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "2.0.0" } } }
+        let(:support_file) do
+          Dependabot::DependencyFile.new(
+            name: "../shared/package.json",
+            content: JSON.dump("name" => "shared", "dependencies" => { "chalk" => "1.0.0" }),
+            support_file: true
+          )
+        end
+
+        it "keeps the version of the file that is updated" do
+          expect(parser.parse.find { |dep| dep.name == "chalk" }.version).to eq("2.0.0")
+        end
+      end
+    end
+
     context "with a flat manifest and malformed dependencies" do
       let(:manifest) { { "flat" => true, "dependencies" => [] } }
 
