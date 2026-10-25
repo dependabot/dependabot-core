@@ -960,6 +960,64 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  # Regression for a lockfile whose CHECKSUMS entry for an unrelated gem
+  # (statesman) doesn't match what the registry serves. Bundler refuses to
+  # resolve, so every update fails. It used to surface as an unknown error on
+  # version updates, and as a silent "not resolvable" on security updates.
+  describe "with a checksum mismatch on an unrelated gem" do
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["<= 1.4.0"]
+        )
+      ]
+    end
+
+    shared_examples "a checksum mismatch" do
+      def raise_checksum_mismatch
+        raise_error(Dependabot::DependencyChecksumMismatch) do |error|
+          expect(error.dependency_name).to eq("statesman (1.2.1)")
+          expect(error.message).to include("mismatched checksums for statesman (1.2.1)")
+          expect(error.message).to include("sha256=#{'e65a37e5' * 8} from the lockfile CHECKSUMS at Gemfile.lock:")
+          expect(error.message).to include("from the API at https://rubygems.org.")
+          expect(error.message).not_to include("dependabot-updater")
+          expect(error.message).not_to include("disable_checksum_validation")
+        end
+      end
+
+      it "raises it from version update resolution" do
+        expect { checker.latest_resolvable_version }.to raise_checksum_mismatch
+      end
+
+      it "raises it from security update resolution instead of reporting the fix as not resolvable" do
+        expect { checker.lowest_resolvable_security_fix_version }.to raise_checksum_mismatch
+      end
+
+      it "raises it from full unlock resolution instead of reporting it as not resolvable" do
+        allow(checker).to receive(:latest_version).and_return(Dependabot::Bundler::Version.new("1.5.0"))
+
+        expect { checker.can_update?(requirements_to_unlock: :all) }.to raise_checksum_mismatch
+      end
+    end
+
+    context "with Bundler 2" do
+      let(:dependency_files) { bundler_project_dependency_files("checksum_mismatch_unrelated_gem_2") }
+
+      it_behaves_like "a checksum mismatch"
+    end
+
+    context "with Bundler 4" do
+      let(:dependency_files) { bundler_project_dependency_files("checksum_mismatch_unrelated_gem_4") }
+
+      it_behaves_like "a checksum mismatch"
+    end
+  end
+
   describe "#updated_dependencies_after_full_unlock" do
     subject(:updated_dependencies_after_full_unlock) do
       checker.send(:updated_dependencies_after_full_unlock)
