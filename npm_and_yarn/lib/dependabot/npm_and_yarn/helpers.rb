@@ -181,6 +181,15 @@ module Dependabot
 
       NPMRC_MIN_RELEASE_AGE_SETTING =
         ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
+
+      # Whether an `overrides` or `resolutions` key targets the given package.
+      # Besides the bare name, keys may be path-qualified (`**/name`,
+      # `parent/name`) and may carry a version range (`name@<1.2.3`).
+      sig { params(key: String, name: String).returns(T::Boolean) }
+      def self.override_key_for?(key, name)
+        key.match?(%r{(\A|/)#{Regexp.escape(name)}(@[^/]*)?\z})
+      end
+
       sig { params(files: T::Array[DependencyFile]).returns(T::Boolean) }
       def self.pnpm_project?(files)
         # Loading this eagerly creates a cycle through ShrinkwrapCompatibility.

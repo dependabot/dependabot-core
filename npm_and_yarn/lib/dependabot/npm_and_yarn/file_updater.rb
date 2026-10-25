@@ -330,7 +330,7 @@ module Dependabot
         return false unless entries.is_a?(Hash)
 
         dependencies.any? do |dep|
-          entries.any? { |k, v| v.is_a?(String) && (k == dep.name || k.end_with?("/#{dep.name}")) }
+          entries.any? { |k, v| v.is_a?(String) && Helpers.override_key_for?(k, dep.name) }
         end
       rescue JSON::ParserError
         false
