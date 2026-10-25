@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve instance fixtures and matchers in loop-generated examples.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"

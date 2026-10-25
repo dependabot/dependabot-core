@@ -1,0 +1,5 @@
+bun add v1.4.2 (744846f84)
+8 |     "packages/example-app/example",
+        ^
+error: Workspace not found "packages/example-app/example"
+    at /home/dependabot/dependabot-updater/repo/package.json:8:5

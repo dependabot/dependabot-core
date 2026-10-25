@@ -1,0 +1,3 @@
+bun add v1.4.2 (744846f84)
+error: the root package depends on workspace "live_toast" (../deps/live_toast), which is listed in bun.lock but not on disk
+error: the root package depends on workspace "phoenix" (../deps/phoenix), which is listed in bun.lock but not on disk

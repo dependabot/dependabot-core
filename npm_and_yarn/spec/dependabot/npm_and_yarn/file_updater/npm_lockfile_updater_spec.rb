@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture in parent subjects and hooks.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/npm_and_yarn/file_updater/npm_lockfile_updater"
@@ -700,6 +702,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  describe "classifying real npm 12 error output" do
+    subject(:updated_npm_lock) { updater.updated_lockfile_reponse(Exception.new(npm_output)) }
+
+    let(:files) { project_dependency_files("npm8/simple") }
+    let(:npm_output) { fixture("npm_errors", "npm12", "#{scenario}.txt") }
+
+    before do
+      # Nothing resolves before the update either, which is when missing-package errors become resolvability errors
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: npm_output, error_context: {})
+      )
+    end
+
+    {
+      "eallowgit" => [Dependabot::DependencyFileNotResolvable, /"git" has been disabled/],
+      "eallowremote" => [Dependabot::DependencyFileNotResolvable, /"remote" has been disabled/],
+      "err_invalid_auth" => [Dependabot::PrivateSourceAuthenticationFailure, /_auth/],
+      "etarget" => [Dependabot::DependencyFileNotResolvable, /etag@\^99\.0\.0/],
+      "e404" => [Dependabot::DependencyFileNotResolvable, /this-pkg-does-not-exist-xyz-123/]
+    }.each do |scenario_name, (error_class, message)|
+      context "with #{scenario_name}" do
+        let(:scenario) { scenario_name }
+
+        it "raises #{error_class}" do
+          expect { updated_npm_lock }.to raise_error(error_class, message)
+        end
+      end
+    end
+  end
+
   context "with a private registry that is inaccessible due to missing or invalid auth" do
     subject(:updated_npm_lock) { updater.updated_lockfile_reponse(exception) }
 
@@ -1396,7 +1428,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           )
 
           mixed_updater = described_class.new(
-            lockfile: mixed_files.find { |f| f.name == "package-lock.json" },
+            lockfile: T.must(mixed_files.find { |f| f.name == "package-lock.json" }),
             dependency_files: mixed_files,
             dependencies: [mixed_regular_dep, mixed_optional_dep],
             credentials: credentials
@@ -1420,7 +1452,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           end
 
           result = mixed_updater.updated_lockfile.content
-          parsed_result = JSON.parse(result)
+          parsed_result = JSON.parse(T.must(result))
 
           # Verify the dependency was updated
           expect(parsed_result.dig("packages", "node_modules/@rollup/rollup-linux-x64-gnu", "version"))
@@ -1609,6 +1641,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
               end
 
               updater.send(:run_npm_install_lockfile_only, install_args)
+            end
+          end
+
+          context "when one .npmrc has a numeric gate and another has a non-numeric gate" do
+            let(:files) do
+              project_dependency_files("npm8/simple") +
+                [
+                  Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=3"),
+                  Dependabot::DependencyFile.new(name: "packages/app/.npmrc", content: "min-release-age=soon")
+                ]
+            end
+
+            it "treats the gate as unreadable and never overrides it with the cooldown" do
+              commands = []
+              allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, **|
+                commands << command
+                ""
+              end
+
+              updater.updated_lockfile
+
+              expect(commands).not_to be_empty
+              expect(commands.join(" ")).not_to include("--min-release-age")
             end
           end
 

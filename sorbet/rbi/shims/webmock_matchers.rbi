@@ -13,6 +13,14 @@ module WebMock
   class WebMockMatcher
     sig { returns(T.self_type) }
     def once; end
+
+    sig do
+      params(
+        options: T::Hash[Symbol, Object],
+        block: T.nilable(T.proc.params(request: WebMock::RequestSignature).returns(T.anything))
+      ).returns(T.self_type)
+    end
+    def with(options = {}, &block); end
   end
 
   class RequestPatternMatcher

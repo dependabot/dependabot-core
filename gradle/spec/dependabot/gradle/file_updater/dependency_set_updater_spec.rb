@@ -50,6 +50,34 @@ RSpec.describe Dependabot::Gradle::FileUpdater::DependencySetUpdater do
         )
     end
 
+    context "when the dependency set is declared with coordinates" do
+      let(:dependency_set) { { group: "org.slf4j", version: "1.7.25" } }
+      let(:previous_requirement) { "1.7.25" }
+      let(:updated_requirement) { "2.0.7" }
+
+      it "updates the version in the coordinates" do
+        expect(updated_files.first.content)
+          .to include("dependencySet('org.slf4j:2.0.7') {")
+      end
+    end
+
+    context "with a Kotlin DSL build file" do
+      let(:buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "build.gradle.kts",
+          content: fixture("buildfiles", buildfile_fixture_name)
+        )
+      end
+      let(:buildfile_fixture_name) { "dependency_set.gradle.kts" }
+
+      it "updates the version in the coordinates" do
+        expect(updated_files.first.content)
+          .to include('dependencySet("com.google.protobuf:4.0.0") {')
+        expect(updated_files.first.content)
+          .to include('dependencySet("io.grpc:1.15.1") {')
+      end
+    end
+
     context "when the dependency set has already been updated" do
       let(:dependency_set) do
         { group: "com.google.protobuf", version: "3.1.2" }

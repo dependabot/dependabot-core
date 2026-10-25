@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files and package_manager fixtures.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/dependency_grapher"
 require "dependabot/npm_and_yarn/dependency_grapher/lockfile_generator"
@@ -227,6 +229,20 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
           .with(/Failed to generate lockfile with npm/)
         expect(Dependabot.logger).to receive(:error)
           .with("Dependency resolution failed. This may be due to conflicting peer dependencies.")
+
+        expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("conflicting peer dependencies")
+        end
+      end
+    end
+
+    context "with ERESOLVE error from npm 12" do
+      it "raises DependencyFileNotResolvable with a user-friendly message" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: fixture("npm_errors", "npm12", "eresolve.txt"),
+                       error_context: {}
+                     ))
 
         expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
           expect(error.message).to include("conflicting peer dependencies")

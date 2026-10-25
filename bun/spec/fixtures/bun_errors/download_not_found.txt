@@ -1,0 +1,10 @@
+bun install v1.4.2 (744846f84)
+Resolving dependencies
+Resolved, downloaded and extracted [2]
+error: failed to download @types/express@5.0.6: 404 Not Found
+  https://npm.pkg.example.com/@types/express/-/express-5.0.6.tgz
+error: failed to download @types/node@25.9.4: 404 Not Found
+  https://npm.pkg.example.com/@types/node/-/node-25.9.4.tgz
+error: Integrity check failed for tarball: @types/qs
+error: failed to download @types/qs@6.15.1: IntegrityCheckFailed
+  https://npm.pkg.example.com/@types/qs/-/qs-6.15.1.tgz

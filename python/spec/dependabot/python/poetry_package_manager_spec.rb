@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/python/package_manager"
@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Python::PoetryPackageManager do
 
   describe "version constants" do
     it "supports Poetry v1 and v2" do
-      expect(described_class::SUPPORTED_VERSIONS).to eq(
+      expect(Dependabot::Python::PoetryPackageManager::SUPPORTED_VERSIONS).to eq(
         [
           Dependabot::Python::Version.new("1"),
           Dependabot::Python::Version.new("2")
@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Python::PoetryPackageManager do
     end
 
     it "deprecates Poetry v1" do
-      expect(described_class::DEPRECATED_VERSIONS).to eq(
+      expect(Dependabot::Python::PoetryPackageManager::DEPRECATED_VERSIONS).to eq(
         [Dependabot::Python::Version.new("1")]
       )
     end

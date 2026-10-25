@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only fixtures or the example helper defined in a callback.
+
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/helpers"
 require "spec_helper"
@@ -527,6 +529,55 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
 
       it "detects npm 12 and uses the image's npm without installing a version" do
+        expect(helper.setup("npm")).to eq(12)
+        expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil
+      end
+    end
+
+    context "when an unpinned repository uses a lockfileVersion 2 package-lock.json" do
+      let(:package_json) { {} }
+      let(:lockfiles) { { npm: v2_lockfile } }
+      let(:v2_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: '{"name": "legacy-project", "lockfileVersion": 2, "packages": {}, "dependencies": {}}'
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "detects npm 8 from the lockfile without installing or activating another npm" do
+        expect(helper.detect_version("npm")).to eq("8")
+        expect(helper.setup("npm")).to eq(8)
+        expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
+        expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil
+      end
+    end
+
+    context "when an unpinned repository uses a lockfileVersion 1 package-lock.json" do
+      let(:package_json) { {} }
+      let(:lockfiles) { { npm: v1_lockfile } }
+      let(:v1_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: '{"name": "legacy-project", "lockfileVersion": 1, "dependencies": {}}'
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_install)
+      end
+
+      after { Dependabot::NpmAndYarn::Helpers.npm_version_selector = nil }
+
+      it "does not install the deprecated npm 6 through Corepack" do
         expect(helper.setup("npm")).to eq(12)
         expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:package_manager_install)
         expect(Dependabot::NpmAndYarn::Helpers.npm_version_selector).to be_nil

@@ -41,7 +41,8 @@ module Dependabot
       DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
 
       DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
-      DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/o
+      DEPENDENCY_SET_COORDINATES_REGEX = /\A\s*['"](?<group>#{PART}):(?<version>#{VSN_PART})['"]\s*\z/o
+      DEPENDENCY_SET_ENTRY_REGEX = /\bentry(?:\s+|\s*\(\s*)['"](?<name>#{PART})['"]/o
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
       PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/o
       DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX = /\bdependencySubstitution\s*\{/
@@ -466,9 +467,7 @@ module Dependabot
         end
 
         dependency_set_blocks.each do |blk|
-          arguments = T.must(blk[:arguments])
-          group   = argument_from_string(arguments, "group")
-          version = argument_from_string(arguments, "version")
+          group, version = dependency_set_group_and_version(T.must(blk[:arguments]))
 
           next unless group && version
 
@@ -483,6 +482,18 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      # Groovy builds usually declare `dependencySet(group: 'g', version: 'v')`, while the Kotlin DSL only
+      # supports the `dependencySet("g:v")` coordinates form (which Groovy accepts as well).
+      sig { params(arguments: String).returns([T.nilable(String), T.nilable(String)]) }
+      def dependency_set_group_and_version(arguments)
+        group   = argument_from_string(arguments, "group")
+        version = argument_from_string(arguments, "version")
+        return [group, version] if group && version
+
+        coordinates = arguments.match(DEPENDENCY_SET_COORDINATES_REGEX)
+        [coordinates&.[](:group), coordinates&.[](:version)]
       end
 
       sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }

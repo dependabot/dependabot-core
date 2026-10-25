@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the dependency_file, toml_content, and plaintext_content fixtures in child contexts.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/rust_toolchain/file_parser"
