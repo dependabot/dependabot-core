@@ -57,7 +57,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @composer_platform_extensions = T.let(initial_platform, T::Hash[String, T::Array[String]])
+          @composer_platform_extensions = T.let(initial_platform_extensions, T::Hash[String, T::Array[String]])
           @lock_git_deps = T.let(true, T::Boolean)
           @error_handler = T.let(ComposerErrorHandler.new, ComposerErrorHandler)
         end
@@ -311,10 +311,14 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
+            next if explicit_platform_extensions.key?(extension)
+
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
-            json["config"]["platform"][extension] =
-              version_for_reqs(requirements)
+            version = version_for_reqs(requirements)
+            raise "No matching version for #{requirements}!" unless version
+
+            json["config"]["platform"][extension] = version
           end
 
           JSON.dump(json)
@@ -457,7 +461,7 @@ module Dependabot
               .gsub(/\}\z/, "}\n")
         end
 
-        sig { params(requirements: T::Array[String]).returns(String) }
+        sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)
           req_arrays =
             requirements
@@ -477,7 +481,7 @@ module Dependabot
             .find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
-          raise "No matching version for #{requirements}!" unless version
+          return unless version
 
           version.to_s
         end
@@ -485,6 +489,9 @@ module Dependabot
         sig { params(additional_extensions: T::Array[T::Hash[Symbol, String]]).void }
         def update_required_extensions(additional_extensions)
           additional_extensions.each do |ext|
+            # Explicitly configured platform extensions are hard constraints
+            next if explicit_platform_extensions.key?(ext.fetch(:name))
+
             composer_platform_extensions[ext.fetch(:name)] ||= []
             existing_reqs = composer_platform_extensions[ext.fetch(:name)]
             composer_platform_extensions[ext.fetch(:name)] =
@@ -536,6 +543,26 @@ module Dependabot
           credentials
             .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
+        end
+
+        # Seeds the platform with explicitly configured `config.platform.ext-*`
+        # versions so they act as hard constraints when checking whether
+        # missing extension requirements can be satisfied.
+        sig { returns(T::Hash[String, T::Array[String]]) }
+        def initial_platform_extensions
+          platform = initial_platform
+          explicit_platform_extensions.each do |extension, version|
+            platform[extension] = [version] if requirement_valid?(version)
+          end
+          platform
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def explicit_platform_extensions
+          @explicit_platform_extensions ||= T.let(
+            manifest_document.platform_extensions,
+            T.nilable(T::Hash[String, String])
+          )
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

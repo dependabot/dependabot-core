@@ -275,6 +275,87 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
+    context "with an explicitly configured platform extension" do
+      let(:dependency_name) { "mongodb/mongodb" }
+      let(:dependency_version) { "2.4.2" }
+      let(:string_req) { "^2.4.2" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "composer.json",
+            content: JSON.pretty_generate(
+              "require" => {
+                "php" => ">=8.1",
+                "ext-mongodb" => "^2.4",
+                "mongodb/mongodb" => "^2.4.2",
+                "vendor/needs-ext" => "^1.0"
+              },
+              "config" => { "platform" => { "ext-mongodb" => "2.4.0" } }
+            )
+          ),
+          Dependabot::DependencyFile.new(
+            name: "composer.lock",
+            content: {
+              "packages" => [],
+              "packages-dev" => [],
+              "platform-overrides" => { "ext-mongodb" => "2.4.0" }
+            }.to_json
+          )
+        ]
+      end
+      let(:written_manifests) { [] }
+      let(:responses) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do
+          written_manifests << JSON.parse(File.read("composer.json"))
+          response = responses.shift
+          raise response if response.is_a?(Exception)
+
+          response
+        end
+      end
+
+      def missing_platform_error(problem)
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Your requirements could not be resolved to an installable set of packages.\n\n" \
+                   "  Problem 1\n    - #{problem}",
+          error_context: {}
+        )
+      end
+
+      context "when a newer version requires an incompatible extension version" do
+        let(:responses) do
+          [missing_platform_error(
+            "mongodb/mongodb 2.5.0 requires ext-mongodb ^2.5 -> it has the wrong version installed (2.4.0)."
+          )]
+        end
+
+        it "treats the explicit platform version as a hard constraint" do
+          expect(resolver.latest_resolvable_version).to be_nil
+          expect(written_manifests.length).to eq(1)
+          expect(written_manifests.map { |json| json.dig("config", "platform", "ext-mongodb") })
+            .to all(eq("2.4.0"))
+        end
+      end
+
+      context "when an undeclared extension is missing" do
+        let(:responses) do
+          [
+            missing_platform_error("vendor/needs-ext 1.0.0 requires ext-foo ^1.2 -> it is missing from your system."),
+            "2.4.2"
+          ]
+        end
+
+        it "synthesizes the missing extension without touching the explicit one" do
+          expect(resolver.latest_resolvable_version).to eq(Dependabot::Composer::Version.new("2.4.2"))
+          expect(written_manifests.length).to eq(2)
+          expect(written_manifests.last.dig("config", "platform"))
+            .to eq("ext-mongodb" => "2.4.0", "ext-foo" => "1.2", "php" => "8.1")
+        end
+      end
+    end
+
     context "with an invalid version string" do
       let(:project_name) { "invalid_version_string" }
 
