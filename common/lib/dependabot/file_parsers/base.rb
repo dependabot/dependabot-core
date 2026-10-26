@@ -70,14 +70,6 @@ module Dependabot
         nil
       end
 
-      # Whether the last `parse` saw every dependency. Ecosystems whose parser can fall back to a partial
-      # result (e.g. when a resolution command fails) should override this so callers don't treat a
-      # dependency's absence as proof that it was removed.
-      sig { returns(T::Boolean) }
-      def complete_parse?
-        true
-      end
-
       # This is an optional public method that ecosystems can implement to allow collaborating classes, such as
       # the ecosystem's DependencyGrapher to run native commands inside the parser's context.
       #

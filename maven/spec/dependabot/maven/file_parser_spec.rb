@@ -512,12 +512,6 @@ RSpec.describe Dependabot::Maven::FileParser do
             )
         end
 
-        it "reports the parse as incomplete, since a declared dependency was skipped" do
-          parser.parse
-
-          expect(parser.complete_parse?).to be(false)
-        end
-
         context "when the property is required for all dependencies" do
           let(:pom_body) { fixture("poms", "missing_property_all.xml") }
 
@@ -1312,12 +1306,6 @@ RSpec.describe Dependabot::Maven::FileParser do
           allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin).and_raise(
             Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
           )
-        end
-
-        it "reports the parse as incomplete" do
-          parser.parse
-
-          expect(parser.complete_parse?).to be(false)
         end
 
         it "returns the flag-off result" do

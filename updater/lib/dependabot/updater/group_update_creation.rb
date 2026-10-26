@@ -47,7 +47,6 @@ module Dependabot
         @error_handler = error_handler
         @job = job
         @group = group
-        @deferred_removals = T.let(nil, T.nilable(T::Hash[String, T::Set[String]]))
       end
 
       sig { returns(Dependabot::DependencySnapshot) }
@@ -81,7 +80,6 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/BlockLength
       sig do
         params(
           group: Dependabot::DependencyGroup,
@@ -112,9 +110,6 @@ module Dependabot
         notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
-        # Kept local to this directory until its aggregate change is accepted.
-        removed_names = T.let(Set.new, T::Set[String])
-        incoming_files = dependency_files
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -130,15 +125,8 @@ module Dependabot
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
-          if dependency.nil?
-            track_removed_dependency(
-              group_dependency_name,
-              original_dependencies,
-              removed_names,
-              changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files)
-            )
-            next
-          end
+          removed_dependency_names << group_dependency_name.downcase if dependency.nil?
+          next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
           original_dependency = original_dependencies.find { |d| d.name == dependency.name }
@@ -180,17 +168,6 @@ module Dependabot
           store_changes(dependency)
         end
 
-        final_files = group_changes.current_dependency_files(job)
-        # While deferred, candidates stay intact so the final per-directory reconciliation sees them.
-        reconcile_removals(
-          final_files,
-          original_dependencies,
-          removed_names,
-          changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files),
-          forget: @deferred_removals.nil?,
-          workspace_files: workspace_files || []
-        )
-
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
 
@@ -208,8 +185,6 @@ module Dependabot
           log_missing_previous_version(dependency_change)
           return nil
         end
-
-        record_accepted_removals(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.
@@ -230,8 +205,6 @@ module Dependabot
         changed_files_by_path = T.let({}, T::Hash[String, Dependabot::DependencyFile])
         initial_paths = T.let(working_files_by_path.keys.to_set, T::Set[String])
         created_paths = T.let(Set.new, T::Set[String])
-        @deferred_removals = {}
-        reconciliation_parses.clear
         dependency_changes = T.must(job.source.directories).filter_map do |directory|
           job.source.directory = directory
           dependency_snapshot.current_directory = directory
@@ -252,17 +225,12 @@ module Dependabot
           change
         end
 
-        commit_deferred_removals(working_files_by_path, created_paths, changed_files_by_path.values)
-
         first_change = dependency_changes.first
         if first_change
           first_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
           first_change.updated_dependency_files.replace(changed_files_by_path.values)
         end
         first_change
-      ensure
-        @deferred_removals = nil
-        reconciliation_parses.clear
       end
 
       sig do
@@ -392,7 +360,6 @@ module Dependabot
         false
       end
 
-      # rubocop:enable Metrics/BlockLength
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
@@ -998,242 +965,6 @@ module Dependabot
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
              .reject { |dependency| resolved_by_removal?(dependency) }
-      end
-
-      # Files inherited from an earlier directory's accepted updates (shared files) count as changes.
-      sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
-      def incoming_file_changes?(dependency_files)
-        snapshot_contents = dependency_snapshot.dependency_files.to_h { |file| [file.path, file.content] }
-        dependency_files.to_h { |file| [file.path, file.content] } != snapshot_contents
-      end
-
-      # Absence only confirms a removal when the dependency was in this directory's snapshot and an
-      # accepted update has changed the files; otherwise the parse may simply be incomplete.
-      sig do
-        params(
-          name: String,
-          original_dependencies: T::Array[Dependabot::Dependency],
-          removed_names: T::Set[String],
-          changed: T::Boolean
-        ).void
-      end
-      def track_removed_dependency(name, original_dependencies, removed_names, changed:)
-        return unless changed
-        return unless original_dependencies.any? { |dependency| dependency.name == name }
-
-        removed_names << name
-      end
-
-      # Removals are final only once every directory has finished, because a later directory can
-      # reintroduce a dependency through a shared file. While deferred they wait per directory.
-      sig { params(removed_names: T::Set[String]).void }
-      def record_accepted_removals(removed_names)
-        directory = job.source.directory
-        if @deferred_removals && directory
-          @deferred_removals[directory] = removed_names.dup
-        else
-          commit_removals(removed_names)
-        end
-      end
-
-      sig { params(removed_names: T::Set[String]).void }
-      def commit_removals(removed_names)
-        removed_names.each { |name| dependency_snapshot.add_handled_dependencies(name) }
-        removed_dependency_names.merge(removed_names.map(&:downcase))
-      end
-
-      # Rechecks each directory's removals against its final working files before committing them.
-      sig do
-        params(
-          working_files_by_path: T::Hash[String, Dependabot::DependencyFile],
-          created_paths: T::Set[String],
-          workspace_files: T::Array[Dependabot::DependencyFile]
-        ).void
-      end
-      def commit_deferred_removals(working_files_by_path, created_paths, workspace_files)
-        pending = @deferred_removals || {}
-        original_directory = job.source.directory
-        (job.source.directories || []).each do |directory|
-          job.source.directory = directory
-          dependency_snapshot.current_directory = directory
-          final_files = working_dependency_files_for(directory, working_files_by_path, created_paths)
-          removed_names = pending[directory] || Set.new
-          # A later directory may remove, through a shared file, a dependency this one still has.
-          changed = incoming_file_changes?(final_files)
-          next if removed_names.empty? && !changed
-
-          reconcile_in_workspace(final_files, removed_names, workspace_files, changed)
-          commit_removals(removed_names)
-        end
-      ensure
-        job.source.directory = original_directory
-        dependency_snapshot.current_directory = original_directory if original_directory
-        @deferred_removals = nil
-        reconciliation_parses.clear
-      end
-
-      # Clone-based parsers read from the workspace, so it must hold every accepted edit while parsing.
-      sig do
-        params(
-          final_files: T::Array[Dependabot::DependencyFile],
-          removed_names: T::Set[String],
-          workspace_files: T::Array[Dependabot::DependencyFile],
-          changed: T::Boolean
-        ).void
-      end
-      def reconcile_in_workspace(final_files, removed_names, workspace_files, changed)
-        # Unchanged inputs mean the per-directory compile already parsed exactly this state.
-        return reconcile_with_cached_parse(final_files, removed_names, workspace_files, changed) if
-          reconciliation_parses.key?(parse_key(final_files, workspace_files))
-
-        prepare_workspace
-        materialize_workspace_files(workspace_files)
-        reconcile_removals(
-          final_files,
-          dependency_snapshot.dependencies,
-          removed_names,
-          changed: changed,
-          forget: true,
-          workspace_files: workspace_files
-        )
-      ensure
-        cleanup_created_workspace_files(workspace_files)
-        cleanup_workspace
-      end
-
-      sig do
-        params(
-          final_files: T::Array[Dependabot::DependencyFile],
-          removed_names: T::Set[String],
-          workspace_files: T::Array[Dependabot::DependencyFile],
-          changed: T::Boolean
-        ).void
-      end
-      def reconcile_with_cached_parse(final_files, removed_names, workspace_files, changed)
-        reconcile_removals(
-          final_files,
-          dependency_snapshot.dependencies,
-          removed_names,
-          changed: changed,
-          forget: true,
-          workspace_files: workspace_files
-        )
-      end
-
-      sig do
-        params(
-          final_files: T::Array[Dependabot::DependencyFile],
-          workspace_files: T::Array[Dependabot::DependencyFile]
-        ).returns(T::Array[Object])
-      end
-      def parse_key(final_files, workspace_files)
-        [
-          job.source.directory,
-          final_files.to_h { |file| [file.path, file.content] },
-          workspace_files.to_h { |file| [file.path, file.content] }
-        ]
-      end
-
-      # Parses the final files once (parsing can run expensive resolution) to both collect group
-      # dependencies that vanished without being tracked (e.g. skipped by update-types before a parent
-      # update removed them) and, if `forget`, drop removals that a later update reintroduced.
-      sig do
-        params(
-          final_files: T::Array[Dependabot::DependencyFile],
-          original_dependencies: T::Array[Dependabot::Dependency],
-          removed_names: T::Set[String],
-          changed: T::Boolean,
-          forget: T::Boolean,
-          workspace_files: T::Array[Dependabot::DependencyFile]
-        ).void
-      end
-      def reconcile_removals(final_files, original_dependencies, removed_names, changed:, forget:, workspace_files: [])
-        candidates = changed ? group.dependencies.map(&:name).uniq - removed_names.to_a : []
-        return if candidates.empty? && (removed_names.empty? || !forget)
-
-        parsed, complete = parse_for_reconciliation(final_files, workspace_files)
-        unless complete
-          # Absence in a partial parse (e.g. a failed Maven tree scan) proves nothing.
-          removed_names.clear if forget
-          return
-        end
-
-        collect_absent_group_dependencies(parsed, candidates, original_dependencies, removed_names, changed: changed)
-        forget_reintroduced_dependencies(parsed, removed_names) if forget
-      end
-
-      # Results are reused across the per-directory and final passes while the inputs are unchanged.
-      sig do
-        params(
-          final_files: T::Array[Dependabot::DependencyFile],
-          workspace_files: T::Array[Dependabot::DependencyFile]
-        ).returns([T::Array[Dependabot::Dependency], T::Boolean])
-      end
-      def parse_for_reconciliation(final_files, workspace_files)
-        return parse_files(final_files) unless @deferred_removals
-
-        key = parse_key(final_files, workspace_files)
-        reconciliation_parses[key] ||= parse_files(final_files)
-      end
-
-      sig do
-        params(final_files: T::Array[Dependabot::DependencyFile])
-          .returns([T::Array[Dependabot::Dependency], T::Boolean])
-      end
-      def parse_files(final_files)
-        parser = dependency_file_parser(final_files)
-        [parser.parse, parser.complete_parse?]
-      end
-
-      sig { returns(T::Hash[T::Array[Object], [T::Array[Dependabot::Dependency], T::Boolean]]) }
-      def reconciliation_parses
-        @reconciliation_parses ||= T.let(
-          {},
-          T.nilable(T::Hash[T::Array[Object], [T::Array[Dependabot::Dependency], T::Boolean]])
-        )
-      end
-
-      sig do
-        params(
-          parsed: T::Array[Dependabot::Dependency],
-          candidates: T::Array[String],
-          original_dependencies: T::Array[Dependabot::Dependency],
-          removed_names: T::Set[String],
-          changed: T::Boolean
-        ).void
-      end
-      def collect_absent_group_dependencies(parsed, candidates, original_dependencies, removed_names, changed:)
-        present = parsed.to_set(&:name)
-        candidates.each do |name|
-          next if present.include?(name)
-
-          track_removed_dependency(name, original_dependencies, removed_names, changed: changed)
-        end
-      end
-
-      # A later update may bring a removed dependency back. Confirm against the final files: it
-      # stays resolved only if it came back at a version no advisory flags.
-      sig { params(parsed: T::Array[Dependabot::Dependency], removed_names: T::Set[String]).void }
-      def forget_reintroduced_dependencies(parsed, removed_names)
-        return if removed_names.empty?
-
-        present = parsed.group_by { |dependency| dependency.name.downcase }
-        removed_names.reject! do |name|
-          reintroduced = present[name.downcase]
-          reintroduced&.any? && !reintroduced.all? { |dependency| safe_after_reintroduction?(dependency) }
-        end
-      end
-
-      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
-      def safe_after_reintroduction?(dependency)
-        versions = dependency.all_versions
-        version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
-        return false if versions.empty? || versions.any? { |version| !version_class.correct?(version) }
-
-        advisories = job.security_advisories_for(dependency)
-        advisories.any? && versions.none? do |version|
-          advisories.any? { |advisory| advisory.vulnerable?(version_class.new(version)) }
-        end
       end
 
       # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.

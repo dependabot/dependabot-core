@@ -155,11 +155,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       cleanup_workspace: nil
     )
     allow(test_instance).to receive_messages(
-      dependency_file_parser: instance_double(
-        Dependabot::FileParsers::Base,
-        parse: dependencies,
-        complete_parse?: true
-      ),
+      dependency_file_parser: instance_double(Dependabot::FileParsers::Base, parse: dependencies),
       service: service
     )
     allow(Dependabot.logger).to receive(:info)
@@ -493,287 +489,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
-  describe "#track_removed_dependency" do
-    let(:dependency) { dependencies.first }
-    let(:removed_names) { Set.new }
-
-    it "records a dependency from the snapshot once the files have changed" do
-      test_instance.track_removed_dependency(dependency.name, [dependency], removed_names, changed: true)
-
-      expect(removed_names).to include(dependency.name)
-    end
-
-    it "ignores a dependency that was never in the active directory's snapshot" do
-      test_instance.track_removed_dependency(dependency.name, [], removed_names, changed: true)
-
-      expect(removed_names).to be_empty
-    end
-
-    it "ignores absence before any update has changed the files" do
-      test_instance.track_removed_dependency(dependency.name, [dependency], removed_names, changed: false)
-
-      expect(removed_names).to be_empty
-    end
-  end
-
-  describe "#incoming_file_changes?" do
-    let(:snapshot_file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "a", directory: "/") }
-
-    before { allow(dependency_snapshot).to receive(:dependency_files).and_return([snapshot_file]) }
-
-    it "is false when the files match the snapshot" do
-      expect(test_instance.incoming_file_changes?([snapshot_file])).to be(false)
-    end
-
-    it "is true when an earlier directory deleted a file" do
-      expect(test_instance.incoming_file_changes?([])).to be(true)
-    end
-
-    it "is true when a shared file was edited by an earlier directory" do
-      edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "b", directory: "/")
-
-      expect(test_instance.incoming_file_changes?([edited])).to be(true)
-    end
-  end
-
-  describe "#reconcile_removals" do
-    let(:dependency) { dependencies.first }
-    let(:parser) { instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: complete) }
-    let(:complete) { true }
-
-    before { allow(test_instance).to receive(:dependency_file_parser).and_return(parser) }
-
-    it "does not parse when nothing changed and nothing is pending" do
-      test_instance.reconcile_removals([], [dependency], Set.new, changed: false, forget: true)
-
-      expect(test_instance).not_to have_received(:dependency_file_parser)
-    end
-
-    it "records group dependencies missing from the final files" do
-      removed = Set.new
-
-      test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
-
-      expect(removed).to include(dependency.name)
-    end
-
-    it "parses the final files only once when collecting and reconciling" do
-      removed = Set.new(["other"])
-
-      test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
-
-      expect(test_instance).to have_received(:dependency_file_parser).once
-    end
-
-    context "when the parse is incomplete (e.g. a failed Maven tree scan)" do
-      let(:complete) { false }
-
-      it "does not treat absent dependencies as removed" do
-        removed = Set.new
-
-        test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
-
-        expect(removed).to be_empty
-      end
-
-      it "discards pending removals it cannot confirm" do
-        removed = Set.new([dependency.name])
-
-        test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
-
-        expect(removed).to be_empty
-      end
-
-      it "keeps pending removals while reconciliation is deferred" do
-        removed = Set.new([dependency.name])
-
-        test_instance.reconcile_removals([], [dependency], removed, changed: false, forget: false)
-
-        expect(removed).to include(dependency.name)
-      end
-    end
-  end
-
-  describe "#parse_for_reconciliation" do
-    let(:file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "a", directory: "/a") }
-    let(:parser) { instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: true) }
-
-    before { allow(test_instance).to receive(:dependency_file_parser).and_return(parser) }
-
-    it "reuses the parse for unchanged inputs while removals are deferred" do
-      test_instance.instance_variable_set(:@deferred_removals, {})
-
-      2.times { test_instance.parse_for_reconciliation([file], []) }
-
-      expect(test_instance).to have_received(:dependency_file_parser).once
-    end
-
-    it "reparses when the files change" do
-      test_instance.instance_variable_set(:@deferred_removals, {})
-      changed = Dependabot::DependencyFile.new(name: "Gemfile", content: "b", directory: "/a")
-
-      test_instance.parse_for_reconciliation([file], [])
-      test_instance.parse_for_reconciliation([changed], [])
-
-      expect(test_instance).to have_received(:dependency_file_parser).twice
-    end
-
-    it "reparses when workspace inputs change" do
-      test_instance.instance_variable_set(:@deferred_removals, {})
-      sibling = Dependabot::DependencyFile.new(name: "pkg/Gemfile", content: "x", directory: "/")
-
-      test_instance.parse_for_reconciliation([file], [])
-      test_instance.parse_for_reconciliation([file], [sibling])
-
-      expect(test_instance).to have_received(:dependency_file_parser).twice
-    end
-
-    it "never caches outside a multi-directory compile" do
-      2.times { test_instance.parse_for_reconciliation([file], []) }
-
-      expect(test_instance).to have_received(:dependency_file_parser).twice
-    end
-  end
-
-  describe "#commit_deferred_removals" do
-    let(:dependency) { dependencies.first }
-    let(:file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/a") }
-    let(:original) { Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/a") }
-
-    before do
-      allow(job.source).to receive(:directories).and_return(["/a"])
-      allow(job.source).to receive(:directory=)
-      allow(dependency_snapshot).to receive_messages(
-        dependency_files: [original],
-        dependencies: [dependency],
-        all_dependency_files: [original]
-      )
-      allow(dependency_snapshot).to receive(:current_directory=)
-      allow(dependency_snapshot).to receive(:add_handled_dependencies)
-      allow(test_instance).to receive_messages(
-        working_dependency_files_for: [file],
-        dependency_file_parser: instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: true)
-      )
-    end
-
-    it "handles a dependency a later directory removed through a shared file" do
-      test_instance.commit_deferred_removals({}, Set.new, [])
-
-      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
-    end
-
-    it "does not commit a pending removal that the final files reintroduce vulnerably" do
-      allow(test_instance).to receive(:dependency_file_parser).and_return(
-        instance_double(Dependabot::FileParsers::Base, parse: [dependency], complete_parse?: true)
-      )
-      allow(job).to receive(:security_advisories_for).and_return([])
-      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
-      test_instance.instance_variable_set(:@deferred_removals, { "/a" => Set.new([dependency.name]) })
-
-      test_instance.commit_deferred_removals({}, Set.new, [])
-
-      expect(test_instance.removed_dependency_names).to be_empty
-      expect(dependency_snapshot).not_to have_received(:add_handled_dependencies)
-    end
-
-    it "commits a pending removal with a case-insensitive name" do
-      test_instance.instance_variable_set(:@deferred_removals, { "/a" => Set.new(["DEP1"]) })
-
-      test_instance.commit_deferred_removals({}, Set.new, [])
-
-      expect(test_instance.removed_dependency_names).to include("dep1")
-    end
-
-    it "cleans up the workspace even when parsing raises" do
-      allow(test_instance).to receive(:dependency_file_parser).and_raise(StandardError, "boom")
-      allow(test_instance).to receive(:cleanup_workspace)
-
-      expect { test_instance.commit_deferred_removals({}, Set.new, []) }.to raise_error(StandardError, "boom")
-      expect(test_instance).to have_received(:cleanup_workspace)
-    end
-
-    it "restores the job directory afterwards" do
-      test_instance.commit_deferred_removals({}, Set.new, [])
-
-      expect(job.source).to have_received(:directory=).with(job.source.directory).at_least(:once)
-    end
-  end
-
-  describe "#record_accepted_removals" do
-    let(:dependency) { dependencies.first }
-    let(:removed_names) { Set.new([dependency.name]) }
-
-    before { allow(dependency_snapshot).to receive(:add_handled_dependencies) }
-
-    it "commits immediately outside a multi-directory compile" do
-      test_instance.record_accepted_removals(removed_names)
-
-      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
-    end
-
-    it "holds removals back while a multi-directory compile is running" do
-      test_instance.instance_variable_set(:@deferred_removals, {})
-
-      test_instance.record_accepted_removals(removed_names)
-
-      expect(test_instance.removed_dependency_names).to be_empty
-    end
-  end
-
-  describe "#forget_reintroduced_dependencies" do
-    let(:dependency) { dependencies.first }
-    let(:removed_names) { Set.new([dependency.name]) }
-    let(:advisory) { instance_double(Dependabot::SecurityAdvisory) }
-
-    before do
-      allow(job).to receive_messages(package_manager: "bundler", security_advisories_for: [advisory])
-      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
-      allow(advisory).to receive(:vulnerable?) { |version| version < Gem::Version.new("2.0.0") }
-    end
-
-    it "keeps a removal that came back at a version no advisory flags" do
-      fixed = Dependabot::Dependency.new(
-        name: dependency.name, version: "2.0.0", requirements: [], package_manager: "bundler"
-      )
-      test_instance.forget_reintroduced_dependencies([fixed], removed_names)
-
-      expect(removed_names).to include(dependency.name)
-    end
-
-    it "drops a removal when any locked copy is vulnerable" do
-      copies = %w(2.0.0 1.0.0).map do |version|
-        Dependabot::Dependency.new(
-          name: dependency.name, version: version, requirements: [], package_manager: "bundler"
-        )
-      end
-      mixed = Dependabot::Dependency.new(
-        name: dependency.name,
-        version: "2.0.0",
-        requirements: [],
-        package_manager: "bundler",
-        metadata: { all_versions: copies }
-      )
-      test_instance.forget_reintroduced_dependencies([mixed], removed_names)
-
-      expect(removed_names).to be_empty
-    end
-
-    it "drops a removal that came back at a vulnerable version" do
-      vulnerable = Dependabot::Dependency.new(
-        name: dependency.name, version: "1.0.0", requirements: [], package_manager: "bundler"
-      )
-      test_instance.forget_reintroduced_dependencies([vulnerable], removed_names)
-
-      expect(removed_names).to be_empty
-    end
-
-    it "keeps a dependency that is still absent from the final files" do
-      test_instance.forget_reintroduced_dependencies([], removed_names)
-
-      expect(removed_names).to include(dependency.name)
-    end
-  end
-
   describe "compile_all_dependency_changes_for" do
     let(:group_notices) { [] }
 
@@ -866,7 +581,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           note_security_update_not_found: nil
         )
         allow(test_instance).to receive(:dependency_file_parser).and_return(
-          instance_double(Dependabot::FileParsers::Base, parse: [reparsed_dependency], complete_parse?: true)
+          instance_double(Dependabot::FileParsers::Base, parse: [reparsed_dependency])
         )
         allow(checker).to receive(:up_to_date?) do
           Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
@@ -890,80 +605,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         expect(Dependabot::DependencyChange).to have_received(:new) do |notices:, **|
           expect(notices.map(&:type)).to include("cooldown_date_unavailable")
         end
-      end
-    end
-
-    context "when an earlier update removes a group dependency" do
-      let(:removed_dependency) do
-        Dependabot::Dependency.new(name: "dep1", version: "1.0.0", requirements: [], package_manager: "bundler")
-      end
-      let(:dependencies) { [removed_dependency] }
-      let(:group_dependencies) { [removed_dependency] }
-
-      before do
-        allow(test_instance).to receive(:dependency_file_parser).and_return(
-          instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: true)
-        )
-      end
-
-      it "records the removal once the aggregate change is accepted" do
-        test_instance.compile_all_dependency_changes_for(group)
-
-        expect(test_instance.removed_dependency_names).to include("dep1")
-      end
-
-      it "marks the accepted removal as handled so the ungrouped pass skips it" do
-        allow(dependency_snapshot).to receive(:add_handled_dependencies)
-
-        test_instance.compile_all_dependency_changes_for(group)
-
-        expect(dependency_snapshot).to have_received(:add_handled_dependencies).with("dep1")
-      end
-
-      it "records a removal of a shared file edited by an earlier directory" do
-        edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
-        original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
-        allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
-        allow(Dependabot::Updater::DependencyGroupChangeBatch).to receive(:new).and_call_original
-
-        test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
-
-        expect(test_instance.removed_dependency_names).to include("dep1")
-      end
-
-      it "records a group dependency skipped earlier that a later update removed" do
-        edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
-        original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
-        allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
-        allow(test_instance).to receive(:skip_dependency?).and_return(true)
-
-        test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
-
-        expect(test_instance.removed_dependency_names).to include("dep1")
-      end
-
-      it "leaves reconciliation to the final pass while directories are deferred" do
-        edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
-        original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
-        allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
-        allow(test_instance).to receive(:forget_reintroduced_dependencies)
-        test_instance.instance_variable_set(:@deferred_removals, {})
-
-        test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
-
-        expect(test_instance).not_to have_received(:forget_reintroduced_dependencies)
-        expect(test_instance.instance_variable_get(:@deferred_removals).values).to eq([Set.new(["dep1"])])
-      end
-
-      it "discards the removal when the aggregate change is rejected" do
-        allow(Dependabot::DependencyChange).to receive(:new).and_return(
-          instance_double(Dependabot::DependencyChange, all_have_previous_version?: false)
-        )
-        allow(test_instance).to receive(:log_missing_previous_version)
-
-        test_instance.compile_all_dependency_changes_for(group)
-
-        expect(test_instance.removed_dependency_names).to be_empty
       end
     end
 
@@ -1101,7 +742,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
             ["git", "ls-files", "--stage", "submodule"],
             cwd: repo_contents_path
           )
-          instance_double(Dependabot::FileParsers::Base, parse: dependencies, complete_parse?: true)
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
         end
       end
 
@@ -1136,7 +777,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         allow(Dependabot::Workspace).to receive(:cleanup!).and_call_original
         allow(test_instance).to receive(:dependency_file_parser) do
           materialized_file_seen << File.exist?(created_path)
-          instance_double(Dependabot::FileParsers::Base, parse: dependencies, complete_parse?: true)
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
         end
       end
 
@@ -1147,89 +788,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       it "removes the created file after compilation" do
         test_instance.compile_all_dependency_changes_for(group, workspace_files: [created_file])
 
-        expect(materialized_file_seen).to all(be(true))
+        expect(materialized_file_seen).to eq([true])
         expect(File).not_to exist(created_path)
-      end
-    end
-  end
-
-  describe "cross-directory removal and reintroduction through a shared file" do
-    let(:parent) do
-      Dependabot::Dependency.new(name: "parent", version: "1.0.0", requirements: [], package_manager: "bundler")
-    end
-    let(:child) do
-      Dependabot::Dependency.new(name: "dep1", version: "1.0.0", requirements: [], package_manager: "bundler")
-    end
-    let(:dependencies) { [parent, child] }
-    let(:group_dependencies) { [parent, child] }
-    let(:shared_file) { Dependabot::DependencyFile.new(name: "shared.lock", content: "v1", directory: "/") }
-    let(:advisory) { instance_double(Dependabot::SecurityAdvisory) }
-    let(:security_advisories) { [advisory] }
-    let(:updates) { %w(removed reintroduced).each_with_index.to_h { |content, i| [i, content] } }
-    let(:next_content) { updates.values.each }
-
-    before do
-      allow(source).to receive(:directories).and_return(%w(/a /b))
-      allow(source).to receive(:directory=) { |dir| allow(source).to receive(:directory).and_return(dir) }
-      allow(dependency_snapshot).to receive_messages(
-        all_dependency_files: [shared_file],
-        dependency_files: [shared_file],
-        dependencies: dependencies,
-        handled_dependencies: Set.new
-      )
-      allow(dependency_snapshot).to receive(:current_directory=)
-      allow(advisory).to receive(:vulnerable?).and_return(true)
-      allow(job).to receive(:security_updates_only?).and_return(true)
-      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
-      allow(test_instance).to receive(:dependency_file_parser) do |files|
-        content = files.find { |f| f.name.end_with?("shared.lock") }&.content
-        parsed = content&.start_with?("removed") ? [parent] : [parent, child]
-        instance_double(Dependabot::FileParsers::Base, parse: parsed, complete_parse?: true)
-      end
-      allow(test_instance).to receive(:compile_updates_for) do |dependency, _files, _group|
-        next [] unless dependency.name == "parent"
-
-        [Dependabot::Dependency.new(
-          name: "parent",
-          version: "2.0.0",
-          previous_version: "1.0.0",
-          requirements: [],
-          previous_requirements: [],
-          package_manager: "bundler"
-        )]
-      end
-      allow(test_instance).to receive(:create_change_for) do |lead, _updated, _files, _group|
-        file = Dependabot::DependencyFile.new(
-          name: "shared.lock",
-          content: next_content.next,
-          directory: "/",
-          operation: Dependabot::DependencyFile::Operation::UPDATE
-        )
-        Dependabot::DependencyChange.new(
-          job: job, updated_dependencies: [lead], updated_dependency_files: [file]
-        )
-      end
-    end
-
-    context "when the second directory reintroduces the vulnerable dependency" do
-      it "neither records the removal nor marks the dependency handled, so it is still reported" do
-        change = test_instance.compile_all_dependency_changes_for_directories(group)
-
-        expect(test_instance.removed_dependency_names).to be_empty
-        expect(dependency_snapshot).not_to have_received(:add_handled_dependencies).with("dep1")
-        expect(test_instance.failed_security_update_dependencies(change).map(&:name)).to include("dep1")
-      end
-    end
-
-    context "when the second directory keeps the dependency removed" do
-      let(:updates) { { 0 => "removed", 1 => "removed-again" } }
-
-      it "records the removal, marks it handled and does not report it" do
-        change = test_instance.compile_all_dependency_changes_for_directories(group)
-
-        expect(test_instance.removed_dependency_names).to include("dep1")
-        expect(dependency_snapshot).to have_received(:add_handled_dependencies).with("dep1").at_least(:once)
-        expect(test_instance.failed_security_update_dependencies(change).map(&:name)).not_to include("dep1")
       end
     end
   end
