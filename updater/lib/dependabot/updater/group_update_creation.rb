@@ -110,6 +110,8 @@ module Dependabot
         notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
+        # Kept local until the aggregate change passes validation, since a rejected change is never submitted.
+        removed_names = T.let(Set.new, T::Set[String])
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -125,7 +127,7 @@ module Dependabot
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
-          removed_dependency_names << group_dependency_name.downcase if dependency.nil?
+          removed_names << group_dependency_name.downcase if dependency.nil?
           next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
@@ -185,6 +187,8 @@ module Dependabot
           log_missing_previous_version(dependency_change)
           return nil
         end
+
+        removed_dependency_names.merge(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.

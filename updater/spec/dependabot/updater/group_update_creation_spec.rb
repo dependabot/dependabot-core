@@ -524,6 +524,17 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           .and_return(instance_double(Dependabot::FileParsers::Base, parse: []))
       end
 
+      it "keeps reporting it when the aggregate change is rejected" do
+        allow(Dependabot::DependencyChange).to receive(:new).and_return(
+          instance_double(Dependabot::DependencyChange, all_have_previous_version?: false)
+        )
+        allow(test_instance).to receive(:log_missing_previous_version)
+
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(test_instance.failed_security_update_dependencies(nil).map(&:name)).to include("dep1")
+      end
+
       it "no longer reports that dependency as a failed security update" do
         expect(test_instance.failed_security_update_dependencies(nil).map(&:name)).to include("dep1")
 
