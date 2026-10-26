@@ -80,6 +80,7 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/BlockLength
       sig do
         params(
           group: Dependabot::DependencyGroup,
@@ -110,6 +111,8 @@ module Dependabot
         notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
+        # Kept local to this directory until its aggregate change is accepted.
+        removed_names = T.let(Set.new, T::Set[String])
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -125,8 +128,10 @@ module Dependabot
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
-          track_removed_dependency(group_dependency_name, original_dependencies, group_changes) if dependency.nil?
-          next if dependency.nil?
+          if dependency.nil?
+            track_removed_dependency(group_dependency_name, original_dependencies, group_changes, removed_names)
+            next
+          end
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
           original_dependency = original_dependencies.find { |d| d.name == dependency.name }
@@ -168,7 +173,7 @@ module Dependabot
           store_changes(dependency)
         end
 
-        forget_reintroduced_dependencies(group_changes)
+        forget_reintroduced_dependencies(group_changes, removed_names)
 
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
@@ -187,6 +192,8 @@ module Dependabot
           log_missing_previous_version(dependency_change)
           return nil
         end
+
+        removed_dependency_names.merge(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.
@@ -362,6 +369,7 @@ module Dependabot
         false
       end
 
+      # rubocop:enable Metrics/BlockLength
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
@@ -975,24 +983,27 @@ module Dependabot
         params(
           name: String,
           original_dependencies: T::Array[Dependabot::Dependency],
-          group_changes: Dependabot::Updater::DependencyGroupChangeBatch
+          group_changes: Dependabot::Updater::DependencyGroupChangeBatch,
+          removed_names: T::Set[String]
         ).void
       end
-      def track_removed_dependency(name, original_dependencies, group_changes)
+      def track_removed_dependency(name, original_dependencies, group_changes, removed_names)
         return unless original_dependencies.any? { |dependency| dependency.name == name }
         return if group_changes.updated_dependency_files.empty?
 
-        removed_dependency_names << name.downcase
+        removed_names << name.downcase
       end
 
       # A later update may bring a removed dependency back, so confirm against the final files.
-      sig { params(group_changes: Dependabot::Updater::DependencyGroupChangeBatch).void }
-      def forget_reintroduced_dependencies(group_changes)
-        return if removed_dependency_names.empty?
+      sig do
+        params(group_changes: Dependabot::Updater::DependencyGroupChangeBatch, removed_names: T::Set[String]).void
+      end
+      def forget_reintroduced_dependencies(group_changes, removed_names)
+        return if removed_names.empty?
 
         final_files = group_changes.current_dependency_files(job)
         present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
-        removed_dependency_names.subtract(present)
+        removed_names.subtract(present)
       end
 
       # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.

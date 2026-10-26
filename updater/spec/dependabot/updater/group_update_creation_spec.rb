@@ -493,29 +493,30 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     let(:dependency) { dependencies.first }
     let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
     let(:changed_file) { instance_double(Dependabot::DependencyFile) }
+    let(:removed_names) { Set.new }
 
     it "records a dependency from the snapshot once an update has changed the files" do
       allow(group_changes).to receive(:updated_dependency_files).and_return([changed_file])
 
-      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes)
+      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes, removed_names)
 
-      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
+      expect(removed_names).to include(dependency.name.downcase)
     end
 
     it "ignores a dependency that was never in the active directory's snapshot" do
       allow(group_changes).to receive(:updated_dependency_files).and_return([changed_file])
 
-      test_instance.track_removed_dependency(dependency.name, [], group_changes)
+      test_instance.track_removed_dependency(dependency.name, [], group_changes, removed_names)
 
-      expect(test_instance.removed_dependency_names).to be_empty
+      expect(removed_names).to be_empty
     end
 
     it "ignores absence before any update has changed the files" do
       allow(group_changes).to receive(:updated_dependency_files).and_return([])
 
-      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes)
+      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes, removed_names)
 
-      expect(test_instance.removed_dependency_names).to be_empty
+      expect(removed_names).to be_empty
     end
   end
 
@@ -523,27 +524,27 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     let(:dependency) { dependencies.first }
     let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
     let(:parser) { instance_double(Dependabot::FileParsers::Base) }
+    let(:removed_names) { Set.new([dependency.name.downcase]) }
 
     before do
       allow(group_changes).to receive(:current_dependency_files).with(job).and_return([])
       allow(test_instance).to receive(:dependency_file_parser).and_return(parser)
-      test_instance.removed_dependency_names << dependency.name.downcase
     end
 
     it "drops a removed dependency that is present in the final files" do
       allow(parser).to receive(:parse).and_return([dependency])
 
-      test_instance.forget_reintroduced_dependencies(group_changes)
+      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
 
-      expect(test_instance.removed_dependency_names).to be_empty
+      expect(removed_names).to be_empty
     end
 
     it "keeps a dependency that is still absent from the final files" do
       allow(parser).to receive(:parse).and_return([])
 
-      test_instance.forget_reintroduced_dependencies(group_changes)
+      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
 
-      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
+      expect(removed_names).to include(dependency.name.downcase)
     end
   end
 
@@ -663,6 +664,37 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         expect(Dependabot::DependencyChange).to have_received(:new) do |notices:, **|
           expect(notices.map(&:type)).to include("cooldown_date_unavailable")
         end
+      end
+    end
+
+    context "when an earlier update removes a group dependency" do
+      let(:removed_dependency) do
+        Dependabot::Dependency.new(name: "dep1", version: "1.0.0", requirements: [], package_manager: "bundler")
+      end
+      let(:dependencies) { [removed_dependency] }
+      let(:group_dependencies) { [removed_dependency] }
+
+      before do
+        allow(test_instance).to receive(:dependency_file_parser).and_return(
+          instance_double(Dependabot::FileParsers::Base, parse: [])
+        )
+      end
+
+      it "records the removal once the aggregate change is accepted" do
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(test_instance.removed_dependency_names).to include("dep1")
+      end
+
+      it "discards the removal when the aggregate change is rejected" do
+        allow(Dependabot::DependencyChange).to receive(:new).and_return(
+          instance_double(Dependabot::DependencyChange, all_have_previous_version?: false)
+        )
+        allow(test_instance).to receive(:log_missing_previous_version)
+
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(test_instance.removed_dependency_names).to be_empty
       end
     end
 
