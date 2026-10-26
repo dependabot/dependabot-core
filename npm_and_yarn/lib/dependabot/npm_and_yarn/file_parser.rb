@@ -625,11 +625,12 @@ module Dependabot
 
         # The versions of the declarations are merged into one, the lowest, which may be the one of a support file
         all_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependabot::Dependency])) || []
-        own_version = all_versions.find { |v| (v.requirements - support_reqs).any? }&.version
+        own_versions = all_versions.select { |v| (v.requirements - support_reqs).any? }
+        own_version = DependencySet.new(own_versions).dependency_for_name(dep.name)&.version
 
         Dependency.new(
           name: dep.name,
-          version: own_version || dep.version,
+          version: own_version,
           requirements: own_reqs,
           package_manager: dep.package_manager,
           subdependency_metadata: dep.subdependency_metadata,
