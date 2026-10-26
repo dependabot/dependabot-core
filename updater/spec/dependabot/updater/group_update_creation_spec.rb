@@ -469,6 +469,26 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#failed_security_update_dependencies" do
+    let(:dependency) { dependencies.first }
+
+    before { allow(job).to receive_messages(security_updates_only?: true) }
+
+    it "excludes a dependency that an earlier update removed from the files" do
+      test_instance.removed_dependency_names << dependency.name.downcase
+
+      expect(test_instance.failed_security_update_dependencies(nil)).not_to include(dependency)
+    end
+
+    it "keeps a removed dependency that has a diagnosed failure" do
+      test_instance.removed_dependency_names << dependency.name.downcase
+      test_instance.security_update_failures[dependency.name.downcase] =
+        Dependabot::Service::ErrorRecord.new(error_type: "security_update_not_possible", error_details: {})
+
+      expect(test_instance.failed_security_update_dependencies(nil)).to include(dependency)
+    end
+  end
+
   describe "compile_all_dependency_changes_for" do
     let(:group_notices) { [] }
 

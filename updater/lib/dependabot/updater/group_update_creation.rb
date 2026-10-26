@@ -66,6 +66,13 @@ module Dependabot
         @security_update_failures ||= T.let({}, T.nilable(T::Hash[String, Dependabot::Service::ErrorRecord]))
       end
 
+      # Names of dependencies that vanished from the files because an earlier update in the
+      # group removed them, which resolves any advisory against them.
+      sig { returns(T::Set[String]) }
+      def removed_dependency_names
+        @removed_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -113,10 +120,12 @@ module Dependabot
 
           # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
-          dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+          group_dependency_name = dependency.name
+          dependency = reparsed_dependencies.find { |d| d.name == group_dependency_name }
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
+          removed_dependency_names << group_dependency_name.downcase if dependency.nil?
           next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
@@ -955,6 +964,14 @@ module Dependabot
         group.dependencies
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
+             .reject { |dependency| resolved_by_removal?(dependency) }
+      end
+
+      # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def resolved_by_removal?(dependency)
+        name = dependency.name.downcase
+        removed_dependency_names.include?(name) && !security_update_failures.key?(name)
       end
 
       sig { params(dependency_change: T.nilable(Dependabot::DependencyChange)).void }
