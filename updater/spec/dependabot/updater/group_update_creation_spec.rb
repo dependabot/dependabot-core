@@ -532,6 +532,57 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#collect_absent_group_dependencies" do
+    let(:dependency) { dependencies.first }
+
+    it "does not parse when nothing changed" do
+      allow(test_instance).to receive(:dependency_file_parser)
+
+      test_instance.collect_absent_group_dependencies([], [dependency], Set.new, changed: false)
+
+      expect(test_instance).not_to have_received(:dependency_file_parser)
+    end
+
+    it "records group dependencies missing from the final files" do
+      allow(test_instance).to receive(:dependency_file_parser).and_return(
+        instance_double(Dependabot::FileParsers::Base, parse: [])
+      )
+      removed = Set.new
+
+      test_instance.collect_absent_group_dependencies([], [dependency], removed, changed: true)
+
+      expect(removed).to include(dependency.name)
+    end
+  end
+
+  describe "#commit_deferred_removals" do
+    let(:dependency) { dependencies.first }
+    let(:file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/a") }
+    let(:original) { Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/a") }
+
+    before do
+      allow(job.source).to receive(:directories).and_return(["/a"])
+      allow(job.source).to receive(:directory=)
+      allow(dependency_snapshot).to receive_messages(
+        dependency_files: [original],
+        dependencies: [dependency],
+        all_dependency_files: [original]
+      )
+      allow(dependency_snapshot).to receive(:current_directory=)
+      allow(dependency_snapshot).to receive(:add_handled_dependencies)
+      allow(test_instance).to receive_messages(
+        working_dependency_files_for: [file],
+        dependency_file_parser: instance_double(Dependabot::FileParsers::Base, parse: [])
+      )
+    end
+
+    it "handles a dependency a later directory removed through a shared file" do
+      test_instance.commit_deferred_removals({}, Set.new, [])
+
+      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
+    end
+  end
+
   describe "#record_accepted_removals" do
     let(:dependency) { dependencies.first }
     let(:removed_names) { Set.new([dependency.name]) }

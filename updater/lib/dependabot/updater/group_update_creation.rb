@@ -185,8 +185,7 @@ module Dependabot
           final_files,
           original_dependencies,
           removed_names,
-          group_changes,
-          incoming_files
+          changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files)
         )
         # While deferred, candidates stay intact so the final per-directory reconciliation sees them.
         forget_reintroduced_dependencies(final_files, removed_names) unless @deferred_removals
@@ -1051,11 +1050,16 @@ module Dependabot
       def commit_deferred_removals(working_files_by_path, created_paths, workspace_files)
         pending = @deferred_removals || {}
         original_directory = job.source.directory
-        pending.each do |directory, removed_names|
+        (job.source.directories || []).each do |directory|
           job.source.directory = directory
           dependency_snapshot.current_directory = directory
           final_files = working_dependency_files_for(directory, working_files_by_path, created_paths)
-          reconcile_in_workspace(final_files, removed_names, workspace_files)
+          removed_names = pending[directory] || Set.new
+          # A later directory may remove, through a shared file, a dependency this one still has.
+          changed = incoming_file_changes?(final_files)
+          next if removed_names.empty? && !changed
+
+          reconcile_in_workspace(final_files, removed_names, workspace_files, changed)
           commit_removals(removed_names)
         end
       ensure
@@ -1069,12 +1073,16 @@ module Dependabot
         params(
           final_files: T::Array[Dependabot::DependencyFile],
           removed_names: T::Set[String],
-          workspace_files: T::Array[Dependabot::DependencyFile]
+          workspace_files: T::Array[Dependabot::DependencyFile],
+          changed: T::Boolean
         ).void
       end
-      def reconcile_in_workspace(final_files, removed_names, workspace_files)
+      def reconcile_in_workspace(final_files, removed_names, workspace_files, changed)
         prepare_workspace
         materialize_workspace_files(workspace_files)
+        collect_absent_group_dependencies(
+          final_files, dependency_snapshot.dependencies, removed_names, changed: changed
+        )
         forget_reintroduced_dependencies(final_files, removed_names)
       ensure
         cleanup_created_workspace_files(workspace_files)
@@ -1088,22 +1096,17 @@ module Dependabot
           final_files: T::Array[Dependabot::DependencyFile],
           original_dependencies: T::Array[Dependabot::Dependency],
           removed_names: T::Set[String],
-          group_changes: Dependabot::Updater::DependencyGroupChangeBatch,
-          incoming_files: T::Array[Dependabot::DependencyFile]
+          changed: T::Boolean
         ).void
       end
-      def collect_absent_group_dependencies(
-        final_files,
-        original_dependencies,
-        removed_names,
-        group_changes,
-        incoming_files
-      )
+      def collect_absent_group_dependencies(final_files, original_dependencies, removed_names, changed:)
+        # Parsing can run expensive resolution, and nothing is recorded without a change.
+        return unless changed
+
         candidates = group.dependencies.map(&:name).uniq - removed_names.to_a
         return if candidates.empty?
 
         present = dependency_file_parser(final_files).parse.to_set(&:name)
-        changed = group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files)
         candidates.each do |name|
           next if present.include?(name)
 
