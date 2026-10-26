@@ -116,11 +116,20 @@ module Dependabot
         Dependabot::Julia::Version.new(best.to_s)
       end
 
+      # A stdlib has no registry target, but the PR still needs a version to
+      # report, so use the newest bundled version its compat entry admits
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
+      def preferred_resolvable_version
+        return stdlib_versions.values.flatten.map { |v| Dependabot::Julia::Version.new(v) }.max if stdlib?
+
+        super
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         Dependabot::Julia::RequirementsUpdater.new(
           requirements: dependency.requirements,
-          target_version: preferred_resolvable_version&.to_s,
+          target_version: stdlib? ? nil : preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy&.to_s&.to_sym,
           stdlib_versions: stdlib_versions
         ).updated_requirements

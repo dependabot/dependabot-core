@@ -371,6 +371,31 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
       expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
     end
 
+    it "reports the newest bundled version as the updated version" do
+      updated = checker.updated_dependencies(requirements_to_unlock: :own)
+      expect(updated.map(&:version)).to eq(["1.10.0"])
+    end
+
+    context "when the project's Julia range bundles several versions" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "SHA",
+          version: nil,
+          requirements: [{ file: "Project.toml", requirement: nil, groups: ["deps"], source: nil }],
+          package_manager: "julia",
+          metadata: {
+            julia_uuid: "ea8e919c-243c-51af-8825-aaa63cd721ce",
+            julia_stdlib_versions: { "Project.toml" => ["0.7.0", "1.0.0"] }
+          }
+        )
+      end
+
+      it "reports the newest one" do
+        expect(checker.updated_requirements.first[:requirement]).to eq("0.7, 1")
+        expect(checker.updated_dependencies(requirements_to_unlock: :own).map(&:version)).to eq(["1.0.0"])
+      end
+    end
+
     context "when the entry already covers the range" do
       let(:dependency) do
         Dependabot::Dependency.new(
