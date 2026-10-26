@@ -68,7 +68,7 @@ module Dependabot
           @dependency_files             = dependency_files
           @requirements_to_unlock       = requirements_to_unlock
           @latest_allowable_version     = latest_allowable_version
-          @composer_platform_extensions = T.let(initial_platform, T::Hash[String, T::Array[String]])
+          @composer_platform_extensions = T.let(initial_platform_extensions, T::Hash[String, T::Array[String]])
           @error_handler                = T.let(ComposerErrorHandler.new, ComposerErrorHandler)
         end
 
@@ -229,6 +229,7 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
+            next if explicit_platform_extensions.key?(extension)
             next unless version_for_reqs(requirements)
 
             json[PackageManager::CONFIG_KEY] ||= {}
@@ -508,6 +509,9 @@ module Dependabot
         sig { params(additional_extensions: T::Array[T::Hash[Symbol, String]]).void }
         def update_required_extensions(additional_extensions)
           additional_extensions.each do |ext|
+            # Explicitly configured platform extensions are hard constraints
+            next if explicit_platform_extensions.key?(ext.fetch(:name))
+
             composer_platform_extensions[ext.fetch(:name)] ||= []
             composer_platform_extensions[ext.fetch(:name)] =
               T.must(composer_platform_extensions[ext.fetch(:name)]) + [ext.fetch(:requirement)]
@@ -528,6 +532,26 @@ module Dependabot
           @composer_version ||= T.let(
             Helpers.composer_version(manifest_document, lockfile_document),
             T.nilable(String)
+          )
+        end
+
+        # Seeds the platform with explicitly configured `config.platform.ext-*`
+        # versions so they act as hard constraints when checking whether
+        # missing extension requirements can be satisfied.
+        sig { returns(T::Hash[String, T::Array[String]]) }
+        def initial_platform_extensions
+          platform = initial_platform
+          explicit_platform_extensions.each do |extension, version|
+            platform[extension] = [version] if requirement_valid?(version)
+          end
+          platform
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def explicit_platform_extensions
+          @explicit_platform_extensions ||= T.let(
+            manifest_document.platform_extensions,
+            T.nilable(T::Hash[String, String])
           )
         end
 

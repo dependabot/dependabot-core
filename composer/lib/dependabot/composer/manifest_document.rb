@@ -99,6 +99,24 @@ module Dependabot
         DocumentValueParser.optional_string(platform&.[](name), "#{@context} config.platform.#{name}")
       end
 
+      # Explicitly configured `config.platform.ext-*` versions. Entries set to
+      # `false` (which disable an extension) or other non-string values are ignored.
+      sig { returns(T::Hash[String, String]) }
+      def platform_extensions
+        config = section(@data, "config", "config")
+        platform = config && section(config, "platform", "config.platform")
+        return {} unless platform
+
+        extensions = T.let({}, T::Hash[String, String])
+        platform.each do |name, value|
+          next unless name.start_with?("ext-")
+          next unless value.is_a?(String)
+
+          extensions[name] = value
+        end
+        extensions
+      end
+
       sig { params(name: String).returns(T.nilable(String)) }
       def dependency_constraint(name)
         requirements = section(@data, "require", "require")
