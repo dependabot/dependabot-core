@@ -517,6 +517,22 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
     end
 
+    context "when an earlier update removes a vulnerable group dependency from the files" do
+      before do
+        allow(job).to receive_messages(security_updates_only?: true)
+        allow(test_instance).to receive(:dependency_file_parser)
+          .and_return(instance_double(Dependabot::FileParsers::Base, parse: []))
+      end
+
+      it "no longer reports that dependency as a failed security update" do
+        expect(test_instance.failed_security_update_dependencies(nil).map(&:name)).to include("dep1")
+
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(test_instance.failed_security_update_dependencies(nil).map(&:name)).not_to include("dep1")
+      end
+    end
+
     context "when dependency changes generate notices" do
       let(:notice) do
         Dependabot::Notice.new(
