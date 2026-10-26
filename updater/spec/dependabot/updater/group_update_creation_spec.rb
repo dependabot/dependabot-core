@@ -581,6 +581,42 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
     end
+
+    it "does not commit a pending removal that the final files reintroduce vulnerably" do
+      allow(test_instance).to receive(:dependency_file_parser).and_return(
+        instance_double(Dependabot::FileParsers::Base, parse: [dependency])
+      )
+      allow(job).to receive(:security_advisories_for).and_return([])
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
+      test_instance.instance_variable_set(:@deferred_removals, { "/a" => Set.new([dependency.name]) })
+
+      test_instance.commit_deferred_removals({}, Set.new, [])
+
+      expect(test_instance.removed_dependency_names).to be_empty
+      expect(dependency_snapshot).not_to have_received(:add_handled_dependencies)
+    end
+
+    it "commits a pending removal with a case-insensitive name" do
+      test_instance.instance_variable_set(:@deferred_removals, { "/a" => Set.new(["DEP1"]) })
+
+      test_instance.commit_deferred_removals({}, Set.new, [])
+
+      expect(test_instance.removed_dependency_names).to include("dep1")
+    end
+
+    it "cleans up the workspace even when parsing raises" do
+      allow(test_instance).to receive(:dependency_file_parser).and_raise(StandardError, "boom")
+      allow(test_instance).to receive(:cleanup_workspace)
+
+      expect { test_instance.commit_deferred_removals({}, Set.new, []) }.to raise_error(StandardError, "boom")
+      expect(test_instance).to have_received(:cleanup_workspace)
+    end
+
+    it "restores the job directory afterwards" do
+      test_instance.commit_deferred_removals({}, Set.new, [])
+
+      expect(job.source).to have_received(:directory=).with(job.source.directory).at_least(:once)
+    end
   end
 
   describe "#record_accepted_removals" do
