@@ -647,14 +647,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it "can update to the latest version" do
           expect(latest_version).to eq(tip_of_master)
         end
-
-        it "clones with a fingerprint without the repository URL or the temporary clone path" do
-          latest_version
-
-          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-            .with(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node },
-                  fingerprint: "git clone --no-recurse-submodules <url> <path>")
-        end
       end
 
       context "when it's on a different branch" do
@@ -976,6 +968,36 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       it "re-raises the error" do
         expect { updated_requirements }.to raise_error(unexpected_error)
+      end
+    end
+
+    context "when the checker's own pinned-ref clone fails" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+
+      before do
+        # A non-SHA result skips the finder's clone, so only the checker's fallback clone runs.
+        allow(checker.send(:latest_version_finder)).to receive(:latest_release_version).and_return(nil)
+
+        allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
+          .with(array_including(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node }),
+                any_args)
+          .and_return(
+            [
+              "Cloning into 'dependabot_tmp_dir/actions/setup-node'...\n" \
+              "fatal: write error: No space left on device\n",
+              "",
+              instance_double(Process::Status, success?: false, to_s: "pid 1 exit 128")
+            ]
+          )
+      end
+
+      it "reports a fingerprint without the repository URL or the temporary clone path" do
+        expect { updated_requirements }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+          expect(error.backtrace.join("\n"))
+            .to match(/update_checker\.rb:\d+:in .*UpdateChecker#latest_commit_for_pinned_ref/)
+          expect(error.sentry_context[:fingerprint])
+            .to eq(["git clone --no-recurse-submodules <url> <path>"])
+        end
       end
     end
 
