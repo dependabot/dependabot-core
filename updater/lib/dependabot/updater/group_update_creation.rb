@@ -113,6 +113,7 @@ module Dependabot
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         # Kept local to this directory until its aggregate change is accepted.
         removed_names = T.let(Set.new, T::Set[String])
+        incoming_files = dependency_files
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -129,7 +130,12 @@ module Dependabot
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
           if dependency.nil?
-            track_removed_dependency(group_dependency_name, original_dependencies, group_changes, removed_names)
+            track_removed_dependency(
+              group_dependency_name,
+              original_dependencies,
+              removed_names,
+              changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files)
+            )
             next
           end
 
@@ -978,19 +984,26 @@ module Dependabot
              .reject { |dependency| resolved_by_removal?(dependency) }
       end
 
+      # Files inherited from an earlier directory's accepted updates (shared files) count as changes.
+      sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
+      def incoming_file_changes?(dependency_files)
+        snapshot_files = dependency_snapshot.dependency_files.to_h { |file| [file.path, file] }
+        dependency_files.any? { |file| snapshot_files[file.path]&.content != file.content }
+      end
+
       # Absence only confirms a removal when the dependency was in this directory's snapshot and an
-      # accepted update has since changed the files; otherwise the parse may simply be incomplete.
+      # accepted update has changed the files; otherwise the parse may simply be incomplete.
       sig do
         params(
           name: String,
           original_dependencies: T::Array[Dependabot::Dependency],
-          group_changes: Dependabot::Updater::DependencyGroupChangeBatch,
-          removed_names: T::Set[String]
+          removed_names: T::Set[String],
+          changed: T::Boolean
         ).void
       end
-      def track_removed_dependency(name, original_dependencies, group_changes, removed_names)
+      def track_removed_dependency(name, original_dependencies, removed_names, changed:)
+        return unless changed
         return unless original_dependencies.any? { |dependency| dependency.name == name }
-        return if group_changes.updated_dependency_files.empty?
 
         removed_names << name
       end

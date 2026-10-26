@@ -491,32 +491,40 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
   describe "#track_removed_dependency" do
     let(:dependency) { dependencies.first }
-    let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
-    let(:changed_file) { instance_double(Dependabot::DependencyFile) }
     let(:removed_names) { Set.new }
 
-    it "records a dependency from the snapshot once an update has changed the files" do
-      allow(group_changes).to receive(:updated_dependency_files).and_return([changed_file])
-
-      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes, removed_names)
+    it "records a dependency from the snapshot once the files have changed" do
+      test_instance.track_removed_dependency(dependency.name, [dependency], removed_names, changed: true)
 
       expect(removed_names).to include(dependency.name)
     end
 
     it "ignores a dependency that was never in the active directory's snapshot" do
-      allow(group_changes).to receive(:updated_dependency_files).and_return([changed_file])
-
-      test_instance.track_removed_dependency(dependency.name, [], group_changes, removed_names)
+      test_instance.track_removed_dependency(dependency.name, [], removed_names, changed: true)
 
       expect(removed_names).to be_empty
     end
 
     it "ignores absence before any update has changed the files" do
-      allow(group_changes).to receive(:updated_dependency_files).and_return([])
-
-      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes, removed_names)
+      test_instance.track_removed_dependency(dependency.name, [dependency], removed_names, changed: false)
 
       expect(removed_names).to be_empty
+    end
+  end
+
+  describe "#incoming_file_changes?" do
+    let(:snapshot_file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "a", directory: "/") }
+
+    before { allow(dependency_snapshot).to receive(:dependency_files).and_return([snapshot_file]) }
+
+    it "is false when the files match the snapshot" do
+      expect(test_instance.incoming_file_changes?([snapshot_file])).to be(false)
+    end
+
+    it "is true when a shared file was edited by an earlier directory" do
+      edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "b", directory: "/")
+
+      expect(test_instance.incoming_file_changes?([edited])).to be(true)
     end
   end
 
@@ -730,6 +738,18 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         test_instance.compile_all_dependency_changes_for(group)
 
         expect(dependency_snapshot).to have_received(:add_handled_dependencies).with("dep1")
+      end
+
+      it "records a removal of a shared file edited by an earlier directory" do
+        edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
+        original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
+        allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
+        batch = Dependabot::Updater::DependencyGroupChangeBatch.new(initial_dependency_files: [edited])
+        allow(Dependabot::Updater::DependencyGroupChangeBatch).to receive(:new).and_return(batch)
+
+        test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
+
+        expect(test_instance.removed_dependency_names).to include("dep1")
       end
 
       it "discards the removal when the aggregate change is rejected" do
