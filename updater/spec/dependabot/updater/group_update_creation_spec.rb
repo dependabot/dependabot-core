@@ -500,7 +500,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       test_instance.track_removed_dependency(dependency.name, [dependency], group_changes, removed_names)
 
-      expect(removed_names).to include(dependency.name.downcase)
+      expect(removed_names).to include(dependency.name)
     end
 
     it "ignores a dependency that was never in the active directory's snapshot" do
@@ -524,15 +524,33 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     let(:dependency) { dependencies.first }
     let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
     let(:parser) { instance_double(Dependabot::FileParsers::Base) }
-    let(:removed_names) { Set.new([dependency.name.downcase]) }
+    let(:removed_names) { Set.new([dependency.name]) }
+    let(:advisory) { instance_double(Dependabot::SecurityAdvisory) }
 
     before do
       allow(group_changes).to receive(:current_dependency_files).with(job).and_return([])
       allow(test_instance).to receive(:dependency_file_parser).and_return(parser)
+      allow(job).to receive_messages(package_manager: "bundler", security_advisories_for: [advisory])
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
+      allow(advisory).to receive(:vulnerable?) { |version| version < Gem::Version.new("2.0.0") }
     end
 
-    it "drops a removed dependency that is present in the final files" do
-      allow(parser).to receive(:parse).and_return([dependency])
+    it "keeps a removal that came back at a version no advisory flags" do
+      fixed = Dependabot::Dependency.new(
+        name: dependency.name, version: "2.0.0", requirements: [], package_manager: "bundler"
+      )
+      allow(parser).to receive(:parse).and_return([fixed])
+
+      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
+
+      expect(removed_names).to include(dependency.name)
+    end
+
+    it "drops a removal that came back at a vulnerable version" do
+      vulnerable = Dependabot::Dependency.new(
+        name: dependency.name, version: "1.0.0", requirements: [], package_manager: "bundler"
+      )
+      allow(parser).to receive(:parse).and_return([vulnerable])
 
       test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
 
@@ -544,7 +562,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
 
-      expect(removed_names).to include(dependency.name.downcase)
+      expect(removed_names).to include(dependency.name)
     end
   end
 
@@ -684,6 +702,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         test_instance.compile_all_dependency_changes_for(group)
 
         expect(test_instance.removed_dependency_names).to include("dep1")
+      end
+
+      it "marks the accepted removal as handled so the ungrouped pass skips it" do
+        allow(dependency_snapshot).to receive(:add_handled_dependencies)
+
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(dependency_snapshot).to have_received(:add_handled_dependencies).with("dep1")
       end
 
       it "discards the removal when the aggregate change is rejected" do
