@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "uri"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
@@ -20,6 +21,10 @@ module Dependabot
       SUPPORTED_SOURCE_TYPES = %w(github gitlab sourcehut git tarball).freeze
 
       SUPPORTED_LOCK_VERSION = 7
+
+      # Where the registry resolves an indirect channel input to: a NixOS release tarball.
+      RELEASE_TARBALL_HOSTS = %w(releases.nixos.org channels.nixos.org).freeze
+      RELEASE_TARBALL_PATH = %r{/nixexprs\.tar\.(?<extension>xz|gz|bz2|zst)\z}
 
       DEFAULT_HOSTS = T.let(
         {
@@ -83,7 +88,7 @@ module Dependabot
         return unless rev
 
         if source_type == "tarball"
-          build_tarball_dependency(input_name, original, rev)
+          build_tarball_dependency(input_name, locked, original, rev)
         else
           build_git_dependency(input_name, locked, original, rev)
         end
@@ -121,19 +126,19 @@ module Dependabot
         !original.fetch("rev", nil).nil?
       end
 
-      # Channel tarballs track a channel in the URL (e.g. nixos-26.05), not a git
-      # ref. Non-channel tarballs aren't updatable, so they're skipped.
+      # Channel tarballs track a channel (e.g. nixos-26.05) rather than a git ref. Non-channel
+      # tarballs aren't updatable, so they're skipped.
       sig do
         params(
           input_name: String,
+          locked: T::Hash[String, T.untyped],
           original: T::Hash[String, T.untyped],
           rev: String
         ).returns(T.nilable(Dependabot::Dependency))
       end
-      def build_tarball_dependency(input_name, original, rev)
-        url = original.fetch("url", nil)
-        channel = Channel.channel_name_from_url(url)
-        return unless channel
+      def build_tarball_dependency(input_name, locked, original, rev)
+        url, channel = channel_tarball_source(locked, original)
+        return unless url && channel
 
         Dependency.new(
           name: input_name,
@@ -146,6 +151,57 @@ module Dependabot
             groups: []
           }]
         )
+      end
+
+      # The URL and channel of a tarball input, or nil when it isn't a NixOS channel.
+      sig do
+        params(
+          locked: T::Hash[String, T.untyped],
+          original: T::Hash[String, T.untyped]
+        ).returns(T.nilable([String, String]))
+      end
+      def channel_tarball_source(locked, original)
+        return indirect_channel_source(locked, original) if original["type"] == "indirect"
+
+        url = original.fetch("url", nil)
+        channel = Channel.channel_name_from_url(url)
+        [url, channel] if url && channel
+      end
+
+      # An indirect input such as `nixpkgs/nixos-unstable` has no URL in the lock: `original` keeps the registry id
+      # and ref, and `locked` is the release tarball the registry resolved it to. The channel is the ref, so it is only
+      # trusted when the lock really is a NixOS release tarball. The channel's canonical URL stands in for the URL the
+      # flake doesn't have, with the locked tarball's suffix kept.
+      sig do
+        params(
+          locked: T::Hash[String, T.untyped],
+          original: T::Hash[String, T.untyped]
+        ).returns(T.nilable([String, String]))
+      end
+      def indirect_channel_source(locked, original)
+        ref = original.fetch("ref", nil)
+        return unless ref.is_a?(String)
+
+        extension = release_tarball_extension(locked.fetch("url", nil))
+        return unless extension
+
+        # Round-tripping through the channel URL rejects refs that aren't channel names, such as pull/1489/head.
+        url = Channel.url_for(ref, extension: extension)
+        channel = Channel.channel_name_from_url(url)
+        [url, channel] if channel
+      end
+
+      # The compression suffix of a NixOS release tarball URL, or nil for any other URL.
+      sig { params(url: T.untyped).returns(T.nilable(String)) }
+      def release_tarball_extension(url)
+        return unless url.is_a?(String)
+
+        uri = URI.parse(url)
+        return unless RELEASE_TARBALL_HOSTS.include?(uri.host)
+
+        RELEASE_TARBALL_PATH.match(uri.path.to_s)&.[](:extension)
+      rescue URI::InvalidURIError
+        nil
       end
 
       sig { params(locked: T::Hash[String, T.untyped]).returns(T.nilable(String)) }

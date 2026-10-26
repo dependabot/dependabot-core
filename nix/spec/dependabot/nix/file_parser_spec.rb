@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "json"
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/nix/file_parser"
@@ -323,5 +324,135 @@ RSpec.describe Dependabot::Nix::FileParser do
         expect(dependencies).to be_empty
       end
     end
+
+    # `inputs.nixpkgs.url = "nixpkgs/nixos-unstable"` is an indirect input: the lock keeps the registry id and ref
+    # in `original` and has no url, while `locked` is the NixOS release tarball the registry resolved to.
+    context "with an indirect input that the registry resolved to a NixOS release tarball" do
+      let(:flake_lock_content) { fixture("flake_with_indirect_tarball.lock") }
+
+      it "parses the input as a channel tarball dependency" do
+        nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
+        expect(nixpkgs).to be_a(Dependabot::Dependency)
+        expect(nixpkgs.version).to eq("44a91898084f46797b5fac650c7e8c9ac38c43d4")
+        expect(nixpkgs.requirements).to eq(
+          [{
+            requirement: nil,
+            file: "flake.lock",
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst",
+              branch: nil,
+              ref: "nixos-unstable"
+            },
+            groups: []
+          }]
+        )
+      end
+
+      it "still parses indirect inputs that the registry resolved to a git host" do
+        expect(dependencies.map(&:name)).to contain_exactly("nixpkgs", "home-manager")
+        home_manager = dependencies.find { |d| d.name == "home-manager" }
+        expect(home_manager.requirements.first[:source]).to eq(
+          type: "git",
+          url: "https://github.com/nix-community/home-manager",
+          branch: nil,
+          ref: nil
+        )
+      end
+    end
+
+    context "with indirect tarball inputs in other forms" do
+      let(:original) { { "id" => "nixpkgs", "ref" => "nixos-25.11", "type" => "indirect" } }
+      let(:locked_url) { "https://releases.nixos.org/nixos/25.11/nixos-25.11.1234.abcdef123456/nixexprs.tar.xz" }
+      let(:flake_lock_content) { indirect_tarball_lock(original: original, locked_url: locked_url) }
+
+      it "uses the channel from the ref and the suffix from the locked tarball" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.requirements.first[:source]).to eq(
+          type: "tarball",
+          url: "https://channels.nixos.org/nixos-25.11/nixexprs.tar.xz",
+          branch: nil,
+          ref: "nixos-25.11"
+        )
+      end
+
+      context "when the locked tarball is on channels.nixos.org" do
+        let(:locked_url) { "https://channels.nixos.org/nixos-25.11/nixexprs.tar.gz?rev=abc" }
+
+        it "still parses the input and keeps the suffix" do
+          expect(dependencies.first.requirements.first[:source]).to include(
+            url: "https://channels.nixos.org/nixos-25.11/nixexprs.tar.gz",
+            ref: "nixos-25.11"
+          )
+        end
+      end
+
+      context "when the locked tarball is not hosted by NixOS" do
+        let(:locked_url) { "https://example.com/nixos/unstable/abc/nixexprs.tar.xz" }
+
+        it "skips the input" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "when the locked url is not a nixexprs tarball" do
+        let(:locked_url) { "https://releases.nixos.org/nixos/unstable/abc/other.tar.xz" }
+
+        it "skips the input" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "when the indirect input has no ref" do
+        let(:original) { { "id" => "nixpkgs", "type" => "indirect" } }
+
+        it "skips the input, because it does not name a channel" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "when the ref is not a channel name" do
+        let(:original) { { "id" => "nixpkgs", "ref" => "pull/1489/head", "type" => "indirect" } }
+
+        it "skips the input" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "when the input is pinned to a revision" do
+        let(:original) do
+          {
+            "id" => "nixpkgs",
+            "ref" => "nixos-25.11",
+            "rev" => "0123456789abcdef0123456789abcdef01234567",
+            "type" => "indirect"
+          }
+        end
+
+        it "skips the input" do
+          expect(dependencies).to be_empty
+        end
+      end
+    end
+  end
+
+  def indirect_tarball_lock(original:, locked_url:)
+    JSON.pretty_generate(
+      "nodes" => {
+        "nixpkgs_2" => {
+          "locked" => {
+            "lastModified" => 1_700_000_000,
+            "narHash" => "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "rev" => "1111111111111111111111111111111111111111",
+            "type" => "tarball",
+            "url" => locked_url
+          },
+          "original" => original
+        },
+        "root" => { "inputs" => { "nixpkgs" => "nixpkgs_2" } }
+      },
+      "root" => "root",
+      "version" => 7
+    )
   end
 end
