@@ -12,8 +12,10 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/create_security_update_pull_request"
 require "dependabot/dependency_change_builder"
 require "dependabot/notices"
+require "dependabot/source"
 
 require "dependabot/bundler"
+require "dependabot/npm_and_yarn/file_parser"
 
 RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest do
   include DependencyFileHelpers
@@ -240,6 +242,68 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         :dependencies
       ).and_return([dependency])
       allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when a dependency is also declared in a support manifest" do
+      let(:parsed_dependency) do
+        files = [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { "dependencies" => { "chalk" => "1.0.0" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "../shared/package.json",
+            content: { "dependencies" => { "chalk" => "2.0.0" } }.to_json,
+            support_file: true
+          )
+        ]
+        parser = Dependabot::NpmAndYarn::FileParser.new(
+          dependency_files: files,
+          source: Dependabot::Source.new(provider: "github", repo: "test/repo", directory: "/"),
+          credentials: []
+        )
+
+        T.must(parser.parse.find { |dep| dep.name == "chalk" })
+      end
+
+      let(:dependency_snapshot) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          job_dependencies: [parsed_dependency],
+          ecosystem: ecosystem,
+          notices: []
+        )
+      end
+
+      it "does not select a support-manifest version for the security update" do
+        allow(dependency_snapshot).to receive(:job_dependencies).and_return([parsed_dependency])
+        allow(job).to receive(:allowed_update?).and_return(true)
+        checked_dependencies = []
+
+        allow(create_security_update_pull_request).to receive(:update_checker_for) do |candidate|
+          checked_dependencies << candidate
+          instance_double(
+            Dependabot::UpdateCheckers::Base,
+            vulnerable?: candidate.requirements.any? { |req| req.file == "../shared/package.json" },
+            version_class: Dependabot::NpmAndYarn::Version,
+            dependency: candidate,
+            latest_version: "3.0.0",
+            up_to_date?: true
+          )
+        end
+        allow(create_security_update_pull_request).to receive(:record_security_update_not_needed_error)
+        allow(create_security_update_pull_request).to receive(:record_security_update_not_found)
+
+        perform
+
+        expect(checked_dependencies).to all(
+          have_attributes(
+            requirements: contain_exactly(
+              have_attributes(file: "package.json", requirement_string: "1.0.0")
+            )
+          )
+        )
+      end
     end
 
     context "when no requirement unlock can fix the vulnerability" do
