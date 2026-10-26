@@ -47,6 +47,7 @@ module Dependabot
         @error_handler = error_handler
         @job = job
         @group = group
+        @deferred_removals = T.let(nil, T.nilable(T::Hash[String, T::Set[String]]))
       end
 
       sig { returns(Dependabot::DependencySnapshot) }
@@ -179,7 +180,7 @@ module Dependabot
           store_changes(dependency)
         end
 
-        forget_reintroduced_dependencies(group_changes, removed_names)
+        forget_reintroduced_dependencies(group_changes.current_dependency_files(job), removed_names)
 
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
@@ -199,8 +200,7 @@ module Dependabot
           return nil
         end
 
-        removed_names.each { |name| dependency_snapshot.add_handled_dependencies(name) }
-        removed_dependency_names.merge(removed_names.map(&:downcase))
+        record_accepted_removals(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.
@@ -221,6 +221,7 @@ module Dependabot
         changed_files_by_path = T.let({}, T::Hash[String, Dependabot::DependencyFile])
         initial_paths = T.let(working_files_by_path.keys.to_set, T::Set[String])
         created_paths = T.let(Set.new, T::Set[String])
+        @deferred_removals = {}
         dependency_changes = T.must(job.source.directories).filter_map do |directory|
           job.source.directory = directory
           dependency_snapshot.current_directory = directory
@@ -241,12 +242,16 @@ module Dependabot
           change
         end
 
+        commit_deferred_removals(working_files_by_path, created_paths)
+
         first_change = dependency_changes.first
         if first_change
           first_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
           first_change.updated_dependency_files.replace(changed_files_by_path.values)
         end
         first_change
+      ensure
+        @deferred_removals = nil
       end
 
       sig do
@@ -987,8 +992,8 @@ module Dependabot
       # Files inherited from an earlier directory's accepted updates (shared files) count as changes.
       sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
       def incoming_file_changes?(dependency_files)
-        snapshot_files = dependency_snapshot.dependency_files.to_h { |file| [file.path, file] }
-        dependency_files.any? { |file| snapshot_files[file.path]&.content != file.content }
+        snapshot_contents = dependency_snapshot.dependency_files.to_h { |file| [file.path, file.content] }
+        dependency_files.to_h { |file| [file.path, file.content] } != snapshot_contents
       end
 
       # Absence only confirms a removal when the dependency was in this directory's snapshot and an
@@ -1008,15 +1013,53 @@ module Dependabot
         removed_names << name
       end
 
+      # Removals are final only once every directory has finished, because a later directory can
+      # reintroduce a dependency through a shared file. While deferred they wait per directory.
+      sig { params(removed_names: T::Set[String]).void }
+      def record_accepted_removals(removed_names)
+        directory = job.source.directory
+        if @deferred_removals && directory
+          @deferred_removals[directory] = removed_names.dup
+        else
+          commit_removals(removed_names)
+        end
+      end
+
+      sig { params(removed_names: T::Set[String]).void }
+      def commit_removals(removed_names)
+        removed_names.each { |name| dependency_snapshot.add_handled_dependencies(name) }
+        removed_dependency_names.merge(removed_names.map(&:downcase))
+      end
+
+      # Rechecks each directory's removals against its final working files before committing them.
+      sig do
+        params(
+          working_files_by_path: T::Hash[String, Dependabot::DependencyFile],
+          created_paths: T::Set[String]
+        ).void
+      end
+      def commit_deferred_removals(working_files_by_path, created_paths)
+        pending = @deferred_removals || {}
+        original_directory = job.source.directory
+        pending.each do |directory, removed_names|
+          job.source.directory = directory
+          dependency_snapshot.current_directory = directory
+          final_files = working_dependency_files_for(directory, working_files_by_path, created_paths)
+          forget_reintroduced_dependencies(final_files, removed_names)
+          commit_removals(removed_names)
+        end
+      ensure
+        job.source.directory = original_directory
+        dependency_snapshot.current_directory = original_directory if original_directory
+        @deferred_removals = nil
+      end
+
       # A later update may bring a removed dependency back. Confirm against the final files: it
       # stays resolved only if it came back at a version no advisory flags.
-      sig do
-        params(group_changes: Dependabot::Updater::DependencyGroupChangeBatch, removed_names: T::Set[String]).void
-      end
-      def forget_reintroduced_dependencies(group_changes, removed_names)
+      sig { params(final_files: T::Array[Dependabot::DependencyFile], removed_names: T::Set[String]).void }
+      def forget_reintroduced_dependencies(final_files, removed_names)
         return if removed_names.empty?
 
-        final_files = group_changes.current_dependency_files(job)
         present = dependency_file_parser(final_files).parse.group_by { |dependency| dependency.name.downcase }
         removed_names.reject! do |name|
           reintroduced = present[name.downcase]

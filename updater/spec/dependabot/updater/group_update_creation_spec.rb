@@ -521,6 +521,10 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       expect(test_instance.incoming_file_changes?([snapshot_file])).to be(false)
     end
 
+    it "is true when an earlier directory deleted a file" do
+      expect(test_instance.incoming_file_changes?([])).to be(true)
+    end
+
     it "is true when a shared file was edited by an earlier directory" do
       edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "b", directory: "/")
 
@@ -528,15 +532,34 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#record_accepted_removals" do
+    let(:dependency) { dependencies.first }
+    let(:removed_names) { Set.new([dependency.name]) }
+
+    before { allow(dependency_snapshot).to receive(:add_handled_dependencies) }
+
+    it "commits immediately outside a multi-directory compile" do
+      test_instance.record_accepted_removals(removed_names)
+
+      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
+    end
+
+    it "holds removals back while a multi-directory compile is running" do
+      test_instance.instance_variable_set(:@deferred_removals, {})
+
+      test_instance.record_accepted_removals(removed_names)
+
+      expect(test_instance.removed_dependency_names).to be_empty
+    end
+  end
+
   describe "#forget_reintroduced_dependencies" do
     let(:dependency) { dependencies.first }
-    let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
     let(:parser) { instance_double(Dependabot::FileParsers::Base) }
     let(:removed_names) { Set.new([dependency.name]) }
     let(:advisory) { instance_double(Dependabot::SecurityAdvisory) }
 
     before do
-      allow(group_changes).to receive(:current_dependency_files).with(job).and_return([])
       allow(test_instance).to receive(:dependency_file_parser).and_return(parser)
       allow(job).to receive_messages(package_manager: "bundler", security_advisories_for: [advisory])
       allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
@@ -549,7 +572,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
       allow(parser).to receive(:parse).and_return([fixed])
 
-      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
+      test_instance.forget_reintroduced_dependencies([], removed_names)
 
       expect(removed_names).to include(dependency.name)
     end
@@ -569,7 +592,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
       allow(parser).to receive(:parse).and_return([mixed])
 
-      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
+      test_instance.forget_reintroduced_dependencies([], removed_names)
 
       expect(removed_names).to be_empty
     end
@@ -580,7 +603,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
       allow(parser).to receive(:parse).and_return([vulnerable])
 
-      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
+      test_instance.forget_reintroduced_dependencies([], removed_names)
 
       expect(removed_names).to be_empty
     end
@@ -588,7 +611,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     it "keeps a dependency that is still absent from the final files" do
       allow(parser).to receive(:parse).and_return([])
 
-      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
+      test_instance.forget_reintroduced_dependencies([], removed_names)
 
       expect(removed_names).to include(dependency.name)
     end
@@ -744,8 +767,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
         original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
         allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
-        batch = Dependabot::Updater::DependencyGroupChangeBatch.new(initial_dependency_files: [edited])
-        allow(Dependabot::Updater::DependencyGroupChangeBatch).to receive(:new).and_return(batch)
+        allow(Dependabot::Updater::DependencyGroupChangeBatch).to receive(:new).and_call_original
 
         test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
 
