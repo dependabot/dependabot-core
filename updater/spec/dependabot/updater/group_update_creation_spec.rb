@@ -1083,6 +1083,87 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "cross-directory removal and reintroduction through a shared file" do
+    let(:parent) do
+      Dependabot::Dependency.new(name: "parent", version: "1.0.0", requirements: [], package_manager: "bundler")
+    end
+    let(:child) do
+      Dependabot::Dependency.new(name: "dep1", version: "1.0.0", requirements: [], package_manager: "bundler")
+    end
+    let(:dependencies) { [parent, child] }
+    let(:group_dependencies) { [parent, child] }
+    let(:shared_file) { Dependabot::DependencyFile.new(name: "shared.lock", content: "v1", directory: "/") }
+    let(:advisory) { instance_double(Dependabot::SecurityAdvisory) }
+    let(:security_advisories) { [advisory] }
+    let(:updates) { %w(removed reintroduced).each_with_index.to_h { |content, i| [i, content] } }
+    let(:next_content) { updates.values.each }
+
+    before do
+      allow(source).to receive(:directories).and_return(%w(/a /b))
+      allow(source).to receive(:directory=) { |dir| allow(source).to receive(:directory).and_return(dir) }
+      allow(dependency_snapshot).to receive_messages(
+        all_dependency_files: [shared_file],
+        dependency_files: [shared_file],
+        dependencies: dependencies,
+        handled_dependencies: Set.new
+      )
+      allow(dependency_snapshot).to receive(:current_directory=)
+      allow(advisory).to receive(:vulnerable?).and_return(true)
+      allow(job).to receive(:security_updates_only?).and_return(true)
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
+      allow(test_instance).to receive(:dependency_file_parser) do |files|
+        content = files.find { |f| f.name.end_with?("shared.lock") }&.content
+        parsed = content&.start_with?("removed") ? [parent] : [parent, child]
+        instance_double(Dependabot::FileParsers::Base, parse: parsed)
+      end
+      allow(test_instance).to receive(:compile_updates_for) do |dependency, _files, _group|
+        next [] unless dependency.name == "parent"
+
+        [Dependabot::Dependency.new(
+          name: "parent",
+          version: "2.0.0",
+          previous_version: "1.0.0",
+          requirements: [],
+          previous_requirements: [],
+          package_manager: "bundler"
+        )]
+      end
+      allow(test_instance).to receive(:create_change_for) do |lead, _updated, _files, _group|
+        file = Dependabot::DependencyFile.new(
+          name: "shared.lock",
+          content: next_content.next,
+          directory: "/",
+          operation: Dependabot::DependencyFile::Operation::UPDATE
+        )
+        Dependabot::DependencyChange.new(
+          job: job, updated_dependencies: [lead], updated_dependency_files: [file]
+        )
+      end
+    end
+
+    context "when the second directory reintroduces the vulnerable dependency" do
+      it "neither records the removal nor marks the dependency handled, so it is still reported" do
+        change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+        expect(test_instance.removed_dependency_names).to be_empty
+        expect(dependency_snapshot).not_to have_received(:add_handled_dependencies).with("dep1")
+        expect(test_instance.failed_security_update_dependencies(change).map(&:name)).to include("dep1")
+      end
+    end
+
+    context "when the second directory keeps the dependency removed" do
+      let(:updates) { { 0 => "removed", 1 => "removed-again" } }
+
+      it "records the removal, marks it handled and does not report it" do
+        change = test_instance.compile_all_dependency_changes_for_directories(group)
+
+        expect(test_instance.removed_dependency_names).to include("dep1")
+        expect(dependency_snapshot).to have_received(:add_handled_dependencies).with("dep1").at_least(:once)
+        expect(test_instance.failed_security_update_dependencies(change).map(&:name)).not_to include("dep1")
+      end
+    end
+  end
+
   describe "#compile_all_dependency_changes_for_directories" do
     let(:original_file) do
       Dependabot::DependencyFile.new(name: "Gemfile", content: "original")
