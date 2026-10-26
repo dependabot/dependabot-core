@@ -53,6 +53,11 @@ module Dependabot
         end
       end
 
+      sig { override.returns(T::Boolean) }
+      def complete_parse?
+        !@transitive_scan_failed
+      end
+
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
@@ -82,6 +87,7 @@ module Dependabot
       def parse_with_transitive_dependencies
         declared = parse_standard_dependencies
         tree = MavenDependencyParser.build_dependency_set(pomfiles, credentials: credentials)
+        @transitive_scan_failed = T.let(tree.nil?, T.nilable(T::Boolean))
         return declared unless tree
 
         dependency_set = DependencySet.new(declared)

@@ -181,14 +181,14 @@ module Dependabot
         end
 
         final_files = group_changes.current_dependency_files(job)
-        collect_absent_group_dependencies(
+        # While deferred, candidates stay intact so the final per-directory reconciliation sees them.
+        reconcile_removals(
           final_files,
           original_dependencies,
           removed_names,
-          changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files)
+          changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files),
+          forget: @deferred_removals.nil?
         )
-        # While deferred, candidates stay intact so the final per-directory reconciliation sees them.
-        forget_reintroduced_dependencies(final_files, removed_names) unless @deferred_removals
 
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
@@ -1080,33 +1080,51 @@ module Dependabot
       def reconcile_in_workspace(final_files, removed_names, workspace_files, changed)
         prepare_workspace
         materialize_workspace_files(workspace_files)
-        collect_absent_group_dependencies(
-          final_files, dependency_snapshot.dependencies, removed_names, changed: changed
-        )
-        forget_reintroduced_dependencies(final_files, removed_names)
+        reconcile_removals(final_files, dependency_snapshot.dependencies, removed_names, changed: changed, forget: true)
       ensure
         cleanup_created_workspace_files(workspace_files)
         cleanup_workspace
       end
 
-      # A group dependency skipped earlier (e.g. by update-types) can still vanish when a later
-      # parent update removes it, so compare the final files against this directory's snapshot too.
+      # Parses the final files once (parsing can run expensive resolution) to both collect group
+      # dependencies that vanished without being tracked (e.g. skipped by update-types before a parent
+      # update removed them) and, if `forget`, drop removals that a later update reintroduced.
       sig do
         params(
           final_files: T::Array[Dependabot::DependencyFile],
           original_dependencies: T::Array[Dependabot::Dependency],
           removed_names: T::Set[String],
+          changed: T::Boolean,
+          forget: T::Boolean
+        ).void
+      end
+      def reconcile_removals(final_files, original_dependencies, removed_names, changed:, forget:)
+        candidates = changed ? group.dependencies.map(&:name).uniq - removed_names.to_a : []
+        return if candidates.empty? && (removed_names.empty? || !forget)
+
+        parser = dependency_file_parser(final_files)
+        parsed = parser.parse
+        unless parser.complete_parse?
+          # Absence in a partial parse (e.g. a failed Maven tree scan) proves nothing.
+          removed_names.clear if forget
+          return
+        end
+
+        collect_absent_group_dependencies(parsed, candidates, original_dependencies, removed_names, changed: changed)
+        forget_reintroduced_dependencies(parsed, removed_names) if forget
+      end
+
+      sig do
+        params(
+          parsed: T::Array[Dependabot::Dependency],
+          candidates: T::Array[String],
+          original_dependencies: T::Array[Dependabot::Dependency],
+          removed_names: T::Set[String],
           changed: T::Boolean
         ).void
       end
-      def collect_absent_group_dependencies(final_files, original_dependencies, removed_names, changed:)
-        # Parsing can run expensive resolution, and nothing is recorded without a change.
-        return unless changed
-
-        candidates = group.dependencies.map(&:name).uniq - removed_names.to_a
-        return if candidates.empty?
-
-        present = dependency_file_parser(final_files).parse.to_set(&:name)
+      def collect_absent_group_dependencies(parsed, candidates, original_dependencies, removed_names, changed:)
+        present = parsed.to_set(&:name)
         candidates.each do |name|
           next if present.include?(name)
 
@@ -1116,11 +1134,11 @@ module Dependabot
 
       # A later update may bring a removed dependency back. Confirm against the final files: it
       # stays resolved only if it came back at a version no advisory flags.
-      sig { params(final_files: T::Array[Dependabot::DependencyFile], removed_names: T::Set[String]).void }
-      def forget_reintroduced_dependencies(final_files, removed_names)
+      sig { params(parsed: T::Array[Dependabot::Dependency], removed_names: T::Set[String]).void }
+      def forget_reintroduced_dependencies(parsed, removed_names)
         return if removed_names.empty?
 
-        present = dependency_file_parser(final_files).parse.group_by { |dependency| dependency.name.downcase }
+        present = parsed.group_by { |dependency| dependency.name.downcase }
         removed_names.reject! do |name|
           reintroduced = present[name.downcase]
           reintroduced&.any? && !reintroduced.all? { |dependency| safe_after_reintroduction?(dependency) }

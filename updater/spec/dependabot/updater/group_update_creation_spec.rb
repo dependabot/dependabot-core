@@ -155,7 +155,11 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       cleanup_workspace: nil
     )
     allow(test_instance).to receive_messages(
-      dependency_file_parser: instance_double(Dependabot::FileParsers::Base, parse: dependencies),
+      dependency_file_parser: instance_double(
+        Dependabot::FileParsers::Base,
+        parse: dependencies,
+        complete_parse?: true
+      ),
       service: service
     )
     allow(Dependabot.logger).to receive(:info)
@@ -532,26 +536,61 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
-  describe "#collect_absent_group_dependencies" do
+  describe "#reconcile_removals" do
     let(:dependency) { dependencies.first }
+    let(:parser) { instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: complete) }
+    let(:complete) { true }
 
-    it "does not parse when nothing changed" do
-      allow(test_instance).to receive(:dependency_file_parser)
+    before { allow(test_instance).to receive(:dependency_file_parser).and_return(parser) }
 
-      test_instance.collect_absent_group_dependencies([], [dependency], Set.new, changed: false)
+    it "does not parse when nothing changed and nothing is pending" do
+      test_instance.reconcile_removals([], [dependency], Set.new, changed: false, forget: true)
 
       expect(test_instance).not_to have_received(:dependency_file_parser)
     end
 
     it "records group dependencies missing from the final files" do
-      allow(test_instance).to receive(:dependency_file_parser).and_return(
-        instance_double(Dependabot::FileParsers::Base, parse: [])
-      )
       removed = Set.new
 
-      test_instance.collect_absent_group_dependencies([], [dependency], removed, changed: true)
+      test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
 
       expect(removed).to include(dependency.name)
+    end
+
+    it "parses the final files only once when collecting and reconciling" do
+      removed = Set.new(["other"])
+
+      test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
+
+      expect(test_instance).to have_received(:dependency_file_parser).once
+    end
+
+    context "when the parse is incomplete (e.g. a failed Maven tree scan)" do
+      let(:complete) { false }
+
+      it "does not treat absent dependencies as removed" do
+        removed = Set.new
+
+        test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
+
+        expect(removed).to be_empty
+      end
+
+      it "discards pending removals it cannot confirm" do
+        removed = Set.new([dependency.name])
+
+        test_instance.reconcile_removals([], [dependency], removed, changed: true, forget: true)
+
+        expect(removed).to be_empty
+      end
+
+      it "keeps pending removals while reconciliation is deferred" do
+        removed = Set.new([dependency.name])
+
+        test_instance.reconcile_removals([], [dependency], removed, changed: false, forget: false)
+
+        expect(removed).to include(dependency.name)
+      end
     end
   end
 
@@ -572,7 +611,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       allow(dependency_snapshot).to receive(:add_handled_dependencies)
       allow(test_instance).to receive_messages(
         working_dependency_files_for: [file],
-        dependency_file_parser: instance_double(Dependabot::FileParsers::Base, parse: [])
+        dependency_file_parser: instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: true)
       )
     end
 
@@ -584,7 +623,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
     it "does not commit a pending removal that the final files reintroduce vulnerably" do
       allow(test_instance).to receive(:dependency_file_parser).and_return(
-        instance_double(Dependabot::FileParsers::Base, parse: [dependency])
+        instance_double(Dependabot::FileParsers::Base, parse: [dependency], complete_parse?: true)
       )
       allow(job).to receive(:security_advisories_for).and_return([])
       allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
@@ -642,12 +681,10 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
   describe "#forget_reintroduced_dependencies" do
     let(:dependency) { dependencies.first }
-    let(:parser) { instance_double(Dependabot::FileParsers::Base) }
     let(:removed_names) { Set.new([dependency.name]) }
     let(:advisory) { instance_double(Dependabot::SecurityAdvisory) }
 
     before do
-      allow(test_instance).to receive(:dependency_file_parser).and_return(parser)
       allow(job).to receive_messages(package_manager: "bundler", security_advisories_for: [advisory])
       allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Gem::Version)
       allow(advisory).to receive(:vulnerable?) { |version| version < Gem::Version.new("2.0.0") }
@@ -657,9 +694,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       fixed = Dependabot::Dependency.new(
         name: dependency.name, version: "2.0.0", requirements: [], package_manager: "bundler"
       )
-      allow(parser).to receive(:parse).and_return([fixed])
-
-      test_instance.forget_reintroduced_dependencies([], removed_names)
+      test_instance.forget_reintroduced_dependencies([fixed], removed_names)
 
       expect(removed_names).to include(dependency.name)
     end
@@ -677,9 +712,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         package_manager: "bundler",
         metadata: { all_versions: copies }
       )
-      allow(parser).to receive(:parse).and_return([mixed])
-
-      test_instance.forget_reintroduced_dependencies([], removed_names)
+      test_instance.forget_reintroduced_dependencies([mixed], removed_names)
 
       expect(removed_names).to be_empty
     end
@@ -688,16 +721,12 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       vulnerable = Dependabot::Dependency.new(
         name: dependency.name, version: "1.0.0", requirements: [], package_manager: "bundler"
       )
-      allow(parser).to receive(:parse).and_return([vulnerable])
-
-      test_instance.forget_reintroduced_dependencies([], removed_names)
+      test_instance.forget_reintroduced_dependencies([vulnerable], removed_names)
 
       expect(removed_names).to be_empty
     end
 
     it "keeps a dependency that is still absent from the final files" do
-      allow(parser).to receive(:parse).and_return([])
-
       test_instance.forget_reintroduced_dependencies([], removed_names)
 
       expect(removed_names).to include(dependency.name)
@@ -796,7 +825,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           note_security_update_not_found: nil
         )
         allow(test_instance).to receive(:dependency_file_parser).and_return(
-          instance_double(Dependabot::FileParsers::Base, parse: [reparsed_dependency])
+          instance_double(Dependabot::FileParsers::Base, parse: [reparsed_dependency], complete_parse?: true)
         )
         allow(checker).to receive(:up_to_date?) do
           Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
@@ -832,7 +861,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       before do
         allow(test_instance).to receive(:dependency_file_parser).and_return(
-          instance_double(Dependabot::FileParsers::Base, parse: [])
+          instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: true)
         )
       end
 
@@ -1031,7 +1060,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
             ["git", "ls-files", "--stage", "submodule"],
             cwd: repo_contents_path
           )
-          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies, complete_parse?: true)
         end
       end
 
@@ -1066,7 +1095,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         allow(Dependabot::Workspace).to receive(:cleanup!).and_call_original
         allow(test_instance).to receive(:dependency_file_parser) do
           materialized_file_seen << File.exist?(created_path)
-          instance_double(Dependabot::FileParsers::Base, parse: dependencies)
+          instance_double(Dependabot::FileParsers::Base, parse: dependencies, complete_parse?: true)
         end
       end
 
@@ -1114,7 +1143,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       allow(test_instance).to receive(:dependency_file_parser) do |files|
         content = files.find { |f| f.name.end_with?("shared.lock") }&.content
         parsed = content&.start_with?("removed") ? [parent] : [parent, child]
-        instance_double(Dependabot::FileParsers::Base, parse: parsed)
+        instance_double(Dependabot::FileParsers::Base, parse: parsed, complete_parse?: true)
       end
       allow(test_instance).to receive(:compile_updates_for) do |dependency, _files, _group|
         next [] unless dependency.name == "parent"

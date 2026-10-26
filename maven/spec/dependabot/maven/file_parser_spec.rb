@@ -1308,6 +1308,12 @@ RSpec.describe Dependabot::Maven::FileParser do
           )
         end
 
+        it "reports the parse as incomplete" do
+          parser.parse
+
+          expect(parser.complete_parse?).to be(false)
+        end
+
         it "returns the flag-off result" do
           expect(dependencies).to eq(flag_off_dependencies)
           expect(dependencies.map(&:name)).to include("commons-io:commons-io")
