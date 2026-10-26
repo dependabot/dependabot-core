@@ -187,7 +187,8 @@ module Dependabot
           original_dependencies,
           removed_names,
           changed: group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files),
-          forget: @deferred_removals.nil?
+          forget: @deferred_removals.nil?,
+          workspace_files: workspace_files || []
         )
 
         group_notices = notices + group_changes.notices
@@ -230,6 +231,7 @@ module Dependabot
         initial_paths = T.let(working_files_by_path.keys.to_set, T::Set[String])
         created_paths = T.let(Set.new, T::Set[String])
         @deferred_removals = {}
+        reconciliation_parses.clear
         dependency_changes = T.must(job.source.directories).filter_map do |directory|
           job.source.directory = directory
           dependency_snapshot.current_directory = directory
@@ -260,6 +262,7 @@ module Dependabot
         first_change
       ensure
         @deferred_removals = nil
+        reconciliation_parses.clear
       end
 
       sig do
@@ -1066,6 +1069,7 @@ module Dependabot
         job.source.directory = original_directory
         dependency_snapshot.current_directory = original_directory if original_directory
         @deferred_removals = nil
+        reconciliation_parses.clear
       end
 
       # Clone-based parsers read from the workspace, so it must hold every accepted edit while parsing.
@@ -1078,12 +1082,56 @@ module Dependabot
         ).void
       end
       def reconcile_in_workspace(final_files, removed_names, workspace_files, changed)
+        # Unchanged inputs mean the per-directory compile already parsed exactly this state.
+        return reconcile_with_cached_parse(final_files, removed_names, workspace_files, changed) if
+          reconciliation_parses.key?(parse_key(final_files, workspace_files))
+
         prepare_workspace
         materialize_workspace_files(workspace_files)
-        reconcile_removals(final_files, dependency_snapshot.dependencies, removed_names, changed: changed, forget: true)
+        reconcile_removals(
+          final_files,
+          dependency_snapshot.dependencies,
+          removed_names,
+          changed: changed,
+          forget: true,
+          workspace_files: workspace_files
+        )
       ensure
         cleanup_created_workspace_files(workspace_files)
         cleanup_workspace
+      end
+
+      sig do
+        params(
+          final_files: T::Array[Dependabot::DependencyFile],
+          removed_names: T::Set[String],
+          workspace_files: T::Array[Dependabot::DependencyFile],
+          changed: T::Boolean
+        ).void
+      end
+      def reconcile_with_cached_parse(final_files, removed_names, workspace_files, changed)
+        reconcile_removals(
+          final_files,
+          dependency_snapshot.dependencies,
+          removed_names,
+          changed: changed,
+          forget: true,
+          workspace_files: workspace_files
+        )
+      end
+
+      sig do
+        params(
+          final_files: T::Array[Dependabot::DependencyFile],
+          workspace_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T::Array[Object])
+      end
+      def parse_key(final_files, workspace_files)
+        [
+          job.source.directory,
+          final_files.to_h { |file| [file.path, file.content] },
+          workspace_files.to_h { |file| [file.path, file.content] }
+        ]
       end
 
       # Parses the final files once (parsing can run expensive resolution) to both collect group
@@ -1095,16 +1143,16 @@ module Dependabot
           original_dependencies: T::Array[Dependabot::Dependency],
           removed_names: T::Set[String],
           changed: T::Boolean,
-          forget: T::Boolean
+          forget: T::Boolean,
+          workspace_files: T::Array[Dependabot::DependencyFile]
         ).void
       end
-      def reconcile_removals(final_files, original_dependencies, removed_names, changed:, forget:)
+      def reconcile_removals(final_files, original_dependencies, removed_names, changed:, forget:, workspace_files: [])
         candidates = changed ? group.dependencies.map(&:name).uniq - removed_names.to_a : []
         return if candidates.empty? && (removed_names.empty? || !forget)
 
-        parser = dependency_file_parser(final_files)
-        parsed = parser.parse
-        unless parser.complete_parse?
+        parsed, complete = parse_for_reconciliation(final_files, workspace_files)
+        unless complete
           # Absence in a partial parse (e.g. a failed Maven tree scan) proves nothing.
           removed_names.clear if forget
           return
@@ -1112,6 +1160,37 @@ module Dependabot
 
         collect_absent_group_dependencies(parsed, candidates, original_dependencies, removed_names, changed: changed)
         forget_reintroduced_dependencies(parsed, removed_names) if forget
+      end
+
+      # Results are reused across the per-directory and final passes while the inputs are unchanged.
+      sig do
+        params(
+          final_files: T::Array[Dependabot::DependencyFile],
+          workspace_files: T::Array[Dependabot::DependencyFile]
+        ).returns([T::Array[Dependabot::Dependency], T::Boolean])
+      end
+      def parse_for_reconciliation(final_files, workspace_files)
+        return parse_files(final_files) unless @deferred_removals
+
+        key = parse_key(final_files, workspace_files)
+        reconciliation_parses[key] ||= parse_files(final_files)
+      end
+
+      sig do
+        params(final_files: T::Array[Dependabot::DependencyFile])
+          .returns([T::Array[Dependabot::Dependency], T::Boolean])
+      end
+      def parse_files(final_files)
+        parser = dependency_file_parser(final_files)
+        [parser.parse, parser.complete_parse?]
+      end
+
+      sig { returns(T::Hash[T::Array[Object], [T::Array[Dependabot::Dependency], T::Boolean]]) }
+      def reconciliation_parses
+        @reconciliation_parses ||= T.let(
+          {},
+          T.nilable(T::Hash[T::Array[Object], [T::Array[Dependabot::Dependency], T::Boolean]])
+        )
       end
 
       sig do

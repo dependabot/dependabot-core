@@ -594,6 +594,47 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#parse_for_reconciliation" do
+    let(:file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "a", directory: "/a") }
+    let(:parser) { instance_double(Dependabot::FileParsers::Base, parse: [], complete_parse?: true) }
+
+    before { allow(test_instance).to receive(:dependency_file_parser).and_return(parser) }
+
+    it "reuses the parse for unchanged inputs while removals are deferred" do
+      test_instance.instance_variable_set(:@deferred_removals, {})
+
+      2.times { test_instance.parse_for_reconciliation([file], []) }
+
+      expect(test_instance).to have_received(:dependency_file_parser).once
+    end
+
+    it "reparses when the files change" do
+      test_instance.instance_variable_set(:@deferred_removals, {})
+      changed = Dependabot::DependencyFile.new(name: "Gemfile", content: "b", directory: "/a")
+
+      test_instance.parse_for_reconciliation([file], [])
+      test_instance.parse_for_reconciliation([changed], [])
+
+      expect(test_instance).to have_received(:dependency_file_parser).twice
+    end
+
+    it "reparses when workspace inputs change" do
+      test_instance.instance_variable_set(:@deferred_removals, {})
+      sibling = Dependabot::DependencyFile.new(name: "pkg/Gemfile", content: "x", directory: "/")
+
+      test_instance.parse_for_reconciliation([file], [])
+      test_instance.parse_for_reconciliation([file], [sibling])
+
+      expect(test_instance).to have_received(:dependency_file_parser).twice
+    end
+
+    it "never caches outside a multi-directory compile" do
+      2.times { test_instance.parse_for_reconciliation([file], []) }
+
+      expect(test_instance).to have_received(:dependency_file_parser).twice
+    end
+  end
+
   describe "#commit_deferred_removals" do
     let(:dependency) { dependencies.first }
     let(:file) { Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/a") }

@@ -46,6 +46,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
+        @incomplete_parse = T.let(false, T.nilable(T::Boolean))
         if scan_dependency_tree?
           parse_with_transitive_dependencies
         else
@@ -55,7 +56,7 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def complete_parse?
-        !@transitive_scan_failed
+        !@incomplete_parse
       end
 
       sig { returns(Ecosystem) }
@@ -87,8 +88,10 @@ module Dependabot
       def parse_with_transitive_dependencies
         declared = parse_standard_dependencies
         tree = MavenDependencyParser.build_dependency_set(pomfiles, credentials: credentials)
-        @transitive_scan_failed = T.let(tree.nil?, T.nilable(T::Boolean))
-        return declared unless tree
+        unless tree
+          @incomplete_parse = true
+          return declared
+        end
 
         dependency_set = DependencySet.new(declared)
         tree.dependencies.each do |dep|
@@ -166,6 +169,7 @@ module Dependabot
           dep = dependency_from_dependency_node(pom, dependency_node, plugin_names)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
+          @incomplete_parse = true
           errors << e
         end
 
@@ -173,6 +177,7 @@ module Dependabot
           dep = dependency_from_plugin_node(pom, dependency_node)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
+          @incomplete_parse = true
           errors << e
         end
 
@@ -207,6 +212,7 @@ module Dependabot
           dep = dependency_from_dependency_node(extension, dependency_node, plugin_names)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
+          @incomplete_parse = true
           errors << e
         end
 
@@ -229,6 +235,7 @@ module Dependabot
           dep = dependency_from_dependency_node(target, dependency_node, plugin_names)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
+          @incomplete_parse = true
           errors << e
         end
 

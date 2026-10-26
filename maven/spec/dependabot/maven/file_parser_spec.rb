@@ -512,6 +512,12 @@ RSpec.describe Dependabot::Maven::FileParser do
             )
         end
 
+        it "reports the parse as incomplete, since a declared dependency was skipped" do
+          parser.parse
+
+          expect(parser.complete_parse?).to be(false)
+        end
+
         context "when the property is required for all dependencies" do
           let(:pom_body) { fixture("poms", "missing_property_all.xml") }
 
