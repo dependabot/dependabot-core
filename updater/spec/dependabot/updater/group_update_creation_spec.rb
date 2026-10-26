@@ -489,6 +489,64 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#track_removed_dependency" do
+    let(:dependency) { dependencies.first }
+    let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
+    let(:changed_file) { instance_double(Dependabot::DependencyFile) }
+
+    it "records a dependency from the snapshot once an update has changed the files" do
+      allow(group_changes).to receive(:updated_dependency_files).and_return([changed_file])
+
+      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes)
+
+      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
+    end
+
+    it "ignores a dependency that was never in the active directory's snapshot" do
+      allow(group_changes).to receive(:updated_dependency_files).and_return([changed_file])
+
+      test_instance.track_removed_dependency(dependency.name, [], group_changes)
+
+      expect(test_instance.removed_dependency_names).to be_empty
+    end
+
+    it "ignores absence before any update has changed the files" do
+      allow(group_changes).to receive(:updated_dependency_files).and_return([])
+
+      test_instance.track_removed_dependency(dependency.name, [dependency], group_changes)
+
+      expect(test_instance.removed_dependency_names).to be_empty
+    end
+  end
+
+  describe "#forget_reintroduced_dependencies" do
+    let(:dependency) { dependencies.first }
+    let(:group_changes) { instance_double(Dependabot::Updater::DependencyGroupChangeBatch) }
+    let(:parser) { instance_double(Dependabot::FileParsers::Base) }
+
+    before do
+      allow(group_changes).to receive(:current_dependency_files).with(job).and_return([])
+      allow(test_instance).to receive(:dependency_file_parser).and_return(parser)
+      test_instance.removed_dependency_names << dependency.name.downcase
+    end
+
+    it "drops a removed dependency that is present in the final files" do
+      allow(parser).to receive(:parse).and_return([dependency])
+
+      test_instance.forget_reintroduced_dependencies(group_changes)
+
+      expect(test_instance.removed_dependency_names).to be_empty
+    end
+
+    it "keeps a dependency that is still absent from the final files" do
+      allow(parser).to receive(:parse).and_return([])
+
+      test_instance.forget_reintroduced_dependencies(group_changes)
+
+      expect(test_instance.removed_dependency_names).to include(dependency.name.downcase)
+    end
+  end
+
   describe "compile_all_dependency_changes_for" do
     let(:group_notices) { [] }
 

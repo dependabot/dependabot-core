@@ -125,7 +125,7 @@ module Dependabot
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
-          removed_dependency_names << group_dependency_name.downcase if dependency.nil?
+          track_removed_dependency(group_dependency_name, original_dependencies, group_changes) if dependency.nil?
           next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
@@ -167,6 +167,8 @@ module Dependabot
           group_changes.merge(dependency_change)
           store_changes(dependency)
         end
+
+        forget_reintroduced_dependencies(group_changes)
 
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
@@ -965,6 +967,32 @@ module Dependabot
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
              .reject { |dependency| resolved_by_removal?(dependency) }
+      end
+
+      # Absence only confirms a removal when the dependency was in this directory's snapshot and an
+      # accepted update has since changed the files; otherwise the parse may simply be incomplete.
+      sig do
+        params(
+          name: String,
+          original_dependencies: T::Array[Dependabot::Dependency],
+          group_changes: Dependabot::Updater::DependencyGroupChangeBatch
+        ).void
+      end
+      def track_removed_dependency(name, original_dependencies, group_changes)
+        return unless original_dependencies.any? { |dependency| dependency.name == name }
+        return if group_changes.updated_dependency_files.empty?
+
+        removed_dependency_names << name.downcase
+      end
+
+      # A later update may bring a removed dependency back, so confirm against the final files.
+      sig { params(group_changes: Dependabot::Updater::DependencyGroupChangeBatch).void }
+      def forget_reintroduced_dependencies(group_changes)
+        return if removed_dependency_names.empty?
+
+        final_files = group_changes.current_dependency_files(job)
+        present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
+        removed_dependency_names.subtract(present)
       end
 
       # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.
