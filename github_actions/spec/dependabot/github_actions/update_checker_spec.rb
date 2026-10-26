@@ -647,6 +647,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it "can update to the latest version" do
           expect(latest_version).to eq(tip_of_master)
         end
+
+        it "clones with a fingerprint without the repository URL or the temporary clone path" do
+          latest_version
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+            .with(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node },
+                  fingerprint: "git clone --no-recurse-submodules <url> <path>")
+        end
       end
 
       context "when it's on a different branch" do
