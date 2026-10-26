@@ -539,6 +539,108 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with GitHub-hosted runner labels in runs-on" do
+      let(:workflow_file_fixture_name) { "workflow_runner_labels.yml" }
+
+      def runner_requirement(label, path)
+        {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: { type: "runner" },
+          metadata: { declaration_string: label, yaml_source: { path: path } }
+        }
+      end
+
+      it "has a fixture covering every runs-on form that is not a hosted runner label" do
+        jobs = YAML.safe_load(workflow_file_body, aliases: true).fetch("jobs")
+
+        expect(jobs.transform_values { |job| job["runs-on"] }).to include(
+          "aliased" => "macos-15",
+          "self-hosted" => ["Self-Hosted", "ubuntu-22.04"],
+          "scale-set" => "ubuntu-24",
+          "gpu" => ["ubuntu-22.04", "gpu"],
+          "reused" => "windows-2022",
+          "latest" => "ubuntu-latest",
+          "matrix" => "${{ matrix.os }}",
+          "larger" => { "group" => "ubuntu-runners", "labels" => "ubuntu-22.04" },
+          "unversioned" => "windows-11-arm"
+        )
+        expect(workflow_file_body).to include(
+          "runs-on: &macos-15 macos-15",
+          "runs-on: *macos-15",
+          "runs-on: &arm-list [ubuntu-24.04-arm]",
+          "runs-on: *arm-list",
+          "runs-on: [&win windows-2022]",
+          "template: &job-template",
+          "reused: *job-template"
+        )
+      end
+
+      # TODO: runner-labels-experiment, drop once the experiment rolls out (#6584)
+      it "leaves runs-on alone unless the github_actions_runner_labels experiment is on" do
+        expect(dependencies.map(&:name)).to eq(["actions/checkout"])
+      end
+
+      context "when the github_actions_runner_labels experiment is on" do
+        # TODO: runner-labels-experiment, drop once the experiment rolls out (#6584)
+        before { Dependabot::Experiments.register(:github_actions_runner_labels, true) }
+
+        it "turns each versioned hosted runner label into a dependency on its image family" do
+          runners = dependencies.reject { |dependency| dependency.name == "actions/checkout" }
+
+          expect(runners.to_h { |dependency| [dependency.name, dependency.version] }).to eq(
+            "ubuntu" => "22.04",
+            "macos-xlarge" => "14",
+            "windows" => "2022",
+            "ubuntu-arm" => "24.04"
+          )
+        end
+
+        it "records the YAML path of a plain label and of a label inside a list" do
+          ubuntu = dependencies.find { |dependency| dependency.name == "ubuntu" }
+
+          expect(ubuntu.requirements).to contain_exactly(
+            runner_requirement("ubuntu-22.04", %w(jobs build runs-on)),
+            runner_requirement("ubuntu-22.04", ["jobs", "lint", "runs-on", 0])
+          )
+        end
+
+        it "skips lists with more than one label, which usually point at self-hosted runners" do
+          job_ids = dependencies.flat_map(&:requirements).filter_map { |req| req.metadata.dig(:yaml_source, :path, 1) }
+
+          expect(job_ids).not_to include("gpu", "self-hosted")
+        end
+
+        it "skips anchored jobs, lists and labels, since a bump would also move whatever aliases them" do
+          by_name = dependencies.to_h { |dependency| [dependency.name, dependency] }
+
+          expect(by_name).not_to have_key("macos")
+          expect(by_name.fetch("ubuntu-arm").requirements)
+            .to eq([runner_requirement("ubuntu-24.04-arm", %w(jobs arm runs-on))])
+          expect(by_name.fetch("windows").requirements)
+            .to eq([runner_requirement("windows-2022", %w(jobs windows runs-on))])
+        end
+
+        context "when the repository is on GitHub Enterprise Server" do
+          let(:source) do
+            Dependabot::Source.new(
+              provider: "github",
+              repo: "gocardless/bump",
+              directory: "/",
+              hostname: "ghes.example.com",
+              api_endpoint: "https://ghes.example.com/api/v3"
+            )
+          end
+          let(:workflow_file_body) { "jobs:\n  build:\n    runs-on: ubuntu-22.04\n" }
+
+          it "skips runner labels, since GHES has no hosted runners" do
+            expect(dependencies).to be_empty
+          end
+        end
+      end
+    end
+
     context "with actions using inconsistent case" do
       let(:workflow_file_fixture_name) { "inconsistent_case.yml" }
 

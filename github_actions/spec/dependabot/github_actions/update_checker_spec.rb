@@ -1899,4 +1899,159 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(expected_requirements) }
     end
   end
+
+  context "with a GitHub-hosted runner label from runs-on" do
+    let(:dependency_name) { "ubuntu" }
+    let(:runner_labels) { ["ubuntu-22.04"] }
+    let(:runner_version) { "22.04" }
+    let(:runner_metadata) do
+      lambda do |label, index|
+        { declaration_string: label, yaml_source: { path: ["jobs", "job#{index}", "runs-on"] } }
+      end
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: runner_version,
+        requirements: runner_labels.each_with_index.map do |label, index|
+          {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: { type: "runner" },
+            metadata: runner_metadata.call(label, index)
+          }
+        end,
+        package_manager: "github_actions"
+      )
+    end
+
+    def declaration_strings(requirements)
+      requirements.map { |req| req.metadata_string("declaration_string") }
+    end
+
+    it "proposes the newest generally available image in the family" do
+      expect(checker.latest_version.to_s).to eq("26.04")
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    it "rewrites the label and keeps the source and YAML path" do
+      updated = checker.updated_requirements.first
+
+      expect(updated.metadata_string("declaration_string")).to eq("ubuntu-26.04")
+      expect(updated.metadata[:yaml_source]).to eq(path: %w(jobs job0 runs-on))
+      expect(updated.source_hash).to eq(type: "runner")
+    end
+
+    it "never asks git for tags" do
+      checker.latest_version
+      checker.updated_requirements
+
+      expect(WebMock).not_to have_requested(:get, /git-upload-pack/)
+    end
+
+    context "with an advisory naming the image family" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "ubuntu",
+            package_manager: "github_actions",
+            vulnerable_versions: ["< 24.04"]
+          )
+        ]
+      end
+
+      it "is not vulnerable and has no security fix, since runner images have no advisories" do
+        expect(checker.vulnerable?).to be(false)
+        expect(checker.lowest_security_fix_version).to be_nil
+        expect(WebMock).not_to have_requested(:get, /git-upload-pack/)
+      end
+    end
+
+    context "with a family suffix" do
+      let(:dependency_name) { "ubuntu-arm" }
+      let(:runner_labels) { ["ubuntu-22.04-arm"] }
+
+      it "keeps the suffix after the new version" do
+        expect(declaration_strings(checker.updated_requirements)).to eq(["ubuntu-26.04-arm"])
+      end
+    end
+
+    context "with older labels of one family in several jobs" do
+      let(:runner_labels) { ["ubuntu-22.04", "ubuntu-24.04"] }
+
+      it "moves every one of them to the newest image" do
+        expect(declaration_strings(checker.updated_requirements)).to eq(["ubuntu-26.04", "ubuntu-26.04"])
+      end
+    end
+
+    context "when already on the newest image" do
+      let(:runner_labels) { ["ubuntu-26.04"] }
+      let(:runner_version) { "26.04" }
+
+      it "is up to date and leaves the requirement unchanged" do
+        expect(checker.up_to_date?).to be(true)
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+
+      context "with an ignore rule and raise_on_ignored" do
+        let(:ignored_versions) { [">= 23"] }
+        let(:raise_on_ignored) { true }
+
+        it "stays up to date without raising, since there is no newer image to ignore" do
+          expect(checker.latest_version.to_s).to eq("26.04")
+        end
+      end
+    end
+
+    context "when the newest image is ignored" do
+      let(:ignored_versions) { [">= 26.04"] }
+
+      it "proposes the newest image that is not ignored" do
+        expect(checker.latest_version.to_s).to eq("24.04")
+        expect(declaration_strings(checker.updated_requirements)).to eq(["ubuntu-24.04"])
+      end
+
+      context "with another job already on the ignored image" do
+        let(:runner_labels) { ["ubuntu-22.04", "ubuntu-26.04"] }
+
+        it "never moves that job back to an older image" do
+          expect(declaration_strings(checker.updated_requirements)).to eq(["ubuntu-24.04", "ubuntu-26.04"])
+        end
+      end
+    end
+
+    context "when every newer image is ignored" do
+      let(:ignored_versions) { [">= 23"] }
+
+      it "stays on the current image" do
+        expect(checker.latest_version.to_s).to eq("22.04")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+
+      context "with raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it "raises AllVersionsIgnored" do
+          expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "with string-keyed metadata from a serialized job" do
+      let(:runner_metadata) do
+        lambda do |label, index|
+          { "declaration_string" => label, "yaml_source" => { "path" => ["jobs", "job#{index}", "runs-on"] } }
+        end
+      end
+
+      it "rewrites the label under its existing key" do
+        expect(checker.updated_requirements.first.metadata).to eq(
+          "declaration_string" => "ubuntu-26.04",
+          "yaml_source" => { "path" => %w(jobs job0 runs-on) }
+        )
+      end
+    end
+  end
 end

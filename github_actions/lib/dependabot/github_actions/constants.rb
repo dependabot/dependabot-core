@@ -45,5 +45,8 @@ module Dependabot
     REF_KEY = "ref"
     USES_KEY = "uses"
     STEPS_KEY = "steps"
+
+    # The requirement source type of a GitHub-hosted runner label in `runs-on`
+    RUNNER_SOURCE_TYPE = "runner"
   end
 end

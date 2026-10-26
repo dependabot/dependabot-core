@@ -6,13 +6,16 @@ require "yaml"
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/github_actions/constants"
 require "dependabot/github_actions/lockfile/reader"
 require "dependabot/github_actions/version"
 require "dependabot/github_actions/package_manager"
+require "dependabot/github_actions/runner_label"
 require "dependabot/github_actions/workflow_file"
+require "dependabot/github_actions/workflow_file/runs_on_collector"
 
 # For docs, see
 # https://help.github.com/en/articles/configuring-a-workflow#referencing-actions-in-your-workflow
@@ -63,9 +66,46 @@ module Dependabot
 
           dependency_set << dep
         end
+        runner_dependencies(file, workflow_file).each { |dep| dependency_set << dep }
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, file.path
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          workflow_file: WorkflowFile
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def runner_dependencies(file, workflow_file)
+        # TODO: runner-labels-experiment, drop once the experiment rolls out (#6584)
+        return [] unless Dependabot::Experiments.enabled?(:github_actions_runner_labels)
+
+        # GitHub Enterprise Server has no hosted runners, so a label there is self-hosted.
+        hostname = source&.hostname
+        return [] if hostname && hostname != GITHUB_COM
+
+        declarations = WorkflowFile::RunsOnCollector.new(workflow_file.content).declarations
+        declarations.group_by(&:value).filter_map do |label, label_declarations|
+          runner = RunnerLabel.parse(label)
+          next unless runner
+
+          Dependency.new(
+            name: runner.family,
+            version: runner.version,
+            requirements: label_declarations.map do |declaration|
+              {
+                requirement: nil,
+                groups: [],
+                source: { type: RUNNER_SOURCE_TYPE },
+                file: file.name,
+                metadata: { declaration_string: label, yaml_source: { path: declaration.path } }
+              }
+            end,
+            package_manager: PackageManager::NAME
+          )
+        end
       end
 
       sig do

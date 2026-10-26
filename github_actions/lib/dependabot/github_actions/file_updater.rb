@@ -9,6 +9,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/github_actions/constants"
 require "dependabot/github_actions/lockfile"
+require "dependabot/github_actions/runner_label"
 require "dependabot/github_actions/workflow_file"
 
 module Dependabot
@@ -23,7 +24,8 @@ module Dependabot
         updated_files = changed_workflow_files.map do |file|
           updated_file(file: file, content: updated_workflow_file_content(file))
         end
-        updated_files.concat(relocked_files(updated_files))
+        # `actions.lock` only pins action refs, so a `runs-on` change doesn't need a relock.
+        updated_files.concat(relocked_files(updated_files)) unless RunnerLabel.dependency?(dependency)
         updated_files.reject! { |f| dependency_files.include?(f) }
         raise "No files changed!" if updated_files.none?
 
