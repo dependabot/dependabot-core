@@ -24,6 +24,12 @@ module RSpec
     sig { returns(::RSpec::Matchers::BuiltIn::BePredicate) }
     def be_positive; end
 
+    sig { returns(::RSpec::Matchers::BuiltIn::BePredicate) }
+    def be_support_file; end
+
+    sig { returns(::RSpec::Matchers::BuiltIn::BePredicate) }
+    def be_up_to_date; end
+
     sig { params(version: T.anything).returns(::RSpec::Matchers::BuiltIn::BePredicate) }
     def be_satisfied_by(version); end
 

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "cargo",
-          vulnerable_versions: ["<= 0.1.18"]
+          vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 0.1.18")]
         )
       ]
     end
@@ -238,7 +238,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "cargo",
-            vulnerable_versions: ["<= 2.0.0-pre2"]
+            vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 2.0.0-pre2")]
           )
         ]
       end
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "cargo",
-            vulnerable_versions: ["<= 1.0.0"]
+            vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 1.0.0")]
           )
         ]
       end
@@ -434,7 +434,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
             Dependabot::SecurityAdvisory.new(
               dependency_name: dependency_name,
               package_manager: "cargo",
-              vulnerable_versions: ["<= 2.0.0-pre2"]
+              vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 2.0.0-pre2")]
             )
           ]
         end

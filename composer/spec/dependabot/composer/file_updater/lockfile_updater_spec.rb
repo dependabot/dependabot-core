@@ -230,6 +230,33 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when PHP runs out of memory" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: oom_message, error_context: {})
+        )
+      end
+
+      context "when it hits the memory limit" do
+        let(:oom_message) { "Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes)" }
+
+        it "raises a Dependabot::OutOfMemory error" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::OutOfMemory)
+        end
+      end
+
+      context "when the OS can't allocate memory" do
+        let(:oom_message) do
+          "mmap() failed: [12] Cannot allocate memory\n\n" \
+            "mmap() failed: [12] Cannot allocate memory\nOut of memory"
+        end
+
+        it "raises a Dependabot::OutOfMemory error" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::OutOfMemory)
+        end
+      end
+    end
+
     context "when an environment variable is required (composer v2)" do
       let(:project_name) { "env_variable" }
 

@@ -15,7 +15,6 @@
 --ignore=bazel/spec/
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
---ignore=cargo/spec/
 --ignore=composer/spec/
 --ignore=elm/spec/
 --ignore=github_actions/spec/
@@ -27,10 +26,7 @@
 --ignore=nuget/spec/
 --ignore=pre_commit/spec/
 --ignore=pub/spec/
---ignore=rust_toolchain/spec/
 --ignore=swift/spec/
---ignore=terraform/spec/
---ignore=opentofu/spec/
 --ignore=updater/spec/
 --ignore=vcpkg/spec/
 --ignore=.git

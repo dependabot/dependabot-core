@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,14 +6,19 @@ require "dependabot/rust_toolchain/requirement"
 require "dependabot/rust_toolchain/version"
 
 RSpec.describe Dependabot::RustToolchain::Requirement do
+  extend T::Sig
+
+  sig { returns(Dependabot::RustToolchain::Requirement) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:requirement) { described_class.new(requirement_string) }
 
+  sig { returns(String) }
   let(:requirement_string) { ">=1.72.0" }
 
   describe ".new" do
     it { is_expected.to be_a(described_class) }
 
     context "with a comma-separated string" do
+      sig { returns(String) }
       let(:requirement_string) { ">= 1.72, < 1.73" }
 
       it { is_expected.to eq(Gem::Requirement.new(">= 1.72", "< 1.73")) }
@@ -22,6 +27,7 @@ RSpec.describe Dependabot::RustToolchain::Requirement do
 
   describe "#satisfied_by?" do
     context "with version channel types" do
+      sig { returns(String) }
       let(:requirement_string) { ">= 1.72.0" }
 
       it "is satisfied by newer version" do
@@ -38,6 +44,7 @@ RSpec.describe Dependabot::RustToolchain::Requirement do
     end
 
     context "with date channel types" do
+      sig { returns(String) }
       let(:requirement_string) { ">= nightly-2023-10-01" }
 
       it "is satisfied by newer date in same channel" do
@@ -58,6 +65,7 @@ RSpec.describe Dependabot::RustToolchain::Requirement do
     end
 
     context "with stability channel types" do
+      sig { returns(String) }
       let(:requirement_string) { ">= beta" }
 
       it "is satisfied by higher stability" do
@@ -74,6 +82,7 @@ RSpec.describe Dependabot::RustToolchain::Requirement do
     end
 
     context "with exact requirements" do
+      sig { returns(String) }
       let(:requirement_string) { "= nightly-2023-10-01" }
 
       it "is satisfied by exact match" do

@@ -464,6 +464,44 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(updated_workflow_file.content).to include "# tag=v#{dependency.version}"
         end
 
+        context "when the workflow uses CRLF line endings" do
+          let(:workflow_file_body) do
+            fixture("workflow_files", "pinned_sources_version_comments.yml").gsub("\n", "\r\n")
+          end
+
+          it "updates the SHA and every version comment without dropping a carriage return" do
+            content = updated_workflow_file.content
+            sha = dependency.requirements.first.dig(:source, :ref)
+
+            expect(content).to include "actions/checkout@#{sha} # v#{dependency.version}\r\n"
+            expect(content).to include "actions/checkout@#{sha} # #{dependency.version}\r\n"
+            expect(content).to include "actions/checkout@#{sha} # @v#{dependency.version}\r\n"
+            expect(content).to include "actions/checkout@#{sha} # pin @v#{dependency.version}\r\n"
+            expect(content).to include "actions/checkout@#{sha} # tag=v#{dependency.version}\r\n"
+          end
+
+          it "keeps every line ending as CRLF" do
+            content = updated_workflow_file.content
+
+            expect(content).not_to match(/(?<!\r)\n/)
+            expect(content.scan("\r\n").length).to eq(workflow_file_body.scan("\r\n").length)
+          end
+
+          it "gives the same result as the same file with LF line endings" do
+            lf_file = Dependabot::DependencyFile.new(
+              name: ".github/workflows/workflow.yml",
+              content: workflow_file_body.gsub("\r\n", "\n")
+            )
+            lf_content = described_class.new(
+              dependency_files: [lf_file],
+              dependencies: [dependency],
+              credentials: credentials
+            ).updated_dependency_files.first.content
+
+            expect(updated_workflow_file.content.gsub("\r\n", "\n")).to eq(lf_content)
+          end
+        end
+
         context "when previous version is older than comment" do
           let(:previous_version) { "2.0.0" }
 
@@ -954,6 +992,52 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           updated_workflow_file
 
           expect(Dependabot::GitCommitChecker).to have_received(:new).once
+        end
+
+        context "when the workflow uses CRLF line endings" do
+          let(:workflow_file_body) { fixture("workflow_files", "pin_to_sha.yml").gsub("\n", "\r\n") }
+          let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+
+          it "pins block-style declarations and adds the version comment before the carriage return" do
+            content = updated_workflow_file.content
+
+            expect(content).to include "uses: actions/checkout@#{sha} # v2.2.0\r\n"
+            expect(content).to include "uses: \"actions/checkout@#{sha}\" # v2.2.0\r\n"
+            expect(content).to include "uses: 'actions/checkout@#{sha}' # v2.2.0\r\n"
+          end
+
+          it "keeps custom comments and updates existing version comments" do
+            content = updated_workflow_file.content
+
+            expect(content).to include "actions/checkout@#{sha} # keep this custom note\r\n"
+            expect(content).not_to include "# v2.1.0"
+          end
+
+          it "pins flow-style declarations" do
+            expect(updated_workflow_file.content).to include "- { uses: actions/checkout@#{sha} } # v2.2.0\r\n"
+          end
+
+          it "keeps every line ending as CRLF and the YAML valid" do
+            content = updated_workflow_file.content
+
+            expect(content).not_to match(/(?<!\r)\n/)
+            expect(content.scan("\r\n").length).to eq(workflow_file_body.scan("\r\n").length)
+            expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+          end
+
+          it "gives the same result as the same file with LF line endings" do
+            lf_file = Dependabot::DependencyFile.new(
+              name: ".github/workflows/workflow.yml",
+              content: workflow_file_body.gsub("\r\n", "\n")
+            )
+            lf_content = described_class.new(
+              dependency_files: [lf_file],
+              dependencies: [dependency],
+              credentials: credentials
+            ).updated_dependency_files.first.content
+
+            expect(updated_workflow_file.content.gsub("\r\n", "\n")).to eq(lf_content)
+          end
         end
 
         context "when the old ref is a floating tag" do
@@ -2056,6 +2140,106 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         it "reuses one git checker" do
           expect(updated_files.length).to eq(2)
           expect(Dependabot::GitCommitChecker).to have_received(:new).once
+        end
+      end
+    end
+
+    # A workflow or composite action saved with CRLF line endings must update exactly like an LF one.
+    describe "with different line endings in a composite action" do
+      let(:action_requirement) do
+        {
+          requirement: nil,
+          groups: [],
+          file: "action.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/stefanzweifel/git-auto-commit-action",
+            ref: "v5",
+            branch: nil
+          },
+          metadata: { declaration_string: "stefanzweifel/git-auto-commit-action@v5" }
+        }
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "stefanzweifel/git-auto-commit-action",
+          version: "7.0.0",
+          previous_version: "5.0.0",
+          package_manager: "github_actions",
+          previous_requirements: [action_requirement],
+          requirements: [action_requirement.merge(source: action_requirement.fetch(:source).merge(ref: "v7"))]
+        )
+      end
+      let(:uses_value) { "stefanzweifel/git-auto-commit-action@v5" }
+      let(:lines) do
+        [
+          "name: example",
+          "runs:",
+          "  using: composite",
+          "  steps:",
+          "    - name: Commit",
+          "      uses: #{uses_value}"
+        ]
+      end
+      let(:action_file_body) { lines.join(newline) + trailing_newline }
+      let(:trailing_newline) { newline }
+      let(:files) { [Dependabot::DependencyFile.new(name: "action.yml", content: action_file_body)] }
+      let(:updated_action_content) { T.must(updated_files.find { |f| f.name == "action.yml" }).content }
+      let(:expected_content) { action_file_body.sub("@v5", "@v7") }
+
+      {
+        "LF" => "\n",
+        "CRLF" => "\r\n"
+      }.each do |name, line_ending|
+        context "with #{name} line endings" do
+          let(:newline) { line_ending }
+
+          it "updates the action and leaves every line ending as it was" do
+            expect(updated_action_content).to eq(expected_content)
+          end
+
+          context "without a trailing newline" do
+            let(:trailing_newline) { "" }
+
+            it "updates the action" do
+              expect(updated_action_content).to eq(expected_content)
+            end
+          end
+
+          context "with a double-quoted declaration" do
+            let(:uses_value) { '"stefanzweifel/git-auto-commit-action@v5"' }
+
+            it "updates the action" do
+              expect(updated_action_content).to eq(expected_content)
+            end
+          end
+
+          context "with a single-quoted declaration" do
+            let(:uses_value) { "'stefanzweifel/git-auto-commit-action@v5'" }
+
+            it "updates the action" do
+              expect(updated_action_content).to eq(expected_content)
+            end
+          end
+
+          context "with a trailing comment on the declaration" do
+            let(:uses_value) { "stefanzweifel/git-auto-commit-action@v5 # keep this note" }
+
+            it "keeps the comment" do
+              expect(updated_action_content).to eq(expected_content)
+            end
+          end
+        end
+      end
+
+      context "with mixed line endings" do
+        let(:newline) { "\n" }
+        let(:action_file_body) do
+          lines.each_with_index.map { |line, index| line + (index.odd? ? "\r\n" : "\n") }.join
+        end
+
+        it "updates the action and leaves every line ending as it was" do
+          expect(updated_action_content).to eq(expected_content)
         end
       end
     end

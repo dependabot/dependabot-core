@@ -235,7 +235,7 @@ module Dependabot
             raise DependencyFileNotResolvable, error.message
           end
 
-          raise Dependabot::OutOfMemory if error.message.start_with?("Allowed memory size")
+          raise Dependabot::OutOfMemory if Helpers.out_of_memory_error?(error.message)
 
           match_data = error.message.match(%r{https?://(?<source>[^/]+)/})
           if error.message.include?("403 Forbidden") && match_data
