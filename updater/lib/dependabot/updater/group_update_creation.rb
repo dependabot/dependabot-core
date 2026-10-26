@@ -170,6 +170,8 @@ module Dependabot
           store_changes(dependency)
         end
 
+        confirm_removals_in_final_files(group_changes.current_dependency_files(job), removed_names)
+
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
 
@@ -188,6 +190,7 @@ module Dependabot
           return nil
         end
 
+        log_resolved_by_removal(removed_names, original_dependencies)
         removed_dependency_names.merge(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
@@ -969,6 +972,27 @@ module Dependabot
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
              .reject { |dependency| resolved_by_removal?(dependency) }
+      end
+
+      # A later update can reintroduce a dependency an earlier one removed, so only names still
+      # absent from the final files count as resolved.
+      sig { params(final_files: T::Array[Dependabot::DependencyFile], removed_names: T::Set[String]).void }
+      def confirm_removals_in_final_files(final_files, removed_names)
+        return if removed_names.empty?
+
+        present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
+        removed_names.delete_if { |name| present.include?(name) }
+      end
+
+      sig { params(removed_names: T::Set[String], original_dependencies: T::Array[Dependabot::Dependency]).void }
+      def log_resolved_by_removal(removed_names, original_dependencies)
+        removed_names.each do |name|
+          version = original_dependencies.find { |dependency| dependency.name.casecmp?(name) }&.version
+          Dependabot.logger.info(
+            "Security update for #{name} #{version} resolved: removed from the dependency files " \
+            "by another update in group '#{group.name}'"
+          )
+        end
       end
 
       # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.

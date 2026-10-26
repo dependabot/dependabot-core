@@ -522,6 +522,25 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         allow(job).to receive_messages(security_updates_only?: true)
         allow(test_instance).to receive(:dependency_file_parser)
           .and_return(instance_double(Dependabot::FileParsers::Base, parse: []))
+        allow(Dependabot.logger).to receive(:info)
+      end
+
+      it "logs that the dependency was resolved by removal" do
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(Dependabot.logger).to have_received(:info)
+          .with(/Security update for dep1 1\.0\.0 resolved: removed from the dependency files .* 'test-group'/)
+      end
+
+      it "keeps reporting it when the final files reintroduce it" do
+        allow(test_instance).to receive(:dependency_file_parser).and_return(
+          instance_double(Dependabot::FileParsers::Base, parse: []),
+          instance_double(Dependabot::FileParsers::Base, parse: [dependencies.first])
+        )
+
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(test_instance.failed_security_update_dependencies(nil).map(&:name)).to include("dep1")
       end
 
       it "keeps reporting it when the aggregate change is rejected" do
