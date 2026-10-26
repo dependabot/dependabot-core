@@ -1013,12 +1013,14 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def safe_after_reintroduction?(dependency)
-        version = dependency.version
+        versions = dependency.all_versions
         version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
-        return false unless version && version_class.correct?(version)
+        return false if versions.empty? || versions.any? { |version| !version_class.correct?(version) }
 
         advisories = job.security_advisories_for(dependency)
-        advisories.any? && advisories.none? { |advisory| advisory.vulnerable?(version_class.new(version)) }
+        advisories.any? && versions.none? do |version|
+          advisories.any? { |advisory| advisory.vulnerable?(version_class.new(version)) }
+        end
       end
 
       # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.

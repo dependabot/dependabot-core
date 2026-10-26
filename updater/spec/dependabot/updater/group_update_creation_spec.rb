@@ -546,6 +546,26 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       expect(removed_names).to include(dependency.name)
     end
 
+    it "drops a removal when any locked copy is vulnerable" do
+      copies = %w(2.0.0 1.0.0).map do |version|
+        Dependabot::Dependency.new(
+          name: dependency.name, version: version, requirements: [], package_manager: "bundler"
+        )
+      end
+      mixed = Dependabot::Dependency.new(
+        name: dependency.name,
+        version: "2.0.0",
+        requirements: [],
+        package_manager: "bundler",
+        metadata: { all_versions: copies }
+      )
+      allow(parser).to receive(:parse).and_return([mixed])
+
+      test_instance.forget_reintroduced_dependencies(group_changes, removed_names)
+
+      expect(removed_names).to be_empty
+    end
+
     it "drops a removal that came back at a vulnerable version" do
       vulnerable = Dependabot::Dependency.new(
         name: dependency.name, version: "1.0.0", requirements: [], package_manager: "bundler"
