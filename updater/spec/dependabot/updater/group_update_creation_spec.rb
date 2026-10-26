@@ -774,6 +774,30 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         expect(test_instance.removed_dependency_names).to include("dep1")
       end
 
+      it "records a group dependency skipped earlier that a later update removed" do
+        edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
+        original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
+        allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
+        allow(test_instance).to receive(:skip_dependency?).and_return(true)
+
+        test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
+
+        expect(test_instance.removed_dependency_names).to include("dep1")
+      end
+
+      it "leaves reconciliation to the final pass while directories are deferred" do
+        edited = Dependabot::DependencyFile.new(name: "Gemfile", content: "edited", directory: "/")
+        original = Dependabot::DependencyFile.new(name: "Gemfile", content: "original", directory: "/")
+        allow(dependency_snapshot).to receive(:dependency_files).and_return([original])
+        allow(test_instance).to receive(:forget_reintroduced_dependencies)
+        test_instance.instance_variable_set(:@deferred_removals, {})
+
+        test_instance.compile_all_dependency_changes_for(group, dependency_files: [edited])
+
+        expect(test_instance).not_to have_received(:forget_reintroduced_dependencies)
+        expect(test_instance.instance_variable_get(:@deferred_removals).values).to eq([Set.new(["dep1"])])
+      end
+
       it "discards the removal when the aggregate change is rejected" do
         allow(Dependabot::DependencyChange).to receive(:new).and_return(
           instance_double(Dependabot::DependencyChange, all_have_previous_version?: false)
@@ -966,7 +990,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       it "removes the created file after compilation" do
         test_instance.compile_all_dependency_changes_for(group, workspace_files: [created_file])
 
-        expect(materialized_file_seen).to eq([true])
+        expect(materialized_file_seen).to all(be(true))
         expect(File).not_to exist(created_path)
       end
     end

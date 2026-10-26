@@ -180,7 +180,16 @@ module Dependabot
           store_changes(dependency)
         end
 
-        forget_reintroduced_dependencies(group_changes.current_dependency_files(job), removed_names)
+        final_files = group_changes.current_dependency_files(job)
+        collect_absent_group_dependencies(
+          final_files,
+          original_dependencies,
+          removed_names,
+          group_changes,
+          incoming_files
+        )
+        # While deferred, candidates stay intact so the final per-directory reconciliation sees them.
+        forget_reintroduced_dependencies(final_files, removed_names) unless @deferred_removals
 
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
@@ -242,7 +251,7 @@ module Dependabot
           change
         end
 
-        commit_deferred_removals(working_files_by_path, created_paths)
+        commit_deferred_removals(working_files_by_path, created_paths, changed_files_by_path.values)
 
         first_change = dependency_changes.first
         if first_change
@@ -1035,23 +1044,71 @@ module Dependabot
       sig do
         params(
           working_files_by_path: T::Hash[String, Dependabot::DependencyFile],
-          created_paths: T::Set[String]
+          created_paths: T::Set[String],
+          workspace_files: T::Array[Dependabot::DependencyFile]
         ).void
       end
-      def commit_deferred_removals(working_files_by_path, created_paths)
+      def commit_deferred_removals(working_files_by_path, created_paths, workspace_files)
         pending = @deferred_removals || {}
         original_directory = job.source.directory
         pending.each do |directory, removed_names|
           job.source.directory = directory
           dependency_snapshot.current_directory = directory
           final_files = working_dependency_files_for(directory, working_files_by_path, created_paths)
-          forget_reintroduced_dependencies(final_files, removed_names)
+          reconcile_in_workspace(final_files, removed_names, workspace_files)
           commit_removals(removed_names)
         end
       ensure
         job.source.directory = original_directory
         dependency_snapshot.current_directory = original_directory if original_directory
         @deferred_removals = nil
+      end
+
+      # Clone-based parsers read from the workspace, so it must hold every accepted edit while parsing.
+      sig do
+        params(
+          final_files: T::Array[Dependabot::DependencyFile],
+          removed_names: T::Set[String],
+          workspace_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def reconcile_in_workspace(final_files, removed_names, workspace_files)
+        prepare_workspace
+        materialize_workspace_files(workspace_files)
+        forget_reintroduced_dependencies(final_files, removed_names)
+      ensure
+        cleanup_created_workspace_files(workspace_files)
+        cleanup_workspace
+      end
+
+      # A group dependency skipped earlier (e.g. by update-types) can still vanish when a later
+      # parent update removes it, so compare the final files against this directory's snapshot too.
+      sig do
+        params(
+          final_files: T::Array[Dependabot::DependencyFile],
+          original_dependencies: T::Array[Dependabot::Dependency],
+          removed_names: T::Set[String],
+          group_changes: Dependabot::Updater::DependencyGroupChangeBatch,
+          incoming_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def collect_absent_group_dependencies(
+        final_files,
+        original_dependencies,
+        removed_names,
+        group_changes,
+        incoming_files
+      )
+        candidates = group.dependencies.map(&:name).uniq - removed_names.to_a
+        return if candidates.empty?
+
+        present = dependency_file_parser(final_files).parse.to_set(&:name)
+        changed = group_changes.updated_dependency_files.any? || incoming_file_changes?(incoming_files)
+        candidates.each do |name|
+          next if present.include?(name)
+
+          track_removed_dependency(name, original_dependencies, removed_names, changed: changed)
+        end
       end
 
       # A later update may bring a removed dependency back. Confirm against the final files: it
