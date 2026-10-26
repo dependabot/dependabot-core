@@ -534,7 +534,7 @@ module Dependabot
 
         return unless docker_checker.can_update?(requirements_to_unlock: :none)
 
-        version_class.new(latest_version)
+        ImageTag.new(latest_version)
       end
 
       sig { params(tags: T::Array[String], repo_url: String).returns(T::Array[GitTagWithDetail]) }
@@ -583,6 +583,9 @@ module Dependabot
         end
 
         registry = requirement.source_string("registry")
+        # The parser folds a detected registry into the name (e.g. "quay.io/org/app"), but the
+        # Docker checker builds the repository path from the name and the host from the registry.
+        name = name.delete_prefix("#{registry}/") if registry
 
         Dependency.new(
           name: name,

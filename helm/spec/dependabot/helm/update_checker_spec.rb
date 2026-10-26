@@ -205,6 +205,44 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
         it { is_expected.to be_nil }
       end
+
+      context "when the image name already includes its registry host" do
+        let(:dependency_name) { "quay.io/library/ubuntu" }
+        let(:source) { { registry: "quay.io", tag: version } }
+        let(:version) { "v1.3.5" }
+        let(:repo_url) { "https://quay.io/v2/library/ubuntu/" }
+        let(:repo_tags) { { name: "library/ubuntu", tags: %w(v1.3.5 v1.4.0 v1.5.0) }.to_json }
+
+        before do
+          # A registry answers 404 for a repository path that starts with its own host name
+          stub_request(:get, "https://quay.io/v2/quay.io/library/ubuntu/tags/list")
+            .and_return(status: 404, body: { errors: [{ code: "NAME_UNKNOWN" }] }.to_json)
+        end
+
+        it "asks the registry for the repository without its host name" do
+          expect(latest_version).to eq(Dependabot::Helm::Version.new("1.5.0"))
+        end
+
+        it "keeps the tag as the registry publishes it" do
+          expect(latest_version.to_s).to eq("v1.5.0")
+        end
+
+        it "proposes the published tag as the new version and requirement" do
+          updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect([updated.version, updated.previous_version, updated.requirements.first[:requirement]])
+            .to eq(%w(v1.5.0 v1.3.5 v1.5.0))
+        end
+      end
+
+      context "when the tag has a variant suffix" do
+        let(:version) { "17.04-alpine" }
+        let(:repo_tags) { { name: "library/ubuntu", tags: %w(17.04-alpine 17.10-alpine 17.10 18.04) }.to_json }
+
+        it "keeps the suffix" do
+          expect(latest_version.to_s).to eq("17.10-alpine")
+        end
+      end
     end
 
     context "when oci is not in repo" do
