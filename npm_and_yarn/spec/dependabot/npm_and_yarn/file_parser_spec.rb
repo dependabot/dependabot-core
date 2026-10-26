@@ -152,8 +152,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           .to eq([["package.json", "1.0.0"]])
       end
 
+      it "removes support-file declarations from all versions" do
+        chalk = parser.parse.find { |dep| dep.name == "chalk" }
+        version_requirements = chalk.metadata[:all_versions].map(&:requirements).map do |requirements|
+          requirements.map { |req| [req.file, req.requirement_string] }
+        end
+
+        expect(version_requirements).to eq([[["package.json", "1.0.0"]]])
+      end
+
       it "leaves out a dependency that is only declared in the support file" do
         expect(parser.parse.map(&:name)).to contain_exactly("chalk", "debug")
+      end
+
+      context "with a lockfile-only version" do
+        let(:files) do
+          [
+            package_file,
+            support_file,
+            Dependabot::DependencyFile.new(
+              name: "package-lock.json",
+              content: {
+                "lockfileVersion" => 1,
+                "dependencies" => {
+                  "chalk" => {
+                    "version" => "1.0.0",
+                    "dependencies" => { "chalk" => { "version" => "0.5.0" } }
+                  }
+                }
+              }.to_json
+            )
+          ]
+        end
+
+        it "preserves lockfile-only versions in all versions metadata" do
+          chalk = parser.parse.find { |dep| dep.name == "chalk" }
+          versions = chalk.metadata[:all_versions].to_h { |version| [version.version, version.requirements] }
+
+          expect(versions.keys).to contain_exactly("0.5.0", "1.0.0")
+          expect(versions["0.5.0"]).to be_empty
+          expect(versions["1.0.0"].map(&:file)).to eq(["package.json"])
+        end
       end
 
       context "when the support file has the lower version" do

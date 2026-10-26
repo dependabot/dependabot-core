@@ -625,7 +625,9 @@ module Dependabot
 
         # The versions of the declarations are merged into one, the lowest, which may be the one of a support file
         all_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependabot::Dependency])) || []
-        own_versions = all_versions.select { |v| (v.requirements - support_reqs).any? }
+        own_versions = all_versions.filter_map do |version|
+          without_support_file_requirements_for_version(version, support_reqs)
+        end
         own_version = DependencySet.new(own_versions).dependency_for_name(dep.name)&.version
 
         Dependency.new(
@@ -634,7 +636,32 @@ module Dependabot
           requirements: own_reqs,
           package_manager: dep.package_manager,
           subdependency_metadata: dep.subdependency_metadata,
-          metadata: dep.metadata
+          metadata: dep.metadata.merge(all_versions: own_versions)
+        )
+      end
+
+      sig do
+        params(
+          version: Dependabot::Dependency,
+          support_reqs: T::Array[Dependabot::DependencyRequirement]
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def without_support_file_requirements_for_version(version, support_reqs)
+        own_requirements = version.requirements - support_reqs
+        return if own_requirements.empty? && version.requirements.any?
+        return version if own_requirements == version.requirements
+
+        Dependency.new(
+          name: version.name,
+          version: version.version,
+          requirements: own_requirements,
+          package_manager: version.package_manager,
+          previous_version: version.previous_version,
+          previous_requirements: version.previous_requirements,
+          directory: version.directory,
+          subdependency_metadata: version.subdependency_metadata,
+          removed: version.removed?,
+          metadata: version.metadata
         )
       end
 
