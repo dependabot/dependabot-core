@@ -1367,11 +1367,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when the lockfile already has the new version" do
+    context "when the catalog and the importer already have the new version" do
+      # The package keys stay at 3.4.2, so searching the lockfile text for prettier@3.3.3 would find nothing: it is
+      # the catalog and the importer that say the dependency is not behind
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
           .with("install --lockfile-only") do
-            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").gsub("prettier@3.4.2", "prettier@3.3.3"))
+            catalogs = "catalogs:\n  default:\n    prettier:\n      specifier: ^3.3.0\n      version: 3.3.3\n\n" \
+                       "importers:"
+            importer_at_old = "specifier: 'catalog:'\n        version: 3.4.2"
+            importer_at_new = "specifier: 'catalog:'\n        version: 3.3.3"
+            lockfile = File.read("pnpm-lock.yaml").sub(importer_at_old, importer_at_new).sub("importers:", catalogs)
+            File.write("pnpm-lock.yaml", lockfile)
             ""
           end
       end
