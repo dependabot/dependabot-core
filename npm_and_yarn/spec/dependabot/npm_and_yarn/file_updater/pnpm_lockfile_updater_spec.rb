@@ -1301,6 +1301,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when the widened requirement is a catalog entry used only by a child workspace" do
+    let(:project_name) { "pnpm/catalog_monorepo" }
+    let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+    let(:dependencies) do
+      [
+        create_dependency(
+          name: "eslint",
+          required_version: "^9.12.0 || ^10.0.0",
+          previous_required_version: "^9.12.0",
+          version: "10.0.0",
+          file: "pnpm-workspace.yaml"
+        )
+      ]
+    end
+    let(:workspace_files) do
+      { "pnpm-workspace.yaml" => files.find { |f| f.name == "pnpm-workspace.yaml" }.content }
+    end
+    let(:commands) { [] }
+    let(:lockfile_change) { ->(lockfile) { lockfile } }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        if command == "install --lockfile-only"
+          File.write("pnpm-lock.yaml", lockfile_change.call(File.read("pnpm-lock.yaml")))
+        end
+        ""
+      end
+    end
+
+    # The root importer does not use eslint, so only the catalog and the child importer say what it is locked to
+    context "when the catalog is still locked to the old version" do
+      it "updates again" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update eslint@10.0.0"])
+      end
+    end
+
+    context "when the catalog and the child importer already have the new version" do
+      let(:lockfile_change) do
+        lambda do |lockfile|
+          catalog_at_old = "eslint:\n      specifier: ^9.12.0\n      version: 9.12.0"
+          catalog_at_new = "eslint:\n      specifier: ^9.12.0 || ^10.0.0\n      version: 10.0.0"
+          lockfile.sub(catalog_at_old, catalog_at_new).sub("version: 9.12.0(jiti@2.4.0)", "version: 10.0.0(jiti@2.4.0)")
+        end
+      end
+
+      it "does not update again" do
+        updated_pnpm_lock_content
+
+        expect(commands.grep(/\Aupdate eslint@/)).to be_empty
+      end
+    end
+
+    context "when the lockfile has no catalogs section" do
+      let(:lockfile_change) { ->(lockfile) { lockfile.sub(/^catalogs:\n.*?\n\nimporters:/m, "importers:") } }
+
+      it "reads the importer that uses the dependency, and updates again" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update eslint@10.0.0"])
+      end
+    end
+  end
+
   describe "when the lockfile has an environment document before the project document" do
     let(:project_name) { "pnpm/simple" }
     let(:version) { "0.0.2" }
