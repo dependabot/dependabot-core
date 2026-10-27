@@ -630,6 +630,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
               its([:requirement]) { is_expected.to eq("^1.0.0||^2.0.0 || ^3.1.0") }
             end
 
+            context "with build metadata on the old and the new version" do
+              let(:package_json_req_string) { "1.0.0 || 2.0.0+old" }
+              let(:latest_resolvable_version) { "3.0.0+new" }
+
+              its([:requirement]) { is_expected.to eq("1.0.0 || 2.0.0+old || 3.0.0+new") }
+            end
+
+            context "with build metadata only on the old version" do
+              let(:package_json_req_string) { "1.0.0 || 2.0.0+old" }
+              let(:latest_resolvable_version) { "3.0.0" }
+
+              its([:requirement]) { is_expected.to eq("1.0.0 || 2.0.0+old || 3.0.0") }
+            end
+
             context "with a space after the operator" do
               let(:package_json_req_string) { "~ 1.2.0 || ~ 1.3.0" }
               let(:latest_resolvable_version) { Gem::Version.new("1.4.5") }
