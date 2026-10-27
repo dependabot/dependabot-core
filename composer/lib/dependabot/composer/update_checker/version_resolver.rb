@@ -440,7 +440,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T::Boolean) }
         def check_original_requirements_resolvable
           base_directory = T.must(dependency_files.first).directory
@@ -459,13 +458,7 @@ module Dependabot
           raise Dependabot::OutOfMemory if Helpers.out_of_memory_error?(e.message)
 
           if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-            missing_extensions =
-              e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-               .flatten.flat_map do |extension_string|
-                name, requirement = extension_string.strip.split(" ", 2)
-                { name: name, requirement: requirement }
-              end
-            raise MissingExtensions, missing_extensions
+            raise_explicit_platform_req_error(e)
           elsif e.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
                 implicit_platform_reqs_satisfiable?(e.message)
             missing_extensions =
@@ -479,7 +472,21 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
-        # rubocop:enable Metrics/AbcSize
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
+        def raise_explicit_platform_req_error(error)
+          missing_extensions =
+            error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+                 .flatten.flat_map do |extension_string|
+              name, requirement = extension_string.strip.split(" ", 2)
+              { name: name, requirement: requirement }
+            end
+          if missing_extensions.any? { |ext| explicit_platform_extensions.key?(ext[:name]) }
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+
+          raise MissingExtensions, missing_extensions
+        end
 
         sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)
