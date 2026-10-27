@@ -319,6 +319,17 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         perform
       end
 
+      it "reports a concrete failure diagnosed in another directory once after all directories" do
+        allow(job.source).to receive(:directories).and_return(%w(/ /))
+        # The first directory can update (deferred); the second cannot (diagnosed).
+        allow(stub_update_checker).to receive(:can_update?).and_return(true, false)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:record_update_job_error)
+          .with(hash_including(error_type: "security_update_not_possible")).once
+
+        perform
+      end
+
       it "leaves it to an individual update instead of reporting an unknown error" do
         allow(stub_update_checker).to receive(:can_update?).and_return(true)
         expect(mock_error_handler).not_to receive(:handle_dependency_error)
