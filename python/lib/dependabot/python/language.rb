@@ -20,7 +20,7 @@ module Dependabot
         3.13.18
         3.12.16
         3.11.18
-        3.10.20
+        3.10.22
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(

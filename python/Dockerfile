@@ -7,7 +7,7 @@ ARG PY_3_14=3.14.10
 ARG PY_3_13=3.13.18
 ARG PY_3_12=3.12.16
 ARG PY_3_11=3.11.18
-ARG PY_3_10=3.10.20
+ARG PY_3_10=3.10.22
 # https://github.com/pyenv/pyenv/releases
 ARG PYENV_VERSION=v2.6.16
 
