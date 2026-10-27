@@ -383,7 +383,9 @@ module Dependabot
 
         sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
         def parsed_lockfile(content)
-          parsed = T.cast(YAML.safe_load(content, aliases: true), Object)
+          # pnpm 11+ can write the lockfile as two YAML documents, an environment one and then the project's
+          documents = T.cast(YAML.safe_load_stream(content), T::Array[Object])
+          parsed = documents.last
           parsed.is_a?(Hash) ? mapping(parsed) : nil
         rescue Psych::Exception
           nil

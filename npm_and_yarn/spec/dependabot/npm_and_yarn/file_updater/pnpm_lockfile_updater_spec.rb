@@ -1239,6 +1239,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when the lockfile has an environment document before the project document" do
+    let(:project_name) { "pnpm/simple" }
+    let(:version) { "0.0.2" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^0.0.1 || ^0.0.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^0.0.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        if command == "install --lockfile-only"
+          environment = "---\nlockfileVersion: '9.0'\nimporters:\n  .:\n    configDependencies: {}\n---\n"
+          other_entry = "\n  /fetch-factory@0.0.2:\n    resolution: {integrity: sha512-other}\n    dev: false\n"
+          File.write("pnpm-lock.yaml", "#{environment}#{File.read('pnpm-lock.yaml').rstrip}\n#{other_entry}")
+        end
+        ""
+      end
+    end
+
+    it "reads the project document, which is the last one" do
+      updated_pnpm_lock_content
+
+      expect(commands.first(3))
+        .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+    end
+  end
+
   describe "when pnpm refuses to pin a transitive dependency" do
     let(:project_name) { "pnpm/no_lockfile_change" }
     let(:dependencies) { [dependency, transitive_dependency] }
