@@ -1094,6 +1094,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       it_behaves_like "a message without dependency link metadata"
 
+      context "when the shared source lookup fails" do
+        let(:metadata_method) { :look_up_source }
+        let(:metadata_finders) do
+          super().merge(
+            "business" => Dependabot::MetadataFinders::Base.new(dependency: dependency, credentials: credentials)
+          )
+        end
+
+        it_behaves_like "a message without dependency link metadata"
+      end
+
       context "when Azure source metadata is unauthorized" do
         let(:metadata_error) { Dependabot::Clients::Azure::Unauthorized.new }
 
@@ -1164,6 +1175,24 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           expect(pr_message).to include("Updates `business` from 1.4.0 to 1.5.0")
           expect(pr_message).to include("Updates `statesman` from 1.6.0 to 1.7.0")
           expect(pr_message).to include("statesman's changelog")
+        end
+
+        context "when the shared source lookup fails" do
+          let(:metadata_method) { :look_up_source }
+          let(:metadata_finders) do
+            super().merge(
+              "business" => Dependabot::MetadataFinders::Base.new(dependency: dependency, credentials: credentials)
+            )
+          end
+
+          it_behaves_like "a message without dependency link metadata"
+
+          it "preserves commit update details and the unaffected dependency's metadata" do
+            expect(builder.commit_message).to include("Updates `business` from 1.4.0 to 1.5.0")
+            expect(builder.commit_message).to include("Updates `statesman` from 1.6.0 to 1.7.0")
+            expect(builder.commit_message)
+              .to include("[Changelog](https://github.com/gocardless/statesman/blob/master/CHANGELOG.md)")
+          end
         end
       end
     end
