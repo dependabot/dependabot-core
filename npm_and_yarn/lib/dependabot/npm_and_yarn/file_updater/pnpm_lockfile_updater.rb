@@ -353,18 +353,65 @@ module Dependabot
           run_pnpm_update_packages
         end
 
-        # Whether a requirement was widened with another alternative ("^1.0.0 || ^2.0.0") and the lockfile does not
-        # have the new version of that dependency
+        # Whether a requirement was widened with another alternative ("^1.0.0 || ^2.0.0") and the lockfile still has the
+        # dependency, in the importer of that requirement, at another version than the new one
         sig { params(lockfile_content: String).returns(T::Boolean) }
         def widened_dependency_left_behind?(lockfile_content)
+          lockfile = parsed_lockfile(lockfile_content)
+
           dependencies.any? do |dep|
             next false unless dep.top_level? && dep.version
 
-            widened = dep.requirements.zip(dep.previous_requirements || []).any? do |new_req, old_req|
-              new_req.requirement_string != old_req&.requirement_string && new_req.requirement_string&.include?("||")
+            widened_requirements(dep).any? do |req|
+              next !lockfile_content.include?("#{dep.name}@#{dep.version}") unless lockfile
+
+              locked = locked_version(lockfile, T.must(req.file), dep.name)
+              !locked.nil? && locked != dep.version
             end
-            widened && !lockfile_content.include?("#{dep.name}@#{dep.version}")
           end
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
+        def widened_requirements(dep)
+          dep.requirements.zip(dep.previous_requirements || []).filter_map do |new_req, old_req|
+            next if new_req.requirement_string == old_req&.requirement_string
+            next unless new_req.requirement_string&.include?("||")
+
+            new_req
+          end
+        end
+
+        sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
+        def parsed_lockfile(content)
+          parsed = T.cast(YAML.safe_load(content, aliases: true), Object)
+          parsed.is_a?(Hash) ? mapping(parsed) : nil
+        rescue Psych::Exception
+          nil
+        end
+
+        sig { params(value: T.nilable(Object)).returns(T::Hash[String, Object]) }
+        def mapping(value)
+          return {} unless value.is_a?(Hash)
+
+          value.to_h { |key, entry| [T.cast(key, Object).to_s, T.cast(entry, Object)] }
+        end
+
+        # The version a manifest's own dependency is locked to, from the importer of that manifest
+        sig { params(lockfile: T::Hash[String, Object], file_name: String, name: String).returns(T.nilable(String)) }
+        def locked_version(lockfile, file_name, name)
+          importer = if lockfile.key?("importers")
+                       mapping(mapping(lockfile["importers"])[Pathname.new(file_name).dirname.to_s])
+                     else
+                       lockfile
+                     end
+
+          %w(dependencies devDependencies optionalDependencies).each do |group|
+            locked = mapping(importer[group])[name]
+            locked = mapping(locked)["version"] if locked.is_a?(Hash)
+            return locked.to_s.split("(").first.to_s.delete_prefix("/") unless locked.nil?
+          end
+
+          nil
         end
 
         sig { returns(T.nilable(String)) }
