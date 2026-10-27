@@ -152,6 +152,42 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
     end
 
+    context "when the existing PR target is still valid but a newer release is held by cooldown" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      let(:pr_dependency) { dependency_snapshot.dependencies.find { |d| d.name == "dummy-pkg-b" } }
+
+      before do
+        stub_rubygems_calls
+        allow(dependency_snapshot).to receive(:dependency_files).and_return(dependency_files)
+      end
+
+      it "keeps the pull request open" do
+        Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(T.must(pr_dependency))
+        expect(mock_service).not_to receive(:close_pull_request)
+
+        expect(refresh_group.send(:existing_pr_deferred_by_cooldown?, refresh_group.group)).to be(true)
+      end
+
+      it "does not keep it when cooldown is not what withheld the update" do
+        expect(refresh_group.send(:existing_pr_deferred_by_cooldown?, refresh_group.group)).to be(false)
+      end
+
+      it "does not keep it when the target is already applied" do
+        dep = T.must(pr_dependency)
+        Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dep)
+        allow(dep).to receive(:version).and_return("1.2.0")
+
+        expect(refresh_group.send(:existing_pr_deferred_by_cooldown?, refresh_group.group)).to be(false)
+      end
+    end
+
     context "when the dependencies that need to be updated have changed" do
       let(:job_definition) do
         job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")

@@ -254,7 +254,10 @@ module Dependabot
           # so a freshly-pushed digest isn't proposed before it matures. This
           # covers both comparable and non-comparable tags (e.g. "alpine"),
           # which the version-tag cooldown (apply_cooldown) never reaches.
-          return true if digest_only_refresh && digest_within_cooldown?(source_tag)
+          if digest_only_refresh && digest_within_cooldown?(source_tag)
+            Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dependency)
+            return true
+          end
 
           # When digest-only updates are suppressed and the tag hasn't changed,
           # treat the digest as up-to-date to avoid proposing a PR that only
@@ -268,7 +271,10 @@ module Dependabot
           digest_only_refresh = true
           # Pure digest pin (no tag): the proposed digest resolves from the
           # "latest" tag, so gate it on the same cooldown window.
-          return true if digest_within_cooldown?("latest")
+          if digest_within_cooldown?("latest")
+            Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dependency)
+            return true
+          end
 
           expected_digest = updated_digest
         end

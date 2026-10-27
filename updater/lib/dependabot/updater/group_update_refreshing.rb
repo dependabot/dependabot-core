@@ -35,6 +35,11 @@ module Dependabot
       def upsert_pull_request_with_error_handling(dependency_change, group)
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
+        elsif existing_pr_deferred_by_cooldown?(group)
+          Dependabot.logger.info(
+            "No updated dependencies because a newer release is in its cooldown period; " \
+            "keeping existing Pull Request open"
+          )
         else
           Dependabot.logger.info("No updated dependencies, closing existing Pull Request")
           close_pull_request(reason: :update_no_longer_possible, group: group)
@@ -44,6 +49,37 @@ module Dependabot
       ensure
         # record metrics for the ecosystem
         service.record_ecosystem_meta(dependency_snapshot.ecosystem)
+      end
+
+      # A refresh that finds nothing to update normally means the PR is obsolete. When every dependency in the
+      # existing PR has a newer candidate that was only withheld by cooldown, and the PR's target is not yet
+      # applied to the repo, the proposal is still valid (it was created under the same cooldown) so keep it.
+      sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def existing_pr_deferred_by_cooldown?(group)
+        pr = job.existing_group_pull_requests.find { |p| p.dependency_group_name == group.name }
+        pr_dependencies = (pr&.dependencies || []).reject(&:removed)
+        return false if pr_dependencies.empty?
+
+        pr_dependencies.all? { |pr_dep| pr_dependency_deferred_by_cooldown?(pr_dep) }
+      end
+
+      sig { params(pr_dep: Dependabot::Job::ExistingGroupPullRequest::Dependency).returns(T::Boolean) }
+      def pr_dependency_deferred_by_cooldown?(pr_dep)
+        return false unless pr_dep.name && pr_dep.version
+
+        dependency_snapshot.all_dependencies.any? do |dep|
+          dep.name == pr_dep.name &&
+            same_directory?(dep.directory, pr_dep.directory) &&
+            Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dep) &&
+            dep.version != pr_dep.version
+        end
+      end
+
+      sig { params(first: T.nilable(String), second: T.nilable(String)).returns(T::Boolean) }
+      def same_directory?(first, second)
+        return true if first.nil? || second.nil?
+
+        Pathname.new(first).cleanpath == Pathname.new(second).cleanpath
       end
 
       # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
