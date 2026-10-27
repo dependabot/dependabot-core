@@ -1013,15 +1013,16 @@ module Dependabot
       end
       def note_semver_rejected(dependency, checker, group)
         return if group.group_by_dependency_name?
-
-        semver_rejected_dependency_names << dependency.name.downcase
         return unless job.security_updates_only?
 
+        # Nothing newer exists, so no individual update will run to report the still-vulnerable dependency.
+        return note_security_update_not_found(dependency, checker, group) if checker.up_to_date?
+
+        semver_rejected_dependency_names << dependency.name.downcase
         Dependabot.logger.info(
-          "Security update for #{dependency.name} #{dependency.version} not grouped: " \
-          "update to #{checker.lowest_security_fix_version || checker.latest_version} is outside the " \
-          "update-types #{group.update_types.inspect} of group '#{group.name}'; " \
-          "leaving it to an individual update"
+          "Security update for #{dependency.name} #{dependency.version} not grouped: latest version " \
+          "#{checker.latest_version} is outside the update-types #{group.update_types.inspect} " \
+          "of group '#{group.name}'; leaving it to an individual update"
         )
       end
 

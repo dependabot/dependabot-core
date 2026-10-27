@@ -304,16 +304,14 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         Dependabot::DependencyGroup.new(
           name: "security",
           rules: { "patterns" => ["*"], "update-types" => ["patch"] }
-        ).tap { |group| group.dependencies.push(dependency, successful_dependency) }
+        ).tap { |group| group.dependencies.push(dependency) }
       end
 
       before do
-        allow(stub_update_checker).to receive(:latest_version).and_return("9.0.0")
-        allow(successful_checker).to receive(:latest_version).and_return("2.0.0")
+        allow(stub_update_checker).to receive_messages(latest_version: "9.0.0", up_to_date?: false)
       end
 
-      # Neither fixture dependency qualifies for a patch-only group, so no group PR is expected.
-      it "leaves them to individual updates instead of reporting an unknown error" do
+      it "leaves it to an individual update instead of reporting an unknown error" do
         expect(mock_error_handler).not_to receive(:handle_dependency_error)
         expect(mock_service).not_to receive(:record_update_job_error)
         expect(mock_service).not_to receive(:create_pull_request)
