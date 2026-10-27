@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 # rubocop:disable RSpec/SpecFilePathFormat
@@ -280,9 +280,10 @@ RSpec.describe Dependabot::PreCommit do
         dependencies = parser.parse
 
         additional_dep = dependencies.find do |dep|
-          dep.requirements.first[:source]&.dig(:package_name) == "eslint"
+          T.must(dep.requirements.first).source_string("package_name") == "eslint"
         end
         expect(additional_dep).not_to be_nil
+        additional_dep = T.must(additional_dep)
 
         npm_checker_class = class_double("Dependabot::NpmAndYarn::UpdateChecker") # rubocop:disable RSpec/VerifiedDoubleReference
         npm_checker = instance_double(Dependabot::UpdateCheckers::Base)
@@ -306,12 +307,12 @@ RSpec.describe Dependabot::PreCommit do
         expect(latest).to eq("9.0.0")
 
         updated_reqs = update_checker.updated_requirements
-        expect(updated_reqs.first[:requirement]).to eq("9.0.0")
-        expect(updated_reqs.first[:source][:original_string]).to eq("eslint@9.0.0")
+        expect(T.must(updated_reqs.first)[:requirement]).to eq("9.0.0")
+        expect(T.must(updated_reqs.first).source_string("original_string")).to eq("eslint@9.0.0")
 
         updated_dep = Dependabot::Dependency.new(
           name: additional_dep.name,
-          version: latest,
+          version: T.must(latest).to_s,
           previous_version: additional_dep.version,
           requirements: updated_reqs,
           previous_requirements: additional_dep.requirements,
@@ -325,8 +326,8 @@ RSpec.describe Dependabot::PreCommit do
         )
 
         updated_files = file_updater.updated_dependency_files
-        expect(updated_files.first.content).to include("eslint@9.0.0")
-        expect(updated_files.first.content).not_to include("eslint@4.15.0")
+        expect(T.must(updated_files.first).content).to include("eslint@9.0.0")
+        expect(T.must(updated_files.first).content).not_to include("eslint@4.15.0")
       end
     end
   end
