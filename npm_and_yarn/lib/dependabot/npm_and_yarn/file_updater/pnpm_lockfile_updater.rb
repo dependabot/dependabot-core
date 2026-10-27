@@ -267,6 +267,8 @@ module Dependabot
 
               run_pnpm_install
 
+              update_again_for_widened_requirements(pnpm_lock)
+
               updated_content = File.read(pnpm_lock.name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 run_pnpm_deep_update_fallback
@@ -340,6 +342,29 @@ module Dependabot
           cmd = "update #{specs.join(' ')}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
+        end
+
+        # A locked version that satisfies a widened range stays where it is unless pnpm is asked to move it while that
+        # range is in the manifest, which is only the case after the first update and install.
+        sig { params(pnpm_lock: Dependabot::DependencyFile).void }
+        def update_again_for_widened_requirements(pnpm_lock)
+          return unless widened_dependency_left_behind?(File.read(pnpm_lock.name))
+
+          run_pnpm_update_packages
+        end
+
+        # Whether a requirement was widened with another alternative ("^1.0.0 || ^2.0.0") and the lockfile does not
+        # have the new version of that dependency
+        sig { params(lockfile_content: String).returns(T::Boolean) }
+        def widened_dependency_left_behind?(lockfile_content)
+          dependencies.any? do |dep|
+            next false unless dep.top_level? && dep.version
+
+            widened = dep.requirements.zip(dep.previous_requirements || []).any? do |new_req, old_req|
+              new_req.requirement_string != old_req&.requirement_string && new_req.requirement_string&.include?("||")
+            end
+            widened && !lockfile_content.include?("#{dep.name}@#{dep.version}")
+          end
         end
 
         sig { returns(T.nilable(String)) }

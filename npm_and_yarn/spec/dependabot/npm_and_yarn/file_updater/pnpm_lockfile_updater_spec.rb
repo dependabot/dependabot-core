@@ -1166,6 +1166,58 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when the requirement was widened by adding an alternative" do
+    let(:project_name) { "pnpm/simple" }
+    let(:version) { "0.0.2" }
+    let(:requirements) do
+      [{ file: "package.json", requirement: "^0.0.1 || ^0.0.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "package.json", requirement: "^0.0.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+    let(:package_json_at_update) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        package_json_at_update << File.read("package.json") if command.include?("--no-save")
+        ""
+      end
+    end
+
+    # The locked version still satisfies the widened range, so pnpm only moves it when asked to while that range
+    # is in the manifest
+    context "when the lockfile stays behind the new version" do
+      it "runs the update again once the manifest has the widened range" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(3))
+          .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+        requirements_seen = package_json_at_update.first(2).map do |content|
+          JSON.parse(content).dig("dependencies", "fetch-factory")
+        end
+        expect(requirements_seen).to eq(["^0.0.1", "^0.0.1 || ^0.0.2"])
+      end
+    end
+
+    context "when the lockfile already has the new version" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub("fetch-factory@0.0.1", "fetch-factory@0.0.2"))
+            ""
+          end
+      end
+
+      it "updates only once" do
+        updated_pnpm_lock_content
+
+        expect(commands.count { |c| c.start_with?("update fetch-factory") }).to eq(1)
+      end
+    end
+  end
+
   describe "when pnpm refuses to pin a transitive dependency" do
     let(:project_name) { "pnpm/no_lockfile_change" }
     let(:dependencies) { [dependency, transitive_dependency] }

@@ -162,7 +162,8 @@ module Dependabot
             elsif current_requirement.strip.split(SEPARATOR).one?
               update_version_string(current_requirement)
             else
-              current_requirement
+              # "^1.0.0 || ^2.0.0": add an alternative for the new version, written like the last one
+              "#{current_requirement.strip} || #{update_version_string(T.must(reqs.last))}"
             end
 
           Dependabot::DependencyRequirement.create(req.merge(requirement: updated_requirement))
