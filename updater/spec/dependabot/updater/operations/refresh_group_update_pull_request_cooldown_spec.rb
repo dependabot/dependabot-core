@@ -165,6 +165,26 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
     end
 
+    context "when the pull request target is the same version as the base branch (digest-only refresh)" do
+      let(:pr_dependencies) { [["dummy-pkg-b", "1.1.0", false]] }
+
+      it "keeps the pull request open" do
+        expect(mock_service).not_to receive(:close_pull_request)
+
+        refresh_group.perform
+      end
+    end
+
+    context "when the pull request target only normalizes to the base version" do
+      let(:pr_dependencies) { [["dummy-pkg-b", "1.1.0.0", false]] }
+
+      it "closes the pull request" do
+        expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b), :update_no_longer_possible)
+
+        refresh_group.perform
+      end
+    end
+
     context "when the pull request target is older than the version on the base branch" do
       let(:pr_dependencies) { [["dummy-pkg-b", "1.0.0", false]] }
 

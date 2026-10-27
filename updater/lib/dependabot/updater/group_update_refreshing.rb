@@ -106,8 +106,8 @@ module Dependabot
         false
       end
 
-      # Equal versions are allowed (digest-only refreshes); a PR target provably older than the version now on
-      # the base branch would downgrade it, so it must not be retained.
+      # A PR target that is not newer than the version now on the base branch would downgrade or no-op it, so it
+      # must not be retained (unless it is the very same tag, i.e. a digest-only refresh).
       sig do
         params(dep: Dependabot::Dependency, pr_dep: Dependabot::Job::ExistingGroupPullRequest::Dependency)
           .returns(T::Boolean)
@@ -117,10 +117,14 @@ module Dependabot
         target = pr_dep.version
         return false unless current && target
 
+        # Identical values are a digest-only refresh. Distinct values that normalize to the same version (e.g.
+        # dated Docker tags) cannot be proven newer, so treat them as older.
+        return false if target == current
+
         version_class = Dependabot::Utils.version_class_for_package_manager(dep.package_manager)
         return false unless version_class.correct?(current) && version_class.correct?(target)
 
-        version_class.new(target) < version_class.new(current)
+        version_class.new(target) <= version_class.new(current)
       end
 
       # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
