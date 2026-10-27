@@ -255,7 +255,7 @@ module Dependabot
           # covers both comparable and non-comparable tags (e.g. "alpine"),
           # which the version-tag cooldown (apply_cooldown) never reaches.
           if digest_only_refresh && digest_within_cooldown?(source_tag)
-            Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dependency)
+            mark_update_deferred_unless_current(digest_of(source_tag), source_digest)
             return true
           end
 
@@ -272,7 +272,7 @@ module Dependabot
           # Pure digest pin (no tag): the proposed digest resolves from the
           # "latest" tag, so gate it on the same cooldown window.
           if digest_within_cooldown?("latest")
-            Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dependency)
+            mark_update_deferred_unless_current(updated_digest, source_digest)
             return true
           end
 
@@ -288,6 +288,15 @@ module Dependabot
         return true if digest_refresh_is_noop?(source, source_digest, expected_digest, digest_only_refresh)
 
         source_digest == expected_digest
+      end
+
+      # Flags the dependency as deferred by cooldown only when the registry serves a digest that differs
+      # from the pin; otherwise nothing is being held back and an existing PR must not be retained.
+      sig { params(registry_digest: T.nilable(String), pinned_digest: String).void }
+      def mark_update_deferred_unless_current(registry_digest, pinned_digest)
+        return if registry_digest.nil? || registry_digest == pinned_digest
+
+        Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dependency)
       end
 
       sig { params(version: String).returns(String) }

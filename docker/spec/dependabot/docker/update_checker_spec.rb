@@ -2016,6 +2016,22 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           let(:tag_last_pushed) { (Time.now - (1 * 86_400)).iso8601 }
 
           it { is_expected.to be false }
+
+          it "marks the update as deferred by cooldown" do
+            can_update
+
+            expect(Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dependency)).to be true
+          end
+
+          context "when the pinned digest already matches the registry digest" do
+            let(:source) { { tag: "4.0.2-alpine3.23", digest: "newdigest" } }
+
+            it "does not mark the update as deferred" do
+              can_update
+
+              expect(Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dependency)).to be false
+            end
+          end
         end
 
         context "when the new digest is older than the cooldown window" do
