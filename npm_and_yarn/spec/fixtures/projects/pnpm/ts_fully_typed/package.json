@@ -1,0 +1,10 @@
+{
+  "name": "test-pnpm-types",
+  "version": "1.0.0",
+  "dependencies": {
+    "jquery": "3.4"
+  },
+  "devDependencies": {
+    "@types/jquery": "3.3.10"
+  }
+}

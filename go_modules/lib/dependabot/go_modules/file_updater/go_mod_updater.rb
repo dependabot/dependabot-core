@@ -252,6 +252,7 @@ module Dependabot
 
             run_go_work_sync
             run_workspace_tidy
+            run_go_list_modules
 
             collect_workspace_file_contents
           end
@@ -275,6 +276,20 @@ module Dependabot
               run_go_mod_tidy(context: mod_path)
             end
           end
+        end
+
+        # Go < 1.28 leaves go.work.sum without the checksums that `go list -m all` adds after `go work sync`
+        # (golang/go#63901). Loading the full module list last records them for the final workspace graph.
+        # Best-effort: sync and tidy have already succeeded, so a failure here must not fail the update.
+        sig { void }
+        def run_go_list_modules
+          return unless dependency_files.any? { |f| f.name == "go.work.sum" }
+
+          command = "go list -m all"
+          _, stderr, status = Open3.capture3(command)
+          return if status.success?
+
+          Dependabot.logger.info "Failed to `#{command}` in the workspace: #{stderr}"
         end
 
         sig { returns(T::Array[String]) }

@@ -115,6 +115,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       expect(a_request(:get, project_url)).to have_been_made.once
     end
 
+    context "with a replaces-base python index" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://example.com/pypi/",
+            "replaces-base" => true
+          }
+        )]
+      end
+
+      it "does not query public PyPI and falls back to local metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
+    end
+
     context "with a different summary" do
       let(:project_response) { { info: { summary: "Another project" } }.to_json }
 

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,9 @@ require "dependabot/credential"
 require "dependabot/github_actions/lockfile"
 
 RSpec.describe Dependabot::GithubActions::Lockfile::Env do
+  extend T::Sig
+
+  sig { params(hash: T::Hash[String, String]).returns(Dependabot::Credential) }
   def cred(hash)
     Dependabot::Credential.new(hash)
   end
@@ -21,6 +24,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
     end
 
     context "with a real github.com credential (proxyless mode)" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [cred(
           { "type" => "git_source", "host" => "github.com",
@@ -34,6 +38,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
     end
 
     context "with both an app token and a deliberate token" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [
           cred({ "type" => "git_source", "host" => "github.com", "password" => "v1.app-token" }),
@@ -47,6 +52,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
     end
 
     context "with a ghe.com home host" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [
           cred({ "type" => "git_source", "host" => "github.com", "password" => "dotcom-token" }),
@@ -67,6 +73,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
     end
 
     context "with a non-GitHub git credential" do
+      sig { returns(T::Array[Dependabot::Credential]) }
       let(:credentials) do
         [cred({ "type" => "git_source", "host" => "gitlab.com", "password" => "gitlab-token" })]
       end

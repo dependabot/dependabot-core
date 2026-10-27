@@ -389,7 +389,7 @@ module Dependabot
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
-          elsif error.message.start_with?("Allowed memory size", "Out of memory")
+          elsif Helpers.out_of_memory_error?(error.message)
             raise Dependabot::OutOfMemory
           elsif error.error_context[:process_termsig] == Dependabot::SharedHelpers::SIGKILL
             # If the helper was SIGKILL-ed, assume the OOMKiller did it
@@ -439,6 +439,7 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { returns(T::Boolean) }
         def check_original_requirements_resolvable
           base_directory = T.must(dependency_files.first).directory
@@ -454,6 +455,8 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::OutOfMemory if Helpers.out_of_memory_error?(e.message)
+
           if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             missing_extensions =
               e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
@@ -475,6 +478,7 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
+        # rubocop:enable Metrics/AbcSize
 
         sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)

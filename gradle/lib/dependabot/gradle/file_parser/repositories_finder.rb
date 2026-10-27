@@ -146,13 +146,13 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle\(/)
+            repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle(?:\(|\s*\{)/)
 
-            repository_urls << central_repo_url if block.match?(/\smavenCentral\(/)
+            repository_urls << central_repo_url if block.match?(/\smavenCentral(?:\(|\s*\{)/)
 
-            repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
+            repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter(?:\(|\s*\{)/)
 
-            repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal\(/)
+            repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal(?:\(|\s*\{)/)
 
             block.scan(MAVEN_REPO_REGEX) do
               repository_urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))

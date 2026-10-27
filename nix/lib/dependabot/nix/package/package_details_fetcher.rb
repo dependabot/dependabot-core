@@ -66,17 +66,25 @@ module Dependabot
         TARGET_COMMITS_TO_FETCH = 500
         ACTIVITY_TYPES = "push,force_push"
         SHA_REGEX = /\A[0-9a-f]{40}\z/
+        NULL_SHA = "0000000000000000000000000000000000000000"
         # Heuristic for refs that look like a tag/version rather than a branch
         # (e.g. `v1.2.3`, `1.2`, `2024.01`). Branch names like `nixos-25.05`
         # don't match because they don't start with a digit or `v<digit>`.
         TAG_LIKE_REF_REGEX = /\Av?\d+\./
-        private_constant :TARGET_COMMITS_TO_FETCH, :ACTIVITY_TYPES, :SHA_REGEX, :TAG_LIKE_REF_REGEX
+        private_constant :TARGET_COMMITS_TO_FETCH, :ACTIVITY_TYPES, :SHA_REGEX, :NULL_SHA, :TAG_LIKE_REF_REGEX
 
         # Fetch branch-tip history via GitHub's Repo Activity API. Each entry's
         # `after` SHA was once the actual branch tip — for `nixpkgs` channels
         # that means it was Hydra-evaluated and is cache-backed. The /commits
         # endpoint, by contrast, returns intermediate commits that were never
         # branch tips and may not be cached.
+        #
+        # The `activity_type` filter does not narrow the response to pushes, so it
+        # also holds `branch_creation` and `branch_deletion` entries. A deletion
+        # reports the null SHA as its `after`, which is not a revision anyone can
+        # fetch. When the newest entry is a deletion the branch no longer exists
+        # and has no releases; an older deletion, followed by the branch being
+        # created again, is skipped.
         #
         # Returns nil when the activity API isn't usable (non-GitHub host,
         # SHA-pinned ref, missing ref, HTTP error). Callers should fall back to
@@ -91,7 +99,12 @@ module Dependabot
           entries = fetch_activity_entries(T.must(url), T.must(ref))
           return nil unless entries.any?
 
-          trim_entries_to_locked_sha(entries)
+          if branch_deletion?(T.must(entries.first))
+            Dependabot.logger.info("Branch #{ref} of #{url} no longer exists, so #{dependency.name} has no releases")
+            return []
+          end
+
+          trim_entries_to_locked_sha(entries.reject { |entry| branch_deletion?(entry) })
         rescue Octokit::Error => e
           Dependabot.logger.info(
             "Repo Activity API failed for #{dependency.name} (#{e.class}: #{e.message}), " \
@@ -139,6 +152,11 @@ module Dependabot
             end
           end
           result
+        end
+
+        sig { params(entry: Sawyer::Resource).returns(T::Boolean) }
+        def branch_deletion?(entry)
+          activity_string(entry, :after) == NULL_SHA
         end
 
         sig { params(timestamp: T.nilable(Object)).returns(T.nilable(String)) }

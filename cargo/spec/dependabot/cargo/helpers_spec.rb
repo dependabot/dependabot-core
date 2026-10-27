@@ -1,12 +1,15 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/cargo/helpers"
 
 RSpec.describe Dependabot::Cargo::Helpers do
+  extend T::Sig
+
   describe ".sanitize_cargo_config" do
     context "when config has no credential-provider settings" do
+      sig { returns(String) }
       let(:config_content) do
         <<~TOML
           [registries.my-registry]
@@ -24,6 +27,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
 
     context "when config has no registries section" do
+      sig { returns(String) }
       let(:config_content) do
         <<~TOML
           [source.crates-io]
@@ -43,6 +47,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
 
     context "when config has per-registry credential-provider" do
+      sig { returns(String) }
       let(:config_content) do
         <<~TOML
           [registries.artifactory]
@@ -75,6 +80,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
 
     context "when config has [registry] credential-provider (e.g. for cargo publish)" do
+      sig { returns(String) }
       let(:config_content) do
         <<~TOML
           [registry]
@@ -91,6 +97,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
 
     context "when config has mixed settings" do
+      sig { returns(String) }
       let(:config_content) do
         <<~TOML
           [registries.with-cred]
@@ -121,6 +128,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
 
     context "when config is malformed TOML" do
+      sig { returns(String) }
       let(:config_content) { "this is not valid toml {{{{" }
 
       it "raises DependencyFileNotParseable" do
@@ -266,6 +274,8 @@ RSpec.describe Dependabot::Cargo::Helpers do
   end
 
   describe ".registry_token_env" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:config_content) do
       <<~TOML
         [registries.my-private-registry]
@@ -276,12 +286,14 @@ RSpec.describe Dependabot::Cargo::Helpers do
       TOML
     end
 
+    sig { returns(T::Array[Dependabot::Credential]) }
     let(:creds) do
       [
-        { "host" => "private.example.com" },
-        { "host" => "another.example.com" }
+        Dependabot::Credential.new({ "host" => "private.example.com" }),
+        Dependabot::Credential.new({ "host" => "another.example.com" })
       ]
     end
+    # rubocop:enable RSpec/ScatteredLet
 
     it "returns token env vars for matched registries" do
       env = described_class.registry_token_env(config_content, creds)
@@ -303,26 +315,31 @@ RSpec.describe Dependabot::Cargo::Helpers do
   end
 
   describe ".registry_token_env_from_files" do
+    sig { returns(T::Array[Dependabot::Credential]) }
     let(:creds) do
       [
-        { "host" => "private.example.com" },
-        { "host" => "another.example.com" }
+        Dependabot::Credential.new({ "host" => "private.example.com" }),
+        Dependabot::Credential.new({ "host" => "another.example.com" })
       ]
     end
 
     context "when multiple .cargo/config.toml files each define a registry" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:root_config_content) do
         <<~TOML
           [registries.my-private-registry]
           index = "sparse+https://private.example.com/index/"
         TOML
       end
+      sig { returns(String) }
       let(:nested_config_content) do
         <<~TOML
           [registries.another-registry]
           index = "sparse+https://another.example.com/index/"
         TOML
       end
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:dependency_files) do
         [
           Dependabot::DependencyFile.new(
@@ -337,6 +354,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
           )
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "returns token env vars for registries defined across all config files" do
         env = described_class.registry_token_env_from_files(dependency_files, creds)
@@ -349,18 +367,23 @@ RSpec.describe Dependabot::Cargo::Helpers do
   end
 
   describe ".cargo_command_env" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:config_content) do
       <<~TOML
         [registries.my-registry]
         index = "sparse+https://private.example.com/index/"
       TOML
     end
+    sig { returns(T::Array[Dependabot::Credential]) }
     let(:creds) { [Dependabot::Credential.new({ "host" => "private.example.com" })] }
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     let(:dependency_files) do
       [
         Dependabot::DependencyFile.new(name: ".cargo/config.toml", content: config_content)
       ]
     end
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       ENV["DEPENDABOT"] = "true"

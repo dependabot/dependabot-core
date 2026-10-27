@@ -79,6 +79,82 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       end
     end
 
+    # Real bun output for failures that need a change in the repository or its registry access.
+    context "when bun fails while updating the lockfile" do
+      let(:files) { project_dependency_files("bun/simple_v2") }
+      let(:repo_contents_path) { build_tmp_repo("bun/simple_v2", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:version) { "1.8.1" }
+      let(:previous_version) { "1.0.1" }
+      let(:previous_requirements) do
+        [{ file: "package.json", requirement: "1.0.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:requirements) do
+        [{ file: "package.json", requirement: "1.8.1", groups: ["dependencies"], source: nil }]
+      end
+
+      let(:error_message) { fixture("bun_errors", "#{scenario}.txt") }
+
+      before do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: error_message, error_context: {})
+        )
+      end
+
+      {
+        "download_forbidden" => [Dependabot::PrivateSourceAuthenticationFailure, "https://npm.example.com"],
+        "request_unauthorized" => [Dependabot::PrivateSourceAuthenticationFailure, "https://npm.pkg.example.com"],
+        "download_not_found" => [Dependabot::DependencyNotFound, "@types/express"],
+        "workspace_not_on_disk" => [Dependabot::DependencyFileNotResolvable, "@example/closed"],
+        "root_workspace_outside_repo" => [Dependabot::DependencyFileNotResolvable, "../deps/live_toast"],
+        "workspace_not_found" => [Dependabot::DependencyFileNotResolvable, "packages/example-app/example"]
+      }.each do |name, (error_class, detail)|
+        context "with #{name}" do
+          let(:scenario) { name }
+
+          it "raises #{error_class} naming #{detail}" do
+            expect { updated_files }.to raise_error(error_class) do |raised|
+              expect(raised.message).to include(detail)
+            end
+          end
+        end
+      end
+
+      {
+        "download_unsupported_then_forbidden" => "https://npm.example.com",
+        "request_unsupported_then_unauthorized" => "https://npm.pkg.example.com",
+        "download_forbidden_custom_port" => "https://npm.example.com:8443"
+      }.each do |name, source|
+        context "with #{name}" do
+          let(:scenario) { name }
+
+          it "reports the registry #{source} exactly, skipping failures it does not classify" do
+            expect { updated_files }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |raised|
+              expect(raised.source).to eq(source)
+            end
+          end
+        end
+      end
+
+      context "with a security scanner failure that mentions a 403" do
+        let(:scenario) { "security_scanner_forbidden" }
+
+        it "is not mistaken for a registry failure and is re-raised unchanged" do
+          expect { updated_files }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |raised|
+            expect(raised.message).to include("Security scanner failed")
+          end
+        end
+      end
+
+      context "with an error the updater does not recognize" do
+        let(:error_message) { "error: something new" }
+
+        it "re-raises the original error" do
+          expect { updated_files }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /something new/)
+        end
+      end
+    end
+
     %w(simple_v2 simple_v3).each do |project|
       context "with a Bun 1.4 #{project} lockfile" do
         let(:files) { project_dependency_files("bun/#{project}") }
@@ -167,6 +243,268 @@ RSpec.describe Dependabot::Bun::FileUpdater do
             expect(advisory.vulnerable?(Dependabot::Bun::Version.new(dependencies.first.version))).to be(false)
           end
         end
+      end
+    end
+
+    %w(workspace_dependency_not_at_root workspace_dependency_not_at_root_v1
+       workspace_dependency_not_at_root_v3).each do |project|
+      context "with a dependency only declared in a nested workspace package.json (#{project})" do
+        let(:files) { project_dependency_files("bun/#{project}") }
+        let(:repo_contents_path) { build_tmp_repo("bun/#{project}", path: "projects") }
+        let(:dependency_name) { "etag" }
+        let(:previous_version) { "1.0.1" }
+        let(:version) { "1.8.1" }
+        let(:previous_requirements) do
+          [{
+            file: "packages/app/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:requirements) { previous_requirements }
+
+        it "updates the dependency instead of silently dropping it" do
+          expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+          updated_lock = YAML.safe_load(updated_bun_lock.content)
+          expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        end
+
+        it "preserves the lockfile version" do
+          original_lock = YAML.safe_load(files.find { |file| file.name == "bun.lock" }.content)
+          updated_lock = YAML.safe_load(updated_bun_lock.content)
+          expect(updated_lock["lockfileVersion"]).to eq(original_lock["lockfileVersion"])
+        end
+
+        it "scopes the install to the workspace that declares the dependency" do
+          allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+          updated_files
+
+          # Without --filter, bun install would add the dependency to the
+          # root package.json instead, and the final full install would then
+          # revert it as an orphaned entry, silently dropping the update.
+          expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+            ["install", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+          )
+        end
+
+        it "does not add the dependency to the root package.json" do
+          expect(updated_files.map(&:name)).not_to include("package.json")
+        end
+      end
+    end
+
+    context "with dependencies only declared in two different nested workspace packages" do
+      let(:files) { project_dependency_files("bun/multi_workspace_dependency_not_at_root") }
+      let(:repo_contents_path) { build_tmp_repo("bun/multi_workspace_dependency_not_at_root", path: "projects") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.8.1",
+            previous_version: "1.0.1",
+            requirements: [{
+              file: "packages/app/package.json",
+              requirement: "^1.0.0",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "packages/app/package.json",
+              requirement: "^1.0.0",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+            package_manager: "bun"
+          ),
+          Dependabot::Dependency.new(
+            name: "is-number",
+            version: "2.1.0",
+            previous_version: "2.0.0",
+            requirements: [{
+              file: "packages/other/package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "packages/other/package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "bun"
+          )
+        ]
+      end
+
+      it "updates both dependencies, so a later workspace install can't silently discard an earlier one" do
+        expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+        updated_lock = YAML.safe_load(updated_bun_lock.content)
+        expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+        expect(updated_lock["packages"]["is-number"].first).to eq("is-number@2.1.0")
+      end
+
+      it "issues a separately filtered install command for each workspace" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        updated_files
+
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/app", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "is-number@2.1.0", "--filter", "./packages/other", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+      end
+    end
+
+    context "with the same dependency declared in two different workspace packages" do
+      let(:files) { project_dependency_files("bun/shared_workspace_dependency") }
+      let(:repo_contents_path) { build_tmp_repo("bun/shared_workspace_dependency", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [
+          {
+            file: "packages/a/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          },
+          {
+            file: "packages/b/package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: nil
+          }
+        ]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "updates the dependency's locked resolution for both workspaces" do
+        expect(updated_files.map(&:name)).to contain_exactly("bun.lock")
+        updated_lock = YAML.safe_load(updated_bun_lock.content)
+        expect(updated_lock["packages"]["etag"].first).to eq("etag@1.8.1")
+      end
+
+      it "issues a separately filtered install command for each declaring workspace" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        updated_files
+
+        # Bun merges same-name declarations into one Dependency, so without
+        # an install command per declaring workspace, only the first
+        # workspace would actually get updated.
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/a", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/b", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+      end
+    end
+
+    context "with a dependency declared only in a workspace package.json missing a \"name\"" do
+      let(:files) { project_dependency_files("bun/unnamed_workspace_dependency") }
+      let(:repo_contents_path) { build_tmp_repo("bun/unnamed_workspace_dependency", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{
+          file: "packages/app/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "fails explicitly instead of silently falling back to an unfiltered root install" do
+        # Unreachable in practice: Bun refuses to run any command against a
+        # repo with an unnamed workspace. Kept as a defensive guard.
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotParseable, /must declare a "name"/)
+      end
+    end
+
+    context "with a workspace package named using a glob metacharacter" do
+      let(:files) { project_dependency_files("bun/glob_metacharacter_workspace_name") }
+      let(:repo_contents_path) { build_tmp_repo("bun/glob_metacharacter_workspace_name", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{
+          file: "packages/app-star/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "scopes the install by path instead of the package's glob-like name" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        begin
+          updated_files
+        rescue Dependabot::Bun::FileUpdater::NoChangeError
+          # Bun can non-deterministically revert an already-applied bump for
+          # small fixtures; not what's under test here.
+        end
+
+        # Name is "app*". Passed directly to --filter, Bun would treat it as
+        # a glob and also match "app-plain".
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/app-star", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
+        expect(Dependabot::Bun::Helpers).not_to have_received(:run_bun_command).with(
+          array_including("--filter", "./packages/app-plain"), any_args
+        )
+      end
+    end
+
+    context "with a workspace directory path containing a space" do
+      let(:files) { project_dependency_files("bun/workspace_path_with_space") }
+      let(:repo_contents_path) { build_tmp_repo("bun/workspace_path_with_space", path: "projects") }
+      let(:dependency_name) { "etag" }
+      let(:previous_version) { "1.0.1" }
+      let(:version) { "1.8.1" }
+      let(:previous_requirements) do
+        [{
+          file: "packages/my app/package.json",
+          requirement: "^1.0.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:requirements) { previous_requirements }
+
+      it "passes the filter path as a single argument instead of splitting on the space" do
+        allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+        begin
+          updated_files
+        rescue Dependabot::Bun::FileUpdater::NoChangeError
+          # Bun can non-deterministically revert an already-applied bump for
+          # small fixtures; not what's under test here.
+        end
+
+        # A single interpolated string would be whitespace-split before
+        # shelling out, breaking "packages/my app" into two arguments.
+        expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+          ["install", "etag@1.8.1", "--filter", "./packages/my app", "--save-text-lockfile", "--ignore-scripts"],
+          fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+        )
       end
     end
 
@@ -300,7 +638,7 @@ RSpec.describe Dependabot::Bun::FileUpdater do
           updated_files
 
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts$/),
+            start_with("install").and(end_with("--save-text-lockfile", "--ignore-scripts")),
             fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
           )
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(

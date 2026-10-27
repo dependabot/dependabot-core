@@ -285,6 +285,29 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
   end
 
+  describe ".out_of_memory_error?" do
+    it "detects PHP's memory limit error" do
+      message = "Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes)"
+      expect(described_class.out_of_memory_error?(message)).to be(true)
+    end
+
+    it "detects PHP's out of memory error" do
+      message = "Out of memory (allocated 2097152) (tried to allocate 34359738392 bytes)"
+      expect(described_class.out_of_memory_error?(message)).to be(true)
+    end
+
+    it "detects an out of memory error that follows mmap() failures" do
+      message = "mmap() failed: [12] Cannot allocate memory\n\n" \
+                "mmap() failed: [12] Cannot allocate memory\nOut of memory"
+      expect(described_class.out_of_memory_error?(message)).to be(true)
+    end
+
+    it "ignores messages that only mention memory mid-line" do
+      message = "Your requirements could not be resolved. Out of memory notes: none"
+      expect(described_class.out_of_memory_error?(message)).to be(false)
+    end
+  end
+
   def manifest_document(data)
     Dependabot::Composer::ManifestDocument.new(data: data, context: "composer.json")
   end
