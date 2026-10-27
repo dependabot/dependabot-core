@@ -1,8 +1,9 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "yaml"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -10,6 +11,10 @@ require "dependabot/helm/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Helm::FileUpdater do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "redis",
@@ -32,24 +37,31 @@ RSpec.describe Dependabot::Helm::FileUpdater do
       package_manager: "helm"
     )
   end
+  sig { returns(String) }
   let(:helmfile_body) do
     fixture("helm", "v3", "single.yaml")
   end
+  sig { returns(Dependabot::DependencyFile) }
   let(:dockerfile) do
     Dependabot::DependencyFile.new(
       content: helmfile_body,
       name: "Chart.yaml"
     )
   end
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:files) { [dockerfile] }
+  sig { returns(Dependabot::Helm::FileUpdater) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -57,8 +69,10 @@ RSpec.describe Dependabot::Helm::FileUpdater do
       credentials: credentials
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#updated_dependency_files" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "returns DependencyFile objects" do
@@ -68,12 +82,14 @@ RSpec.describe Dependabot::Helm::FileUpdater do
     its(:length) { is_expected.to eq(1) }
 
     describe "the updated Chart.yaml" do
+      sig { returns(Dependabot::DependencyFile) }
       subject(:updated_helmfile) do
-        updated_files.find { |f| f.name == "Chart.yaml" }
+        T.must(updated_files.find { |f| f.name == "Chart.yaml" })
       end
 
+      sig { returns(T::Hash[String, Object]) }
       let(:yaml_content) do
-        YAML.safe_load updated_helmfile.content
+        YAML.safe_load T.must(updated_helmfile.content)
       end
 
       its(:content) { is_expected.to include "- name: redis\n    version: 20.11.3" }
@@ -95,9 +111,12 @@ RSpec.describe Dependabot::Helm::FileUpdater do
     end
 
     context "when multiple identical lines need to be updated" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:helmfile_body) do
         fixture("helm", "v3", "basic.yaml")
       end
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "mongodb",
@@ -120,10 +139,12 @@ RSpec.describe Dependabot::Helm::FileUpdater do
           package_manager: "helm"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       describe "the updated Chart.yaml" do
+        sig { returns(Dependabot::DependencyFile) }
         subject(:updated_helmfile) do
-          updated_files.find { |f| f.name == "Chart.yaml" }
+          T.must(updated_files.find { |f| f.name == "Chart.yaml" })
         end
 
         its(:content) { is_expected.to include "- name: redis\n    version: 17.11.3" }
@@ -132,9 +153,12 @@ RSpec.describe Dependabot::Helm::FileUpdater do
     end
 
     context "when the dependency is from a private registry" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:helmfile_body) do
         fixture("helm", "v3", "private_reg.yaml")
       end
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "myreg/redis",
@@ -163,12 +187,14 @@ RSpec.describe Dependabot::Helm::FileUpdater do
           package_manager: "helm"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       its(:length) { is_expected.to eq(1) }
 
       describe "the updated Chart.yaml" do
+        sig { returns(Dependabot::DependencyFile) }
         subject(:updated_helmfile) do
-          updated_files.find { |f| f.name == "Chart.yaml" }
+          T.must(updated_files.find { |f| f.name == "Chart.yaml" })
         end
 
         its(:content) { is_expected.to include "- name: myreg/redis\n    version: 20.11.3" }
@@ -178,6 +204,8 @@ RSpec.describe Dependabot::Helm::FileUpdater do
     context "when the same chart is in two files and only one changes" do
       # Regression: the unchanged file must be skipped, not written back
       # identically (which would raise "Expected content to change!").
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:files) do
         [
           Dependabot::DependencyFile.new(
@@ -190,6 +218,7 @@ RSpec.describe Dependabot::Helm::FileUpdater do
           )
         ]
       end
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "common",
@@ -210,10 +239,11 @@ RSpec.describe Dependabot::Helm::FileUpdater do
           package_manager: "helm"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "updates only the changed file" do
         expect(updated_files.map(&:name)).to eq(["Chart.yaml"])
-        expect(updated_files.first.content).to include("version: 2.0.0")
+        expect(updated_files.fetch(0).content).to include("version: 2.0.0")
       end
     end
   end

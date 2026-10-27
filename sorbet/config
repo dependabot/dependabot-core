@@ -17,7 +17,6 @@
 --ignore=composer/spec/
 --ignore=elm/spec/
 --ignore=go_modules/spec/
---ignore=helm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
 --ignore=nix/spec/

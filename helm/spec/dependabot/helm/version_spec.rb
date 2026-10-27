@@ -1,10 +1,12 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/helm/version"
 
 RSpec.describe Dependabot::Helm::Version do
+  extend T::Sig
+
   describe ".correct?" do
     it "returns true for versions" do
       expect(described_class.correct?("3.7.7-slim-buster")).to be true
@@ -76,6 +78,7 @@ RSpec.describe Dependabot::Helm::Version do
   end
 
   describe ".correct?" do
+    sig { params(version: String).returns(T::Boolean) }
     def check_version_for_correctness?(version)
       docker_version = described_class.new(version)
       described_class.correct?(docker_version)

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve helper and matcher calls in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/helm/requirement"
 require "dependabot/helm/version"
@@ -118,7 +120,7 @@ RSpec.describe Dependabot::Helm::Requirement do
 
     context "with a nil requirement" do
       it "matches anything (does not raise)" do
-        req = described_class.requirements_array(nil).first
+        req = described_class.requirements_array(nil).fetch(0)
         expect(req.satisfied_by?(Dependabot::Helm::Version.new("9.9.9"))).to be(true)
       end
     end
