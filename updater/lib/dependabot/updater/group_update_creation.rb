@@ -66,6 +66,13 @@ module Dependabot
         @security_update_failures ||= T.let({}, T.nilable(T::Hash[String, Dependabot::Service::ErrorRecord]))
       end
 
+      # Names of dependencies that vanished from the files because an earlier update in the
+      # group removed them, which resolves any advisory against them.
+      sig { returns(T::Set[String]) }
+      def removed_dependency_names
+        @removed_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -103,6 +110,8 @@ module Dependabot
         notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
+        # Kept local until the aggregate change passes validation, since a rejected change is never submitted.
+        removed_names = T.let(Set.new, T::Set[String])
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -113,10 +122,12 @@ module Dependabot
 
           # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
-          dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+          group_dependency_name = dependency.name
+          dependency = reparsed_dependencies.find { |d| d.name == group_dependency_name }
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
+          removed_names << group_dependency_name.downcase if dependency.nil?
           next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
@@ -154,6 +165,8 @@ module Dependabot
           store_changes(dependency)
         end
 
+        confirm_removals_in_final_files(group_changes.current_dependency_files(job), removed_names)
+
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
 
@@ -171,6 +184,9 @@ module Dependabot
           log_missing_previous_version(dependency_change)
           return nil
         end
+
+        log_resolved_by_removal(removed_names, original_dependencies)
+        removed_dependency_names.merge(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.
@@ -960,6 +976,35 @@ module Dependabot
         group.dependencies
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
+             .reject { |dependency| resolved_by_removal?(dependency) }
+      end
+
+      # A later update can reintroduce a dependency an earlier one removed, so only names still
+      # absent from the final files count as resolved.
+      sig { params(final_files: T::Array[Dependabot::DependencyFile], removed_names: T::Set[String]).void }
+      def confirm_removals_in_final_files(final_files, removed_names)
+        return if removed_names.empty?
+
+        present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
+        removed_names.delete_if { |name| present.include?(name) }
+      end
+
+      sig { params(removed_names: T::Set[String], original_dependencies: T::Array[Dependabot::Dependency]).void }
+      def log_resolved_by_removal(removed_names, original_dependencies)
+        removed_names.each do |name|
+          version = original_dependencies.find { |dependency| dependency.name.casecmp?(name) }&.version
+          Dependabot.logger.info(
+            "Security update for #{name} #{version} resolved: removed from the dependency files " \
+            "by another update in group '#{group.name}'"
+          )
+        end
+      end
+
+      # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def resolved_by_removal?(dependency)
+        name = dependency.name.downcase
+        removed_dependency_names.include?(name) && !security_update_failures.key?(name)
       end
 
       sig { params(dependency_change: T.nilable(Dependabot::DependencyChange)).void }
