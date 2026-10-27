@@ -3,7 +3,7 @@
 # python/lib/dependabot/python/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # (`uv/lib/dependabot/uv/language.rb` aliases `Dependabot::Python::Language`).
 # Python versions are pinned to the release of each minor/patch version.
-ARG PY_3_15=3.15.1
+ARG PY_3_15=3.15.2
 ARG PY_3_14=3.14.7
 ARG PY_3_13=3.13.13
 ARG PY_3_12=3.12.13
