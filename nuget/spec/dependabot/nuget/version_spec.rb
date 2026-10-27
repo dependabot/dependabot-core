@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve matcher calls in the class-scope generated comparison examples.
+
 require "spec_helper"
 require "dependabot/nuget/version"
 
