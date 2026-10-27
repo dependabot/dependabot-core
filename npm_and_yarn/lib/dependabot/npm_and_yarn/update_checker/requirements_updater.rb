@@ -162,11 +162,24 @@ module Dependabot
             elsif current_requirement.strip.split(SEPARATOR).one?
               update_version_string(current_requirement)
             else
-              # "^1.0.0 || ^2.0.0": add an alternative for the new version, written like the last one
-              "#{current_requirement.strip} || #{update_version_string(T.must(reqs.last))}"
+              "#{current_requirement.strip} || #{alternative_for_new_version(current_requirement)}"
             end
 
           Dependabot::DependencyRequirement.create(req.merge(requirement: updated_requirement))
+        end
+
+        # The alternative to add to "^1.0.0 || ^2.0.0": the last one written for the new version, as long as it is a
+        # single comparator that admits that version. Otherwise (">9.0.0" would give ">2.0.0", and "^2.0.0 >=2.1.0"
+        # is a range of its own) a caret on the new version, which admits it and stays bounded.
+        sig { params(current_requirement: String).returns(String) }
+        def alternative_for_new_version(current_requirement)
+          last_alternative = current_requirement.split("||").last.to_s.strip
+          candidate = update_version_string(last_alternative) if last_alternative.split(/\s+/).one?
+          version = T.must(latest_resolvable_version)
+
+          return candidate if candidate && ruby_requirements(candidate).any? { |r| r.satisfied_by?(version) }
+
+          "^#{version}"
         end
 
         sig { params(requirement_string: String).returns(T::Array[NpmAndYarn::Requirement]) }
