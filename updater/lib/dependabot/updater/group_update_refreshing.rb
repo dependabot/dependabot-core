@@ -80,8 +80,30 @@ module Dependabot
         candidates.any? do |dep|
           dep.name == pr_dep.name &&
             Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dep) &&
-            !pr_target_older_than_current?(dep, pr_dep)
+            !pr_target_older_than_current?(dep, pr_dep) &&
+            !pr_target_ignored?(dep, pr_dep)
         end
+      end
+
+      # A PR target that is now excluded by ignore conditions or blocked versions must not be retained.
+      sig do
+        params(dep: Dependabot::Dependency, pr_dep: Dependabot::Job::ExistingGroupPullRequest::Dependency)
+          .returns(T::Boolean)
+      end
+      def pr_target_ignored?(dep, pr_dep)
+        target = pr_dep.version
+        return false unless target
+
+        version_class = Dependabot::Utils.version_class_for_package_manager(dep.package_manager)
+        return false unless version_class.correct?(target)
+
+        requirement_class = Dependabot::Utils.requirement_class_for_package_manager(dep.package_manager)
+        version = version_class.new(target)
+        job.ignore_conditions_for(dep).any? do |condition|
+          requirement_class.requirements_array(condition).any? { |req| req.satisfied_by?(version) }
+        end
+      rescue ArgumentError
+        false
       end
 
       # Equal versions are allowed (digest-only refreshes); a PR target provably older than the version now on

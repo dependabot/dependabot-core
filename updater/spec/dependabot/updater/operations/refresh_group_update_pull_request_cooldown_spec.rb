@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -43,9 +43,11 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       entry
     end
     definition["job"]["existing-group-pull-requests"][0]["dependencies"] = entries
+    definition["job"]["ignore-conditions"] = ignore_conditions
     definition
   end
   let(:pr_directory) { "/" }
+  let(:ignore_conditions) { [] }
   let(:pr_dependencies) { [["dummy-pkg-b", "1.2.0", false]] }
 
   let(:job) { Dependabot::Job.new_update_job(job_id: "1", job_definition: job_definition) }
@@ -148,6 +150,16 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       it "keeps the pull request open" do
         expect(mock_service).not_to receive(:close_pull_request)
+
+        refresh_group.perform
+      end
+    end
+
+    context "when the pull request target is now ignored" do
+      let(:ignore_conditions) { [{ "dependency-name" => "dummy-pkg-b", "version-requirement" => ">= 1.2.0" }] }
+
+      it "closes the pull request" do
+        expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b), :update_no_longer_possible)
 
         refresh_group.perform
       end
