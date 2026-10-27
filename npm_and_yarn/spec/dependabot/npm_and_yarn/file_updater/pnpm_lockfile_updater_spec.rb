@@ -1456,6 +1456,81 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when the lockfile has no catalogs section and the catalog-backed importer is behind" do
+      # The new version is in the lockfile for something else, so a text search would find it
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            importer_at_old = "specifier: 'catalog:'\n        version: 3.4.2"
+            importer_at_new = "specifier: 'catalog:'\n        version: 3.3.0"
+            lockfile = File.read("pnpm-lock.yaml").sub(importer_at_old, importer_at_new)
+            File.write("pnpm-lock.yaml", "#{lockfile.rstrip}\n\n  prettier@3.3.3: {}\n")
+            ""
+          end
+      end
+
+      it "reads the importer and updates it" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    context "when a git dependency is updated together with the catalog dependency" do
+      let(:files) do
+        project_dependency_files(project_name).map do |file|
+          next file unless file.name == "package.json"
+
+          manifest = JSON.parse(file.content)
+          manifest["dependencies"] = { "git-package" => "github:org/git-package#v1.0.0" }
+          Dependabot::DependencyFile.new(name: file.name, content: JSON.pretty_generate(manifest))
+        end
+      end
+      let(:git_source) do
+        { type: "git", url: "https://github.com/org/git-package", branch: nil, ref: "v2.0.0" }
+      end
+      let(:dependencies) do
+        [
+          create_dependency(
+            name: "prettier",
+            required_version: "^3.3.0",
+            previous_required_version: "^3.3.0",
+            version: "3.3.3",
+            file: "pnpm-workspace.yaml"
+          ),
+          Dependabot::Dependency.new(
+            name: "git-package",
+            version: "a" * 40,
+            previous_version: "b" * 40,
+            package_manager: "npm_and_yarn",
+            requirements: [
+              { file: "package.json", requirement: nil, groups: ["dependencies"], source: git_source }
+            ],
+            previous_requirements: [
+              { file: "package.json", requirement: nil, groups: ["dependencies"],
+                source: git_source.merge(ref: "v1.0.0") }
+            ]
+          )
+        ]
+      end
+      let(:full_commands) { [] }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+          full_commands << command
+          ""
+        end
+      end
+
+      it "updates only the dependency that is behind, not the git dependency" do
+        updated_pnpm_lock_content
+
+        updates = full_commands.select { |command| command.start_with?("update ") && command.include?("--no-save") }
+        expect(updates).to eq(["update prettier@3.3.3  --lockfile-only --no-save -r"])
+      end
+    end
+
     context "when another declaration of the dependency changes" do
       let(:dependencies) do
         [

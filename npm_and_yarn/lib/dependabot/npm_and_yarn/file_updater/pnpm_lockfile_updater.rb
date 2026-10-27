@@ -352,7 +352,7 @@ module Dependabot
         def update_again_if_lockfile_behind(pnpm_lock, catalog_update:)
           lockfile_content = File.read(pnpm_lock.name)
           lockfile = parsed_lockfile(lockfile_content)
-          behind = dependencies.any? do |dep|
+          behind = dependencies.select do |dep|
             next false unless dep.top_level? && dep.version
 
             requirements_to_check(dep, catalog_update).any? do |req|
@@ -362,14 +362,15 @@ module Dependabot
               locked.any? { |version| version != dep.version }
             end
           end
-          return unless behind
+          return if behind.empty?
 
-          run_pnpm_update_packages
+          run_pnpm_update_specs(behind.map { |dep| "#{dep.name}@#{dep.version}" })
         end
 
         # The requirements whose dependency may be left at its locked version: the ones widened with another
         # alternative ("^1.0.0 || ^2.0.0"), and, for a catalog update, each one that did not change (another
-        # declaration of the dependency can change in the same update)
+        # declaration of the dependency can change in the same update). Only requirements from the registry count:
+        # a git dependency is locked to a URL, never to the version that is asked for.
         sig do
           params(dep: Dependabot::Dependency, catalog_update: T::Boolean)
             .returns(T::Array[Dependabot::DependencyRequirement])
@@ -381,7 +382,12 @@ module Dependabot
           end
           widened = changed.map(&:first).select { |req| req.requirement_string&.include?("||") }
 
-          catalog_update ? widened + unchanged.map(&:first) : widened
+          (catalog_update ? widened + unchanged.map(&:first) : widened).select { |req| registry_requirement?(req) }
+        end
+
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def registry_requirement?(req)
+          !req.requirement_string.nil? && req.source_string("type") != "git"
         end
 
         sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
