@@ -9,7 +9,7 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/update_checkers/cooldown_calculation"
 
-require "dependabot/docker"
+require "support/dummy_package_manager/dummy"
 
 RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   subject(:refresh_group) do
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   end
 
   let(:job_definition) do
-    definition = job_definition_fixture("docker/version_updates/group_update_refresh")
+    definition = job_definition_fixture("dummy/version_updates/group_update_refresh_cooldown")
     definition["job"]["existing-group-pull-requests"][0]["dependencies"][0]["directory"] = pr_directory
     definition
   end
@@ -54,9 +54,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
-        name: "Dockerfile",
+        name: "manifest.txt",
         directory: "/",
-        content: "FROM python:3.14-alpine@sha256:#{'a' * 64}\n"
+        content: "dummy-pkg-b = 1.1.0\n"
       )
     ]
   end
@@ -65,8 +65,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
   before do
     deferred = deferred_by_cooldown
-    allow_any_instance_of(Dependabot::Docker::UpdateChecker).to receive(:latest_version).and_return("3.14-alpine") # rubocop:disable RSpec/AnyInstance
-    allow_any_instance_of(Dependabot::Docker::UpdateChecker).to receive(:up_to_date?) do |checker| # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(DummyPackageManager::UpdateChecker).to receive(:latest_version).and_return("1.1.0") # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(DummyPackageManager::UpdateChecker).to receive(:up_to_date?) do |checker| # rubocop:disable RSpec/AnyInstance
       Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(checker.dependency) if deferred
       true
     end
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:deferred_by_cooldown) { false }
 
       it "closes the pull request" do
-        expect(mock_service).to receive(:close_pull_request).with(["python"], :update_no_longer_possible)
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
         refresh_group.perform
       end
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:pr_directory) { "/other" }
 
       it "closes the pull request" do
-        expect(mock_service).to receive(:close_pull_request).with(["python"], :update_no_longer_possible)
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
         refresh_group.perform
       end

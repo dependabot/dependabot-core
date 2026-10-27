@@ -1,5 +1,5 @@
 job:
-  package-manager: docker
+  package-manager: dummy
   source:
     provider: github
     repo: dependabot/smoke-tests
@@ -8,13 +8,13 @@ job:
     api-endpoint: https://api.github.com/
     hostname: github.com
   dependencies:
-    - python
+    - dummy-pkg-b
   existing-pull-requests: []
   existing-group-pull-requests:
     - dependency-group-name: everything-everywhere-all-at-once
       dependencies:
-        - dependency-name: python
-          dependency-version: 3.14-alpine
+        - dependency-name: dummy-pkg-b
+          dependency-version: 1.2.0
           directory: "/"
   updating-a-pull-request: true
   lockfile-only: false
