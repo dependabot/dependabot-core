@@ -37,11 +37,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
   let(:job_definition) do
     definition = job_definition_fixture("dummy/version_updates/group_update_refresh_cooldown")
-    definition["job"]["existing-group-pull-requests"][0]["dependencies"] = pr_dependencies.map do |name, version, removed|
+    entries = pr_dependencies.map do |name, version, removed|
       entry = { "dependency-name" => name, "dependency-version" => version, "directory" => pr_directory }
       entry["dependency-removed"] = true if removed
       entry
     end
+    definition["job"]["existing-group-pull-requests"][0]["dependencies"] = entries
     definition
   end
   let(:pr_directory) { "/" }
