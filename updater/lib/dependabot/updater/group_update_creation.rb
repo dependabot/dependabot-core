@@ -477,7 +477,7 @@ module Dependabot
           return []
         end
         unless semver_rules_allow_grouping?(group, dependency, checker)
-          semver_rejected_dependency_names << dependency.name.downcase unless group.group_by_dependency_name?
+          note_semver_rejected(dependency, checker, group)
           mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
           return []
         end
@@ -1002,6 +1002,27 @@ module Dependabot
             "by another update in group '#{group.name}'"
           )
         end
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def note_semver_rejected(dependency, checker, group)
+        return if group.group_by_dependency_name?
+
+        semver_rejected_dependency_names << dependency.name.downcase
+        return unless job.security_updates_only?
+
+        Dependabot.logger.info(
+          "Security update for #{dependency.name} #{dependency.version} not grouped: " \
+          "update to #{checker.lowest_security_fix_version || checker.latest_version} is outside the " \
+          "update-types #{group.update_types.inspect} of group '#{group.name}'; " \
+          "leaving it to an individual update"
+        )
       end
 
       # A dependency rejected by the group's update-types rules is updated individually, so only
