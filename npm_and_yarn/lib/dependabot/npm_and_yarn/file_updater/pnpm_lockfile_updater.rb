@@ -401,9 +401,9 @@ module Dependabot
           value.to_h { |key, entry| [T.cast(key, Object).to_s, T.cast(entry, Object)] }
         end
 
-        # The versions a requirement is locked to: for a requirement of the workspace file, those of the catalogs with
-        # that range (all of the catalogs that have the dependency when none has it), otherwise the one in the importer
-        # of the manifest. Empty when the lockfile does not say.
+        # The versions a requirement is locked to: for a requirement of the workspace file (a catalog), those of the
+        # catalogs with that range, or those of the importers that use the dependency when the lockfile has no such
+        # catalog; otherwise the one in the importer of the manifest. Empty when the lockfile does not say.
         sig do
           params(lockfile: T.nilable(T::Hash[String, Object]), req: Dependabot::DependencyRequirement, name: String)
             .returns(T::Array[String])
@@ -414,7 +414,7 @@ module Dependabot
           entries = if File.basename(T.must(req.file)) == PNPMPackageManager::PNPM_WS_YML_FILENAME
                       catalog_entries(lockfile, name, req.requirement_string)
                     else
-                      [importer_entry(lockfile, T.must(req.file), name)].compact
+                      importer_entries(lockfile, name, T.must(req.file))
                     end
 
           entries.map do |entry|
@@ -428,21 +428,26 @@ module Dependabot
         end
         def catalog_entries(lockfile, name, range)
           entries = mapping(lockfile["catalogs"]).values.filter_map { |catalog| mapping(catalog)[name] }
-          with_range = entries.select { |entry| mapping(entry)["specifier"] == range }
+          return importer_entries(lockfile, name, nil) if entries.empty?
 
+          with_range = entries.select { |entry| mapping(entry)["specifier"] == range }
           with_range.empty? ? entries : with_range
         end
 
-        sig { params(lockfile: T::Hash[String, Object], file_name: String, name: String).returns(T.nilable(Object)) }
-        def importer_entry(lockfile, file_name, name)
-          importer = if lockfile.key?("importers")
-                       mapping(mapping(lockfile["importers"])[Pathname.new(file_name).dirname.to_s])
-                     else
-                       lockfile
-                     end
+        # The entries for a dependency in the importer of a manifest, or in every importer when there is no manifest
+        sig { params(lockfile: T::Hash[String, Object], name: String, file_name: T.nilable(String)).returns(T::Array[Object]) }
+        def importer_entries(lockfile, name, file_name)
+          importers = if lockfile.key?("importers")
+                        all = mapping(lockfile["importers"])
+                        file_name ? [all[Pathname.new(file_name).dirname.to_s]].compact : all.values
+                      else
+                        [lockfile]
+                      end
 
           groups = %w(dependencies devDependencies optionalDependencies)
-          groups.filter_map { |group| mapping(importer[group])[name] }.first
+          importers.flat_map do |importer|
+            groups.filter_map { |group| mapping(mapping(importer)[group])[name] }.first(1)
+          end
         end
 
         sig { returns(T.nilable(String)) }
