@@ -174,7 +174,7 @@ module Dependabot
         sig { params(current_requirement: String).returns(String) }
         def alternative_for_new_version(current_requirement)
           last_alternative = current_requirement.split("||").last.to_s.strip
-          candidate = update_version_string(last_alternative) if last_alternative.split(/\s+/).one?
+          candidate = update_version_string(last_alternative) if last_alternative.split(SEPARATOR).one?
           version = T.must(latest_resolvable_version)
 
           return candidate if candidate && ruby_requirements(candidate).any? { |r| r.satisfied_by?(version) }
