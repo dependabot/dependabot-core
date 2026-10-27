@@ -1239,6 +1239,68 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when the widened requirement is in a workspace package" do
+    let(:project_name) { "pnpm/simple" }
+    let(:version) { "0.0.2" }
+    let(:requirements) do
+      [{ file: "packages/a/package.json", requirement: "^0.0.1 || ^0.0.2", groups: ["dependencies"], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "packages/a/package.json", requirement: "^0.0.1", groups: ["dependencies"], source: nil }]
+    end
+    let(:commands) { [] }
+    let(:root_version) { "0.0.1" }
+    let(:package_version) { "0.0.1" }
+    let(:workspace_lockfile) do
+      <<~YAML
+        lockfileVersion: '6.0'
+
+        importers:
+
+          .:
+            dependencies:
+              fetch-factory:
+                specifier: ^0.0.1
+                version: #{root_version}
+
+          packages/a:
+            dependencies:
+              fetch-factory:
+                specifier: ^0.0.1 || ^0.0.2
+                version: #{package_version}
+      YAML
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        File.write("pnpm-lock.yaml", workspace_lockfile) if command == "install --lockfile-only"
+        ""
+      end
+    end
+
+    context "when that package is still locked to the old version and another importer has the new one" do
+      let(:root_version) { "0.0.2" }
+
+      it "updates again" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(3))
+          .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
+      end
+    end
+
+    context "when that package has the new version and another importer is still on the old one" do
+      let(:package_version) { "0.0.2" }
+
+      it "does not update again" do
+        updated_pnpm_lock_content
+
+        expect(commands.count { |c| c.start_with?("update fetch-factory@") }).to eq(1)
+      end
+    end
+  end
+
   describe "when the lockfile has an environment document before the project document" do
     let(:project_name) { "pnpm/simple" }
     let(:version) { "0.0.2" }
