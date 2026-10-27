@@ -715,6 +715,9 @@ module Dependabot
         else
           dependency.display_name
         end
+      rescue StandardError => e
+        suppress_error("dependency link for #{dependency.name}", e)
+        dependency.display_name
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
