@@ -78,8 +78,27 @@ module Dependabot
                      end
 
         candidates.any? do |dep|
-          dep.name == pr_dep.name && Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dep)
+          dep.name == pr_dep.name &&
+            Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dep) &&
+            !pr_target_older_than_current?(dep, pr_dep)
         end
+      end
+
+      # Equal versions are allowed (digest-only refreshes); a PR target provably older than the version now on
+      # the base branch would downgrade it, so it must not be retained.
+      sig do
+        params(dep: Dependabot::Dependency, pr_dep: Dependabot::Job::ExistingGroupPullRequest::Dependency)
+          .returns(T::Boolean)
+      end
+      def pr_target_older_than_current?(dep, pr_dep)
+        current = dep.version
+        target = pr_dep.version
+        return false unless current && target
+
+        version_class = Dependabot::Utils.version_class_for_package_manager(dep.package_manager)
+        return false unless version_class.correct?(current) && version_class.correct?(target)
+
+        version_class.new(target) < version_class.new(current)
       end
 
       # Having created the dependency_change, we need to determine the right strategy to apply it to the project:

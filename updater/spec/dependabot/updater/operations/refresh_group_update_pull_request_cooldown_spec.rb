@@ -37,10 +37,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
   let(:job_definition) do
     definition = job_definition_fixture("dummy/version_updates/group_update_refresh_cooldown")
-    definition["job"]["existing-group-pull-requests"][0]["dependencies"][0]["directory"] = pr_directory
+    definition["job"]["existing-group-pull-requests"][0]["dependencies"] = pr_dependencies.map do |name, version, removed|
+      entry = { "dependency-name" => name, "dependency-version" => version, "directory" => pr_directory }
+      entry["dependency-removed"] = true if removed
+      entry
+    end
     definition
   end
   let(:pr_directory) { "/" }
+  let(:pr_dependencies) { [["dummy-pkg-b", "1.2.0", false]] }
 
   let(:job) { Dependabot::Job.new_update_job(job_id: "1", job_definition: job_definition) }
 
@@ -56,18 +61,21 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       Dependabot::DependencyFile.new(
         name: "manifest.txt",
         directory: "/",
-        content: "dummy-pkg-b = 1.1.0\n"
+        content: "dummy-pkg-a = 1.0.0\ndummy-pkg-b = 1.1.0\n"
       )
     ]
   end
 
   let(:deferred_by_cooldown) { true }
+  let(:deferred_names) { %w(dummy-pkg-a dummy-pkg-b) }
 
   before do
-    deferred = deferred_by_cooldown
+    deferred = deferred_by_cooldown ? deferred_names : []
     allow_any_instance_of(DummyPackageManager::UpdateChecker).to receive(:latest_version).and_return("1.1.0") # rubocop:disable RSpec/AnyInstance
     allow_any_instance_of(DummyPackageManager::UpdateChecker).to receive(:up_to_date?) do |checker| # rubocop:disable RSpec/AnyInstance
-      Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(checker.dependency) if deferred
+      if deferred.include?(checker.dependency.name)
+        Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(checker.dependency)
+      end
       true
     end
   end
@@ -96,7 +104,59 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:pr_directory) { "/other" }
 
       it "closes the pull request" do
-        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+        expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b), :update_no_longer_possible)
+
+        refresh_group.perform
+      end
+    end
+
+    context "when the pull request has several dependencies" do
+      let(:pr_dependencies) { [["dummy-pkg-a", "1.1.0", false], ["dummy-pkg-b", "1.2.0", false]] }
+
+      context "when all of them are deferred" do
+        it "keeps the pull request open" do
+          expect(mock_service).not_to receive(:close_pull_request)
+
+          refresh_group.perform
+        end
+      end
+
+      context "when one of them is not deferred" do
+        let(:deferred_names) { %w(dummy-pkg-b) }
+
+        it "closes the pull request" do
+          expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b), :update_no_longer_possible)
+
+          refresh_group.perform
+        end
+      end
+
+      context "when one of them is missing from the snapshot" do
+        let(:pr_dependencies) { [["dummy-pkg-b", "1.2.0", false], ["dummy-pkg-missing", "1.0.0", false]] }
+
+        it "closes the pull request" do
+          expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b), :update_no_longer_possible)
+
+          refresh_group.perform
+        end
+      end
+    end
+
+    context "when the pull request also lists a removed dependency" do
+      let(:pr_dependencies) { [["dummy-pkg-b", "1.2.0", false], ["dummy-pkg-gone", "1.0.0", true]] }
+
+      it "keeps the pull request open" do
+        expect(mock_service).not_to receive(:close_pull_request)
+
+        refresh_group.perform
+      end
+    end
+
+    context "when the pull request target is older than the version on the base branch" do
+      let(:pr_dependencies) { [["dummy-pkg-b", "1.0.0", false]] }
+
+      it "closes the pull request" do
+        expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b), :update_no_longer_possible)
 
         refresh_group.perform
       end
