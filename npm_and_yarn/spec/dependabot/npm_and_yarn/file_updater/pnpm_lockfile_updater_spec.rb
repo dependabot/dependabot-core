@@ -1201,11 +1201,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when the lockfile already has the new version" do
+    context "when the importer already has the new version" do
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
           .with("install --lockfile-only") do
-            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub("fetch-factory@0.0.1", "fetch-factory@0.0.2"))
+            locked_at_old_version = "specifier: ^0.0.1\n    version: 0.0.1"
+            locked_at_new_version = "specifier: ^0.0.1 || ^0.0.2\n    version: 0.0.2"
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub(locked_at_old_version, locked_at_new_version))
             ""
           end
       end
@@ -1214,6 +1216,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updated_pnpm_lock_content
 
         expect(commands.count { |c| c.start_with?("update fetch-factory") }).to eq(1)
+      end
+    end
+
+    context "when the new version is only in the lockfile for something else" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            other_entry = "\n  /fetch-factory@0.0.2:\n    resolution: {integrity: sha512-other}\n    dev: false\n"
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").rstrip + "\n" + other_entry)
+            ""
+          end
+      end
+
+      it "still updates, because the dependency itself is locked to the old version" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(3))
+          .to eq(["update fetch-factory@0.0.2", "install --lockfile-only", "update fetch-factory@0.0.2"])
       end
     end
   end
@@ -1266,6 +1287,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updated_pnpm_lock_content
 
         expect(commands.grep(/\Aupdate prettier@/)).to be_empty
+      end
+    end
+
+    context "when the catalog is locked to the old version and the new version is in the lockfile for something else" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            catalogs = "catalogs:\n  default:\n    prettier:\n      specifier: ^3.3.0\n      version: 3.3.0\n\n" \
+                       "importers:"
+            lockfile = File.read("pnpm-lock.yaml").sub("importers:", catalogs)
+            File.write("pnpm-lock.yaml", "#{lockfile.rstrip}\n\n  prettier@3.3.3: {}\n")
+            ""
+          end
+      end
+
+      it "still updates it" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
       end
     end
   end

@@ -351,40 +351,77 @@ module Dependabot
         sig { params(pnpm_lock: Dependabot::DependencyFile, catalog_update: T::Boolean).void }
         def update_again_if_lockfile_behind(pnpm_lock, catalog_update:)
           lockfile_content = File.read(pnpm_lock.name)
-          return unless dependencies.any? { |dep| left_behind?(dep, lockfile_content, catalog_update) }
+          lockfile = parsed_lockfile(lockfile_content)
+          behind = dependencies.any? do |dep|
+            next false unless dep.top_level? && dep.version
+
+            requirements_to_check(dep, catalog_update).any? do |req|
+              locked = locked_version(lockfile, T.must(req.file), dep.name)
+              locked.nil? ? !lockfile_content.include?("#{dep.name}@#{dep.version}") : locked != dep.version
+            end
+          end
+          return unless behind
 
           run_pnpm_update_packages
         end
 
+        # The requirements whose dependency may be left at its locked version: the ones widened with another
+        # alternative ("^1.0.0 || ^2.0.0"), or all of them for a catalog update that did not change them
         sig do
-          params(dep: Dependabot::Dependency, lockfile_content: String, catalog_update: T::Boolean).returns(T::Boolean)
+          params(dep: Dependabot::Dependency, catalog_update: T::Boolean)
+            .returns(T::Array[Dependabot::DependencyRequirement])
         end
-        def left_behind?(dep, lockfile_content, catalog_update)
-          return false unless dep.top_level? && dep.version
-          return false if lockfile_content.include?("#{dep.name}@#{dep.version}")
+        def requirements_to_check(dep, catalog_update)
+          pairs = dep.requirements.zip(dep.previous_requirements || [])
+          changed = pairs.reject { |new_req, old_req| new_req.requirement_string == old_req&.requirement_string }
+          return pairs.map(&:first) if catalog_update && changed.empty?
 
-          requirement_widened?(dep) || (catalog_update && requirement_unchanged?(dep))
-        end
-
-        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
-        def requirement_widened?(dep)
-          requirement_pairs(dep).any? do |new_req, old_req|
-            new_req.requirement_string != old_req&.requirement_string && new_req.requirement_string&.include?("||")
-          end
+          changed.map(&:first).select { |req| req.requirement_string&.include?("||") }
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
-        def requirement_unchanged?(dep)
-          pairs = requirement_pairs(dep)
-          pairs.any? && pairs.all? { |new_req, old_req| new_req.requirement_string == old_req&.requirement_string }
+        sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
+        def parsed_lockfile(content)
+          parsed = T.cast(YAML.safe_load(content, aliases: true), Object)
+          parsed.is_a?(Hash) ? mapping(parsed) : nil
+        rescue Psych::Exception
+          nil
         end
 
+        sig { params(value: T.nilable(Object)).returns(T::Hash[String, Object]) }
+        def mapping(value)
+          return {} unless value.is_a?(Hash)
+
+          value.to_h { |key, entry| [T.cast(key, Object).to_s, T.cast(entry, Object)] }
+        end
+
+        # The version a dependency of a manifest is locked to: in the catalogs for a requirement of the workspace
+        # file, otherwise in the importer of that manifest
         sig do
-          params(dep: Dependabot::Dependency)
-            .returns(T::Array[[Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]])
+          params(lockfile: T.nilable(T::Hash[String, Object]), file_name: String, name: String)
+            .returns(T.nilable(String))
         end
-        def requirement_pairs(dep)
-          dep.requirements.zip(dep.previous_requirements || [])
+        def locked_version(lockfile, file_name, name)
+          return unless lockfile
+
+          entry = if File.basename(file_name) == PNPMPackageManager::PNPM_WS_YML_FILENAME
+                    mapping(lockfile["catalogs"]).values.filter_map { |catalog| mapping(catalog)[name] }.first
+                  else
+                    importer_entry(lockfile, file_name, name)
+                  end
+          locked = entry.is_a?(Hash) ? mapping(entry)["version"] : entry
+          locked.to_s.split("(").first.to_s.delete_prefix("/") unless locked.nil?
+        end
+
+        sig { params(lockfile: T::Hash[String, Object], file_name: String, name: String).returns(T.nilable(Object)) }
+        def importer_entry(lockfile, file_name, name)
+          importer = if lockfile.key?("importers")
+                       mapping(mapping(lockfile["importers"])[Pathname.new(file_name).dirname.to_s])
+                     else
+                       lockfile
+                     end
+
+          groups = %w(dependencies devDependencies optionalDependencies)
+          groups.filter_map { |group| mapping(importer[group])[name] }.first
         end
 
         sig { returns(T.nilable(String)) }
