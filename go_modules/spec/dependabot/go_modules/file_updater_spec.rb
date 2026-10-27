@@ -353,6 +353,66 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
+    describe "#updated_dependency_files regarding `go list -m all`" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      let(:go_work_sum_body) { fixture("projects", project_name, "go.work.sum") }
+      let(:go_work_sum) do
+        Dependabot::DependencyFile.new(name: "go.work.sum", content: go_work_sum_body, directory: "/")
+      end
+      let(:go_list_status) { instance_double(Process::Status, success?: true) }
+      let(:go_list_stderr) { "" }
+      let(:commands) { [] }
+      let(:extra_checksum) { "example.com/missing v1.0.0/go.mod h1:AAAA=\n" }
+
+      before do
+        recorded = commands
+        allow(Open3).to receive(:capture3).and_wrap_original do |original, *args|
+          recorded << args.first
+          next original.call(*args) unless args.first == "go list -m all"
+
+          File.open("go.work.sum", "a") { |f| f.write(extra_checksum) }
+          ["", go_list_stderr, go_list_status]
+        end
+      end
+
+      context "when go.work.sum is among the dependency files" do
+        let(:files) { [go_work, go_mod, libs_go_mod, services_go_mod, go_work_sum] }
+
+        it "runs `go list -m all` once, after `go work sync` and the workspace tidy" do
+          updated_files
+
+          expect(commands.count("go list -m all")).to eq(1)
+          expect(commands.index("go list -m all")).to be > commands.index("go work sync")
+          expect(commands.index("go list -m all")).to be > commands.rindex("go mod tidy")
+        end
+
+        it "includes the checksums it adds to go.work.sum" do
+          work_sum = updated_files.find { |f| f.name == "go.work.sum" }
+
+          expect(work_sum).not_to be_nil
+          expect(work_sum.content).to end_with(extra_checksum)
+        end
+
+        context "when `go list -m all` fails" do
+          let(:go_list_status) { instance_double(Process::Status, success?: false) }
+          let(:go_list_stderr) { "go: example.com/private: reading go.mod: 404 Not Found" }
+
+          it "still returns the updated workspace files" do
+            expect(updated_files.map(&:name)).to include("go.mod", "libs/go.mod", "services/go.mod")
+          end
+        end
+      end
+
+      context "when go.work.sum is not among the dependency files" do
+        it "does not run `go list -m all`" do
+          updated_files
+
+          expect(commands).not_to include("go list -m all")
+        end
+      end
+    end
+
     describe "#updated_dependency_files when go work sync fails" do
       before do
         allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only latest fixture used by the parent hook.
+
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"
@@ -597,6 +599,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     let(:source) { { registry: repo_url, tag: version } }
 
     before do
+      allow(Dependabot::Helm::Helpers).to receive_messages(add_repo: "", update_repo: "")
       allow(Dependabot::Helm::Helpers).to receive(:search_releases)
         .with(anything)
         .and_return("")

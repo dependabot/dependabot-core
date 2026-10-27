@@ -1,11 +1,17 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/opentofu/update_checker/latest_version_resolver"
+require "dependabot/opentofu/version"
 
 RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [Dependabot::Credential.new(type: "git_source", token: "test-token")] }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "patrick-zippenfenig/SwiftNetCDF",
@@ -14,6 +20,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
       package_manager: "swift"
     )
   end
+  sig { returns(Dependabot::GitCommitChecker) }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
@@ -23,13 +30,15 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
       consider_version_branches_pinned: true
     )
   end
+  sig { returns(Dependabot::Opentofu::Package::PackageDetailsFetcher) }
   let(:package_details_fetcher) do
-    Dependabot::Swift::Package::PackageDetailsFetcher.new(
+    Dependabot::Opentofu::Package::PackageDetailsFetcher.new(
       dependency: dependency,
       credentials: credentials,
       git_commit_checker: git_commit_checker
     )
   end
+  sig { returns(Dependabot::Package::ReleaseCooldownOptions) }
   let(:cooldown_options) do
     Dependabot::Package::ReleaseCooldownOptions.new(
       default_days: 30,
@@ -39,6 +48,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
     )
   end
 
+  sig { returns(Dependabot::Opentofu::UpdateChecker::LatestVersionResolver) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -47,12 +57,14 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
       git_commit_checker: git_commit_checker
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#filter_versions_in_cooldown_period_from_provider" do
+    sig { returns(T::Array[Dependabot::Opentofu::Version]) }
     let(:versions) do
       [
-        instance_double(Dependabot::Version, to_s: "1.0.0"),
-        instance_double(Dependabot::Version, to_s: "0.9.0")
+        instance_double(Dependabot::Opentofu::Version, to_s: "1.0.0"),
+        instance_double(Dependabot::Opentofu::Version, to_s: "0.9.0")
       ]
     end
 
@@ -73,10 +85,11 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
   end
 
   describe "#filter_versions_in_cooldown_period_from_module" do
+    sig { returns(T::Array[Dependabot::Opentofu::Version]) }
     let(:versions) do
       [
-        instance_double(Dependabot::Version, to_s: "1.0.0"),
-        instance_double(Dependabot::Version, to_s: "0.9.0")
+        instance_double(Dependabot::Opentofu::Version, to_s: "1.0.0"),
+        instance_double(Dependabot::Opentofu::Version, to_s: "0.9.0")
       ]
     end
 
