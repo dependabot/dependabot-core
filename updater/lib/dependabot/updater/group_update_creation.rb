@@ -66,6 +66,13 @@ module Dependabot
         @security_update_failures ||= T.let({}, T.nilable(T::Hash[String, Dependabot::Service::ErrorRecord]))
       end
 
+      # Names of dependencies the group's update-types rules rejected. Outside group-by-name
+      # groups they are left for individual updates, so the group must not report them as failed.
+      sig { returns(T::Set[String]) }
+      def semver_rejected_dependency_names
+        @semver_rejected_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
       # Names of dependencies that vanished from the files because an earlier update in the
       # group removed them, which resolves any advisory against them.
       sig { returns(T::Set[String]) }
@@ -470,6 +477,7 @@ module Dependabot
           return []
         end
         unless semver_rules_allow_grouping?(group, dependency, checker)
+          semver_rejected_dependency_names << dependency.name.downcase unless group.group_by_dependency_name?
           mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
           return []
         end
@@ -972,6 +980,7 @@ module Dependabot
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
              .reject { |dependency| resolved_by_removal?(dependency) }
+             .reject { |dependency| deferred_to_individual_update?(dependency) }
       end
 
       # A later update can reintroduce a dependency an earlier one removed, so only names still
@@ -993,6 +1002,14 @@ module Dependabot
             "by another update in group '#{group.name}'"
           )
         end
+      end
+
+      # A dependency rejected by the group's update-types rules is updated individually, so only
+      # that update can fail it, unless a directory already diagnosed a concrete failure.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def deferred_to_individual_update?(dependency)
+        name = dependency.name.downcase
+        semver_rejected_dependency_names.include?(name) && !security_update_failures.key?(name)
       end
 
       # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.

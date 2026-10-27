@@ -299,6 +299,28 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       perform
     end
 
+    context "when the group's update-types rules reject the dependency" do
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(
+          name: "security",
+          rules: { "patterns" => ["*"], "update-types" => ["patch"] }
+        ).tap { |group| group.dependencies.push(dependency, successful_dependency) }
+      end
+
+      before do
+        allow(stub_update_checker).to receive(:latest_version).and_return("9.0.0")
+        allow(successful_checker).to receive(:latest_version).and_return(successful_update.version)
+      end
+
+      it "leaves it to individual updates instead of reporting an unknown error" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).not_to receive(:record_update_job_error)
+        expect(mock_service).to receive(:create_pull_request)
+
+        perform
+      end
+    end
+
     it "still creates a PR when resolving another dependency's error details fails" do
       resolver_error = RuntimeError.new("resolver failed")
       allow(stub_update_checker).to receive(:lowest_resolvable_security_fix_version).and_raise(resolver_error)
