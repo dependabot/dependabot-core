@@ -42,6 +42,13 @@ module Dependabot
         ).updated_requirements
       end
 
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def latest_resolvable_version_with_no_unlock
+        return super if git_dependency? || resolver_type != :pip_compile
+
+        T.cast(pip_compile_version_resolver, PipCompileVersionResolver).latest_resolvable_version_with_no_unlock
+      end
+
       private
 
       sig { override.returns(T.nilable(Gem::Version)) }

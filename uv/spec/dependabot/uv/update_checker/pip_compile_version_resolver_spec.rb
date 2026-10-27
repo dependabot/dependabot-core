@@ -60,6 +60,72 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipCompileVersionResolver do
     }]
   end
 
+  describe "#update_req_file" do
+    subject(:updated_content) { resolver.send(:update_req_file, manifest_file, ">=2.31.0,<=2.32.3") }
+
+    let(:manifest_fixture_name) { "extras_and_bare.in" }
+    let(:compiled_fixture_name) { "uv_pip_compile_extras_and_bare.txt" }
+    let(:dependency_name) { "requests" }
+    let(:dependency_version) { "2.31.0" }
+    let(:dependency_requirements) do
+      [
+        { file: "requirements/test.in", requirement: ">=2.20.0", groups: [], source: nil },
+        { file: "requirements/test.in", requirement: "<2.32.0,>=2.31.0", groups: [], source: nil }
+      ]
+    end
+
+    it "unlocks every declaration of the package" do
+      expect(updated_content).to eq(
+        "requests>=2.31.0,<=2.32.3\nrequests[socks]>=2.31.0,<=2.32.3\n"
+      )
+    end
+
+    it "resolves past the upper bound of the declaration with extras" do
+      expect(resolver.latest_resolvable_version(requirement: ">=2.31.0,<=2.32.3"))
+        .to eq(Dependabot::Uv::Version.new("2.32.3"))
+    end
+
+    context "when one declaration's requirement starts with another's" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(name: "requirements/test.in", content: manifest_content)
+      end
+      let(:dependency_requirements) do
+        [
+          { file: "requirements/test.in", requirement: ">=2.20.0", groups: [], source: nil },
+          { file: "requirements/test.in", requirement: "<3,>=2.20.0", groups: [], source: nil }
+        ]
+      end
+
+      context "when the shorter declaration comes first" do
+        let(:manifest_content) { "requests>=2.20.0\nrequests[socks]>=2.20.0,<3\n" }
+
+        it "unlocks every declaration of the package" do
+          expect(updated_content).to eq(
+            "requests>=2.31.0,<=2.32.3\nrequests[socks]>=2.31.0,<=2.32.3\n"
+          )
+        end
+      end
+
+      context "when the shorter declaration comes last" do
+        let(:manifest_content) { "requests[socks]>=2.20.0,<3\nrequests>=2.20.0\n" }
+
+        it "unlocks every declaration of the package" do
+          expect(updated_content).to eq(
+            "requests[socks]>=2.31.0,<=2.32.3\nrequests>=2.31.0,<=2.32.3\n"
+          )
+        end
+      end
+    end
+
+    context "when the package is not declared in the file" do
+      let(:dependency_requirements) { [] }
+
+      it "appends the requirement" do
+        expect(updated_content).to end_with("\nrequests >=2.31.0,<=2.32.3")
+      end
+    end
+  end
+
   describe "#pip_compile_options_fingerprint" do
     subject(:fingerprint) { resolver.send(:pip_compile_options_fingerprint, options) }
 

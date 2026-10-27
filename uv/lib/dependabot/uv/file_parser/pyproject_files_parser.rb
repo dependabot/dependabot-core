@@ -105,7 +105,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: normalised_name(dep.name, dep.extras),
+                name: normalise(dep.name),
                 version: dep.version&.include?("*") ? nil : dep.version,
                 requirements: [{
                   requirement: requirement_value,
@@ -113,7 +113,8 @@ module Dependabot
                   source: nil,
                   groups: [dep.requirement_type].compact
                 }],
-                package_manager: "uv"
+                package_manager: "uv",
+                metadata: extras_metadata(dep.extras)
               )
           end
 
@@ -206,9 +207,13 @@ module Dependabot
           dependencies
         end
 
-        sig { params(name: String, extras: T::Array[String]).returns(String) }
-        def normalised_name(name, extras)
-          NameNormaliser.normalise_including_extras(name, extras)
+        # Extras are kept out of the dependency name so it matches the uv.lock
+        # entry, which always uses the bare package name.
+        sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+        def extras_metadata(extras)
+          return {} if extras.empty?
+
+          { extras: extras.join(",") }
         end
 
         sig do

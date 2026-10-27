@@ -282,39 +282,48 @@ module Dependabot
         def freeze_dependency_requirement(file)
           return file.content unless file.name.end_with?(".in")
 
-          old_req = T.must(dependency).previous_requirements
-          old_req = old_req&.find { |r| r.file == file.name }
+          frozen_requirement = "==#{T.must(dependency).version}"
+          old_requirements = (T.must(dependency).previous_requirements || [])
+                             .select { |r| r.file == file.name }
+                             .map(&:requirement_string)
+                             .uniq
+                             .reject { |old_requirement| old_requirement == frozen_requirement }
 
-          return file.content unless old_req
-          return file.content if old_req.requirement_string == "==#{T.must(dependency).version}"
-
-          RequirementReplacer.new(
-            content: T.must(file.content),
-            dependency_name: T.must(dependency).name,
-            old_requirement: old_req.requirement_string,
-            new_requirement: "==#{T.must(dependency).version}",
-            index_urls: @index_urls
-          ).updated_content
+          # A package can be declared more than once (e.g. with and without
+          # extras), so every declaration has to be pinned.
+          old_requirements.reduce(file.content) do |content, old_requirement|
+            RequirementReplacer.new(
+              content: T.must(content),
+              dependency_name: T.must(dependency).name,
+              old_requirement: old_requirement,
+              new_requirement: frozen_requirement,
+              index_urls: @index_urls
+            ).updated_content
+          end
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
         def update_dependency_requirement(file)
           return file.content unless file.name.end_with?(".in")
 
-          old_req = T.must(dependency).previous_requirements
-          old_req = old_req&.find { |r| r.file == file.name }
-          new_req = T.must(dependency).requirements
-          new_req = new_req.find { |r| r.file == file.name }
-          return file.content unless old_req&.requirement_string
-          return file.content if old_req == new_req
+          old_requirements = (T.must(dependency).previous_requirements || []).select { |r| r.file == file.name }
+          new_requirements = T.must(dependency).requirements.select { |r| r.file == file.name }
 
-          RequirementReplacer.new(
-            content: T.must(file.content),
-            dependency_name: T.must(dependency).name,
-            old_requirement: old_req.requirement_string,
-            new_requirement: T.must(T.must(new_req).requirement_string),
-            index_urls: @index_urls
-          ).updated_content
+          # Requirements and previous requirements are built in the same order,
+          # so each declaration of the package is paired with its update.
+          changes = old_requirements.zip(new_requirements)
+                                    .reject { |old_req, new_req| old_req.requirement_string.nil? || old_req == new_req }
+                                    .uniq
+
+          changes.reduce(file.content) do |content, (old_req, new_req)|
+            RequirementReplacer.new(
+              content: T.must(content),
+              dependency_name: T.must(dependency).name,
+              old_requirement: old_req.requirement_string,
+              new_requirement: T.must(T.must(new_req).requirement_string),
+              index_urls: @index_urls
+            ).updated_content
+          end
         end
 
         sig { params(updated_content: String, file: Dependabot::DependencyFile).returns(String) }
