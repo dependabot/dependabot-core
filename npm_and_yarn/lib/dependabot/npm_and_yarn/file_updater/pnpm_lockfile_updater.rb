@@ -267,7 +267,7 @@ module Dependabot
 
               run_pnpm_install
 
-              update_again_for_widened_requirements(pnpm_lock)
+              update_again_if_lockfile_behind(pnpm_lock, catalog_update: !updated_pnpm_workspace_content.nil?)
 
               updated_content = File.read(pnpm_lock.name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
@@ -344,27 +344,47 @@ module Dependabot
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
         end
 
-        # A locked version that satisfies a widened range stays where it is unless pnpm is asked to move it while that
-        # range is in the manifest, which is only the case after the first update and install.
-        sig { params(pnpm_lock: Dependabot::DependencyFile).void }
-        def update_again_for_widened_requirements(pnpm_lock)
-          return unless widened_dependency_left_behind?(File.read(pnpm_lock.name))
+        # `pnpm install` keeps a locked version that the manifest still allows, so a dependency can stay behind the
+        # update: with a requirement widened by another alternative (it is only in the manifest after the first
+        # update and install), and with a catalog dependency whose range already allows the new version (a catalog
+        # update only writes the workspace file). Ask pnpm to move it.
+        sig { params(pnpm_lock: Dependabot::DependencyFile, catalog_update: T::Boolean).void }
+        def update_again_if_lockfile_behind(pnpm_lock, catalog_update:)
+          lockfile_content = File.read(pnpm_lock.name)
+          return unless dependencies.any? { |dep| left_behind?(dep, lockfile_content, catalog_update) }
 
           run_pnpm_update_packages
         end
 
-        # Whether a requirement was widened with another alternative ("^1.0.0 || ^2.0.0") and the lockfile does not
-        # have the new version of that dependency
-        sig { params(lockfile_content: String).returns(T::Boolean) }
-        def widened_dependency_left_behind?(lockfile_content)
-          dependencies.any? do |dep|
-            next false unless dep.top_level? && dep.version
+        sig do
+          params(dep: Dependabot::Dependency, lockfile_content: String, catalog_update: T::Boolean).returns(T::Boolean)
+        end
+        def left_behind?(dep, lockfile_content, catalog_update)
+          return false unless dep.top_level? && dep.version
+          return false if lockfile_content.include?("#{dep.name}@#{dep.version}")
 
-            widened = dep.requirements.zip(dep.previous_requirements || []).any? do |new_req, old_req|
-              new_req.requirement_string != old_req&.requirement_string && new_req.requirement_string&.include?("||")
-            end
-            widened && !lockfile_content.include?("#{dep.name}@#{dep.version}")
+          requirement_widened?(dep) || (catalog_update && requirement_unchanged?(dep))
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+        def requirement_widened?(dep)
+          requirement_pairs(dep).any? do |new_req, old_req|
+            new_req.requirement_string != old_req&.requirement_string && new_req.requirement_string&.include?("||")
           end
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+        def requirement_unchanged?(dep)
+          pairs = requirement_pairs(dep)
+          pairs.any? && pairs.all? { |new_req, old_req| new_req.requirement_string == old_req&.requirement_string }
+        end
+
+        sig do
+          params(dep: Dependabot::Dependency)
+            .returns(T::Array[[Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]])
+        end
+        def requirement_pairs(dep)
+          dep.requirements.zip(dep.previous_requirements || [])
         end
 
         sig { returns(T.nilable(String)) }

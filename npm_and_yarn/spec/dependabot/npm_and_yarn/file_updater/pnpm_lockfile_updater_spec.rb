@@ -1218,6 +1218,58 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "when a catalog requirement already allows the new version" do
+    let(:project_name) { "pnpm/catalog_prettier" }
+    let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+    let(:dependencies) do
+      [
+        create_dependency(
+          name: "prettier",
+          required_version: "^3.3.0",
+          previous_required_version: "^3.3.0",
+          version: "3.3.3",
+          file: "pnpm-workspace.yaml"
+        )
+      ]
+    end
+    let(:workspace_files) do
+      { "pnpm-workspace.yaml" => files.find { |f| f.name == "pnpm-workspace.yaml" }.content }
+    end
+    let(:commands) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, *_args|
+        commands << command.split.first(2).join(" ")
+        ""
+      end
+    end
+
+    # Only the catalog file is written, and `pnpm install` keeps a locked version that the range allows
+    context "when the lockfile stays behind the new version" do
+      it "updates the dependency after the install" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    context "when the lockfile already has the new version" do
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").gsub("prettier@3.4.2", "prettier@3.3.3"))
+            ""
+          end
+      end
+
+      it "does not update it again" do
+        updated_pnpm_lock_content
+
+        expect(commands.grep(/\Aupdate prettier@/)).to be_empty
+      end
+    end
+  end
+
   describe "when pnpm refuses to pin a transitive dependency" do
     let(:project_name) { "pnpm/no_lockfile_change" }
     let(:dependencies) { [dependency, transitive_dependency] }
