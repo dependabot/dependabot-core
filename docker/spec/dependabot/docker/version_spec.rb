@@ -65,6 +65,11 @@ RSpec.describe Dependabot::Docker::Version do
       expect(described_class.new("17.0.4_8")).to be < described_class.new("17.0.4_8_1")
     end
 
+    it "treats a trailing underscore as an extra zero group" do
+      expect(described_class.new("24_2")).to be < described_class.new("24_2_")
+      expect(described_class.new("17.0.4_8")).to be < described_class.new("17.0.4_8_")
+    end
+
     it "ignores groups that are not numeric" do
       expect(described_class.new("2_1_d088644")).to eq(described_class.new("2_1_0"))
     end
