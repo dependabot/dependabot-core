@@ -183,6 +183,10 @@ module Dependabot
                 name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
+            if missing_extensions.any? { |ext| explicit_platform_extensions.key?(ext[:name]) }
+              raise DependencyFileNotResolvable, error.message
+            end
+
             raise MissingExtensions, missing_extensions
           elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
                 !library? &&

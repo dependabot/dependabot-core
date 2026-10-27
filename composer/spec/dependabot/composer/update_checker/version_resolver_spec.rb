@@ -339,6 +339,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         end
       end
 
+      context "when a root requirement conflicts with the explicit platform version" do
+        let(:responses) do
+          [missing_platform_error(
+            "PHP extension ext-mongodb ^2.5 but it has the wrong version installed (2.4.0)"
+          )]
+        end
+
+        it "raises a DependencyFileNotResolvable error with the Composer diagnostic" do
+          expect { resolver.latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /PHP extension ext-mongodb/)
+          expect(written_manifests.length).to eq(1)
+        end
+      end
+
       context "when an undeclared extension is missing" do
         let(:responses) do
           [
