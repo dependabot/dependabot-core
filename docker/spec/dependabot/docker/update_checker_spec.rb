@@ -2023,6 +2023,35 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             expect(Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dependency)).to be true
           end
 
+          context "when digest-only update suppression is enabled" do
+            before do
+              allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+              allow(Dependabot::Experiments).to receive(:enabled?)
+                .with(:docker_digest_only_update_suppression).and_return(true)
+            end
+
+            it "does not mark the update as deferred" do
+              can_update
+
+              expect(Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dependency)).to be false
+            end
+          end
+
+          context "when only an unconsumed platform changed" do
+            before do
+              allow(checker).to receive(:platform_digests)
+                .with("sha256:old_digest").and_return({ "linux/amd64" => "sha256:a" })
+              allow(checker).to receive(:platform_digests)
+                .with("sha256:newdigest").and_return({ "linux/amd64" => "sha256:a" })
+            end
+
+            it "does not mark the update as deferred" do
+              can_update
+
+              expect(Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(dependency)).to be false
+            end
+          end
+
           context "when the pinned digest already matches the registry digest" do
             let(:source) { { tag: "4.0.2-alpine3.23", digest: "newdigest" } }
 
