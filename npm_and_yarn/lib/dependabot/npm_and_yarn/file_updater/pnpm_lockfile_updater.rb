@@ -356,8 +356,10 @@ module Dependabot
             next false unless dep.top_level? && dep.version
 
             requirements_to_check(dep, catalog_update).any? do |req|
-              locked = locked_version(lockfile, T.must(req.file), dep.name)
-              locked.nil? ? !lockfile_content.include?("#{dep.name}@#{dep.version}") : locked != dep.version
+              locked = locked_versions(lockfile, req, dep.name)
+              next !lockfile_content.include?("#{dep.name}@#{dep.version}") if locked.empty?
+
+              locked.any? { |version| version != dep.version }
             end
           end
           return unless behind
@@ -366,17 +368,20 @@ module Dependabot
         end
 
         # The requirements whose dependency may be left at its locked version: the ones widened with another
-        # alternative ("^1.0.0 || ^2.0.0"), or all of them for a catalog update that did not change them
+        # alternative ("^1.0.0 || ^2.0.0"), and, for a catalog update, each one that did not change (another
+        # declaration of the dependency can change in the same update)
         sig do
           params(dep: Dependabot::Dependency, catalog_update: T::Boolean)
             .returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_to_check(dep, catalog_update)
           pairs = dep.requirements.zip(dep.previous_requirements || [])
-          changed = pairs.reject { |new_req, old_req| new_req.requirement_string == old_req&.requirement_string }
-          return pairs.map(&:first) if catalog_update && changed.empty?
+          unchanged, changed = pairs.partition do |new_req, old_req|
+            new_req.requirement_string == old_req&.requirement_string
+          end
+          widened = changed.map(&:first).select { |req| req.requirement_string&.include?("||") }
 
-          changed.map(&:first).select { |req| req.requirement_string&.include?("||") }
+          catalog_update ? widened + unchanged.map(&:first) : widened
         end
 
         sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
@@ -396,22 +401,36 @@ module Dependabot
           value.to_h { |key, entry| [T.cast(key, Object).to_s, T.cast(entry, Object)] }
         end
 
-        # The version a dependency of a manifest is locked to: in the catalogs for a requirement of the workspace
-        # file, otherwise in the importer of that manifest
+        # The versions a requirement is locked to: for a requirement of the workspace file, those of the catalogs with
+        # that range (all of the catalogs that have the dependency when none has it), otherwise the one in the importer
+        # of the manifest. Empty when the lockfile does not say.
         sig do
-          params(lockfile: T.nilable(T::Hash[String, Object]), file_name: String, name: String)
-            .returns(T.nilable(String))
+          params(lockfile: T.nilable(T::Hash[String, Object]), req: Dependabot::DependencyRequirement, name: String)
+            .returns(T::Array[String])
         end
-        def locked_version(lockfile, file_name, name)
-          return unless lockfile
+        def locked_versions(lockfile, req, name)
+          return [] unless lockfile
 
-          entry = if File.basename(file_name) == PNPMPackageManager::PNPM_WS_YML_FILENAME
-                    mapping(lockfile["catalogs"]).values.filter_map { |catalog| mapping(catalog)[name] }.first
-                  else
-                    importer_entry(lockfile, file_name, name)
-                  end
-          locked = entry.is_a?(Hash) ? mapping(entry)["version"] : entry
-          locked.to_s.split("(").first.to_s.delete_prefix("/") unless locked.nil?
+          entries = if File.basename(T.must(req.file)) == PNPMPackageManager::PNPM_WS_YML_FILENAME
+                      catalog_entries(lockfile, name, req.requirement_string)
+                    else
+                      [importer_entry(lockfile, T.must(req.file), name)].compact
+                    end
+
+          entries.map do |entry|
+            locked = entry.is_a?(Hash) ? mapping(entry)["version"] : entry
+            locked.to_s.split("(").first.to_s.delete_prefix("/")
+          end
+        end
+
+        sig do
+          params(lockfile: T::Hash[String, Object], name: String, range: T.nilable(String)).returns(T::Array[Object])
+        end
+        def catalog_entries(lockfile, name, range)
+          entries = mapping(lockfile["catalogs"]).values.filter_map { |catalog| mapping(catalog)[name] }
+          with_range = entries.select { |entry| mapping(entry)["specifier"] == range }
+
+          with_range.empty? ? entries : with_range
         end
 
         sig { params(lockfile: T::Hash[String, Object], file_name: String, name: String).returns(T.nilable(Object)) }

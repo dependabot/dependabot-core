@@ -1321,6 +1321,71 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when another declaration of the dependency changes" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "prettier",
+            version: "3.3.3",
+            package_manager: "npm_and_yarn",
+            requirements: [
+              { file: "pnpm-workspace.yaml", requirement: "^3.3.0", groups: ["dependencies"], source: nil },
+              { file: "package.json", requirement: "3.3.3", groups: ["devDependencies"], source: nil }
+            ],
+            previous_requirements: [
+              { file: "pnpm-workspace.yaml", requirement: "^3.3.0", groups: ["dependencies"], source: nil },
+              { file: "package.json", requirement: "3.3.0", groups: ["devDependencies"], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "still updates the catalog dependency after the install" do
+        updated_pnpm_lock_content
+
+        expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+      end
+    end
+
+    context "with several catalogs" do
+      let(:catalogs_section) do
+        "catalogs:\n  default:\n    prettier:\n      specifier: ^3.3.0\n      version: #{default_version}\n" \
+          "  named:\n    prettier:\n      specifier: #{named_specifier}\n      version: #{named_version}\n\n" \
+          "importers:"
+      end
+      let(:default_version) { "3.3.3" }
+      let(:named_specifier) { "^3.3.0" }
+      let(:named_version) { "3.3.0" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only") do
+            commands << "install --lockfile-only"
+            File.write("pnpm-lock.yaml", File.read("pnpm-lock.yaml").sub("importers:", catalogs_section))
+            ""
+          end
+      end
+
+      context "when a catalog with the same range is still locked to the old version" do
+        it "updates it, although the first catalog has the new version" do
+          updated_pnpm_lock_content
+
+          expect(commands.first(2)).to eq(["install --lockfile-only", "update prettier@3.3.3"])
+        end
+      end
+
+      context "when the other catalog uses another range" do
+        let(:named_specifier) { "^2.0.0" }
+        let(:named_version) { "2.8.8" }
+
+        it "does not update it again" do
+          updated_pnpm_lock_content
+
+          expect(commands.grep(/\Aupdate prettier@/)).to be_empty
+        end
+      end
+    end
+
     context "when the catalog is locked to the old version and the new version is in the lockfile for something else" do
       before do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
