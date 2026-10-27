@@ -311,7 +311,16 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         allow(stub_update_checker).to receive_messages(latest_version: "9.0.0", up_to_date?: false)
       end
 
+      it "reports a diagnosed failure instead of deferring when no update is possible" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:record_update_job_error)
+          .with(hash_including(error_type: "security_update_not_possible"))
+
+        perform
+      end
+
       it "leaves it to an individual update instead of reporting an unknown error" do
+        allow(stub_update_checker).to receive(:can_update?).and_return(true)
         expect(mock_error_handler).not_to receive(:handle_dependency_error)
         expect(mock_service).not_to receive(:record_update_job_error)
         expect(mock_service).not_to receive(:create_pull_request)

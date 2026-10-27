@@ -1018,6 +1018,12 @@ module Dependabot
         # Nothing newer exists, so no individual update will run to report the still-vulnerable dependency.
         return note_security_update_not_found(dependency, checker, group) if checker.up_to_date?
 
+        # An individual update that cannot be resolved only logs, so diagnose it here.
+        if requirements_to_unlock(checker) == :update_not_possible
+          Dependabot.logger.info("No update possible for #{dependency.name} #{dependency.version}")
+          return note_security_update_not_possible(dependency, checker, group)
+        end
+
         semver_rejected_dependency_names << dependency.name.downcase
         Dependabot.logger.info(
           "Security update for #{dependency.name} #{dependency.version} not grouped: latest version " \
