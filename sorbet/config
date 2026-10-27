@@ -20,7 +20,6 @@
 --ignore=julia/spec/
 --ignore=nix/spec/
 --ignore=nuget/spec/
---ignore=pre_commit/spec/
 --ignore=swift/spec/
 --ignore=updater/spec/
 --ignore=vcpkg/spec/
