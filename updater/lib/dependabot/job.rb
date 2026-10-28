@@ -351,8 +351,8 @@ module Dependabot
         next false if security_update && !vulnerable?(dependency, check_previous_version)
 
         # Check the dependency-name (defaulting to matching)
-        condition_name = update.dependency_name || dependency.name
-        next false unless name_match?(condition_name, dependency.name)
+        condition_name = update.dependency_name
+        next false if condition_name && !dependency_name_match?(condition_name, dependency)
 
         # Check the dependency-type (defaulting to all)
         dep_type = update.dependency_type
@@ -490,7 +490,7 @@ module Dependabot
     # were created via "@dependabot ignore version" commands
     sig { params(dependency: Dependabot::Dependency).void }
     def log_ignore_conditions_for(dependency)
-      conditions = ignore_conditions.select { |ic| name_match?(ic.dependency_name, dependency.name) }
+      conditions = ignore_conditions.select { |ic| dependency_name_match?(ic.dependency_name, dependency) }
       if conditions.any?
         Dependabot.logger.info("Ignored versions:")
         conditions.each do |ic|
@@ -613,7 +613,7 @@ module Dependabot
     sig { params(update: AllowedUpdate, dependency: Dependabot::Dependency).returns(T::Boolean) }
     def allow_rule_matches_dependency?(update, dependency)
       condition_name = update.dependency_name
-      return false if condition_name && !name_match?(condition_name, dependency.name)
+      return false if condition_name && !dependency_name_match?(condition_name, dependency)
 
       dep_type = update.dependency_type
       return true if dep_type == "all"
@@ -661,6 +661,11 @@ module Dependabot
     sig { void }
     def validate_job
       raise "Either directory or directories must be provided" unless source.directory.nil? ^ source.directories.nil?
+    end
+
+    sig { params(pattern: String, dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def dependency_name_match?(pattern, dependency)
+      dependency.names_for_matching.any? { |name| name_match?(pattern, name) }
     end
 
     sig { params(name1: String, name2: String).returns(T::Boolean) }
