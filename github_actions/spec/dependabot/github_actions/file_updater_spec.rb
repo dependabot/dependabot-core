@@ -466,6 +466,21 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(updated_workflow_file.content).to include "# tag=v#{dependency.version}"
         end
 
+        it "repairs stale standalone comments for tagged SHA pins" do
+          new_sha = dependency.requirements.first.dig(:source, :ref)
+          expect(
+            updated_workflow_file.content.scan("#{new_sha} # #{dependency.version}").length
+          ).to eq(2)
+          expect(
+            updated_workflow_file.content.scan(
+              "\"actions/checkout@#{new_sha}\" # v#{dependency.version}"
+            ).length
+          ).to eq(2)
+          expect(updated_workflow_file.content).not_to include "#{new_sha} # v1.0.0"
+          expect(updated_workflow_file.content).not_to include "#{new_sha} # 1.0.0-rc.1"
+          expect(updated_workflow_file.content).not_to include "\"actions/checkout@#{new_sha}\" # v1"
+        end
+
         context "when the workflow uses CRLF line endings" do
           let(:workflow_file_body) do
             fixture("workflow_files", "pinned_sources_version_comments.yml").gsub("\n", "\r\n")
@@ -531,11 +546,40 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         context "when the previous SHA is not tagged" do
           before do
             dependency.previous_requirements.first[:source][:ref] = "85b1f35505da871133b65f059e96210c65650a8b"
+            dependency.previous_requirements.first[:metadata][:declaration_string] =
+              "actions/checkout@85b1f35505da871133b65f059e96210c65650a8b"
           end
 
-          it "updates SHA version but not the comment" do
+          it "repairs standalone version comments" do
             new_sha = dependency.requirements.first.dig(:source, :ref)
-            expect(updated_workflow_file.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
+            expected_comment = "#{new_sha} # v#{dependency.version}"
+            expect(updated_workflow_file.content.scan(expected_comment).length).to eq(2)
+          end
+
+          it "preserves descriptive comments" do
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+            expect(updated_workflow_file.content).to include "#{new_sha} # v2.1.0 - historical note"
+            expect(updated_workflow_file.content).to include(
+              "#{new_sha} # Versions older than v2.1.0 have a security vulnerability"
+            )
+          end
+
+          context "when the new SHA has no version tag" do
+            let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+            before do
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+              allow(git_checker).to receive_messages(
+                ref_looks_like_commit_sha?: true,
+                most_specific_version_tags_for_sha: [],
+                most_specific_version_tag_for_sha: nil
+              )
+            end
+
+            it "preserves the standalone version comment" do
+              new_sha = dependency.requirements.first.dig(:source, :ref)
+              expect(updated_workflow_file.content).to include "#{new_sha} # v2.1.0"
+            end
           end
         end
 
