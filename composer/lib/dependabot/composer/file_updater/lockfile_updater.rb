@@ -457,7 +457,7 @@ module Dependabot
               .gsub(/\}\z/, "}\n")
         end
 
-        sig { params(requirements: T::Array[String]).returns(String) }
+        sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)
           req_arrays =
             requirements
@@ -477,7 +477,7 @@ module Dependabot
             .find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
-          raise "No matching version for #{requirements}!" unless version
+          return unless version
 
           version.to_s
         end
