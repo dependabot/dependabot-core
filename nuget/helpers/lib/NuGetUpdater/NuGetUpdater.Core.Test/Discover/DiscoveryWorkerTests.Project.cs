@@ -1,3 +1,7 @@
+using System.Collections.Immutable;
+
+using NuGet.LibraryModel;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
@@ -6,6 +10,157 @@ public partial class DiscoveryWorkerTests
 {
     public class Projects : DiscoveryWorkerTestBase
     {
+        [Fact]
+        public async Task PackageReferenceAssetFlagsFlowToTransitiveDependencies()
+        {
+            var excludedCompatibilityAssets = LibraryIncludeFlags.All &
+                ~(LibraryIncludeFlags.Compile | LibraryIncludeFlags.Runtime);
+            var assetFlags = new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["net8.0"] = excludedCompatibilityAssets,
+            }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage(
+                        "Build.Only.Package",
+                        "1.0.0",
+                        "net45",
+                        [(null, [("Incompatible.Transitive.Package", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Incompatible.Transitive.Package", "1.0.0", "net45"),
+                ],
+                workspacePath: "",
+                files:
+                [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Build.Only.Package" Version="1.0.0" ExcludeAssets="compile;runtime" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies =
+                            [
+                                new(
+                                    "Build.Only.Package",
+                                    "1.0.0",
+                                    DependencyType.PackageReference,
+                                    TargetFrameworks: ["net8.0"],
+                                    AssetFlags: assetFlags),
+                                new(
+                                    "Incompatible.Transitive.Package",
+                                    "1.0.0",
+                                    DependencyType.Unknown,
+                                    TargetFrameworks: ["net8.0"],
+                                    IsTopLevel: false,
+                                    AssetFlags: assetFlags),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task PackageReferenceAssetFlagsAreTrackedPerTargetFramework()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    new MockNuGetPackage(
+                        "Parent.Package",
+                        "1.0.0",
+                        DependencyGroups: [(null, [("Transitive.Dependency", "2.0.0")])],
+                        Files:
+                        [
+                            ("lib/net8.0/Parent.Package.dll", []),
+                            ("lib/net9.0/Parent.Package.dll", []),
+                        ]),
+                    new MockNuGetPackage(
+                        "Transitive.Dependency",
+                        "2.0.0",
+                        Files:
+                        [
+                            ("lib/net8.0/Transitive.Dependency.dll", []),
+                            ("lib/net9.0/Transitive.Dependency.dll", []),
+                        ]),
+                ],
+                workspacePath: "",
+                files:
+                [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                          </PropertyGroup>
+                          <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+                            <PackageReference Include="Parent.Package" Version="1.0.0" IncludeAssets="build;analyzers" />
+                          </ItemGroup>
+                          <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+                            <PackageReference Include="Parent.Package" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies =
+                            [
+                                new(
+                                    "Parent.Package",
+                                    "1.0.0",
+                                    DependencyType.PackageReference,
+                                    TargetFrameworks: ["net8.0", "net9.0"],
+                                    AssetFlags: new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+                                    {
+                                        ["net8.0"] = LibraryIncludeFlags.Build | LibraryIncludeFlags.Analyzers,
+                                        ["net9.0"] = LibraryIncludeFlags.All,
+                                    }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase)),
+                                new(
+                                    "Transitive.Dependency",
+                                    "2.0.0",
+                                    DependencyType.Unknown,
+                                    TargetFrameworks: ["net8.0", "net9.0"],
+                                    IsTopLevel: false,
+                                    AssetFlags: new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+                                    {
+                                        ["net8.0"] = LibraryIncludeFlags.Build | LibraryIncludeFlags.Analyzers,
+                                        ["net9.0"] = LibraryIncludeFlags.All,
+                                    }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase)),
+                            ],
+                            TargetFrameworks = ["net8.0", "net9.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
         [Fact]
         public async Task TargetFrameworksAreHonoredInConditions()
         {
