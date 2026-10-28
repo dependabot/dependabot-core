@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     module_hostname = "modules.#{hostname}"
     token = SecureRandom.hex(16)
     credentials = [
-      { "type" => "terraform_registry", "host" => hostname, "token" => token }
+      Dependabot::Credential.new({ "type" => "terraform_registry", "host" => hostname, "token" => token })
     ]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
