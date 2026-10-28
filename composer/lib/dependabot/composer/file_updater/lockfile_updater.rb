@@ -42,7 +42,7 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
+            (?<=require\s|requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
           }x
         MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/
 
