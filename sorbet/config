@@ -18,6 +18,7 @@
 --ignore=elm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
+--ignore=mise/spec/
 --ignore=nix/spec/
 --ignore=nuget/spec/
 --ignore=swift/spec/

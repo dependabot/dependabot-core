@@ -1,0 +1,4 @@
+[tools]
+erlang = "27.3.2"
+elixir = "1.18.4-otp-27"
+helm = "3.17.3"
