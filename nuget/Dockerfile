@@ -44,7 +44,7 @@ RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
 
 # Install .NET SDK
 # these versions should be kept in sync with the files `.devcontainer/devcontainer.json` and `nuget/helpers/lib/NuGetUpdater/global.json`
-ARG DOTNET_SDK_VERSIONS="8.0.424 9.0.317 10.0.400"
+ARG DOTNET_SDK_VERSIONS="8.0.424 9.0.317 10.0.400 11.0.100-rc.2.26504.105"
 ARG DOTNET_SDK_INSTALL_URL=https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh

@@ -329,6 +329,11 @@ internal static class CompatibilityChecker
                 context.SourceCacheContext,
                 context.Logger,
                 cancellationToken);
+            if (downloader is null)
+            {
+                context.Logger.LogDebug($"No package downloader is available for {package} from {source.Source}.");
+                continue;
+            }
 
             var packagePath = GetPackagePath(package, context);
             var isDownloaded = await downloader.CopyNupkgFileToAsync(packagePath, cancellationToken);

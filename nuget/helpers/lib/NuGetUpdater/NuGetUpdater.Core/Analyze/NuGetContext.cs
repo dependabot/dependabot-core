@@ -176,7 +176,7 @@ internal record NuGetContext : IDisposable
                 try
                 {
                     var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
-                    var url = metadata.ProjectUrl ?? metadata.LicenseUrl;
+                    var url = metadata?.ProjectUrl ?? metadata?.LicenseUrl;
                     if (url is not null)
                     {
                         return url.ToString();

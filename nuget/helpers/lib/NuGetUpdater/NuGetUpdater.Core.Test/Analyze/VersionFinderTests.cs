@@ -265,7 +265,7 @@ public class VersionFinderTests : TestBase
             CancellationToken.None);
 
         // assert
-        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        var actual = versionResult.GetVersions().Order().Select(v => v.ToString()).ToArray();
         var expected = new[] { "2.0.0", "3.0.0" };
         AssertEx.Equal(expected, actual);
     }
@@ -1047,14 +1047,14 @@ public class VersionFinderTests : TestBase
             return Task.FromResult(versions);
         }
 
-        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion?>>> GetLatestVersions(
             IEnumerable<string> packageIds,
             bool includePrerelease,
             bool includeUnlisted,
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
             CancellationToken token) =>
-            Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion>>>([]);
+            Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion?>>>([]);
     }
 
     private sealed class CancelThenSucceedMetadataResource(IEnumerable<NuGetVersion> versions) : MetadataResource
@@ -1095,7 +1095,7 @@ public class VersionFinderTests : TestBase
             return versions;
         }
 
-        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion?>>> GetLatestVersions(
             IEnumerable<string> packageIds,
             bool includePrerelease,
             bool includeUnlisted,
@@ -1139,7 +1139,7 @@ public class VersionFinderTests : TestBase
             return Versions.Task;
         }
 
-        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion?>>> GetLatestVersions(
             IEnumerable<string> packageIds,
             bool includePrerelease,
             bool includeUnlisted,
@@ -1160,14 +1160,14 @@ public class VersionFinderTests : TestBase
             NuGet.Common.ILogger log,
             CancellationToken token) => throw new NotImplementedException();
 
-        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+        public override Task<IPackageSearchMetadata?> GetMetadataAsync(
             PackageIdentity package,
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
             CancellationToken token)
         {
             ReceivedToken = token;
-            return Task.FromResult<IPackageSearchMetadata>(
+            return Task.FromResult<IPackageSearchMetadata?>(
                 new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
                 {
                     Identity = package,
