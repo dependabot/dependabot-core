@@ -1,7 +1,10 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only declaration_spans fixture.
+
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/apm/file_updater"
@@ -56,12 +59,14 @@ RSpec.describe Dependabot::Apm::FileUpdater do
     described_class.new(
       dependency_files: [manifest],
       dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 
@@ -120,7 +125,8 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
             File.write(
               "apm.lock.yaml",
-              "lockfile_version: '1'\napm_version: 0.33.0\n# locked against: #{File.read('apm.yml').lines[2].strip}\n"
+              "lockfile_version: '1'\napm_version: 0.33.0\n" \
+              "# locked against: #{File.read('apm.yml').lines.fetch(2).strip}\n"
             )
             ""
           end

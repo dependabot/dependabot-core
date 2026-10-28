@@ -11,21 +11,15 @@
 
 # Sorbet's RSpec support is experimental, so spec trees are checked incrementally
 # while unenrolled spec trees are ignored.
---ignore=apm/spec/
 --ignore=bazel/spec/
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
 --ignore=composer/spec/
 --ignore=elm/spec/
---ignore=github_actions/spec/
---ignore=go_modules/spec/
---ignore=helm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
 --ignore=nix/spec/
 --ignore=nuget/spec/
---ignore=pre_commit/spec/
---ignore=pub/spec/
 --ignore=swift/spec/
 --ignore=updater/spec/
 --ignore=vcpkg/spec/
