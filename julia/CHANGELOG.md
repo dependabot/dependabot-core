@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- A manifest update that fails because of the manifest itself (a path package missing from the checkout, a package no reachable registry has) now gets a notice instead of an unknown error, and a git source that cannot be cloned is reported as `git_dependencies_not_reachable`; the helper tells the cases apart by Pkg's exception types and the git error behind a failed clone, not by message text
 - Fixed registry lookups on Julia 1.13, where Pkg changed `registry_info` to also take the registry instance
 - Fixed suggested `[compat]` entries for JLL packages carrying the build number (e.g. `Zlib_jll = "1.6.10+0"`), which Pkg rejects as an invalid version specifier
 - A JLL rebuild (`0.0.43+1`) now satisfies a compat entry admitting `0.0.43`, as it does for Pkg, instead of proposing a redundant `=0.0.43, 0.0.43` widening; prerelease tags are ignored the same way, so `2.0.0-rc1` is not taken as admitted by `"1"`

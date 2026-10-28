@@ -331,8 +331,64 @@ function update_manifest(project_path::String, updates::Dict, manifest_file::Uni
             "Failed to update manifest: "
         end
 
-        return Dict("error" => error_prefix * sprint(showerror, ex))
+        result = Dict{String,Any}("error" => error_prefix * sprint(showerror, ex))
+        return merge!(result, update_failure_details(current_exceptions(), manifest_file))
     end
+end
+
+"""
+    update_failure_details(stack, manifest_file) -> Dict
+
+Why a manifest update failed, so the updater can report it to the user. The `"kind"` is
+
+- `"resolver"`: the requirements cannot be satisfied,
+- `"newer_julia"`: a newer Julia wrote the manifest,
+- `"manifest"`: the manifest needs a package that is not in the checkout or in any
+  registry the updater has,
+- `"git_unreachable"`: a git source of the manifest cannot be cloned, which `"urls"` names.
+
+The Dict is empty for anything else, such as a network failure or a bug, which the updater raises.
+"""
+function update_failure_details(stack, manifest_file)
+    unknown = Dict{String,Any}()
+    ex = last(stack).exception
+    ex isa Pkg.Resolve.ResolverError && return Dict{String,Any}("kind" => "resolver")
+    ex isa NewerJuliaManifest && return Dict{String,Any}("kind" => "newer_julia")
+    (ex isa Pkg.Types.PkgError && manifest_file isa String && isfile(manifest_file)) || return unknown
+
+    # Pkg reports a failed clone with the git error as its cause
+    git_error = findlast(entry -> entry.exception isa LibGit2.GitError, stack)
+    if git_error !== nothing
+        # A network failure can pass, so the job should fail and run again
+        stack[git_error].exception.class == LibGit2.Error.Net && return unknown
+        message = sprint(showerror, ex)
+        urls = unique(String[entry.repo.source for entry in values(Pkg.Types.read_manifest(manifest_file))
+                             if entry.repo.source !== nothing && occursin(entry.repo.source, message)])
+        # A clone of anything else, such as a registry, is not the repository's problem
+        isempty(urls) && return unknown
+        return Dict{String,Any}("kind" => "git_unreachable", "urls" => urls)
+    end
+
+    unavailable_manifest_package(manifest_file) || return unknown
+    return Dict{String,Any}("kind" => "manifest")
+end
+
+"""
+    unavailable_manifest_package(manifest_file) -> Bool
+
+Whether the manifest has a package the updater cannot get: one tracked by a path that
+is not in the checkout, or one tracked from a registry that no reachable registry has.
+"""
+function unavailable_manifest_package(manifest_file::String)
+    registries = Pkg.Registry.reachable_registries()
+    for (uuid, entry) in Pkg.Types.read_manifest(manifest_file)
+        if entry.path !== nothing
+            isdir(joinpath(dirname(manifest_file), entry.path)) || return true
+        elseif entry.repo.source === nothing && entry.tree_hash !== nothing
+            any(registry -> haskey(registry, uuid), registries) || return true
+        end
+    end
+    return false
 end
 
 """

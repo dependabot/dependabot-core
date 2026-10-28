@@ -114,14 +114,23 @@ module Dependabot
 
         class Failure < T::ImmutableStruct
           const :message, String
+          # Why a manifest update failed, when the helper can tell
+          const :kind, T.nilable(String), default: nil
+          const :urls, T::Array[String], default: []
         end
 
-        sig { params(hash: ObjectHash, _context: String).returns(T.nilable(Failure)) }
-        def self.failure_from(hash, _context)
-          error = hash["error"]
-          return unless hash.length == 1 && error.is_a?(String)
+        FAILURE_KEYS = %w(error kind urls).freeze
 
-          Failure.new(message: error)
+        sig { params(hash: ObjectHash, context: String).returns(T.nilable(Failure)) }
+        def self.failure_from(hash, context)
+          error = hash["error"]
+          return unless error.is_a?(String) && (hash.keys - FAILURE_KEYS).empty?
+
+          Failure.new(
+            message: error,
+            kind: ValueParser.optional_string(hash, "kind", context),
+            urls: ValueParser.optional_string_array(hash, "urls", context)
+          )
         end
 
         class Version < T::ImmutableStruct

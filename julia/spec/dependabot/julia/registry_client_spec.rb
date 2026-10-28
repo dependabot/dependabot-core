@@ -303,6 +303,24 @@ RSpec.describe Dependabot::Julia::RegistryClient do
           manifest_path: "Manifest.toml"
         )
       end
+
+      it "returns a typed failure with why the update failed" do
+        allow(registry_client).to receive(:call_julia_helper).and_return(
+          {
+            "error" => "Failed to update manifest: failed to clone from https://github.com/owner/Private.jl.git",
+            "kind" => "git_unreachable",
+            "urls" => ["https://github.com/owner/Private.jl.git"]
+          }
+        )
+
+        result = registry_client.update_manifest(
+          project_path: "/tmp/test_project",
+          updates: { "uuid" => { "name" => "Example", "version" => "0.5.5" } }
+        )
+
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::Failure)
+        expect(result).to have_attributes(kind: "git_unreachable", urls: ["https://github.com/owner/Private.jl.git"])
+      end
     end
   end
 

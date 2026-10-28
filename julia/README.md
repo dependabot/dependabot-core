@@ -56,6 +56,8 @@ When manifest updates fail (common in workspace configurations with conflicting 
 
 This ensures users understand when lockfiles couldn't be updated and why, while still providing the compatibility range update in the project file.
 
+The helper classifies a failed manifest update by the exception Pkg raised, not by its message. A notice is added, as for a conflict, when the manifest was written by a newer Julia, or when it needs a package the updater cannot get: one tracked by a path that is not in the checkout, or one that no reachable registry has. When nothing else would change, the notice would never be seen, so the update fails with `dependency_file_not_resolvable` and the same message instead. A git source that cannot be cloned fails the update with `git_dependencies_not_reachable`. Any other failure, including a network error, is raised, so the job fails and the next run tries again.
+
 ## Current Limitations
 
 - Custom/private registries are not currently fully supported

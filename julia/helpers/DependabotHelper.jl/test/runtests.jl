@@ -582,6 +582,7 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                 @test isa(result, Dict)
                 @test haskey(result, "error")
                 @test occursin("empty intersection between", result["error"])
+                @test result["kind"] == "resolver"
 
                 # Step 4: Update SubPackageB compat to also allow 0.21 and 1.x
                 subpkg_b_project = joinpath(tmp_subpkg_b, "Project.toml")
@@ -938,7 +939,39 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                     "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
                 ))
                 @test startswith(result["error"], "Manifest written by a newer Julia: Julia $julia_version wrote the manifest")
+                @test result["kind"] == "newer_julia"
                 @test read(manifest, String) == original
+            end
+        end
+
+        # A failed update says why, so the updater can tell the repository's problems from its own
+        for (entry, kind, urls) in [
+            # a path package that is not in the checkout
+            ("path = \"C:\\\\Users\\\\someone\\\\.julia\\\\dev\\\\Foo\"", "manifest", nothing),
+            # a package that no registry has
+            ("git-tree-sha1 = \"0000000000000000000000000000000000000001\"", "manifest", nothing),
+            # a git source that cannot be cloned
+            ("git-tree-sha1 = \"0000000000000000000000000000000000000001\"\nrepo-rev = \"main\"\nrepo-url = \"https://github.com/JuliaLang/this-repository-does-not-exist.jl.git\"",
+             "git_unreachable", ["https://github.com/JuliaLang/this-repository-does-not-exist.jl.git"]),
+            # a host that cannot be reached, which may pass
+            ("git-tree-sha1 = \"0000000000000000000000000000000000000001\"\nrepo-rev = \"main\"\nrepo-url = \"https://unreachable.invalid/Foo.jl.git\"",
+             nothing, nothing),
+        ]
+            mktempdir() do tmpdir
+                cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
+                project_dir = joinpath(tmpdir, "TestPackage.jl")
+                project = joinpath(project_dir, "Project.toml")
+                write(project, replace(read(project, String), "[deps]\n" => "[deps]\nFoo = \"22222222-2222-2222-2222-222222222222\"\n"))
+                manifest = joinpath(project_dir, "Manifest.toml")
+                write(manifest, read(manifest, String) *
+                      "\n[[deps.Foo]]\n$entry\nuuid = \"22222222-2222-2222-2222-222222222222\"\nversion = \"0.1.0\"\n")
+                result = DependabotHelper.update_manifest(Dict(
+                    "project_path" => project_dir,
+                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
+                ))
+                @test haskey(result, "error")
+                @test get(result, "kind", nothing) == kind
+                @test get(result, "urls", nothing) == urls
             end
         end
 
