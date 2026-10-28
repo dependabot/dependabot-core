@@ -8,6 +8,7 @@
 - Added warning notices to PRs when manifest updates fail due to dependency conflicts
 - Added absolute path resolution for workspace manifests in user-facing notices
 - `[extras]` packages that already have a `[compat]` entry now get compat updates, matching CompatHelper.jl's default `IfExistingCompatExtras()` policy; they are reported as development dependencies
+- Pull requests that add a `<0.0.1` bound to a standard library's compat entry now carry a note explaining it (`Pkg.test()` on Julia before 1.10 gave stdlibs version 0.0.0)
 
 ### Changed
 

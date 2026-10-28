@@ -1,0 +1,10 @@
+[ERR_PNPM_PEER_DEP_ISSUES] Unmet peer dependencies
+
+✕ unmet peer react
+  Installed: 17.0.2
+  Wanted:
+    ^16.14.0:
+      react-dom@16.14.0
+hint: To disable failing on peer dependency issues, add the following to pnpm-workspace.yaml in your project root:
+
+  strictPeerDependencies: false

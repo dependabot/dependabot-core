@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve matcher calls in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/lockfile"
@@ -89,6 +91,13 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
 
     it "matches the ref exactly — a different ref for the same action is not pinned" do
       expect(reader.pins_action?(".github/workflows/workflow.yml", "actions/setup-node@v4")).to be(false)
+    end
+  end
+
+  describe "#pinned_hostname" do
+    it "skips non-string dependency keys instead of crashing" do
+      lock = "version: v0.0.3\ndependencies:\n  123: {}\n  o/r@v1:\n    ref: v1\n"
+      expect(described_class.new(lock).pinned_hostname("o/r@v1", home: "github.com")).to eq("github.com")
     end
   end
 

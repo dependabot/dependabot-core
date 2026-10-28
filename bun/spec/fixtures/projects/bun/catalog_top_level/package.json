@@ -1,0 +1,8 @@
+{
+  "name": "catalog-top-level",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "catalog": {
+    "is-number": "6.0.0"
+  }
+}

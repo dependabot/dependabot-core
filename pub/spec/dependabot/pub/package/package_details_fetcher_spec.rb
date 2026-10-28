@@ -1,5 +1,7 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
+
+# Sorbet cannot resolve fixtures and matcher calls in class-scope generated examples.
 
 require "json"
 require "time"

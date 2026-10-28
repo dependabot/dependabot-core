@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the subject's child-context version fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"

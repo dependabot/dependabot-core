@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
+require "dependabot/updater/semver_grouping_rules"
 require "dependabot/workspace"
 require "dependabot/updater/security_update_helpers"
 require "dependabot/service"
@@ -65,6 +66,20 @@ module Dependabot
         @security_update_failures ||= T.let({}, T.nilable(T::Hash[String, Dependabot::Service::ErrorRecord]))
       end
 
+      # Names of dependencies the group's update-types rules rejected. Outside group-by-name
+      # groups they are left for individual updates, so the group must not report them as failed.
+      sig { returns(T::Set[String]) }
+      def semver_rejected_dependency_names
+        @semver_rejected_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
+      # Names of dependencies that vanished from the files because an earlier update in the
+      # group removed them, which resolves any advisory against them.
+      sig { returns(T::Set[String]) }
+      def removed_dependency_names
+        @removed_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -102,6 +117,8 @@ module Dependabot
         notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
+        # Kept local until the aggregate change passes validation, since a rejected change is never submitted.
+        removed_names = T.let(Set.new, T::Set[String])
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -112,10 +129,12 @@ module Dependabot
 
           # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
-          dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+          group_dependency_name = dependency.name
+          dependency = reparsed_dependencies.find { |d| d.name == group_dependency_name }
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
+          removed_names << group_dependency_name.downcase if dependency.nil?
           next if dependency.nil?
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
@@ -158,6 +177,8 @@ module Dependabot
           store_changes(dependency)
         end
 
+        confirm_removals_in_final_files(group_changes.current_dependency_files(job), removed_names)
+
         group_notices = notices + group_changes.notices
         add_cooldown_date_unavailable_notice(group_notices, original_dependencies)
 
@@ -175,6 +196,9 @@ module Dependabot
           log_missing_previous_version(dependency_change)
           return nil
         end
+
+        log_resolved_by_removal(removed_names, original_dependencies)
+        removed_dependency_names.merge(removed_names)
 
         # Send warning alerts to the API if any warning notices are present.
         # Note that only notices with notice.show_alert set to true will be sent.
@@ -453,6 +477,7 @@ module Dependabot
           return []
         end
         unless semver_rules_allow_grouping?(group, dependency, checker)
+          note_semver_rejected(dependency, checker, group)
           mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
           return []
         end
@@ -583,7 +608,6 @@ module Dependabot
       # then it should not be in the group, but be an individual PR, or in another group that fits it.
       # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
       # Other rules are applied earlier in the process.
-      # rubocop:disable Metrics/AbcSize
       sig do
         params(
           group: Dependabot::DependencyGroup,
@@ -593,107 +617,9 @@ module Dependabot
           .returns(T::Boolean)
       end
       def semver_rules_allow_grouping?(group, dependency, checker)
-        update_types = group.update_types
-        # There are no group rules defined, so this dependency can be included in the group.
-        return true unless update_types
-
-        return cargo_semver_rules_allow_grouping?(group, dependency, checker) if job.package_manager == "cargo"
-
-        version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
-        unless version_class.correct?(dependency.version.to_s) && version_class.correct?(checker.latest_version)
-          return false
+        SemverGroupingRules.new(job: job).allow_grouping?(group, dependency, checker) do
+          requirements_to_unlock(checker)
         end
-
-        version = version_class.new(dependency.version.to_s)
-        latest_version = version_class.new(checker.latest_version)
-
-        # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
-        latest = semver_segments(latest_version)
-        current = semver_segments(version)
-        # Ensure that semver components are of the same type and can be compared with each other.
-        return false unless %i(major minor patch).all? { |k| current[k].instance_of?(latest[k].class) }
-
-        return update_types.include?("major") if T.must(latest[:major]) > T.must(current[:major])
-        return update_types.include?("minor") if T.must(latest[:minor]) > T.must(current[:minor])
-        return update_types.include?("patch") if T.must(latest[:patch]) > T.must(current[:patch])
-
-        # some ecosystems don't do semver exactly, so anything lower gets individual for now
-        false
-      end
-      # rubocop:enable Metrics/AbcSize
-
-      sig do
-        params(
-          group: Dependabot::DependencyGroup,
-          dependency: Dependabot::Dependency,
-          checker: Dependabot::UpdateCheckers::Base
-        ).returns(T::Boolean)
-      end
-      def cargo_semver_rules_allow_grouping?(group, dependency, checker)
-        case dependency.metadata[:all_versions]
-        when Array
-          return cargo_locked_line_updates_allowed?(group, dependency, checker)
-        end
-
-        version_class = Dependabot::Utils.version_class_for_package_manager("cargo")
-        latest_version = checker.latest_version
-        return false unless version_class.correct?(dependency.version.to_s) && version_class.correct?(latest_version)
-
-        cargo_update_type_allowed?(
-          group,
-          version_class.new(dependency.version.to_s),
-          version_class.new(latest_version)
-        )
-      end
-
-      sig do
-        params(
-          group: Dependabot::DependencyGroup,
-          dependency: Dependabot::Dependency,
-          checker: Dependabot::UpdateCheckers::Base
-        ).returns(T::Boolean)
-      end
-      def cargo_locked_line_updates_allowed?(group, dependency, checker)
-        requirements = requirements_to_unlock(checker)
-        return false if requirements == :update_not_possible
-
-        updates = checker.updated_dependencies(requirements_to_unlock: requirements)
-                         .select { |updated| updated.name.casecmp?(dependency.name) }
-        return false if updates.empty?
-
-        version_class = Dependabot::Utils.version_class_for_package_manager("cargo")
-        updates.all? do |updated|
-          previous_version = updated.previous_version
-          version = updated.version
-          next false unless previous_version && version
-          next false unless version_class.correct?(previous_version) && version_class.correct?(version)
-
-          cargo_update_type_allowed?(
-            group,
-            version_class.new(previous_version),
-            version_class.new(version)
-          )
-        end
-      end
-
-      sig { params(version: Gem::Version).returns(T::Hash[Symbol, Integer]) }
-      def semver_segments(version)
-        {
-          major: version.segments[0] || 0,
-          minor: version.segments[1] || 0,
-          patch: version.segments[2] || 0
-        }
-      end
-
-      sig { params(group: Dependabot::DependencyGroup, version: Gem::Version, latest_version: Gem::Version).returns(T::Boolean) }
-      def cargo_update_type_allowed?(group, version, latest_version)
-        return true unless Dependabot::Cargo::Version.respond_to?(:update_type)
-
-        actual_update_type = Dependabot::Cargo::Version.update_type(version.to_s, latest_version.to_s)
-        group_update_types = group.update_types
-        return true unless group_update_types
-
-        group_update_types.include?(actual_update_type)
       end
 
       sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
@@ -1053,6 +979,72 @@ module Dependabot
         group.dependencies
              .uniq { |dependency| dependency.name.downcase }
              .reject { |dependency| updated_names.include?(dependency.name.downcase) }
+             .reject { |dependency| resolved_by_removal?(dependency) }
+             .reject { |dependency| deferred_to_individual_update?(dependency) }
+      end
+
+      # A later update can reintroduce a dependency an earlier one removed, so only names still
+      # absent from the final files count as resolved.
+      sig { params(final_files: T::Array[Dependabot::DependencyFile], removed_names: T::Set[String]).void }
+      def confirm_removals_in_final_files(final_files, removed_names)
+        return if removed_names.empty?
+
+        present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
+        removed_names.delete_if { |name| present.include?(name) }
+      end
+
+      sig { params(removed_names: T::Set[String], original_dependencies: T::Array[Dependabot::Dependency]).void }
+      def log_resolved_by_removal(removed_names, original_dependencies)
+        removed_names.each do |name|
+          version = original_dependencies.find { |dependency| dependency.name.casecmp?(name) }&.version
+          Dependabot.logger.info(
+            "Security update for #{name} #{version} resolved: removed from the dependency files " \
+            "by another update in group '#{group.name}'"
+          )
+        end
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def note_semver_rejected(dependency, checker, group)
+        return if group.group_by_dependency_name?
+        return unless job.security_updates_only?
+
+        # Nothing newer exists, so no individual update will run to report the still-vulnerable dependency.
+        return note_security_update_not_found(dependency, checker, group) if checker.up_to_date?
+
+        # An individual update that cannot be resolved only logs, so diagnose it here.
+        if requirements_to_unlock(checker) == :update_not_possible
+          Dependabot.logger.info("No update possible for #{dependency.name} #{dependency.version}")
+          return note_security_update_not_possible(dependency, checker, group)
+        end
+
+        semver_rejected_dependency_names << dependency.name.downcase
+        Dependabot.logger.info(
+          "Security update for #{dependency.name} #{dependency.version} not grouped: latest version " \
+          "#{checker.latest_version} is outside the update-types #{group.update_types.inspect} " \
+          "of group '#{group.name}'; leaving it to an individual update"
+        )
+      end
+
+      # A dependency rejected by the group's update-types rules is updated individually, so only
+      # that update can fail it, unless a directory already diagnosed a concrete failure.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def deferred_to_individual_update?(dependency)
+        name = dependency.name.downcase
+        semver_rejected_dependency_names.include?(name) && !security_update_failures.key?(name)
+      end
+
+      # A removed dependency is resolved unless a directory diagnosed a concrete failure for it.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def resolved_by_removal?(dependency)
+        name = dependency.name.downcase
+        removed_dependency_names.include?(name) && !security_update_failures.key?(name)
       end
 
       sig { params(dependency_change: T.nilable(Dependabot::DependencyChange)).void }

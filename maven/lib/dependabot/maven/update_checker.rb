@@ -271,7 +271,8 @@ module Dependabot
         @all_property_based_dependencies ||=
           Maven::FileParser.new(
             dependency_files: dependency_files,
-            source: nil
+            source: nil,
+            options: { skip_dependency_tree: true }
           ).parse.select do |dep|
             dep.requirements.any? { |req| req.metadata_string("property_name") }
           end

@@ -829,6 +829,31 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           expect(checker.send(:cooldown_period?, release_time, "0.34.0")).to be false
         end
       end
+
+      context "when the current dependency version is not a valid version" do
+        let(:dependency_version) { "RULES_ANDROID_VERSION" }
+        let(:dependency_requirements) do
+          [{
+            file: "MODULE.bazel",
+            requirement: "RULES_ANDROID_VERSION",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "uses the default cooldown when the current version is invalid" do
+          allow(registry_client).to receive(:get_metadata)
+            .with("rules_go").and_return({ "versions" => ["0.34.0", "0.35.0"] })
+          allow(registry_client).to receive(:all_module_versions)
+            .with("rules_go").and_return(["0.34.0", "0.35.0"])
+          allow(registry_client).to receive(:get_version_release_date)
+            .with("rules_go", "0.34.0").and_return(Time.now - (48 * 60 * 60))
+          allow(registry_client).to receive(:get_version_release_date)
+            .with("rules_go", "0.35.0").and_return(Time.now - (12 * 60 * 60))
+
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("0.34.0"))
+        end
+      end
     end
 
     describe "#publication_detail" do

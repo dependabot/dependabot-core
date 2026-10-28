@@ -1,10 +1,11 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/update_checker"
+require "dependabot/go_modules/requirement"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GoModules::UpdateChecker do
@@ -49,12 +50,13 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     )
   end
   let(:security_advisories) { [] }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
   let(:expected_cooldown_options) { nil }
   let(:checker) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: [],
       update_cooldown: expected_cooldown_options
@@ -98,7 +100,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "go_modules",
-          vulnerable_versions: ["= 1.0.1"]
+          vulnerable_versions: Dependabot::GoModules::Requirement.requirements_array("= 1.0.1")
         )
       ]
     end
@@ -120,7 +122,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "go_modules",
-          vulnerable_versions: ["= 1.0.1"]
+          vulnerable_versions: Dependabot::GoModules::Requirement.requirements_array("= 1.0.1")
         )
       ]
     end
@@ -159,7 +161,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "go_modules",
-          vulnerable_versions: ["< 1.0.1"]
+          vulnerable_versions: Dependabot::GoModules::Requirement.requirements_array("< 1.0.1")
         )
       ]
     end

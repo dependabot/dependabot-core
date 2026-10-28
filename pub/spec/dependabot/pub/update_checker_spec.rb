@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context fixtures or included temporary-directory contexts here.
+
 require "spec_helper"
 require "webrick"
 

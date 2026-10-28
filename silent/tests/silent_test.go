@@ -35,7 +35,11 @@ func Commands() map[string]script.Cmd {
 	commands := scripttest.DefaultCmds()
 
 	// additional Dependabot commands
-	commands["dependabot"] = script.Program("dependabot", nil, 100*time.Millisecond)
+	dependabot := script.Program("dependabot", nil, 100*time.Millisecond)
+	commands["dependabot"] = script.Command(*dependabot.Usage(), func(s *script.State, args ...string) (script.WaitFunc, error) {
+		// The silent updater image is built locally and has no published signature.
+		return dependabot.Run(s, append([]string{"--skip-image-verification"}, args...)...)
+	})
 	commands["pr-created"] = PRCreated()
 	commands["pr-updated"] = PRUpdated()
 

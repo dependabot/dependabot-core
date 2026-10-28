@@ -1,4 +1,5 @@
-# typed: strict
+# typed: false
+# Sorbet cannot resolve child fixtures or generated examples in this group. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -271,6 +272,36 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it { is_expected.to be false }
+    end
+  end
+
+  describe "#latest_version pre-release detection against the `latest` tag" do
+    before do
+      allow(checker).to receive(:latest_digest).and_return("latest-digest")
+      allow(checker).to receive(:find_latest_tag).and_call_original
+      allow(Dependabot.logger).to receive(:info)
+    end
+
+    context "when a canonical tag matches the latest digest" do
+      before do
+        allow(checker).to receive(:digest_of) { |tag| tag == "17.10" ? "latest-digest" : "other" }
+      end
+
+      it "selects the matching version, scanning once without the no-match log" do
+        expect(checker.latest_version).to eq("17.10")
+        expect(checker).to have_received(:find_latest_tag).once
+        expect(Dependabot.logger).not_to have_received(:info).with(/No canonical tag matches/)
+      end
+    end
+
+    context "when no canonical tag matches the latest digest" do
+      before { allow(checker).to receive(:digest_of).and_return("other") }
+
+      it "selects the newest version, scanning once and logging once" do
+        expect(checker.latest_version).to eq("17.10")
+        expect(checker).to have_received(:find_latest_tag).once
+        expect(Dependabot.logger).to have_received(:info).with(/No canonical tag matches/).once
+      end
     end
   end
 

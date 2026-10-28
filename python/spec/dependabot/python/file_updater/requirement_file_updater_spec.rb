@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -744,6 +744,85 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         expect(updated_content).to include("some-other-package==1.0.0")
         expect(updated_content).to include("nox==2026.2.9")
         expect(updated_content).to include("pytest==9.0.2")
+      end
+    end
+
+    context "when the same package appears more than once with different environment markers" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          content: <<~TOML,
+            [project]
+            name = "example"
+            version = "0.0.0"
+            dependencies = [
+              #{declarations.join(",\n  ")},
+            ]
+          TOML
+          name: "pyproject.toml"
+        )
+      end
+      let(:darwin_declaration) { "\"example-alpha==1.0.0; platform_system == 'Darwin'\"" }
+      let(:other_declaration) { "\"example-alpha>=0.5.0; platform_system != 'Darwin'\"" }
+      let(:base_requirement) { { file: "pyproject.toml", groups: ["dependencies"], source: nil } }
+      let(:darwin_requirement) { base_requirement.merge(requirement: "==1.0.0") }
+      let(:other_requirement) { base_requirement.merge(requirement: ">=0.5.0") }
+      let(:updated_darwin_requirement) { darwin_requirement.merge(requirement: "==1.1.0") }
+      let(:declarations) { [darwin_declaration, other_declaration] }
+      let(:requirements_list) { [updated_darwin_requirement, other_requirement] }
+      let(:previous_requirements_list) { [darwin_requirement, other_requirement] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example-alpha",
+          version: "1.1.0",
+          previous_version: "1.0.0",
+          requirements: requirements_list,
+          previous_requirements: previous_requirements_list,
+          package_manager: "pip"
+        )
+      end
+
+      context "when the updated declaration comes first" do
+        it "updates only the matching declaration" do
+          expect(updated_files.count).to eq(1)
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha==1.1.0; platform_system == 'Darwin'\"")
+          expect(content).to include("\"example-alpha>=0.5.0; platform_system != 'Darwin'\"")
+        end
+      end
+
+      context "when the updated declaration comes last" do
+        let(:declarations) { [other_declaration, darwin_declaration] }
+        let(:requirements_list) { [other_requirement, updated_darwin_requirement] }
+        let(:previous_requirements_list) { [other_requirement, darwin_requirement] }
+
+        it "updates only the matching declaration" do
+          expect(updated_files.count).to eq(1)
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha==1.1.0; platform_system == 'Darwin'\"")
+          expect(content).to include("\"example-alpha>=0.5.0; platform_system != 'Darwin'\"")
+        end
+      end
+
+      context "when the declarations are in a requirements.txt file" do
+        let(:dependency_files) { [requirements] }
+        let(:requirements) do
+          Dependabot::DependencyFile.new(
+            content: "example-alpha>=0.5.0; platform_system != 'Darwin'\n" \
+                     "example-alpha==1.0.0; platform_system == 'Darwin'\n",
+            name: "requirements.txt"
+          )
+        end
+        let(:base_requirement) { { file: "requirements.txt", groups: [], source: nil } }
+        let(:requirements_list) { [other_requirement, updated_darwin_requirement] }
+        let(:previous_requirements_list) { [other_requirement, darwin_requirement] }
+
+        it "updates only the matching declaration" do
+          expect(updated_files.first.content).to eq(
+            "example-alpha>=0.5.0; platform_system != 'Darwin'\n" \
+            "example-alpha==1.1.0; platform_system == 'Darwin'\n"
+          )
+        end
       end
     end
 

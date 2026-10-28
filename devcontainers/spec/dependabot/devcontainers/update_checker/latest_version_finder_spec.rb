@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,8 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/devcontainers/update_checker/latest_version_finder"
 require "dependabot/devcontainers/requirement"
 
-namespace = Dependabot::Devcontainers::UpdateChecker
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::Devcontainers::UpdateChecker::LatestVersionFinder do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "ghcr.io/codspace/versioning/foo",
@@ -33,7 +32,7 @@ RSpec.describe namespace::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: github_credentials,
+      credentials: github_credentials.map { |credential| Dependabot::Credential.new(credential) },
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored

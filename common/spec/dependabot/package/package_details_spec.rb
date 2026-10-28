@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,9 +7,15 @@ require "dependabot/dependency"
 require "dependabot/version"
 
 RSpec.describe Dependabot::Package::PackageDetails do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(name: "rails", version: "6.1.4", requirements: [], package_manager: "bundler")
   end
+
+  sig { returns(Dependabot::Package::PackageRelease) }
   let(:release1) do
     Dependabot::Package::PackageRelease.new(
       version: Dependabot::Version.new("6.1.4"),
@@ -20,6 +26,8 @@ RSpec.describe Dependabot::Package::PackageDetails do
       package_type: "gem"
     )
   end
+
+  sig { returns(Dependabot::Package::PackageRelease) }
   let(:release2) do
     Dependabot::Package::PackageRelease.new(
       version: Dependabot::Version.new("6.0.3"),
@@ -30,6 +38,7 @@ RSpec.describe Dependabot::Package::PackageDetails do
       package_type: "gem"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#initialize" do
     it "creates a PackageDetails object with sorted releases" do
@@ -65,7 +74,7 @@ RSpec.describe Dependabot::Package::PackageDetails do
       )
 
       expect(details.dist_tags).to eq(dist_tags)
-      expect(details.dist_tags["latest"]).to eq("6.1.4")
+      expect(T.must(details.dist_tags)["latest"]).to eq("6.1.4")
     end
   end
 

@@ -31,6 +31,10 @@ module Dependabot
 
       GIT_REPO_URL = %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?}
 
+      # PHP's out-of-memory errors. When the OS refuses an allocation, PHP
+      # prints "mmap() failed" lines before "Out of memory", so match any line.
+      OUT_OF_MEMORY_ERROR = /^(?:Allowed memory size|Out of memory)/
+
       sig do
         params(
           composer_json: ManifestDocument,
@@ -73,6 +77,11 @@ module Dependabot
 
         # If no conditions are met return V2 by default.
         V2
+      end
+
+      sig { params(message: String).returns(T::Boolean) }
+      def self.out_of_memory_error?(message)
+        OUT_OF_MEMORY_ERROR.match?(message)
       end
 
       sig { params(message: String).returns(T.nilable(String)) }

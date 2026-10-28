@@ -1,0 +1,7 @@
+Error: ERR_PNPM_BAD_RUNTIME_VERSION
+
+  × This project requires Node.js 24.21.0. Your current Node.js is v24.22.0
+  help: If you want to bypass this version check, set "runtimeOnFail" to
+        "warn" or "ignore" (e.g. via --runtime-on-fail=ignore), or set
+        "devEngines.runtime.onFail"/"engines.runtime.onFail" to "warn" or
+        "ignore"
