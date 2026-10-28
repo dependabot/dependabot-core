@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the project_name fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/vcpkg/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
