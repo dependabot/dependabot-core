@@ -77,10 +77,11 @@ module Dependabot
 
           sig { params(comment: String, old_ref: String, new_ref: String).returns(T.nilable(String)) }
           def previous_version_from_comment(comment, old_ref, new_ref)
-            previous_version = tagged_version_from_comment(comment, old_ref, new_ref)
-            return previous_version if previous_version
+            standalone_version = standalone_version_from_comment(comment) if sha?(old_ref) && sha?(new_ref)
+            # A standalone comment names its entire version, so a tag suffix must not match it.
+            return standalone_version if standalone_version
 
-            standalone_version_from_comment(comment) if sha?(old_ref) && sha?(new_ref)
+            tagged_version_from_comment(comment, old_ref, new_ref)
           end
 
           sig { params(comment: String).returns(T.nilable(String)) }
