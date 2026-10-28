@@ -134,6 +134,97 @@ public class RefreshVersionUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
     }
 
     [Fact]
+    public async Task GeneratesUpdatePullRequest_ExistingPullRequestRecordedUnderDifferentDirectory()
+    {
+        await TestAsync(
+            job: new Job()
+            {
+                Dependencies = ["Some.Dependency"],
+                ExistingPullRequests = [new() { Dependencies = [new() { DependencyName = "Some.Dependency", DependencyVersion = NuGetVersion.Parse("2.0.0"), Directory = "/" }] }],
+                Source = CreateJobSource("/src"),
+                UpdatingAPullRequest = true,
+            },
+            files: [
+                ("src/project.csproj", "initial contents"),
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(input => Task.FromResult(new AnalysisResult()
+            {
+                CanUpdate = true,
+                UpdatedVersion = "2.0.0",
+                UpdatedDependencies = [],
+            })),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                await File.WriteAllTextAsync(Path.Join(input.Item1, input.Item2), "updated contents");
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/src/project.csproj"] }],
+                };
+            }),
+            expectedUpdateHandler: RefreshVersionUpdatePullRequestHandler.Instance,
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/project.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_version_pr",
+                    }
+                },
+                new UpdatePullRequest()
+                {
+                    DependencyNames = ["Some.Dependency"],
+                    DependencyGroup = null,
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        }
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
     public async Task GeneratesUpdatePullRequest_FirstUpdateDidNothingSecondUpdateSucceeded()
     {
         await TestAsync(

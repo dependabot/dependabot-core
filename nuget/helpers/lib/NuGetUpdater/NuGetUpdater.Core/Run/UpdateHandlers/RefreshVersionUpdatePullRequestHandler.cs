@@ -155,7 +155,11 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
                 var reportedDependencies = updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory)).ToArray();
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true);
+                // The PR being refreshed may have been recorded under a different directory than the one this job
+                // scans (e.g. "/" vs. a nested project directory), so fall back to ignoring directories rather than
+                // closing the PR and relying on a replacement being created.
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true)
+                    ?? job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true, considerDirectories: false);
                 if (existingPullRequest is not null)
                 {
                     await apiHandler.UpdatePullRequest(new UpdatePullRequest()
@@ -172,7 +176,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 }
                 else
                 {
-                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false);
+                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false, considerDirectories: false);
                     if (existingPrButDifferent is not null)
                     {
                         await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));

@@ -143,9 +143,10 @@ public sealed record Job
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
-        bool considerVersions)
+        bool considerVersions,
+        bool considerDirectories = true)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, considerDirectories);
     }
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
@@ -160,7 +161,8 @@ public sealed record Job
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
         bool considerVersions,
         string? dependencyGroupName,
-        bool matchGroupName)
+        bool matchGroupName,
+        bool considerDirectories = true)
     {
         var desiredDependencies = dependencies.ToArray();
         if (desiredDependencies.Any(d => d.Version is null))
@@ -178,7 +180,8 @@ public sealed record Job
         bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
-                (existingDependency.Directory is null ||
+                (!considerDirectories ||
+                    existingDependency.Directory is null ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
