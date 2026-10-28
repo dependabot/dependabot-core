@@ -1137,6 +1137,75 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    # `go mod tidy` reports an import that no module provides like this. The path is often inside the repository's own
+    # module: generated code (protobuf, mocks) that is not committed, so only the repository's owner can fix it.
+    context "when an imported package is in no module" do
+      let(:stderr) do
+        <<~ERROR
+          go: downloading github.com/ebitengine/purego v0.11.0
+          go: downloading github.com/go-ole/go-ole v1.3.0
+          go: finding module for package github.com/example/app/gen/app/v1
+          go: finding module for package github.com/example/app/gen/plugin/v1
+          go: github.com/example/app/cmd/app imports
+          \tgithub.com/example/app/gen/app/v1: no matching versions for query "latest"
+          go: github.com/example/app/internal/pluginrunner imports
+          \tgithub.com/example/app/gen/plugin/v1: no matching versions for query "latest"
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable naming every package and the import chain" do
+        expect { updater.send(:handle_subprocess_error, stderr) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) { |error|
+            expect(error.message).to include(
+              "github.com/example/app/gen/app/v1",
+              "github.com/example/app/gen/plugin/v1",
+              "generated",
+              "go: github.com/example/app/cmd/app imports"
+            )
+          }
+      end
+
+      it "leaves out the progress lines" do
+        expect { updater.send(:handle_subprocess_error, stderr) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) { |error|
+            expect(error.message).not_to include("go: downloading")
+          }
+      end
+
+      context "when the package is imported by a test" do
+        let(:stderr) do
+          <<~ERROR
+            go: finding module for package github.com/example/app/util/mocks
+            go: github.com/example/app/grpc tested by
+            \tgithub.com/example/app/grpc.test imports
+            \tgithub.com/example/app/util/mocks: no matching versions for query "latest"
+          ERROR
+        end
+
+        it "raises DependencyFileNotResolvable" do
+          expect do
+            updater.send(:handle_subprocess_error, stderr)
+          end.to raise_error(Dependabot::DependencyFileNotResolvable, %r{github.com/example/app/util/mocks})
+        end
+      end
+
+      context "when another error is reported with it" do
+        let(:stderr) do
+          <<~ERROR
+            go: github.com/example/app/cmd/app imports
+            \tgithub.com/example/app/gen/app/v1: no matching versions for query "latest"
+            go: github.com/private/dep@v1.0.0: reading github.com/private/dep/go.mod at revision v1.0.0: unknown revision v1.0.0
+          ERROR
+        end
+
+        it "keeps the more specific classification" do
+          expect do
+            updater.send(:handle_subprocess_error, stderr)
+          end.to raise_error(Dependabot::DependencyFileNotResolvable, /unknown revision/)
+        end
+      end
+    end
+
     context "with a missing go.sum entry error" do
       let(:stderr) do
         <<~ERROR
