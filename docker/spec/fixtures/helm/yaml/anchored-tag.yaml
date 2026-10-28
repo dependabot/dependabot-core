@@ -1,0 +1,8 @@
+api:
+  image:
+    repository: registry.example.com/example/api
+    tag: &release 1.2.0
+worker:
+  image:
+    repository: registry.example.com/example/worker
+    tag: *release
