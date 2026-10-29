@@ -659,6 +659,29 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the proposed SHA has no version tag" do
+      it "uses the proposed SHA for the git show date lookup" do
+        commit_date = "2026-06-01 10:00:00 +0000"
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(latest_version_tag: nil, available_release: "branch-head-sha")
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch.* branch-head-sha\z/, hash_including(fingerprint: anything))
+          .and_return(commit_date)
+
+        expect(commit_metadata_details).to eq(commit_date)
+      end
+    end
+
     context "when tag points to old commit but was recently created" do
       it "uses tag creation date for cooldown (not old commit date)" do
         # Tag created today, but commit is from 30 days ago
