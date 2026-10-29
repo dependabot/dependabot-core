@@ -165,6 +165,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       status: 204,
       headers: { "X-Terraform-Get" => "/v1/modules/hashicorp/consul/aws/0.9.3/download.zip" }
     )
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws").and_return(status: 404)
     client = described_class.new(hostname: hostname)
     dependency = Dependabot::Dependency.new(
       name: "hashicorp/consul/aws",
@@ -183,6 +184,53 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
 
     expect { client.source(dependency: dependency) }.not_to raise_error
+  end
+
+  it "returns the raw source when the proxied response has no terraform-get hint" do
+    raw_source = "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6..."
+    stub_request(:get, "#{raw_source}?terraform-get=1").and_return(
+      status: 200,
+      headers: { "Content-Type" => "application/x-gzip" },
+      body: "\x1F\x8B\b\x00"
+    )
+
+    expect(described_class.get_proxied_source(raw_source)).to eq(raw_source)
+  end
+
+  it "falls back to metadata API when X-Terraform-Get returns archivist URL" do
+    hostname = "registry.terraform.io"
+
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      status: 200,
+      body: {
+        "modules.v1": "/v1/modules/"
+      }.to_json
+    )
+
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/0.9.3/download").and_return(
+      status: 204,
+      headers: {
+        "X-Terraform-Get" => "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6..."
+      }
+    )
+
+    stub_request(:get, "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6...?terraform-get=1").and_return(
+      status: 200,
+      headers: { "Content-Type" => "application/x-gzip" },
+      body: "\x1F\x8B\b\x00"
+    )
+
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws").and_return(
+      status: 200,
+      body: {
+        "source" => "https://github.com/hashicorp/terraform-aws-consul"
+      }.to_json
+    )
+
+    source = client.source(dependency: module_dependency)
+
+    expect(source).to be_a Dependabot::Source
+    expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
   it "fetches the source for a provider dependency", :vcr do
@@ -247,6 +295,52 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     expect(source).to be_a Dependabot::Source
     expect(T.must(source).url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
+  end
+
+  it "passes Bearer token to metadata API when fallback occurs on private registry" do
+    hostname = "registry.example.org"
+    token = SecureRandom.hex(16)
+    credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => hostname, "token" => token })]
+
+    private_module_dependency = Dependabot::Dependency.new(
+      name: "corp/mymodule/aws",
+      version: "1.0.0",
+      package_manager: "terraform",
+      requirements: [{
+        requirement: "1.0.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "registry",
+          registry_hostname: hostname,
+          module_identifier: "corp/mymodule/aws"
+        }
+      }]
+    )
+
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
+      .and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+
+    stub_request(:get, "https://#{hostname}/v1/modules/corp/mymodule/aws/1.0.0/download")
+      .and_return(
+        status: 204,
+        headers: { "X-Terraform-Get" => "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6..." }
+      )
+
+    stub_request(:get, "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6...?terraform-get=1")
+      .and_return(status: 200, body: "<html><head><meta name=\"terraform-get\" content=\"https://archivist.terraform.io/v1/object/dmF1bHQ6djE6...\"/></head></html>")
+
+    stub_request(:get, "https://#{hostname}/v1/modules/corp/mymodule/aws")
+      .and_return(body: { "source" => "https://github.com/corp/terraform-aws-mymodule" }.to_json)
+
+    client = described_class.new(hostname: hostname, credentials: credentials)
+    source = client.source(dependency: private_module_dependency)
+
+    expect(source).to be_a Dependabot::Source
+    expect(T.must(source).url).to eq("https://github.com/corp/terraform-aws-mymodule")
+
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/modules/corp/mymodule/aws")
+      .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
   context "with a custom hostname" do
