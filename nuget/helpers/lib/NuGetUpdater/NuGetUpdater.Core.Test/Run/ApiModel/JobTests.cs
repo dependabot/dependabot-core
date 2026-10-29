@@ -88,7 +88,7 @@ public class JobTests
     [Theory]
     [InlineData(null, "/src/Project", true)]
     [InlineData("", "/src/Project", true)]
-    [InlineData("/", "/src/Project", true)]
+    [InlineData("/", "/src/Project", false)]
     [InlineData("/src/Project", "/src/Project", true)]
     [InlineData("/src/Other", "/src/Project", false)]
     public void GetExistingPullRequestForDependencies_DirectoryMatching_Refresh(string? existingDirectory, string desiredDirectory, bool expectedMatch)
@@ -110,13 +110,13 @@ public class JobTests
             new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = desiredDirectory },
         };
 
-        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRootDirectoryAsWildcard: true);
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
 
         Assert.Equal(expectedMatch, pullRequest is not null);
     }
 
     [Fact]
-    public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteralWhenCreating()
+    public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral()
     {
         var job = new Job()
         {
@@ -135,7 +135,7 @@ public class JobTests
             new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/Project" },
         };
 
-        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true);
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
 
         Assert.Null(pullRequest);
     }
