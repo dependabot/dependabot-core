@@ -411,9 +411,11 @@ module Dependabot
           dependency_files.any? do |file|
             next false unless File.basename(file.name) == "pnpm-workspace.yaml"
 
-            content = file.content.to_s
-            yaml_boolean_setting(content, "minimumReleaseAgeStrict", ":") == false &&
-              yaml_boolean_setting(content, "trustLockfile", ":") == true
+            settings = T.cast(YAML.safe_load(file.content.to_s, aliases: true), Object)
+            next false unless settings.is_a?(Hash)
+
+            T.cast(settings["minimumReleaseAgeStrict"], Object).to_s.downcase == "false" &&
+              T.cast(settings["trustLockfile"], Object).to_s.downcase == "true"
           end
         end
 
