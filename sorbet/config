@@ -20,5 +20,4 @@
 --ignore=nix/spec/
 --ignore=swift/spec/
 --ignore=updater/spec/
---ignore=vcpkg/spec/
 --ignore=.git

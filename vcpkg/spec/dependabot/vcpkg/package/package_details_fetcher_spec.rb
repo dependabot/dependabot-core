@@ -1,16 +1,23 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/vcpkg/package/package_details_fetcher"
 
 RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  sig { returns(Dependabot::Vcpkg::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:fetcher) do
     described_class.new(dependency: dependency, versions_database: versions_database)
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Vcpkg::Package::VersionsDatabase) }
   let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+  sig { returns(String) }
   let(:dependency_name) { "github.com/microsoft/vcpkg" }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -27,11 +34,15 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
       package_manager: "vcpkg"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch" do
-    subject(:details) { fetcher.fetch }
+    sig { returns(Dependabot::Package::PackageDetails) }
+    subject(:details) { T.must(fetcher.fetch) }
 
     context "when dependency is not a git dependency" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "curl",
@@ -46,6 +57,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         )
       end
 
+      sig { returns(T::Array[Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion]) }
       let(:port_versions) do
         [
           build_port_version("8.15.0#1", "version", "aaa"),
@@ -53,6 +65,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
           build_port_version("8.10.0", "version", "ccc")
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(versions_database).to receive_messages(
@@ -70,7 +83,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         expect(details.dependency).to eq(dependency)
         expect(details.releases.size).to eq(3)
 
-        latest_release = details.releases.first
+        latest_release = T.must(details.releases.first)
         expect(latest_release.version.to_s).to eq("8.15.0#1")
         expect(latest_release.tag).to eq("8.15.0#1")
         expect(latest_release.details["base_version"]).to eq("8.15.0")
@@ -78,7 +91,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         expect(latest_release.details["scheme"]).to eq("version")
         expect(latest_release.released_at).to eq(Time.utc(2025, 1, 15))
 
-        second_release = details.releases[1]
+        second_release = T.must(details.releases[1])
         expect(second_release.version.to_s).to eq("8.14.0")
         expect(second_release.details["port_version"]).to eq(0)
       end
@@ -95,11 +108,12 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         allow(versions_database).to receive(:versions_for)
           .and_return([build_port_version("1.2.11", "version-string", "eee")])
 
-        expect(details.releases.first.details["scheme"]).to eq("version-string")
+        expect(T.must(details.releases.first).details["scheme"]).to eq("version-string")
       end
     end
 
     context "when the port is missing from the versions database" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "nonexistent",
@@ -126,7 +140,10 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     end
 
     context "when dependency is a baseline git dependency" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::GitCommitChecker) }
       let(:git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
+      sig { returns(T::Array[T::Hash[Symbol, T.any(String, Dependabot::Vcpkg::Version)]]) }
       let(:mock_tags) do
         [
           {
@@ -143,6 +160,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
           }
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_commit_checker)
@@ -155,7 +173,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         expect(details.releases).not_to be_empty
         expect(details.releases.size).to eq(2)
 
-        first_release = details.releases.first
+        first_release = T.must(details.releases.first)
         expect(first_release.version).to eq(Dependabot::Vcpkg::Version.new("2025.06.13"))
         expect(first_release.tag).to eq("2025.06.13")
         expect(first_release.released_at).to eq(Time.new(2025, 6, 13))
@@ -163,6 +181,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     end
 
     context "when git repository is not reachable" do
+      sig { returns(Dependabot::GitCommitChecker) }
       let(:git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
 
       before do
@@ -192,6 +211,10 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     end
   end
 
+  sig do
+    params(version_string: String, scheme: String, git_tree: String)
+      .returns(Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion)
+  end
   def build_port_version(version_string, scheme, git_tree)
     Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion.new(
       version: Dependabot::Vcpkg::Version.new(version_string),

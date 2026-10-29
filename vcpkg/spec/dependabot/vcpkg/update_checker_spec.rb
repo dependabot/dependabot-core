@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve commit_sha and previous_tag fixtures defined only in child contexts.
+
 require "spec_helper"
 
 require "dependabot/dependency"
