@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only raw fixture or class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/apm/package_specifier"
 
@@ -452,7 +454,7 @@ RSpec.describe Dependabot::Apm::PackageSpecifier do
 
   describe "#lockfile_key" do
     def lockfile_key(raw, default_host: "github.com")
-      described_class.parse(raw, default_host: default_host).lockfile_key
+      T.must(described_class.parse(raw, default_host: default_host)).lockfile_key
     end
 
     it "uses the lowercased owner/repo for GitHub packages" do

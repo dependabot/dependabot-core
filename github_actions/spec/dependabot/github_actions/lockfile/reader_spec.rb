@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve matcher calls in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/lockfile"

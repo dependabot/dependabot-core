@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/credential"
@@ -6,15 +6,21 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/package/package_details_fetcher"
 require "dependabot/github_actions/version"
+require "dependabot/github_actions/requirement"
 require "dependabot/package/package_release"
 require "spec_helper"
 
 RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:upload_pack_fixture) { "setup-node" }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
@@ -58,7 +64,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
   let(:fetcher) do
     described_class.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
@@ -324,7 +330,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "github_actions",
-          vulnerable_versions: ["< 1.0"]
+          vulnerable_versions: [Dependabot::GithubActions::Requirement.new("< 1.0")]
         )
       ]
     end

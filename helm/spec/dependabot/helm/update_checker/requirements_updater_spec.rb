@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only update_strategy fixture.
+
 require "spec_helper"
 require "dependabot/dependency_requirement"
 require "dependabot/requirements_update_strategy"
