@@ -1981,13 +1981,81 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       context "with updated pnpm-workspace.yaml content (a catalog update)" do
-        let(:workspace_files) do
-          { "pnpm-workspace.yaml" => "minimumReleaseAge: 10080\ncatalog:\n  fetch-factory: ^0.0.2\n" }
-        end
+        let(:intended_workspace) { "minimumReleaseAge: 10080\ncatalog:\n  fetch-factory: ^0.0.2\n" }
+        let(:workspace_files) { { "pnpm-workspace.yaml" => intended_workspace } }
 
         it "does not return a lockfile that adds a version inside the window" do
           expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
           expect(commands).not_to include(a_string_including("--no-save"))
+        end
+
+        # Without strict mode an install records its young picks in minimumReleaseAgeExclude, but Dependabot
+        # returns the workspace content it computed, without them, so they must not satisfy the verification.
+        context "when pnpm records exclusions for the picks it made" do
+          let(:workspace_seen) { [] }
+
+          before do
+            failure = verification_failure
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              commands << cmd
+              if cmd == verify_command
+                workspace_seen << File.read("pnpm-workspace.yaml")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: failure, error_context: {})
+              end
+              File.write("pnpm-lock.yaml", lockfile_with(locked_after))
+              File.write(
+                "pnpm-workspace.yaml",
+                "#{File.read('pnpm-workspace.yaml')}minimumReleaseAgeExclude:\n  - cooldown-test-child@2.0.0\n"
+              )
+              ""
+            end
+          end
+
+          it "verifies against the workspace content Dependabot returns and leaves that on disk" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+            expect(workspace_seen).to eq([intended_workspace])
+            expect(File.read(File.join(repo_contents_path, "pnpm-workspace.yaml"))).to eq(intended_workspace)
+          end
+        end
+      end
+
+      context "when other lockfile policies fail too" do
+        # The shape pnpm's `violation_breakdown` prints when several policies reject entries: each line is tagged
+        let(:verification_failure) do
+          "[ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION] 2 lockfile entries failed verification:\n  " \
+            "cooldown-test-child@2.0.0 [MINIMUM_RELEASE_AGE_VIOLATION] was published at 2026-10-26T01:32:35.582Z, " \
+            "within the minimumReleaseAge cutoff (2026-10-22T01:32:40.804Z)\n  " \
+            "legacy-young@1.0.0 [TRUST_DOWNGRADE] lost its provenance\n"
+        end
+
+        it "still finds the version the update added" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(Dependabot.logger).to have_received(:warn).with(/window: cooldown-test-child@2\.0\.0\./)
+        end
+      end
+
+      context "when pnpm records exclusions during an ordinary update" do
+        let(:workspace_seen) { [] }
+
+        before do
+          failure = verification_failure
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            if cmd == verify_command
+              workspace_seen << File.read("pnpm-workspace.yaml")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: failure, error_context: {})
+            end
+            File.write("pnpm-lock.yaml", lockfile_with(locked_after))
+            File.write("pnpm-workspace.yaml", "#{workspace_settings}minimumReleaseAgeExclude:\n  - x@1.0.0\n")
+            ""
+          end
+        end
+
+        it "verifies against the repo's own pnpm-workspace.yaml" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(workspace_seen).to eq([workspace_settings])
         end
       end
 
