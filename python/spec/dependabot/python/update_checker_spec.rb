@@ -762,6 +762,34 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
       end
 
+      # Regression: a Poetry 2.0 project declaring dependencies via PEP 621 `[project.dependencies]` with no
+      # `[tool.poetry]` table at all. `poetry_based?` only checked `[tool.poetry]` presence, so this shape was
+      # misrouted to the generic requirements resolver instead of Poetry even though `poetry.lock` is the
+      # resolution source of truth.
+      context "when including a PEP 621-only Poetry 2.0 project with lockfile" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "poetry_v2_pep621_only.lock")
+          )
+        end
+        let(:dependency_files) { [pyproject, poetry_lock] }
+
+        it "delegates to PoetryVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .with(requirement: ">=2.0.0,<=2.6.0")
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
       context "when urllib3 is pinned via constraints and botocore is incompatible" do
         let(:dependency_name) { "urllib3" }
         let(:constraints_pyproject) do
