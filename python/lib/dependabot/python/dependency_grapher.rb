@@ -66,7 +66,6 @@ module Dependabot
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
-        supplement_poetry_lock_dependencies!
       end
 
       # Layering is specific to pip / pip-compile for Python.
@@ -295,19 +294,8 @@ module Dependabot
         end
       end
 
-      # The shared file parser only treats a project as Poetry when `[tool.poetry]` is present, so a PEP
-      # 621-only Poetry 2.0 manifest never gets poetry.lock's transitive packages merged into `@dependencies`.
-      # The grapher detects Poetry purely from poetry.lock's presence, so it backfills whatever the parser
-      # didn't report to avoid an incomplete dependency graph submission.
-      sig { void }
-      def supplement_poetry_lock_dependencies!
-        return unless python_package_manager == PoetryPackageManager::NAME
-        return unless committed_poetry_lock
-
-        known_names = T.let(Set.new(@dependencies.map(&:name)), T::Set[String])
-        @dependencies.concat(poetry_lock_dependency_resolver.missing_dependencies(known_names))
-      end
-
+      # The shared file parser now recognises PEP 621-only Poetry 2.0 manifests (poetry-core build backend
+      # plus a lockfile) as Poetry, so `@dependencies` already includes poetry.lock's full package set here.
       sig { returns(PoetryLockDependencyResolver) }
       def poetry_lock_dependency_resolver
         @poetry_lock_dependency_resolver ||=
