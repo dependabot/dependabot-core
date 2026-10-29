@@ -377,6 +377,64 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
+    # Regression: a Poetry 2.0 project declaring dependencies via PEP 621 `[project.dependencies]` with no
+    # `[tool.poetry]` table at all. The shared file parser only merges poetry.lock's full package set when
+    # `[tool.poetry]` is present, so without this fix only the top-level deps (requests, urllib3) would be
+    # reported and the transitive packages the lockfile resolved would be silently dropped.
+    context "when a PEP 621-only Poetry 2.0 project has a committed poetry.lock" do
+      let(:pep621_only_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_v2_pep621_only.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:pep621_only_lock) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_v2_pep621_only.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pep621_only_toml, pep621_only_lock] }
+
+      it "includes both the top-level and transitive dependencies from poetry.lock" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The PEP 621 top-level entries (requests, urllib3) don't carry a resolved version here because that
+        # comes from a native helper invocation outside this test's scope; what this regression guards is that
+        # the *transitive* packages poetry.lock resolved are present at all, which they previously were not.
+        expect(resolved_dependencies.keys).to include(
+          "pkg:pypi/requests",
+          "pkg:pypi/urllib3",
+          "pkg:pypi/certifi@2024.2.2",
+          "pkg:pypi/charset-normalizer@3.3.2",
+          "pkg:pypi/idna@3.6"
+        )
+      end
+
+      it "attributes the transitive dependencies to requests as subdependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        requests = resolved_dependencies.fetch("pkg:pypi/requests")
+        expect(requests.direct).to be(true)
+        expect(requests.dependencies).to eq(
+          [
+            "pkg:pypi/certifi@2024.2.2",
+            "pkg:pypi/charset-normalizer@3.3.2",
+            "pkg:pypi/idna@3.6",
+            "pkg:pypi/urllib3"
+          ]
+        )
+
+        certifi = resolved_dependencies.fetch("pkg:pypi/certifi@2024.2.2")
+        expect(certifi.direct).to be(false)
+        expect(certifi.runtime).to be(true)
+      end
+    end
+
     context "when a non-manifest .txt file is fetched alongside a real manifest" do
       let(:requirements_txt) do
         Dependabot::DependencyFile.new(

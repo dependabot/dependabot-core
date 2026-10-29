@@ -5,6 +5,7 @@ require "json"
 require "sorbet-runtime"
 require "pathname"
 
+require "dependabot/dependency"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/python/file_parser"
@@ -19,6 +20,7 @@ module Dependabot
   module Python
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       require_relative "dependency_grapher/lockfile_generator"
+      require_relative "dependency_grapher/poetry_lock_dependency_resolver"
       require_relative "dependency_grapher/requirements_layers"
 
       sig { override.returns(Dependabot::DependencyFile) }
@@ -64,6 +66,7 @@ module Dependabot
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
+        supplement_poetry_lock_dependencies!
       end
 
       # Layering is specific to pip / pip-compile for Python.
@@ -284,7 +287,7 @@ module Dependabot
       def fetch_package_relationships
         case python_package_manager
         when PoetryPackageManager::NAME
-          poetry_lock ? fetch_poetry_lock_relationships : {}
+          poetry_lock ? poetry_lock_dependency_resolver.relationships : {}
         when PipenvPackageManager::NAME
           pipfile_lock ? fetch_pipfile_lock_relationships : {}
         else
@@ -292,19 +295,23 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_poetry_lock_relationships
-        TomlRB.parse(T.must(poetry_lock).content).fetch("package", []).each_with_object({}) do |pkg, rels|
-          next unless pkg.is_a?(Hash) && pkg["name"].is_a?(String)
+      # The shared file parser only treats a project as Poetry when `[tool.poetry]` is present, so a PEP
+      # 621-only Poetry 2.0 manifest never gets poetry.lock's transitive packages merged into `@dependencies`.
+      # The grapher detects Poetry purely from poetry.lock's presence, so it backfills whatever the parser
+      # didn't report to avoid an incomplete dependency graph submission.
+      sig { void }
+      def supplement_poetry_lock_dependencies!
+        return unless python_package_manager == PoetryPackageManager::NAME
+        return unless committed_poetry_lock
 
-          parent = NameNormaliser.normalise(pkg["name"])
-          deps = pkg["dependencies"]
-          deps = {} unless deps.is_a?(Hash)
-          children = deps.keys.map { |name| NameNormaliser.normalise(name) }
-          rels[parent] = children
-        end
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).name
+        known_names = T.let(Set.new(@dependencies.map(&:name)), T::Set[String])
+        @dependencies.concat(poetry_lock_dependency_resolver.missing_dependencies(known_names))
+      end
+
+      sig { returns(PoetryLockDependencyResolver) }
+      def poetry_lock_dependency_resolver
+        @poetry_lock_dependency_resolver ||=
+          T.let(PoetryLockDependencyResolver.new(T.must(poetry_lock)), T.nilable(PoetryLockDependencyResolver))
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
