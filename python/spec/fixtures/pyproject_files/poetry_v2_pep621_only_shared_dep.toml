@@ -1,0 +1,15 @@
+[project]
+name = "pep621-only-shared-dep-project"
+version = "0.1.0"
+description = "A PEP 621-only Poetry v2 project where a lockfile package appears under multiple groups"
+authors = [
+    {name = "Dependabot Support", email = "support@dependabot.com"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28.0,<3.0",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -400,15 +400,12 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       let(:dependency_files) { [pep621_only_toml, pep621_only_lock] }
 
-      it "includes both the top-level and transitive dependencies from poetry.lock" do
+      it "includes both the top-level and transitive dependencies from poetry.lock, all with resolved versions" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        # The PEP 621 top-level entries (requests, urllib3) don't carry a resolved version here because that
-        # comes from a native helper invocation outside this test's scope; what this regression guards is that
-        # the *transitive* packages poetry.lock resolved are present at all, which they previously were not.
         expect(resolved_dependencies.keys).to include(
-          "pkg:pypi/requests",
-          "pkg:pypi/urllib3",
+          "pkg:pypi/requests@2.31.0",
+          "pkg:pypi/urllib3@2.1.0",
           "pkg:pypi/certifi@2024.2.2",
           "pkg:pypi/charset-normalizer@3.3.2",
           "pkg:pypi/idna@3.6"
@@ -418,20 +415,50 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       it "attributes the transitive dependencies to requests as subdependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        requests = resolved_dependencies.fetch("pkg:pypi/requests")
+        requests = resolved_dependencies.fetch("pkg:pypi/requests@2.31.0")
         expect(requests.direct).to be(true)
         expect(requests.dependencies).to eq(
           [
             "pkg:pypi/certifi@2024.2.2",
             "pkg:pypi/charset-normalizer@3.3.2",
             "pkg:pypi/idna@3.6",
-            "pkg:pypi/urllib3"
+            "pkg:pypi/urllib3@2.1.0"
           ]
         )
 
         certifi = resolved_dependencies.fetch("pkg:pypi/certifi@2024.2.2")
         expect(certifi.direct).to be(false)
         expect(certifi.runtime).to be(true)
+      end
+    end
+
+    # Regression: poetry.lock can record the same package under more than one `[[package]]` entry (e.g. one
+    # per group it belongs to). Treating the first-seen entry as authoritative for production status would
+    # misclassify a package as dev-only if its dev entry happens to be parsed before its main entry.
+    context "when a PEP 621-only Poetry 2.0 project has a lockfile package recorded under multiple groups" do
+      let(:shared_dep_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_v2_pep621_only_shared_dep.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:shared_dep_lock) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_v2_pep621_only_shared_dep.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [shared_dep_toml, shared_dep_lock] }
+
+      it "marks the package as runtime despite its first lockfile entry being dev-only" do
+        idna = grapher.resolved_dependencies.fetch("pkg:pypi/idna@3.6")
+
+        expect(idna.direct).to be(false)
+        expect(idna.runtime).to be(true)
       end
     end
 

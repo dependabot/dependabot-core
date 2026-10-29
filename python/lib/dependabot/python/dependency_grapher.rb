@@ -8,6 +8,7 @@ require "pathname"
 require "dependabot/dependency"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
+require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
@@ -295,17 +296,16 @@ module Dependabot
         end
       end
 
-      # The shared file parser only treats a project as Poetry when `[tool.poetry]` is present, so a PEP
-      # 621-only Poetry 2.0 manifest never gets poetry.lock's transitive packages merged into `@dependencies`.
-      # The grapher detects Poetry purely from poetry.lock's presence, so it backfills whatever the parser
-      # didn't report to avoid an incomplete dependency graph submission.
+      # The shared file parser only merges poetry.lock's package set when `[tool.poetry]` is present, so PEP
+      # 621-only manifests keep top-level deps versionless and drop transitives. Merge via DependencySet,
+      # which fills in missing versions and combines duplicate lockfile entries for the same package.
       sig { void }
       def supplement_poetry_lock_dependencies!
-        return unless python_package_manager == PoetryPackageManager::NAME
-        return unless committed_poetry_lock
+        return unless python_package_manager == PoetryPackageManager::NAME && committed_poetry_lock
 
-        known_names = T.let(Set.new(@dependencies.map(&:name)), T::Set[String])
-        @dependencies.concat(poetry_lock_dependency_resolver.missing_dependencies(known_names))
+        merged = Dependabot::FileParsers::Base::DependencySet.new(@dependencies) +
+                 poetry_lock_dependency_resolver.dependency_set
+        @dependencies = merged.dependencies
       end
 
       sig { returns(PoetryLockDependencyResolver) }

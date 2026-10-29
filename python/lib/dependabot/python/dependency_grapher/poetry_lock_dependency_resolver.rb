@@ -7,6 +7,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/errors"
+require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
@@ -42,19 +43,21 @@ module Dependabot
           end
         end
 
-        # Synthetic Dependency objects for every resolvable poetry.lock package whose normalised name is not
-        # already present in `known_names`.
-        sig { params(known_names: T::Set[String]).returns(T::Array[Dependabot::Dependency]) }
-        def missing_dependencies(known_names)
-          packages.filter_map do |pkg|
+        # Synthetic Dependency objects for every resolvable poetry.lock package, as a DependencySet so that
+        # packages recorded multiple times (e.g. once per platform marker) have their metadata merged rather
+        # than only the first-seen entry's groups deciding production status.
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+        def dependency_set
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          packages.each do |pkg|
             next if UNRESOLVABLE_SOURCE_TYPES.include?(source_type(pkg))
 
             name = normalised_name(pkg)
-            next if known_names.include?(name)
-
-            known_names << name
-            dependency_for(pkg, name)
+            dependencies << dependency_for(pkg, name)
           end
+
+          dependencies
         end
 
         private
