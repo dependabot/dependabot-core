@@ -1,0 +1,12 @@
+{
+  "name": "bun-resolutions-after-catalog",
+  "packageManager": "bun@1.4.2",
+  "workspaces": {"packages":["packages/*"],"catalog":{"is-number":"6.0.0"}},
+  "dependencies": {
+    "etag": "1.0.1",
+    "is-number": "^6.0.0"
+  },
+  "resolutions": {
+    "is-number": "6.0.0"
+  }
+}
