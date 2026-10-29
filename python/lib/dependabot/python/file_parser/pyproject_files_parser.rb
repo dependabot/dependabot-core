@@ -205,9 +205,12 @@ module Dependabot
           }
         end
 
+        # A project is Poetry-managed either because it declares `[tool.poetry]` directly, or because it's a
+        # PEP 621-only Poetry 2.0+ manifest (poetry-core build backend, no `[tool.poetry]` table) with a
+        # committed poetry.lock as the resolution source of truth.
         sig { returns(T::Boolean) }
         def using_poetry?
-          pyproject_document.poetry?
+          pyproject_document.poetry? || (pyproject_document.poetry_build_backend? && !lockfile.nil?)
         end
 
         sig { returns(T::Boolean) }

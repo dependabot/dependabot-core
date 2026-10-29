@@ -464,6 +464,17 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
           expect(parsed.dig("tool", "poetry")).to be_nil
         end
+
+        it "includes transitive dependencies from the committed poetry.lock" do
+          names = dependencies.map(&:name)
+          expect(names).to include("certifi", "charset-normalizer", "idna")
+        end
+
+        it "marks transitive dependencies as subdependencies with no requirement" do
+          idna = dependencies.find { |d| d.name == "idna" }
+          expect(idna.requirements).to eq([])
+          expect(idna.version).to eq("3.6")
+        end
       end
 
       context "with a hybrid PEP 621 + tool.poetry enrichment project" do

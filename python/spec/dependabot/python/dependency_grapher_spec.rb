@@ -400,15 +400,12 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       let(:dependency_files) { [pep621_only_toml, pep621_only_lock] }
 
-      it "includes both the top-level and transitive dependencies from poetry.lock" do
+      it "includes both the top-level and transitive dependencies from poetry.lock, all with resolved versions" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        # The PEP 621 top-level entries (requests, urllib3) don't carry a resolved version here because that
-        # comes from a native helper invocation outside this test's scope; what this regression guards is that
-        # the *transitive* packages poetry.lock resolved are present at all, which they previously were not.
         expect(resolved_dependencies.keys).to include(
-          "pkg:pypi/requests",
-          "pkg:pypi/urllib3",
+          "pkg:pypi/requests@2.31.0",
+          "pkg:pypi/urllib3@2.1.0",
           "pkg:pypi/certifi@2024.2.2",
           "pkg:pypi/charset-normalizer@3.3.2",
           "pkg:pypi/idna@3.6"
@@ -418,14 +415,14 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       it "attributes the transitive dependencies to requests as subdependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        requests = resolved_dependencies.fetch("pkg:pypi/requests")
+        requests = resolved_dependencies.fetch("pkg:pypi/requests@2.31.0")
         expect(requests.direct).to be(true)
         expect(requests.dependencies).to eq(
           [
             "pkg:pypi/certifi@2024.2.2",
             "pkg:pypi/charset-normalizer@3.3.2",
             "pkg:pypi/idna@3.6",
-            "pkg:pypi/urllib3"
+            "pkg:pypi/urllib3@2.1.0"
           ]
         )
 
