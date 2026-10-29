@@ -414,8 +414,8 @@ module Dependabot
             settings = T.cast(YAML.safe_load(file.content.to_s, aliases: true), Object)
             next false unless settings.is_a?(Hash)
 
-            T.cast(settings["minimumReleaseAgeStrict"], Object).to_s.downcase == "false" &&
-              T.cast(settings["trustLockfile"], Object).to_s.downcase == "true"
+            T.cast(settings["minimumReleaseAgeStrict"], Object).to_s.match?(/\Afalse\z/i) &&
+              T.cast(settings["trustLockfile"], Object).to_s.match?(/\Atrue\z/i)
           end
         end
 
