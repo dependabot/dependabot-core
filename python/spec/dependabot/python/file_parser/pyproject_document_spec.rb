@@ -91,6 +91,49 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     end
   end
 
+  it "does not consider poetry-core the build backend when build-system is absent" do
+    expect(document).not_to be_poetry_build_backend
+  end
+
+  context "with a PEP 621-only manifest declaring poetry-core as the build backend" do
+    let(:content) do
+      <<~TOML
+        [project]
+        name = "pep621-only"
+        version = "0.1.0"
+        dependencies = ["requests>=2"]
+
+        [build-system]
+        requires = ["poetry-core>=2.0.0,<3.0.0"]
+        build-backend = "poetry.core.masonry.api"
+      TOML
+    end
+
+    it "is not poetry (no [tool.poetry] table) but is poetry-core-backed" do
+      expect(document).not_to be_poetry
+      expect(document).to be_poetry_build_backend
+    end
+  end
+
+  context "with a non-Poetry build backend" do
+    let(:content) do
+      <<~TOML
+        [project]
+        name = "hatch-project"
+        version = "0.1.0"
+        dependencies = ["requests>=2"]
+
+        [build-system]
+        requires = ["hatchling"]
+        build-backend = "hatchling.build"
+      TOML
+    end
+
+    it "is not poetry-core-backed" do
+      expect(document).not_to be_poetry_build_backend
+    end
+  end
+
   it "ignores unknown keys" do
     file.content = "#{content}\n[tool.unknown]\nvalue = 1\n"
 

@@ -161,6 +161,17 @@ module Dependabot
           @data.key?("dependency-groups")
         end
 
+        # True when poetry-core is declared as the build backend, independent of whether `[tool.poetry]` is
+        # present. A PEP 621-only Poetry 2.0+ manifest has no `[tool.poetry]` table, so this is the only
+        # manifest-level signal that poetry.lock (if present) is the authoritative resolution for the project.
+        sig { returns(T::Boolean) }
+        def poetry_build_backend?
+          build_system = section(@data, "build-system", "build-system")
+          build_backend = build_system&.[]("build-backend")
+
+          build_backend.is_a?(String) && build_backend.start_with?("poetry.core")
+        end
+
         sig { params(type: String).returns(PoetryDependencyMap) }
         def poetry_dependencies(type)
           root = poetry_root
