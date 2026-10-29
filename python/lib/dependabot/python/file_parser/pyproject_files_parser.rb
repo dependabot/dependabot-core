@@ -207,7 +207,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_poetry?
-          pyproject_document.poetry?
+          pyproject_document.poetry? || pyproject_document.poetry_build_backend?
         end
 
         sig { returns(T::Boolean) }
