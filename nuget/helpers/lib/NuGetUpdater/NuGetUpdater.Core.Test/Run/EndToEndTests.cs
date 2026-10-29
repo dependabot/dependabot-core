@@ -17,13 +17,15 @@ using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
-    [Fact]
-    public async Task WithPackageReference()
+    [Theory]
+    [InlineData("net9.0")]
+    [InlineData("net11.0")]
+    public async Task WithPackageReference(string targetFramework)
     {
         await RunAsync(
             packages: [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", targetFramework),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", targetFramework),
             ],
             job: new()
             {
@@ -44,10 +46,10 @@ public class EndToEndTests
                       </PropertyGroup>
                     </Project>
                     """),
-                ("project.csproj", """
+                ("project.csproj", $$"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>net9.0</TargetFramework>
+                        <TargetFramework>{{targetFramework}}</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Package" Version="1.0.0" />
@@ -128,10 +130,10 @@ public class EndToEndTests
                         {
                             Directory = "/",
                             Name = "project.csproj",
-                            Content = """
+                            Content = $$"""
                                 <Project Sdk="Microsoft.NET.Sdk">
                                   <PropertyGroup>
-                                    <TargetFramework>net9.0</TargetFramework>
+                                    <TargetFramework>{{targetFramework}}</TargetFramework>
                                   </PropertyGroup>
                                   <ItemGroup>
                                     <PackageReference Include="Some.Package" Version="2.0.0" />

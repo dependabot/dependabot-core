@@ -2,7 +2,7 @@
 	path = nuget/helpers/lib/NuGet.Client
 	url = https://github.com/NuGet/NuGet.Client
 	# Keep this branch aligned with the NuGet assemblies bundled by the SDK in NuGetUpdater/global.json.
-	branch = release/7.9.x
+	branch = release/8.0.x
 [submodule "nuget/helpers/lib/dotnet-core"]
 	path = nuget/helpers/lib/dotnet-core
 	url = https://github.com/dotnet/core

@@ -57,6 +57,33 @@ public class CompatibilityCheckerTests
     }
 
     [Fact]
+    public async Task ExistsAsync_NullPackageDownloader_ReportsAsUnavailable()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var resourceProvider = new CapturingResourceProvider<FindPackageByIdResource>(
+            new MissingFindPackageByIdResource(packageExists: true));
+        using var context = new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(source, [resourceProvider]));
+
+        var exists = await CompatibilityChecker.ExistsAsync(
+            new PackageIdentity("Missing.Downloader", NuGetVersion.Parse("1.0.0")),
+            context,
+            TestContext.Current.CancellationToken);
+
+        Assert.False(exists);
+    }
+
+    [Fact]
     public void PerformCheck_CompatiblePackage_IsCompatible()
     {
         var package = new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0"));
@@ -271,7 +298,7 @@ public class CompatibilityCheckerTests
         }
     }
 
-    private sealed class MissingFindPackageByIdResource : FindPackageByIdResource
+    private sealed class MissingFindPackageByIdResource(bool packageExists = false) : FindPackageByIdResource
     {
         public override Task<IEnumerable<NuGetVersion>> GetAllVersionsAsync(
             string id,
@@ -279,7 +306,7 @@ public class CompatibilityCheckerTests
             NuGet.Common.ILogger logger,
             CancellationToken cancellationToken) => throw new NotImplementedException();
 
-        public override Task<FindPackageByIdDependencyInfo> GetDependencyInfoAsync(
+        public override Task<FindPackageByIdDependencyInfo?> GetDependencyInfoAsync(
             string id,
             NuGetVersion version,
             SourceCacheContext cacheContext,
@@ -294,17 +321,17 @@ public class CompatibilityCheckerTests
             NuGet.Common.ILogger logger,
             CancellationToken cancellationToken) => throw new NotImplementedException();
 
-        public override Task<IPackageDownloader> GetPackageDownloaderAsync(
+        public override Task<IPackageDownloader?> GetPackageDownloaderAsync(
             PackageIdentity packageIdentity,
             SourceCacheContext cacheContext,
             NuGet.Common.ILogger logger,
-            CancellationToken cancellationToken) => throw new NotImplementedException();
+            CancellationToken cancellationToken) => Task.FromResult<IPackageDownloader?>(null);
 
         public override Task<bool> DoesPackageExistAsync(
             string id,
             NuGetVersion version,
             SourceCacheContext cacheContext,
             NuGet.Common.ILogger logger,
-            CancellationToken cancellationToken) => Task.FromResult(false);
+            CancellationToken cancellationToken) => Task.FromResult(packageExists);
     }
 }

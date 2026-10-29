@@ -9,7 +9,8 @@
             NuGetUpdater\NuGetUpdater.Core\FrameworkChecker\SupportedFrameworks.cs
       2. Update tests as needed at `NuGetUpdater\NuGetUpdater.Core.Test\FrameworkChecker\CompatibilityCheckerFacts.cs`
     -->
-    <CommonTargetFramework>net10.0</CommonTargetFramework>
+    <CommonTargetFramework>net11.0</CommonTargetFramework>
+    <RestoreConfigFile Condition="'$(RestoreConfigFile)' == ''">$(MSBuildThisFileDirectory)NuGetUpdater.Restore.Config</RestoreConfigFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts\$(OS)</ArtifactsPath>

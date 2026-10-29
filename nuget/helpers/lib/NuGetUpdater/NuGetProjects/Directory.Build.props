@@ -15,7 +15,7 @@
       These assemblies share the default load context with the copies bundled in the selected .NET SDK.
       Keep this version aligned with both NuGet.Client/build/config.props and the SDK in ../global.json.
     -->
-    <Version>7.9.0</Version>
+    <Version>8.0.0</Version>
     <SignAssembly>true</SignAssembly>
     <PublicSign>true</PublicSign>
     <!-- NuGet.Core assemblies use Microsoft's public key, as do the copies bundled with the SDK. -->

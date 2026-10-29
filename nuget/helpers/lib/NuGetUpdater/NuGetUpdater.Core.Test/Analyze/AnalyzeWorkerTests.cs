@@ -2175,6 +2175,16 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task GetPackageInfoUrlAsyncReturnsNullWhenMetadataIsMissing()
+    {
+        using var context = await CreateNuGetContextAsync(downloadResource: null, projectUrl: null);
+
+        var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
+
+        Assert.Null(infoUrl);
+    }
+
+    [Fact]
     public async Task GetPackageInfoUrlAsyncFallsBackToMetadataWhenAvailableDownloadHasNoPackageReader()
     {
         var expectedUrl = new Uri("https://example.com/package");
@@ -2187,7 +2197,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         Assert.Equal(expectedUrl.ToString(), infoUrl);
     }
 
-    private static async Task<NuGetContext> CreateNuGetContextAsync(DownloadResource? downloadResource, Uri projectUrl)
+    private static async Task<NuGetContext> CreateNuGetContextAsync(DownloadResource? downloadResource, Uri? projectUrl)
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
             ("NuGet.Config", """
@@ -2248,13 +2258,13 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             NuGet.Common.ILogger log,
             CancellationToken token) => Task.FromResult<IEnumerable<NuGetVersion>>([]);
 
-        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion?>>> GetLatestVersions(
             IEnumerable<string> packageIds,
             bool includePrerelease,
             bool includeUnlisted,
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
-            CancellationToken token) => Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion>>>([]);
+            CancellationToken token) => Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion?>>>([]);
     }
 
     private sealed class TestDownloadResource(DownloadResourceResult result) : DownloadResource
@@ -2267,7 +2277,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             CancellationToken token) => Task.FromResult(result);
     }
 
-    private sealed class TestPackageMetadataResource(Uri projectUrl) : PackageMetadataResource
+    private sealed class TestPackageMetadataResource(Uri? projectUrl) : PackageMetadataResource
     {
         public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
             string packageId,
@@ -2277,13 +2287,13 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             NuGet.Common.ILogger log,
             CancellationToken token) => Task.FromResult<IEnumerable<IPackageSearchMetadata>>([]);
 
-        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+        public override Task<IPackageSearchMetadata?> GetMetadataAsync(
             PackageIdentity package,
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
             CancellationToken token) =>
-            Task.FromResult<IPackageSearchMetadata>(
-                new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+            Task.FromResult<IPackageSearchMetadata?>(
+                projectUrl is null ? null : new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
                 {
                     Identity = package,
                     ProjectUrl = projectUrl,
@@ -2304,7 +2314,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             NuGet.Common.ILogger log,
             CancellationToken token) => throw new NotImplementedException();
 
-        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+        public override Task<IPackageSearchMetadata?> GetMetadataAsync(
             PackageIdentity package,
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
@@ -2316,7 +2326,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 throw new InvalidDataException("Metadata should not be requested for an incompatible candidate.");
             }
 
-            return Task.FromResult<IPackageSearchMetadata>(
+            return Task.FromResult<IPackageSearchMetadata?>(
                 new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
                 {
                     Identity = package,
