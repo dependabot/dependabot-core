@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
 require "dependabot/npm_and_yarn/language"
 require "dependabot/npm_and_yarn/constraint_helper"
+require "dependabot/npm_and_yarn/shrinkwrap_compatibility"
 require "dependabot/package/npm_package_manager_config"
 
 module Dependabot
@@ -333,13 +334,24 @@ module Dependabot
 
           if version
             raise_if_unsupported!(name, version.to_s)
-            install(name, version.to_s) if name == PNPMPackageManager::NAME
+            install(name, version.to_s) if should_install_guessed_version?(name, version)
           end
         end
         version
       end
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { params(name: String, version: Integer).returns(T::Boolean) }
+      def should_install_guessed_version?(name, version)
+        return true if name == PNPMPackageManager::NAME
+
+        # If an unpinned repository uses npm-shrinkwrap.json (which routes to npm 11 because
+        # npm 12 dropped shrinkwrap support), install/activate npm 11 through Corepack so the
+        # updater runs npm 11 rather than falling back to the image-local npm 12.
+        name == NpmPackageManager::NAME && version == Helpers::NPM_V11
+      end
+      private :should_install_guessed_version?
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
@@ -455,6 +467,7 @@ module Dependabot
 
       sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
+        ensure_shrinkwrap_supports!(name, version)
         return unless name == PNPMPackageManager::NAME
         return unless Version.new(version) < Version.new("7")
 
@@ -471,9 +484,35 @@ module Dependabot
           Helpers.npm_version_selector = version.to_s if name == NpmPackageManager::NAME
         rescue SharedHelpers::HelperSubprocessFailed, RegistryError => e
           Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
-          Helpers.fallback_to_local_version(name, env: corepack_env)
+          recover_from_failed_install(name, version.to_s)
         end
       end
+
+      # The image only caches npm's latest release plus the latest of each older major, so an exact npm pin
+      # usually misses the cache. Stay on the pinned major rather than silently updating with the image's npm.
+      sig { params(name: String, version: String).void }
+      def recover_from_failed_install(name, version)
+        return Helpers.fallback_to_local_version(name, env: corepack_env) unless name == NpmPackageManager::NAME
+
+        major = version.split(".").first.to_s
+        return if version != major && install_cached_major(name, major)
+
+        Helpers.raise_unless_local_npm_major_matches!(version)
+        Helpers.fallback_to_local_version(name, env: corepack_env)
+      end
+      private :recover_from_failed_install
+
+      sig { params(name: String, major: String).returns(T::Boolean) }
+      def install_cached_major(name, major)
+        Helpers.package_manager_install(name, major, env: corepack_env)
+        Helpers.npm_version_selector = major
+        Dependabot.logger.info("Using cached \"#{name}@#{major}\" instead of the exact pin")
+        true
+      rescue SharedHelpers::HelperSubprocessFailed, RegistryError => e
+        Dependabot.logger.error("Error installing #{name}@#{major}: #{e.message}")
+        false
+      end
+      private :install_cached_major
 
       # Environment variables (e.g. COREPACK_NPM_REGISTRY) that point Corepack at
       # the configured private registry. Without these, Corepack reaches out to
@@ -525,10 +564,26 @@ module Dependabot
 
         return if engine_versions.empty?
 
-        version = engine_versions[name]
+        version = shrinkwrap_compatible_version(name, engine_versions[name])
         Dependabot.logger.info("Returned (#{MANIFEST_ENGINES_KEY}) info \"#{name}\" : \"#{version}\"")
         version
       end
+
+      sig { params(name: String, version: T.nilable(String)).returns(T.nilable(String)) }
+      def shrinkwrap_compatible_version(name, version)
+        return version unless version && name == NpmPackageManager::NAME && shrinkwrap_lockfile?(@lockfiles[:npm])
+
+        ShrinkwrapCompatibility.engines_version(raw_engine_constraint(name), version)
+      end
+      private :shrinkwrap_compatible_version
+
+      sig { params(name: String, version: String).void }
+      def ensure_shrinkwrap_supports!(name, version)
+        return unless name == NpmPackageManager::NAME && shrinkwrap_lockfile?(@lockfiles[:npm])
+
+        ShrinkwrapCompatibility.ensure_pin_supported!(version)
+      end
+      private :ensure_shrinkwrap_supports!
 
       sig { params(name: String).returns(T.nilable(T::Array[Dependabot::Version])) }
       def dependabot_versions(name)
@@ -551,6 +606,8 @@ module Dependabot
       def numeric_lockfile_version(name, lockfile)
         case name
         when NpmPackageManager::NAME
+          return Helpers::NPM_V11 if shrinkwrap_lockfile?(lockfile)
+
           Helpers.npm_version_numeric(lockfile)
         when YarnPackageManager::NAME
           Helpers.yarn_version_numeric(lockfile)
@@ -558,6 +615,12 @@ module Dependabot
           Helpers.pnpm_version_numeric(lockfile)
         end
       end
+
+      sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(T::Boolean) }
+      def shrinkwrap_lockfile?(lockfile)
+        lockfile&.name&.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME) || false
+      end
+      private :shrinkwrap_lockfile?
     end
   end
 end

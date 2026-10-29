@@ -72,6 +72,29 @@ RSpec.describe Dependabot::Bazel::FileParser do
         expect(ecosystem.language.version.to_s).to eq("8.5.1")
       end
     end
+
+    # Bazelisk accepts values that are not plain versions, such as release channels and forks
+    %w(buildbuddy-io/5.0.382 latest last_green rolling).each do |bazelisk_value|
+      context "with a .bazelversion value of #{bazelisk_value}" do
+        let(:dependency_files) do
+          bazel_project_dependency_files("simple_module") + [
+            Dependabot::DependencyFile.new(name: ".bazelversion", content: "#{bazelisk_value}\n")
+          ]
+        end
+
+        it "falls back to the default version instead of raising" do
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.package_manager.detected_version.to_s).to eq("8.5.1")
+          expect(ecosystem.package_manager.version).to be_nil
+          expect(ecosystem.language.version.to_s).to eq("8.5.1")
+        end
+
+        it "does not report the value as the Bazel version" do
+          expect(parser.send(:bazel_version)).to be_nil
+        end
+      end
+    end
   end
 
   context "with WORKSPACE file" do

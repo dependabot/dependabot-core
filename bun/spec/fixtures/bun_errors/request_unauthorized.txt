@@ -1,0 +1,6 @@
+bun add v1.4.2 (744846f84)
+Resolving dependencies
+Resolved, downloaded and extracted [4]
+error: GET https://npm.pkg.example.com/download/@example/design-tokens/0.10.0/266a4333c0bb2ac8116762b441e976378ff02e96 - 401
+
+error: GET https://npm.pkg.example.com/download/@example/ui/1.18.0/304abd4edc9546bd6624ee470537844920d9d79a - 401

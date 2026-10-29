@@ -114,6 +114,12 @@ module Dependabot
         GITHUB_403_REGEX =
           %r{https://github\.com/(?<repo>[^/'\s]+/[^/'\s]+)/?': The requested URL returned error: 403}
 
+        # An import that no module provides, as `go mod tidy` and `go get` report it. The package is often inside the
+        # repository's own module, and is generated code (protobuf, mocks) that is not committed.
+        MISSING_PACKAGE_ERROR = /^\s*(?<package>\S+): no matching versions for query "latest"/
+
+        GO_PROGRESS_LINE = /^go: (?:downloading|extracting) /
+
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
         sig do
@@ -252,6 +258,7 @@ module Dependabot
 
             run_go_work_sync
             run_workspace_tidy
+            run_go_list_modules
 
             collect_workspace_file_contents
           end
@@ -275,6 +282,20 @@ module Dependabot
               run_go_mod_tidy(context: mod_path)
             end
           end
+        end
+
+        # Go < 1.28 leaves go.work.sum without the checksums that `go list -m all` adds after `go work sync`
+        # (golang/go#63901). Loading the full module list last records them for the final workspace graph.
+        # Best-effort: sync and tidy have already succeeded, so a failure here must not fail the update.
+        sig { void }
+        def run_go_list_modules
+          return unless dependency_files.any? { |f| f.name == "go.work.sum" }
+
+          command = "go list -m all"
+          _, stderr, status = Open3.capture3(command)
+          return if status.success?
+
+          Dependabot.logger.info "Failed to `#{command}` in the workspace: #{stderr}"
         end
 
         sig { returns(T::Array[String]) }
@@ -498,6 +519,8 @@ module Dependabot
             )
           end
 
+          raise_for_missing_package_error(stderr)
+
           # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependabotError, msg
@@ -529,6 +552,18 @@ module Dependabot
           credentials.any? do |credential|
             credential["type"] == "git_source" && credential["host"] == "github.com"
           end
+        end
+
+        sig { params(stderr: String).void }
+        def raise_for_missing_package_error(stderr)
+          packages = stderr.scan(MISSING_PACKAGE_ERROR).flatten.uniq
+          return if packages.empty?
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Go cannot find a module that provides #{packages.join(', ')}. If they are generated code " \
+                "(for example protobuf or mock output) that is not committed, Dependabot cannot generate it: " \
+                "commit the generated files, or check the import paths.\n\n" \
+                "#{stderr.lines.grep_v(GO_PROGRESS_LINE).join.strip}"
         end
 
         sig { params(stderr: String).void }

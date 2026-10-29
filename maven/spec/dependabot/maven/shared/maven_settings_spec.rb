@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the dynamic settings class and callback locals. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"

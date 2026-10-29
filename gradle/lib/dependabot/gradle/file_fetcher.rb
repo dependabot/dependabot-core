@@ -82,8 +82,12 @@ module Dependabot
 
       private
 
-      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
-      def all_buildfiles_in_build(root_dir)
+      # Builds can include themselves or each other (e.g. `includeBuild(".")` or a child build
+      # that includes its parent with `includeBuild("..")`), so each build is only visited once.
+      sig { params(root_dir: String, visited: T::Set[String]).returns(T::Array[DependencyFile]) }
+      def all_buildfiles_in_build(root_dir, visited = Set.new)
+        return [] unless visited.add?(root_dir)
+
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir),
                  properties_file(root_dir)]
                 .compact
@@ -94,7 +98,7 @@ module Dependabot
         files += convention_plugin_source_files(files, root_dir)
 
         files + included_builds(root_dir)
-                .flat_map { |dir| all_buildfiles_in_build(dir) }
+                .flat_map { |dir| all_buildfiles_in_build(dir, visited) }
       end
 
       # Only fetch source trees for *nested* project directories (e.g. "build-logic/convention"

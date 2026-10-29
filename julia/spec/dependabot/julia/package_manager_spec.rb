@@ -9,7 +9,6 @@ RSpec.describe Dependabot::Julia::PackageManager do
     subject(:package_manager) { described_class.new }
 
     let(:expected_minimum_version) { Dependabot::Julia::PackageManager::MINIMUM_VERSION }
-    let(:expected_current_version) { Dependabot::Julia::PackageManager::CURRENT_VERSION }
 
     before do
       # Mock version detection to return consistent test values
@@ -21,10 +20,7 @@ RSpec.describe Dependabot::Julia::PackageManager do
       # The version will be the MINIMUM_VERSION from the PackageManager
       expect(package_manager.version).to eq(Dependabot::Version.new(expected_minimum_version))
       expect(package_manager.supported_versions)
-        .to contain_exactly(
-          Dependabot::Version.new(expected_minimum_version),
-          Dependabot::Version.new(expected_current_version)
-        )
+        .to contain_exactly(Dependabot::Version.new(expected_minimum_version))
       expect(package_manager.deprecated_versions).to be_empty
     end
 

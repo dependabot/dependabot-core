@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the dynamic describe constant or its child-context-only dependency fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -617,7 +619,7 @@ end
 # at `extra` when given.
 def rewrite_lockfile_lodash(version, extra: nil)
   content = File.read("pnpm-lock.yaml")
-  block = content[%r{^  /lodash@3\.10\.1:\n(?:    .*\n)+}]
+  block = T.must(content[%r{^  /lodash@3\.10\.1:\n(?:    .*\n)+}])
   content = content.gsub("/lodash@3.10.1:", "/lodash@#{version}:").gsub("lodash: 3.10.1", "lodash: #{version}")
   if extra
     content += block.gsub("3.10.1", extra)

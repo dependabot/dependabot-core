@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "uri"
 
 require "dependabot/bundler/update_checker"
+require "dependabot/bundler/checksum_mismatch"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 require "dependabot/logger"
@@ -118,6 +119,8 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_bundler_errors(error)
+          raise_if_checksum_mismatch(error)
+
           if error.error_class == "JSON::ParserError"
             msg = "Error evaluating your dependency files: #{error.message}"
             raise Dependabot::DependencyFileNotEvaluatable, msg
@@ -205,6 +208,15 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
+
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).void }
+        def raise_if_checksum_mismatch(error)
+          return unless error.error_class == ChecksumMismatch::ERROR_CLASS
+
+          # A mismatch that isn't mapped (on Bundler itself) is re-raised as-is,
+          # so callers don't mistake it for an ordinary resolution failure.
+          raise ChecksumMismatch.error_for(error) || error
+        end
 
         # When Bundler fails to parse gem metadata served by a registry's compact
         # index, surface it as a private source error (the registry returned bad
