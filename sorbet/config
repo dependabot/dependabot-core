@@ -19,7 +19,6 @@
 --ignore=hex/spec/
 --ignore=julia/spec/
 --ignore=nix/spec/
---ignore=nuget/spec/
 --ignore=swift/spec/
 --ignore=updater/spec/
 --ignore=vcpkg/spec/

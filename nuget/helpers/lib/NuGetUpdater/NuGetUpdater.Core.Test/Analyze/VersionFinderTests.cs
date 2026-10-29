@@ -265,7 +265,7 @@ public class VersionFinderTests : TestBase
             CancellationToken.None);
 
         // assert
-        var actual = versionResult.GetVersions().Select(v => v.ToString()).ToArray();
+        var actual = versionResult.GetVersions().Order().Select(v => v.ToString()).ToArray();
         var expected = new[] { "2.0.0", "3.0.0" };
         AssertEx.Equal(expected, actual);
     }
