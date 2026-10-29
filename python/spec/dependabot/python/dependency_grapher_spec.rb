@@ -959,6 +959,38 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(resolved_dependencies.keys).not_to include("pkg:pypi/cachecontrol")
       end
     end
+
+    context "when a PEP 621-only Poetry 2.0 project has a committed poetry.lock" do
+      let(:pep621_only_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_v2_pep621_only.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:pep621_only_lock) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_v2_pep621_only.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pep621_only_toml, pep621_only_lock] }
+
+      it "includes transitive dependencies from the lockfile, not just the top-level ones" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).to include(
+          "pkg:pypi/requests@2.31.0",
+          "pkg:pypi/urllib3@2.1.0",
+          "pkg:pypi/certifi@2024.2.2",
+          "pkg:pypi/charset-normalizer@3.3.2",
+          "pkg:pypi/idna@3.6"
+        )
+      end
+    end
   end
 
   # Regression: multiple independent pip-compile manifests stacked in a single directory.
