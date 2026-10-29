@@ -268,6 +268,43 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
     end
 
+    context "when another group has no patterns" do
+      let(:no_patterns_group) do
+        group_double(
+          name: "fallback",
+          dependencies: [],
+          rules: { "update-types" => %w(minor patch) }
+        )
+      end
+
+      let(:all_groups) { [docker_group, no_patterns_group] }
+      let(:contains_checker) { proc { |_group, _dep, _directory| true } }
+
+      it "does not outrank a wildcard pattern" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          docker_group, dependency, all_groups, contains_checker, directory
+        )
+
+        expect(result).to be false
+      end
+
+      it "does not select the fallback as a more specific group" do
+        result = calculator.find_most_specific_group_name(
+          docker_group, dependency, all_groups, contains_checker, directory
+        )
+
+        expect(result).to be_nil
+      end
+
+      it "has the same priority as a universal wildcard" do
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          generic_group, dependency, [generic_group, no_patterns_group], contains_checker, directory
+        )
+
+        expect(result).to be false
+      end
+    end
+
     context "when current group has no patterns" do
       let(:no_patterns_group) do
         group_double(
