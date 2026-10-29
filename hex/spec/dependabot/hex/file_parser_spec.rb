@@ -69,10 +69,10 @@ RSpec.describe Dependabot::Hex::FileParser do
     end
 
     context "with a ~> version specified" do
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
 
-      describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+      describe "the plug dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "plug" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -90,14 +90,41 @@ RSpec.describe Dependabot::Hex::FileParser do
       end
     end
 
+    context "with transitive dependencies in the lockfile" do
+      describe "a transitive dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "phoenix_pubsub" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.version).to eq("1.0.2")
+          expect(dependency.requirements).to eq([])
+          expect(dependency).not_to be_top_level
+          expect(dependency.metadata[:hex_package]).to eq("phoenix_pubsub")
+        end
+      end
+
+      it "includes every dependency reachable from the mixfile" do
+        expect(dependencies.map(&:name))
+          .to match_array(%w(mime phoenix phoenix_pubsub plug poison))
+      end
+
+      context "when the lockfile has entries that are no longer used" do
+        let(:lockfile_fixture_name) { "unused_lock_entry" }
+
+        it "skips them" do
+          expect(dependencies.map(&:name)).not_to include("jason")
+        end
+      end
+    end
+
     context "with an exact version specified" do
       let(:mixfile_fixture_name) { "exact_version" }
       let(:lockfile_fixture_name) { "exact_version" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      describe "the phoenix dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "phoenix" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -114,8 +141,8 @@ RSpec.describe Dependabot::Hex::FileParser do
         end
       end
 
-      describe "the second dependency" do
-        subject(:dependency) { dependencies.last }
+      describe "the plug dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "plug" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -137,8 +164,8 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:mixfile_fixture_name) { "no_requirement" }
       let(:lockfile_fixture_name) { "no_requirement" }
 
-      describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+      describe "the plug dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "plug" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -189,10 +216,10 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:mixfile_fixture_name) { "development_dependency" }
       let(:lockfile_fixture_name) { "development_dependency" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      describe "the phoenix dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "phoenix" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -209,8 +236,8 @@ RSpec.describe Dependabot::Hex::FileParser do
         end
       end
 
-      describe "the second dependency" do
-        subject(:dependency) { dependencies.last }
+      describe "the plug dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "plug" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -233,7 +260,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:lockfile_fixture_name) { "git_source" }
 
       it "includes the git dependency" do
-        expect(dependencies.length).to eq(2)
+        expect(dependencies.length).to eq(3)
         expect(dependencies).to include(
           Dependabot::Dependency.new(
             name: "phoenix",
@@ -259,7 +286,7 @@ RSpec.describe Dependabot::Hex::FileParser do
         let(:lockfile_fixture_name) { "git_source_tag_can_update" }
 
         it "includes the git dependency" do
-          expect(dependencies.length).to eq(2)
+          expect(dependencies.length).to eq(3)
           expect(dependencies).to include(
             Dependabot::Dependency.new(
               name: "phoenix",
@@ -286,21 +313,21 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:mixfile_fixture_name) { "minor_version" }
       let(:lockfile_fixture_name) { "hex_version_0_20_2" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with an old elixir version" do
       let(:mixfile_fixture_name) { "old_elixir" }
       let(:lockfile_fixture_name) { "old_elixir" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with a really old elixir version" do
       let(:mixfile_fixture_name) { "really_old_elixir" }
       let(:lockfile_fixture_name) { "really_old_elixir" }
 
-      its(:length) { is_expected.to eq(7) }
+      its(:length) { is_expected.to eq(22) }
     end
 
     context "with an unevaluatable mixfile" do
@@ -319,7 +346,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with a call to read a version file in a support file" do
@@ -334,7 +361,7 @@ RSpec.describe Dependabot::Hex::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with a call to eval a support file" do
@@ -349,14 +376,14 @@ RSpec.describe Dependabot::Hex::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
       let(:lockfile_fixture_name) { "exact_version" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with an umbrella app" do
@@ -377,7 +404,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       end
 
       it "parses the dependencies correctly" do
-        expect(dependencies.length).to eq(3)
+        expect(dependencies.length).to eq(4)
         expect(dependencies).to include(
           Dependabot::Dependency.new(
             name: "jason",
@@ -455,7 +482,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:mixfile_fixture_name) { "hex_alias" }
       let(:lockfile_fixture_name) { "hex_alias" }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "the aliased dependency" do
         subject(:dependency) { dependencies.find { |d| d.name == "pulsar" } }

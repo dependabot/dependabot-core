@@ -33,16 +33,25 @@ module Dependabot
         dependency_details.each do |dep|
           git_dependency = dep["source"]&.fetch("type") == "git"
 
-          dependency_set <<
-            Dependency.new(
-              name: dep["name"],
-              version: git_dependency ? dep["checksum"] : dep["version"],
-              requirements: [{
+          # Transitive dependencies only appear in the lockfile, so they
+          # don't have a requirement in any mixfile
+          requirements =
+            if dep["top_level"] == false
+              []
+            else
+              [{
                 requirement: dep["requirement"],
                 groups: dep["groups"],
                 source: dep["source"] && symbolize_keys(dep["source"]),
                 file: dep["from"]
-              }],
+              }]
+            end
+
+          dependency_set <<
+            Dependency.new(
+              name: dep["name"],
+              version: git_dependency ? dep["checksum"] : dep["version"],
+              requirements: requirements,
               package_manager: "hex",
               metadata: { hex_package: dep["package_name"] }
             )
