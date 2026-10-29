@@ -121,9 +121,21 @@ module Dependabot
           new(PyprojectValueParser.object_hash(parsed, "pyproject.toml"))
         end
 
+        POETRY_BUILD_BACKEND = "poetry.core.masonry.api"
+
         sig { returns(T::Boolean) }
         def poetry?
           !poetry_root.nil?
+        end
+
+        # Poetry 2.0+ allows projects to declare dependencies using only PEP 621's
+        # [project.dependencies], with no [tool.poetry] table at all. We detect these
+        # projects via their declared build backend so they're still treated as Poetry
+        # projects (e.g. for lockfile parsing and dependency updates).
+        sig { returns(T::Boolean) }
+        def poetry_build_backend?
+          build_system = section(@data, "build-system", "build-system")
+          build_system&.[]("build-backend") == POETRY_BUILD_BACKEND
         end
 
         sig { returns(T::Boolean) }
