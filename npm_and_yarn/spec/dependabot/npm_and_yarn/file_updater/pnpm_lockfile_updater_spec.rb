@@ -2034,6 +2034,57 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
           expect(Dependabot.logger).to have_received(:warn).with(/window: cooldown-test-child@2\.0\.0\./)
         end
+
+        context "when pnpm lists only entries of the other policies" do
+          # pnpm sorts the entries by name@version and prints the first 20, so a release-age entry can be the
+          # one left out
+          let(:verification_failure) do
+            visible = (1..20).map { |i| format("  a-pkg-%<i>02d@1.0.0 [TRUST_DOWNGRADE] lost its provenance", i: i) }
+            "[ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION] 21 lockfile entries failed verification:\n" \
+              "#{visible.join("\n")}\n  …and 1 more\n"
+          end
+
+          it "does not return the lockfile, since an unlisted entry may be one the update added" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          end
+        end
+      end
+
+      context "when only the trust policy rejects entries" do
+        let(:verification_failure) do
+          visible = (1..20).map { |i| format("  a-pkg-%<i>02d@1.0.0 lost its provenance", i: i) }
+          "[ERR_PNPM_TRUST_DOWNGRADE] 21 lockfile entries failed verification:\n#{visible.join("\n")}\n  …and 1 more\n"
+        end
+
+        it "returns the updated lockfile, since no entry is inside the window" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+        end
+      end
+
+      context "when the repo trusts its lockfile and turns strict mode off itself" do
+        let(:workspace_settings) do
+          "minimumReleaseAge: 10080\nminimumReleaseAgeStrict: false\ntrustLockfile: true\n"
+        end
+
+        it "does not verify, since the repo's own update and install would both accept the version" do
+          allow(Dependabot.logger).to receive(:info)
+
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(commands).not_to include(verify_command)
+        end
+      end
+
+      context "when the repo trusts its lockfile but keeps strict mode" do
+        let(:workspace_settings) { "minimumReleaseAge: 10080\ntrustLockfile: true\n" }
+
+        it "verifies, since the repo's own update would refuse the version" do
+          allow(Dependabot.logger).to receive(:info)
+
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(commands.last).to eq(verify_command)
+        end
       end
 
       context "when pnpm records exclusions during an ordinary update" do
