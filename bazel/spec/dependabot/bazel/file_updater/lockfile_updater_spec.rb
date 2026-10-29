@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the dependency_files fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bazel/file_updater/lockfile_updater"
 
