@@ -491,9 +491,12 @@ module Dependabot
 
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
       def registry_tag_release_date(tag)
+        return docker_hub_tag_release_date(tag) if using_dockerhub?
+
+        # Docker Hub has a registry-reported date, which we prefer because the label is
+        # publisher-controlled. Other registries have no verified source, so use the label.
         image_created = oci_image_created_label(tag.name)
         return image_created if image_created
-        return docker_hub_tag_release_date(tag) if using_dockerhub?
 
         Dependabot.logger.info(
           "No verified registry publication date source for #{registry_hostname}; " \
@@ -1290,7 +1293,10 @@ module Dependabot
         end
 
         resolved = resolve_platform_manifest(manifest)
-        config_digest = resolved&.dig("config", "digest")
+        return nil unless resolved
+
+        config = resolved["config"]
+        config_digest = config.is_a?(Hash) ? config["digest"] : nil
         return nil unless config_digest.is_a?(String)
 
         config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do

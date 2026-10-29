@@ -3827,6 +3827,48 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(mock_client).not_to have_received(:dohead)
       end
     end
+
+    context "when the registry is not Docker Hub" do
+      let(:config_digest) { "sha256:#{'b' * 64}" }
+      let(:image_created) { (Time.now - (2 * 86_400)).utc.iso8601 }
+      let(:labels) { { "org.opencontainers.image.created" => image_created } }
+      let(:config_body) { { created: "2000-01-01T00:00:00Z", config: { Labels: labels } }.to_json }
+
+      before do
+        allow(checker).to receive(:using_dockerhub?).and_return(false)
+        allow(mock_client).to receive(:manifest)
+          .and_return({ "mediaType" => "application/vnd.oci.image.manifest.v1+json",
+                        "config" => { "digest" => config_digest } })
+        allow(mock_client).to receive(:doget)
+          .with("v2/ubuntu/blobs/#{config_digest}")
+          .and_return(instance_double(Excon::Response, body: config_body))
+      end
+
+      it "holds a tag whose org.opencontainers.image.created label is within cooldown" do
+        expect(latest_version).to eq(version)
+        expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+      end
+
+      context "when the label is older than cooldown" do
+        let(:image_created) { (Time.now - (30 * 86_400)).utc.iso8601 }
+
+        it "selects the new tag" do
+          expect(latest_version).to eq(candidate_version)
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      [{}, { "org.opencontainers.image.created" => "not-a-timestamp" }].each do |missing_labels|
+        context "when the label is #{missing_labels.empty? ? 'absent' : 'unparsable'}" do
+          let(:labels) { missing_labels }
+
+          it "marks the date unavailable" do
+            expect(latest_version).to eq(candidate_version)
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
+      end
+    end
   end
 
   describe "#digest_up_to_date?" do
