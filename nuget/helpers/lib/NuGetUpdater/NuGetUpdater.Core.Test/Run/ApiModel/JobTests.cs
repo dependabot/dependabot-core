@@ -85,6 +85,36 @@ public class JobTests
         Assert.Equal(expectedMatch, pullRequest is not null);
     }
 
+    [Theory]
+    [InlineData(null, "/src/Project", true)]
+    [InlineData("", "/src/Project", true)]
+    [InlineData("/", "/src/Project", true)]
+    [InlineData("/src/Project", "/src/Project", true)]
+    [InlineData("/src/Other", "/src/Project", false)]
+    public void GetExistingPullRequestForDependencies_DirectoryMatching(string? existingDirectory, string desiredDirectory, bool expectedMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = existingDirectory }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = desiredDirectory },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true);
+
+        Assert.Equal(expectedMatch, pullRequest is not null);
+    }
+
     public static IEnumerable<object?[]> IsUpdatePermittedTestData()
     {
         // with default allowed updates on a transitive dependency

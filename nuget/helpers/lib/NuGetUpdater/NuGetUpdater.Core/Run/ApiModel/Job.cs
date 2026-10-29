@@ -178,7 +178,8 @@ public sealed record Job
         bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
-                (existingDependency.Directory is null ||
+                (string.IsNullOrEmpty(existingDependency.Directory) ||
+                    existingDependency.Directory == "/" ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
