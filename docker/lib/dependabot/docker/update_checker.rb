@@ -1288,8 +1288,12 @@ module Dependabot
       # timestamps it is not reset when a tag is re-pushed.
       sig { params(tag_name: String).returns(T.nilable(Time)) }
       def oci_image_created_label(tag_name)
+        # Pin to the digest we'd propose so a tag moving mid-check can't lend its old date to a new image.
+        digest = digest_of(tag_name)
+        return nil unless digest
+
         manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          docker_registry_client.manifest(docker_repo_name, tag_name)
+          docker_registry_client.manifest(docker_repo_name, "sha256:#{digest}")
         end
 
         resolved = resolve_platform_manifest(manifest)
@@ -1309,7 +1313,11 @@ module Dependabot
         return nil unless created.is_a?(String)
 
         Time.iso8601(created)
-      rescue ArgumentError, TypeError, JSON::ParserError => e
+      rescue ArgumentError, TypeError, JSON::ParserError, DockerRegistry2::RegistryHTTPException,
+             DockerRegistry2::NotFound, RestClient::Forbidden, RestClient::TooManyRequests, RestClient::ServerBrokeConnection,
+             DockerRegistry2::RegistryAuthenticationException, DockerRegistry2::RegistryAuthorizationException,
+             Excon::Error::Socket, Excon::Error::Timeout,
+             *transient_docker_errors => e
         Dependabot.logger.info(
           "Failed to read #{OCI_CREATED_LABEL} for #{docker_repo_name}:#{tag_name}: #{e.message}"
         )
@@ -1356,7 +1364,8 @@ module Dependabot
           platform = m["platform"] || m[:platform] || {}
           next false unless platform.is_a?(Hash)
 
-          (platform["architecture"] || platform[:architecture]) == "amd64"
+          os = platform["os"] || platform[:os]
+          (platform["architecture"] || platform[:architecture]) == "amd64" && (os.nil? || os == "linux")
         end
       end
 
