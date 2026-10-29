@@ -56,6 +56,7 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      OCI_CREATED_LABEL = "org.opencontainers.image.created"
       MANIFEST_LIST_TYPES = [
         "application/vnd.docker.distribution.manifest.list.v2+json",
         "application/vnd.oci.image.index.v1+json"
@@ -490,6 +491,8 @@ module Dependabot
 
       sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
       def registry_tag_release_date(tag)
+        image_created = oci_image_created_label(tag.name)
+        return image_created if image_created
         return docker_hub_tag_release_date(tag) if using_dockerhub?
 
         Dependabot.logger.info(
@@ -1273,6 +1276,36 @@ module Dependabot
       rescue ArgumentError => e
         Dependabot.logger.info(
           "Failed to parse config created timestamp for #{docker_repo_name} blob #{config_digest}: #{e.message}"
+        )
+        nil
+      end
+
+      # Reads the `org.opencontainers.image.created` label from the image config,
+      # i.e. the build time declared by the image author. Unlike registry push
+      # timestamps it is not reset when a tag is re-pushed.
+      sig { params(tag_name: String).returns(T.nilable(Time)) }
+      def oci_image_created_label(tag_name)
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, tag_name)
+        end
+
+        resolved = resolve_platform_manifest(manifest)
+        config_digest = resolved&.dig("config", "digest")
+        return nil unless config_digest.is_a?(String)
+
+        config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.doget("v2/#{docker_repo_name}/blobs/#{config_digest}")
+        end
+
+        config_data = JSON.parse(config_blob.body)
+        labels = config_data.is_a?(Hash) ? config_data.dig("config", "Labels") : nil
+        created = labels.is_a?(Hash) ? labels[OCI_CREATED_LABEL] : nil
+        return nil unless created.is_a?(String)
+
+        Time.iso8601(created)
+      rescue ArgumentError, TypeError, JSON::ParserError => e
+        Dependabot.logger.info(
+          "Failed to read #{OCI_CREATED_LABEL} for #{docker_repo_name}:#{tag_name}: #{e.message}"
         )
         nil
       end
