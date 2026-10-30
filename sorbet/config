@@ -13,5 +13,6 @@
 # while unenrolled spec trees are ignored.
 --ignore=bundler/helpers/
 --ignore=bundler/spec/fixtures/
+--ignore=sorbet/rbi/bundler_helpers/
 --ignore=updater/spec/
 --ignore=.git
