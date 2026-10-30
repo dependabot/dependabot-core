@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,6 +7,10 @@ require "dependabot/dependency_file"
 require "dependabot/hex/file_updater/mixfile_updater"
 
 RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Hex::FileUpdater::MixfileUpdater) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:updater) do
     described_class.new(
       mixfile: mixfile,
@@ -14,14 +18,17 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
     )
   end
 
+  sig { returns(Dependabot::DependencyFile) }
   let(:mixfile) do
     Dependabot::DependencyFile.new(
       content: fixture("mixfiles", mixfile_fixture_name),
       name: "mix.exs"
     )
   end
+  sig { returns(String) }
   let(:mixfile_fixture_name) { "exact_version" }
 
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "plug",
@@ -34,8 +41,10 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
       package_manager: "hex"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#updated_mixfile_content" do
+    sig { returns(String) }
     subject(:updated_mixfile_content) { updater.updated_mixfile_content }
 
     it "updates the right dependency" do
@@ -44,7 +53,10 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
     end
 
     context "with a git dependency having its reference updated" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:mixfile_fixture_name) { "git_source_tag_can_update" }
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "phoenix",
@@ -75,6 +87,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
           package_manager: "hex"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "updates the right dependency" do
         expect(updated_mixfile_content).to include(%({:plug, "1.3.3"},))
@@ -85,8 +98,11 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
     end
 
     context "with similarly named packages" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:mixfile_fixture_name) { "similar_names" }
 
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "plug",
@@ -107,6 +123,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
           package_manager: "hex"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "updates the right dependency" do
         expect(updated_mixfile_content).to include(%({:plug , "~> 1.4"},))
@@ -118,6 +135,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
     end
 
     context "with a mix.exs that opens another file" do
+      sig { returns(String) }
       let(:mixfile_fixture_name) { "loads_file" }
 
       it "doesn't leave the temporary edits present" do
