@@ -11,6 +11,7 @@ require "dependabot/github_actions/package/package_details_fetcher"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/helpers"
+require "dependabot/github_actions/repository_cloner"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/shared_helpers"
 require "dependabot/update_checkers/cooldown_calculation"
@@ -349,7 +350,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
             repo_contents_path = File.join(temp_dir, File.basename(source.repo))
 
-            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+            RepositoryCloner.clone(url: T.must(url), path: repo_contents_path, bare: true)
             Dir.chdir(repo_contents_path) do
               date = if tag_name
                        tag_date = SharedHelpers.run_shell_command(
