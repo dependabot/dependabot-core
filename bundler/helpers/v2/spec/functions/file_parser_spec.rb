@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "native_spec_helper"
@@ -6,8 +6,11 @@ require "shared_contexts"
 require "json"
 
 RSpec.describe Functions::FileParser do
+  extend T::Sig
+
   include_context "when in a temporary bundler directory"
 
+  sig { returns(Functions::FileParser) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:dependency_source) do
     described_class.new(
       lockfile_name: "Gemfile.lock"
@@ -15,12 +18,14 @@ RSpec.describe Functions::FileParser do
   end
 
   describe "#parsed_gemfile" do
+    sig { returns(T::Array[T::Hash[Symbol, T.anything]]) }
     subject(:parsed_gemfile) do
       in_tmp_folder do
         dependency_source.parsed_gemfile(gemfile_name: "Gemfile")
       end
     end
 
+    sig { returns(String) }
     let(:project_name) { "gemfile" }
 
     it "parses gemfile" do
@@ -44,6 +49,7 @@ RSpec.describe Functions::FileParser do
     end
 
     context "with a git source" do
+      sig { returns(String) }
       let(:project_name) { "git_source" }
 
       it "parses gemfile" do
@@ -110,12 +116,14 @@ RSpec.describe Functions::FileParser do
   end
 
   describe "#parsed_gemspec" do
+    sig { returns(T::Array[T::Hash[Symbol, T.anything]]) }
     subject(:parsed_gemspec) do
       in_tmp_folder do |_tmp_path|
         dependency_source.parsed_gemspec(gemspec_name: "example.gemspec")
       end
     end
 
+    sig { returns(String) }
     let(:project_name) { "gemfile_exact" }
 
     it "parses gemspec" do
