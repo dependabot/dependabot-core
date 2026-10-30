@@ -591,6 +591,62 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
         end
       end
 
+      context "when an args entry matches an additional dependency" do
+        let(:config_file_body) { fixture("prek_configs", "additional_dependency_in_args.toml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "types-requests",
+            version: "2.32.0.20240914",
+            previous_version: "2.31.0.1",
+            requirements: [{
+              requirement: "==2.32.0.20240914", groups: ["additional_dependencies"], file: "prek.toml",
+              source: {
+                type: "additional_dependency", language: "python", package_name: "types-requests",
+                original_name: "types-requests", hook_id: "mypy",
+                hook_repo: "https://github.com/pre-commit/mirrors-mypy", extras: nil,
+                original_string: "types-requests==2.32.0.20240914"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "==2.31.0.1", groups: ["additional_dependencies"], file: "prek.toml",
+              source: {
+                type: "additional_dependency", language: "python", package_name: "types-requests",
+                original_name: "types-requests", hook_id: "mypy",
+                hook_repo: "https://github.com/pre-commit/mirrors-mypy", extras: nil,
+                original_string: "types-requests==2.31.0.1"
+              }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "updates only the additional_dependencies entry" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content).to include(%(additional_dependencies = [\n  "types-requests==2.32.0.20240914",))
+          expect(content).to include(%(args = [\n  "types-requests==2.31.0.1",))
+        end
+      end
+
+      context "when a multiline string contains a sample repo entry" do
+        let(:config_file_body) { fixture("prek_configs", "repos_in_multiline_string.toml") }
+
+        it "updates only the real repo entry" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content.scan('rev = "v6.0.0"').length).to eq(1)
+          expect(content.scan('rev = "v4.4.0"').length).to eq(1)
+          expect(content.lines[2]).to eq(%(rev = "v6.0.0"\n))
+        end
+      end
+
+      context "with quoted keys" do
+        let(:config_file_body) { fixture("prek_configs", "quoted_keys.toml") }
+
+        it "updates the rev" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content).to include(%('rev' = "v6.0.0"  # frozen: v4.4.0))
+        end
+      end
+
       context "when a later table's rev precedes its repo" do
         # Both tables pin the same rev value, and the second table lists `rev`
         # before `repo` (legal TOML). A leaked current_repo would rewrite the
