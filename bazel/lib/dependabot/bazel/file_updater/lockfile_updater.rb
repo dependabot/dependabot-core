@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/bazel/file_updater"
 require "dependabot/bazel/package_manager"
+require "dependabot/bazel/version"
 require "dependabot/shared_helpers"
 require "pathname"
 require "fileutils"
@@ -51,11 +52,11 @@ module Dependabot
 
         sig { returns(String) }
         def determine_bazel_version
+          # Exact name match: nested .bazelversion files (e.g. from local_path_override
+          # modules) pin those modules' Bazel, not this workspace's.
           bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
-          return Dependabot::Bazel::DEFAULT_BAZEL_VERSION unless bazelversion_file
-
-          version = T.must(bazelversion_file.content).strip
-          version.empty? ? Dependabot::Bazel::DEFAULT_BAZEL_VERSION : version
+          Dependabot::Bazel::Version.version_from_file(bazelversion_file) ||
+            Dependabot::Bazel::DEFAULT_BAZEL_VERSION
         end
 
         private
@@ -144,10 +145,27 @@ module Dependabot
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname) if path.include?("/")
-            File.write(path, T.must(file.content))
+            if File.basename(path) == ".bazelversion"
+              target = bazelisk_target(file)
+              unless target == T.must(file.content).strip
+                Dependabot.logger.info("Rewriting #{path} for Bazelisk: #{target.inspect}")
+              end
+              File.write(path, target)
+            else
+              File.write(path, T.must(file.content))
+            end
           end
 
           write_bazelversion_if_missing
+        end
+
+        # What the temporary .bazelversion should contain for Bazelisk to run: the
+        # file's own target (fork entries preserved, wrapper entries stripped),
+        # falling back to the default Bazel version for wrapper-only/empty files.
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def bazelisk_target(file)
+          Dependabot::Bazel::Version.bazelisk_target_from_file(file) ||
+            Dependabot::Bazel::DEFAULT_BAZEL_VERSION
         end
 
         sig { void }
