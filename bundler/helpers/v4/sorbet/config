@@ -1,0 +1,11 @@
+# Run from bundler/helpers/v4 with the repository root Gemfile.
+--dir=spec
+--dir=../../../sorbet/rbi
+--dir=../../../common/lib
+lib/bundler_version_constraint.rb
+--ignore=/fixtures/
+--ignore=/tmp/
+--disable-watchman
+--enable-experimental-rspec
+--enable-experimental-requires-ancestor
+--suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading

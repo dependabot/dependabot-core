@@ -12,3 +12,8 @@ bundle exec turbo_tests2 --verbose
 DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v2/build \
   && bundle exec rspec spec \
   && cd -
+
+# shellcheck source=../helpers/v4/build
+DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v4/build \
+  && bundle exec rspec spec \
+  && cd -
