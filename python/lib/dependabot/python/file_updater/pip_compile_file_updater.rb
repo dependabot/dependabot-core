@@ -365,7 +365,8 @@ module Dependabot
           content = update_hashes_if_required(content, T.must(file.content))
           content = scrub_index_url_credentials(content)
           content = replace_absolute_file_paths(content, T.must(file.content))
-          restore_via_requirement_paths(content, T.must(file.content))
+          content = restore_via_requirement_paths(content, T.must(file.content))
+          content
         end
 
         # Index URLs are passed to pip-compile with credentials embedded so the
@@ -425,10 +426,12 @@ module Dependabot
           updated_paths = content.scan(via_ref_regex).flatten.uniq
 
           updated_paths.each do |short_path|
-            full_path = original_paths.find do |orig|
+            candidates = original_paths.select do |orig|
               File.basename(orig) == File.basename(short_path) && orig != short_path
             end
-            next unless full_path
+            next unless candidates.one?
+
+            full_path = T.must(candidates.first)
 
             content = content.gsub(/^(\s*#\s+(?:via\s+)?)-r #{Regexp.escape(short_path)}/) do
               "#{Regexp.last_match(1)}-r #{full_path}"
