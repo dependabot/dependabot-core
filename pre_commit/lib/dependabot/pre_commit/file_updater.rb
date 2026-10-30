@@ -6,22 +6,12 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/pre_commit/prek_toml"
 
 module Dependabot
   module PreCommit
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
-
-      # Matches a `repo = "..."` assignment anywhere a TOML key can begin: at the
-      # start of a line (the `[[repos]]` table form) or after a `{`/`,`/space (the
-      # inline-table array form). The leading boundary prevents matching the
-      # `repos = [` array key.
-      REPO_LINE_PATTERN = /(?:^|[\s{,])repo\s*=\s*["']([^"']+)["']/
-
-      # A `[[repos]]` array-of-tables header. Used to reset the current-repo
-      # scope so a stray `rev =` before this table's `repo =` is not attributed
-      # to the previous table.
-      REPOS_TABLE_HEADER = /^\s*\[\[\s*repos\s*\]\]/
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -207,9 +197,8 @@ module Dependabot
         updated_lines.join
       end
 
-      # Tracks the current repo (handling both the multi-line `[[repos]]` table
-      # form and the single-line inline-table form) and rewrites the matching
-      # `rev = "..."` value.
+      # Rewrites the `rev` value of each repo entry matching repo_url, then the
+      # version comment on that line.
       sig do
         params(
           content: String,
@@ -221,41 +210,19 @@ module Dependabot
         ).returns(String)
       end
       def replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
-        current_repo = T.let(nil, T.nilable(String))
-        rev_pattern = rev_value_pattern(old_ref)
+        updated_content = content.dup
 
-        updated_lines = content.lines.map do |line|
-          current_repo = nil if line.match?(REPOS_TABLE_HEADER)
+        PrekToml.rev_value_ranges(content, repo_url).reverse_each do |range|
+          next unless content[range] == old_ref
 
-          repo_match = line.match(REPO_LINE_PATTERN)
-          current_repo = repo_match[1] if repo_match
-
-          next line unless current_repo == repo_url
-          next line unless line.match?(rev_pattern)
-
-          updated_line = line.sub(rev_pattern) do
-            m = T.must(Regexp.last_match)
-            "#{m[:lead]}#{m[:open]}#{new_ref}#{m[:close]}"
-          end
-          update_version_comment(updated_line, old_version, new_version)
+          updated_content[range] = new_ref
+          line_start = (updated_content.rindex("\n", range.begin) || -1) + 1
+          line_end = updated_content.index("\n", range.begin) || updated_content.length
+          updated_content[line_start...line_end] =
+            update_version_comment(T.must(updated_content[line_start...line_end]), old_version, new_version)
         end
 
-        updated_lines.join
-      end
-
-      # Builds a regex matching exactly the `rev = "<old_ref>"` value for the
-      # given old_ref. The trailing lookahead anchors the value so an old_ref
-      # that is a prefix of a longer on-file rev (e.g. "v4.4" vs "v4.4.0") does
-      # not partially rewrite it.
-      sig { params(old_ref: String).returns(Regexp) }
-      def rev_value_pattern(old_ref)
-        /
-          (?<lead>(?:^|[\s{,])rev\s*=\s*)  # the rev key, with its preceding boundary
-          (?<open>["']?)                   # optional opening quote
-          #{Regexp.escape(old_ref)}        # the exact old ref
-          (?<close>["']?)                  # optional closing quote
-          (?=[\s,}\#]|$)                   # must terminate the value
-        /x
+        updated_content
       end
 
       sig do
@@ -295,9 +262,11 @@ module Dependabot
           # - 'types-requests==1.0.0'
           # - "types-requests==1.0.0"
           # [..., types-requests==1.0.0, ...]
+          #   "types-requests==1.0.0",
           if line.match?(/^\s*-\s*['"]?#{escaped_old}['"]?\s*$/) || # Block style
              line.match?(/[\[,]\s*['"]?#{escaped_old}['"]?\s*[,\]]/) || # Flow style
-             line.match?(/^\s*-\s*['"]?#{escaped_old}['"]?\s*#/) # With comment
+             line.match?(/^\s*-\s*['"]?#{escaped_old}['"]?\s*#/) || # With comment
+             line.match?(/^\s*['"]#{escaped_old}['"]\s*,?\s*(?:#.*)?$/) # Quoted element on its own line
             line.gsub(old_string, new_string)
           else
             line

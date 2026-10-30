@@ -520,6 +520,77 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
         end
       end
 
+      context "with several inline-table repos on one line" do
+        let(:config_file_body) { fixture("prek_configs", "inline_repos_one_line.toml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/psf/black",
+            version: "24.1.0",
+            previous_version: "23.12.1",
+            requirements: [{
+              requirement: nil, groups: [], file: "prek.toml",
+              source: { type: "git", url: "https://github.com/psf/black", ref: "24.1.0", branch: nil }
+            }],
+            previous_requirements: [{
+              requirement: nil, groups: [], file: "prek.toml",
+              source: { type: "git", url: "https://github.com/psf/black", ref: "23.12.1", branch: nil }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "updates the matching inline table only" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content).to include('rev = "24.1.0"')
+          expect(content).to include('rev = "v4.4.0"')
+        end
+      end
+
+      context "when a hook string contains rev-like text" do
+        let(:config_file_body) { fixture("prek_configs", "rev_in_hook_string.toml") }
+
+        it "leaves the string untouched" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content).to include("rev = \"v6.0.0\"\n")
+          expect(content).to include(%q(name = 'pin, rev = "v4.4.0" stays'))
+        end
+      end
+
+      context "with an additional dependency in a multiline array" do
+        let(:config_file_body) { fixture("prek_configs", "multiline_additional_dependencies.toml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "types-requests",
+            version: "2.32.0.20240914",
+            previous_version: "2.31.0.1",
+            requirements: [{
+              requirement: "==2.32.0.20240914", groups: ["additional_dependencies"], file: "prek.toml",
+              source: {
+                type: "additional_dependency", language: "python", package_name: "types-requests",
+                original_name: "types-requests", hook_id: "mypy",
+                hook_repo: "https://github.com/pre-commit/mirrors-mypy", extras: nil,
+                original_string: "types-requests==2.32.0.20240914"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "==2.31.0.1", groups: ["additional_dependencies"], file: "prek.toml",
+              source: {
+                type: "additional_dependency", language: "python", package_name: "types-requests",
+                original_name: "types-requests", hook_id: "mypy",
+                hook_repo: "https://github.com/pre-commit/mirrors-mypy", extras: nil,
+                original_string: "types-requests==2.31.0.1"
+              }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "updates the array element" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content).to include('    "types-requests==2.32.0.20240914",')
+        end
+      end
+
       context "when a later table's rev precedes its repo" do
         # Both tables pin the same rev value, and the second table lists `rev`
         # before `repo` (legal TOML). A leaked current_repo would rewrite the
@@ -531,6 +602,31 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
           expect(content.scan('rev = "v6.0.0"').length).to eq(1)
           # The second table (psf/black) keeps its rev untouched.
           expect(content).to include('rev = "v4.4.0"  # frozen: v4.4.0')
+        end
+
+        context "when updating the repo whose rev precedes its repo key" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "https://github.com/psf/black",
+              version: "24.1.0",
+              previous_version: "v4.4.0",
+              requirements: [{
+                requirement: nil, groups: [], file: "prek.toml",
+                source: { type: "git", url: "https://github.com/psf/black", ref: "24.1.0", branch: nil }
+              }],
+              previous_requirements: [{
+                requirement: nil, groups: [], file: "prek.toml",
+                source: { type: "git", url: "https://github.com/psf/black", ref: "v4.4.0", branch: nil }
+              }],
+              package_manager: "pre_commit"
+            )
+          end
+
+          it "rewrites that table's rev" do
+            content = updated_files.find { |f| f.name == "prek.toml" }.content
+            expect(content).to include('rev = "24.1.0"  # frozen: v4.4.0')
+            expect(content.scan('rev = "v4.4.0"').length).to eq(1)
+          end
         end
       end
     end

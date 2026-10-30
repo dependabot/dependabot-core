@@ -374,6 +374,15 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
         names = file_fetcher_instance.files.map(&:name)
         expect(names).to contain_exactly(".pre-commit-config.yaml", "prek.toml")
       end
+
+      context "when one of them is excluded" do
+        before { file_fetcher_instance.exclude_paths = ["prek.toml"] }
+
+        it "does not request the excluded file" do
+          expect(file_fetcher_instance.files.map(&:name)).to eq([".pre-commit-config.yaml"])
+          expect(a_request(:get, url + "prek.toml?ref=sha")).not_to have_been_made
+        end
+      end
     end
   end
 
