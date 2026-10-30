@@ -25,6 +25,10 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
 
+        # A "-r <file>" reference inside a "# via" annotation, matched as a whole
+        # token so "test.in" never matches the start of "test.in.txt".
+        VIA_REQUIREMENT_PATH = /(?<=\s)-r (\S+?\.(?:in|txt))(?=[\s,]|$)/
+
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
         INCOMPATIBLE_VERSIONS_REGEX = Regexp.new(
           "(?:not supported between instances of 'InstallationCandidate'" \
@@ -417,28 +421,37 @@ module Dependabot
         # becomes "-r main.in"). This restores the original full paths.
         sig { params(updated_content: String, original_content: String).returns(String) }
         def restore_via_requirement_paths(updated_content, original_content)
-          via_ref_regex = /^\s*#\s+(?:via\s+)?-r (\S+\.(?:in|txt))/
-
-          original_paths = original_content.scan(via_ref_regex).flatten.uniq
+          original_paths = via_requirement_paths(original_content)
           return updated_content if original_paths.empty?
 
-          content = updated_content
-          updated_paths = content.scan(via_ref_regex).flatten.uniq
+          updated_content.lines.map do |line|
+            code, hash, comment = line.partition("#")
+            next line if hash.empty?
 
-          updated_paths.each do |short_path|
-            candidates = original_paths.select do |orig|
-              File.basename(orig) == File.basename(short_path) && orig != short_path
+            restored_comment = comment.gsub(VIA_REQUIREMENT_PATH) do |reference|
+              full_path = full_via_requirement_path(T.must(Regexp.last_match(1)), original_paths)
+              full_path ? "-r #{full_path}" : reference
             end
-            next unless candidates.one?
+            code + hash + restored_comment
+          end.join
+        end
 
-            full_path = T.must(candidates.first)
+        sig { params(content: String).returns(T::Array[String]) }
+        def via_requirement_paths(content)
+          content.lines.flat_map do |line|
+            line.partition("#").last.scan(VIA_REQUIREMENT_PATH).flatten
+          end.uniq
+        end
 
-            content = content.gsub(/^(\s*#\s+(?:via\s+)?)-r #{Regexp.escape(short_path)}/) do
-              "#{Regexp.last_match(1)}-r #{full_path}"
-            end
-          end
+        # Returns the original path a shortened -r reference stands for, or nil
+        # when the reference is already an original path or its basename is
+        # ambiguous.
+        sig { params(path: String, original_paths: T::Array[String]).returns(T.nilable(String)) }
+        def full_via_requirement_path(path, original_paths)
+          return if original_paths.include?(path)
 
-          content
+          candidates = original_paths.select { |orig| File.basename(orig) == File.basename(path) }
+          candidates.first if candidates.one?
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
