@@ -187,7 +187,9 @@ module Dependabot
       # `parent/name`) and may carry a version range (`name@<1.2.3`).
       sig { params(key: String, name: String).returns(T::Boolean) }
       def self.override_key_for?(key, name)
-        key.match?(%r{(\A|/)#{Regexp.escape(name)}(@[^/]*)?\z})
+        parts = key.sub(%r{@[^/]*\z}, "").split("/")
+        package_name = parts[-2]&.start_with?("@") ? parts.last(2).join("/") : parts.last
+        package_name == name
       end
 
       sig { params(files: T::Array[DependencyFile]).returns(T::Boolean) }
