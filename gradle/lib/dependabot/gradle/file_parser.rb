@@ -40,6 +40,7 @@ module Dependabot
       VSN_PART = %r{[^\s,'":/\\]+}
       DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
 
+      LOCKFILE_ENTRY_REGEX = /\A(?<group>#{PART}):(?<name>#{PART}):(?<version>#{VSN_PART})=/o
       DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
       DEPENDENCY_SET_COORDINATES_REGEX = /\A\s*['"](?<group>#{PART}):(?<version>#{VSN_PART})['"]\s*\z/o
       DEPENDENCY_SET_ENTRY_REGEX = /\bentry(?:\s+|\s*\(\s*)['"](?<name>#{PART})['"]/o
@@ -62,6 +63,7 @@ module Dependabot
         version_catalog_file.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
         end
+        dependency_set = add_lockfile_dependencies(dependency_set)
         dependency_set.dependencies.reject do |dependency|
           dependency.version == "latest.integration" || dependency.version == "latest.release"
         end
@@ -272,6 +274,44 @@ module Dependabot
         dependency = DistributionsFinder.resolve_dependency(properties_file)
         dependency_set << dependency if dependency
         dependency_set
+      end
+
+      # Adds dependencies that only appear in a gradle.lockfile (e.g. transitive
+      # ones) as sub-dependencies, without requirements. Dependencies declared
+      # in build files or version catalogs take precedence.
+      sig { params(dependency_set: DependencySet).returns(DependencySet) }
+      def add_lockfile_dependencies(dependency_set)
+        declared_names = dependency_set.dependencies.map(&:name)
+        lockfile_set = DependencySet.new
+        lockfiles.each do |lockfile|
+          lockfile_dependencies(lockfile).each do |dependency|
+            lockfile_set << dependency unless declared_names.include?(dependency.name)
+          end
+        end
+        dependency_set + lockfile_set
+      end
+
+      sig { params(lockfile: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def lockfile_dependencies(lockfile)
+        T.must(lockfile.content).each_line.filter_map do |line|
+          match = line.strip.match(LOCKFILE_ENTRY_REGEX)
+          next unless match
+
+          version = T.must(match[:version])
+          next unless Gradle::Version.correct?(version)
+
+          Dependency.new(
+            name: "#{match[:group]}:#{match[:name]}",
+            version: version,
+            requirements: [],
+            package_manager: "gradle"
+          )
+        end
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def lockfiles
+        dependency_files.select { |f| f.name.end_with?(".lockfile") }
       end
 
       sig { params(toml_file: Dependabot::DependencyFile).returns(DependencySet) }
