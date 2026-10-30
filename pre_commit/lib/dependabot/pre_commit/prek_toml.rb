@@ -14,12 +14,8 @@ module Dependabot
     class PrekToml
       extend T::Sig
 
-      REPOS_TABLE_HEADER = /^[ \t]*\[\[[ \t]*repos[ \t]*\]\]/
-      HOOKS_TABLE_HEADER = /^[ \t]*\[\[[ \t]*repos[ \t]*\.[ \t]*hooks[ \t]*\]\]/
-      TABLE_HEADER = /^[ \t]*\[/
-      # Any table header except a `[repos.*]` sub-table, which still belongs to
-      # the `[[repos]]` entry before it.
-      NON_REPO_TABLE_HEADER = /^[ \t]*\[(?!\[?[ \t]*repos[ \t]*\.)/
+      # A table header, capturing its dotted key path.
+      TABLE_HEADER = /^[ \t]*\[\[?([^\[\]\n]*)\]/
       KEY = /(?:^|[{,])[ \t]*([A-Za-z0-9_-]+|"[^"\n]*"|'[^'\n]*')[ \t]*=[ \t]*/
       QUOTES = ['"', "'"].freeze
 
@@ -81,25 +77,57 @@ module Dependabot
 
       sig { params(repo_url: String).returns(T::Array[T::Range[Integer]]) }
       def repo_scopes(repo_url)
-        scopes = header_tables(REPOS_TABLE_HEADER, NON_REPO_TABLE_HEADER) + inline_tables
+        # A `[repos.*]` sub-table still belongs to the `[[repos]]` entry before it.
+        repo_tables = header_tables(["repos"]) { |path| path.first != "repos" || path.length == 1 }
+        scopes = repo_tables + inline_tables
         scopes.select { |scope| text(string_value(scope, "repo")) == repo_url }
       end
 
       sig { params(repo_scope: T::Range[Integer]).returns(T::Array[T::Range[Integer]]) }
       def hook_scopes(repo_scope)
-        scopes = header_tables(HOOKS_TABLE_HEADER, TABLE_HEADER) + inline_tables
+        scopes = header_tables(%w(repos hooks)) { true } + inline_tables
         scopes.select { |scope| scope != repo_scope && repo_scope.cover?(scope.begin) }
       end
 
-      # Each table from a header matching header up to the next terminator.
-      sig { params(header: Regexp, terminator: Regexp).returns(T::Array[T::Range[Integer]]) }
-      def header_tables(header, terminator)
-        tables = T.let([], T::Array[T::Range[Integer]])
-        @masked.scan(header) do
-          match = T.must(Regexp.last_match)
-          tables << (match.begin(0)...(@masked.index(terminator, match.end(0)) || @masked.length))
+      # Each table whose header names path, up to the next header whose path
+      # ends it.
+      sig do
+        params(
+          path: T::Array[String],
+          ends: T.proc.params(path: T::Array[String]).returns(T::Boolean)
+        ).returns(T::Array[T::Range[Integer]])
+      end
+      def header_tables(path, &ends)
+        headers = table_headers
+        headers.each_with_index.filter_map do |(start, header_path), index|
+          next unless header_path == path
+
+          following = headers.drop(index + 1).find { |(_, later_path)| yield(later_path) }
+          start...(following&.first || @masked.length)
         end
-        tables
+      end
+
+      # The offset and key path of each table header.
+      sig { returns(T::Array[[Integer, T::Array[String]]]) }
+      def table_headers
+        headers = T.let([], T::Array[[Integer, T::Array[String]]])
+        @masked.scan(TABLE_HEADER) do
+          match = T.must(Regexp.last_match)
+          headers << [match.begin(0), key_path(match.begin(1), match.end(1))]
+        end
+        headers
+      end
+
+      # The unquoted keys of the dotted key between offsets from and to. Dots
+      # inside quoted keys are masked, so splitting on the mask is safe.
+      sig { params(from: Integer, to: Integer).returns(T::Array[String]) }
+      def key_path(from, to)
+        offset = from
+        T.must(@masked[from...to]).split(".", -1).map do |part|
+          key = T.must(@content[offset, part.length]).strip
+          offset += part.length + 1
+          QUOTES.include?(key[0]) ? T.must(key[1...-1]) : key
+        end
       end
 
       sig { returns(T::Array[T::Range[Integer]]) }
@@ -132,9 +160,8 @@ module Dependabot
       def value_start(scope, key)
         T.must(@masked[scope]).scan(KEY) do
           match = T.must(Regexp.last_match)
-          name = T.must(@content[(scope.begin + match.begin(1))...(scope.begin + match.end(1))])
-          name = T.must(name[1...-1]) if QUOTES.include?(name[0])
-          return scope.begin + match.end(0) if name == key
+          name = key_path(scope.begin + match.begin(1), scope.begin + match.end(1))
+          return scope.begin + match.end(0) if name == [key]
         end
         nil
       end

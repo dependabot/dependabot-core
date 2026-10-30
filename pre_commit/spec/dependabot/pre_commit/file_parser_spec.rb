@@ -713,6 +713,19 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         end
       end
 
+      context "with quoted table headers" do
+        let(:pre_commit_config) do
+          Dependabot::DependencyFile.new(
+            name: "prek.toml", content: fixture("prek_configs", "quoted_table_headers.toml")
+          )
+        end
+
+        it "reads the rev comment" do
+          dep = dependencies.find { |d| d.name.include?("pre-commit-hooks") }
+          expect(dep.requirements.first[:metadata][:comment]).to eq("# frozen: v4.4.0")
+        end
+      end
+
       context "with quoted keys" do
         let(:pre_commit_config) do
           Dependabot::DependencyFile.new(name: "prek.toml", content: fixture("prek_configs", "quoted_keys.toml"))
