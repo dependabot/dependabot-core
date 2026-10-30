@@ -743,6 +743,30 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
 
         expect(commit_metadata_details).to eq(tag_creation_date)
       end
+
+      it "clones only commits and tags to read the date" do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("2026-01-01 00:00:00 +0000")
+
+        commit_metadata_details
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          %r{\Agit clone --bare --filter=tree:0 --no-recurse-submodules https://github\.com/},
+          fingerprint: "git clone --bare --filter=tree:0 --no-recurse-submodules <url> <path>"
+        )
+      end
     end
   end
 end

@@ -631,7 +631,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+          .with(%r{git clone --no-checkout --filter=tree:0 --no-recurse-submodules https://github\.com/actions/setup-node},
                 any_args)
           .and_return("")
       end
@@ -919,7 +919,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+          .with(%r{git clone --no-checkout --filter=tree:0 --no-recurse-submodules https://github\.com/actions/setup-node},
                 any_args)
           .and_return("")
 
@@ -953,7 +953,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+          .with(%r{git clone --no-checkout --filter=tree:0 --no-recurse-submodules https://github\.com/actions/setup-node},
                 any_args)
           .and_return("")
 
@@ -979,7 +979,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(checker.send(:latest_version_finder)).to receive(:latest_release_version).and_return(nil)
 
         allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
-          .with(array_including(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node }),
+          .with(array_including(%r{\Agit clone .*https://github\.com/actions/setup-node }),
                 any_args)
           .and_return(
             [
