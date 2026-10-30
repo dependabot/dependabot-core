@@ -3,6 +3,11 @@ using JSON
 using DependabotHelper
 import Pkg
 
+# Shared with Pkg's tests
+module JuliaVersionManifests
+include(joinpath(@__DIR__, "julia_version.jl"))
+end
+
 # Keep tests hermetic: don't hit the network to refresh registries
 ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
 
@@ -577,6 +582,7 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
                 @test isa(result, Dict)
                 @test haskey(result, "error")
                 @test occursin("empty intersection between", result["error"])
+                @test result["kind"] == "resolver"
 
                 # Step 4: Update SubPackageB compat to also allow 0.21 and 1.x
                 subpkg_b_project = joinpath(tmp_subpkg_b, "Project.toml")
@@ -880,11 +886,92 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
             @test json_dep !== nothing
             @test updated_manifest["dependencies"][json_dep]["version"] == "0.21.1"
 
-            # The manifest is resolved by the Julia that wrote it, keeping its stdlib versions
-            if Sys.which("juliaup") !== nothing
-                @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
-                dates = findfirst(d -> d["name"] == "Dates", updated_manifest["dependencies"])
-                @test updated_manifest["dependencies"][dates]["version"] == "1.11.0"
+            # The manifest is resolved for the Julia that wrote it, keeping its stdlib versions
+            @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
+            dates = findfirst(d -> d["name"] == "Dates", updated_manifest["dependencies"])
+            @test updated_manifest["dependencies"][dates]["version"] == "1.11.0"
+        end
+
+        # Manifests written by past Julia releases, added by `julia_version.jl`. A release can
+        # change the manifest format or the project hash, so every released minor version
+        # needs them.
+        manifests = JuliaVersionManifests.manifests()
+        covered = Set(Base.thisminor(VersionNumber(v)) for v in keys(manifests))
+        isempty(Pkg.Types.STDLIBS_BY_VERSION) && DependabotHelper.HistoricalStdlibVersions.register!()
+        released = Set(Base.thisminor(v) for v in first.(Pkg.Types.STDLIBS_BY_VERSION) if v"1.10" <= v < Base.thisminor(VERSION))
+        @test isempty(setdiff(released, covered))
+
+        # Pkg writes the manifest the way the release it resolves for does
+        for (version, written) in manifests
+            julia_version = VersionNumber(version)
+            julia_version > VERSION && continue
+            # The environment as that release set it up, before the update
+            project_dir = JuliaVersionManifests.environment(written["project"], written["manifest"])
+            JuliaVersionManifests.update_project!(project_dir)
+            result = DependabotHelper.update_manifest(Dict(
+                "project_path" => project_dir,
+                "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4"))
+            ))
+            @test !haskey(result, "error")
+            @test result["manifest_content"] == written["expected"]
+        end
+
+        # A manifest is resolved for the Julia that wrote it
+        mktempdir() do dir
+            manifest = joinpath(dir, "Manifest.toml")
+            for (julia_version, expected) in [nothing => VERSION, string(VERSION) => VERSION, "1.10.0" => v"1.10.0"]
+                write(manifest, julia_version === nothing ? "" : "julia_version = \"$julia_version\"\n")
+                @test DependabotHelper.resolve_julia_version(manifest) == expected
+            end
+        end
+
+        # Pkg cannot know how a newer Julia writes a manifest, so that manifest is left alone
+        newer = VersionNumber(VERSION.major, VERSION.minor + 1)
+        for julia_version in (newer, VersionNumber(VERSION.major, VERSION.minor, VERSION.patch + 1), VersionNumber("$newer-DEV.1"))
+            mktempdir() do tmpdir
+                cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
+                project_dir = joinpath(tmpdir, "TestPackage.jl")
+                manifest = joinpath(project_dir, "Manifest.toml")
+                write(manifest, replace(read(manifest, String), r"^julia_version = .*$"m => "julia_version = \"$julia_version\""))
+                original = read(manifest, String)
+                result = DependabotHelper.update_manifest(Dict(
+                    "project_path" => project_dir,
+                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
+                ))
+                @test startswith(result["error"], "Manifest written by a newer Julia: Julia $julia_version wrote the manifest")
+                @test result["kind"] == "newer_julia"
+                @test read(manifest, String) == original
+            end
+        end
+
+        # A failed update says why, so the updater can tell the repository's problems from its own
+        for (entry, kind, urls) in [
+            # a path package that is not in the checkout
+            ("path = \"C:\\\\Users\\\\someone\\\\.julia\\\\dev\\\\Foo\"", "manifest", nothing),
+            # a package that no registry has
+            ("git-tree-sha1 = \"0000000000000000000000000000000000000001\"", "manifest", nothing),
+            # a git source that cannot be cloned
+            ("git-tree-sha1 = \"0000000000000000000000000000000000000001\"\nrepo-rev = \"main\"\nrepo-url = \"https://github.com/JuliaLang/this-repository-does-not-exist.jl.git\"",
+             "git_unreachable", ["https://github.com/JuliaLang/this-repository-does-not-exist.jl.git"]),
+            # a host that cannot be reached, which may pass
+            ("git-tree-sha1 = \"0000000000000000000000000000000000000001\"\nrepo-rev = \"main\"\nrepo-url = \"https://unreachable.invalid/Foo.jl.git\"",
+             nothing, nothing),
+        ]
+            mktempdir() do tmpdir
+                cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
+                project_dir = joinpath(tmpdir, "TestPackage.jl")
+                project = joinpath(project_dir, "Project.toml")
+                write(project, replace(read(project, String), "[deps]\n" => "[deps]\nFoo = \"22222222-2222-2222-2222-222222222222\"\n"))
+                manifest = joinpath(project_dir, "Manifest.toml")
+                write(manifest, read(manifest, String) *
+                      "\n[[deps.Foo]]\n$entry\nuuid = \"22222222-2222-2222-2222-222222222222\"\nversion = \"0.1.0\"\n")
+                result = DependabotHelper.update_manifest(Dict(
+                    "project_path" => project_dir,
+                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
+                ))
+                @test haskey(result, "error")
+                @test get(result, "kind", nothing) == kind
+                @test get(result, "urls", nothing) == urls
             end
         end
 
@@ -899,23 +986,21 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         end
 
         # A version-specific manifest is only read by its own Julia release
-        if Sys.which("juliaup") !== nothing
-            mktempdir() do tmpdir
-                cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
-                project_dir = joinpath(tmpdir, "TestPackage.jl")
-                mv(joinpath(project_dir, "Manifest.toml"), joinpath(project_dir, "Manifest-v1.12.toml"))
+        mktempdir() do tmpdir
+            cp(joinpath(@__DIR__, "TestPackage.jl"), joinpath(tmpdir, "TestPackage.jl"))
+            project_dir = joinpath(tmpdir, "TestPackage.jl")
+            mv(joinpath(project_dir, "Manifest.toml"), joinpath(project_dir, "Manifest-v1.12.toml"))
 
-                @test basename.(DependabotHelper.environment_manifest_files(project_dir)) == ["Manifest-v1.12.toml"]
-                result = DependabotHelper.update_manifest(Dict(
-                    "project_path" => project_dir,
-                    "manifest_path" => "Manifest-v1.12.toml",
-                    "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
-                ))
-                @test !haskey(result, "error")
-                @test result["manifest_path"] == "Manifest-v1.12.toml"
-                @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
-                @test !isfile(joinpath(project_dir, "Manifest.toml"))
-            end
+            @test basename.(DependabotHelper.environment_manifest_files(project_dir)) == ["Manifest-v1.12.toml"]
+            result = DependabotHelper.update_manifest(Dict(
+                "project_path" => project_dir,
+                "manifest_path" => "Manifest-v1.12.toml",
+                "updates" => Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.1"))
+            ))
+            @test !haskey(result, "error")
+            @test result["manifest_path"] == "Manifest-v1.12.toml"
+            @test occursin("julia_version = \"1.12.1\"", result["manifest_content"])
+            @test !isfile(joinpath(project_dir, "Manifest.toml"))
         end
     end
 

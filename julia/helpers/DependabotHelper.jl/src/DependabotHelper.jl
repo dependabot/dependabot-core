@@ -3,6 +3,7 @@ module DependabotHelper
 import Downloads
 import HistoricalStdlibVersions
 import JSON
+import LibGit2
 import Pkg
 import TOML
 using PrecompileTools

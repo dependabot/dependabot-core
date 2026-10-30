@@ -427,7 +427,8 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         allow(registry_client_double).to receive(:update_manifest) do |manifest_path:, **|
           if manifest_path.end_with?("Manifest-v1.10.toml")
             Dependabot::Julia::RegistryClient::Result::Failure.new(
-              message: "Pkg resolver error: Unsatisfiable requirements detected for package JSON"
+              message: "Pkg resolver error: Unsatisfiable requirements detected for package JSON",
+              kind: "resolver"
             )
           else
             Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
@@ -448,11 +449,34 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when the manifest was written by a newer Julia" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          Dependabot::Julia::RegistryClient::Result::Failure.new(
+            message: "Manifest written by a newer Julia: Julia 1.14.0 wrote the manifest, " \
+                     "and Julia 1.13.1 cannot write a manifest for it",
+            kind: "newer_julia"
+          )
+        )
+      end
+
+      it "adds a notice and returns updated Project.toml only" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.map(&:name)).to eq(["Project.toml"])
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.type).to eq("julia_manifest_not_updated")
+        expect(notice.description).to include("Julia 1.14.0 wrote the manifest")
+      end
+    end
+
     context "when Julia helper returns a resolver error" do
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
           Dependabot::Julia::RegistryClient::Result::Failure.new(
-            message: "Unsatisfiable requirements detected for package JSON"
+            message: "Pkg resolver error: Unsatisfiable requirements detected for package JSON",
+            kind: "resolver"
           )
         )
       end
@@ -487,10 +511,70 @@ RSpec.describe Dependabot::Julia::FileUpdater do
           )
         end
 
-        it "returns no files and keeps the notice" do
-          expect(updater.updated_dependency_files).to eq([])
-          expect(updater.notices.length).to eq(1)
+        it "raises an error that says why, since a notice would never be shown" do
+          expect { updater.updated_dependency_files }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /Unsatisfiable requirements/)
         end
+      end
+    end
+
+    context "when the manifest needs a package the updater cannot get" do
+      let(:message) do
+        "Failed to update manifest: expected package `Example [7876af07]` to exist at path " \
+          "`/home/dependabot/dependabot-updater/repo/C:\\Users\\someone\\.julia\\dev\\Example`"
+      end
+
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          Dependabot::Julia::RegistryClient::Result::Failure.new(message: message, kind: "manifest")
+        )
+      end
+
+      it "adds a notice and returns updated Project.toml only" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.map(&:name)).to eq(["Project.toml"])
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.type).to eq("julia_manifest_not_updated")
+        expect(notice.description).to include(message)
+      end
+    end
+
+    context "when a git source of the manifest cannot be cloned" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          Dependabot::Julia::RegistryClient::Result::Failure.new(
+            message: "Failed to update manifest: failed to clone from https://github.com/owner/Private.jl.git, " \
+                     "error: GitError(Code:EUSER, Class:Callback, Aborting, user cancelled credential request.)",
+            kind: "git_unreachable",
+            urls: ["https://github.com/owner/Private.jl.git"]
+          )
+        )
+      end
+
+      it "raises an error naming the source" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::GitDependenciesNotReachable) { |error|
+            expect(error.dependency_urls).to eq(["https://github.com/owner/Private.jl.git"])
+          }
+      end
+    end
+
+    context "when the helper cannot tell why the update failed" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          Dependabot::Julia::RegistryClient::Result::Failure.new(
+            message: "Failed to update manifest: failed to clone from https://github.com/owner/Example.jl.git, " \
+                     "error: GitError(Code:ERROR, Class:Net, failed to resolve address for github.com)"
+          )
+        )
+      end
+
+      it "raises it without a notice" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(RuntimeError, /failed to resolve address/)
+        expect(updater.notices).to be_empty
       end
     end
 

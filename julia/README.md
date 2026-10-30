@@ -41,7 +41,7 @@ For more information about Julia package management, see:
 
 ## Manifest Julia Version
 
-A manifest is resolved by the Julia version that wrote it, its `julia_version`, which juliaup installs and launches. Every manifest of an environment is updated this way, so `Manifest.toml` and a version-specific `Manifest-v1.12.toml` are each resolved by their own Julia; a dependency's current version is the oldest across them, so a manifest that lags behind still gets updated. Resolving under the updater's own Julia would rewrite `julia_version` and the stdlib entries, leaving a manifest the project's Julia may not load. A manifest without a `julia_version`, or one written by a prerelease build, is resolved with the updater's Julia.
+A manifest is resolved for the Julia version that wrote it, its `julia_version`, by the updater's own Julia: Pkg resolves for another release given its `julia_version` and the stdlib versions that release shipped, from [HistoricalStdlibVersions.jl](https://github.com/JuliaPackaging/HistoricalStdlibVersions.jl), as BinaryBuilder does. Pkg also writes the manifest in that release's format and with its project hash, so the result is the manifest that release would write itself. Every manifest of an environment is updated this way, so `Manifest.toml` and a version-specific `Manifest-v1.12.toml` are each resolved for their own Julia; a dependency's current version is the oldest across them, so a manifest that lags behind still gets updated. Resolving for the updater's Julia instead would rewrite `julia_version` and the stdlib entries, leaving a manifest the project's Julia may not load. A manifest without a `julia_version` is resolved for the updater's Julia. A manifest written by a newer Julia than the updater's, including a prerelease, is left as it is, since Pkg cannot know how that release writes a manifest; the pull request carries a notice and the `Project.toml` changes still go out.
 
 ## Error Handling and User Notifications
 
@@ -55,6 +55,8 @@ When manifest updates fail (common in workspace configurations with conflicting 
    - The fact that only the `Project.toml` was updated
 
 This ensures users understand when lockfiles couldn't be updated and why, while still providing the compatibility range update in the project file.
+
+The helper classifies a failed manifest update by the exception Pkg raised, not by its message. A notice is added, as for a conflict, when the manifest was written by a newer Julia, or when it needs a package the updater cannot get: one tracked by a path that is not in the checkout, or one that no reachable registry has. When nothing else would change, the notice would never be seen, so the update fails with `dependency_file_not_resolvable` and the same message instead. A git source that cannot be cloned fails the update with `git_dependencies_not_reachable`. Any other failure, including a network error, is raised, so the job fails and the next run tries again.
 
 ## Current Limitations
 

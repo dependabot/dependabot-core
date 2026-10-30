@@ -45,6 +45,7 @@ module Dependabot
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
         super
         @notices = T.let([], T::Array[Dependabot::Notice])
+        @manifest_errors = T.let([], T::Array[String])
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -83,8 +84,10 @@ module Dependabot
             updated_manifest = updated_manifest_file(manifest)
             updated_files << updated_manifest if updated_manifest
           end
-          # A manifest that could not be resolved is reported in a notice instead
-          return updated_files if updated_files.empty? && notices.any?
+          # A manifest that could not be resolved is reported in a notice, which is only
+          # seen when there are other changes to ship
+          first_error = @manifest_errors.first
+          raise Dependabot::DependencyFileNotResolvable, first_error if updated_files.empty? && first_error
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -183,18 +186,16 @@ module Dependabot
         ).void
       end
       def handle_julia_helper_error(result, manifest)
-        error_message = result.message
-        raise error_message unless resolver_error?(error_message)
-
-        # The Project.toml changes still go out without this manifest
-        add_manifest_update_notice(manifest.name, error_message)
-      end
-
-      sig { params(error_message: String).returns(T::Boolean) }
-      def resolver_error?(error_message)
-        error_message.start_with?("Pkg resolver error:") ||
-          error_message.include?("Unsatisfiable requirements") ||
-          error_message.include?("ResolverError")
+        case result.kind
+        when "resolver", "newer_julia", "manifest"
+          # The Project.toml changes still go out without this manifest
+          @manifest_errors << result.message
+          add_manifest_update_notice(manifest.name, result.message)
+        when "git_unreachable"
+          raise Dependabot::GitDependenciesNotReachable, result.urls
+        else
+          raise result.message
+        end
       end
 
       sig { params(manifest_path: String, error_message: String).void }
