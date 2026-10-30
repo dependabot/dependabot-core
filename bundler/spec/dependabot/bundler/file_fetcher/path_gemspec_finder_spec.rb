@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,11 +7,18 @@ require "dependabot/dependency_file"
 require "dependabot/bundler/file_fetcher/path_gemspec_finder"
 
 RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Bundler::FileFetcher::PathGemspecFinder) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:finder) { described_class.new(gemfile: gemfile) }
 
+  sig { returns(Dependabot::DependencyFile) }
   let(:gemfile) { bundler_project_dependency_file("gemfile", filename: "Gemfile") }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#path_gemspec_paths" do
+    sig { returns(T::Array[Pathname]) }
     subject(:path_gemspec_paths) { finder.path_gemspec_paths }
 
     context "when the file does not include any path gemspecs" do
@@ -19,6 +26,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
     end
 
     context "with invalid Ruby in the Gemfile" do
+      sig { returns(Dependabot::DependencyFile) }
       let(:gemfile) { bundler_project_dependency_file("invalid_ruby", filename: "Gemfile") }
 
       it "raises a helpful error" do
@@ -32,11 +40,13 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
     end
 
     context "when the file does include a path gemspec" do
+      sig { returns(Dependabot::DependencyFile) }
       let(:gemfile) { bundler_project_dependency_file("path_source", filename: "Gemfile") }
 
       it { is_expected.to eq([Pathname.new("plugins/example")]) }
 
       context "when gemspec path must be evaluated" do
+        sig { returns(Dependabot::DependencyFile) }
         let(:gemfile) { bundler_project_dependency_file("path_source_eval", filename: "Gemfile") }
 
         it "raises a helpful error" do
@@ -48,6 +58,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
       end
 
       context "when this Gemfile is already in a nested directory" do
+        sig { returns(Dependabot::DependencyFile) }
         let(:gemfile) do
           bundler_project_dependency_file("nested_path_source", filename: "nested/Gemfile")
         end
@@ -56,6 +67,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
       end
 
       context "when that is behind a conditional that is false" do
+        sig { returns(Dependabot::DependencyFile) }
         let(:gemfile) { bundler_project_dependency_file("path_source_if", filename: "Gemfile") }
 
         it { is_expected.to eq([Pathname.new("plugins/example")]) }

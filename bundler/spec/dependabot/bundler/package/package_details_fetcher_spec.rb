@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
       yanked_reason: nil,
       downloads: 382,
       url: "https://rubygems.org/gems/dependabot-common-0.302.0.gem",
-      package_type: described_class::PACKAGE_TYPE,
+      package_type: Dependabot::Bundler::Package::PackageDetailsFetcher::PACKAGE_TYPE,
       language: Dependabot::Package::PackageLanguage.new(
         name: "ruby",
         version: nil,

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in class-scope generated examples.
+
 require "bundler"
 require "spec_helper"
 require "dependabot/bundler/checksum_mismatch"
