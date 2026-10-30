@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only fixtures, shared-example fixtures, and generated examples.
+
 require "spec_helper"
 require "dependabot/julia/requirement"
 require "dependabot/julia/version"

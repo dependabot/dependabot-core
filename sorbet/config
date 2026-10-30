@@ -13,6 +13,5 @@
 # while unenrolled spec trees are ignored.
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
---ignore=julia/spec/
 --ignore=updater/spec/
 --ignore=.git

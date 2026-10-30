@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(example_dep.version).to eq("0.4.1") # Installed version from Manifest.toml
         expect(example_dep.requirements.first[:groups]).to eq(["deps"])
         expect(example_dep.requirements.first[:requirement]).to eq("0.4")
-        expect(example_dep).to be_production
+        expect(example_dep.production?).to be(true)
 
         # Weak dependency with compat entry. Its manifest entry is an indirect
         # dependency that the helper will not bump, so no version is recorded.
@@ -125,14 +125,14 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(json_dep.version).to be_nil
         expect(json_dep.requirements.first[:groups]).to eq(["weakdeps"])
         expect(json_dep.requirements.first[:requirement]).to eq("0.21")
-        expect(json_dep).to be_production
+        expect(json_dep.production?).to be(true)
 
         # Extras with existing compat entries: same, compat-only
         filepaths_dep = dependencies.find { |d| d.name == "FilePathsBase" }
         expect(filepaths_dep.version).to be_nil
         expect(filepaths_dep.requirements.first[:groups]).to eq(["extras"])
         expect(filepaths_dep.requirements.first[:requirement]).to eq("0.6, 0.7, 0.8")
-        expect(filepaths_dep).not_to be_production
+        expect(filepaths_dep.production?).to be(false)
 
         # A stdlib under [extras] is handled like one under [deps]
         test_dep = dependencies.find { |d| d.name == "Test" }
@@ -721,11 +721,5 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(example_dep.requirements.first[:requirement]).to be_nil
       end
     end
-  end
-
-  private
-
-  def fixture(type, *names)
-    File.read(File.join("spec", "fixtures", type, *names))
   end
 end

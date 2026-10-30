@@ -1,13 +1,17 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/julia/package_manager"
 
 RSpec.describe Dependabot::Julia::PackageManager do
+  extend T::Sig
+
   describe "#ecosystem" do
+    sig { returns(Dependabot::Julia::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:package_manager) { described_class.new }
 
+    sig { returns(String) }
     let(:expected_minimum_version) { Dependabot::Julia::PackageManager::MINIMUM_VERSION }
 
     before do
