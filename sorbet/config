@@ -12,6 +12,6 @@
 # Sorbet's RSpec support is experimental, so spec trees are checked incrementally
 # while unenrolled spec trees are ignored.
 --ignore=bundler/helpers/
---ignore=bundler/spec/
+--ignore=bundler/spec/fixtures/
 --ignore=updater/spec/
 --ignore=.git
