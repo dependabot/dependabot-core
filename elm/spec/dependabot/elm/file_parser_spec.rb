@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_name fixtures.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
