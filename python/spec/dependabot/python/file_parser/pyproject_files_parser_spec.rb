@@ -466,6 +466,23 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
+      context "with a PEP 621 only project that declares the Poetry build backend but has no committed lockfile" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:files) { [pyproject] }
+
+        it "does not skip the build-system.requires dependency" do
+          # Without a lockfile, a declared Poetry build backend alone isn't evidence the project
+          # is actively Poetry-managed, so its build dependency should still be tracked.
+          names = dependencies.map(&:name)
+          expect(names).to include("poetry-core")
+        end
+
+        it "still parses the top-level PEP 621 dependencies" do
+          names = dependencies.map(&:name)
+          expect(names).to include("requests", "urllib3")
+        end
+      end
+
       context "with a hybrid PEP 621 + tool.poetry enrichment project" do
         let(:pyproject_fixture_name) { "poetry_v2_hybrid.toml" }
         let(:poetry_lock_fixture_name) { "poetry_v2_hybrid.lock" }

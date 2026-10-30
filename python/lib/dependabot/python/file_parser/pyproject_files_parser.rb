@@ -207,7 +207,14 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_poetry?
-          pyproject_document.poetry? || pyproject_document.poetry_build_backend?
+          pyproject_document.poetry? || locked_poetry_build_backend?
+        end
+
+        # A declared Poetry build backend alone isn't proof the project is actively Poetry-managed;
+        # require a committed lockfile as evidence it's really locked by Poetry.
+        sig { returns(T::Boolean) }
+        def locked_poetry_build_backend?
+          pyproject_document.poetry_build_backend? && !lockfile.nil?
         end
 
         sig { returns(T::Boolean) }
