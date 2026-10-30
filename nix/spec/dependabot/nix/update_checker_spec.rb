@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/nix/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
@@ -25,12 +26,14 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 

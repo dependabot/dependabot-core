@@ -17,7 +17,6 @@
 --ignore=elm/spec/
 --ignore=hex/spec/
 --ignore=julia/spec/
---ignore=nix/spec/
 --ignore=swift/spec/
 --ignore=updater/spec/
 --ignore=.git
