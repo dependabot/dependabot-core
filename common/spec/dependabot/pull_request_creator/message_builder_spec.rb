@@ -1066,6 +1066,137 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       }
     end
 
+    context "when dependency link metadata fails" do
+      let(:metadata_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Cannot detect VCS",
+          error_context: {}
+        )
+      end
+      let(:metadata_method) { :source_url }
+      let(:expected_intro) { "Bumps business from 1.4.0 to 1.5.0." }
+
+      before do
+        allow(metadata_finders.fetch("business"))
+          .to receive(metadata_method)
+          .and_raise(metadata_error)
+      end
+
+      shared_examples "a message without dependency link metadata" do
+        it "keeps the update summary without a dependency link" do
+          expect(pr_message).to include(expected_intro)
+        end
+
+        it "keeps the update summary in the commit message" do
+          expect(builder.commit_message).to include(expected_intro)
+        end
+      end
+
+      it_behaves_like "a message without dependency link metadata"
+
+      context "when the shared source lookup fails" do
+        let(:metadata_method) { :look_up_source }
+        let(:metadata_finders) do
+          super().merge(
+            "business" => Dependabot::MetadataFinders::Base.new(dependency: dependency, credentials: credentials)
+          )
+        end
+
+        it_behaves_like "a message without dependency link metadata"
+      end
+
+      context "when Azure source metadata is unauthorized" do
+        let(:metadata_error) { Dependabot::Clients::Azure::Unauthorized.new }
+
+        it_behaves_like "a message without dependency link metadata"
+      end
+
+      context "when GitHub source metadata is unauthorized" do
+        let(:metadata_error) { Octokit::Unauthorized.new }
+
+        it_behaves_like "a message without dependency link metadata"
+      end
+
+      context "when the homepage lookup fails" do
+        let(:business_metadata) { super().merge(source_url: nil) }
+        let(:metadata_method) { :homepage_url }
+
+        it_behaves_like "a message without dependency link metadata"
+      end
+
+      context "with a custom header and footer" do
+        let(:pr_message_header) { "Custom header" }
+        let(:pr_message_footer) { "Custom footer" }
+
+        it_behaves_like "a message without dependency link metadata"
+
+        it "preserves the custom header and footer" do
+          expect(pr_message).to start_with("Custom header\n\n")
+          expect(pr_message).to end_with("\n\nCustom footer")
+        end
+      end
+
+      context "when updating a library requirement" do
+        let(:files) { [gemfile, gemfile_lock, gemspec] }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            name: "bump.gemspec",
+            content: fixture("ruby", "gemspecs", "example")
+          )
+        end
+        let(:expected_intro) { "Updates the requirements on business to permit the latest version." }
+
+        it_behaves_like "a message without dependency link metadata"
+      end
+
+      context "when updating a dependency group" do
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
+        end
+        let(:dependencies) { [dependency, dependency2] }
+        let(:dependency2) do
+          Dependabot::Dependency.new(
+            name: "statesman",
+            version: "1.7.0",
+            previous_version: "1.6.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:expected_intro) do
+          "Bumps the all-the-things group with 2 updates: " \
+            "business and [statesman](https://github.com/gocardless/statesman)."
+        end
+
+        it_behaves_like "a message without dependency link metadata"
+
+        it "preserves update details and the unaffected dependency's metadata" do
+          expect(pr_message).to include("Updates `business` from 1.4.0 to 1.5.0")
+          expect(pr_message).to include("Updates `statesman` from 1.6.0 to 1.7.0")
+          expect(pr_message).to include("statesman's changelog")
+        end
+
+        context "when the shared source lookup fails" do
+          let(:metadata_method) { :look_up_source }
+          let(:metadata_finders) do
+            super().merge(
+              "business" => Dependabot::MetadataFinders::Base.new(dependency: dependency, credentials: credentials)
+            )
+          end
+
+          it_behaves_like "a message without dependency link metadata"
+
+          it "preserves commit update details and the unaffected dependency's metadata" do
+            expect(builder.commit_message).to include("Updates `business` from 1.4.0 to 1.5.0")
+            expect(builder.commit_message).to include("Updates `statesman` from 1.6.0 to 1.7.0")
+            expect(builder.commit_message)
+              .to include("[Changelog](https://github.com/gocardless/statesman/blob/master/CHANGELOG.md)")
+          end
+        end
+      end
+    end
+
     context "when dealing with an application" do
       it "has the right text" do
         expect(pr_message)
