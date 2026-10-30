@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/julia/metadata_finder"

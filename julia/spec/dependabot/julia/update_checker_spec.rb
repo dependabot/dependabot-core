@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only release-date, version, and requirement fixtures.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
