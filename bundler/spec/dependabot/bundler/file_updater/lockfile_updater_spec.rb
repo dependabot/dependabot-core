@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only fixtures and dynamic described_class constant references.
+
 require "spec_helper"
 require "shared_contexts"
 require "dependabot/dependency"
