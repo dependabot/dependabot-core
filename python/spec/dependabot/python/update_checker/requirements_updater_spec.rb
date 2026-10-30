@@ -904,6 +904,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               its([:requirement]) { is_expected.to eq(">=1.4,<1.6") }
             end
 
+            context "when needing an update within a patch wildcard" do
+              let(:pyproject_req_string) { "==1.4.0.*" }
+              let(:latest_resolvable_version) { "1.4.5" }
+
+              its([:requirement]) { is_expected.to eq(">=1.4.0,<1.4.6") }
+            end
+
             context "when along with an exact match" do
               let(:pyproject_req_string) { "==1.4.*, ==1.4.1" }
 
