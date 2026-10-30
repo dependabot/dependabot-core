@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/credential"
@@ -10,9 +10,14 @@ require "dependabot/registry_client"
 require "spec_helper"
 
 RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
+  extend T::Sig
+
   describe "#fetch_package_releases" do
+    sig { returns(Dependabot::Hex::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:fetcher) { described_class.new(dependency: dependency) }
 
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(Dependabot::Dependency) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
@@ -21,8 +26,11 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
         package_manager: "hex"
       )
     end
+    sig { returns(String) }
     let(:dependency_version) { "2.2.0" }
+    sig { returns(String) }
     let(:dependency_name) { "hex/http" }
+    sig { returns(T::Array[T::Hash[Symbol, Object]]) }
     let(:requirements) do
       [{
         file: "hex.json",
@@ -31,9 +39,12 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
         source: nil
       }]
     end
+    sig { returns(String) }
     let(:string_req) { "1.0.0 <= v <= 2.2.0" }
+    # rubocop:enable RSpec/ScatteredLet
 
     context "when the response is successful" do
+      sig { returns(Excon::Response) }
       let(:response) do
         instance_double(
           Excon::Response,
@@ -48,16 +59,17 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
       end
 
       it "returns an array of package releases" do
-        releases = fetcher.fetch_package_releases
+        releases = T.must(fetcher.fetch_package_releases)
         expect(releases.size).to eq(160)
-        expect(releases[0].version.to_s).to eq("1.8.0-rc.3")
-        expect(releases[0].released_at.to_s).to eq("2025-05-07 04:40:42 UTC")
-        expect(releases[1].version.to_s).to eq("1.8.0-rc.2")
-        expect(releases[1].released_at.to_s).to eq("2025-04-30 03:58:52 UTC")
+        expect(releases.fetch(0).version.to_s).to eq("1.8.0-rc.3")
+        expect(releases.fetch(0).released_at.to_s).to eq("2025-05-07 04:40:42 UTC")
+        expect(releases.fetch(1).version.to_s).to eq("1.8.0-rc.2")
+        expect(releases.fetch(1).released_at.to_s).to eq("2025-04-30 03:58:52 UTC")
       end
     end
 
     context "when the response is not successful" do
+      sig { returns(Excon::Response) }
       let(:response) { instance_double(Excon::Response, status: 404, body: "[]") }
 
       before do
@@ -70,6 +82,8 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
     end
 
     context "when the dependency has a hex package name alias" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "pulsar",
@@ -85,6 +99,7 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
         )
       end
 
+      sig { returns(Excon::Response) }
       let(:response) do
         instance_double(
           Excon::Response,
@@ -93,6 +108,7 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
                 fixture("package_fetch_response", "hex-parser.json")
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(Dependabot::RegistryClient).to receive(:get).and_return(response)
