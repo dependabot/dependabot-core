@@ -94,7 +94,7 @@ module Dependabot
         when "git"
           apply_git_requirement_update(content, new_req, old_req, file)
         when "additional_dependency"
-          apply_additional_dependency_update(content, new_req, old_req)
+          apply_additional_dependency_update(content, new_req, old_req, file)
         else
           content
         end
@@ -130,14 +130,37 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_additional_dependency_update(content, new_req, old_req)
+      def apply_additional_dependency_update(content, new_req, old_req, file)
         old_string = T.must(old_req.source_string("original_string"))
         new_string = T.must(new_req.source_string("original_string"))
+        return replace_additional_dependency_in_toml(content, old_req, old_string, new_string) if toml?(file)
 
         replace_additional_dependency_in_content(content, old_string, new_string)
+      end
+
+      # Rewrites the matching element of the hook's additional_dependencies
+      # only, so the same string elsewhere (e.g. in args) is left alone.
+      sig do
+        params(
+          content: String,
+          old_req: Dependabot::DependencyRequirement,
+          old_string: String,
+          new_string: String
+        ).returns(String)
+      end
+      def replace_additional_dependency_in_toml(content, old_req, old_string, new_string)
+        ranges = PrekToml.new(content).additional_dependency_ranges(
+          T.must(old_req.source_string("hook_repo")),
+          T.must(old_req.source_string("hook_id")),
+          old_string
+        )
+        updated_content = content.dup
+        ranges.reverse_each { |range| updated_content[range] = new_string }
+        updated_content
       end
 
       # Any .toml dependency file is rewritten as TOML; everything else as YAML.
@@ -212,7 +235,7 @@ module Dependabot
       def replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
         updated_content = content.dup
 
-        PrekToml.rev_value_ranges(content, repo_url).reverse_each do |range|
+        PrekToml.new(content).rev_value_ranges(repo_url).reverse_each do |range|
           next unless content[range] == old_ref
 
           updated_content[range] = new_ref
@@ -262,11 +285,9 @@ module Dependabot
           # - 'types-requests==1.0.0'
           # - "types-requests==1.0.0"
           # [..., types-requests==1.0.0, ...]
-          #   "types-requests==1.0.0",
           if line.match?(/^\s*-\s*['"]?#{escaped_old}['"]?\s*$/) || # Block style
              line.match?(/[\[,]\s*['"]?#{escaped_old}['"]?\s*[,\]]/) || # Flow style
-             line.match?(/^\s*-\s*['"]?#{escaped_old}['"]?\s*#/) || # With comment
-             line.match?(/^\s*['"]#{escaped_old}['"]\s*,?\s*(?:#.*)?$/) # Quoted element on its own line
+             line.match?(/^\s*-\s*['"]?#{escaped_old}['"]?\s*#/) # With comment
             line.gsub(old_string, new_string)
           else
             line

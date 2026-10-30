@@ -713,6 +713,16 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         end
       end
 
+      context "with quoted keys" do
+        let(:pre_commit_config) do
+          Dependabot::DependencyFile.new(name: "prek.toml", content: fixture("prek_configs", "quoted_keys.toml"))
+        end
+
+        it "reads the rev comment" do
+          expect(dependencies.first.requirements.first[:metadata][:comment]).to eq("# frozen: v4.4.0")
+        end
+      end
+
       context "when a later table's rev precedes its repo" do
         # The second table puts `rev` before `repo` (legal TOML, any key order)
         # and carries a comment. The first repo's own rev line has no comment,

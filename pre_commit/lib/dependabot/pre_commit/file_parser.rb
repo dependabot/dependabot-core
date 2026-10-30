@@ -358,9 +358,9 @@ module Dependabot
         ).returns(T.nilable(String))
       end
       def toml_rev_line_comment(file, repo_url)
-        content = T.must(file.content)
-        rev = PrekToml.rev_value_ranges(content, repo_url).first
-        PrekToml.line_comment(content, rev.end) if rev
+        toml = PrekToml.new(T.must(file.content))
+        rev = toml.rev_value_ranges(repo_url).first
+        toml.line_comment(rev.end) if rev
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
