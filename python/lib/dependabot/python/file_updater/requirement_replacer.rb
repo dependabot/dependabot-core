@@ -152,7 +152,8 @@ module Dependabot
           # This ensures a single gsub handles all extras variants of the same dependency.
           # The requirement must end where the declaration's own specifiers end: ">=2.7.0" is the start of
           # ">=2.7.0,<3.0.0" and ">=2.7.0,!=2.9.0; sys_platform == 'win32'", which are other declarations.
-          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*#{after_escaped}(?![\-\w\.]|\s*,\s*\\?\s*[<>=!~])/
+          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*
+           #{after_escaped}(?![\-\w\.]|\s*,\s*\\?\s*[<>=!~])/x
         end
 
         sig { params(requirement: T.nilable(String)).returns(T::Boolean) }
