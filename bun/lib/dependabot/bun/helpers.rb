@@ -85,7 +85,7 @@ module Dependabot
 
       BUNFIG_FILE = "bunfig.toml"
       FROZEN_LOCKFILE_SETTING = /\A(?<key>\s*(?<dotted>install\.)?frozenLockfile\s*=\s*)true\b/
-      TOML_TABLE_HEADER = /\A\s*\[\[?\s*(?<name>[\w.-]+)\s*\]\]?\s*(?:#.*)?\z/
+      TOML_TABLE_HEADER = /\A\s*\[\[?\s*(?<name>[\w.-]+)\s*\]\]?\s*(?:#.*)?\s*\z/
 
       # A repository can set `frozenLockfile = true` in its bunfig.toml so that a plain `bun install` never rewrites
       # bun.lock. Bun has no flag to undo that, and refuses any install or update that would change the lockfile, which
