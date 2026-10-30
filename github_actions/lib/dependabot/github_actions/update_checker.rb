@@ -240,7 +240,10 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
                 repo_contents_path = File.join(temp_dir, File.basename(source.repo))
 
-                SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
+                SharedHelpers.run_shell_command(
+                  "git clone --no-recurse-submodules #{url} #{repo_contents_path}",
+                  fingerprint: "git clone --no-recurse-submodules <url> <path>"
+                )
 
                 Dir.chdir(repo_contents_path) do
                   ref_branch = ContainingBranchFinder.find(
