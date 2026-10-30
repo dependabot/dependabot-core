@@ -421,6 +421,14 @@ module Dependabot
       # if .toml has incorrect version specification i.e. <0.2.0app
       INVALID_VERSION = /Could not parse version constraint: (?<ver>.*)/
 
+      # Poetry cannot read the poetry.lock: it has no lock-version (written by Poetry before 1.1), or its lock-version
+      # is newer than this Poetry reads. The warning for a merely newer lock-version says "might not be compatible".
+      LOCK_FILE_NOT_COMPATIBLE = /
+        The\slock\sfile\sis\snot\scompatible\swith\sthe\scurrent\sversion\sof\sPoetry\.\s+
+        (?:Upgrade\sPoetry\sto\sbe\sable\sto\sread\sthe\slock\sfile\sor,\salternatively,\sregenerate|Regenerate)
+        \sthe\slock\sfile\swith\sthe\s`poetry\slock`\scommand\.
+      /x
+
       # dependency source link not accessible
       INVALID_LINK = /No valid distribution links found for package: "(?<dep>.*)" version: "(?<ver>.*)"/
 
@@ -530,6 +538,7 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
+        handle_lock_file_not_compatible(error)
         handle_enrich_constraints(error)
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
@@ -571,6 +580,13 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
 
       private
+
+      sig { params(error: Exception).void }
+      def handle_lock_file_not_compatible(error)
+        return unless (msg = error.message.match(LOCK_FILE_NOT_COMPATIBLE))
+
+        raise DependencyFileNotResolvable, msg[0].to_s.gsub(/\s+/, " ")
+      end
 
       sig { params(error: Exception).void }
       def handle_enrich_constraints(error)
