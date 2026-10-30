@@ -505,9 +505,11 @@ module Dependabot
       def fetch_latest_image_version
         docker_dependency = build_docker_dependency
 
+        docker_cooldown = docker_cooldown_options
+
         Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{docker_dependency.name}")
 
-        docker_checker = if cooldown_enabled?
+        docker_checker = if docker_cooldown
                            Dependabot::UpdateCheckers.for_package_manager("docker").new(
                              dependency: docker_dependency,
                              dependency_files: dependency_files,
@@ -515,7 +517,7 @@ module Dependabot
                              ignored_versions: ignored_versions,
                              security_advisories: security_advisories,
                              raise_on_ignored: raise_on_ignored,
-                             update_cooldown: update_cooldown
+                             update_cooldown: docker_cooldown
                            )
                          else
                            Dependabot::UpdateCheckers.for_package_manager("docker").new(
@@ -600,6 +602,21 @@ module Dependabot
             }
           }],
           package_manager: "docker"
+        )
+      end
+
+      # The Docker checker matches include/exclude against the shortened image name, so resolve
+      # them here against the original Helm dependency name and delegate a pattern-free cooldown.
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      def docker_cooldown_options
+        cooldown = update_cooldown
+        return nil if cooldown.nil? || !cooldown_enabled? || !cooldown.included?(dependency.name)
+
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: cooldown.default_days,
+          semver_major_days: cooldown.semver_major_days,
+          semver_minor_days: cooldown.semver_minor_days,
+          semver_patch_days: cooldown.semver_patch_days
         )
       end
 
