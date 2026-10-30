@@ -285,7 +285,18 @@ module Dependabot
         ignore_conditions = job.ignore_conditions_for(dep)
         return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
 
+        return true if explicitly_targeted_security_dependency?(dep, job)
+
         job.allowed_update?(dep, check_previous_version: true)
+      end
+
+      # A security job names the dependencies it targets. Those must survive the group filter even when the
+      # job's advisory list has no entry for them, otherwise a compiled change is silently discarded.
+      sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }
+      def explicitly_targeted_security_dependency?(dep, job)
+        return false unless job.security_updates_only?
+
+        Array(job.dependencies).any? { |name| name.casecmp?(dep.name) }
       end
 
       sig { params(dep_name: String, pattern: String).returns(T::Boolean) }
@@ -360,7 +371,12 @@ module Dependabot
         other = T.must(grouped_deps[:other])
 
         log_dependency_group(not_in_group, "not in group") if not_in_group.any?
-        log_dependency_group(filtered_by_config, "filtered by dependabot.yml config") if filtered_by_config.any?
+        if filtered_by_config.any?
+          log_dependency_group(
+            filtered_by_config,
+            "rejected by job update rules (ignore conditions or allowed updates)"
+          )
+        end
         if belongs_to_more_specific_group.any?
           log_dependency_group(
             belongs_to_more_specific_group,
