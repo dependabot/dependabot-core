@@ -147,4 +147,16 @@ RSpec.describe Dependabot::Helm::Version do
       expect(described_class.new("img_20230915.3").to_s).to eq("20230915.3")
     end
   end
+
+  describe Dependabot::Helm::ImageTag do
+    it "returns the tag exactly as published" do
+      expect(described_class.new("v1.5.0").to_s).to eq("v1.5.0")
+      expect(described_class.new("20.9.0-alpine3.18").to_s).to eq("20.9.0-alpine3.18")
+    end
+
+    it "compares like a Helm::Version" do
+      expect(described_class.new("v1.5.0")).to be > Dependabot::Helm::Version.new("1.4.9")
+      expect(described_class.new("v1.5.0")).to eq(Dependabot::Helm::Version.new("1.5.0"))
+    end
+  end
 end
