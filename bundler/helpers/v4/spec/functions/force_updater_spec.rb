@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_name and target_version fixtures.
+
 require "native_spec_helper"
 require "shared_contexts"
 
