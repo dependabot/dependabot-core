@@ -67,10 +67,12 @@ module Dependabot
         fetched_files += project_files
         fetched_files << python_version_file if python_version_file
 
-        uniques = uniq_files(fetched_files)
-        uniques.reject do |file|
-          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        uniques = uniq_files(fetched_files).reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.path, "file from final collection", @exclude_paths)
         end
+        # A top-level fallback keeps its real path for the check above, then takes the local name
+        python_version_file&.name = ".python-version"
+        uniques
       end
 
       private
@@ -122,7 +124,6 @@ module Dependabot
             # Check the top-level for a .python-version file, too
             reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
             fetch_support_file(File.join(reverse_path, ".python-version"))
-              &.tap { |f| f.name = ".python-version" }
           end,
           T.nilable(Dependabot::DependencyFile)
         )
@@ -132,8 +133,12 @@ module Dependabot
       def pyproject
         return @pyproject if defined?(@pyproject)
 
+        # Loaded from the clone by path, bypassing the filtered listing: exclude it before
+        # its path dependencies are followed
         @pyproject = T.let(
-          fetch_file_if_present("pyproject.toml"),
+          fetch_file_if_present("pyproject.toml")&.then do |file|
+            file unless Dependabot::FileFiltering.should_exclude_path?(file.path, "pyproject.toml", @exclude_paths)
+          end,
           T.nilable(Dependabot::DependencyFile)
         )
       end
