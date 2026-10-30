@@ -25,6 +25,7 @@ module Dependabot
 
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/hook_language_fetcher"
+      require_relative "prek_toml"
 
       # Matches pre-commit's YAML configs as well as prek's TOML config, which
       # is configuration-compatible once parsed.
@@ -349,10 +350,7 @@ module Dependabot
 
       # Extracts the trailing comment on a repo's `rev = "..."` line, e.g.
       # `rev = "<sha>"  # frozen: v4.4.0`. TOML comments are discarded by the
-      # parser, so we scan the raw content like pre-commit does for YAML. The
-      # `repo =` / `rev =` assignments are matched with a leading boundary so
-      # both the `[[repos]]` table form and the inline-table array form
-      # (`repos = [{ repo = "...", rev = "..." }]`) are handled.
+      # parser, so the raw content is scanned like pre-commit does for YAML.
       sig do
         params(
           file: Dependabot::DependencyFile,
@@ -360,24 +358,9 @@ module Dependabot
         ).returns(T.nilable(String))
       end
       def toml_rev_line_comment(file, repo_url)
-        current_repo = T.let(nil, T.nilable(String))
-
-        T.must(file.content).each_line do |line|
-          # A new `[[repos]]` table starts a fresh repo scope; reset so a stray
-          # `rev =` appearing before this table's `repo =` can't be attributed
-          # to the previous table's repo.
-          current_repo = nil if line.match?(/^\s*\[\[\s*repos\s*\]\]/)
-
-          repo_match = line.match(/(?:^|[\s{,])repo\s*=\s*["']([^"']+)["']/)
-          current_repo = repo_match[1] if repo_match
-
-          next unless current_repo == repo_url
-
-          rev_match = line.match(/(?:^|[\s{,])rev\s*=\s*\S+.*?(#.*)$/)
-          return T.must(rev_match[1]).rstrip if rev_match
-        end
-
-        nil
+        content = T.must(file.content)
+        rev = PrekToml.rev_value_ranges(content, repo_url).first
+        PrekToml.line_comment(content, rev.end) if rev
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

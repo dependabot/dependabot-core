@@ -729,6 +729,11 @@ RSpec.describe Dependabot::PreCommit::FileParser do
           dep = dependencies.find { |d| d.name.include?("pre-commit-hooks") }
           expect(dep.requirements.first[:metadata][:comment]).to be_nil
         end
+
+        it "attributes the comment to the table that holds it" do
+          dep = dependencies.find { |d| d.name.include?("psf/black") }
+          expect(dep.requirements.first[:metadata][:comment]).to eq("# frozen: v4.4.0")
+        end
       end
     end
   end
