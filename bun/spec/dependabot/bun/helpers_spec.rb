@@ -124,5 +124,84 @@ RSpec.describe Dependabot::Bun::Helpers do
         expect(bunfig_seen_by_block).to eq("[install]\nexact = true\n\n[run]\nfrozenLockfile = true\n")
       end
     end
+
+    {
+      "a quoted table name" => [
+        "[\"install\"]\nfrozenLockfile = true\n",
+        "[\"install\"]\nfrozenLockfile = false\n"
+      ],
+      "a single-quoted table name" => [
+        "['install']\nfrozenLockfile = true\n",
+        "['install']\nfrozenLockfile = false\n"
+      ],
+      "a quoted key" => [
+        "[install]\n\"frozenLockfile\" = true\n",
+        "[install]\n\"frozenLockfile\" = false\n"
+      ],
+      "a single-quoted key" => [
+        "[install]\n'frozenLockfile' = true\n",
+        "[install]\n'frozenLockfile' = false\n"
+      ],
+      "whitespace around the dot of a dotted key" => [
+        "install . frozenLockfile = true\n",
+        "install . frozenLockfile = false\n"
+      ],
+      "a quoted segment in a dotted key" => [
+        "\"install\".\"frozenLockfile\" = true\n",
+        "\"install\".\"frozenLockfile\" = false\n"
+      ],
+      "a dotted table name" => [
+        "[ \"install\" . cache ]\ndisable = true\n[install]\nfrozenLockfile = true\n",
+        "[ \"install\" . cache ]\ndisable = true\n[install]\nfrozenLockfile = false\n"
+      ],
+      "a key made of escape sequences" => [
+        "[install]\n\"frozen\\u004cockfile\" = true\n",
+        "[install]\n\"frozen\\u004cockfile\" = false\n"
+      ],
+      "a header with a trailing comment" => [
+        "[install] # settings\nfrozenLockfile = true\n",
+        "[install] # settings\nfrozenLockfile = false\n"
+      ],
+      "Windows line endings" => [
+        "[install]\r\nfrozenLockfile = true\r\n",
+        "[install]\r\nfrozenLockfile = false\r\n"
+      ]
+    }.each do |description, (before, after)|
+      context "when the freeze is written with #{description}" do
+        before { write_bunfig(before) }
+
+        it "turns the freeze off and keeps the rest of the file" do
+          expect(bunfig_seen_by_block).to eq(after)
+        end
+      end
+    end
+
+    {
+      "a quoted table name" => "[install]\nexact = true\n\n[\"run\"]\nfrozenLockfile = true\n",
+      "a single-quoted table name" => "[install]\nexact = true\n\n['run']\nfrozenLockfile = true\n",
+      "a commented table header" => "[install]\nexact = true\n[run] # scripts\nfrozenLockfile = true\n",
+      "a quoted key that only looks like the setting" =>
+        "[install]\n\"frozenLockfile.extra\" = true\n",
+      "a dotted key of another table" => "run.frozenLockfile = true\n",
+      "a table that only starts with the name" => "[installer]\nfrozenLockfile = true\n",
+      "an array of tables" => "[[install]]\nfrozenLockfile = true\n",
+      "a quoted name that contains a dot" => "[\"install.frozenLockfile\"]\nfrozenLockfile = true\n"
+    }.each do |description, content|
+      context "when #{description} holds a key named frozenLockfile" do
+        before { write_bunfig(content) }
+
+        it "leaves the file as it is" do
+          expect(bunfig_seen_by_block).to eq(content)
+        end
+      end
+    end
+
+    context "when a header has a long run of spaces and no closing bracket" do
+      before { write_bunfig("[#{' ' * 50_000}-\nfrozenLockfile = true\n") }
+
+      it "returns promptly" do
+        expect { Timeout.timeout(2) { bunfig_seen_by_block } }.not_to raise_error
+      end
+    end
   end
 end

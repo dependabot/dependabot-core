@@ -84,8 +84,17 @@ module Dependabot
       end
 
       BUNFIG_FILE = "bunfig.toml"
-      FROZEN_LOCKFILE_SETTING = /\A(?<key>\s*(?<dotted>install\.)?frozenLockfile\s*=\s*)true\b/
-      TOML_TABLE_HEADER = /\A\s*\[\[?\s*(?<name>[\w.-]+)\s*\]\]?\s*(?:#.*)?\s*\z/
+      FROZEN_LOCKFILE_PATH = %w(install frozenLockfile).freeze
+      TOML_KEY_SEGMENT = /"(?:[^"\\\n]|\\.)*"|'[^'\n]*'|[A-Za-z0-9_-]+/
+      TOML_KEY_PATH = /#{TOML_KEY_SEGMENT}(?:[ \t]*\.[ \t]*#{TOML_KEY_SEGMENT})*/
+      TOML_TABLE_HEADER = /\A[ \t]*(?<array>\[)?\[[ \t]*(?<path>#{TOML_KEY_PATH})[ \t]*\]\]?[ \t]*(?:#.*)?\z/
+      FROZEN_LOCKFILE_SETTING = /\A(?<before>[ \t]*(?<path>#{TOML_KEY_PATH})[ \t]*=[ \t]*)true\b/
+      TOML_ESCAPES = T.let(
+        {
+          "b" => "\b", "t" => "\t", "n" => "\n", "f" => "\f", "r" => "\r", "e" => "\e", '"' => '"', "\\" => "\\"
+        }.freeze,
+        T::Hash[String, String]
+      )
 
       # A repository can set `frozenLockfile = true` in its bunfig.toml so that a plain `bun install` never rewrites
       # bun.lock. Bun has no flag to undo that, and refuses any install or update that would change the lockfile, which
@@ -109,26 +118,39 @@ module Dependabot
         end
       end
 
-      # Only `frozenLockfile` under [install], or as `install.frozenLockfile` outside any table, is the setting bun
-      # reads. A key of that name in another table is left alone, and so is everything else in the file.
+      # Only the key `install.frozenLockfile` is the setting bun reads, however TOML spells it: under an `[install]`
+      # table, as a dotted key, with quoted names or with spaces around the dots. A key of that name in another table is
+      # left alone, and so is everything else in the file.
       sig { params(bunfig: String).returns(String) }
       def self.without_frozen_lockfile(bunfig)
-        table = T.let(nil, T.nilable(String))
+        table = T.let([], T::Array[String])
 
         bunfig.lines.map do |line|
-          if (header = line.match(TOML_TABLE_HEADER))
-            table = header[:name]
+          if (header = line.chomp.match(TOML_TABLE_HEADER))
+            table = header[:array] ? ["[[#{header[:path]}]]"] : toml_key_path(T.must(header[:path]))
             next line
           end
 
           setting = line.match(FROZEN_LOCKFILE_SETTING)
-          next line unless setting
+          next line unless setting && table + toml_key_path(T.must(setting[:path])) == FROZEN_LOCKFILE_PATH
 
-          in_install_table = setting[:dotted].nil? ? table == "install" : table.nil?
-          next line unless in_install_table
-
-          line.sub(FROZEN_LOCKFILE_SETTING, "\\k<key>false")
+          line.sub(FROZEN_LOCKFILE_SETTING, "\\k<before>false")
         end.join
+      end
+
+      # Splits a TOML key such as `"install" . frozenLockfile` into its unquoted names.
+      sig { params(key: String).returns(T::Array[String]) }
+      def self.toml_key_path(key)
+        T.cast(key.scan(TOML_KEY_SEGMENT), T::Array[String]).map do |segment|
+          if segment.start_with?('"')
+            segment[1..-2].to_s.gsub(/\\(?:u(\h{4})|U(\h{8})|(.))/) do
+              hex = Regexp.last_match(1) || Regexp.last_match(2)
+              hex ? [hex.hex].pack("U") : TOML_ESCAPES.fetch(Regexp.last_match(3).to_s, Regexp.last_match(3).to_s)
+            end
+          else
+            segment.delete_prefix("'").delete_suffix("'")
+          end
+        end
       end
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
