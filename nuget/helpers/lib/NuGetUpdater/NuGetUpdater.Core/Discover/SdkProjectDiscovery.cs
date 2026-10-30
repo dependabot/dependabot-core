@@ -213,6 +213,10 @@ internal static class SdkProjectDiscovery
                 // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
                 args.Add("/p:TreatWarningsAsErrors=false");
                 args.Add("/p:MSBuildTreatWarningsAsErrors=false");
+
+                // a repo might enable locked mode, e.g., only on CI, which would fail restore with NU1004 once a version has been changed;
+                // explicitly don't allow that because this restore is also how a lock file gets updated
+                args.Add("/p:RestoreLockedMode=false");
                 args.Add($"/bl:{binLogPath}");
 
                 var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
