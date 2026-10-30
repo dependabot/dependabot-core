@@ -1111,6 +1111,119 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
+    context "when the full paths sharing a basename are already present" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: "attrs\n"
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: original_compiled_content
+        )
+      end
+
+      let(:original_compiled_content) do
+        <<~TXT
+          attrs==17.3.0
+              # via
+              #   -r requirements/dev/test.in
+              #   -r requirements/prod/test.in
+        TXT
+      end
+
+      let(:updated_compiled_content) do
+        <<~TXT
+          attrs==18.1.0
+              # via
+              #   -r requirements/dev/test.in
+              #   -r requirements/prod/test.in
+        TXT
+      end
+
+      it "leaves both paths unchanged" do
+        result = updater.send(:post_process_compiled_file, updated_compiled_content, generated_file)
+        expect(result).to include("#   -r requirements/dev/test.in")
+        expect(result).to include("#   -r requirements/prod/test.in")
+      end
+    end
+
+    context "when via annotations are inline" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: "attrs\n"
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: original_compiled_content
+        )
+      end
+
+      let(:original_compiled_content) do
+        <<~TXT
+          attrs==17.3.0             # via -r requirements/test.in
+          six==1.11.0               # via attrs, -r requirements/test.in
+        TXT
+      end
+
+      let(:updated_compiled_content) do
+        <<~TXT
+          attrs==18.1.0             # via -r test.in
+          six==1.11.0               # via attrs, -r test.in
+        TXT
+      end
+
+      it "restores the full path in inline annotations" do
+        result = updater.send(:post_process_compiled_file, updated_compiled_content, generated_file)
+        expect(result).to include("attrs==18.1.0             # via -r requirements/test.in")
+        expect(result).to include("six==1.11.0               # via attrs, -r requirements/test.in")
+      end
+    end
+
+    context "when one shortened path is a prefix of another" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: "attrs\n"
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: original_compiled_content
+        )
+      end
+
+      let(:original_compiled_content) do
+        <<~TXT
+          attrs==17.3.0
+              # via
+              #   -r requirements/test.in
+              #   -r other/test.in.txt
+        TXT
+      end
+
+      let(:updated_compiled_content) do
+        <<~TXT
+          attrs==18.1.0
+              # via
+              #   -r test.in
+              #   -r test.in.txt
+        TXT
+      end
+
+      it "restores each path in full" do
+        result = updater.send(:post_process_compiled_file, updated_compiled_content, generated_file)
+        expect(result).to include("#   -r other/test.in.txt")
+        expect(result).to include("#   -r requirements/test.in")
+      end
+    end
+
     context "when via annotations have correct paths (root-level files)" do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(
