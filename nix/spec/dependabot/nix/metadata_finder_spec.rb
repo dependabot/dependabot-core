@@ -1,25 +1,35 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/nix/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Nix::MetadataFinder do
+  extend T::Sig
+
+  sig { returns(Dependabot::Nix::MetadataFinder) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { "https://github.com/NixOS/nixpkgs" }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "nixpkgs",
@@ -40,6 +50,7 @@ RSpec.describe Dependabot::Nix::MetadataFinder do
       package_manager: "nix"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     stub_request(:get, "https://example.com/status").to_return(
@@ -52,21 +63,25 @@ RSpec.describe Dependabot::Nix::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
+    sig { returns(T.nilable(String)) }
     subject(:source_url) { finder.source_url }
 
     context "when the URL is a github one" do
+      sig { returns(String) }
       let(:url) { "https://github.com/NixOS/nixpkgs" }
 
       it { is_expected.to eq("https://github.com/NixOS/nixpkgs") }
     end
 
     context "when the URL is a gitlab one" do
+      sig { returns(String) }
       let(:url) { "https://gitlab.com/myorg/myrepo" }
 
       it { is_expected.to eq("https://gitlab.com/myorg/myrepo") }
     end
 
     context "when the source is a NixOS channel tarball" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "nixpkgs",
