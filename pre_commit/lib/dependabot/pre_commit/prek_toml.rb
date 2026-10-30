@@ -17,7 +17,9 @@ module Dependabot
       REPOS_TABLE_HEADER = /^[ \t]*\[\[[ \t]*repos[ \t]*\]\]/
       TABLE_HEADER = /^[ \t]*\[/
       STRING_VALUE = /\G(["'])(.*?)\1/
-      STRING_OR_COMMENT = /"(?:[^"\\\n]|\\.)*"|'[^'\n]*'|#[^\n]*/
+      # An unterminated string runs to the end of its line, so no input makes
+      # the match backtrack.
+      STRING_OR_COMMENT = /"(?:[^"\\\n]|\\.)*(?:"|$)|'[^'\n]*(?:'|$)|#[^\n]*/
 
       # Returns the character range of each `rev` value (inside its quotes)
       # in a repo entry whose `repo` is repo_url.
@@ -82,17 +84,11 @@ module Dependabot
         (value_start + 1)...(value_start + 1 + T.must(value_match[2]).length)
       end
 
-      # Replaces the contents of strings and comments with spaces, keeping
-      # quotes, the comment `#` and every offset intact.
+      # Replaces the contents of strings and comments with spaces, keeping the
+      # opening quote or `#` and every offset intact.
       sig { params(content: String).returns(String) }
       def self.mask(content)
-        content.gsub(STRING_OR_COMMENT) do |token|
-          if token.start_with?("#")
-            "#" + (" " * (token.length - 1))
-          else
-            T.must(token[0]) + (" " * (token.length - 2)) + T.must(token[-1])
-          end
-        end
+        content.gsub(STRING_OR_COMMENT) { |token| T.must(token[0]) + (" " * (token.length - 1)) }
       end
     end
   end
