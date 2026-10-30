@@ -193,7 +193,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           before do
-            stub_request(:get, "https://api.github.com/repos/mperham/sidekiq/contents/")
+            stub_request(:get, "https://api.github.com/repos/mperham/sidekiq/contents/?ref=master")
               .to_return(status: 200,
                          body: fixture("github", "contents_sidekiq.json"),
                          headers: { "Content-Type" => "application/json" })
@@ -208,7 +208,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           context "when the suggested repository response is malformed" do
             before do
-              stub_request(:get, "https://api.github.com/repos/mperham/sidekiq/contents/")
+              stub_request(:get, "https://api.github.com/repos/mperham/sidekiq/contents/?ref=master")
                 .to_return(
                   status: 200,
                   body: JSON.dump([{ type: 1 }]),
@@ -244,7 +244,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           context "when there is a fragment in the URL" do
             let(:suggested_changelog_url) do
-              "https:/github.com/mperham/sidekiq/blob/master/Pro-Changes.md#v2.8.6"
+              "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md#v2.8.6"
             end
 
             it "gets the right URL" do
@@ -255,10 +255,43 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             end
           end
 
+          context "when the suggested changelog is nested" do
+            let(:suggested_changelog_url) do
+              "https://github.com/mperham/sidekiq/blob/master/docs/Pro-Changes.md"
+            end
+            let(:nested_contents_url) { "https://api.github.com/repos/mperham/sidekiq/contents/docs?ref=master" }
+
+            before do
+              file = JSON.parse(fixture("github", "contents_sidekiq.json"))
+                         .find { |entry| entry.fetch("name") == "Pro-Changes.md" }
+              response = file.merge(
+                "path" => "docs/Pro-Changes.md",
+                "html_url" => "https://github.com/mperham/sidekiq/blob/master/docs/Pro-Changes.md",
+                "url" => "https://api.github.com/repos/mperham/sidekiq/contents/docs/Pro-Changes.md?ref=master",
+                "download_url" => "https://raw.githubusercontent.com/mperham/sidekiq/master/docs/Pro-Changes.md"
+              )
+              stub_request(:get, nested_contents_url)
+                .to_return(status: 200, body: JSON.dump([response]), headers: { "Content-Type" => "application/json" })
+            end
+
+            it "looks in the containing directory" do
+              expect(changelog_url).to eq("https://github.com/mperham/sidekiq/blob/master/docs/Pro-Changes.md")
+              expect(WebMock).to have_requested(:get, nested_contents_url).once
+            end
+
+            context "with a fragment" do
+              let(:suggested_changelog_url) { super() + "#v2.8.6" }
+
+              it "gets the right URL" do
+                expect(changelog_url).to eq("https://github.com/mperham/sidekiq/blob/master/docs/Pro-Changes.md")
+              end
+            end
+          end
+
           context "when the repo can't be found" do
             before do
               suggested_github_url =
-                "https://api.github.com/repos/mperham/sidekiq/contents/"
+                "https://api.github.com/repos/mperham/sidekiq/contents/?ref=master"
               stub_request(:get, suggested_github_url)
                 .to_return(status: 404)
 
@@ -1069,7 +1102,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           suggested_github_response =
             fixture("github", "contents_sidekiq.json")
           suggested_github_url =
-            "https://api.github.com/repos/mperham/sidekiq/contents/"
+            "https://api.github.com/repos/mperham/sidekiq/contents/?ref=master"
           stub_request(:get, suggested_github_url)
             .to_return(status: 200,
                        body: suggested_github_response,
