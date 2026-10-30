@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,10 +6,17 @@ require "dependabot/vcpkg/requirement"
 require "dependabot/vcpkg/version"
 
 RSpec.describe Dependabot::Vcpkg::Requirement do
+  extend T::Sig
+
+  sig { returns(Dependabot::Vcpkg::Requirement) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:requirement) { described_class.new(requirement_string) }
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:requirement_string) { ">=1.2.3" }
+  sig { returns(T.class_of(Dependabot::Vcpkg::Version)) }
   let(:version_class) { Dependabot::Vcpkg::Version }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe ".new" do
     it "parses an operator that is not separated by whitespace" do

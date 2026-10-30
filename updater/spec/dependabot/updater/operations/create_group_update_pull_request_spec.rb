@@ -299,6 +299,47 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       perform
     end
 
+    context "when the group's update-types rules reject the dependency" do
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(
+          name: "security",
+          rules: { "patterns" => ["*"], "update-types" => ["patch"] }
+        ).tap { |group| group.dependencies.push(dependency) }
+      end
+
+      before do
+        allow(stub_update_checker).to receive_messages(latest_version: "9.0.0", up_to_date?: false)
+      end
+
+      it "reports a diagnosed failure instead of deferring when no update is possible" do
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:record_update_job_error)
+          .with(hash_including(error_type: "security_update_not_possible"))
+
+        perform
+      end
+
+      it "reports a concrete failure diagnosed in another directory once after all directories" do
+        allow(job.source).to receive(:directories).and_return(%w(/ /))
+        # The first directory can update (deferred); the second cannot (diagnosed).
+        allow(stub_update_checker).to receive(:can_update?).and_return(true, false)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).to receive(:record_update_job_error)
+          .with(hash_including(error_type: "security_update_not_possible")).once
+
+        perform
+      end
+
+      it "leaves it to an individual update instead of reporting an unknown error" do
+        allow(stub_update_checker).to receive(:can_update?).and_return(true)
+        expect(mock_error_handler).not_to receive(:handle_dependency_error)
+        expect(mock_service).not_to receive(:record_update_job_error)
+        expect(mock_service).not_to receive(:create_pull_request)
+
+        perform
+      end
+    end
+
     it "still creates a PR when resolving another dependency's error details fails" do
       resolver_error = RuntimeError.new("resolver failed")
       allow(stub_update_checker).to receive(:lowest_resolvable_security_fix_version).and_raise(resolver_error)

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/credential"
@@ -6,15 +6,21 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/package/package_details_fetcher"
 require "dependabot/github_actions/version"
+require "dependabot/github_actions/requirement"
 require "dependabot/package/package_release"
 require "spec_helper"
 
 RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:upload_pack_fixture) { "setup-node" }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
@@ -58,7 +64,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
   let(:fetcher) do
     described_class.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
@@ -263,6 +269,31 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when cloning the repository to find the branch of a pinned commit fails" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+
+      before do
+        allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
+          .with(array_including(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node }),
+                any_args)
+          .and_return(
+            [
+              "Cloning into 'dependabot_tmp_dir/actions/setup-node'...\n" \
+              "fatal: write error: No space left on device\n",
+              "",
+              instance_double(Process::Status, success?: false, to_s: "pid 1 exit 128")
+            ]
+          )
+      end
+
+      it "reports a fingerprint without the repository URL or the temporary clone path" do
+        expect { latest_version }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+          expect(error.sentry_context[:fingerprint])
+            .to eq(["git clone --no-recurse-submodules <url> <path>"])
+        end
+      end
+    end
+
     context "when using a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
@@ -324,7 +355,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "github_actions",
-          vulnerable_versions: ["< 1.0"]
+          vulnerable_versions: [Dependabot::GithubActions::Requirement.new("< 1.0")]
         )
       ]
     end

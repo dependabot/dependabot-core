@@ -1,14 +1,22 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/github_actions"
 
 RSpec.describe Dependabot::GithubActions::Version do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:semver_version) { "v1.2.3" }
+  sig { returns(String) }
   let(:semver_without_v) { "1.2.3" }
+  sig { returns(String) }
   let(:path_based_sem_version) { "dummy/v1.2.3" }
+  sig { returns(String) }
   let(:path_based_sem_without_v) { "dummy/1.2.3" }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#correct?" do
     it "rejects nil" do

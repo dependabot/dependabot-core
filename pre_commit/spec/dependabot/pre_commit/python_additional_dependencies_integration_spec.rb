@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -309,9 +309,10 @@ RSpec.describe "Python additional_dependencies integration" do
       dependencies = parser.parse
 
       additional_dep = dependencies.find do |dep|
-        dep.requirements.first[:source]&.dig(:package_name) == "types-requests"
+        T.must(dep.requirements.first).source_string("package_name") == "types-requests"
       end
       expect(additional_dep).not_to be_nil
+      additional_dep = T.must(additional_dep)
 
       # Step 2: Check for updates (mocked)
       pip_checker = instance_double(Dependabot::Python::UpdateChecker)
@@ -332,12 +333,12 @@ RSpec.describe "Python additional_dependencies integration" do
       expect(latest).to eq("2.31.0.20")
 
       updated_reqs = update_checker.updated_requirements
-      expect(updated_reqs.first[:requirement]).to eq("==2.31.0.20")
+      expect(T.must(updated_reqs.first)[:requirement]).to eq("==2.31.0.20")
 
       # Step 3: Update the file
       updated_dep = Dependabot::Dependency.new(
         name: additional_dep.name,
-        version: latest,
+        version: T.must(latest).to_s,
         previous_version: additional_dep.version,
         requirements: updated_reqs,
         previous_requirements: additional_dep.requirements,
@@ -351,7 +352,7 @@ RSpec.describe "Python additional_dependencies integration" do
       )
 
       updated_files = file_updater.updated_dependency_files
-      expect(updated_files.first.content).to include("types-requests==2.31.0.20")
+      expect(T.must(updated_files.first).content).to include("types-requests==2.31.0.20")
     end
   end
 end

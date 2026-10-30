@@ -1030,6 +1030,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       before do
         allow(test_instance).to receive(:semver_rules_allow_grouping?).and_return(false)
+        allow(job).to receive(:security_updates_only?).and_return(false)
       end
 
       it "does NOT mark the dependency as handled" do
