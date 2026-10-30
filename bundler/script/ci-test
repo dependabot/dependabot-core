@@ -2,6 +2,14 @@
 
 set -e
 
+run_native_specs() (
+  # Mocked registry metadata must not leak into later bundle installs.
+  cache_dir="$(mktemp -d)" || exit
+  trap 'rm -rf -- "$cache_dir"' EXIT
+  export BUNDLE_USER_CACHE="$cache_dir"
+  bundle exec rspec spec
+)
+
 bundle install
 bundle exec turbo_tests2 --verbose
 
@@ -10,10 +18,10 @@ bundle exec turbo_tests2 --verbose
 
 # shellcheck source=../helpers/v2/build
 DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v2/build \
-  && bundle exec rspec spec \
+  && run_native_specs \
   && cd -
 
 # shellcheck source=../helpers/v4/build
 DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v4/build \
-  && bundle exec rspec spec \
+  && run_native_specs \
   && cd -
