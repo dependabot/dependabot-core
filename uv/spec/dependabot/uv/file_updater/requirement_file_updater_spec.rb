@@ -734,6 +734,97 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
       end
     end
 
+    context "when one declaration of the package starts with another one" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          content: <<~TOML,
+            [project]
+            name = "example"
+            version = "0.0.0"
+            dependencies = [
+              "example-alpha#{short_requirement}",
+            ]
+
+            [project.optional-dependencies]
+            extra = ["example-alpha#{long_requirement}"]
+          TOML
+          name: "pyproject.toml"
+        )
+      end
+      let(:short_requirement) { ">=2.7.0" }
+      let(:long_requirement) { ">=2.7.0,<3.0.0" }
+      let(:short) { { file: "pyproject.toml", groups: ["dependencies"], source: nil, requirement: short_requirement } }
+      let(:long) { { file: "pyproject.toml", groups: ["extra"], source: nil, requirement: long_requirement } }
+      let(:updated_short) { short.merge(requirement: ">=3.1.0") }
+      let(:updated_long) { long.merge(requirement: ">=3.1.0,<4.0.0") }
+      let(:requirements_list) { [updated_short, updated_long] }
+      let(:previous_requirements_list) { [short, long] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example-alpha",
+          version: "3.1.0",
+          previous_version: "2.7.0",
+          requirements: requirements_list,
+          previous_requirements: previous_requirements_list,
+          package_manager: "uv"
+        )
+      end
+
+      it "updates both declarations" do
+        expect(updated_files.count).to eq(1)
+        content = updated_files.first.content
+        expect(content).to include("\"example-alpha>=3.1.0\",")
+        expect(content).to include("[\"example-alpha>=3.1.0,<4.0.0\"]")
+      end
+
+      context "when the longer declaration comes first" do
+        let(:requirements_list) { [updated_long, updated_short] }
+        let(:previous_requirements_list) { [long, short] }
+
+        it "updates both declarations" do
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha>=3.1.0\",")
+          expect(content).to include("[\"example-alpha>=3.1.0,<4.0.0\"]")
+        end
+      end
+
+      context "when only the shorter declaration changes" do
+        let(:requirements_list) { [updated_short, long] }
+
+        it "leaves the longer declaration as it was" do
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha>=3.1.0\",")
+          expect(content).to include("[\"example-alpha>=2.7.0,<3.0.0\"]")
+        end
+      end
+
+      context "when the longer declaration has a marker" do
+        let(:long_requirement) { ">=2.7.0,!=2.9.0" }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            content: <<~TOML,
+              [project]
+              name = "example"
+              version = "0.0.0"
+              dependencies = [
+                "example-alpha#{short_requirement}",
+                "example-alpha#{long_requirement}; sys_platform == 'win32'",
+              ]
+            TOML
+            name: "pyproject.toml"
+          )
+        end
+        let(:requirements_list) { [updated_short, long] }
+
+        it "leaves the longer declaration and its marker as they were" do
+          content = updated_files.first.content
+          expect(content).to include("\"example-alpha>=3.1.0\",")
+          expect(content).to include("\"example-alpha>=2.7.0,!=2.9.0; sys_platform == 'win32'\"")
+        end
+      end
+    end
+
     context "when the dependency is in constraints.txt and requirement.txt" do
       let(:dependency_files) { [requirements, constraints] }
       let(:requirements_fixture_name) { "specific_with_constraints.txt" }

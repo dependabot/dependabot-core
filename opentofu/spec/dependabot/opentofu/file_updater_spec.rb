@@ -1447,6 +1447,38 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
           expect(result).to be_nil
         end
       end
+
+      context "when the new version no longer ships a platform the lockfile has hashes for" do
+        let(:old_version_packages) do
+          {
+            "linux_amd64" => {
+              "hashes" => ["h1:mxnOC4CXzhG+/JiAs6u2QTn6ecDBoiZBqxaXwqp2TB0=", "zh:fakehash1"]
+            },
+            "darwin_amd64" => {
+              "hashes" => ["h1:RvLGIfRZfbzY58wUja9B6CvGdgVVINy7zLVBdLqIelA=", "zh:fakehash2"]
+            },
+            "windows_arm" => {
+              "hashes" => ["h1:Tf6Os+utUxE8rEr/emCXLFEDdCb0Y6rsN4Ee84+aDCQ=", "zh:fakehash3"]
+            }
+          }
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        end
+
+        it "locks the platforms the new version has instead of asking tofu for the missing one" do
+          actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+          expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+            .with(a_string_matching(/tofu providers lock/), any_args)
+
+          aws_block = actual_lockfile.content[%r(provider "registry\.opentofu\.org/hashicorp/aws".*?^})m]
+          expect(aws_block).to include('version     = "3.42.0"')
+          expect(aws_block.scan(/h1:[^",\s]+/))
+            .to contain_exactly("h1:newLinuxAmd64Hash=", "h1:newDarwinAmd64Hash=")
+        end
+      end
     end
 
     context "when using a lockfile that requires access to an unreachable module" do
