@@ -3,16 +3,16 @@
 # python/lib/dependabot/python/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # (`uv/lib/dependabot/uv/language.rb` aliases `Dependabot::Python::Language`).
 # Python versions are pinned to the release of each minor/patch version.
-ARG PY_3_14=3.14.9
-ARG PY_3_13=3.13.17
-ARG PY_3_12=3.12.13
-ARG PY_3_11=3.11.15
-ARG PY_3_10=3.10.20
+ARG PY_3_14=3.14.10
+ARG PY_3_13=3.13.18
+ARG PY_3_12=3.12.16
+ARG PY_3_11=3.11.18
+ARG PY_3_10=3.10.22
 # https://github.com/pyenv/pyenv/releases
 ARG PYENV_VERSION=v2.6.16
 
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_14
