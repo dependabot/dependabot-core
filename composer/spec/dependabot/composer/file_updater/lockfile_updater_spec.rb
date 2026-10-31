@@ -878,5 +878,118 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           end
       end
     end
+
+    context "with an explicitly configured platform extension" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "mongodb/mongodb",
+          version: "2.4.3",
+          requirements: [{ file: "composer.json", requirement: "^2.4.2", groups: ["runtime"], source: nil }],
+          previous_version: "2.4.2",
+          previous_requirements: [{ file: "composer.json", requirement: "^2.4.2", groups: ["runtime"], source: nil }],
+          package_manager: "composer"
+        )
+      end
+      let(:original_lockfile) do
+        {
+          "content-hash" => "old",
+          "packages" => [{ "name" => "mongodb/mongodb", "version" => "2.4.2" }],
+          "packages-dev" => [],
+          "platform-overrides" => { "ext-mongodb" => "2.4.0" }
+        }
+      end
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "composer.json",
+            content: JSON.pretty_generate(
+              "require" => {
+                "php" => ">=8.1",
+                "ext-mongodb" => "^2.4",
+                "mongodb/mongodb" => "^2.4.2",
+                "vendor/needs-ext" => "^1.0"
+              },
+              "config" => { "platform" => { "ext-mongodb" => "2.4.0" } }
+            )
+          ),
+          Dependabot::DependencyFile.new(name: "composer.lock", content: JSON.pretty_generate(original_lockfile))
+        ]
+      end
+      let(:written_manifests) { [] }
+      let(:responses) { [] }
+
+      before do
+        allow(updater).to receive(:run_update_helper) do
+          written_manifests << JSON.parse(File.read("composer.json"))
+          response = responses.shift
+          raise response if response.is_a?(Exception)
+
+          response
+        end
+        allow(updater).to receive(:replace_content_hash) { |content| content }
+      end
+
+      def missing_platform_error(problem)
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Your requirements could not be resolved to an installable set of packages.\n\n" \
+                   "  Problem 1\n    - #{problem}",
+          error_context: {}
+        )
+      end
+
+      context "when the update requires an incompatible extension version" do
+        let(:responses) do
+          [missing_platform_error(
+            "mongodb/mongodb 2.5.0 requires ext-mongodb ^2.5 -> it has the wrong version installed (2.4.0)."
+          )]
+        end
+
+        it "does not override the explicit platform version" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect(written_manifests.length).to eq(1)
+          expect(written_manifests.first.dig("config", "platform", "ext-mongodb")).to eq("2.4.0")
+        end
+      end
+
+      context "when a root requirement conflicts with the explicit platform version" do
+        let(:responses) do
+          [missing_platform_error(
+            "PHP extension ext-mongodb ^2.5 but it has the wrong version installed (2.4.0)"
+          )]
+        end
+
+        it "raises a DependencyFileNotResolvable error with the Composer diagnostic" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /PHP extension ext-mongodb/)
+          expect(written_manifests.length).to eq(1)
+        end
+      end
+
+      context "when an undeclared extension is missing" do
+        let(:responses) do
+          [
+            missing_platform_error("vendor/needs-ext 1.0.0 requires ext-foo ^1.2 -> it is missing from your system."),
+            {
+              "composer.lock" => JSON.pretty_generate(
+                original_lockfile.merge(
+                  "packages" => [{ "name" => "mongodb/mongodb", "version" => "2.4.3" }],
+                  "platform-overrides" => { "ext-mongodb" => "2.4.0", "ext-foo" => "1.2", "php" => "8.1" }
+                )
+              )
+            }
+          ]
+        end
+
+        it "synthesizes the missing extension and restores the original platform overrides" do
+          lockfile = JSON.parse(updater.updated_lockfile_content)
+
+          expect(written_manifests.length).to eq(2)
+          expect(written_manifests.last.dig("config", "platform"))
+            .to eq("ext-mongodb" => "2.4.0", "ext-foo" => "1.2", "php" => "8.1")
+          expect(lockfile["platform-overrides"]).to eq("ext-mongodb" => "2.4.0")
+          expect(lockfile["packages"]).to eq([{ "name" => "mongodb/mongodb", "version" => "2.4.3" }])
+        end
+      end
+    end
   end
 end

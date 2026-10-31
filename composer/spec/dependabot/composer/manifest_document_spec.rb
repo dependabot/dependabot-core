@@ -74,6 +74,26 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
     end
   end
 
+  describe "#platform_extensions" do
+    let(:data) do
+      {
+        "config" => {
+          "platform" => { "php" => "8.2.0", "ext-mongodb" => "2.4.0", "ext-intl" => false, "lib-icu" => "70.1" }
+        }
+      }
+    end
+
+    it "returns only explicitly configured ext-* versions" do
+      expect(document.platform_extensions).to eq("ext-mongodb" => "2.4.0")
+    end
+
+    context "without a platform config" do
+      let(:data) { {} }
+
+      it { expect(document.platform_extensions).to eq({}) }
+    end
+  end
+
   describe "#repositories" do
     let(:data) do
       {
