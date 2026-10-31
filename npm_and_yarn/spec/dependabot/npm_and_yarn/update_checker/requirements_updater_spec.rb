@@ -603,6 +603,69 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq(package_json_req_string) }
           end
 
+          context "when specified with || and the new version is not covered" do
+            let(:package_json_req_string) { "^2.13.0 || ^3.0.0 || ^4.0.0" }
+            let(:latest_resolvable_version) { Gem::Version.new("6.2.1") }
+
+            its([:requirement]) { is_expected.to eq("^2.13.0 || ^3.0.0 || ^4.0.0 || ^6.2.1") }
+
+            context "with tilde ranges" do
+              let(:package_json_req_string) { "~1.2.0 || ~1.3.0" }
+              let(:latest_resolvable_version) { Gem::Version.new("1.4.5") }
+
+              its([:requirement]) { is_expected.to eq("~1.2.0 || ~1.3.0 || ~1.4.5") }
+            end
+
+            context "with exact versions" do
+              let(:package_json_req_string) { "1.0.0 || 2.0.0" }
+              let(:latest_resolvable_version) { Gem::Version.new("3.0.0") }
+
+              its([:requirement]) { is_expected.to eq("1.0.0 || 2.0.0 || 3.0.0") }
+            end
+
+            context "without spaces around the ||" do
+              let(:package_json_req_string) { "^1.0.0||^2.0.0" }
+              let(:latest_resolvable_version) { Gem::Version.new("3.1.0") }
+
+              its([:requirement]) { is_expected.to eq("^1.0.0||^2.0.0 || ^3.1.0") }
+            end
+
+            context "with build metadata on the old and the new version" do
+              let(:package_json_req_string) { "1.0.0 || 2.0.0+old" }
+              let(:latest_resolvable_version) { "3.0.0+new" }
+
+              its([:requirement]) { is_expected.to eq("1.0.0 || 2.0.0+old || 3.0.0+new") }
+            end
+
+            context "with build metadata only on the old version" do
+              let(:package_json_req_string) { "1.0.0 || 2.0.0+old" }
+              let(:latest_resolvable_version) { "3.0.0" }
+
+              its([:requirement]) { is_expected.to eq("1.0.0 || 2.0.0+old || 3.0.0") }
+            end
+
+            context "with a space after the operator" do
+              let(:package_json_req_string) { "~ 1.2.0 || ~ 1.3.0" }
+              let(:latest_resolvable_version) { Gem::Version.new("1.4.5") }
+
+              its([:requirement]) { is_expected.to eq("~ 1.2.0 || ~ 1.3.0 || ~ 1.4.5") }
+            end
+
+            context "when the last alternative would not admit the new version" do
+              let(:package_json_req_string) { "^1.0.0 || >9.0.0" }
+              let(:latest_resolvable_version) { Gem::Version.new("2.0.0") }
+
+              its([:requirement]) { is_expected.to eq("^1.0.0 || >9.0.0 || ^2.0.0") }
+            end
+
+            context "when the last alternative is a range with several comparators" do
+              let(:package_json_req_string) { "^1.0.0 || ^2.0.0 >=2.1.0" }
+              let(:latest_resolvable_version) { Gem::Version.new("3.0.0") }
+
+              its([:requirement]) { is_expected.to eq("^1.0.0 || ^2.0.0 >=2.1.0 || ^3.0.0") }
+            end
+          end
+
           context "when including a pre-release" do
             let(:package_json_req_string) { ">=1.2.0 <1.4.0-dev" }
 
