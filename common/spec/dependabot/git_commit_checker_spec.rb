@@ -1082,6 +1082,34 @@ RSpec.describe Dependabot::GitCommitChecker do
           is_expected.to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
         end
 
+        context "when the version class rejects a tag that matches the version pattern" do
+          # Mirrors a tag such as `v1.2.2-python38`: VERSION_REGEX accepts it,
+          # but PEP 440 does not, so Python's version class raises on it.
+          let(:strict_version_class) do
+            Class.new(DummyPackageManager::Version) do
+              def self.correct?(version)
+                return false if remove_leading_v(version).to_s == "1.13.0"
+
+                super
+              end
+
+              def initialize(version)
+                if DummyPackageManager::Version.remove_leading_v(version).to_s == "1.13.0"
+                  raise Dependabot::BadRequirementError, "Malformed version string - #{version}"
+                end
+
+                super
+              end
+            end
+          end
+
+          before do
+            allow(dependency).to receive(:version_class).and_return(strict_version_class)
+          end
+
+          its([:tag]) { is_expected.to eq("v1.11.1") }
+        end
+
         context "when there is a pre-release latest version" do
           let(:upload_pack_fixture) { "k8s-apiextensions-apiserver" }
 

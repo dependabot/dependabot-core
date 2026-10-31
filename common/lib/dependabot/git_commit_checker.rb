@@ -418,7 +418,7 @@ module Dependabot
     def allowed_versions(local_tags, filter_by_prefix: true)
       tags =
         local_tags
-        .select { |t| version_tag?(t.name) && (filter_by_prefix ? matches_existing_prefix?(t.name) : true) }
+        .select { |t| parsable_version_tag?(t.name) && (filter_by_prefix ? matches_existing_prefix?(t.name) : true) }
       filtered = tags
                  .reject { |t| tag_included_in_ignore_requirements?(t) }
       if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
@@ -592,6 +592,14 @@ module Dependabot
     sig { overridable.params(tag: String).returns(T::Boolean) }
     def version_tag?(tag)
       tag.match?(VERSION_REGEX)
+    end
+
+    # A tag can match VERSION_REGEX and still be rejected by the ecosystem's version class
+    # (e.g. `v1.2.2-python38` is not a valid PEP 440 version). Parsing such a tag raises,
+    # which would abort the update for the whole dependency, so treat it as a non-version tag.
+    sig { params(tag: String).returns(T::Boolean) }
+    def parsable_version_tag?(tag)
+      version_tag?(tag) && version_class.correct?(scan_version(tag))
     end
 
     sig { params(tag: String).returns(T::Boolean) }
