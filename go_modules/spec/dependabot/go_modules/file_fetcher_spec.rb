@@ -136,6 +136,170 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     end
   end
 
+  context "when the job directory is a single module inside a go.work workspace" do
+    let(:repo_contents_path) { build_tmp_repo(project_name) }
+    let(:project_name) { "workspace" }
+    let(:directory) { "/libs" }
+    let(:experiment_enabled) { true }
+    let(:file_fetcher_instance) do
+      described_class.new(
+        source: source,
+        credentials: github_credentials,
+        repo_contents_path: repo_contents_path
+      )
+    end
+    let(:fetched_files) { file_fetcher_instance.files }
+
+    before do
+      allow(file_fetcher_instance).to receive(:clone_repo_contents).and_return(repo_contents_path)
+      Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+      FileUtils.rm_rf(repo_contents_path)
+    end
+
+    it "fetches the ancestor go.work as a support file without switching to workspace mode" do
+      ancestor = fetched_files.find { |f| f.name == "../go.work" }
+
+      expect(ancestor).not_to be_nil
+      expect(ancestor.support_file?).to be(true)
+      expect(ancestor.path).to eq("/go.work")
+    end
+
+    it "fetches the ancestor workspace files without fetching other members' manifests" do
+      expect(fetched_files.map(&:name)).to contain_exactly(
+        "go.mod",
+        "go.sum",
+        "../go.work",
+        "../go.work.sum"
+      )
+    end
+
+    it "fetches only the module's own go.mod and go.sum as regular files" do
+      regular_files = fetched_files.reject(&:support_file?)
+
+      expect(regular_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+    end
+
+    context "when the directory is nested more than one level below go.work" do
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        FileUtils.mkdir_p(File.join(path, "libs", "nested"))
+        FileUtils.cp(File.join(path, "libs", "go.mod"), File.join(path, "libs", "nested", "go.mod"))
+        File.write(File.join(path, "go.work"), "go 1.21\n\nuse (\n\t.\n\t./libs/nested\n)\n")
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add --all")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m nested")
+        end
+        path
+      end
+      let(:directory) { "/libs/nested" }
+
+      it "walks up to the go.work and names the workspace files relative to the directory" do
+        expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "../../go.work", "../../go.work.sum")
+      end
+    end
+
+    context "when go.work lists the module without a ./ prefix or with quotes" do
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        File.write(File.join(path, "go.work"), "go 1.21\n\n#{use_directive}\n")
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add --all")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
+        end
+        path
+      end
+
+      {
+        "an unprefixed path" => "use libs",
+        "a quoted path" => %(use "./libs"),
+        "a quoted path in a use block" => %(use (\n\t"./libs" // libs module\n))
+      }.each do |description, directive|
+        context "with #{description}" do
+          let(:use_directive) { directive }
+
+          it "fetches the ancestor go.work" do
+            expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
+          end
+        end
+      end
+    end
+
+    context "when go.work lists members that are missing, nested or outside the repository" do
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        FileUtils.mkdir_p(File.join(path, "libs", "nested"))
+        File.write(File.join(path, "libs", "nested", "go.mod"), "module example.com/libs/nested\n\ngo 1.21\n")
+        File.write(
+          File.join(path, "go.work"),
+          "go 1.21\n\nuse (\n\t./libs\n\t./libs/nested\n\t./missing\n\t../outside\n)\n"
+        )
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add --all")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m members")
+        end
+        path
+      end
+
+      it "does not fetch nested, missing or outside members" do
+        expect(fetched_files.map(&:name)).to contain_exactly(
+          "go.mod", "go.sum", "../go.work", "../go.work.sum"
+        )
+      end
+    end
+
+    context "when the experiment is disabled" do
+      let(:experiment_enabled) { false }
+
+      it "does not fetch the ancestor go.work" do
+        expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
+      end
+    end
+
+    context "when the nearest go.work does not list the module" do
+      let(:project_name) { "workspace_no_root_mod" }
+      let(:directory) { "/other" }
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        FileUtils.mkdir_p(File.join(path, "other"))
+        File.write(File.join(path, "other", "go.mod"), "module example.com/other\n\ngo 1.21\n")
+        path
+      end
+
+      it "does not fetch it" do
+        expect(fetched_files.map(&:name)).to contain_exactly("go.mod")
+      end
+    end
+
+    context "when the repo has no go.work" do
+      let(:project_name) { "simple" }
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        FileUtils.mkdir_p(File.join(path, "libs"))
+        File.write(File.join(path, "libs", "go.mod"), "module example.com/libs\n\ngo 1.21\n")
+        path
+      end
+
+      it "fetches only the module files" do
+        expect(fetched_files.map(&:name)).to contain_exactly("go.mod")
+      end
+    end
+
+    context "when the job directory itself contains the go.work" do
+      let(:directory) { "/" }
+
+      it "uses the existing workspace behaviour and fetches no ancestor go.work" do
+        names = fetched_files.map(&:name)
+
+        expect(names).to include("go.work", "libs/go.mod", "services/go.mod")
+        expect(names.grep(%r{\.\./})).to be_empty
+      end
+    end
+  end
+
   context "with a go.work workspace (no root module)" do
     let(:repo_contents_path) { build_tmp_repo("workspace_no_root_mod") }
     let(:file_fetcher_instance) do
