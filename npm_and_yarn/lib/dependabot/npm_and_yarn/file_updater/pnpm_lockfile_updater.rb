@@ -176,6 +176,11 @@ module Dependabot
         # parse as INVALID_PATCH
         ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_(?:NOT_APPLIED|FAILED)|ERR_PNPM_INVALID_PATCH/
 
+        # A patch is keyed by the exact version it was made for ("pkg@1.0.0"), so updating a patched package leaves its
+        # patch without a package, and pnpm refuses to install while a patch is unused.
+        ERR_PNPM_UNUSED_PATCH = /ERR_PNPM_UNUSED_PATCH/
+        UNUSED_PATCH_LIST = /The following patches were not used: (?<patches>[^\n]+)/
+
         # this intermittent issue is related with Node v20
         ERR_INVALID_THIS = /ERR_INVALID_THIS/
         URL_SEARCH_PARAMS = /URLSearchParams/
@@ -944,6 +949,7 @@ module Dependabot
           end
 
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
+          raise_unused_patch_error(error_message) if error_message.match?(ERR_PNPM_UNUSED_PATCH)
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
           if error_message.match?(ERR_INVALID_THIS) && error_message.match?(URL_SEARCH_PARAMS)
@@ -1056,6 +1062,19 @@ module Dependabot
                 "update group \"patchedDependencies\"."
           Dependabot.logger.warn(error_message)
           raise Dependabot::DependencyFileNotResolvable, msg
+        end
+
+        sig { params(error_message: String).returns(T.noreturn) }
+        def raise_unused_patch_error(error_message)
+          patches = error_message.match(UNUSED_PATCH_LIST)&.[](:patches).to_s.split(",").map(&:strip).reject(&:empty?)
+          dependency_names = dependencies.map(&:name).join(", ")
+          unused = patches.empty? ? "its patches" : patches.join(", ")
+
+          Dependabot.logger.warn(error_message)
+          raise Dependabot::DependencyFileNotResolvable,
+                "Updating \"#{dependency_names}\" leaves #{unused} in \"patchedDependencies\" without a package to " \
+                "apply to, because a patch is tied to the exact version it was made for. Update the version in " \
+                "\"patchedDependencies\" (and check that the patch still applies), or remove the patch."
         end
 
         sig do

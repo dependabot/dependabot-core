@@ -147,6 +147,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      # A patch in patchedDependencies is keyed by the exact version it was made for ("pkg@1.0.0"), so updating a
+      # patched package leaves its patch without a package. Real output, captured with pnpm 10.34.9, 11.28.9 and
+      # 12.10.1.
+      %w(pnpm10 pnpm11 pnpm12).each do |version_dir|
+        context "with a patch that no package uses after the update (#{version_dir} output)" do
+          let(:project_name) { "pnpm/simple" }
+
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: fixture("pnpm_errors", version_dir, "unused_patch.txt"),
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises DependencyFileNotResolvable naming the dependency and the patch" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("\"#{dependency_name}\"", "is-odd@3.0.0", "patchedDependencies")
+            end
+          end
+        end
+      end
+
+      context "with several unused patches, one of them for a scoped package" do
+        let(:project_name) { "pnpm/simple" }
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "[ERR_PNPM_UNUSED_PATCH] The following patches were not used: @bbob/core@4.2.0, " \
+                       "@bbob/plugin-helper@4.2.0, eslint-nibble@8.1.0\n\nEither remove them from " \
+                       "\"patchedDependencies\" or update them to match packages in your dependencies.",
+              error_context: {}
+            )
+          )
+        end
+
+        it "names every patch" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("@bbob/core@4.2.0", "@bbob/plugin-helper@4.2.0", "eslint-nibble@8.1.0")
+          end
+        end
+      end
+
       {
         "github:owner/repo#main" => "https://github.com/owner/repo",
         "owner/repo" => "https://github.com/owner/repo",
