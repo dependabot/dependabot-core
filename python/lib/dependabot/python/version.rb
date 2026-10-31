@@ -127,6 +127,13 @@ module Dependabot
         !!(pre || dev)
       end
 
+      sig { returns(T::Boolean) }
+      def placeholder?
+        # Check if this is a placeholder version (all segments are zero)
+        # Common placeholder versions: 0, 0.0, 0.0.0
+        release_segment.all?(&:zero?)
+      end
+
       sig { returns(Dependabot::Python::Version) }
       def release
         Dependabot::Python::Version.new(release_segment.join("."))
