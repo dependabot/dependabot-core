@@ -179,9 +179,9 @@ module Dependabot
           return package_json_content unless resolutions.any?
 
           content = package_json_content
-          resolutions.each do |_, resolution|
+          resolutions.each do |key, resolution|
             original_line = declaration_line(
-              dependency_name: dep.name,
+              dependency_name: key,
               dependency_req: Dependabot::DependencyRequirement.create(requirement: resolution),
               content: content
             )
@@ -214,14 +214,14 @@ module Dependabot
 
           matching = entries
                      .select { |_, v| v.is_a?(String) }
-                     .select { |k, _| k == dependency.name || k.end_with?("/#{dependency.name}") }
+                     .select { |k, _| Helpers.override_key_for?(k, dependency.name) }
                      .select { |_, v| v.include?(T.must(dependency.previous_version)) }
           return package_json_content unless matching.any?
 
           content = package_json_content
-          matching.each do |_, resolution|
+          matching.each do |key, resolution|
             original_line = declaration_line(
-              dependency_name: dependency.name,
+              dependency_name: key,
               dependency_req: Dependabot::DependencyRequirement.create(requirement: resolution),
               content: content
             )
@@ -256,7 +256,7 @@ module Dependabot
           resolution_entries(parsed)
             .select { |_, v| v.is_a?(String) }
             .select { |_, v| v == old_requirement || v == dep.previous_version }
-            .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+            .select { |k, _| Helpers.override_key_for?(k, dep.name) }
         end
 
         sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T.untyped]) }

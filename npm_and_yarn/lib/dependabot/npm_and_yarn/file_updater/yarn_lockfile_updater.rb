@@ -632,7 +632,7 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
 
             updated_content =
-              if update_package_json && top_level_dependencies.any?
+              if update_package_json
                 updated_package_json_content(file)
               else
                 file.content
@@ -802,7 +802,7 @@ module Dependabot
           T.must(
             PackageJsonUpdater.new(
               package_json: file,
-              dependencies: top_level_dependencies
+              dependencies: dependencies
             ).updated_package_json.content
           )
         end
