@@ -25,6 +25,10 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
 
+        # A "-r <file>" reference inside a "# via" annotation, matched as a whole
+        # token so "test.in" never matches the start of "test.in.txt".
+        VIA_REQUIREMENT_PATH = /(?<=\s)-r (\S+?\.(?:in|txt))(?=[\s,]|$)/
+
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
         INCOMPATIBLE_VERSIONS_REGEX = Regexp.new(
           "(?:not supported between instances of 'InstallationCandidate'" \
@@ -364,7 +368,9 @@ module Dependabot
           content = remove_new_warnings(content, T.must(file.content))
           content = update_hashes_if_required(content, T.must(file.content))
           content = scrub_index_url_credentials(content)
-          replace_absolute_file_paths(content, T.must(file.content))
+          content = replace_absolute_file_paths(content, T.must(file.content))
+          content = restore_via_requirement_paths(content, T.must(file.content))
+          content
         end
 
         # Index URLs are passed to pip-compile with credentials embedded so the
@@ -407,6 +413,45 @@ module Dependabot
           end
 
           content
+        end
+
+        # When pip-compile regenerates a .txt file where both input and output
+        # are in a subdirectory (e.g., requirements/), it may shorten the -r
+        # reference paths in "# via" annotations (e.g., "-r requirements/main.in"
+        # becomes "-r main.in"). This restores the original full paths.
+        sig { params(updated_content: String, original_content: String).returns(String) }
+        def restore_via_requirement_paths(updated_content, original_content)
+          original_paths = via_requirement_paths(original_content)
+          return updated_content if original_paths.empty?
+
+          updated_content.lines.map do |line|
+            code, hash, comment = line.partition("#")
+            next line if hash.empty?
+
+            restored_comment = comment.gsub(VIA_REQUIREMENT_PATH) do |reference|
+              full_path = full_via_requirement_path(T.must(Regexp.last_match(1)), original_paths)
+              full_path ? "-r #{full_path}" : reference
+            end
+            code + hash + restored_comment
+          end.join
+        end
+
+        sig { params(content: String).returns(T::Array[String]) }
+        def via_requirement_paths(content)
+          content.lines.flat_map do |line|
+            line.partition("#").last.scan(VIA_REQUIREMENT_PATH).flatten
+          end.uniq
+        end
+
+        # Returns the original path a shortened -r reference stands for, or nil
+        # when the reference is already an original path or its basename is
+        # ambiguous.
+        sig { params(path: String, original_paths: T::Array[String]).returns(T.nilable(String)) }
+        def full_via_requirement_path(path, original_paths)
+          return if original_paths.include?(path)
+
+          candidates = original_paths.select { |orig| File.basename(orig) == File.basename(path) }
+          candidates.first if candidates.one?
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
