@@ -18,6 +18,9 @@ module Dependabot
 
       DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
       DATE_UNAVAILABLE_METADATA_KEY = :cooldown_date_unavailable
+      # Set when a newer candidate exists but was withheld by cooldown, so a refresh
+      # of an existing PR can tell "deferred by cooldown" from "no longer needed".
+      UPDATE_DEFERRED_METADATA_KEY = :cooldown_update_deferred
 
       # Shared by the pull request notice and the job-level warning so both channels
       # report the same diagnostic, whether or not the update produced a pull request.
@@ -65,6 +68,16 @@ module Dependabot
         return unless cooldown_days.positive?
 
         dependency.metadata[DATE_UNAVAILABLE_METADATA_KEY] = true
+      end
+
+      sig { params(dependency: Dependabot::Dependency).void }
+      def self.mark_update_deferred(dependency)
+        dependency.metadata[UPDATE_DEFERRED_METADATA_KEY] = true
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def self.update_deferred?(dependency)
+        dependency.metadata[UPDATE_DEFERRED_METADATA_KEY] == true
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }

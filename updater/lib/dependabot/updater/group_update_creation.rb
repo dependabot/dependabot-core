@@ -146,12 +146,7 @@ module Dependabot
           end
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
-          if original_dependency &&
-             Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
-            original_dependency.metadata[
-              Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_METADATA_KEY
-            ] = true
-          end
+          propagate_cooldown_metadata(from: dependency, to: original_dependency) if original_dependency
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|
@@ -745,6 +740,16 @@ module Dependabot
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.cleanup!
+      end
+
+      sig { params(from: Dependabot::Dependency, to: Dependabot::Dependency).void }
+      def propagate_cooldown_metadata(from:, to:)
+        if Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(from)
+          to.metadata[Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_METADATA_KEY] = true
+        end
+        return unless Dependabot::UpdateCheckers::CooldownCalculation.update_deferred?(from)
+
+        to.metadata[Dependabot::UpdateCheckers::CooldownCalculation::UPDATE_DEFERRED_METADATA_KEY] = true
       end
 
       sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }

@@ -254,7 +254,12 @@ module Dependabot
           # so a freshly-pushed digest isn't proposed before it matures. This
           # covers both comparable and non-comparable tags (e.g. "alpine"),
           # which the version-tag cooldown (apply_cooldown) never reaches.
-          return true if digest_only_refresh && digest_within_cooldown?(source_tag)
+          if digest_only_refresh && digest_within_cooldown?(source_tag)
+            unless digest_only_update_suppressed?(source_tag, latest_tag)
+              mark_update_deferred_unless_current(source, digest_of(source_tag), source_digest)
+            end
+            return true
+          end
 
           # When digest-only updates are suppressed and the tag hasn't changed,
           # treat the digest as up-to-date to avoid proposing a PR that only
@@ -268,7 +273,10 @@ module Dependabot
           digest_only_refresh = true
           # Pure digest pin (no tag): the proposed digest resolves from the
           # "latest" tag, so gate it on the same cooldown window.
-          return true if digest_within_cooldown?("latest")
+          if digest_within_cooldown?("latest")
+            mark_update_deferred_unless_current(source, updated_digest, source_digest)
+            return true
+          end
 
           expected_digest = updated_digest
         end
@@ -282,6 +290,19 @@ module Dependabot
         return true if digest_refresh_is_noop?(source, source_digest, expected_digest, digest_only_refresh)
 
         source_digest == expected_digest
+      end
+
+      # Flags the dependency as deferred by cooldown only when cooldown actually withheld an otherwise-allowed
+      # update: the registry serves a digest that differs from the pin and the change isn't a multi-arch no-op.
+      # Otherwise nothing is being held back and an existing PR must not be retained.
+      sig do
+        params(source: DockerSource, registry_digest: T.nilable(String), pinned_digest: String).void
+      end
+      def mark_update_deferred_unless_current(source, registry_digest, pinned_digest)
+        return if registry_digest.nil? || registry_digest == pinned_digest
+        return if digest_refresh_is_noop?(source, pinned_digest, registry_digest, true)
+
+        Dependabot::UpdateCheckers::CooldownCalculation.mark_update_deferred(dependency)
       end
 
       sig { params(version: String).returns(String) }
