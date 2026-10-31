@@ -222,9 +222,15 @@ module Dependabot
       select_matching_existing_precision(allowed_version_tags).filter_map { |t| to_local_tag(t) }
     end
 
-    sig { returns(T::Array[Dependabot::GitTagDetails]) }
-    def local_tags_for_allowed_versions
-      allowed_version_tags.filter_map { |t| to_local_tag(t) }
+    # Returns every allowed version tag. With cooldown options, tags still within
+    # their cooldown window are left out, so the list is empty when all of them are.
+    sig do
+      params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        .returns(T::Array[Dependabot::GitTagDetails])
+    end
+    def local_tags_for_allowed_versions(cooldown_options = nil)
+      tags = apply_cooldown(allowed_version_tags, cooldown_options) || []
+      tags.filter_map { |t| to_local_tag(t) }
     end
 
     sig { returns(T::Array[Dependabot::GitRef]) }

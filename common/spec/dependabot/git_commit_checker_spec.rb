@@ -1421,6 +1421,68 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#local_tags_for_allowed_versions with cooldown options" do
+    subject(:tag_names) { checker.local_tags_for_allowed_versions(cooldown_options).map { |t| t[:tag] } }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:upload_pack_fixture) { "business" }
+    let(:all_tag_names) { checker.local_tags_for_allowed_versions.map { |t| t[:tag] } }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+    end
+
+    context "when no cooldown options are configured (e.g. security updates)" do
+      let(:cooldown_options) { nil }
+
+      it "returns every allowed tag without consulting release dates" do
+        expect(checker).not_to receive(:refs_for_tag_with_detail)
+        expect(tag_names).to include("v1.11.1", "v1.13.0")
+      end
+    end
+
+    context "when cooldown options are configured" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+      end
+
+      before do
+        allow(checker).to receive(:refs_for_tag_with_detail).and_return(refs_with_detail)
+      end
+
+      context "when one tag is still within its cooldown window" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: Time.now.strftime("%Y-%m-%d"))
+          ]
+        end
+
+        it "leaves out only that tag" do
+          expect(tag_names).to eq(all_tag_names - ["v1.13.0"])
+        end
+      end
+
+      context "when all candidate tags are within their cooldown window" do
+        let(:refs_with_detail) do
+          checker.allowed_version_tags.map do |tag|
+            Dependabot::GitTagWithDetail.new(tag: tag.name, release_date: Time.now.strftime("%Y-%m-%d"))
+          end
+        end
+
+        it "returns no tags" do
+          expect(tag_names).to eq([])
+        end
+      end
+    end
+  end
+
   describe "#local_ref_for_latest_version_matching_existing_precision" do
     subject { checker.local_ref_for_latest_version_matching_existing_precision }
 
