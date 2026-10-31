@@ -434,14 +434,14 @@ module Dependabot
 
         sig do
           params(
-            response: T.any(Sawyer::Resource, T::Array[Sawyer::Resource]),
+            response: T.nilable(T.any(Sawyer::Resource, T::Array[T.nilable(Sawyer::Resource)])),
             source_url: String
           )
             .returns(T::Array[ChangelogFile])
         end
         def github_changelog_files(response, source_url:)
           resources = response.is_a?(Array) ? response : [response]
-          resources.filter_map do |resource|
+          resources.compact.filter_map do |resource|
             type = sawyer_string(resource, :type, source_url: source_url)
             next unless CHANGELOG_FILE_TYPES.include?(type)
 
