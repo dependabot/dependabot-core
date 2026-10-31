@@ -9,6 +9,7 @@ require "dependabot/github_actions/constants"
 require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/lockfile/reader"
 require "dependabot/github_actions/requirement"
+require "dependabot/github_actions/runner_label"
 require "dependabot/github_actions/version"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
@@ -22,11 +23,16 @@ module Dependabot
       GitSource = T.type_alias { T::Hash[Symbol, String] }
 
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/runner_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release_version,
+          if runner_dependency?
+            runner_version_finder.latest_version
+          else
+            T.must(latest_version_finder).latest_release_version
+          end,
           T.nilable(T.any(String, Gem::Version))
         )
       end
@@ -51,6 +57,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
+        return if runner_dependency?
+
         @lowest_security_fix_version ||= T.let(
           T.must(latest_version_finder).lowest_security_fix_release&.fetch(:version),
           T.nilable(Dependabot::Version)
@@ -64,6 +72,8 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
+        return runner_version_finder.updated_requirements(T.must(latest_version).to_s) if runner_dependency?
+
         updated_reqs = dependency.requirements.map do |req|
           source = req.source_hash
           updated = updated_ref(source, onboarded: onboarded_requirement?(req))
@@ -207,8 +217,25 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Boolean) }
+      def runner_dependency? = RunnerLabel.dependency?(dependency)
+
+      sig { returns(RunnerVersionFinder) }
+      def runner_version_finder
+        @runner_version_finder ||= T.let(
+          RunnerVersionFinder.new(
+            dependency: dependency,
+            ignore_requirements: ignore_requirements,
+            raise_on_ignored: raise_on_ignored
+          ),
+          T.nilable(RunnerVersionFinder)
+        )
+      end
+
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       def active_advisories
+        return [] if runner_dependency?
+
         security_advisories.select do |advisory|
           version = git_commit_checker.most_specific_tag_equivalent_to_pinned_ref
           version.nil? ? false : advisory.vulnerable?(version_class.new(version))
