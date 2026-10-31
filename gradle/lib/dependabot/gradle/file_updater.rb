@@ -12,6 +12,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      require_relative "file_updater/declaration_scanner"
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/lockfile_updater"
@@ -260,16 +261,16 @@ module Dependabot
         buildfile = T.must(buildfiles.find { |f| f.name == file })
         content = T.must(buildfile.content)
         substitution_ranges = substitution_block_line_ranges(content, kotlin: file.end_with?(".kts"))
+        own_code, statement_of = code_by_line(blank_lines(content, substitution_ranges), file)
+        joined_matches = joined_declares_coordinates(buildfile, own_code, statement_of, dependency.name)
 
         content.lines.each_with_index.filter_map do |line, index|
           next if substitution_ranges.any? { |range| range.cover?(index) }
 
-          evaluated = evaluate_properties(line, buildfile)
-          evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "")
+          evaluated = evaluate_properties(own_code.fetch(index), buildfile)
 
           if dependency.name.include?(":")
-            dep_parts = dependency.name.split(":")
-            next unless evaluated.include?(T.must(dep_parts.first)) || evaluated.include?(T.must(dep_parts.last))
+            next unless joined_matches.fetch(index) || declares_coordinates?(evaluated, dependency.name)
           elsif file.end_with?(".properties")
             property = requirement.source_string("property")
             next unless property && evaluated.start_with?(property)
@@ -286,6 +287,94 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Checks that a line declares exactly `group:name`, either as a coordinate
+      # string that starts with it ("group:name:version", or a catalog
+      # `module = "group:name"`) or as separate `group`/`name` arguments.
+      # Matching on the group or name alone, or on text inside another string
+      # such as a `because` reason, would also update other artifacts.
+      sig { params(line: String, dependency_name: String).returns(T::Boolean) }
+      def declares_coordinates?(line, dependency_name)
+        group, name = dependency_name.split(":", 2).map { |part| Regexp.quote(part) }
+        line = DeclarationScanner.without_non_declaring_strings(line)
+
+        line.match?(/['"]#{group}:#{name}(?=[:@'"])/) ||
+          (line.match?(DeclarationScanner.map_argument_regex("group", T.must(group))) &&
+            line.match?(DeclarationScanner.map_argument_regex("name", T.must(name))))
+      end
+
+      # Build scripts are read with DeclarationScanner, which removes comments
+      # and closures of other calls. Other files (version catalogs, properties)
+      # are read line by line.
+      sig { params(content: String, file: String).returns([T::Array[String], T::Array[Integer]]) }
+      def code_by_line(content, file)
+        unless file.end_with?(".gradle", ".gradle.kts")
+          lines = content.split("\n", -1)
+          return [lines, lines.each_index.to_a]
+        end
+
+        DeclarationScanner.new(content, kotlin: file.end_with?(".kts")).code_by_line
+      end
+
+      # Like the parser, a block comment that spans lines joins the code on
+      # either side into one statement. For each line of such a joined
+      # statement, returns the joined text, so a declaration split by comments
+      # can still be matched. A line that declares a dependency by itself splits
+      # the statement and is not joined, so a comment can't tie a line to a
+      # neighbouring declaration. Lines with no code of their own (inside a
+      # comment) and lines left on their own get "". Lines in
+      # dependencySubstitution blocks are left out, as the parser removes those
+      # blocks first.
+      sig { params(own_code: T::Array[String], statement_of: T::Array[Integer]).returns(T::Array[String]) }
+      def lines_with_block_comments_joined(own_code, statement_of)
+        joined = Array.new(own_code.length, "")
+        whole = own_code.map { |code| DeclarationScanner.declares_any_coordinates?(code) }
+        statement_of.each_index.chunk_while { |a, b| statement_of.fetch(a) == statement_of.fetch(b) }.each do |indexes|
+          joinable_parts(indexes, whole).each do |part|
+            next if part.one?
+
+            text = part.map { |i| own_code.fetch(i) }.join
+            part.each { |i| joined[i] = text unless own_code.fetch(i).strip.empty? }
+          end
+        end
+        joined
+      end
+
+      # Splits a statement's lines into the runs to join, leaving out lines that
+      # declare a dependency by themselves.
+      sig { params(indexes: T::Array[Integer], whole: T::Array[T::Boolean]).returns(T::Array[T::Array[Integer]]) }
+      def joinable_parts(indexes, whole)
+        indexes.chunk { |i| whole.fetch(i) ? :_separator : true }.map(&:last)
+      end
+
+      # Lines of one joined statement share the same string, so each statement
+      # is only checked once. Plugin IDs have no `group:name`, so nothing is
+      # joined for them.
+      sig do
+        params(
+          buildfile: Dependabot::DependencyFile,
+          own_code: T::Array[String],
+          statement_of: T::Array[Integer],
+          dependency_name: String
+        ).returns(T::Array[T::Boolean])
+      end
+      def joined_declares_coordinates(buildfile, own_code, statement_of, dependency_name)
+        return [] unless dependency_name.include?(":")
+
+        matches = T.let({}.compare_by_identity, T::Hash[String, T::Boolean])
+        lines_with_block_comments_joined(own_code, statement_of).map do |joined|
+          matches.fetch(joined) do
+            matches[joined] = declares_coordinates?(evaluate_properties(joined, buildfile), dependency_name)
+          end
+        end
+      end
+
+      sig { params(content: String, ranges: T::Array[T::Range[Integer]]).returns(String) }
+      def blank_lines(content, ranges)
+        content.lines.each_with_index.map do |line, index|
+          ranges.any? { |range| range.cover?(index) } ? line[/\n\z/].to_s : line
+        end.join
+      end
 
       # Returns the (0-based) line-index ranges covered by dependencySubstitution
       # blocks, so lines inside them can be excluded regardless of formatting.

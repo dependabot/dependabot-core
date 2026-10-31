@@ -137,6 +137,37 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
 
+        context "with a declaration split by a multi-line block comment whose group is the plugin id" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "build.gradle",
+              content: <<~GROOVY
+                plugins {
+                    id 'org.springframework.boot' version '2.0.5.RELEASE'
+                }
+                dependencies {
+                    implementation group: 'org.springframework.boot', /* pinned
+                        for compat */ name: 'spring-boot-starter', version: '2.0.5.RELEASE'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the plugin" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                plugins {
+                    id 'org.springframework.boot' version '2.1.4.RELEASE'
+                }
+                dependencies {
+                    implementation group: 'org.springframework.boot', /* pinned
+                        for compat */ name: 'spring-boot-starter', version: '2.0.5.RELEASE'
+                }
+              GROOVY
+            )
+          end
+        end
+
         context "with kotlin" do
           let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 
@@ -319,6 +350,678 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           expect(updated_buildfile.content).to include(
             '.using(module("com.google.guava:guava:31.0-jre"))'
           )
+        end
+      end
+
+      context "with other dependencies sharing the group and version" do
+        let(:buildfile_name) { "build.gradle" }
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: buildfile_name,
+            content: fixture("buildfiles", buildfile_fixture_name)
+          )
+        end
+        let(:dependency_files) { [buildfile] }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "com.example:error-handler",
+            version: "4.0.0",
+            requirements: [{
+              file: buildfile_name,
+              requirement: "4.0.0",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: buildfile_name,
+              requirement: "4.0.0-RC1",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        context "with a Kotlin DSL build file" do
+          let(:buildfile_name) { "build.gradle.kts" }
+          let(:buildfile_fixture_name) { "same_group_and_version.gradle.kts" }
+
+          it "updates only the declarations of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~KOTLIN
+                plugins {
+                    java
+                }
+
+                dependencies {
+                    implementation("com.example:lib-instrumentation:4.0.0-RC1")
+                    implementation("com.example:error-handler:4.0.0")
+                    implementation("com.example:error-handler-extra:4.0.0-RC1")
+                    implementation(group = "com.example", name = "error-handler-legacy", version = "4.0.0-RC1")
+                    implementation(group = "com.example", name = "error-handler", version = "4.0.0")
+                    runtimeOnly(group = "com.example", name = /* artifact */ "error-handler", version = "4.0.0")
+                    testImplementation("org.other:error-handler:4.0.0-RC1")
+                }
+              KOTLIN
+            )
+          end
+        end
+
+        context "with a Groovy build file" do
+          let(:buildfile_fixture_name) { "same_group_and_version.gradle" }
+
+          it "updates only the declarations of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                    implementation 'com.example:error-handler:4.0.0@jar'
+                    implementation 'com.example:error-handler-extra:4.0.0-RC1'
+                    implementation group: 'com.example', name: 'error-handler-legacy', version: '4.0.0-RC1'
+                    implementation name: 'error-handler', version: '4.0.0', group: 'com.example'
+                    implementation group: 'com.example', name: /* artifact */ 'error-handler', version: '4.0.0'
+                    testImplementation 'org.other:error-handler:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a version catalog" do
+          subject(:updated_buildfile) { updated_files.find { |f| f.name == buildfile_name } }
+
+          let(:buildfile_name) { "gradle/libs.versions.toml" }
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: fixture("version_catalog_file", "same_group_and_version.toml")
+            )
+          end
+
+          it "updates only the declarations of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~TOML
+                [libraries]
+                lib-instrumentation = { module = "com.example:lib-instrumentation", version = "4.0.0-RC1" }
+                error-handler = { module = "com.example:error-handler", version = "4.0.0" }
+                error-handler-extra = { module = "com.example:error-handler-extra", version = "4.0.0-RC1" }
+                error-handler-legacy = { group = "com.example", name = "error-handler-legacy", version = "4.0.0-RC1" }
+                error-handler-map = { group = "com.example", name = "error-handler", version = "4.0.0" }
+                error-handler-quoted = { "group" = "com.example", 'name' = "error-handler", version = "4.0.0" }
+                error-handler-short = "com.example:error-handler:4.0.0"
+                other-error-handler = "org.other:error-handler:4.0.0-RC1"
+              TOML
+            )
+          end
+        end
+
+        context "with declarations split by multi-line block comments" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler-legacy', version: '4.0.0-RC1'
+                    implementation group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0-RC1'
+                    implementation group: 'com.example', /* first
+                        */ /* second
+                        */ name: 'error-handler', version: '4.0.0-RC1'
+                    implementation 'com.example:error-handler:4.0.0-RC1' /* note
+                        */ implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler-legacy', version: '4.0.0-RC1'
+                    implementation group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0'
+                    implementation group: 'com.example', /* first
+                        */ /* second
+                        */ name: 'error-handler', version: '4.0.0'
+                    implementation 'com.example:error-handler:4.0.0' /* note
+                        */ implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a multi-line block comment that mentions the version" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0-RC1' /* pinned:
+                        4.0.0-RC1 is required for now */
+                    implementation group: 'com.example', /* pinned:
+                        4.0.0-RC1 is required for now
+                        */ name: 'error-handler', version: '4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "leaves the comment unchanged" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0' /* pinned:
+                        4.0.0-RC1 is required for now */
+                    implementation group: 'com.example', /* pinned:
+                        4.0.0-RC1 is required for now
+                        */ name: 'error-handler', version: '4.0.0'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a line comment inside a block comment" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0-RC1' /* was 4.0.0-M1 // see changelog */
+                    implementation 'org.other:lib:4.0.0-RC1'
+                    implementation 'org.other:extra:4.0.0-RC1' /* see above */
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0' /* was 4.0.0-M1 // see changelog */
+                    implementation 'org.other:lib:4.0.0-RC1'
+                    implementation 'org.other:extra:4.0.0-RC1' /* see above */
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a block comment joining a declaration to other code" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0-RC1'; /* note
+                    */ def instrumentationVersion = '4.0.0-RC1'
+                    implementation group: 'com.example', name: 'error-handler', version: '4.0.0-RC1'; /* note
+                    */ def extraVersion = '4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declarations of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0'; /* note
+                    */ def instrumentationVersion = '4.0.0-RC1'
+                    implementation group: 'com.example', name: 'error-handler', version: '4.0.0'; /* note
+                    */ def extraVersion = '4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a split declaration that also has a quoted URL" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0-RC1') { because 'https://example.com/issue' }
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declaration" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0') { because 'https://example.com/issue' }
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a split declaration that has an exclude closure" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0-RC1') { exclude group: 'org.other', module: 'legacy' }
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declaration" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0') { exclude group: 'org.other', module: 'legacy' }
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a split declaration whose because string looks like coordinates" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0-RC1') { because 'org.other:legacy is incompatible' }
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declaration" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0') { because 'org.other:legacy is incompatible' }
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a split declaration whose chained because string looks like coordinates" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0-RC1').because('org.other:legacy is incompatible')
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declaration" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0').because('org.other:legacy is incompatible')
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with declarations inside blocks of calls that take coordinates" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    components {
+                        withModule("com.example:other") {
+                            allVariants { withDependencies { add("com.example:error-handler:4.0.0-RC1") } }
+                        }
+                    }
+                }
+                with("org.other:marker:1.0") {
+                    dependencies {
+                        implementation 'com.example:error-handler:4.0.0-RC1'
+                    }
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declarations" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    components {
+                        withModule("com.example:other") {
+                            allVariants { withDependencies { add("com.example:error-handler:4.0.0") } }
+                        }
+                    }
+                }
+                with("org.other:marker:1.0") {
+                    dependencies {
+                        implementation 'com.example:error-handler:4.0.0'
+                    }
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a declaration inside a project block with a relative path" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                project("services:api") {
+                    dependencies {
+                        implementation 'com.example:error-handler:4.0.0-RC1'
+                    }
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declaration" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                project("services:api") {
+                    dependencies {
+                        implementation 'com.example:error-handler:4.0.0'
+                    }
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a split declaration whose last part has one argument and a because closure" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', version: '4.0.0-RC1', /* pinned
+                        for compat */ name: 'error-handler') { because 'org.other:legacy is incompatible' }
+                    implementation(name: 'error-handler', version: '4.0.0-RC1', /* pinned
+                        for compat */ group: 'com.example') { because 'org.other:legacy is incompatible' }
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declarations of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation(group: 'com.example', version: '4.0.0', /* pinned
+                        for compat */ name: 'error-handler') { because 'org.other:legacy is incompatible' }
+                    implementation(name: 'error-handler', version: '4.0.0', /* pinned
+                        for compat */ group: 'com.example') { because 'org.other:legacy is incompatible' }
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a because closure that names the target on another dependency" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation('org.other:error-handler:4.0.0-RC1') { because 'com.example:error-handler is incompatible' }
+                    implementation 'com.example:error-handler:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation('org.other:error-handler:4.0.0-RC1') { because 'com.example:error-handler is incompatible' }
+                    implementation 'com.example:error-handler:4.0.0'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a chained because string that names the target on another dependency" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation('org.other:legacy:4.0.0-RC1').because('Migrate to com.example:error-handler')
+                    implementation('org.other:legacy2:4.0.0-RC1').because('com.example:error-handler')
+                    implementation('org.other:legacy3:4.0.0-RC1') .because ( "com.example:error-handler:4.0.0-RC1 replaces it" )
+                    implementation('org.other:legacy4:4.0.0-RC1').because('Don\\'t use it, use \\'com.example:error-handler:4.0.0-RC1\\'')
+                    implementation 'com.example:error-handler:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation('org.other:legacy:4.0.0-RC1').because('Migrate to com.example:error-handler')
+                    implementation('org.other:legacy2:4.0.0-RC1').because('com.example:error-handler')
+                    implementation('org.other:legacy3:4.0.0-RC1') .because ( "com.example:error-handler:4.0.0-RC1 replaces it" )
+                    implementation('org.other:legacy4:4.0.0-RC1').because('Don\\'t use it, use \\'com.example:error-handler:4.0.0-RC1\\'')
+                    implementation 'com.example:error-handler:4.0.0'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a line comment marker inside a block comment before another declaration" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0-RC1' /* note // explanation */
+                    testImplementation 'com.example:error-handler:4.0.0-RC1' /* test only */
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates every declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'com.example:error-handler:4.0.0' /* note // explanation */
+                    testImplementation 'com.example:error-handler:4.0.0' /* test only */
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a closure that names the target group on another dependency" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation(group: 'org.other', name: 'error-handler', version: '4.0.0-RC1') { exclude group: 'com.example', module: 'legacy' }
+                    implementation 'com.example:error-handler:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation(group: 'org.other', name: 'error-handler', version: '4.0.0-RC1') { exclude group: 'com.example', module: 'legacy' }
+                    implementation 'com.example:error-handler:4.0.0'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a declaration inside a one-line conditional block" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    if (project.hasProperty('feature')) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    if (project.hasProperty('feature')) { implementation group: 'com.example', name: 'error-handler', version: '4.0.0-RC1' }
+                    if (enabled(name: 'feature')) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    if (project.hasProperty('feature') &&
+                        !isCi) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    if ("enabled)" == flag) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    if (enabled(
+                        name: 'feature')) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    if (enabled(name: 'feature)')) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    if (enabled(group: 'features', name: 'error-handling')) { implementation 'com.example:error-handler:4.0.0-RC1' }
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declarations of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    if (project.hasProperty('feature')) { implementation 'com.example:error-handler:4.0.0' }
+                    if (project.hasProperty('feature')) { implementation group: 'com.example', name: 'error-handler', version: '4.0.0' }
+                    if (enabled(name: 'feature')) { implementation 'com.example:error-handler:4.0.0' }
+                    if (project.hasProperty('feature') &&
+                        !isCi) { implementation 'com.example:error-handler:4.0.0' }
+                    if ("enabled)" == flag) { implementation 'com.example:error-handler:4.0.0' }
+                    if (enabled(
+                        name: 'feature')) { implementation 'com.example:error-handler:4.0.0' }
+                    if (enabled(name: 'feature)')) { implementation 'com.example:error-handler:4.0.0' }
+                    if (enabled(group: 'features', name: 'error-handling')) { implementation 'com.example:error-handler:4.0.0' }
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a multi-line block comment on a sibling line that names the target" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1' /* migrate to com.example:error-handler
+                       later */
+                    implementation 'com.example:error-handler:4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the declaration of the target dependency" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'com.example:lib-instrumentation:4.0.0-RC1' /* migrate to com.example:error-handler
+                       later */
+                    implementation 'com.example:error-handler:4.0.0'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a full declaration and a split declaration in one comment chain" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                dependencies {
+                    implementation 'org.other:other:4.0.0-RC1'; /* a
+                    */ implementation group: 'com.example', /* b
+                    */ name: 'error-handler', version: '4.0.0-RC1'
+                }
+              GROOVY
+            )
+          end
+
+          it "updates only the split declaration" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                dependencies {
+                    implementation 'org.other:other:4.0.0-RC1'; /* a
+                    */ implementation group: 'com.example', /* b
+                    */ name: 'error-handler', version: '4.0.0'
+                }
+              GROOVY
+            )
+          end
+        end
+
+        context "with a comment-like string in a dependencySubstitution block" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: buildfile_name,
+              content: <<~GROOVY
+                configurations.all {
+                    resolutionStrategy.dependencySubstitution {
+                        def docs = "See /* docs"
+                    }
+                }
+                dependencies {
+                    implementation group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0-RC1'
+                    implementation fileTree(dir: 'libs', include: ['**/*.jar'])
+                }
+              GROOVY
+            )
+          end
+
+          it "updates the declaration split by a block comment" do
+            expect(updated_buildfile.content).to eq(
+              <<~GROOVY
+                configurations.all {
+                    resolutionStrategy.dependencySubstitution {
+                        def docs = "See /* docs"
+                    }
+                }
+                dependencies {
+                    implementation group: 'com.example', /* pinned
+                        for compat */ name: 'error-handler', version: '4.0.0'
+                    implementation fileTree(dir: 'libs', include: ['**/*.jar'])
+                }
+              GROOVY
+            )
+          end
         end
       end
 
