@@ -1449,4 +1449,29 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
     end
   end
+
+  describe "module extension file references (cloned repo)" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
+    end
+    let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+    context "with gazelle go_deps.from_file(go_mod = ...) tags (#13907)" do
+      let(:project_name) { "module_with_gazelle_go_deps" }
+
+      it "fetches the go.mod named by each go_mod attribute" do
+        expect(fetched_files.map(&:name)).to include("go.mod", "tools/go.mod")
+      end
+
+      it "fetches the go.sum next to each go.mod" do
+        expect(fetched_files.map(&:name)).to include("go.sum", "tools/go.sum")
+      end
+
+      it "fetches the BUILD.bazel that makes a go.mod directory a package" do
+        expect(fetched_files.map(&:name)).to include("tools/BUILD.bazel")
+      end
+    end
+  end
 end
