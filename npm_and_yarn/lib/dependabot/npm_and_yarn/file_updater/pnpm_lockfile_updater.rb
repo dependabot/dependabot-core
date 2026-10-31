@@ -267,7 +267,7 @@ module Dependabot
 
               run_pnpm_install
 
-              update_again_for_widened_requirements(pnpm_lock)
+              update_again_if_lockfile_behind(pnpm_lock, catalog_update: !updated_pnpm_workspace_content.nil?)
 
               updated_content = File.read(pnpm_lock.name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
@@ -344,41 +344,50 @@ module Dependabot
           run_pnpm_command_with_release_age_gate(cmd, fingerprint)
         end
 
-        # A locked version that satisfies a widened range stays where it is unless pnpm is asked to move it while that
-        # range is in the manifest, which is only the case after the first update and install.
-        sig { params(pnpm_lock: Dependabot::DependencyFile).void }
-        def update_again_for_widened_requirements(pnpm_lock)
-          return unless widened_dependency_left_behind?(File.read(pnpm_lock.name))
-
-          run_pnpm_update_packages
-        end
-
-        # Whether a requirement was widened with another alternative ("^1.0.0 || ^2.0.0") and the lockfile still has the
-        # dependency, in the importer of that requirement, at another version than the new one
-        sig { params(lockfile_content: String).returns(T::Boolean) }
-        def widened_dependency_left_behind?(lockfile_content)
+        # `pnpm install` keeps a locked version that the manifest still allows, so a dependency can stay behind the
+        # update: with a requirement widened by another alternative (it is only in the manifest after the first
+        # update and install), and with a catalog dependency whose range already allows the new version (a catalog
+        # update only writes the workspace file). Ask pnpm to move it.
+        sig { params(pnpm_lock: Dependabot::DependencyFile, catalog_update: T::Boolean).void }
+        def update_again_if_lockfile_behind(pnpm_lock, catalog_update:)
+          lockfile_content = File.read(pnpm_lock.name)
           lockfile = parsed_lockfile(lockfile_content)
-
-          dependencies.any? do |dep|
+          behind = dependencies.select do |dep|
             next false unless dep.top_level? && dep.version
 
-            widened_requirements(dep).any? do |req|
+            requirements_to_check(dep, catalog_update).any? do |req|
               locked = locked_versions(lockfile, req, dep.name)
               next !lockfile_content.include?("#{dep.name}@#{dep.version}") if locked.empty?
 
               locked.any? { |version| version != dep.version }
             end
           end
+          return if behind.empty?
+
+          run_pnpm_update_specs(behind.map { |dep| "#{dep.name}@#{dep.version}" })
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
-        def widened_requirements(dep)
-          dep.requirements.zip(dep.previous_requirements || []).filter_map do |new_req, old_req|
-            next if new_req.requirement_string == old_req&.requirement_string
-            next unless new_req.requirement_string&.include?("||")
-
-            new_req
+        # The requirements whose dependency may be left at its locked version: the ones widened with another
+        # alternative ("^1.0.0 || ^2.0.0"), and, for a catalog update, each one that did not change (another
+        # declaration of the dependency can change in the same update). Only requirements from the registry count:
+        # a git dependency is locked to a URL, never to the version that is asked for.
+        sig do
+          params(dep: Dependabot::Dependency, catalog_update: T::Boolean)
+            .returns(T::Array[Dependabot::DependencyRequirement])
+        end
+        def requirements_to_check(dep, catalog_update)
+          pairs = dep.requirements.zip(dep.previous_requirements || [])
+          unchanged, changed = pairs.partition do |new_req, old_req|
+            new_req.requirement_string == old_req&.requirement_string
           end
+          widened = changed.map(&:first).select { |req| req.requirement_string&.include?("||") }
+
+          (catalog_update ? widened + unchanged.map(&:first) : widened).select { |req| registry_requirement?(req) }
+        end
+
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def registry_requirement?(req)
+          !req.requirement_string.nil? && req.source_string("type") != "git"
         end
 
         sig { params(content: String).returns(T.nilable(T::Hash[String, Object])) }
