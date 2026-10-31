@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/pre_commit/prek_toml"
 
 module Dependabot
   module PreCommit
@@ -52,7 +53,7 @@ module Dependabot
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
-          updated_content = apply_requirement_update(updated_content, new_req, old_req)
+          updated_content = apply_requirement_update(updated_content, new_req, old_req, file)
         end
 
         updated_content
@@ -84,15 +85,16 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_requirement_update(content, new_req, old_req)
+      def apply_requirement_update(content, new_req, old_req, file)
         case new_req.source_string("type")
         when "git"
-          apply_git_requirement_update(content, new_req, old_req)
+          apply_git_requirement_update(content, new_req, old_req, file)
         when "additional_dependency"
-          apply_additional_dependency_update(content, new_req, old_req)
+          apply_additional_dependency_update(content, new_req, old_req, file)
         else
           content
         end
@@ -102,10 +104,11 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_git_requirement_update(content, new_req, old_req)
+      def apply_git_requirement_update(content, new_req, old_req, file)
         repo_url = T.must(old_req.source_string("url"))
         old_ref = T.must(old_req.source_string("ref"))
         new_ref = T.must(new_req.source_string("ref"))
@@ -117,6 +120,7 @@ module Dependabot
           repo_url,
           old_ref,
           new_ref,
+          file,
           old_version: old_version,
           new_version: new_version
         )
@@ -126,14 +130,64 @@ module Dependabot
         params(
           content: String,
           new_req: Dependabot::DependencyRequirement,
-          old_req: Dependabot::DependencyRequirement
+          old_req: Dependabot::DependencyRequirement,
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_additional_dependency_update(content, new_req, old_req)
+      def apply_additional_dependency_update(content, new_req, old_req, file)
         old_string = T.must(old_req.source_string("original_string"))
         new_string = T.must(new_req.source_string("original_string"))
+        return replace_additional_dependency_in_toml(content, old_req, old_string, new_string) if toml?(file)
 
         replace_additional_dependency_in_content(content, old_string, new_string)
+      end
+
+      # Rewrites the matching element of the hook's additional_dependencies
+      # only, so the same string elsewhere (e.g. in args) is left alone.
+      sig do
+        params(
+          content: String,
+          old_req: Dependabot::DependencyRequirement,
+          old_string: String,
+          new_string: String
+        ).returns(String)
+      end
+      def replace_additional_dependency_in_toml(content, old_req, old_string, new_string)
+        ranges = PrekToml.new(content).additional_dependency_ranges(
+          T.must(old_req.source_string("hook_repo")),
+          T.must(old_req.source_string("hook_id")),
+          old_string
+        )
+        updated_content = content.dup
+        ranges.reverse_each { |range| updated_content[range] = new_string }
+        updated_content
+      end
+
+      # Any .toml dependency file is rewritten as TOML; everything else as YAML.
+      # In practice only prek.toml / .prek.toml reach here (the fetcher gates on
+      # CONFIG_FILE_PATTERN), which is the sole TOML config pre-commit supports.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def toml?(file)
+        file.name.end_with?(".toml")
+      end
+
+      sig do
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          file: Dependabot::DependencyFile,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def replace_ref_in_content(content, repo_url, old_ref, new_ref, file, old_version: nil, new_version: nil)
+        if toml?(file)
+          replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: old_version, new_version: new_version)
+        else
+          replace_ref_in_yaml(content, repo_url, old_ref, new_ref, old_version: old_version, new_version: new_version)
+        end
       end
 
       sig do
@@ -146,7 +200,7 @@ module Dependabot
           new_version: T.nilable(String)
         ).returns(String)
       end
-      def replace_ref_in_content(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
+      def replace_ref_in_yaml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
         current_repo = T.let(nil, T.nilable(String))
 
         updated_lines = content.lines.map do |line|
@@ -164,6 +218,34 @@ module Dependabot
         end
 
         updated_lines.join
+      end
+
+      # Rewrites the `rev` value of each repo entry matching repo_url, then the
+      # version comment on that line.
+      sig do
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
+        updated_content = content.dup
+
+        PrekToml.new(content).rev_value_ranges(repo_url).reverse_each do |range|
+          next unless content[range] == old_ref
+
+          updated_content[range] = new_ref
+          line_start = (updated_content.rindex("\n", range.begin) || -1) + 1
+          line_end = updated_content.index("\n", range.begin) || updated_content.length
+          updated_content[line_start...line_end] =
+            update_version_comment(T.must(updated_content[line_start...line_end]), old_version, new_version)
+        end
+
+        updated_content
       end
 
       sig do
