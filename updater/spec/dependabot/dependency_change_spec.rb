@@ -460,6 +460,23 @@ RSpec.describe Dependabot::DependencyChange do
         expect(dependency_change.matches_existing_pr?).to be true
       end
 
+      context "when the API records the configured parent of a dependency-name subgroup" do
+        let(:dependency_change) do
+          described_class.new(
+            job: job,
+            updated_dependencies: updated_dependencies,
+            updated_dependency_files: updated_dependency_files,
+            dependency_group: Dependabot::DependencyGroup.new(
+              name: "foo/business", rules: { "patterns" => ["business"], "group-by" => "dependency-name" }
+            )
+          )
+        end
+
+        it "recognizes the existing PR instead of superseding it on every refresh" do
+          expect(dependency_change.matches_existing_pr?).to be(true)
+        end
+      end
+
       context "when there's no directory in a PR that otherwise matches" do
         let(:existing_group_pull_requests) do
           [
