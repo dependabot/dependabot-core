@@ -132,6 +132,7 @@ module Dependabot
         # only camelCase keys from it.)
         STRICT_RELEASE_AGE_OFF = "--config.minimum-release-age-strict=false"
         TRUST_LOCKFILE_ON = "--config.trust-lockfile=true"
+        TRUST_LOCKFILE_OFF = "--config.trust-lockfile=false"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         # pnpm 11 and 12 name the dependency's specifier, not the repository URL
@@ -169,6 +170,17 @@ module Dependabot
           ),
           Regexp
         )
+
+        # A lockfile entry, or a pick, inside the release-age window: lockfile verification reports
+        # MINIMUM_RELEASE_AGE_VIOLATION, or tags each entry with it when other policies fail too, and a resolution
+        # reports NO_MATURE_MATCHING_VERSION. Each entry reads `<name>@<version> was published at ...`.
+        RELEASE_AGE_VERIFICATION_FAILED =
+          /ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION|ERR_PNPM_NO_MATURE_MATCHING_VERSION|\[MINIMUM_RELEASE_AGE_VIOLATION\]/
+        RELEASE_AGE_VIOLATION_TAG = "[MINIMUM_RELEASE_AGE_VIOLATION]"
+        RELEASE_AGE_REJECTION_TEXT = " was published at"
+        RELEASE_AGE_ENTRIES_OMITTED = /(?:…|\.\.\.)\s*and \d+ more/
+        # Entries rejected by more than one policy; a release-age entry can be among those pnpm leaves out
+        MIXED_POLICY_VERIFICATION_FAILED = /ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION/
 
         ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
 
@@ -280,6 +292,7 @@ module Dependabot
 
               # After the fallbacks: they resolve without a version too.
               verify_unpinned_updates!(original_content, updated_content) if updated_content != original_content
+              verify_release_age_of_added_entries!(pnpm_lock, updated_content, updated_pnpm_workspace_content)
               updated_content
             end
           end
@@ -333,6 +346,137 @@ module Dependabot
                   "pnpm resolved #{dep.name} #{outcome}. It is not a direct dependency, so pnpm " \
                   "updates it to what a fresh install would resolve rather than to the requested version."
           end
+        end
+
+        # Dependabot relaxes the repo's own release-age gate to run its commands: strict mode is off for the
+        # `--no-save` update, where pnpm then falls back to a version inside the window when no older one satisfies
+        # a range, and the lockfile each command loads is trusted, so no later command re-checks what an earlier
+        # one (or an earlier update in the same group) added. The repo's own `pnpm install` verifies every entry
+        # and rejects such a lockfile, so verify the result the same way and refuse an update that adds an entry
+        # the window rejects. Entries the lockfile already held are not the update's doing and do not block it.
+        sig do
+          params(
+            pnpm_lock: Dependabot::DependencyFile,
+            updated_content: String,
+            updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
+          ).void
+        end
+        def verify_release_age_of_added_entries!(pnpm_lock, updated_content, updated_pnpm_workspace_content)
+          original_content = pnpm_lock.content.to_s
+          return if updated_content == original_content
+          return unless repo_release_age_gate_relaxed?
+
+          # Without strict mode an install records the young versions it picks in `minimumReleaseAgeExclude`, but
+          # Dependabot returns the workspace files it computed itself, so verify against those, and keep them on
+          # disk for the next update in a group.
+          workspace = returned_workspace_contents(updated_pnpm_workspace_content)
+          workspace.each { |name, content| File.write(name, content) }
+          begin
+            execute_pnpm_command(release_age_verification_command, nil)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            handle_release_age_verification_failure(e, original_content)
+          ensure
+            # A verification that passes may still rewrite files; the update's result is what was read above.
+            File.write(pnpm_lock.name, updated_content)
+            workspace.each { |name, content| File.write(name, content) }
+          end
+        end
+
+        sig do
+          params(updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)]))
+            .returns(T::Hash[String, String])
+        end
+        def returned_workspace_contents(updated_pnpm_workspace_content)
+          contents = workspace_files.to_h { |file| [file.name, file.content.to_s] }
+          updated_pnpm_workspace_content&.each { |name, content| contents[name] = content if content }
+          contents
+        end
+
+        sig { returns(T::Boolean) }
+        def repo_release_age_gate_relaxed?
+          return false if security_updates_only?
+
+          configured = pnpm_configured_minimum_release_age
+          return false if configured.nil? || configured <= 0
+          return false if repo_accepts_young_picks?
+
+          # Older pnpm has no strict toggle, so Dependabot passes no relaxing flags and pnpm applies the gate itself.
+          pnpm_supports_minimum_release_age_strict?
+        end
+
+        # A repo that turns strict mode off and trusts its lockfile itself lets its own `pnpm update` fall back to a
+        # version inside the window and its own install accept it, so the update is not stricter than that.
+        sig { returns(T::Boolean) }
+        def repo_accepts_young_picks?
+          dependency_files.any? do |file|
+            next false unless File.basename(file.name) == "pnpm-workspace.yaml"
+
+            settings = T.cast(YAML.safe_load(file.content.to_s, aliases: true), Object)
+            next false unless settings.is_a?(Hash)
+
+            T.cast(settings["minimumReleaseAgeStrict"], Object).to_s.match?(/\Afalse\z/i) &&
+              T.cast(settings["trustLockfile"], Object).to_s.match?(/\Atrue\z/i)
+          end
+        end
+
+        # No age override: the repo's own window is the one its install enforces.
+        sig { returns(String) }
+        def release_age_verification_command
+          return "install --lockfile-only" unless pnpm_supports_trust_lockfile?
+
+          "install --lockfile-only #{TRUST_LOCKFILE_OFF}"
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed, original_content: String).void }
+        def handle_release_age_verification_failure(error, original_content)
+          message = PnpmErrorMessage.normalize(error.message)
+          unless release_age_rejection_possible?(message)
+            # The update itself succeeded, so keep the behaviour from before this check existed.
+            Dependabot.logger.warn(
+              "pnpm could not verify the updated lockfile against the repository's release-age window, " \
+              "so it is used as resolved: #{error.message}"
+            )
+            return
+          end
+
+          locked = PnpmResolutions.new(original_content).locked_packages
+          added = release_age_rejected_entries(message).reject { |entry| locked.include?(entry) }
+          # pnpm lists at most 20 entries, so an unlisted one may be one the update added.
+          return if added.empty? && !message.match?(RELEASE_AGE_ENTRIES_OMITTED)
+
+          raise_release_age_window_violated(added, message)
+        end
+
+        # A listed release-age entry, or a truncated list of entries several policies rejected, where pnpm may have
+        # left the release-age ones out.
+        sig { params(message: String).returns(T::Boolean) }
+        def release_age_rejection_possible?(message)
+          return true if message.match?(RELEASE_AGE_VERIFICATION_FAILED)
+
+          message.match?(MIXED_POLICY_VERIFICATION_FAILED) && message.match?(RELEASE_AGE_ENTRIES_OMITTED)
+        end
+
+        # Each rejected entry reads `<name>@<version> was published at ...`, with a `[<code>]` tag after the version
+        # when other policies fail too. Split on the fixed text rather than scan with a pattern that starts with an
+        # unbounded quantifier, which backtracks polynomially on long runs of name characters.
+        sig { params(message: String).returns(T::Array[String]) }
+        def release_age_rejected_entries(message)
+          preceding = message.split(RELEASE_AGE_REJECTION_TEXT)
+          preceding.pop
+          preceding.filter_map { |text| text.split.reject { |token| token == RELEASE_AGE_VIOLATION_TAG }.last }.uniq
+        end
+
+        sig { params(added: T::Array[String], message: String).returns(T.noreturn) }
+        def raise_release_age_window_violated(added, message)
+          names = dependencies.map(&:name)
+          blocked = names & added.map { |entry| entry.rpartition("@").first }
+          described = added.empty? ? "(pnpm did not list them all)" : added.join(", ")
+
+          Dependabot.logger.warn(
+            "The update would add versions published inside the repository's release-age window: #{described}. " \
+            "It is not possible until they mature: #{message}"
+          )
+          raise Dependabot::UpdateNotPossible, blocked.empty? ? names : blocked
         end
 
         sig { params(specs: T::Array[String]).returns(T.nilable(String)) }
@@ -428,7 +572,9 @@ module Dependabot
         #   default, and strict mode refuses `--no-save` outright
         #   (ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE). Older pnpm refuses once
         #   a resolved version is inside the window. `install` and `audit` have no
-        #   such conflict and keep whatever strictness the repo configured.
+        #   such conflict and keep whatever strictness the repo configured. Without
+        #   strict mode pnpm falls back to a version inside the window, so the result
+        #   is verified afterwards (see `verify_release_age_of_added_entries!`).
         # - The existing lockfile is trusted under the same rule as for the cooldown
         #   override (see `trust_existing_lockfile?`), so an entry a human committed
         #   inside the repo's window does not fail every command.
@@ -465,7 +611,8 @@ module Dependabot
             "pnpm-workspace.yaml sets minimumReleaseAgeStrict: true, but strict mode needs an interactive " \
             "approval that pnpm refuses to combine with the `--no-save` update Dependabot runs, so " \
             "Dependabot passes minimum-release-age-strict=false for its release-age handling. " \
-            "The minimumReleaseAge window itself still applies."
+            "The updated lockfile is then verified against the minimumReleaseAge window, and an update that " \
+            "would add a version inside it is not made."
           )
         end
 
@@ -574,7 +721,10 @@ module Dependabot
         # command even though Dependabot neither introduced it nor can fix it
         # (dependabot/dependabot-core#15937). Trusting the lockfile keeps the
         # cooldown enforced for the versions pnpm resolves now, rather than dropping
-        # it wholesale, so an update is still delivered under the gate.
+        # it wholesale, so an update is still delivered under the gate. pnpm trusts
+        # whatever lockfile a command loads, including entries an earlier command in
+        # the same update added, so under the repo's own gate the result is verified
+        # afterwards (see `verify_release_age_of_added_entries!`).
         #
         # It is skipped when the repo states its own lockfile-verification policy:
         # `trustLockfile` is the user's to set, and `trustPolicy` re-verification of

@@ -1832,6 +1832,312 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    # Dependabot turns strict mode off for its `--no-save` update and trusts the lockfile it loads, so pnpm can
+    # fall back to a version inside the repo's window and no later command checks it. The repo's own install
+    # verifies every entry and rejects such a lockfile.
+    context "when the update adds lockfile entries the repo's own release-age gate rejects" do
+      let(:project_name) { "pnpm/simple" }
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          security_updates_only: security_updates_only,
+          release_age_days: 7
+        )
+      end
+      let(:security_updates_only) { false }
+      let(:workspace_settings) { "minimumReleaseAge: 10080\n" }
+      let(:files) do
+        project_dependency_files(project_name) +
+          [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: workspace_settings)]
+      end
+      let(:pnpm_version) { "12.10.1" }
+      let(:locked_before) { %w(fetch-factory@0.0.1 legacy-young@1.0.0) }
+      let(:locked_after) { %w(cooldown-test-child@2.0.0 fetch-factory@0.0.2 legacy-young@1.0.0) }
+      let(:pnpm_lock) do
+        Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: lockfile_with(locked_before))
+      end
+      # Real pnpm 12.10.1 output: cooldown-test-child@2.0.0 is new, legacy-young@1.0.0 was already locked
+      let(:verification_failure) { fixture("pnpm_errors", "pnpm12", "release_age_violation.txt") }
+      let(:commands) { [] }
+      let(:verify_command) { "install --lockfile-only --config.trust-lockfile=false" }
+
+      def lockfile_with(entries)
+        packages = entries.map { |entry| "  #{entry}:\n    resolution: {integrity: sha512-x}\n" }
+        "lockfileVersion: '9.0'\n\npackages:\n\n#{packages.join("\n")}"
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new(pnpm_version))
+        # Read before the updater changes into the repo directory
+        failure = verification_failure
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          commands << cmd
+          if cmd == verify_command
+            if failure
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: failure,
+                error_context: {}
+              )
+            end
+          else
+            File.write("pnpm-lock.yaml", lockfile_with(locked_after))
+          end
+          ""
+        end
+      end
+
+      it "does not return a lockfile that adds a version inside the window" do
+        expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+          expect(error.dependencies).to eq([dependency_name])
+        end
+        expect(commands.last).to eq(verify_command)
+      end
+
+      it "logs the entries the update would have added" do
+        allow(Dependabot.logger).to receive(:warn)
+
+        expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(/would add versions published inside the repository's release-age window: cooldown-test-child@2\.0\.0/)
+      end
+
+      context "when the repo's own window accepts every entry" do
+        let(:verification_failure) { nil }
+
+        it "returns the updated lockfile, verified without trusting it and under the repo's own window" do
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(commands.last).to eq(verify_command)
+          expect(commands.last).not_to include("minimum-release-age")
+        end
+      end
+
+      context "when every rejected entry was already in the lockfile" do
+        let(:locked_before) { %w(cooldown-test-child@2.0.0 fetch-factory@0.0.1 legacy-young@1.0.0) }
+
+        it "returns the updated lockfile, since the update added none of them" do
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+        end
+
+        context "when pnpm lists only some of the rejected entries" do
+          # pnpm prints at most 20 entries and then `…and <n> more`
+          let(:verification_failure) do
+            fixture("pnpm_errors", "pnpm12", "release_age_violation.txt")
+              .sub("  help:", "        …and 1 more\n  help:")
+          end
+
+          it "does not return the lockfile, since an unlisted entry may be one the update added" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          end
+        end
+      end
+
+      context "with pnpm 11 output" do
+        let(:pnpm_version) { "11.25.0" }
+        let(:locked_after) { %w(@types/node@24.19.1 fetch-factory@0.0.2 legacy-young@1.0.0) }
+        let(:verification_failure) { fixture("pnpm_errors", "pnpm11", "release_age_violation.txt") }
+
+        it "does not return a lockfile that adds a version inside the window" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+        end
+      end
+
+      context "when the version inside the window is one being updated" do
+        let(:locked_after) { %w(@types/node@24.19.1 fetch-factory@0.0.2 legacy-young@1.0.0) }
+        let(:verification_failure) { fixture("pnpm_errors", "pnpm11", "release_age_violation.txt") }
+        let(:dependencies) do
+          [
+            dependency,
+            Dependabot::Dependency.new(
+              name: "@types/node",
+              version: "24.19.1",
+              previous_version: "24.0.0",
+              requirements: [],
+              previous_requirements: [],
+              package_manager: "npm_and_yarn"
+            )
+          ]
+        end
+
+        it "names only that one" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+            expect(error.dependencies).to eq(["@types/node"])
+          end
+        end
+      end
+
+      context "when the verification fails for another reason" do
+        let(:verification_failure) { fixture("pnpm_errors", "pnpm12", "network_error.txt") }
+
+        it "returns the updated lockfile, as before the verification existed" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(Dependabot.logger).to have_received(:warn).with(/could not verify the updated lockfile/)
+        end
+      end
+
+      context "with updated pnpm-workspace.yaml content (a catalog update)" do
+        let(:intended_workspace) { "minimumReleaseAge: 10080\ncatalog:\n  fetch-factory: ^0.0.2\n" }
+        let(:workspace_files) { { "pnpm-workspace.yaml" => intended_workspace } }
+
+        it "does not return a lockfile that adds a version inside the window" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(commands).not_to include(a_string_including("--no-save"))
+        end
+
+        # Without strict mode an install records its young picks in minimumReleaseAgeExclude, but Dependabot
+        # returns the workspace content it computed, without them, so they must not satisfy the verification.
+        context "when pnpm records exclusions for the picks it made" do
+          let(:workspace_seen) { [] }
+
+          before do
+            failure = verification_failure
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              commands << cmd
+              if cmd == verify_command
+                workspace_seen << File.read("pnpm-workspace.yaml")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: failure, error_context: {})
+              end
+              File.write("pnpm-lock.yaml", lockfile_with(locked_after))
+              File.write(
+                "pnpm-workspace.yaml",
+                "#{File.read('pnpm-workspace.yaml')}minimumReleaseAgeExclude:\n  - cooldown-test-child@2.0.0\n"
+              )
+              ""
+            end
+          end
+
+          it "verifies against the workspace content Dependabot returns and leaves that on disk" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+            expect(workspace_seen).to eq([intended_workspace])
+            expect(File.read(File.join(repo_contents_path, "pnpm-workspace.yaml"))).to eq(intended_workspace)
+          end
+        end
+      end
+
+      context "when other lockfile policies fail too" do
+        # The shape pnpm's `violation_breakdown` prints when several policies reject entries: each line is tagged
+        let(:verification_failure) do
+          "[ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION] 2 lockfile entries failed verification:\n  " \
+            "cooldown-test-child@2.0.0 [MINIMUM_RELEASE_AGE_VIOLATION] was published at 2026-10-26T01:32:35.582Z, " \
+            "within the minimumReleaseAge cutoff (2026-10-22T01:32:40.804Z)\n  " \
+            "legacy-young@1.0.0 [TRUST_DOWNGRADE] lost its provenance\n"
+        end
+
+        it "still finds the version the update added" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(Dependabot.logger).to have_received(:warn).with(/window: cooldown-test-child@2\.0\.0\./)
+        end
+
+        context "when pnpm lists only entries of the other policies" do
+          # pnpm sorts the entries by name@version and prints the first 20, so a release-age entry can be the
+          # one left out
+          let(:verification_failure) do
+            visible = (1..20).map { |i| format("  a-pkg-%<i>02d@1.0.0 [TRUST_DOWNGRADE] lost its provenance", i: i) }
+            "[ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION] 21 lockfile entries failed verification:\n" \
+              "#{visible.join("\n")}\n  …and 1 more\n"
+          end
+
+          it "does not return the lockfile, since an unlisted entry may be one the update added" do
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          end
+        end
+      end
+
+      context "when only the trust policy rejects entries" do
+        let(:verification_failure) do
+          visible = (1..20).map { |i| format("  a-pkg-%<i>02d@1.0.0 lost its provenance", i: i) }
+          "[ERR_PNPM_TRUST_DOWNGRADE] 21 lockfile entries failed verification:\n#{visible.join("\n")}\n  …and 1 more\n"
+        end
+
+        it "returns the updated lockfile, since no entry is inside the window" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+        end
+      end
+
+      context "when the repo trusts its lockfile and turns strict mode off itself" do
+        let(:workspace_settings) do
+          "minimumReleaseAge: 10080\nminimumReleaseAgeStrict: false\ntrustLockfile: true\n"
+        end
+
+        it "does not verify, since the repo's own update and install would both accept the version" do
+          allow(Dependabot.logger).to receive(:info)
+
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(commands).not_to include(verify_command)
+        end
+      end
+
+      context "when the repo trusts its lockfile but keeps strict mode" do
+        let(:workspace_settings) { "minimumReleaseAge: 10080\ntrustLockfile: true\n" }
+
+        it "verifies, since the repo's own update would refuse the version" do
+          allow(Dependabot.logger).to receive(:info)
+
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(commands.last).to eq(verify_command)
+        end
+      end
+
+      context "when pnpm records exclusions during an ordinary update" do
+        let(:workspace_seen) { [] }
+
+        before do
+          failure = verification_failure
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            if cmd == verify_command
+              workspace_seen << File.read("pnpm-workspace.yaml")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: failure, error_context: {})
+            end
+            File.write("pnpm-lock.yaml", lockfile_with(locked_after))
+            File.write("pnpm-workspace.yaml", "#{workspace_settings}minimumReleaseAgeExclude:\n  - x@1.0.0\n")
+            ""
+          end
+        end
+
+        it "verifies against the repo's own pnpm-workspace.yaml" do
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(workspace_seen).to eq([workspace_settings])
+        end
+      end
+
+      context "when the update is a security update" do
+        let(:security_updates_only) { true }
+
+        it "does not verify, since security updates bypass the window" do
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(commands).not_to include(verify_command)
+        end
+      end
+
+      context "when the repo sets no minimumReleaseAge of its own" do
+        let(:workspace_settings) { "packages: []\n" }
+
+        it "does not verify, since only Dependabot's best-effort cooldown applies" do
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(commands).not_to include(verify_command)
+        end
+      end
+
+      context "when the running pnpm predates the strict toggle" do
+        let(:pnpm_version) { "10.16.0" }
+
+        it "does not verify, since Dependabot does not relax the repo's gate there" do
+          expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          expect(commands).not_to include(a_string_including("trust-lockfile"))
+        end
+      end
+    end
+
     context "when the running pnpm version gates the release-age gate" do
       let(:updater) do
         described_class.new(
