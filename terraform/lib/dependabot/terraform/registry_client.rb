@@ -6,11 +6,12 @@ require "dependabot/errors"
 require "dependabot/registry_client"
 require "dependabot/source"
 require "dependabot/terraform/version"
+require "nokogiri"
 
 module Dependabot
   module Terraform
     # Terraform::RegistryClient is a basic API client to interact with a
-    # terraform registry: https://www.terraform.io/docs/registry/api.html
+    # terraform registry: https://developer.hashicorp.com/terraform/registry/api-docs
     class RegistryClient
       extend T::Sig
 
@@ -55,7 +56,7 @@ module Dependabot
         doc = Nokogiri::XML(response.body)
         doc.css("meta").find do |tag|
           tag.attributes&.fetch("name", nil)&.value == "terraform-get"
-        end&.attributes&.fetch("content", nil)&.value
+        end&.attributes&.fetch("content", nil)&.value || raw_source
       rescue Excon::Error::Socket, Excon::Error::Timeout => e
         raise PrivateSourceAuthenticationFailure, host if e.message.include?("no address for")
 
@@ -112,26 +113,10 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
         type = T.must(dependency.source_string("type"))
-        base_url = service_url_for(service_key_for(type))
-        case type
-        # https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
-        when "module", "modules", "registry"
-          download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
-          response = http_get(download_url)
-          return nil unless response.status == 204
-
-          source_url = response.headers.fetch("X-Terraform-Get")
-          source_url = URI.join(download_url, source_url).to_s if
-            source_url.start_with?("/", "./", "../")
-          source_url = RegistryClient.get_proxied_source(source_url) if source_url
-        when "provider", "providers"
-          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
-          return nil unless response.status == 200
-
-          source_url = JSON.parse(response.body).fetch("source")
-        end
-
-        Source.from_url(source_url) if source_url
+        source_url = fetch_source_url(dependency, type)
+        result = Source.from_url(source_url) if source_url
+        result ||= source_from_module_metadata(dependency) if service_key_for(type) == "modules.v1"
+        result
       rescue JSON::ParserError, Excon::Error::Timeout
         nil
       end
@@ -151,6 +136,92 @@ module Dependabot
       end
 
       private
+
+      # Fetch source URL from registry API. The source can be a module or a
+      # provider, both using different endpoints and response formats.
+      #
+      # @param dependency [Dependabot::Dependency] the dependency to fetch the
+      # source for
+      # @param type [String] the type of the dependency, normally either
+      # "module" or "provider"
+      # @return [String, nil] the source URL or nil if not found
+      sig { params(dependency: Dependabot::Dependency, type: String).returns(T.nilable(String)) }
+      def fetch_source_url(dependency, type)
+        base_url = service_url_for(service_key_for(type))
+        case type
+        when "module", "modules", "registry"
+          fetch_module_source_url(dependency, base_url)
+        when "provider", "providers"
+          fetch_provider_source_url(dependency, base_url)
+        end
+      end
+
+      # Fetch the source URL of a given module dependency.
+      #
+      # See:
+      # - https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+      #
+      # @param dependency [Dependabot::Dependency] the module dependency
+      # @param base_url [String] the base URL for the module registry service
+      # @return [String, nil] the source URL or nil if not found
+      sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
+      def fetch_module_source_url(dependency, base_url)
+        # Example: https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8/download
+        download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
+        response = http_get(download_url)
+        return nil unless response.status == 204
+
+        source_url = response.headers["X-Terraform-Get"]
+        return nil unless source_url
+
+        source_url = URI.join(download_url, source_url) if
+          source_url.start_with?("/", "./", "../")
+        RegistryClient.get_proxied_source(source_url.to_s)
+      end
+
+      # Fetch the source URL of a given provider dependency.
+      #
+      # See:
+      # - https://developer.hashicorp.com/terraform/internals/provider-registry-protocol#find-a-provider-package
+      #
+      # @param dependency [Dependabot::Dependency] the provider dependency
+      # @param base_url [String] the base URL for the provider registry service
+      # @return [String, nil] the source URL or nil if not found
+      sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
+      def fetch_provider_source_url(dependency, base_url)
+        # Example: https://registry.terraform.io/v1/providers/hashicorp/aws/3.40.0
+        response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+        return nil unless response.status == 200
+
+        JSON.parse(response.body).fetch("source")
+      end
+
+      # Fetch the source repository URL from the module metadata API. Used as a
+      # fallback when the source can't be resolved from the download endpoint,
+      # e.g. when X-Terraform-Get points to an opaque archivist blob URL.
+      #
+      # The metadata response carries the repository URL in its "source" field.
+      #
+      # See: https://developer.hashicorp.com/terraform/registry/api-docs#show-a-module
+      #
+      # @param dependency [Dependabot::Dependency] the dependency to fetch metadata for
+      # @return [Dependabot::Source, nil] the parsed source or nil if not found
+      sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
+      def source_from_module_metadata(dependency)
+        base_url = service_url_for("modules.v1")
+        metadata_url = URI.join(base_url, dependency.name.to_s)
+
+        response = http_get(metadata_url)
+        return nil unless response.status == 200
+
+        data = JSON.parse(response.body)
+        source_url = data["source"]
+
+        Source.from_url(source_url) if source_url
+      rescue JSON::ParserError, Excon::Error => e
+        Dependabot.logger.warn("Failed to fetch module metadata for #{dependency.name}: #{e.message}")
+        nil
+      end
 
       sig { returns(String) }
       attr_reader :hostname
