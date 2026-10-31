@@ -7,8 +7,13 @@ defmodule UpdateChecker do
     # This is necessary because we can't specify :extra_applications to have :hex in other mixfiles.
     Mix.ensure_application!(:hex)
 
+    # Mix only knows about transitive dependencies once their parents are
+    # fetched, so only name declared ones. Removing a dependency from the
+    # lock is enough for Hex to unlock it.
+    names = if declared?(dependency_name), do: [dependency_name], else: []
+
     # Update the lockfile in a session that we can time out
-    task = Task.async(fn -> do_resolution(dependency_name) end)
+    task = Task.async(fn -> do_resolution(dependency_name, names) end)
 
     case Task.yield(task, 30000) || Task.shutdown(task) do
       {:ok, {:ok, :resolution_successful}} ->
@@ -35,18 +40,25 @@ defmodule UpdateChecker do
     end
   end
 
-  defp do_resolution(dependency_name) do
+  defp do_resolution(dependency_name, names) do
     # Fetch dependencies that needs updating
     {dependency_lock, rest_lock} =
       Map.split(Mix.Dep.Lock.read(), [String.to_atom(dependency_name)])
 
     try do
-      Mix.Dep.Fetcher.by_name([dependency_name], dependency_lock, rest_lock, [])
+      Mix.Dep.Fetcher.by_name(names, dependency_lock, rest_lock, [])
 
       {:ok, :resolution_successful}
     rescue
       error -> {:error, error}
     end
+  end
+
+  defp declared?(dependency_name) do
+    Enum.any?(Mix.Dep.Converger.converge(), &(Atom.to_string(&1.app) == dependency_name))
+  rescue
+    # Leave it to the resolution to report the error
+    _error -> true
   end
 end
 

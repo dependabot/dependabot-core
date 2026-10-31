@@ -472,6 +472,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
+    context "when the dependency is a transitive dependency" do
+      let(:dependency_name) { "plug" }
+      let(:version) { "1.10.4" }
+      let(:dependency_requirements) { [] }
+
+      let(:mixfile_body) { fixture("mixfiles", "deep_upgrade") }
+      let(:lockfile_body) { fixture("lockfiles", "deep_upgrade") }
+
+      it { is_expected.to be > Gem::Version.new("1.10.4") }
+
+      it "doesn't update any requirements" do
+        expect(checker.updated_requirements).to eq([])
+      end
+    end
+
     context "with a dependency with a private organization" do
       let(:mixfile_body) { fixture("mixfiles", "private_package") }
       let(:dependency_name) { "example_package_a" }
