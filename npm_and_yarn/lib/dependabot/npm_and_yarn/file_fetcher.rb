@@ -57,7 +57,7 @@ module Dependabot
         begin
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(@git_lfs_cloned_repo_contents_path) do
-              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
               SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
             end
             @git_lfs_cloned_repo_contents_path
@@ -235,9 +235,11 @@ module Dependabot
         content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
         return unless content
 
+        policy_lines = NpmAndYarn::FileUpdater::NpmrcBuilder.policy_lines(npmrc&.content)
+
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: content,
+          content: [content, *policy_lines].reject(&:empty?).join("\n"),
           directory: directory
         )
       end
@@ -360,7 +362,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
+          npm: shrinkwrap || package_lock,
           yarn: yarn_lock,
           pnpm: pnpm_lock
         }
@@ -799,7 +801,9 @@ module Dependabot
       def parsed_pnpm_workspace_yaml
         return {} unless pnpm_workspace_yaml
 
-        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        parsed = YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        # A file with only comments (or a bare scalar) parses to something other than a mapping
+        parsed.is_a?(Hash) ? parsed : {}
       rescue Psych::SyntaxError, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, T.must(pnpm_workspace_yaml).path
       end
@@ -859,8 +863,10 @@ module Dependabot
         if repo_contents_path.nil?
           Dependabot.logger.info("Repository contents path is nil")
         elsif Dir.exist?(T.must(repo_contents_path))
-          Dir.chdir(T.must(repo_contents_path)) do
-            FileUtils.mkdir_p(".yarn/cache")
+          project_path = File.join(T.must(repo_contents_path), directory)
+          Dir.chdir(Dir.exist?(project_path) ? project_path : T.must(repo_contents_path)) do
+            cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
+            FileUtils.mkdir_p(cache_dir)
           end
         else
           Dependabot.logger.info("Repository contents path does not exist")

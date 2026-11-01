@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "cargo",
-            vulnerable_versions: ["<= 0.1.39"]
+            vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 0.1.39")]
           )
         ]
       end
@@ -377,7 +377,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "cargo",
-            vulnerable_versions: ["<= 0.1.38"]
+            vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 0.1.38")]
           )
         ]
       end
@@ -479,7 +479,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
   describe "#updated_requirements" do
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater)
+      expect(Dependabot::Cargo::UpdateChecker::RequirementsUpdater)
         .to receive(:new)
         .with(
           requirements: requirements,
@@ -507,13 +507,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "cargo",
-            vulnerable_versions: ["<= 0.1.38"]
+            vulnerable_versions: [Dependabot::Cargo::Requirement.new("<= 0.1.38")]
           )
         ]
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater)
+        expect(Dependabot::Cargo::UpdateChecker::RequirementsUpdater)
           .to receive(:new)
           .with(
             requirements: requirements,
@@ -798,7 +798,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             Dependabot::SecurityAdvisory.new(
               dependency_name: "getrandom",
               package_manager: "cargo",
-              vulnerable_versions: [">= 0.4.0, < 0.4.3"]
+              vulnerable_versions: [Dependabot::Cargo::Requirement.new(">= 0.4.0, < 0.4.3")]
             )
           ]
         end
@@ -816,7 +816,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
               Dependabot::SecurityAdvisory.new(
                 dependency_name: "getrandom",
                 package_manager: "cargo",
-                vulnerable_versions: [">= 0.2.0, < 0.2.17", ">= 0.4.0, < 0.4.3"]
+                vulnerable_versions: [
+                  Dependabot::Cargo::Requirement.new(">= 0.2.0, < 0.2.17"),
+                  Dependabot::Cargo::Requirement.new(">= 0.4.0, < 0.4.3")
+                ]
               )
             ]
           end

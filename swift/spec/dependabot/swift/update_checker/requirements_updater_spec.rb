@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,8 @@ require "dependabot/swift/update_checker/requirements_updater"
 require "dependabot/swift/version"
 
 RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
+  extend T::Sig
+
   let(:requirements) do
     [{
       file: "MyApp.xcodeproj/project.pbxproj",
@@ -16,8 +18,12 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
     }]
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:target_version) { "7.0.2" }
+  sig { returns(T::Boolean) }
   let(:xcode_mode) { true }
+  sig { returns(T.nilable(String)) }
   let(:target_commit_sha) { nil }
 
   let(:updater) do
@@ -28,6 +34,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
       target_commit_sha: target_commit_sha
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#initialize" do
     it "stores target_commit_sha" do

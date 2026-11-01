@@ -42,6 +42,15 @@ module Dependabot
         ).updated_requirements
       end
 
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def latest_resolvable_version_with_no_unlock
+        # A sub-dependency in uv.lock has no manifest requirement to unlock, so
+        # any version uv can resolve is reachable with a lockfile-only change.
+        return super unless requirements.none? && resolver_type == :lock_file
+
+        vulnerable? ? lowest_resolvable_security_fix_version : latest_resolvable_version
+      end
+
       private
 
       sig { override.returns(T.nilable(Gem::Version)) }

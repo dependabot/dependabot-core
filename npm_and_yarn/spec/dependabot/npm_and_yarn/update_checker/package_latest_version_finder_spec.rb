@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,9 +9,10 @@ require "dependabot/credential"
 require "dependabot/security_advisory"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/package/package_details_fetcher"
 
-MAX_COOLDOWN_DAYS = 100 * 365
+MAX_COOLDOWN_DAYS = T.let(100 * 365, Integer)
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder do
   let(:registry_base) { "https://registry.npmjs.org" }
@@ -1140,7 +1141,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
         Dependabot::SecurityAdvisory.new(
           dependency_name: "rails",
           package_manager: "npm_and_yarn",
-          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
+          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"].map do |requirement|
+            Dependabot::NpmAndYarn::Requirement.new(requirement)
+          end
         )
       ]
     end

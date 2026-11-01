@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
 
 using NuGet.Frameworks;
+using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
@@ -13,6 +15,47 @@ namespace NuGetUpdater.Core.Test.Analyze;
 
 public class CompatibilityCheckerTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistsAsync_ResourceLookupReceivesCancellationToken(bool packageIsCached)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var resourceProvider = new CapturingResourceProvider<FindPackageByIdResource>(
+            new MissingFindPackageByIdResource());
+        using var context = new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(source, [resourceProvider]));
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0");
+        var packageIdentity = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        if (packageIsCached)
+        {
+            var packagePath = CompatibilityChecker.GetPackagePath(packageIdentity, context);
+            using var packageStream = package.GetZipStream();
+            using var cacheStream = File.Create(packagePath);
+            await packageStream.CopyToAsync(cacheStream, TestContext.Current.CancellationToken);
+        }
+
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        var exists = await CompatibilityChecker.ExistsAsync(
+            packageIdentity,
+            context,
+            cancellationSource.Token);
+
+        Assert.False(exists);
+        Assert.Equal(cancellationSource.Token, resourceProvider.ReceivedToken);
+    }
+
     [Fact]
     public void PerformCheck_CompatiblePackage_IsCompatible()
     {
@@ -168,6 +211,25 @@ public class CompatibilityCheckerTests
         Assert.True(isCompatible);
     }
 
+    [Fact]
+    public async Task ExistsAndIsCompatibleAsync_ExistingPackageWithoutProjectFrameworks_ReportsAsCompatible()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0");
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+
+        var isCompatible = await CompatibilityChecker.ExistsAndIsCompatibleAsync(
+            packageId,
+            projectFrameworks: [],
+            context,
+            new TestLogger(),
+            CancellationToken.None);
+
+        Assert.True(isCompatible);
+    }
+
     [Theory]
     [InlineData("netstandard2.0")]
     [InlineData("net472")]
@@ -189,5 +251,60 @@ public class CompatibilityCheckerTests
             new TestLogger());
 
         Assert.True(result);
+    }
+
+    private sealed class CapturingResourceProvider<TResource>(TResource resource) : INuGetResourceProvider
+        where TResource : class, INuGetResource
+    {
+        public Type ResourceType => typeof(TResource);
+        public string Name => typeof(TResource).Name;
+        public IEnumerable<string> Before => [];
+        public IEnumerable<string> After => [];
+        public CancellationToken ReceivedToken { get; private set; }
+
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(
+            SourceRepository source,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        }
+    }
+
+    private sealed class MissingFindPackageByIdResource : FindPackageByIdResource
+    {
+        public override Task<IEnumerable<NuGetVersion>> GetAllVersionsAsync(
+            string id,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<FindPackageByIdDependencyInfo> GetDependencyInfoAsync(
+            string id,
+            NuGetVersion version,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<bool> CopyNupkgToStreamAsync(
+            string id,
+            NuGetVersion version,
+            Stream destination,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<IPackageDownloader> GetPackageDownloaderAsync(
+            PackageIdentity packageIdentity,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<bool> DoesPackageExistAsync(
+            string id,
+            NuGetVersion version,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => Task.FromResult(false);
     }
 }

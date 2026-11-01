@@ -1,10 +1,13 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/julia"
 
 RSpec.describe Dependabot::Julia::FileUpdater do
+  extend T::Sig
+
   let(:project_file) do
     Dependabot::DependencyFile.new(
       name: "Project.toml",
@@ -24,12 +27,14 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       described_class.new(
         dependencies: [dependency],
         dependency_files: dependency_files,
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
+        credentials: [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        )]
       )
     end
 
@@ -124,6 +129,64 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when a stdlib compat entry gains a <0.0.1 bound" do
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "TestProject"
+            uuid = "1234e567-e89b-12d3-a456-789012345678"
+
+            [deps]
+            Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+            [compat]
+            Statistics = "#{previous_requirement}"
+            julia = "1.6"
+          TOML
+        )
+      end
+      let(:dependency_files) { [project_file] }
+      let(:previous_requirement) { "1" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Statistics",
+          version: nil,
+          package_manager: "julia",
+          requirements: [{ requirement: "<0.0.1, 1", file: "Project.toml", groups: ["deps"], source: nil }],
+          previous_requirements: [
+            { requirement: previous_requirement, file: "Project.toml", groups: ["deps"], source: nil }
+          ],
+          metadata: {
+            julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2",
+            julia_stdlib_versions: { "Project.toml" => ["0.0.0", "1.6.0"] }
+          }
+        )
+      end
+
+      it "explains the bound in a notice" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.first.content).to include('Statistics = "<0.0.1, 1"')
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.type).to eq("julia_stdlib_zero_version_bound")
+        expect(notice.show_in_pr).to be true
+        expect(notice.description).to start_with("This update adds `<0.0.1` to standard library compat entries.")
+        expect(Dependabot::Notice.markdown_from_description(notice)).to start_with("> [!NOTE]\n")
+      end
+
+      context "when the entry already had it" do
+        let(:previous_requirement) { "< 0.0.1" }
+
+        it "adds no notice" do
+          updater.updated_dependency_files
+
+          expect(updater.notices).to be_empty
+        end
+      end
+    end
+
     context "when preserving UUID in [deps] section" do
       let(:project_file_content) do
         <<~TOML
@@ -207,12 +270,14 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       described_class.new(
         dependencies: [dependency],
         dependency_files: dependency_files,
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
+        credentials: [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        )]
       )
     end
 
@@ -390,6 +455,27 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when the manifest was written by a newer Julia" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          Dependabot::Julia::RegistryClient::Result::Failure.new(
+            message: "Manifest written by a newer Julia: Julia 1.14.0 wrote the manifest, " \
+                     "and Julia 1.13.1 cannot write a manifest for it"
+          )
+        )
+      end
+
+      it "adds a notice and returns updated Project.toml only" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.map(&:name)).to eq(["Project.toml"])
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.type).to eq("julia_manifest_not_updated")
+        expect(notice.description).to include("Julia 1.14.0 wrote the manifest")
+      end
+    end
+
     context "when Julia helper returns a resolver error" do
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
@@ -513,18 +599,20 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         updater = described_class.new(
           dependencies: [dependency],
           dependency_files: dependency_files,
-          credentials: [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }]
+          credentials: [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
         )
 
         updated_files = updater.updated_dependency_files
-        project_toml = updated_files.first
+        project_toml = updated_files.fetch(0)
 
-        compat_section = project_toml.content.match(/\[compat\]\n(.*?)(?:\n\[|\z)/m)[1]
+        compat_section = T.must(T.must(project_toml.content).match(/\[compat\]\n(.*?)(?:\n\[|\z)/m)).captures.fetch(0)
         entry_names = compat_section.scan(/^([A-Za-z_]+)\s*=/).flatten
 
         expect(entry_names).to eq(%w(Aqua CUDA Statistics julia))
@@ -606,7 +694,7 @@ RSpec.describe Dependabot::Julia::FileUpdater do
           credentials: []
         )
 
-        content = updater.updated_dependency_files.first.content
+        content = updater.updated_dependency_files.fetch(0).content
         expect(content).to include('Aqua = "0.8, 0.9"')
         expect(content).to include("# keep in sync with CI")
         expect(content).to include('julia = "1.10" # LTS')
@@ -713,10 +801,12 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       described_class.new(
         dependencies: [],
         dependency_files: dependency_files,
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com"
-        }]
+        credentials: [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com"
+          }
+        )]
       )
     end
 
@@ -758,12 +848,14 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       described_class.new(
         dependencies: [root_dependency],
         dependency_files: [root_project_file],
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
+        credentials: [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        )]
       )
     end
 
@@ -828,12 +920,14 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       described_class.new(
         dependencies: [json_dependency],
         dependency_files: workspace_files,
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
+        credentials: [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        )]
       )
     end
 
@@ -980,7 +1074,8 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
   private
 
+  sig { params(path: String).returns(String) }
   def fixture(*path)
-    File.read(File.join(__dir__, "..", "..", "fixtures", *path))
+    File.read(File.join(__dir__, "..", "..", "fixtures", File.join(path)))
   end
 end

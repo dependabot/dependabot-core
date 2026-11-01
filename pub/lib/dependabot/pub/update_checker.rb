@@ -21,7 +21,10 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
-        version = version_unless_ignored(T.must(version_report.latest_version), current_version: dependency.version)
+        candidate = version_report.latest_version
+        return nil unless candidate
+
+        version = version_unless_ignored(candidate, current_version: dependency.version)
 
         raise AllVersionsIgnored if version.nil? && @raise_on_ignored
 
@@ -48,10 +51,12 @@ module Dependabot
         e = dependency_services_smallest_update
         return nil if e.nil?
 
-        upgrade = e.find { |u| u["name"] == dependency.name }
+        upgrade = e.find { |u| u.name == dependency.name }
 
-        version = T.must(upgrade)["version"]
-        T.cast(version_unless_ignored(version), Dependabot::Version)
+        version = upgrade&.version
+        return unless version
+
+        T.cast(version_unless_ignored(version), T.nilable(Dependabot::Version))
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -80,16 +85,16 @@ module Dependabot
 
                   # Ideally we would like to do any upgrade that migrates away from the vulnerability
                   # but this method can only return a single requirement udate.
-                  breaking_changes = updates&.filter { |d| d["previousConstraint"] != d["constraintBumpedIfNeeded"] }
+                  breaking_changes = updates&.filter { |d| d.previous_constraint != d.constraint_bumped_if_needed }
 
                   # This security update would require unlocking other packages, which is not currently supported.
                   # Because of that, return original requirements, so that no requirements are actually updated and
                   # the error bubbles up as security_update_not_possible to the user.
                   return dependency.requirements if breaking_changes&.size&.> 1
 
-                  updates&.find { |u| u["name"] == dependency.name }
+                  updates&.find { |u| u.name == dependency.name }
                 else
-                  version_report.latest_resolvable_version_hash
+                  version_report.latest_resolvable_update
                 end
         return [] unless entry
 
@@ -100,7 +105,7 @@ module Dependabot
       private
 
       # rubocop:disable Metrics/AbcSize
-      sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      sig { returns(T.nilable(T::Array[DependencyServicesResult::DependencyUpdate])) }
       def dependency_services_smallest_update
         return @smallest_update if @smallest_update
 
@@ -129,10 +134,12 @@ module Dependabot
               }
             ]
         }
-        report = JSON.parse(run_dependency_services("report", stdin_data: JSON.generate(input)))["dependencies"]
+        report = DependencyServicesResult.report_from_json(
+          run_dependency_services("report", stdin_data: JSON.generate(input))
+        )
         @smallest_update = T.let(
-          report.find { |d| d["name"] == dependency.name }["smallestUpdate"],
-          T.nilable(T::Array[T::Hash[String, T.untyped]])
+          DependencyServicesResult.find_report(report.dependencies, dependency.name).smallest_update,
+          T.nilable(T::Array[DependencyServicesResult::DependencyUpdate])
         )
       end
       # rubocop:enable Metrics/AbcSize
@@ -184,11 +191,13 @@ module Dependabot
         report_section = if vulnerable?
                            dependency_services_smallest_update
                          else
-                           version_report.latest_version_resolvable_with_full_unlock_hash
+                           version_report.full_unlock_updates
                          end
+        return [] unless report_section
+
         # We only expose non-transitive dependencies here...
         direct_deps = report_section.reject do |d|
-          d["kind"] == "transitive"
+          d.kind == "transitive"
         end
         direct_deps.map do |d|
           parse_updated_dependency(d, resolved_requirements_update_strategy)

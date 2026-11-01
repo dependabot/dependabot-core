@@ -102,7 +102,67 @@ public sealed record Job
         return existingPullRequests;
     }
 
-    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(IEnumerable<ReportedDependencyWithDirectory> dependencies, bool considerVersions)
+    public DependencyGroup? ResolveDependencyGroupToRefresh()
+    {
+        if (DependencyGroupToRefresh is null)
+        {
+            return null;
+        }
+
+        var exactGroup = FindConfiguredDependencyGroup(DependencyGroupToRefresh);
+        if (exactGroup is not null)
+        {
+            return exactGroup.IsGroupedByDependencyName ? null : exactGroup;
+        }
+
+        var dynamicParent = DependencyGroups
+            .Where(g => g.IsGroupedByDependencyName)
+            .Where(g => DependencyGroupToRefresh.StartsWith($"{g.Name}/", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(g => g.Name.Length)
+            .FirstOrDefault();
+        if (dynamicParent is null)
+        {
+            return null;
+        }
+
+        var dependencyName = DependencyGroupToRefresh[(dynamicParent.Name.Length + 1)..];
+        if (dependencyName.Length == 0 ||
+            (Dependencies.Length > 0 && !Dependencies.Contains(dependencyName, StringComparer.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        return dynamicParent.CreateDependencyNameSubgroup(dependencyName, DependencyGroupToRefresh);
+    }
+
+    public DependencyGroup? FindConfiguredDependencyGroup(string name)
+    {
+        return DependencyGroups.FirstOrDefault(g => g.Name == name) ??
+            DependencyGroups.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
+        IEnumerable<ReportedDependencyWithDirectory> dependencies,
+        bool considerVersions,
+        bool treatEmptyDirectoryAsWildcard = false)
+    {
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatEmptyDirectoryAsWildcard);
+    }
+
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
+        IEnumerable<ReportedDependencyWithDirectory> dependencies,
+        bool considerVersions,
+        string dependencyGroupName)
+    {
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatEmptyDirectoryAsWildcard: false);
+    }
+
+    private Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
+        IEnumerable<ReportedDependencyWithDirectory> dependencies,
+        bool considerVersions,
+        string? dependencyGroupName,
+        bool matchGroupName,
+        bool treatEmptyDirectoryAsWildcard)
     {
         var desiredDependencies = dependencies.ToArray();
         if (desiredDependencies.Any(d => d.Version is null))
@@ -114,13 +174,14 @@ public sealed record Job
         {
             return desiredDependency.Name.Equals(existingDependency.DependencyName, StringComparison.OrdinalIgnoreCase) &&
                 (!considerVersions ||
-                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion.ToString(), StringComparison.OrdinalIgnoreCase));
+                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion?.ToString(), StringComparison.OrdinalIgnoreCase));
         }
 
         bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
                 (existingDependency.Directory is null ||
+                    (treatEmptyDirectoryAsWildcard && existingDependency.Directory.Length == 0) ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
@@ -128,6 +189,12 @@ public sealed record Job
         var existingPullRequest = existingPullRequests
             .FirstOrDefault(pr =>
             {
+                if (matchGroupName &&
+                    !string.Equals(pr.Item1, dependencyGroupName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
                 return desiredDependencies.All(desired => pr.Item2.Any(existing => DependenciesMatch(desired, existing))) &&
                     pr.Item2.All(existing => desiredDependencies.Any(desired => DependenciesMatch(desired, existing)));
             });
@@ -179,7 +246,9 @@ public sealed record Job
                     // try to match to existing PR
                     var dependencyVersion = NuGetVersion.Parse(dependency.Version);
                     var existingPullRequests = GetAllExistingPullRequests()
-                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) && d.DependencyVersion >= dependencyVersion))
+                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) &&
+                            d.DependencyVersion is not null &&
+                            d.DependencyVersion >= dependencyVersion))
                         .ToArray();
                     if (existingPullRequests.Length > 0)
                     {

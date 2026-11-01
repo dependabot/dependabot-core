@@ -1,0 +1,10 @@
+{
+  "name": "workspace-root",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "typescript": "4.9.5"
+  }
+}

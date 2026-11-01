@@ -16,7 +16,7 @@ public class RunWorkerTests
 
             var result = RunWorker.AddInsecureConnectionsAttribute(input);
 
-            Assert.Equal(expected, result);
+            Assert.Equal(expected.ReplaceLineEndings("\n"), result.ReplaceLineEndings("\n"));
         }
 
         public static TheoryData<string, string, string> TestData => new()

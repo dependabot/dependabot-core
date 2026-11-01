@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only fixtures or class-scope generated its examples.
+
 require "spec_helper"
 
 require "dependabot/composer/update_checker/requirements_updater"

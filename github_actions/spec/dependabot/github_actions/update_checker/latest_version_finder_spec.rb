@@ -1,18 +1,24 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/update_checker/latest_version_finder"
+require "dependabot/github_actions/requirement"
 
-namespace = Dependabot::GithubActions::UpdateChecker
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:upload_pack_fixture) { "setup-node" }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
@@ -58,7 +64,7 @@ RSpec.describe namespace::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
@@ -181,7 +187,7 @@ RSpec.describe namespace::LatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "github_actions",
-          vulnerable_versions: ["< 1.0"]
+          vulnerable_versions: [Dependabot::GithubActions::Requirement.new("< 1.0")]
         )
       ]
     end
@@ -242,7 +248,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -284,7 +290,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -326,7 +332,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -439,7 +445,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -485,7 +491,7 @@ RSpec.describe namespace::LatestVersionFinder do
           described_class.new(
             dependency: dependency,
             dependency_files: [],
-            credentials: github_credentials,
+            credentials: credentials,
             security_advisories: security_advisories,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
@@ -508,7 +514,7 @@ RSpec.describe namespace::LatestVersionFinder do
           described_class.new(
             dependency: dependency,
             dependency_files: [],
-            credentials: github_credentials,
+            credentials: credentials,
             security_advisories: security_advisories,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
@@ -572,7 +578,7 @@ RSpec.describe namespace::LatestVersionFinder do
       described_class.new(
         dependency: dependency,
         dependency_files: [],
-        credentials: github_credentials,
+        credentials: credentials,
         security_advisories: security_advisories,
         ignored_versions: ignored_versions,
         raise_on_ignored: raise_on_ignored,

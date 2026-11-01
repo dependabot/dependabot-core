@@ -15,6 +15,7 @@ module Dependabot
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
+      require_relative "file_updater/dependency_management_locator"
       require_relative "file_updater/dependency_requirement_scopes"
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/wrapper_updater"
@@ -219,8 +220,8 @@ module Dependabot
       end
       def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/AbcSize
         doc = REXML::Document.new(content)
-        project = doc.get_elements("//project").first
-        raise "<project> element not found in the XML content" unless project
+        project = doc.root
+        raise "<project> element not found in the XML content" unless project&.name == "project"
 
         # Detect indentation of the file from indentation of the project tag children
         indentation_config = detect_indentation_config(project)
@@ -250,30 +251,14 @@ module Dependabot
         dependencies.add_text("\n#{indentation_config[:levels][:dependency_management]}")
         dependency_management.add_text("\n#{indentation_config[:levels][:base]}") if dependencies_created
 
-        # If a new dependencyManagement section was created, we use a hybrid DOM-guided
-        # text splice instead of doc.to_s. This completely preserves the original
-        # file's formatting, indentation style, and attribute quotes on the root elements,
-        # avoiding git diff noise on unrelated lines.
-        if dependency_management_created
-          # Find the character position of the true closing project tag at the literal end of the file.
-          match_data = content.match(%r{</project>\s*\z})
-
-          if match_data
-            insert_position = match_data.begin(0)
-            # Extract the baseline indentation level for the root block formatting (e.g. spaces or tabs)
-            formatted_patch = "\n#{indentation_config[:levels][:base]}#{dependency_management}\n"
-
-            # place the block text right into that character boundary index position
-            return T.must(content[0...insert_position]) + formatted_patch + T.must(content[insert_position..-1])
-          end
-        end
-
-        # If dependencyManagement was not created, we just replace the existing dependencyManagement element
-        # with the updated one, preserving the rest of the document
-        content.gsub(
-          %r{\<dependencyManagement\>[\s\S]*\</dependencyManagement\>},
-          dependency_management.to_s
+        range = DependencyManagementLocator.new(content).replacement_range(
+          project_name: project.expanded_name,
+          element_name: dependency_management.expanded_name
         )
+        replacement = dependency_management.to_s
+        replacement = "\n#{indentation_config[:levels][:base]}#{replacement}\n" if dependency_management_created
+
+        T.must(content.byteslice(0...range.begin)) + replacement + T.must(content.byteslice(range.end..))
       end
 
       sig do

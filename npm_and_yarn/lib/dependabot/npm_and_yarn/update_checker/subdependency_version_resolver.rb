@@ -267,7 +267,7 @@ module Dependabot
           end
         end
 
-        # First-tier fallback: try `pnpm update --depth Infinity <dep>` to
+        # First-tier fallback: try a deep `pnpm update <dep>` to
         # update transitive dependencies in the lockfile without modifying
         # manifests or relying on older pnpm audit fixes that may add overrides.
         sig { void }
@@ -278,7 +278,7 @@ module Dependabot
           dependency.metadata[:deep_update_used] = true
         rescue SharedHelpers::HelperSubprocessFailed
           Dependabot.logger.info(
-            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
+            "pnpm deep update failed or partially fixed — continuing with any changes made"
           )
         end
 

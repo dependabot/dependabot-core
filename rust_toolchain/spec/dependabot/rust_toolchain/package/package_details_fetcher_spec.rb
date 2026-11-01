@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,7 +7,10 @@ require "dependabot/rust_toolchain/package/package_details_fetcher"
 RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
   subject(:finder) { described_class.new(dependency: dependency) }
 
-  let(:manifests_url_with_timestamp) { /\A#{Regexp.escape(described_class::MANIFESTS_URL)}(\?t=\d+)?\z/o }
+  let(:manifests_url_with_timestamp) do
+    manifests_url = Dependabot::RustToolchain::Package::PackageDetailsFetcher::MANIFESTS_URL
+    /\A#{Regexp.escape(manifests_url)}(\?t=\d+)?\z/o
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(

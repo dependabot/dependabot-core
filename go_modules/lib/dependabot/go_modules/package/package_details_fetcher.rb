@@ -9,6 +9,8 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
+require "dependabot/go_modules/go_mod_manifest"
+require "dependabot/go_modules/module_info"
 require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/azure_devops_path_normalizer"
 
@@ -73,17 +75,13 @@ module Dependabot
               # appears to be a side effect of operating with modules included in GOPRIVATE. We'll
               # retain any exclude directives to omit those versions.
               File.write("go.mod", "module dummy\n")
-              manifest["Exclude"]&.each do |r|
-                SharedHelpers.run_shell_command("go mod edit -exclude=#{r['Path']}@#{r['Version']}")
+              manifest.exclusions.each do |exclusion|
+                SharedHelpers.run_shell_command("go mod edit -exclude=#{exclusion.path}@#{exclusion.version}")
               end
 
               # Turn off the module proxy for private dependencies
               dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
-              versions_json = SharedHelpers.run_shell_command(
-                "go list -m -versions -json #{dependency_name}",
-                fingerprint: "go list -m -versions -json <dependency_name>"
-              )
-              version_strings = JSON.parse(versions_json)["Versions"]
+              version_strings = fetch_module_versions(dependency_name)
 
               # If no versions found, the path may be a sub-package rather than a module root.
               # Try progressively shorter paths to find the actual module.
@@ -106,6 +104,8 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if e.is_a?(GoModManifest::InvalidOutput) || e.is_a?(ModuleInfo::InvalidOutput)
+
           retry_count ||= 0
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
@@ -150,13 +150,13 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(GoModManifest) }
         def parse_manifest
           SharedHelpers.in_a_temporary_directory do
             File.write("go.mod", T.must(go_mod).content)
             json = SharedHelpers.run_shell_command("go mod edit -json")
 
-            JSON.parse(json) || {}
+            GoModManifest.from_json(json, file_path: T.must(go_mod).path)
           end
         end
 
@@ -171,7 +171,10 @@ module Dependabot
             "go list -m -versions -json #{module_path}",
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
-          JSON.parse(versions_json)["Versions"]
+          ModuleInfo.from_json(
+            versions_json,
+            command: "go list -m -versions -json <dependency_name>"
+          ).versions
         end
 
         # When a full import path (e.g. github.com/owner/repo/cmd/tool) is not a module,
@@ -188,7 +191,9 @@ module Dependabot
             Dependabot.logger.debug("Trying shorter module path: #{candidate}")
             versions = fetch_module_versions(candidate)
             return versions if versions&.any?
-          rescue SharedHelpers::HelperSubprocessFailed
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise if e.is_a?(ModuleInfo::InvalidOutput)
+
             next
           end
 

@@ -1,0 +1,7 @@
+{
+  "name": "npmrc_allow_policies",
+  "version": "1.0.0",
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}

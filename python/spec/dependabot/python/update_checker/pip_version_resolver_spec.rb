@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/python/requirement"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pip_version_resolver"
@@ -122,7 +123,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "pip",
-          vulnerable_versions: ["<= 2.1.0"]
+          vulnerable_versions: [Dependabot::Python::Requirement.new("<= 2.1.0")]
         )
       ]
     end

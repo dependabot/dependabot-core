@@ -121,6 +121,8 @@ module Dependabot
             )
             dependencies_from(updated_deps, specs)
           rescue SharedHelpers::HelperSubprocessFailed => e
+            raise_if_checksum_mismatch(e)
+
             msg = e.error_class + " with message: " + e.message
             raise Dependabot::DependencyFileNotResolvable, msg
           end

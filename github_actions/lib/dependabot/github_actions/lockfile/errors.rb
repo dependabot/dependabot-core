@@ -23,7 +23,7 @@ module Dependabot
           super(
             LOCKFILE_PATH,
             "Unsupported actions.lock version #{found.inspect}; " \
-            "this version of Dependabot supports #{supported.inspect}. " \
+            "this version of Dependabot supports #{supported}. " \
             "Upgrade Dependabot or regenerate the lockfile with a compatible gh-actions-lock version."
           )
         end

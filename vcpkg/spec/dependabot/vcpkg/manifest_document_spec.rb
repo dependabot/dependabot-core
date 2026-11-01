@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in generated examples and parameterized shared examples.
+
 require "spec_helper"
 require "dependabot/vcpkg/manifest_document"
 

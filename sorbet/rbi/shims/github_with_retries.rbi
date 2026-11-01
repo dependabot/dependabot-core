@@ -18,6 +18,10 @@ module Dependabot
       sig { params(repo: String, options: ClientOptions).returns(T.any(Sawyer::Resource, T::Array[Sawyer::Resource])) }
       def contents(repo, options = {}); end
 
+      # Git data
+      sig { params(repo: String, tree_sha: String, options: ClientOptions).returns(Sawyer::Resource) }
+      def tree(repo, tree_sha, options = {}); end
+
       # Commits
       sig { params(repo: String, options: ClientOptions).returns(T::Array[Sawyer::Resource]) }
       def commits(repo, options = {}); end

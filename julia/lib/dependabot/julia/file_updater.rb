@@ -19,6 +19,12 @@ module Dependabot
       # comment ("[compat]  # pins")
       COMPAT_HEADER_PATTERN = /^\s*\[compat\]\s*(?:#.*)?$/
 
+      # A compat entry part that admits only 0.0.0 ("<0.0.1", "< 0.0.1")
+      ZERO_VERSION_BOUND_PATTERN = /\A<\s*0\.0\.1\z/
+
+      STDLIB_COMPAT_PSA_URL =
+        "https://discourse.julialang.org/t/psa-compat-requirements-in-the-general-registry-are-changing/104958"
+
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/(?:Julia)?Project\.toml$/i, /(?:Julia)?Manifest(?:-v[\d.]+)?\.toml$/i]
@@ -48,7 +54,9 @@ module Dependabot
 
         # Use DependabotHelper.jl for manifest updating
         # This works for both standard packages and workspace packages
-        updated_files_with_julia_helper
+        updated_files = updated_files_with_julia_helper
+        add_zero_version_bound_notice
+        updated_files
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -176,7 +184,7 @@ module Dependabot
       end
       def handle_julia_helper_error(result, manifest)
         error_message = result.message
-        raise error_message unless resolver_error?(error_message)
+        raise error_message unless resolver_error?(error_message) || newer_julia_error?(error_message)
 
         # The Project.toml changes still go out without this manifest
         add_manifest_update_notice(manifest.name, error_message)
@@ -187,6 +195,12 @@ module Dependabot
         error_message.start_with?("Pkg resolver error:") ||
           error_message.include?("Unsatisfiable requirements") ||
           error_message.include?("ResolverError")
+      end
+
+      # Pkg cannot write a manifest for a newer Julia than the updater's
+      sig { params(error_message: String).returns(T::Boolean) }
+      def newer_julia_error?(error_message)
+        error_message.start_with?("Manifest written by a newer Julia:")
       end
 
       sig { params(manifest_path: String, error_message: String).void }
@@ -215,6 +229,40 @@ module Dependabot
       end
 
       private
+
+      # A "<0.0.1" bound on a stdlib looks like a bug unless explained.
+      # The text names no packages, so a PR across several directories shows it only once.
+      sig { void }
+      def add_zero_version_bound_notice
+        bound_added = dependencies.any? do |dependency|
+          dependency.metadata.key?(:julia_stdlib_versions) &&
+            !zero_version_bound?(dependency.previous_requirements) &&
+            zero_version_bound?(dependency.requirements)
+        end
+        return unless bound_added
+
+        @notices << Dependabot::Notice.new(
+          mode: Dependabot::Notice::NoticeMode::INFO,
+          type: "julia_stdlib_zero_version_bound",
+          package_manager_name: "Pkg",
+          title: "Why stdlib compat entries include `<0.0.1`",
+          description: "This update adds `<0.0.1` to standard library compat entries. Before Julia 1.10, " \
+                       "`Pkg.test()` gave standard libraries version 0.0.0, so while the `julia` compat entry " \
+                       "admits those releases, a stdlib compat entry needs `<0.0.1` for tests to resolve. " \
+                       "Raising the `julia` compat entry to `1.10` or later removes the need for it. " \
+                       "See the [stdlib compat PSA](#{STDLIB_COMPAT_PSA_URL}).",
+          show_in_pr: true,
+          show_alert: false
+        )
+      end
+
+      sig { params(requirements: T.nilable(T::Array[T::Hash[Symbol, T.untyped]])).returns(T::Boolean) }
+      def zero_version_bound?(requirements)
+        (requirements || []).any? do |req|
+          requirement = T.cast(req[:requirement], T.nilable(String)).to_s
+          requirement.split(",").any? { |part| part.strip.match?(ZERO_VERSION_BOUND_PATTERN) }
+        end
+      end
 
       sig { returns(T::Hash[String, T::Hash[String, String]]) }
       def build_updates_hash

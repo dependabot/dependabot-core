@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-only project_name fixture or shared-example fixtures.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"

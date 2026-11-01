@@ -11,7 +11,9 @@ module Dependabot
     module Lockfile
       # Builds the subprocess environment for the gh-actions-lock engine. Hosted
       # Dependabot is tokenless behind a MITM proxy that overwrites the auth header,
-      # while proxyless local runs hold the real github.com token in `credentials`.
+      # while proxyless local runs hold the real home-host token in `credentials`.
+      # Only a home-host `git_source` token is ever used; the engine reads other
+      # hosts (dotcom fallback) anonymously.
       module Env
         extend T::Sig
 
@@ -20,13 +22,13 @@ module Dependabot
         DUMMY_TOKEN = "x-access-token"
 
         sig do
-          params(credentials: T::Array[Dependabot::Credential])
+          params(credentials: T::Array[Dependabot::Credential], hostname: String)
             .returns(T::Hash[String, String])
         end
-        def self.build(credentials)
+        def self.build(credentials, hostname = GITHUB_COM)
           env = {}
 
-          github_credential = github_dot_com_credential(credentials)
+          github_credential = home_credential(credentials, hostname)
           env["GH_TOKEN"] = github_credential&.fetch("password", nil) || DUMMY_TOKEN
           env["GH_ACTIONS_LOCK_DEPENDABOT_PROXY"] = "1" unless github_credential
 
@@ -36,12 +38,12 @@ module Dependabot
         # Mirrors SharedHelpers.configure_git_to_use_https_with_credentials: prefer a
         # deliberately-added token over an app installation token ("v1." prefix).
         sig do
-          params(credentials: T::Array[Dependabot::Credential])
+          params(credentials: T::Array[Dependabot::Credential], hostname: String)
             .returns(T.nilable(Dependabot::Credential))
         end
-        def self.github_dot_com_credential(credentials)
+        def self.home_credential(credentials, hostname)
           candidates = credentials.select do |c|
-            c["type"] == "git_source" && c["host"] == GITHUB_COM && c["password"]
+            c["type"] == "git_source" && c["host"] == hostname && c["password"]
           end
 
           candidates.find { |c| !c["password"]&.start_with?("v1.") } || candidates.first

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency_files fixture used by the parent subject.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
@@ -396,6 +398,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
+    context "when both npm-shrinkwrap.json and package-lock.json exist" do
+      let(:dependency_files) { project_dependency_files("npm8/shrinkwrap_and_package_lock") }
+
+      it "reads the dependency from the shrinkwrap npm actually uses" do
+        expect(lockfile_details).to have_attributes(version: "1.8.1")
+      end
+
+      context "when the dependency only exists in the ignored package-lock.json" do
+        let(:dependency_name) { "stale-only" }
+
+        it "does not fall through to the ignored package-lock.json" do
+          expect(lockfile_details).to be_nil
+        end
+
+        it "does not parse dependencies from the ignored package-lock.json" do
+          expect(lockfile_parser.parse.map { |d| [d.name, d.version] }).to eq([["etag", "1.8.1"]])
+        end
+      end
+    end
+
     context "with unconsumed fields in a modern npm entry" do
       let(:dependency_files) do
         [
@@ -457,6 +479,53 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             version: "8.4.17",
             resolution: "postcss@npm:8.4.17"
           )
+        end
+      end
+
+      context "when an OR range shares a prefix with another requirement" do
+        # Keep separate aproba entries for ^1.0.3 and ^1.0.3 || ^2.0.0 to exercise descriptor matching.
+        let(:dependency_files) { project_dependency_files("yarn_berry/no_lockfile_change") }
+        let(:dependency_name) { "aproba" }
+        let(:requirement) { "^1.0.3 || ^2.0.0" }
+
+        it "finds the entry matching the complete descriptor" do
+          expect(lockfile_details).to have_attributes(
+            version: "2.0.0",
+            resolution: "aproba@npm:2.0.0"
+          )
+        end
+      end
+
+      context "when a scoped dependency has multiple native npm descriptors" do
+        # Keep both @babel/code-frame entries so the sole-candidate fallback cannot satisfy this example.
+        let(:dependency_files) { project_dependency_files("yarn_berry/lockfile_only_change") }
+        let(:dependency_name) { "@babel/code-frame" }
+        let(:requirement) { "^7.0.0-beta.35" }
+
+        it "finds the entry matching the complete descriptor" do
+          expect(lockfile_details).to have_attributes(
+            version: "7.0.0-beta.35",
+            resolution: "@babel/code-frame@npm:7.0.0-beta.35"
+          )
+        end
+      end
+
+      context "when a comparator range belongs to a composite descriptor" do
+        # Keep statuses@npm:2.0.1 alongside the grouped >= 1.5.0 < 2 and ^1.5.0 descriptors.
+        let(:dependency_files) { project_dependency_files("yarn/submodule_dependency") }
+        let(:dependency_name) { "statuses" }
+        let(:requirement) { ">= 1.5.0 < 2" }
+
+        it "matches the complete comparator range" do
+          expect(lockfile_details).to have_attributes(version: "1.5.0", resolution: "statuses@npm:1.5.0")
+        end
+
+        context "when the requirement matches the second descriptor" do
+          let(:requirement) { "^1.5.0" }
+
+          it "finds the entry matching the requirement" do
+            expect(lockfile_details).to have_attributes(version: "1.5.0", resolution: "statuses@npm:1.5.0")
+          end
         end
       end
     end

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,8 +6,9 @@ require "dependabot/github_actions/lockfile"
 
 RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
   describe ".compatible?" do
-    it "accepts the supported version" do
+    it "accepts the supported versions" do
       expect(described_class.compatible?("v0.0.2")).to be(true)
+      expect(described_class.compatible?("v0.0.3")).to be(true)
     end
 
     it "rejects the previous schema" do
@@ -15,7 +16,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
     end
 
     it "rejects a newer schema" do
-      expect(described_class.compatible?("v0.0.3")).to be(false)
+      expect(described_class.compatible?("v0.0.4")).to be(false)
     end
 
     it "rejects blank input" do
@@ -26,6 +27,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
   describe ".assert_supported!" do
     it "does not raise for a supported version" do
       expect { described_class.assert_supported!("v0.0.2") }.not_to raise_error
+      expect { described_class.assert_supported!("v0.0.3") }.not_to raise_error
     end
 
     it "raises UnsupportedLockfileVersion for an unsupported version" do
@@ -36,7 +38,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
     it "maps unsupported versions to a user-facing updater error" do
       described_class.assert_supported!("v2.0.0")
     rescue Dependabot::GithubActions::Lockfile::UnsupportedLockfileVersion => e
-      expect(Dependabot.updater_error_details(e).error_type).to eq("dependency_file_not_parseable")
+      expect(T.must(Dependabot.updater_error_details(e)).error_type).to eq("dependency_file_not_parseable")
     end
   end
 end

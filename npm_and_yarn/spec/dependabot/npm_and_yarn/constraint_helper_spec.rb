@@ -1,15 +1,22 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/constraint_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T.class_of(Dependabot::NpmAndYarn::ConstraintHelper)) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:helper) { described_class }
-  let(:version_regex) { /^#{helper::VERSION}$/o }
+  sig { returns(Regexp) }
+  let(:version_regex) { /^#{Dependabot::NpmAndYarn::ConstraintHelper::VERSION}$/o }
+  sig { returns(T::Array[Dependabot::Version]) }
   let(:dependabot_versions) do
     []
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "Regex Constants" do
     describe "VERSION" do
@@ -40,7 +47,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "^1.2.3", "^0.1.0", "^1.2.3-alpha", "^1.0.0+build", "^1"
         ]
         valid_constraints.each do |constraint|
-          expect(helper::CARET_CONSTRAINT_REGEX.match?(constraint)).to be(true), "Expected #{constraint} to match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::CARET_CONSTRAINT_REGEX.match?(constraint))
+            .to be(true), "Expected #{constraint} to match"
         end
       end
 
@@ -49,7 +57,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "^1.2.3-", "^", "1.2.3", "^1.2.3 alpha", "^1.2..3"
         ]
         invalid_constraints.each do |constraint|
-          expect(helper::CARET_CONSTRAINT_REGEX.match?(constraint)).to be(false), "Expected #{constraint} to not match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::CARET_CONSTRAINT_REGEX.match?(constraint))
+            .to be(false), "Expected #{constraint} to not match"
         end
       end
     end
@@ -60,7 +69,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "~1.2.3", "~0.1.0", "~1.2.3-alpha", "~1.0.0+build"
         ]
         valid_constraints.each do |constraint|
-          expect(helper::TILDE_CONSTRAINT_REGEX.match?(constraint)).to be(true), "Expected #{constraint} to match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::TILDE_CONSTRAINT_REGEX.match?(constraint))
+            .to be(true), "Expected #{constraint} to match"
         end
       end
 
@@ -69,7 +79,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "~1.2.3-", "~", "1.2.3", "~1.2.3 alpha", "~1.2..3"
         ]
         invalid_constraints.each do |constraint|
-          expect(helper::TILDE_CONSTRAINT_REGEX.match?(constraint)).to be(false), "Expected #{constraint} to not match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::TILDE_CONSTRAINT_REGEX.match?(constraint))
+            .to be(false), "Expected #{constraint} to not match"
         end
       end
     end
@@ -80,7 +91,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "1.2.3", "0.1.0", "1.2.3-alpha", "1.0.0+build"
         ]
         valid_constraints.each do |constraint|
-          expect(helper::EXACT_CONSTRAINT_REGEX.match?(constraint)).to be(true), "Expected #{constraint} to match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::EXACT_CONSTRAINT_REGEX.match?(constraint))
+            .to be(true), "Expected #{constraint} to match"
         end
       end
 
@@ -89,7 +101,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "1.2.3-", "~1.2.3", "^1.2.3", ""
         ]
         invalid_constraints.each do |constraint|
-          expect(helper::EXACT_CONSTRAINT_REGEX.match?(constraint)).to be(false), "Expected #{constraint} to not match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::EXACT_CONSTRAINT_REGEX.match?(constraint))
+            .to be(false), "Expected #{constraint} to not match"
         end
       end
     end
@@ -100,7 +113,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           ">=1.2.3", ">=1.0.0+build", ">=0.1.0-alpha"
         ]
         valid_constraints.each do |constraint|
-          expect(helper::GREATER_THAN_EQUAL_REGEX.match?(constraint)).to be(true), "Expected #{constraint} to match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::GREATER_THAN_EQUAL_REGEX.match?(constraint))
+            .to be(true), "Expected #{constraint} to match"
         end
       end
 
@@ -109,8 +123,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           ">1.2.3", ">=1.2.3-", ">=1.2.3 alpha", ""
         ]
         invalid_constraints.each do |constraint|
-          expect(helper::GREATER_THAN_EQUAL_REGEX.match?(constraint)).to be(false),
-                                                                         "Expected #{constraint} to not match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::GREATER_THAN_EQUAL_REGEX.match?(constraint))
+            .to be(false), "Expected #{constraint} to not match"
         end
       end
     end
@@ -121,7 +135,8 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "<=1.2.3", "<=1.0.0+build", "<=0.1.0-alpha"
         ]
         valid_constraints.each do |constraint|
-          expect(helper::LESS_THAN_EQUAL_REGEX.match?(constraint)).to be(true), "Expected #{constraint} to match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::LESS_THAN_EQUAL_REGEX.match?(constraint))
+            .to be(true), "Expected #{constraint} to match"
         end
       end
 
@@ -130,14 +145,15 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "<1.2.3", "<=1.2.3-", "<=1.2.3 alpha", ""
         ]
         invalid_constraints.each do |constraint|
-          expect(helper::LESS_THAN_EQUAL_REGEX.match?(constraint)).to be(false), "Expected #{constraint} to not match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::LESS_THAN_EQUAL_REGEX.match?(constraint))
+            .to be(false), "Expected #{constraint} to not match"
         end
       end
     end
 
     describe "WILDCARD_REGEX" do
       it "matches valid wildcard constraints" do
-        expect(helper::WILDCARD_REGEX.match?("*")).to be(true)
+        expect(Dependabot::NpmAndYarn::ConstraintHelper::WILDCARD_REGEX.match?("*")).to be(true)
       end
 
       it "does not match invalid wildcard constraints" do
@@ -145,18 +161,20 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
           "**", "1.*", "1.2.*"
         ]
         invalid_constraints.each do |constraint|
-          expect(helper::WILDCARD_REGEX.match?(constraint)).to be(false), "Expected #{constraint} to not match"
+          expect(Dependabot::NpmAndYarn::ConstraintHelper::WILDCARD_REGEX.match?(constraint))
+            .to be(false), "Expected #{constraint} to not match"
         end
       end
     end
 
     describe "LATEST_REGEX" do
       it "matches valid wildcard constraints" do
-        expect(helper::LATEST_REGEX.match?("latest")).to be(true)
+        expect(Dependabot::NpmAndYarn::ConstraintHelper::LATEST_REGEX.match?("latest")).to be(true)
       end
 
       it "does not match invalid keyword constraints" do
-        expect(helper::LATEST_REGEX.match?("invalid")).to be(false), "Expected invalid to not match"
+        expect(Dependabot::NpmAndYarn::ConstraintHelper::LATEST_REGEX.match?("invalid"))
+          .to be(false), "Expected invalid to not match"
       end
     end
   end
@@ -187,6 +205,7 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
   end
 
   describe ".find_highest_version_from_constraint_expression" do
+    sig { returns(T::Array[Dependabot::Version]) }
     let(:dependabot_versions) do
       ["1.2.3", "2.0.0", "3.4.5", "3.5.1", "4.0.0"].map do |v|
         Dependabot::Version.new(v)
