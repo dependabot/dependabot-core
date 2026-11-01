@@ -17,6 +17,7 @@ module Dependabot
       extend T::Sig
 
       MAIN_PYPI_URL = "https://pypi.org/pypi"
+      PYPI_INTEGRITY_URL = "https://pypi.org/integrity"
 
       sig do
         params(
@@ -29,6 +30,7 @@ module Dependabot
         super
         @pypi_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @parsed_source_urls = T.let({}, T::Hash[String, T.nilable(Dependabot::Source)])
+        @pypi_version_listings = T.let({}, T::Hash[String, T::Hash[String, T.untyped]])
       end
 
       sig { returns(T.nilable(String)) }
@@ -68,6 +70,23 @@ module Dependabot
 
         "None of the maintainers for your current version of #{dependency.name} are " \
           "listed as maintainers for the new version on PyPI."
+      end
+
+      sig { override.returns(T.nilable(String)) }
+      def attestation_changes
+        return unless dependency.previous_version
+        return unless dependency.version
+        return if using_private_index?
+
+        previous_attested = version_has_attestation?(dependency.previous_version)
+        current_attested = version_has_attestation?(dependency.version)
+
+        return unless previous_attested && !current_attested
+
+        "This version has no provenance attestation, while the previous version " \
+          "(#{dependency.previous_version}) was attested. Review the " \
+          "[package versions](https://pypi.org/project/#{normalised_dependency_name}/#history) " \
+          "before updating."
       end
 
       private
@@ -220,6 +239,49 @@ module Dependabot
         return unless @homepage_response&.status == 200
 
         @homepage_response&.body
+      end
+
+      sig { params(version: T.nilable(String)).returns(T::Boolean) }
+      def version_has_attestation?(version)
+        return false unless version
+
+        filename = sdist_filename_for_version(version)
+        return false unless filename
+
+        url = "#{PYPI_INTEGRITY_URL}/#{normalised_dependency_name}/#{version}/#{filename}/provenance"
+        response = Dependabot::RegistryClient.get(url: url)
+        return false unless response.status == 200
+
+        data = JSON.parse(response.body)
+        data.is_a?(Hash) && data["attestation_bundles"].is_a?(Array) && !data["attestation_bundles"].empty?
+      rescue JSON::ParserError, Excon::Error::Timeout
+        false
+      end
+
+      sig { params(version: String).returns(T.nilable(String)) }
+      def sdist_filename_for_version(version)
+        listing = pypi_version_listing(version)
+        urls = listing["urls"]
+        return unless urls.is_a?(Array)
+
+        sdist_entry = urls.find { |entry| entry["packagetype"] == "sdist" }
+        sdist_entry&.fetch("filename", nil)
+      end
+
+      sig { params(version: String).returns(T::Hash[String, T.untyped]) }
+      def pypi_version_listing(version)
+        return T.must(@pypi_version_listings[version]) if @pypi_version_listings.key?(version)
+
+        url = "#{MAIN_PYPI_URL}/#{normalised_dependency_name}/#{version}/json"
+        response = Dependabot::RegistryClient.get(url: url)
+        @pypi_version_listings[version] = response.status == 200 ? JSON.parse(response.body) : {}
+      rescue JSON::ParserError, Excon::Error::Timeout
+        @pypi_version_listings[version] = {}
+      end
+
+      sig { returns(T::Boolean) }
+      def using_private_index?
+        credentials.any? { |cred| cred["type"] == "python_index" && cred.replaces_base? }
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
