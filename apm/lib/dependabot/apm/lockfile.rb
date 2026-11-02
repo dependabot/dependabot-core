@@ -50,25 +50,27 @@ module Dependabot
         entry.delete("content_hash")
       end
 
-      # The harnesses (e.g. `claude`, `copilot`) the lockfile records project
-      # files as deployed to, from its `deployments` entries. MCP and LSP
-      # servers are `uri` entries whose target (`mcp`, `lsp`) isn't a harness,
-      # so they are skipped, as are names APM wouldn't accept as a target. A
-      # lockfile without `deployments` yields none: like APM, this doesn't
-      # infer harnesses from legacy `deployed_files` paths.
+      # The targets the lockfile records project files as deployed to, from its
+      # `deployments` entries. MCP and LSP servers are `uri` entries whose
+      # target (`mcp`, `lsp`) isn't a harness, so they are skipped. Not every
+      # name is a harness either (APM records unattributed paths as `legacy`),
+      # so callers check these against `apm targets`. A lockfile without
+      # `deployments` yields none: like APM, this doesn't infer harnesses from
+      # legacy `deployed_files` paths.
       sig { returns(T::Array[String]) }
       def deployment_targets
-        deployments = @document["deployments"]
-        return [] unless deployments.is_a?(Array)
+        project_deployments.filter_map do |deployment|
+          deployment_name(deployment, "target") unless deployment["kind"] == URI_KIND
+        end.uniq.sort
+      end
 
-        targets = deployments.filter_map do |deployment|
-          next unless deployment.is_a?(Hash)
-          next if deployment["kind"] == URI_KIND || deployment["scope"] != PROJECT_SCOPE
-
-          target = deployment["target"]
-          target if target.is_a?(String) && target.match?(TARGET_NAME_REGEX)
-        end
-        targets.uniq.sort
+      # The runtimes (e.g. `claude`, `intellij`) the lockfile records MCP and
+      # LSP servers as configured for.
+      sig { returns(T::Array[String]) }
+      def service_runtimes
+        project_deployments.filter_map do |deployment|
+          deployment_name(deployment, "runtime") if deployment["kind"] == URI_KIND
+        end.uniq.sort
       end
 
       sig { returns(String) }
@@ -77,6 +79,20 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Array[T::Hash[Object, Object]]) }
+      def project_deployments
+        deployments = @document["deployments"]
+        return [] unless deployments.is_a?(Array)
+
+        deployments.select { |deployment| deployment.is_a?(Hash) && deployment["scope"] == PROJECT_SCOPE }
+      end
+
+      sig { params(deployment: T::Hash[Object, Object], field: String).returns(T.nilable(String)) }
+      def deployment_name(deployment, field)
+        name = deployment[field]
+        name if name.is_a?(String) && name.match?(TARGET_NAME_REGEX)
+      end
 
       sig { params(key: String).returns(T.nilable(T::Hash[Object, Object])) }
       def entry_for(key)
