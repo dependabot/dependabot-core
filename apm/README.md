@@ -80,9 +80,12 @@ declarations (tag, then SHA, then branch) are updated.
 #### Lockfile regeneration
 
 When the repository has an `apm.lock.yaml`, Dependabot regenerates it with the
-APM CLI's `apm lock`, which resolves the updated manifest without deploying any
-package files. APM only re-resolves the entries whose manifest ref changed, so
-every other entry keeps its locked commit. A branch pin's lock entry is first
+APM CLI. If the lockfile records deployed files, Dependabot runs `apm install`
+with `--target` set to the harnesses those `deployments` name, so each entry's
+deployed file list and hashes match the new version, as `apm install --frozen`
+requires. Otherwise it runs `apm lock`, which resolves the updated manifest
+without deploying anything. APM only re-resolves the entries whose manifest ref
+changed, so every other entry keeps its locked commit. A branch pin's lock entry is first
 moved to the branch's new head commit (dropping its now stale `content_hash`)
 for APM to verify and re-hash. APM rewrites the whole file, so its
 `apm_version` also changes to the version of the CLI Dependabot runs. A missing
