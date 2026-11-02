@@ -42,7 +42,7 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
+            (?<=require\s|requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
           }x
         MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/
 
@@ -457,7 +457,7 @@ module Dependabot
               .gsub(/\}\z/, "}\n")
         end
 
-        sig { params(requirements: T::Array[String]).returns(String) }
+        sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)
           req_arrays =
             requirements
@@ -477,7 +477,7 @@ module Dependabot
             .find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
-          raise "No matching version for #{requirements}!" unless version
+          return unless version
 
           version.to_s
         end

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only project_name and directory fixtures.
+
 require "spec_helper"
 require "dependabot/swift/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"

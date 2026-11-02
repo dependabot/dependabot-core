@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/elm/package_manager"
@@ -6,9 +6,16 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Elm::PackageManager do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Elm::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:package_manager) { described_class.new(version, requirement) }
+  sig { returns(String) }
   let(:version) { "0.19.1" }
+  sig { returns(T.nilable(Dependabot::Elm::Requirement)) }
   let(:requirement) { nil }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#initialize" do
     context "when version is a String" do
@@ -30,6 +37,7 @@ RSpec.describe Dependabot::Elm::PackageManager do
     end
 
     context "when a requirement is provided" do
+      sig { returns(Dependabot::Elm::Requirement) }
       let(:requirement) { Dependabot::Elm::Requirement.new(">= 0.19.0, < 0.20.0") }
 
       it "sets the requirement correctly" do
@@ -37,11 +45,11 @@ RSpec.describe Dependabot::Elm::PackageManager do
       end
 
       it "calculates the correct min_version" do
-        expect(package_manager.requirement.min_version).to eq(Dependabot::Version.new("0.19.0"))
+        expect(T.must(package_manager.requirement).min_version).to eq(Dependabot::Version.new("0.19.0"))
       end
 
       it "calculates the correct max_version" do
-        expect(package_manager.requirement.max_version).to eq(Dependabot::Version.new("0.20.0"))
+        expect(T.must(package_manager.requirement).max_version).to eq(Dependabot::Version.new("0.20.0"))
       end
     end
   end

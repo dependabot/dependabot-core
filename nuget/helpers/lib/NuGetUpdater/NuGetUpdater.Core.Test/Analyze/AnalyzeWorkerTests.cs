@@ -2187,7 +2187,71 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         Assert.Equal(expectedUrl.ToString(), infoUrl);
     }
 
-    private static async Task<NuGetContext> CreateNuGetContextAsync(DownloadResource? downloadResource, Uri projectUrl)
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CompletedPackageInfoLookupsAreCached(bool hasUrl)
+    {
+        var requestCount = 0;
+        var expectedUrl = hasUrl ? new Uri("https://example.com/package") : null;
+        using var context = await CreateNuGetContextAsync(null, expectedUrl, (_, _) =>
+        {
+            requestCount++;
+            return Task.CompletedTask;
+        });
+
+        var first = await context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", TestContext.Current.CancellationToken);
+        var second = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedUrl?.ToString(), first);
+        Assert.Equal(first, second);
+        Assert.Equal(1, requestCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FailedPackageInfoLookupsAreRetried(bool cancel)
+    {
+        var requestCount = 0;
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var expectedUrl = new Uri("https://example.com/package");
+        using var context = await CreateNuGetContextAsync(null, expectedUrl, (_, token) =>
+        {
+            if (++requestCount == 1)
+            {
+                if (cancel)
+                {
+                    cancellationSource.Cancel();
+                    token.ThrowIfCancellationRequested();
+                }
+
+                throw new HttpRequestException("Package metadata is unavailable.");
+            }
+
+            return Task.CompletedTask;
+        });
+        var first = context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", cancellationSource.Token);
+        if (cancel)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+        }
+        else
+        {
+            await Assert.ThrowsAsync<HttpRequestException>(() => first);
+        }
+
+        var second = await context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", TestContext.Current.CancellationToken);
+        var third = await context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", TestContext.Current.CancellationToken);
+        Assert.Equal(expectedUrl.ToString(), second);
+        Assert.Equal(second, third);
+        Assert.Equal(2, requestCount);
+    }
+
+    private static async Task<NuGetContext> CreateNuGetContextAsync(
+        DownloadResource? downloadResource,
+        Uri? projectUrl,
+        Func<PackageIdentity, CancellationToken, Task>? beforeGetMetadata = null)
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
             ("NuGet.Config", """
@@ -2207,7 +2271,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 [
                     new TestResourceProvider<MetadataResource>(new TestMetadataResource()),
                     new TestResourceProvider<DownloadResource>(downloadResource),
-                    new TestResourceProvider<PackageMetadataResource>(new TestPackageMetadataResource(projectUrl)),
+                    new TestResourceProvider<PackageMetadataResource>(new TestPackageMetadataResource(projectUrl, beforeGetMetadata)),
                 ]));
     }
 
@@ -2267,7 +2331,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             CancellationToken token) => Task.FromResult(result);
     }
 
-    private sealed class TestPackageMetadataResource(Uri projectUrl) : PackageMetadataResource
+    private sealed class TestPackageMetadataResource(
+        Uri? projectUrl,
+        Func<PackageIdentity, CancellationToken, Task>? beforeGetMetadata = null) : PackageMetadataResource
     {
         public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
             string packageId,
@@ -2277,17 +2343,23 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             NuGet.Common.ILogger log,
             CancellationToken token) => Task.FromResult<IEnumerable<IPackageSearchMetadata>>([]);
 
-        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+        public override async Task<IPackageSearchMetadata> GetMetadataAsync(
             PackageIdentity package,
             SourceCacheContext sourceCacheContext,
             NuGet.Common.ILogger log,
-            CancellationToken token) =>
-            Task.FromResult<IPackageSearchMetadata>(
-                new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
-                {
-                    Identity = package,
-                    ProjectUrl = projectUrl,
-                });
+            CancellationToken token)
+        {
+            if (beforeGetMetadata is not null)
+            {
+                await beforeGetMetadata(package, token);
+            }
+
+            return new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+            {
+                Identity = package,
+                ProjectUrl = projectUrl,
+            };
+        }
     }
 
     private sealed class SelectivePackageMetadataResource(NuGetVersion failingVersion) : PackageMetadataResource

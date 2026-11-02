@@ -269,6 +269,31 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when cloning the repository to find the branch of a pinned commit fails" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+
+      before do
+        allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout)
+          .with(array_including(%r{\Agit clone --no-recurse-submodules https://github\.com/actions/setup-node }),
+                any_args)
+          .and_return(
+            [
+              "Cloning into 'dependabot_tmp_dir/actions/setup-node'...\n" \
+              "fatal: write error: No space left on device\n",
+              "",
+              instance_double(Process::Status, success?: false, to_s: "pid 1 exit 128")
+            ]
+          )
+      end
+
+      it "reports a fingerprint without the repository URL or the temporary clone path" do
+        expect { latest_version }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+          expect(error.sentry_context[:fingerprint])
+            .to eq(["git clone --no-recurse-submodules <url> <path>"])
+        end
+      end
+    end
+
     context "when using a dependency with multiple git refs" do
       include_context "with multiple git sources"
 

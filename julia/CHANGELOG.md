@@ -29,7 +29,7 @@
 - A spec added to a compat entry is placed in ascending order, and the old test sandbox pin is written as in the General registry PSA: `"<0.0.1, 1"` instead of `"1, < 0.0.1"` (#16355)
 - Fixed Julia version requirement parsing to correctly handle caret (^) and tilde (~) semantics according to Julia's official specification
 - Fixed handling julia style compat version spec lists
-- A checked-in manifest is now resolved by the Julia version recorded in its `julia_version`, launched through juliaup, instead of the updater's Julia, which rewrote `julia_version` and the stdlib entries to the updater's release
+- A checked-in manifest is now resolved for the Julia version recorded in its `julia_version`, using Pkg's `julia_version` support and HistoricalStdlibVersions.jl, instead of for the updater's Julia, which rewrote `julia_version` and the stdlib entries to the updater's release. No other Julia release is downloaded. Pkg from Julia 1.13.3 writes the manifest in that release's format and with its project hash, so the helper now requires 1.13.3. A manifest written by a newer Julia than the updater's is not updated, and the pull request carries a notice
 - Every manifest of an environment is now updated, each by its own Julia: a version-specific `Manifest-v1.12.toml` was invisible to the updater's Julia 1.13, so it was never fetched or updated, and only one manifest was considered when an environment had several
 - Corrected test expectations for 0.0.x version semantics to match Julia Pkg behavior (0.0.5 satisfies only itself, not 0.0.6+)
 

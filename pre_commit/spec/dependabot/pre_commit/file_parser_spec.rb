@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -505,10 +505,10 @@ RSpec.describe Dependabot::PreCommit::FileParser do
           content: fixture("pre_commit_configs", "without_language_field.yaml")
         )
       end
-      let(:hook_language_fetcher) { instance_double(described_class::HookLanguageFetcher) }
+      let(:hook_language_fetcher) { instance_double(Dependabot::PreCommit::FileParser::HookLanguageFetcher) }
 
       before do
-        allow(described_class::HookLanguageFetcher).to receive(:new).and_return(hook_language_fetcher)
+        allow(Dependabot::PreCommit::FileParser::HookLanguageFetcher).to receive(:new).and_return(hook_language_fetcher)
 
         # Mock the language fetcher for black hook
         allow(hook_language_fetcher).to receive(:fetch_language)
@@ -553,10 +553,10 @@ RSpec.describe Dependabot::PreCommit::FileParser do
           content: fixture("pre_commit_configs", "without_language_field.yaml")
         )
       end
-      let(:hook_language_fetcher) { instance_double(described_class::HookLanguageFetcher) }
+      let(:hook_language_fetcher) { instance_double(Dependabot::PreCommit::FileParser::HookLanguageFetcher) }
 
       before do
-        allow(described_class::HookLanguageFetcher).to receive(:new).and_return(hook_language_fetcher)
+        allow(Dependabot::PreCommit::FileParser::HookLanguageFetcher).to receive(:new).and_return(hook_language_fetcher)
 
         # Mock the language fetcher to return nil (language not found)
         allow(hook_language_fetcher).to receive(:fetch_language).and_return(nil)

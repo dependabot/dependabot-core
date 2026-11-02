@@ -1,12 +1,16 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/composer/manifest_document"
 
 RSpec.describe Dependabot::Composer::ManifestDocument do
+  extend T::Sig
+
+  sig { returns(Dependabot::Composer::ManifestDocument) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:document) { described_class.from_file(file) }
 
+  sig { returns(Dependabot::DependencyFile) }
   let(:file) { Dependabot::DependencyFile.new(name: "composer.json", content: data.to_json) }
   let(:data) do
     {
@@ -22,14 +26,14 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
     entries = document.requirements("require")
 
     expect(entries.map(&:name)).to eq(%w(vendor/first vendor/second))
-    expect(entries.first.requirement).to eq("^1")
-    expect(entries.last.string_requirement).to be_nil
+    expect(entries.fetch(0).requirement).to eq("^1")
+    expect(entries.fetch(-1).string_requirement).to be_nil
     expect(document.required_dependency_names).to eq(%w(vendor/first vendor/second))
     expect(document.requirements("require-dev").map(&:name)).to eq(["vendor/dev"])
   end
 
   it "rejects a malformed requirement only when consumed" do
-    expect { document.requirements("require").last.requirement }
+    expect { document.requirements("require").fetch(-1).requirement }
       .to raise_error(TypeError, /composer.json.*require.*string/)
   end
 
@@ -87,7 +91,7 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
       repositories = document.repositories
       expect(repositories.map(&:type)).to eq(%w(path artifact path))
       expect(repositories.take(2).map(&:url)).to eq(["packages/*", "artifacts"])
-      expect { repositories.last.url }.to raise_error(TypeError, /repositories.*url.*string/)
+      expect { repositories.fetch(-1).url }.to raise_error(TypeError, /repositories.*url.*string/)
     end
 
     context "with an array" do
