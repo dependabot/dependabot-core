@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 
+require "dependabot/nimble/file_fetcher"
 require "dependabot/nimble/manifest"
 
 module Dependabot
