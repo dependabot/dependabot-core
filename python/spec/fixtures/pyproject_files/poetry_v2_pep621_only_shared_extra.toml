@@ -1,0 +1,17 @@
+[project]
+name = "pep621-only-shared-extra-project"
+version = "0.1.0"
+description = "A PEP 621 only project (Poetry v2) where a dependency is declared in both project.dependencies and an optional-dependencies extra"
+requires-python = ">=3.10,<4"
+dependencies = [
+    "requests==2.28.0",
+]
+
+[project.optional-dependencies]
+extra = [
+    "requests==2.28.0",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

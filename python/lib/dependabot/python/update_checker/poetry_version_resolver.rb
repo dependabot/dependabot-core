@@ -363,7 +363,9 @@ module Dependabot
           dep_arrays.compact!
           dep_arrays.select! { |arr| arr.is_a?(Array) }
 
-          updated = dep_arrays.any? { |arr| update_pep621_dependency_requirement(arr, updated_requirement) }
+          # Update every array (e.g. a dependency can appear in both project.dependencies and an
+          # optional-dependencies extra) rather than stopping at the first match.
+          updated = dep_arrays.map { |arr| update_pep621_dependency_requirement(arr, updated_requirement) }.any?
           return if updated
 
           # This is a sub-dependency not declared anywhere in the pyproject.toml; add it so Poetry's

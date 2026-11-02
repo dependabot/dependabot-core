@@ -379,6 +379,27 @@ RSpec.describe namespace::PoetryVersionResolver do
 
         it { is_expected.to be(true) }
       end
+
+      context "with a dependency declared in both project.dependencies and an optional-dependencies " \
+              "extra of a PEP 621 only project (no [tool.poetry])" do
+        let(:dependency_name) { "requests" }
+        let(:dependency_version) { "2.28.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "pyproject.toml",
+            requirement: "2.28.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only_shared_extra.toml" }
+        let(:lockfile_fixture_name) { "poetry_v2_pep621_only_shared_extra.lock" }
+        let(:version) { Gem::Version.new("2.31.0") }
+
+        # Both declarations must be updated in the scratch pyproject.toml, otherwise the leftover
+        # "==2.28.0" pin in the extra conflicts with the new version and the solve fails.
+        it { is_expected.to be(true) }
+      end
     end
 
     context "when version is not resolvable" do
