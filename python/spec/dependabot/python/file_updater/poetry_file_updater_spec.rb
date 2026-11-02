@@ -69,6 +69,21 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
+    context "when Poetry succeeds without locking the requested version" do
+      before do
+        allow(updater).to receive_messages(
+          updated_lockfile_content_for: lockfile.content.dup,
+          pyproject_hash_for: "newhash"
+        )
+      end
+
+      it "raises UpdateNotPossible instead of returning an unchanged lockfile" do
+        expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+          expect(error.dependencies).to eq(["requests"])
+        end
+      end
+    end
+
     it "updates the lockfile successfully (and doesn't affect other deps)" do
       expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
 
