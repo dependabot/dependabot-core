@@ -368,6 +368,17 @@ RSpec.describe namespace::PoetryVersionResolver do
 
         it { is_expected.to be(true) }
       end
+
+      context "with a subdependency of a PEP 621 only project (no [tool.poetry])" do
+        let(:dependency_name) { "certifi" }
+        let(:dependency_version) { "2024.2.2" }
+        let(:dependency_requirements) { [] }
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+        let(:version) { Gem::Version.new("2025.1.31") }
+
+        it { is_expected.to be(true) }
+      end
     end
 
     context "when version is not resolvable" do
