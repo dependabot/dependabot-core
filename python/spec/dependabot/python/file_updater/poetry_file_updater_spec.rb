@@ -84,6 +84,49 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "when a PEP 621 project lockfile retains the old version" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0,<3.0" }
+        )
+      end
+
+      before do
+        old_version_lockfile = lockfile.content.sub(
+          "name = \"requests\"\nversion = \"2.31.0\"",
+          "name = \"requests\"\nversion = \"2.28.0\""
+        )
+        allow(updater).to receive_messages(
+          updated_lockfile_content_for: old_version_lockfile,
+          pyproject_hash_for: "newhash"
+        )
+      end
+
+      it "raises UpdateNotPossible instead of returning the old locked version" do
+        expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+          expect(error.dependencies).to eq(["requests"])
+        end
+      end
+    end
+
     it "updates the lockfile successfully (and doesn't affect other deps)" do
       expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
 
