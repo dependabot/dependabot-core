@@ -177,13 +177,8 @@ module Dependabot
           if error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
-            missing_extensions =
-              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                { name: name, requirement: requirement }
-              end
-            if missing_extensions.any? { |ext| explicit_platform_extensions.key?(ext[:name]) }
+            missing_extensions = Helpers.missing_extensions_from(error.message, MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+            if missing_extensions.any? { |ext| manifest_document.platform_extension_pinned?(ext.fetch(:name)) }
               raise DependencyFileNotResolvable, error.message
             end
 
@@ -315,7 +310,7 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
-            next if explicit_platform_extensions.key?(extension)
+            next if manifest_document.platform_extension_pinned?(extension)
 
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
@@ -494,7 +489,7 @@ module Dependabot
         def update_required_extensions(additional_extensions)
           additional_extensions.each do |ext|
             # Explicitly configured platform extensions are hard constraints
-            next if explicit_platform_extensions.key?(ext.fetch(:name))
+            next if manifest_document.platform_extension_pinned?(ext.fetch(:name))
 
             composer_platform_extensions[ext.fetch(:name)] ||= []
             existing_reqs = composer_platform_extensions[ext.fetch(:name)]
@@ -555,18 +550,10 @@ module Dependabot
         sig { returns(T::Hash[String, T::Array[String]]) }
         def initial_platform_extensions
           platform = initial_platform
-          explicit_platform_extensions.each do |extension, version|
+          manifest_document.platform_extension_versions.each do |extension, version|
             platform[extension] = [version] if requirement_valid?(version)
           end
           platform
-        end
-
-        sig { returns(T::Hash[String, String]) }
-        def explicit_platform_extensions
-          @explicit_platform_extensions ||= T.let(
-            manifest_document.platform_extensions,
-            T.nilable(T::Hash[String, String])
-          )
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

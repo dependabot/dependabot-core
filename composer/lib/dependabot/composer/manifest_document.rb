@@ -99,22 +99,33 @@ module Dependabot
         DocumentValueParser.optional_string(platform&.[](name), "#{@context} config.platform.#{name}")
       end
 
-      # Explicitly configured `config.platform.ext-*` versions. Entries set to
-      # `false` (which disable an extension) or other non-string values are ignored.
-      sig { returns(T::Hash[String, String]) }
+      # Every explicitly configured `config.platform.ext-*` entry. The value is
+      # the pinned version, or nil for non-string entries such as `false`
+      # (which hides an extension). Both kinds must never be overwritten.
+      sig { returns(T::Hash[String, T.nilable(String)]) }
       def platform_extensions
         config = section(@data, "config", "config")
         platform = config && section(config, "platform", "config.platform")
         return {} unless platform
 
-        extensions = T.let({}, T::Hash[String, String])
+        extensions = T.let({}, T::Hash[String, T.nilable(String)])
         platform.each do |name, value|
           next unless name.start_with?("ext-")
-          next unless value.is_a?(String)
 
-          extensions[name] = value
+          extensions[name] = value.is_a?(String) ? value : nil
         end
         extensions
+      end
+
+      sig { params(name: String).returns(T::Boolean) }
+      def platform_extension_pinned?(name)
+        platform_extensions.key?(name)
+      end
+
+      # Pinned `config.platform.ext-*` versions that can seed a platform.
+      sig { returns(T::Hash[String, String]) }
+      def platform_extension_versions
+        platform_extensions.select { |_, version| version }.transform_values(&:to_s)
       end
 
       sig { params(name: String).returns(T.nilable(String)) }

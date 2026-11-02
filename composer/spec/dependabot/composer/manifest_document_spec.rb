@@ -83,8 +83,14 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
       }
     end
 
-    it "returns only explicitly configured ext-* versions" do
-      expect(document.platform_extensions).to eq("ext-mongodb" => "2.4.0")
+    it "returns every configured ext-* entry, with nil for non-string values" do
+      expect(document.platform_extensions).to eq("ext-mongodb" => "2.4.0", "ext-intl" => nil)
+      expect(document.platform_extension_pinned?("ext-intl")).to be(true)
+      expect(document.platform_extension_pinned?("lib-icu")).to be(false)
+    end
+
+    it "only exposes string versions as constraints" do
+      expect(document.platform_extension_versions).to eq("ext-mongodb" => "2.4.0")
     end
 
     context "without a platform config" do

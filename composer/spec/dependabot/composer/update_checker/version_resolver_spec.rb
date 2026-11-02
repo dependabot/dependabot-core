@@ -379,6 +379,30 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         end
       end
 
+      context "when a root requirement conflicts with an extension disabled with false" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "composer.json",
+              content: JSON.pretty_generate(
+                "require" => { "php" => ">=8.1", "mongodb/mongodb" => "^2.4.2" },
+                "config" => { "platform" => { "ext-foo" => false } }
+              )
+            )
+          ]
+        end
+        let(:responses) do
+          [missing_platform_error("PHP extension ext-foo ^1.2 but it is missing from your system.")]
+        end
+
+        it "never overrides the disabled extension" do
+          expect { resolver.latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /PHP extension ext-foo/)
+          expect(written_manifests.length).to eq(1)
+          expect(written_manifests.first.dig("config", "platform", "ext-foo")).to be(false)
+        end
+      end
+
       context "when an undeclared extension is missing" do
         let(:responses) do
           [

@@ -229,7 +229,7 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
-            next if explicit_platform_extensions.key?(extension)
+            next if manifest_document.platform_extension_pinned?(extension)
             next unless version_for_reqs(requirements)
 
             json[PackageManager::CONFIG_KEY] ||= {}
@@ -327,17 +327,7 @@ module Dependabot
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
-            missing_extensions =
-              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-                name, requirement = if extension_string.is_a?(Array)
-                                      [extension_string.first.to_s.strip, extension_string.last.to_s]
-                                    else
-                                      extension_string.to_s.strip.split(" ", 2)
-                                    end
-                { name: name, requirement: requirement }
-              end
-            raise MissingExtensions, missing_extensions
+            raise_explicit_platform_req_error(error)
           elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
                 !library? &&
                 !initial_platform.empty? &&
@@ -475,13 +465,8 @@ module Dependabot
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def raise_explicit_platform_req_error(error)
-          missing_extensions =
-            error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-                 .flatten.flat_map do |extension_string|
-              name, requirement = extension_string.strip.split(" ", 2)
-              { name: name, requirement: requirement }
-            end
-          if missing_extensions.any? { |ext| explicit_platform_extensions.key?(ext[:name]) }
+          missing_extensions = Helpers.missing_extensions_from(error.message, MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+          if missing_extensions.any? { |ext| manifest_document.platform_extension_pinned?(ext.fetch(:name)) }
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
@@ -517,7 +502,7 @@ module Dependabot
         def update_required_extensions(additional_extensions)
           additional_extensions.each do |ext|
             # Explicitly configured platform extensions are hard constraints
-            next if explicit_platform_extensions.key?(ext.fetch(:name))
+            next if manifest_document.platform_extension_pinned?(ext.fetch(:name))
 
             composer_platform_extensions[ext.fetch(:name)] ||= []
             composer_platform_extensions[ext.fetch(:name)] =
@@ -548,18 +533,10 @@ module Dependabot
         sig { returns(T::Hash[String, T::Array[String]]) }
         def initial_platform_extensions
           platform = initial_platform
-          explicit_platform_extensions.each do |extension, version|
+          manifest_document.platform_extension_versions.each do |extension, version|
             platform[extension] = [version] if requirement_valid?(version)
           end
           platform
-        end
-
-        sig { returns(T::Hash[String, String]) }
-        def explicit_platform_extensions
-          @explicit_platform_extensions ||= T.let(
-            manifest_document.platform_extensions,
-            T.nilable(T::Hash[String, String])
-          )
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }
