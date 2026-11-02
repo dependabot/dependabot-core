@@ -670,6 +670,50 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
         end
       end
 
+      context "with an escaped quote in an additional dependency" do
+        let(:config_file_body) { fixture("prek_configs", "escaped_additional_dependency.toml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "types-requests",
+            version: "2.32.0.20240914",
+            previous_version: "2.31.0.1",
+            requirements: [{
+              requirement: "==2.32.0.20240914", groups: ["additional_dependencies"], file: "prek.toml",
+              source: {
+                type: "additional_dependency", language: "python", package_name: "types-requests",
+                original_name: "types-requests", hook_id: "mypy",
+                hook_repo: "https://github.com/pre-commit/mirrors-mypy", extras: nil,
+                original_string: 'types-requests==2.32.0.20240914; python_version < "3.12"'
+              }
+            }],
+            previous_requirements: [{
+              requirement: "==2.31.0.1", groups: ["additional_dependencies"], file: "prek.toml",
+              source: {
+                type: "additional_dependency", language: "python", package_name: "types-requests",
+                original_name: "types-requests", hook_id: "mypy",
+                hook_repo: "https://github.com/pre-commit/mirrors-mypy", extras: nil,
+                original_string: 'types-requests==2.31.0.1; python_version < "3.12"'
+              }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "updates the entry and keeps it escaped" do
+          content = updated_files.find { |f| f.name == "prek.toml" }.content
+          expect(content).to include('["types-requests==2.32.0.20240914; python_version < \\"3.12\\""]')
+        end
+
+        context "when the entry is a literal string" do
+          let(:config_file_body) { fixture("prek_configs", "literal_additional_dependency.toml") }
+
+          it "updates the entry verbatim" do
+            content = updated_files.find { |f| f.name == "prek.toml" }.content
+            expect(content).to include(%(['types-requests==2.32.0.20240914; python_version < "3.12"']))
+          end
+        end
+      end
+
       context "when a multiline string contains a sample repo entry" do
         let(:config_file_body) { fixture("prek_configs", "repos_in_multiline_string.toml") }
 

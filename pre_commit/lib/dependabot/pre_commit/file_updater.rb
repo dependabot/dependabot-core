@@ -224,13 +224,14 @@ module Dependabot
         ).returns(String)
       end
       def replace_additional_dependency_in_toml(content, old_req, old_string, new_string)
-        ranges = PrekToml.new(content).additional_dependency_ranges(
+        toml = PrekToml.new(content)
+        ranges = toml.additional_dependency_ranges(
           T.must(old_req.source_string("hook_repo")),
           T.must(old_req.source_string("hook_id")),
           old_string
         )
         updated_content = content.dup
-        ranges.reverse_each { |range| updated_content[range] = new_string }
+        ranges.reverse_each { |range| updated_content[range] = toml.encoded(range, new_string) }
         updated_content
       end
 

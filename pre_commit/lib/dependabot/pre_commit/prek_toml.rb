@@ -3,6 +3,7 @@
 
 require "strscan"
 require "sorbet-runtime"
+require "toml-rb"
 
 module Dependabot
   module PreCommit
@@ -60,7 +61,16 @@ module Dependabot
         hooks = repo_scopes(repo_url).flat_map { |scope| hook_scopes(scope) }
         hooks.select { |hook| text(string_value(hook, "id")) == hook_id }
              .flat_map { |hook| array_strings(hook, "additional_dependencies") }
-             .select { |range| @content[range] == dependency }
+             .select { |range| decoded(range) == dependency }
+      end
+
+      # Returns value spelled for the quotes around range: escaped for a basic
+      # string, verbatim for a literal one.
+      sig { params(range: T::Range[Integer], value: String).returns(String) }
+      def encoded(range, value)
+        return value if @content[range.begin - 1] == "'"
+
+        value.gsub(/["\\]/) { |char| "\\#{char}" }
       end
 
       # Returns the trailing comment on the line holding offset, if any.
@@ -196,6 +206,13 @@ module Dependabot
 
         quotes = (start..closing).select { |index| QUOTES.include?(@masked[index]) }
         quotes.each_slice(2).filter_map { |open, close| (T.must(open) + 1)...close if close }
+      end
+
+      # The value of the string whose contents span range, with escapes decoded.
+      sig { params(range: T::Range[Integer]).returns(String) }
+      def decoded(range)
+        string = @content[(range.begin - 1)..range.end]
+        T.cast(TomlRB.parse("value = #{string}"), T::Hash[String, String]).fetch("value")
       end
 
       sig { params(range: T.nilable(T::Range[Integer])).returns(T.nilable(String)) }
