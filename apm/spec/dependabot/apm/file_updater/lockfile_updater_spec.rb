@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     )
   end
 
-  context "when apm lock succeeds" do
+  context "when the lockfile records no deployed files" do
     before do
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
         File.write("apm.lock.yaml", "lockfile_version: '1'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
@@ -52,8 +52,47 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       end
     end
 
-    it "returns the lockfile apm wrote for the updated manifest" do
+    it "returns the lockfile apm lock wrote for the updated manifest" do
       expect(updated_lockfile_content).to eq("lockfile_version: '1'\n# - microsoft/edge-ai#v1.2.0\n")
+    end
+  end
+
+  context "when the lockfile records deployed files" do
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "apm.lock.yaml",
+        content: <<~YAML
+          lockfile_version: '2'
+          dependencies: []
+          deployments:
+          - kind: file
+            target: copilot
+            value: .github/skills/edge-ai/SKILL.md
+          - kind: file
+            target: claude
+            value: .claude/skills/edge-ai/SKILL.md
+          - kind: file
+            target: copilot
+            value: .github/skills/edge-ai/README.md
+          - kind: uri
+            target: mcp
+            value: context7
+          - kind: file
+            target: "claude; touch pwned"
+            value: .claude/skills/edge-ai/README.md
+        YAML
+      )
+    end
+
+    before do
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --target claude,copilot") do
+        File.write("apm.lock.yaml", "lockfile_version: '2'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
+        ""
+      end
+    end
+
+    it "runs apm install for each harness the lockfile deploys to, skipping MCP and invalid targets" do
+      expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# - microsoft/edge-ai#v1.2.0\n")
     end
   end
 

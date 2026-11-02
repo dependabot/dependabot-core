@@ -15,6 +15,9 @@ module Dependabot
     class Lockfile
       extend T::Sig
 
+      MCP_TARGET = "mcp"
+      TARGET_NAME_REGEX = /\A[a-z][a-z0-9-]*\z/
+
       sig { params(file: Dependabot::DependencyFile).void }
       def initialize(file)
         @document = T.let(parse(file), T::Hash[Object, Object])
@@ -44,6 +47,22 @@ module Dependabot
 
         entry["resolved_commit"] = commit
         entry.delete("content_hash")
+      end
+
+      # The harnesses (e.g. `claude`, `copilot`) the lockfile records files as
+      # deployed to, from its `deployments` entries. MCP server entries carry
+      # the `mcp` target, which isn't a harness, and names APM wouldn't accept
+      # as a target are ignored.
+      sig { returns(T::Array[String]) }
+      def deployment_targets
+        deployments = @document["deployments"]
+        return [] unless deployments.is_a?(Array)
+
+        targets = deployments.filter_map do |deployment|
+          target = deployment["target"] if deployment.is_a?(Hash)
+          target if target.is_a?(String) && target != MCP_TARGET && target.match?(TARGET_NAME_REGEX)
+        end
+        targets.uniq.sort
       end
 
       sig { returns(String) }

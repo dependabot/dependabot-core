@@ -13,8 +13,11 @@ require "dependabot/apm/native_helpers"
 module Dependabot
   module Apm
     class FileUpdater < Dependabot::FileUpdaters::Base
-      # Regenerates `apm.lock.yaml` with `apm lock`, which resolves the updated
-      # manifest without deploying any package files. APM only re-resolves the
+      # Regenerates `apm.lock.yaml` for the updated manifest. When the lockfile
+      # records deployed files, it runs `apm install` for the same harnesses:
+      # `apm lock` doesn't deploy, so it would keep the old version's deployed
+      # file list and hashes, which `apm install --frozen` rejects. Otherwise it
+      # runs `apm lock`, which needs no harness. APM only re-resolves the
       # entries whose manifest ref changed, keeping every other entry on its
       # locked commit, so tag and SHA updates are picked up from the manifest.
       # A branch pin's ref doesn't change, so its lock entry is first moved to
@@ -73,7 +76,7 @@ module Dependabot
         sig { returns(String) }
         def updated_lockfile_content
           SharedHelpers.in_a_temporary_repo_directory(lockfile.directory, repo_contents_path) do
-            # `apm lock` downloads packages into apm_modules/ and resolves
+            # APM downloads packages into apm_modules/ and resolves
             # transitive dependencies from what is already there. The git reset
             # between updates doesn't remove that ignored directory, so clear it
             # to keep one update's packages from leaking into the next.
@@ -82,7 +85,7 @@ module Dependabot
             File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              NativeHelpers.run_apm_command("lock")
+              NativeHelpers.run_apm_command(apm_command)
             end
 
             File.read(FileUpdater::LOCKFILE_FILENAME)
@@ -90,7 +93,7 @@ module Dependabot
             FileUtils.rm_rf(APM_MODULES_DIRECTORY)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_apm_lock_error(e)
+          handle_apm_error(e)
         end
 
         private
@@ -109,6 +112,17 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
+        # Passing the recorded targets keeps `apm install` from auto-detecting
+        # harnesses from the checkout, where ignored harness directories are
+        # missing, so it deploys to the same harnesses the lockfile describes.
+        sig { returns(String) }
+        def apm_command
+          targets = Lockfile.new(lockfile).deployment_targets
+          return "lock" if targets.empty?
+
+          "install --target #{targets.join(',')}"
+        end
 
         sig { returns(String) }
         def prepared_lockfile_content
@@ -135,7 +149,7 @@ module Dependabot
         end
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
-        def handle_apm_lock_error(error)
+        def handle_apm_error(error)
           message = error.message
 
           unreachable_url = unreachable_repository_url(message)
