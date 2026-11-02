@@ -196,8 +196,8 @@ module Dependabot
         def updated_lockfile_content
           @updated_lockfile_content ||=
             begin
-              new_lockfile = LockedVersionChecker.new(dependencies: dependencies)
-                                                 .check(updated_lockfile_content_for(prepared_pyproject))
+              new_lockfile = updated_lockfile_content_for(prepared_pyproject)
+              LockedVersionChecker.new(dependencies: dependencies).check(new_lockfile)
 
               original_locked_python = TomlRB.parse(T.must(lockfile).content)["metadata"]["python-versions"]
 

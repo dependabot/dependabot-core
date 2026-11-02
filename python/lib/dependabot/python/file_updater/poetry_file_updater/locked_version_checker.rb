@@ -19,7 +19,7 @@ module Dependabot
             @dependencies = dependencies
           end
 
-          sig { params(lockfile_content: String).returns(String) }
+          sig { params(lockfile_content: String).void }
           def check(lockfile_content)
             locked_packages = TomlRB.parse(lockfile_content).fetch("package", [])
             unmet = dependencies.reject do |dep|
@@ -28,7 +28,7 @@ module Dependabot
               target = Python::Version.new(T.must(dep.version))
               locked_packages.any? { |pkg| package_matches_target?(pkg, dep, target) }
             end
-            return lockfile_content if unmet.empty?
+            return if unmet.empty?
 
             raise Dependabot::UpdateNotPossible, unmet.map(&:name)
           end
