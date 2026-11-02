@@ -940,14 +940,15 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       )
     end
     let(:pyproject_fixture_name) { "caret_version.toml" }
+    let(:lockfile_fixture_name) { "caret_version.lock" }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
-        version: "2.18.0",
-        previous_version: "1.0.0",
+        version: "1.2.3",
+        previous_version: "1.2.3",
         package_manager: "pip",
         requirements: [{
-          requirement: "^2.18.0",
+          requirement: "^1.1.0",
           file: "pyproject.toml",
           source: nil,
           groups: ["dependencies"]
@@ -961,12 +962,18 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       )
     end
 
-    it "returns only the updated pyproject without raising" do
-      # Stub lockfile generation to return the original lockfile content
-      # simulating the case where bumping a lower bound doesn't affect resolution
-      allow(updater).to receive(:updated_lockfile_content).and_return(lockfile.content)
+    before do
+      allow(updater).to receive_messages(
+        updated_lockfile_content_for: lockfile.content.dup,
+        pyproject_hash_for: TomlRB.parse(lockfile.content)["metadata"]["content-hash"]
+      )
+    end
 
+    it "updates the requirement without changing the lockfile" do
       expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+      updated_pyproject = updated_files.first
+      expect(updated_pyproject.content).to include('requests = "^1.1.0"')
     end
   end
 
@@ -2218,8 +2225,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "fastapi",
-        version: nil,
-        previous_version: nil,
+        version: "0.128.0",
+        previous_version: "0.110.0",
         package_manager: "pip",
         requirements: [{
           requirement: nil,
@@ -2248,6 +2255,25 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
     describe "#updated_dependency_files" do
       subject(:updated_files) { updater.updated_dependency_files }
+
+      context "with a lockfile" do
+        let(:dependency_files) { [pyproject, lockfile] }
+        let(:lockfile_fixture_name) { "git_dependency.lock" }
+
+        before do
+          allow(updater).to receive_messages(
+            updated_lockfile_content_for: lockfile.content.dup,
+            pyproject_hash_for: TomlRB.parse(lockfile.content)["metadata"]["content-hash"]
+          )
+        end
+
+        it "updates the Git dependency without requiring a matching locked package" do
+          expect(updated_files.map(&:name)).to eq(["pyproject.toml"])
+
+          updated_pyproject = updated_files.first
+          expect(updated_pyproject.content).to include('tag = "0.128.0"')
+        end
+      end
 
       it "updates only the pyproject.toml file" do
         expect(updated_files.map(&:name)).to eq(["pyproject.toml"])
