@@ -649,6 +649,25 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
           expect(content).to include(%(additional_dependencies = [\n  "types-requests==2.32.0.20240914",))
           expect(content).to include(%(args = [\n  "types-requests==2.31.0.1",))
         end
+
+        context "when the located ranges would change anything else" do
+          before do
+            allow(Dependabot::PreCommit::PrekToml).to receive(:new).and_wrap_original do |original, content|
+              toml = original.call(content)
+              old_string = "types-requests==2.31.0.1"
+              every_occurrence = content.enum_for(:scan, old_string).map do
+                start = T.must(Regexp.last_match).begin(0)
+                start...(start + old_string.length)
+              end
+              allow(toml).to receive(:additional_dependency_ranges).and_return(every_occurrence)
+              toml
+            end
+          end
+
+          it "refuses the update" do
+            expect { updated_files }.to raise_error(/changed more than types-requests/)
+          end
+        end
       end
 
       context "when a multiline string contains a sample repo entry" do

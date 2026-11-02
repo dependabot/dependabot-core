@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "toml-rb"
 
 require "dependabot/errors"
 require "dependabot/file_updaters"
@@ -53,10 +54,80 @@ module Dependabot
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
+          previous_content = updated_content
           updated_content = apply_requirement_update(updated_content, new_req, old_req, file)
+          verify_toml_update(previous_content, updated_content, new_req, old_req) if toml?(file)
         end
 
         updated_content
+      end
+
+      # Re-parses an edited prek.toml and raises unless the edit changed exactly
+      # the requirement being updated, so a TOML construct PrekToml mislocates
+      # fails the update instead of corrupting the file.
+      sig do
+        params(
+          before: String,
+          after: String,
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
+        ).void
+      end
+      def verify_toml_update(before, after, new_req, old_req)
+        return if before == after
+
+        expected = parse_toml(before)
+        repos = T.cast(expected.fetch("repos", []), T::Array[T::Hash[String, Object]])
+        if new_req.source_string("type") == "git"
+          expect_rev_update(repos, new_req, old_req)
+        else
+          expect_additional_dependency_update(repos, new_req, old_req)
+        end
+        return if parse_toml(after) == expected
+
+        raise "Updating prek.toml changed more than #{dependency.name}"
+      end
+
+      sig { params(content: String).returns(T::Hash[String, Object]) }
+      def parse_toml(content)
+        T.cast(TomlRB.parse(content), T::Hash[String, Object])
+      end
+
+      sig do
+        params(
+          repos: T::Array[T::Hash[String, Object]],
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
+        ).void
+      end
+      def expect_rev_update(repos, new_req, old_req)
+        repos.each do |repo|
+          next unless old_req.source_string("url") == repo["repo"] && old_req.source_string("ref") == repo["rev"]
+
+          repo["rev"] = new_req.source_string("ref")
+        end
+      end
+
+      sig do
+        params(
+          repos: T::Array[T::Hash[String, Object]],
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
+        ).void
+      end
+      def expect_additional_dependency_update(repos, new_req, old_req)
+        old_string = old_req.source_string("original_string")
+        repos.each do |repo|
+          next unless old_req.source_string("hook_repo") == repo["repo"]
+
+          T.cast(repo.fetch("hooks", []), T::Array[T::Hash[String, Object]]).each do |hook|
+            next unless old_req.source_string("hook_id") == hook["id"] && hook.key?("additional_dependencies")
+
+            dependencies = T.cast(hook["additional_dependencies"], T::Array[String])
+            hook["additional_dependencies"] =
+              dependencies.map { |dep| dep == old_string ? new_req.source_string("original_string") : dep }
+          end
+        end
       end
 
       sig do
