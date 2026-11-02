@@ -489,6 +489,30 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
           expect(content).not_to include("6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e")
           expect(content).not_to include("v4.4.0")
         end
+
+        context "when a hook string on the same line contains the old version" do
+          let(:config_file_body) { fixture("prek_configs", "hash_in_hook_string.toml") }
+
+          it "rewrites the comment and leaves the string untouched" do
+            content = updated_files.find { |f| f.name == "prek.toml" }.content
+            expect(content).to include(%(args = ["# v4.4.0"]))
+            expect(content).to include("},  # frozen: v6.0.0")
+          end
+        end
+
+        context "when two inline tables for the repo share a line" do
+          let(:config_file_body) { fixture("prek_configs", "inline_frozen_same_repo_one_line.toml") }
+
+          before do
+            dependency.requirements.first[:metadata][:new_comment_version] = "v10.0.0"
+          end
+
+          it "rewrites the shared comment once" do
+            content = updated_files.find { |f| f.name == "prek.toml" }.content
+            expect(content).to end_with("}]  # frozen: v10.0.0\n")
+            expect(content.scan("10864545ddc58bd96330029b6bff16da3d072237").length).to eq(2)
+          end
+        end
       end
 
       context "when the dependency's old ref is a prefix of the on-file rev" do

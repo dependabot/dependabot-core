@@ -234,15 +234,20 @@ module Dependabot
       end
       def replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
         updated_content = content.dup
+        toml = PrekToml.new(content)
+        rewritten_comment = T.let(nil, T.nilable(T::Range[Integer]))
 
-        PrekToml.new(content).rev_value_ranges(repo_url).reverse_each do |range|
+        toml.rev_value_ranges(repo_url).reverse_each do |range|
           next unless content[range] == old_ref
 
+          # The comment follows the rev, so rewriting it first keeps range
+          # valid. Revs sharing a line share a comment, so rewrite it once.
+          comment = toml.line_comment_range(range.end)
+          if comment && comment != rewritten_comment
+            updated_content[comment] = update_version_comment(T.must(content[comment]), old_version, new_version)
+            rewritten_comment = comment
+          end
           updated_content[range] = new_ref
-          line_start = (updated_content.rindex("\n", range.begin) || -1) + 1
-          line_end = updated_content.index("\n", range.begin) || updated_content.length
-          updated_content[line_start...line_end] =
-            update_version_comment(T.must(updated_content[line_start...line_end]), old_version, new_version)
         end
 
         updated_content

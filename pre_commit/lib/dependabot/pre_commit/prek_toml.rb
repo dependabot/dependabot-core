@@ -66,11 +66,16 @@ module Dependabot
       # Returns the trailing comment on the line holding offset, if any.
       sig { params(offset: Integer).returns(T.nilable(String)) }
       def line_comment(offset)
+        range = line_comment_range(offset)
+        T.must(@content[range]).rstrip if range
+      end
+
+      # Returns the range of the trailing comment on the line holding offset.
+      sig { params(offset: Integer).returns(T.nilable(T::Range[Integer])) }
+      def line_comment_range(offset)
         line_end = @content.index("\n", offset) || @content.length
         comment_start = @masked.index("#", offset)
-        return unless comment_start && comment_start < line_end
-
-        T.must(@content[comment_start...line_end]).rstrip
+        comment_start...line_end if comment_start && comment_start < line_end
       end
 
       private
