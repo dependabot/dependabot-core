@@ -965,6 +965,33 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "when a transitive requirement needs an extension disabled with false" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "composer.json",
+              content: JSON.pretty_generate(
+                "require" => { "php" => ">=8.1", "mongodb/mongodb" => "^2.4.2", "vendor/needs-ext" => "^1.0" },
+                "config" => { "platform" => { "ext-foo" => false } }
+              )
+            ),
+            Dependabot::DependencyFile.new(name: "composer.lock", content: JSON.pretty_generate(original_lockfile))
+          ]
+        end
+        let(:responses) do
+          [missing_platform_error(
+            "vendor/needs-ext 1.0.0 requires ext-foo >=1.2 -> it is disabled by your platform config."
+          )]
+        end
+
+        it "does not retry and keeps the Composer diagnostic" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable, /ext-foo >=1.2/)
+          expect(written_manifests.length).to eq(1)
+          expect(written_manifests.first.dig("config", "platform", "ext-foo")).to be(false)
+        end
+      end
+
       context "when an undeclared extension is missing" do
         let(:responses) do
           [

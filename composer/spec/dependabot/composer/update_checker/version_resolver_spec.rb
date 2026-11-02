@@ -403,6 +403,33 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         end
       end
 
+      context "when a transitive requirement needs an extension disabled with false" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "composer.json",
+              content: JSON.pretty_generate(
+                "require" => { "php" => ">=8.1", "mongodb/mongodb" => "^2.4.2", "vendor/needs-ext" => "^1.0" },
+                "config" => { "platform" => { "ext-foo" => false } }
+              )
+            )
+          ]
+        end
+        let(:responses) do
+          [missing_platform_error(
+            "vendor/needs-ext 1.0.0 requires ext-foo >=1.2 -> it is disabled by your platform config."
+          )]
+        end
+
+        it "reports a normal resolution failure instead of retrying with an override" do
+          expect(Dependabot.logger).to receive(:error).with(/ext-foo >=1.2 -> it is disabled/).ordered
+          allow(Dependabot.logger).to receive(:error)
+
+          expect(resolver.latest_resolvable_version).to be_nil
+          expect(written_manifests.map { |json| json.dig("config", "platform", "ext-foo") }).to all(be(false))
+        end
+      end
+
       context "when an undeclared extension is missing" do
         let(:responses) do
           [

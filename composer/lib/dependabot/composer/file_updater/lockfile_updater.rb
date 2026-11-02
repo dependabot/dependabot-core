@@ -187,16 +187,8 @@ module Dependabot
                 !library? &&
                 !initial_platform.empty? &&
                 implicit_platform_reqs_satisfiable?(error.message)
-            missing_extensions =
-              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                { name: name, requirement: requirement }
-              end
-
-            missing_extension = missing_extensions.find do |hash|
-              existing_reqs = composer_platform_extensions[hash[:name]] || []
-              version_for_reqs(existing_reqs + [hash[:requirement]])
+            missing_extension = retryable_missing_extensions(error.message).find do |hash|
+              extension_satisfiable?(hash)
             end
 
             raise(MissingExtensions, T.must(missing_extension).then { |ext| [ext] })
@@ -264,17 +256,21 @@ module Dependabot
 
         sig { params(message: String).returns(T::Boolean) }
         def implicit_platform_reqs_satisfiable?(message)
-          missing_extensions =
-            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
-                   .map do |extension_string|
-              name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-              { name: name, requirement: requirement }
-            end
+          retryable_missing_extensions(message).any? { |hash| extension_satisfiable?(hash) }
+        end
 
-          missing_extensions.any? do |hash|
-            existing_reqs = composer_platform_extensions[hash[:name]] || []
-            version_for_reqs(existing_reqs + [hash[:requirement]])
-          end
+        # Missing extensions that Dependabot may add to the temporary platform.
+        # Extensions pinned in `config.platform` (including `false`) are excluded.
+        sig { params(message: String).returns(T::Array[T::Hash[Symbol, String]]) }
+        def retryable_missing_extensions(message)
+          Helpers.missing_extensions_from(message, MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+                 .reject { |hash| manifest_document.platform_extension_pinned?(hash.fetch(:name)) }
+        end
+
+        sig { params(extension: T::Hash[Symbol, String]).returns(T::Boolean) }
+        def extension_satisfiable?(extension)
+          existing_reqs = composer_platform_extensions[extension.fetch(:name)] || []
+          !version_for_reqs(existing_reqs + [extension.fetch(:requirement)]).nil?
         end
 
         sig { void }
