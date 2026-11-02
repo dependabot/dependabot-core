@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Text;
 
@@ -51,7 +52,7 @@ internal record NuGetContext : IDisposable
         SourceCacheContext.Dispose();
     }
 
-    private readonly Dictionary<PackageIdentity, string?> _packageInfoUrlCache = new();
+    private readonly ConcurrentDictionary<PackageIdentity, string?> _packageInfoUrlCache = new();
 
     public static string[] GetPackageSourceUrls(string currentDirectory)
     {

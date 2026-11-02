@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve class-scope generated its examples and their fixtures.
+
 require "spec_helper"
 require "dependabot/hex/update_checker/requirements_updater"
 

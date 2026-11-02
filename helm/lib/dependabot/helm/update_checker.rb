@@ -505,9 +505,11 @@ module Dependabot
       def fetch_latest_image_version
         docker_dependency = build_docker_dependency
 
+        docker_cooldown = docker_cooldown_options
+
         Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{docker_dependency.name}")
 
-        docker_checker = if cooldown_enabled?
+        docker_checker = if docker_cooldown
                            Dependabot::UpdateCheckers.for_package_manager("docker").new(
                              dependency: docker_dependency,
                              dependency_files: dependency_files,
@@ -515,7 +517,7 @@ module Dependabot
                              ignored_versions: ignored_versions,
                              security_advisories: security_advisories,
                              raise_on_ignored: raise_on_ignored,
-                             update_cooldown: update_cooldown
+                             update_cooldown: docker_cooldown
                            )
                          else
                            Dependabot::UpdateCheckers.for_package_manager("docker").new(
@@ -534,7 +536,7 @@ module Dependabot
 
         return unless docker_checker.can_update?(requirements_to_unlock: :none)
 
-        version_class.new(latest_version)
+        ImageTag.new(latest_version)
       end
 
       sig { params(tags: T::Array[String], repo_url: String).returns(T::Array[GitTagWithDetail]) }
@@ -583,6 +585,9 @@ module Dependabot
         end
 
         registry = requirement.source_string("registry")
+        # The parser folds a detected registry into the name (e.g. "quay.io/org/app"), but the
+        # Docker checker builds the repository path from the name and the host from the registry.
+        name = name.delete_prefix("#{registry}/") if registry
 
         Dependency.new(
           name: name,
@@ -597,6 +602,21 @@ module Dependabot
             }
           }],
           package_manager: "docker"
+        )
+      end
+
+      # The Docker checker matches include/exclude against the shortened image name, so resolve
+      # them here against the original Helm dependency name and delegate a pattern-free cooldown.
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      def docker_cooldown_options
+        cooldown = update_cooldown
+        return nil if cooldown.nil? || !cooldown_enabled? || !cooldown.included?(dependency.name)
+
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: cooldown.default_days,
+          semver_major_days: cooldown.semver_major_days,
+          semver_minor_days: cooldown.semver_minor_days,
+          semver_patch_days: cooldown.semver_patch_days
         )
       end
 
