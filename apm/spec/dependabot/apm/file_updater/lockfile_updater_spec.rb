@@ -169,11 +169,12 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     end
 
     context "when the manifest declares its targets" do
+      let(:manifest_content) { "targets:\n  - intellij\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
       let(:lockfile_updater) do
         described_class.new(
           dependencies: [dependency],
           lockfile: lockfile,
-          manifest_content: "targets:\n  - intellij\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n",
+          manifest_content: manifest_content,
           credentials: [],
           repo_contents_path: nil
         )
@@ -188,6 +189,32 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
       it "runs apm install and lets APM use the manifest's targets" do
         expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
+      end
+
+      context "when the manifest uses a YAML alias" do
+        let(:manifest_content) do
+          "x-skills: &skills microsoft/edge-ai#v1.2.0\ntargets: [claude]\ndependencies:\n  apm:\n    - *skills\n"
+        end
+
+        it "still reads the declared targets" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
+        end
+      end
+
+      context "when the manifest declares targets as a comma-separated string" do
+        let(:manifest_content) { "target: claude,copilot\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+
+        it "runs apm install" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
+        end
+      end
+
+      context "when the manifest declares the legacy all target" do
+        let(:manifest_content) { "targets: [claude, all]\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+
+        it "treats the targets as unspecified and uses the recorded ones" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# - microsoft/edge-ai#v1.2.0\n")
+        end
       end
     end
   end
