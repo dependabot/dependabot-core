@@ -106,11 +106,9 @@ module Dependabot
         def resolvable?(version:)
           return T.must(@resolvable[version]) if @resolvable.key?(version)
 
-          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-                                   true
-                                 else
-                                   false
-                                 end
+          resolved_version = fetch_latest_resolvable_version_string(requirement: "==#{version}")
+          @resolvable[version] = !resolved_version.nil? &&
+                                 Python::Version.new(resolved_version) == Python::Version.new(version.to_s)
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise unless e.message.include?("version solving failed.")
 
