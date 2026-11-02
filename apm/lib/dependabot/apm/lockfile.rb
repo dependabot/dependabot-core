@@ -15,7 +15,8 @@ module Dependabot
     class Lockfile
       extend T::Sig
 
-      MCP_TARGET = "mcp"
+      URI_KIND = "uri"
+      PROJECT_SCOPE = "project"
       TARGET_NAME_REGEX = /\A[a-z][a-z0-9-]*\z/
 
       sig { params(file: Dependabot::DependencyFile).void }
@@ -49,18 +50,23 @@ module Dependabot
         entry.delete("content_hash")
       end
 
-      # The harnesses (e.g. `claude`, `copilot`) the lockfile records files as
-      # deployed to, from its `deployments` entries. MCP server entries carry
-      # the `mcp` target, which isn't a harness, and names APM wouldn't accept
-      # as a target are ignored.
+      # The harnesses (e.g. `claude`, `copilot`) the lockfile records project
+      # files as deployed to, from its `deployments` entries. MCP and LSP
+      # servers are `uri` entries whose target (`mcp`, `lsp`) isn't a harness,
+      # so they are skipped, as are names APM wouldn't accept as a target. A
+      # lockfile without `deployments` yields none: like APM, this doesn't
+      # infer harnesses from legacy `deployed_files` paths.
       sig { returns(T::Array[String]) }
       def deployment_targets
         deployments = @document["deployments"]
         return [] unless deployments.is_a?(Array)
 
         targets = deployments.filter_map do |deployment|
-          target = deployment["target"] if deployment.is_a?(Hash)
-          target if target.is_a?(String) && target != MCP_TARGET && target.match?(TARGET_NAME_REGEX)
+          next unless deployment.is_a?(Hash)
+          next if deployment["kind"] == URI_KIND || deployment["scope"] != PROJECT_SCOPE
+
+          target = deployment["target"]
+          target if target.is_a?(String) && target.match?(TARGET_NAME_REGEX)
         end
         targets.uniq.sort
       end

@@ -65,21 +65,36 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
           lockfile_version: '2'
           dependencies: []
           deployments:
-          - kind: file
+          - kind: project-relative
             target: copilot
             value: .github/skills/edge-ai/SKILL.md
-          - kind: file
+            scope: project
+          - kind: project-relative
             target: claude
             value: .claude/skills/edge-ai/SKILL.md
-          - kind: file
+            scope: project
+          - kind: project-relative
             target: copilot
             value: .github/skills/edge-ai/README.md
+            scope: project
           - kind: uri
             target: mcp
             value: context7
-          - kind: file
+            runtime: claude
+            scope: project
+          - kind: uri
+            target: lsp
+            value: pyright
+            runtime: claude
+            scope: project
+          - kind: project-relative
+            target: codex
+            value: .codex/skills/edge-ai/SKILL.md
+            scope: user
+          - kind: project-relative
             target: "claude; touch pwned"
             value: .claude/skills/edge-ai/README.md
+            scope: project
         YAML
       )
     end
@@ -91,8 +106,34 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       end
     end
 
-    it "runs apm install for each harness the lockfile deploys to, skipping MCP and invalid targets" do
+    it "runs apm install for each harness with project files, skipping MCP, LSP, user-scope and invalid targets" do
       expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# - microsoft/edge-ai#v1.2.0\n")
+    end
+  end
+
+  context "when a legacy lockfile records deployed files without deployments" do
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "apm.lock.yaml",
+        content: <<~YAML
+          lockfile_version: '1'
+          dependencies:
+          - repo_url: microsoft/edge-ai
+            deployed_files:
+            - .claude/skills/edge-ai
+        YAML
+      )
+    end
+
+    before do
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+        File.write("apm.lock.yaml", "lockfile_version: '1'\n# locked\n")
+        ""
+      end
+    end
+
+    it "runs apm lock rather than inferring harnesses from the deployed paths" do
+      expect(updated_lockfile_content).to eq("lockfile_version: '1'\n# locked\n")
     end
   end
 
