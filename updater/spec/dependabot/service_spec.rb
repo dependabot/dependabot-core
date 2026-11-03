@@ -450,6 +450,43 @@ RSpec.describe Dependabot::Service do
         )
     end
 
+    it "sends an allowlisted error context" do
+      error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+        message: "Something went wrong",
+        error_context: {
+          command: "pip-compile --index-url https://user:secret@example.com",
+          function: "resolve",
+          args: ["secret"],
+          stderr_output: "secret"
+        }
+      )
+
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CONTEXT => {
+              "helper-function" => "resolve",
+              "helper-error-class" => "HelperSubprocessFailed"
+            }
+          )
+        )
+    end
+
+    it "omits the error context when there is none" do
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_excluding(Dependabot::ErrorAttributes::CONTEXT)
+        )
+    end
+
     it "extracts information from a dependency if provided" do
       dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
@@ -461,7 +498,8 @@ RSpec.describe Dependabot::Service do
           error_details: hash_including(
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
-            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
+            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash",
+            Dependabot::ErrorAttributes::CONTEXT => { "dependency-name" => "lodash" }
           )
         )
     end
