@@ -14,6 +14,7 @@ require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_pep621_subdependency_scope"
 require "dependabot/package/release_cooldown_options"
 
 module Dependabot
@@ -282,41 +283,16 @@ module Dependabot
 
         sig { params(project_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
         def pin_pep621_subdependency!(project_object, dep)
-          pin = "#{dep.name}==#{dep.version}"
-          extras = pep621_subdependency_extras(dep)
-
-          if extras.empty?
-            (project_object["dependencies"] ||= []) << pin
-          else
-            optional_deps = (project_object["optional-dependencies"] ||= {})
-            extras.each { |extra| (optional_deps[extra] ||= []) << pin }
-          end
-        end
-
-        # Reads the pre-update lockfile to find which extra(s), if any, a pure sub-dependency was
-        # scoped to (Poetry records this as `markers = "extra == \"name\""` on its package entry),
-        # so the pin doesn't promote an extra-only package into an unconditional main dependency.
-        # PEP 735 dependency-groups aren't handled here - this codebase doesn't otherwise write
-        # [dependency-groups] entries, so a dev-only sub-dependency still falls back to being
-        # pinned as a main dependency on the scratch manifest only.
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[String]) }
-        def pep621_subdependency_extras(dep)
-          package = poetry_lock_packages.find { |pkg| normalise(pkg.name) == dep.name }
-          return [] unless package
-          return [] unless package.optional
-
-          markers = package.markers
-          return [] unless markers
-
-          markers.scan(/extra\s*==\s*"([^"]+)"/).flatten
-        end
-
-        sig { returns(T::Array[Dependabot::Python::FileParser::PoetryLock::Package]) }
-        def poetry_lock_packages
-          @poetry_lock_packages ||= T.let(
-            lockfile ? Dependabot::Python::FileParser::PoetryLock.from_file(T.must(lockfile)).packages : [],
-            T.nilable(T::Array[Dependabot::Python::FileParser::PoetryLock::Package])
+          main_pin, extra_pins = PoetryPep621SubdependencyScope.pins_for_dependency(
+            lockfile, dep.name, "#{dep.name}==#{dep.version}"
           )
+
+          (project_object["dependencies"] ||= []) << main_pin if main_pin
+
+          return if extra_pins.empty?
+
+          optional_deps = (project_object["optional-dependencies"] ||= {})
+          extra_pins.each { |extra, extra_pin| (optional_deps[extra] ||= []) << extra_pin }
         end
 
         sig { params(pyproject_content: String).returns(String) }

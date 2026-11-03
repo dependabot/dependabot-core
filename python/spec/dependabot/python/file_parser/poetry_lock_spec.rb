@@ -60,6 +60,31 @@ RSpec.describe Dependabot::Python::FileParser::PoetryLock do
     end
   end
 
+  context "with a group-keyed marker table (poetry.lock format 2.1+)" do
+    let(:content) do
+      <<~TOML
+        [[package]]
+        name = "exceptiongroup"
+        version = "1.3.1"
+        optional = true
+        markers = {main = "extra == \\"security\\" and python_version < \\"3.11\\"", dev = "python_version < \\"3.11\\""}
+      TOML
+    end
+
+    it "parses each group's marker string instead of raising" do
+      exceptiongroup = lock.packages.first
+
+      expect(exceptiongroup.markers).to eq(
+        "main" => "extra == \"security\" and python_version < \"3.11\"",
+        "dev" => "python_version < \"3.11\""
+      )
+      expect(exceptiongroup.marker_strings).to contain_exactly(
+        "extra == \"security\" and python_version < \"3.11\"",
+        "python_version < \"3.11\""
+      )
+    end
+  end
+
   context "with no packages" do
     let(:content) { "lock-version = \"2.0\"\n" }
 

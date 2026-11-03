@@ -1,0 +1,22 @@
+[project]
+name = "pep621-only-paren-marker"
+version = "0.1.0"
+requires-python = ">=3.8"
+dependencies = [
+    "urllib3>=2.0.0",
+]
+
+[project.optional-dependencies]
+lint = [
+    "black>=23.0.0",
+]
+typecheck = [
+    "mypy>=1.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -69,6 +69,15 @@ module Dependabot
           end
         end
 
+        # From poetry.lock format 2.1, `markers` can be a string shared by every group a package
+        # belongs to, or a table keyed by group name when groups have different conditions.
+        sig { params(value: Object, context: String).returns(T.any(String, T::Hash[String, String])) }
+        def self.string_or_table(value, context)
+          return value if value.is_a?(String)
+
+          object_hash(value, context).to_h { |key, item| [key, string(item, "#{context} value")] }
+        end
+
         sig { params(value: Object, name: String).returns(T::Array[PoetryRequirement]) }
         def self.poetry_requirements(value, name)
           flattened = value.is_a?(Array) ? value.flatten : [value]

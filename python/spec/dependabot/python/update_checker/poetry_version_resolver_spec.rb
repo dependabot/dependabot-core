@@ -451,6 +451,35 @@ RSpec.describe namespace::PoetryVersionResolver do
     end
   end
 
+  describe "#resolvable?" do
+    subject(:resolvable) { resolver.resolvable?(version: Gem::Version.new("0.4.4")) }
+
+    context "with a pure sub-dependency of a PEP 621 only project that has a plain environment marker" do
+      let(:dependency_name) { "colorama" }
+      let(:dependency_version) { "0.4.6" }
+      let(:dependency_requirements) { [] }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }
+
+      # Without the marker, the scratch pin would force colorama onto every platform - which,
+      # for a genuinely Windows-only release, could make an otherwise-valid update unresolvable.
+      it "preserves the marker on the scratch pin, rather than making it unconditional" do
+        scratch_pyproject_content = nil
+        allow(resolver).to receive(:run_poetry_command).and_wrap_original do |original, *args, **kwargs|
+          scratch_pyproject_content ||= File.read("pyproject.toml")
+          original.call(*args, **kwargs)
+        end
+
+        resolvable
+
+        pyproject_object = TomlRB.parse(scratch_pyproject_content)
+        pin = pyproject_object["project"]["dependencies"].find { |dep| dep.start_with?("colorama") }
+
+        expect(pin).to eq("colorama==0.4.4; platform_system == \"Windows\"")
+      end
+    end
+  end
+
   describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
     subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
 

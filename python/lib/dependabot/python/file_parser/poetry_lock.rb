@@ -21,7 +21,7 @@ module Dependabot
           const :version, String
           const :source_type, T.nilable(String), default: nil
           const :optional, T::Boolean, default: false
-          const :markers, T.nilable(String), default: nil
+          const :markers, T.nilable(T.any(String, T::Hash[String, String])), default: nil
 
           sig { params(value: Object).returns(Package) }
           def self.from_object(value)
@@ -34,11 +34,11 @@ module Dependabot
                 PyprojectValueParser.object_hash(source, "Poetry lock package source")
               end
 
-            optional =
-              if hash.key?("optional")
-                PyprojectValueParser.boolean(hash["optional"], "Poetry lock package optional")
-              else
-                false
+            optional = PyprojectValueParser.boolean(hash.fetch("optional", false), "Poetry lock package optional")
+
+            markers =
+              if hash.key?("markers")
+                PyprojectValueParser.string_or_table(hash["markers"], "Poetry lock package markers")
               end
 
             new(
@@ -49,11 +49,11 @@ module Dependabot
                 "Poetry lock package source type"
               ),
               optional: optional,
-              markers: PyprojectValueParser.optional_string(hash["markers"], "Poetry lock package markers")
+              markers: markers
             )
           end
 
-          sig { returns(T::Hash[Symbol, T.nilable(T.any(String, T::Boolean))]) }
+          sig { returns(T::Hash[Symbol, T.nilable(T.any(String, T::Boolean, T::Hash[String, String]))]) }
           def to_h
             {
               name: name,
@@ -62,6 +62,18 @@ module Dependabot
               optional: optional,
               markers: markers
             }
+          end
+
+          # Normalises `markers` to a flat list of marker strings, regardless of whether the
+          # lockfile recorded a single shared string or a table keyed by group name.
+          sig { returns(T::Array[String]) }
+          def marker_strings
+            value = markers
+            case value
+            when String then [value]
+            when Hash then value.values
+            else []
+            end
           end
         end
 

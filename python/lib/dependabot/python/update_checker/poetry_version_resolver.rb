@@ -19,6 +19,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_pep621_subdependency_scope"
 
 module Dependabot
   module Python
@@ -368,9 +369,24 @@ module Dependabot
           updated = dep_arrays.map { |arr| update_pep621_dependency_requirement(arr, updated_requirement) }.any?
           return if updated
 
-          # This is a sub-dependency not declared anywhere in the pyproject.toml; add it so Poetry's
-          # solver is forced to consider the target version.
-          (project_object["dependencies"] ||= []) << "#{dependency.name}#{updated_requirement}"
+          # A sub-dependency not declared anywhere in the pyproject.toml; pin it so Poetry's solver
+          # considers the target version, preserving its pre-update lockfile scope - an unconditional
+          # pin could force it outside its real conditions and make a valid update unresolvable.
+          pin_pep621_subdependency!(project_object, updated_requirement)
+        end
+
+        sig { params(project_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def pin_pep621_subdependency!(project_object, updated_requirement)
+          main_pin, extra_pins = PoetryPep621SubdependencyScope.pins_for_dependency(
+            lockfile, dependency.name, "#{dependency.name}#{updated_requirement}"
+          )
+
+          (project_object["dependencies"] ||= []) << main_pin if main_pin
+
+          return if extra_pins.empty?
+
+          optional_deps = (project_object["optional-dependencies"] ||= {})
+          extra_pins.each { |extra, extra_pin| (optional_deps[extra] ||= []) << extra_pin }
         end
 
         sig { params(dep_array: T::Array[String], requirement: String).returns(T::Boolean) }
