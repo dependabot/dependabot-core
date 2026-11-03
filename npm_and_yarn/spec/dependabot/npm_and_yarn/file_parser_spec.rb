@@ -2086,6 +2086,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
       end
 
+      context "with one dependency in catalogs in several included files" do
+        # An included file can itself be named pnpm-workspace.yaml; list it first so the root is not picked by order
+        let(:files) do
+          project_dependency_files("pnpm/catalog_include_multiple")
+            .sort_by { |f| f.name == "config/pnpm-workspace.yaml" ? 0 : 1 }
+        end
+
+        it "gives the dependency a requirement in each file that owns it" do
+          is_even = top_level_dependencies.find { |dep| dep.name == "is-even" }
+
+          expect(is_even.requirements).to contain_exactly(
+            { requirement: "0.1.1", file: "catalogs/legacy.yaml", groups: ["dependencies"], source: nil },
+            { requirement: "0.1.2", file: "config/pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+          )
+        end
+      end
+
       context "when pnpm-workspace.yaml has only comments" do
         let(:files) do
           [

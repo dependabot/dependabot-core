@@ -4,6 +4,7 @@
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/pnpm_error_message"
+require "dependabot/npm_and_yarn/pnpm_workspace_includes"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
@@ -289,10 +290,9 @@ module Dependabot
         # Files that pnpm-workspace.yaml includes can own its catalogs, and pnpm reads them from disk.
         sig { params(updated_contents: T::Hash[String, T.nilable(String)]).void }
         def write_included_pnpm_workspace_files(updated_contents)
-          updated_contents.each do |name, content|
-            next if content.nil? || File.basename(name) == PNPMPackageManager::PNPM_WS_YML_FILENAME
-
-            File.write(name, content)
+          PnpmWorkspaceIncludes.included_files(dependency_files).each do |file|
+            content = updated_contents[file.name]
+            File.write(file.name, content) if content
           end
         end
 

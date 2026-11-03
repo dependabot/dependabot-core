@@ -43,6 +43,12 @@ module Dependabot
         []
       end
 
+      # Whether a relative path climbs above the directory it is relative to (`../x.yaml`, `a/../../x.yaml`).
+      sig { params(path: String).returns(T::Boolean) }
+      def self.outside?(path)
+        Pathname.new(path).cleanpath.each_filename.first == ".."
+      end
+
       sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
       def self.included_files(dependency_files)
         paths = dependency_files

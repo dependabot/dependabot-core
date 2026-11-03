@@ -65,6 +65,16 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmWorkspaceIncludes do
     end
   end
 
+  describe ".outside?" do
+    it "is true only for paths that climb above their base directory" do
+      expect(
+        ["../x.yaml", "a/../../x.yaml", "./../x.yaml", "x.yaml", "a/../x.yaml", "./..x.yaml"].map do |path|
+          described_class.outside?(path)
+        end
+      ).to eq([true, true, true, false, false, false])
+    end
+  end
+
   describe ".included_files" do
     subject(:included) { described_class.included_files(files) }
 

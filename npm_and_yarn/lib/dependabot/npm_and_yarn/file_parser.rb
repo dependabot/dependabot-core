@@ -193,11 +193,14 @@ module Dependabot
         )
       end
 
+      # The root workspace file: an included file can have the same name, so skip those
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pnpm_workspace_yml
         @pnpm_workspace_yml ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+          begin
+            candidates = dependency_files.select { |f| f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME) }
+            included = PnpmWorkspaceIncludes.included_files(dependency_files)
+            (candidates - included).first || candidates.first
           end,
           T.nilable(Dependabot::DependencyFile)
         )

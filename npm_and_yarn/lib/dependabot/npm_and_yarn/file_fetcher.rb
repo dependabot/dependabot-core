@@ -470,6 +470,11 @@ module Dependabot
         return [] unless workspace
 
         PnpmWorkspaceIncludes.included_file_paths(workspace).map do |path|
+          # A path above the repository root would be read from the root instead, and later written outside it
+          if PnpmWorkspaceIncludes.outside?(File.join(".", directory, path))
+            raise Dependabot::DependencyFileNotFound, path
+          end
+
           fetch_file_from_host(path).tap { |f| f.support_file = workspace.support_file? }
         end
       end

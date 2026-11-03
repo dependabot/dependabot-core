@@ -2323,6 +2323,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
+    context "when an included file is outside the repository" do
+      before do
+        File.write(
+          File.join(repo_contents_path, "pnpm-workspace.yaml"),
+          "packages:\n  - packages/*\n\ninclude:\n  ../pnpm-catalogs.yaml: [catalogs]\n"
+        )
+      end
+
+      it "raises a DependencyFileNotFound error instead of reading another file" do
+        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect(error.file_path).to eq("../pnpm-catalogs.yaml")
+        end
+      end
+    end
+
     context "when the workspace is fetched from a parent directory" do
       let(:directory) { "/packages/app" }
 
