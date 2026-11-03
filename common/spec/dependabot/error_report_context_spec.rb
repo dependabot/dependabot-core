@@ -90,6 +90,33 @@ RSpec.describe Dependabot::ErrorReportContext do
       end
     end
 
+    context "with an Excon HTTP status error built from a raw response hash" do
+      let(:error) do
+        Excon::Error::NotFound.new("Not Found", { method: :get, host: "registry.npmjs.org" }, { status: 404 })
+      end
+
+      it "forwards the status" do
+        expect(context).to include("http-status" => 404)
+      end
+    end
+
+    context "with an Excon HTTP status error raised by a request" do
+      let(:error) do
+        stub_request(:get, "https://registry.npmjs.org/lodash").to_return(status: 503)
+        Excon.get("https://registry.npmjs.org/lodash", expects: [200])
+      rescue Excon::Error::HTTPStatus => e
+        e
+      end
+
+      it "forwards the method, host and status" do
+        expect(context).to eq(
+          "http-method" => "GET",
+          "host" => "registry.npmjs.org",
+          "http-status" => 503
+        )
+      end
+    end
+
     context "with a wrapped error" do
       let(:error) do
         begin
@@ -128,6 +155,16 @@ RSpec.describe Dependabot::ErrorReportContext do
           package_manager: "pip",
           requirements: [{ file: "requirements.txt", requirement: "==2.32.0", groups: [], source: nil }]
         )
+      end
+
+      it "truncates long dependency values" do
+        long_dependency = Dependabot::Dependency.new(
+          name: "a" * 600, version: "1.0.0", package_manager: "pip", requirements: []
+        )
+        long_context = described_class.build(error: RuntimeError.new("boom"), dependency: long_dependency)
+
+        expect(long_context["dependency-name"]).to eq("#{'a' * 500}...")
+        expect(long_context).not_to have_key("dependency-requirement-files")
       end
 
       it "describes the dependency being updated" do
