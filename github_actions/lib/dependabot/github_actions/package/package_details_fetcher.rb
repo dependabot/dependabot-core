@@ -10,6 +10,7 @@ require "dependabot/errors"
 require "dependabot/git_tag_with_detail"
 require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/helpers"
+require "dependabot/github_actions/repository_cloner"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/version"
@@ -230,10 +231,7 @@ module Dependabot
                 SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
                   repo_contents_path = File.join(temp_dir, File.basename(source.repo))
 
-                  SharedHelpers.run_shell_command(
-                    "git clone --no-recurse-submodules #{url} #{repo_contents_path}",
-                    fingerprint: "git clone --no-recurse-submodules <url> <path>"
-                  )
+                  RepositoryCloner.clone(url: T.must(url), path: repo_contents_path)
 
                   Dir.chdir(repo_contents_path) do
                     ref_branch = ContainingBranchFinder.find(
