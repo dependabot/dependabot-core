@@ -14,6 +14,7 @@ require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirement_suffix_helper"
+require "dependabot/uv/sources_table"
 
 module Dependabot
   module Uv
@@ -145,12 +146,17 @@ module Dependabot
           return content unless file_changed?(file)
 
           updated_content = content.dup
+          nothing_to_rewrite = T.let(false, T::Boolean)
 
           T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
             next unless new_r.file == file.name && T.must(old_r).file == file.name
 
-            updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
+            rewritten = rewrite_requirement(updated_content, new_r, T.must(old_r))
+            nothing_to_rewrite = true if rewritten.nil?
+            updated_content = rewritten if rewritten
           end
+
+          return content if nothing_to_rewrite && content == updated_content
 
           raise DependencyFileContentNotChanged, "Content did not change!" if content == updated_content
 
@@ -198,6 +204,106 @@ module Dependabot
           end
 
           updated_content
+        end
+
+        sig { returns(T::Boolean) }
+        def git_dependency?
+          T.must(dependency).requirements.any? { |r| r.source_string("type") == "git" }
+        end
+
+        # nil when this file has nothing to rewrite: updated_git_requirements stamps the resolved source
+        # onto every requirement of the merged dependency, including one from a manifest that does not
+        # declare it, and that file had nothing to rewrite before this either.
+        sig do
+          params(
+            content: String,
+            new_r: Dependabot::DependencyRequirement,
+            old_r: Dependabot::DependencyRequirement
+          ).returns(T.nilable(String))
+        end
+        def rewrite_requirement(content, new_r, old_r)
+          return replace_git_tag(T.must(dependency), content, new_r, old_r) if git_tag_moved?(new_r, old_r)
+          return nil if git_source_arrived?(new_r, old_r)
+
+          replace_dep(T.must(dependency), content, new_r, old_r)
+        end
+
+        sig do
+          params(new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement)
+            .returns(T::Boolean)
+        end
+        def git_source_arrived?(new_r, old_r)
+          new_r.source_string("type") == "git" && old_r.source_string("type").nil?
+        end
+
+        sig do
+          params(new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement)
+            .returns(T::Boolean)
+        end
+        def git_tag_moved?(new_r, old_r)
+          return false unless new_r.source_string("type") == "git"
+          return false unless old_r.source_string("type") == "git"
+
+          old_ref = old_r.source_string("ref")
+          new_ref = new_r.source_string("ref")
+          return false if old_ref.nil? || new_ref.nil?
+
+          old_ref != new_ref
+        end
+
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            content: String,
+            new_r: Dependabot::DependencyRequirement,
+            old_r: Dependabot::DependencyRequirement
+          ).returns(String)
+        end
+        def replace_git_tag(dep, content, new_r, old_r)
+          old_ref = T.must(old_r.source_string("ref"))
+          new_ref = T.must(new_r.source_string("ref"))
+
+          key = raw_source_key(content, dep.name, old_ref)
+          return content unless key
+
+          span = SourcesTable.span(content)
+          return content unless span
+
+          rewritten = span[1].sub(SourcesTable.tag_regex(key, old_ref)) do
+            "#{Regexp.last_match(1)}#{new_ref}#{Regexp.last_match(2)}"
+          end
+          candidate = content.dup.tap { |c| c[span[0]] = rewritten }
+          moved_tag?(candidate, key, new_ref) ? candidate : content
+        end
+
+        # The table is located by pattern over raw text, so a [tool.uv.sources] block quoted inside
+        # a string can answer for the real one. Asking TOML what the result says the tag is turns any
+        # such surprise into the no-op this had before, instead of an edit reported as a bump.
+        sig { params(content: String, key: String, ref: String).returns(T::Boolean) }
+        def moved_tag?(content, key, ref)
+          TomlRB.parse(content).dig("tool", "uv", "sources", key, "tag") == ref
+        rescue TomlRB::ParseError
+          false
+        end
+
+        # uv resolves a source under PEP 508 normalisation, so the file's key can differ from dep.name.
+        # Two keys can normalise the same - `pkg` and `Pkg_` - so the ref decides between them: the
+        # one whose entry actually carries it is the one the parser attached, and the only one this
+        # can rewrite.
+        sig { params(content: String, name: String, ref: String).returns(T.nilable(String)) }
+        def raw_source_key(content, name, ref)
+          sources = TomlRB.parse(content).dig("tool", "uv", "sources")
+          return nil unless sources.is_a?(Hash)
+
+          table = SourcesTable.span(content)&.last
+          return nil unless table
+
+          normalised = normalise(name)
+          sources.keys.find do |key|
+            normalise(key) == normalised && table.match?(SourcesTable.tag_regex(key, ref))
+          end
+        rescue TomlRB::ParseError
+          nil
         end
 
         sig { params(req1: String, req2: String).returns(T::Boolean) }
@@ -306,7 +412,11 @@ module Dependabot
           # uv lock --upgrade-package expects the base package name without extras
           base_dep_name = normalise(dep_name)
           package_spec =
-            if target_requirement
+            if git_dependency?
+              # There is no index to pin a version against: the ref in [tool.uv.sources] has already
+              # been rewritten, so re-resolving the package by name is what picks the new tag up.
+              base_dep_name
+            elsif target_requirement
               "#{base_dep_name}#{target_requirement}"
             elsif dep_version
               "#{base_dep_name}==#{dep_version}"
