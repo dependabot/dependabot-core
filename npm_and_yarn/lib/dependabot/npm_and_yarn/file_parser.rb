@@ -15,6 +15,7 @@ require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/npm_and_yarn/pnpm_workspace_includes"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
@@ -264,26 +265,48 @@ module Dependabot
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def workspace_catalog_dependencies
-        dependency_set = DependencySet.new
-        workspace_config = YAML.safe_load(T.must(pnpm_workspace_yml&.content), aliases: true)
+        workspace_file = T.must(pnpm_workspace_yml)
+        workspace_config = YAML.safe_load(T.must(workspace_file.content), aliases: true)
+        dependency_set = catalog_dependencies(workspace_file, workspace_config)
 
-        workspace_config["catalog"]&.each do |name, version|
+        # Catalogs delegated with `include` are read from, and updated in, the file that owns them
+        included_paths = PnpmWorkspaceIncludes.included_file_paths(workspace_file)
+        dependency_files.select { |f| included_paths.include?(f.name) }.each do |file|
+          dependency_set += catalog_dependencies(file, parsed_pnpm_included_file(file))
+        end
+
+        dependency_set
+      end
+
+      sig { params(file: Dependabot::DependencyFile, config: T.untyped).returns(Dependabot::FileParsers::Base::DependencySet) }
+      def catalog_dependencies(file, config)
+        dependency_set = DependencySet.new
+        return dependency_set unless config.is_a?(Hash)
+
+        config["catalog"]&.each do |name, version|
           dep = build_dependency(
-            file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
+            file: file, type: "dependencies", name: name, requirement: version
           )
           dependency_set << dep if dep
         end
 
-        workspace_config["catalogs"]&.each do |_, group_depenencies|
+        config["catalogs"]&.each do |_, group_depenencies|
           group_depenencies.each do |name, version|
             dep = build_dependency(
-              file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
+              file: file, type: "dependencies", name: name, requirement: version
             )
             dependency_set << dep if dep
           end
         end
 
         dependency_set
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.untyped) }
+      def parsed_pnpm_included_file(file)
+        YAML.safe_load(T.must(file.content), aliases: true)
+      rescue Psych::Exception
+        raise Dependabot::DependencyFileNotParseable, file.path
       end
 
       sig { returns(LockfileParser) }

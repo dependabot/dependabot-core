@@ -4231,6 +4231,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       describe "pnpm catalog protocol" do
+        context "when the catalog is in a file that pnpm-workspace.yaml includes" do
+          let(:project_name) { "pnpm/catalog_include" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-catalogs.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "3.3.3",
+                previous_required_version: "3.3.0"
+              )
+            ]
+          end
+          let(:updated_pnpm_catalogs) { updated_files.find { |f| f.name == "pnpm-catalogs.yaml" } }
+
+          it "updates the included file and the lockfile, and leaves pnpm-workspace.yaml alone" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-catalogs.yaml pnpm-lock.yaml))
+            expect(updated_pnpm_catalogs.content)
+              .to eq("catalog:\n  prettier: 3.3.3\n\ncatalogs:\n  legacy:\n    is-even: 0.1.2\n")
+            expect(updated_pnpm_lock.content).to include("prettier:\n      specifier: 3.3.3\n      version: 3.3.3")
+            expect(updated_pnpm_lock.content).not_to include("prettier@3.3.0")
+          end
+        end
+
         context "when individual dependency needs updating" do
           let(:project_name) { "pnpm/catalog_monorepo" }
           let(:dependency_name) { "prettier" }

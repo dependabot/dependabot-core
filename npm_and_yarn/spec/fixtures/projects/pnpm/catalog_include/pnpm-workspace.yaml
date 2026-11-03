@@ -1,0 +1,5 @@
+packages:
+  - packages/*
+
+include:
+  ./pnpm-catalogs.yaml: [catalogs]

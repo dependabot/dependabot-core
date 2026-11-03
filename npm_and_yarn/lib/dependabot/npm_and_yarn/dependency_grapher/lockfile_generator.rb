@@ -9,6 +9,7 @@ require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/pnpm_error_message"
+require "dependabot/npm_and_yarn/pnpm_workspace_includes"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
 module Dependabot
@@ -68,10 +69,11 @@ module Dependabot
 
         sig { void }
         def write_package_files
+          included_files = PnpmWorkspaceIncludes.included_files(dependency_files)
           dependency_files.each do |file|
             next unless file.name.end_with?(
               "package.json", ".npmrc", ".yarnrc", ".yarnrc.yml", "pnpm-workspace.yaml"
-            )
+            ) || included_files.include?(file)
 
             path = file.name
             FileUtils.mkdir_p(File.dirname(path))

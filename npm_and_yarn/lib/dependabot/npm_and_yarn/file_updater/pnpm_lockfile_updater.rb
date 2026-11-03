@@ -257,6 +257,7 @@ module Dependabot
 
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
+                write_included_pnpm_workspace_files(updated_pnpm_workspace_content)
               else
                 run_pnpm_update_packages
               end
@@ -282,6 +283,16 @@ module Dependabot
               verify_unpinned_updates!(original_content, updated_content) if updated_content != original_content
               updated_content
             end
+          end
+        end
+
+        # Files that pnpm-workspace.yaml includes can own its catalogs, and pnpm reads them from disk.
+        sig { params(updated_contents: T::Hash[String, T.nilable(String)]).void }
+        def write_included_pnpm_workspace_files(updated_contents)
+          updated_contents.each do |name, content|
+            next if content.nil? || File.basename(name) == PNPMPackageManager::PNPM_WS_YML_FILENAME
+
+            File.write(name, content)
           end
         end
 

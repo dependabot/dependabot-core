@@ -182,6 +182,25 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
             fingerprint: "install --lockfile-only --ignore-scripts"
           )
       end
+
+      context "when pnpm-workspace.yaml includes other files" do
+        let(:dependency_files) do
+          project_dependency_files("pnpm/catalog_include").reject { |f| f.name == "pnpm-lock.yaml" }
+        end
+
+        it "writes the included files before running pnpm" do
+          included_content = nil
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
+            included_content = File.read("pnpm-catalogs.yaml") if File.exist?("pnpm-catalogs.yaml")
+            File.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+            ""
+          end
+
+          generator.generate
+
+          expect(included_content).to eq(dependency_files.find { |f| f.name == "pnpm-catalogs.yaml" }.content)
+        end
+      end
     end
   end
 

@@ -11,6 +11,7 @@ require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/npm_and_yarn/pnpm_workspace_includes"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
@@ -140,6 +141,7 @@ module Dependabot
         fetched_pnpm_files = []
         fetched_pnpm_files << pnpm_lock if pnpm_lock && !skip_pnpm_lock?
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
+        fetched_pnpm_files += pnpm_workspace_included_files
         fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
       end
@@ -459,6 +461,17 @@ module Dependabot
 
         # Only fetch from parent directories if the file wasn't found initially
         @pnpm_workspace_yaml ||= fetch_file_from_parent_directories(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+      end
+
+      # pnpm fails when a file that pnpm-workspace.yaml includes is missing, so a missing one is an error here too.
+      sig { returns(T::Array[DependencyFile]) }
+      def pnpm_workspace_included_files
+        workspace = pnpm_workspace_yaml
+        return [] unless workspace
+
+        PnpmWorkspaceIncludes.included_file_paths(workspace).map do |path|
+          fetch_file_from_host(path).tap { |f| f.support_file = workspace.support_file? }
+        end
       end
 
       sig { returns(T.nilable(DependencyFile)) }
