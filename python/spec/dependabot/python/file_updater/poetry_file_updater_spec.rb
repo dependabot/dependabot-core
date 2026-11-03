@@ -847,6 +847,31 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
             .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a")
         end
       end
+
+      context "with a sub-dependency of a PEP 621 only project (no [tool.poetry])" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "2025.1.31",
+            previous_version: "2024.2.2",
+            package_manager: "pip",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependency_name) { "certifi" }
+
+        it "pins the lockfile to the selected version, rather than letting Poetry pick a newer one" do
+          updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+          lockfile_obj = TomlRB.parse(updated_lockfile.content)
+          certifi = lockfile_obj["package"].find { |d| d["name"] == "certifi" }
+
+          expect(certifi["version"]).to eq("2025.1.31")
+        end
+      end
     end
 
     context "with a non-package mode project" do

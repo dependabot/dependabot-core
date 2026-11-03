@@ -29,6 +29,7 @@ module Dependabot
     end
 
     class FileUpdater
+      # rubocop:disable-next Metrics/ClassLength
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
@@ -249,6 +250,8 @@ module Dependabot
                 create_declaration_at_new_version!(poetry_object, dep)
               end
             end
+          else
+            freeze_pep621_subdependencies_being_updated!(pyproject_object)
           end
 
           # Freeze PEP 621 project.dependencies and project.optional-dependencies
@@ -257,6 +260,24 @@ module Dependabot
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        sig { params(pyproject_object: T::Hash[String, T.untyped]).void }
+        def freeze_pep621_subdependencies_being_updated!(pyproject_object)
+          # No [tool.poetry] table to pin a sub-dependency into. Declared PEP 621 dependencies are
+          # pinned below by freeze_pep621_deps!, but a pure sub-dependency needs an entry added so
+          # Poetry's solver can't drift it to a newer release than the one actually selected. PEP 508
+          # has no equivalent of Poetry's bare-version caret shorthand, so pin exactly.
+          project_object = pyproject_object["project"]
+          return unless project_object
+
+          dependencies.each do |dep|
+            next if git_dependency_being_updated?(dep)
+            next if dep.requirements.find { |r| r.file == pyproject&.name }
+            next unless dep.version
+
+            (project_object["dependencies"] ||= []) << "#{dep.name}==#{dep.version}"
+          end
         end
 
         sig { params(pyproject_content: String).returns(String) }
