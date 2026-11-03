@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -185,12 +185,12 @@ RSpec.describe Dependabot::Bundler::Helpers do
 
     it "returns a combined requirement for bundler from multiple files" do
       requirement = described_class.dependency_requirement("bundler", [gemfile_with_bundler, gemspec_with_bundler])
-      expect(requirement.constraints).to eq(["~> 2.3.0", ">= 1.12.0"])
+      expect(T.must(requirement).constraints).to eq(["~> 2.3.0", ">= 1.12.0"])
     end
 
     it "returns a combined requirement for ruby from multiple files" do
       requirement = described_class.dependency_requirement("ruby", [gemfile_with_ruby, gemspec_with_ruby])
-      expect(requirement.constraints).to eq([">= 2.5.0"])
+      expect(T.must(requirement).constraints).to eq([">= 2.5.0"])
     end
 
     it "returns nil if no constraints are found" do
