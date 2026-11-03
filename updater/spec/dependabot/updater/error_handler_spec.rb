@@ -286,6 +286,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
             Dependabot::ErrorAttributes::FINGERPRINT => ["123456789"],
+            Dependabot::ErrorAttributes::CONTEXT => { "helper-error-class" => "HelperSubprocessFailed" },
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
@@ -324,6 +325,8 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
                 bumblebees: "many", honeybees: "few", wasps: "none"
               }
             )
+          expect(Dependabot::ErrorReportContext.build(error: args[:error]))
+            .to eq("helper-error-class" => "HelperSubprocessFailed")
         end
 
         handle_dependency_error

@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/error_report_context"
 require "dependabot/errors"
 require "dependabot/sentry/error_fingerprint"
 require "dependabot/updater/errors"
@@ -234,6 +235,7 @@ module Dependabot
           msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
+          ErrorReportContext.attach(sanitized_error, ErrorReportContext.build(error: error) || {})
           service.capture_exception(error: sanitized_error, job: job)
         else
           service.capture_exception(
@@ -254,6 +256,7 @@ module Dependabot
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
           ErrorAttributes::FINGERPRINT => extract_fingerprint(error),
+          ErrorAttributes::CONTEXT => ErrorReportContext.build(error: error),
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
