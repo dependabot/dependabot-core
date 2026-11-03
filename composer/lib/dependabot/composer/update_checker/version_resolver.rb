@@ -40,7 +40,7 @@ module Dependabot
           }x
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX = %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
+            (?<=require\s|requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)
           }x
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 

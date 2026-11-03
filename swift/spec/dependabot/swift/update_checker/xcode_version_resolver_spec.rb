@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -10,6 +10,10 @@ require "dependabot/security_advisory"
 require "dependabot/swift/version"
 
 RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "github.com/quick/quick",
@@ -19,6 +23,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     )
   end
 
+  sig { returns(T::Array[T::Hash[Symbol, Object]]) }
   let(:requirements) do
     [{
       file: "MyApp.xcodeproj/project.pbxproj",
@@ -29,14 +34,18 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     }]
   end
 
+  sig { returns(String) }
   let(:requirement_kind) { "upToNextMajorVersion" }
 
+  sig { returns(Dependabot::GitCommitChecker) }
   let(:git_commit_checker) do
     instance_double(Dependabot::GitCommitChecker)
   end
 
+  sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
   let(:security_advisories) { [] }
 
+  sig { returns(Dependabot::Swift::UpdateChecker::XcodeVersionResolver) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -45,6 +54,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     )
   end
 
+  sig { returns(Dependabot::GitTagDetails) }
   let(:latest_tag) do
     Dependabot::GitTagDetails.new(
       tag: "7.0.2",
@@ -53,6 +63,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       tag_sha: "abc123"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#latest_resolvable_version_tag" do
     before do
@@ -60,7 +71,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     it "returns the full tag hash including commit_sha" do
-      tag = resolver.latest_resolvable_version_tag
+      tag = T.must(resolver.latest_resolvable_version_tag)
       expect(tag).to be_a(Hash)
       expect(tag[:version]).to eq(Dependabot::Swift::Version.new("7.0.2"))
       expect(tag[:commit_sha]).to eq("91132c0fe9a98e76f3d7381a608685aa41770706")
@@ -73,6 +84,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "when dependency version is not pinned" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "github.com/quick/quick",
@@ -98,8 +110,11 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "with update_cooldown" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::Package::ReleaseCooldownOptions) }
       let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(semver_major_days: 90) }
 
+      sig { returns(Dependabot::Swift::UpdateChecker::XcodeVersionResolver) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:resolver) do
         described_class.new(
           dependency: dependency,
@@ -109,6 +124,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
         )
       end
 
+      # rubocop:enable RSpec/ScatteredLet
+
       it "passes cooldown to local_tag_for_latest_version" do
         resolver.latest_resolvable_version
         expect(git_commit_checker).to have_received(:local_tag_for_latest_version).with(cooldown)
@@ -117,10 +134,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
   end
 
   describe "#version_meets_requirements?" do
+    sig { returns(Dependabot::Version) }
     let(:version) { Dependabot::Swift::Version.new("8.0.0") }
 
     context "with exactVersion requirement kind" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:requirement_kind) { "exactVersion" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
@@ -131,12 +152,15 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
         }]
       end
 
+      # rubocop:enable RSpec/ScatteredLet
+
       it "returns true (allows any version since requirement will be updated)" do
         expect(resolver.send(:version_meets_requirements?, version)).to be true
       end
     end
 
     context "with upToNextMajorVersion requirement kind" do
+      sig { returns(String) }
       let(:requirement_kind) { "upToNextMajorVersion" }
 
       it "returns true (allows any version since requirement will be updated)" do
@@ -145,7 +169,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "with upToNextMinorVersion requirement kind" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:requirement_kind) { "upToNextMinorVersion" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
@@ -156,13 +183,18 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
         }]
       end
 
+      # rubocop:enable RSpec/ScatteredLet
+
       it "returns true (allows any version since requirement will be updated)" do
         expect(resolver.send(:version_meets_requirements?, version)).to be true
       end
     end
 
     context "with versionRange requirement kind" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:requirement_kind) { "versionRange" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
@@ -172,6 +204,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
           metadata: { kind: "versionRange", requirement_string: "\"7.0.0\"..<\"8.0.0\"" }
         }]
       end
+
+      # rubocop:enable RSpec/ScatteredLet
 
       it "returns false when version exceeds upper bound" do
         expect(resolver.send(:version_meets_requirements?, version)).to be false
@@ -184,6 +218,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "with nil requirement kind from pbxproj" do
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
@@ -200,6 +235,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "with nil requirement kind from Package.resolved (sub-dependency)" do
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
@@ -222,6 +258,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "when dependency version is nil" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "github.com/quick/quick",
@@ -237,6 +274,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     context "when dependency version is a commit SHA" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "github.com/quick/quick",
@@ -253,7 +291,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
   end
 
   describe "#latest_resolvable_version_tag with versionRange" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:requirement_kind) { "versionRange" }
+    sig { returns(T::Array[T::Hash[Symbol, Object]]) }
     let(:requirements) do
       [{
         file: "MyApp.xcodeproj/project.pbxproj",
@@ -264,6 +305,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       }]
     end
 
+    sig { returns(Dependabot::Dependency) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "github.com/sdwebimage/sdwebimage",
@@ -273,6 +315,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       )
     end
 
+    sig { returns(T::Array[Dependabot::GitTagDetails]) }
     let(:all_tags) do
       [
         Dependabot::GitTagDetails.new(
@@ -293,11 +336,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       ]
     end
 
+    sig { returns(Dependabot::GitTagDetails) }
     let(:latest_tag) do
       Dependabot::GitTagDetails.new(
         tag: "5.21.7", version: Dependabot::Swift::Version.new("5.21.7"), commit_sha: "eee555"
       )
     end
+
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       allow(git_commit_checker).to receive_messages(
@@ -307,14 +353,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     it "returns the highest version within the range when latest exceeds upper bound" do
-      tag = resolver.latest_resolvable_version_tag
+      tag = T.must(resolver.latest_resolvable_version_tag)
       expect(tag).not_to be_nil
       expect(tag[:version]).to eq(Dependabot::Swift::Version.new("5.19.0"))
       expect(tag[:commit_sha]).to eq("ccc333")
     end
 
     it "returns a version higher than current" do
-      tag = resolver.latest_resolvable_version_tag
+      tag = T.must(resolver.latest_resolvable_version_tag)
       expect(tag[:version]).to be > Dependabot::Swift::Version.new("5.15.0")
     end
   end
