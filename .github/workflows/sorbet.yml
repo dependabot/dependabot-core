@@ -29,6 +29,21 @@ jobs:
 
       - run: bundle exec srb tc
 
+      - name: Check Bundler v2 helper specs
+        working-directory: bundler/helpers/v2
+        env:
+          BUNDLE_GEMFILE: ${{ github.workspace }}/Gemfile
+        run: |
+          bundle exec srb tc
+          # Spoom resets Bundler's environment before launching the compiler.
+          sorbet="$(bundle exec ruby -e '
+            puts File.join(Gem.loaded_specs.fetch("sorbet-static").full_gem_path, "libexec", "sorbet")
+          ')"
+          bundle exec spoom srb coverage --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=false --to=true --dry --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=true --to=strict --dry --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=strict --to=strong --dry --sorbet="$sorbet"
+
       - run: bundle exec spoom srb coverage
 
       - run: |
