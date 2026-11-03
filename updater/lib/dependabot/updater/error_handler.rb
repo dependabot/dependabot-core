@@ -235,7 +235,8 @@ module Dependabot
           msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
-          ErrorReportContext.attach(sanitized_error, ErrorReportContext.build(error: error) || {})
+          sanitized_context = ErrorReportContext.build(error: error, dependency: dependency)
+          ErrorReportContext.attach(sanitized_error, sanitized_context) if sanitized_context
           service.capture_exception(error: sanitized_error, job: job)
         else
           service.capture_exception(

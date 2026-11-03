@@ -34,7 +34,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
 
   describe "#handle_dependency_error" do
     let(:dependency) do
-      instance_double(Dependabot::Dependency, name: "broken-biscuits")
+      Dependabot::Dependency.new(
+        name: "broken-biscuits",
+        version: "1.2.0",
+        previous_version: "1.1.0",
+        package_manager: "bundler",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.2", groups: [], source: nil }]
+      )
     end
 
     let(:handle_dependency_error) do
@@ -326,7 +332,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
               }
             )
           expect(Dependabot::ErrorReportContext.build(error: args[:error]))
-            .to eq("helper-error-class" => "HelperSubprocessFailed")
+            .to eq(
+              "dependency-name" => "broken-biscuits",
+              "dependency-version" => "1.2.0",
+              "dependency-previous-version" => "1.1.0",
+              "dependency-requirement-files" => ["Gemfile"],
+              "helper-error-class" => "HelperSubprocessFailed"
+            )
         end
 
         handle_dependency_error

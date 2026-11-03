@@ -157,19 +157,32 @@ module Dependabot
         host = request[:host]
         context["host"] = truncate(host) if host.is_a?(String)
       end
-      context["http-status"] = response.status if response.is_a?(Excon::Response)
+      status = response_status(response)
+      context["http-status"] = status if status
       context
+    end
+
+    # Excon's own middleware wraps responses in Excon::Response, but status
+    # errors can also be built directly from a raw response hash.
+    sig { params(response: Object).returns(T.nilable(Integer)) }
+    private_class_method def self.response_status(response)
+      status = case response
+               when Excon::Response then response.status
+               when Hash then response[:status]
+               end
+      status.is_a?(Integer) ? status : nil
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(Context) }
     private_class_method def self.dependency_context(dependency)
-      files = dependency.requirements.filter_map { |req| req[:file] }.map(&:to_s).uniq
-      {
-        "dependency-name" => dependency.name,
-        "dependency-version" => dependency.version,
-        "dependency-previous-version" => dependency.previous_version,
-        "dependency-requirement-files" => files.empty? ? nil : files.first(MAX_ARRAY_LENGTH)
-      }.compact
+      normalize(
+        {
+          "dependency-name" => dependency.name,
+          "dependency-version" => dependency.version,
+          "dependency-previous-version" => dependency.previous_version,
+          "dependency-requirement-files" => dependency.requirements.filter_map { |req| req[:file] }.map(&:to_s).uniq
+        }
+      )
     end
 
     sig { params(dependencies: T.nilable(Object)).returns(T.nilable(T::Array[String])) }
