@@ -53,6 +53,13 @@ module Dependabot
           string(value, context)
         end
 
+        sig { params(value: Object, context: String).returns(T::Boolean) }
+        def self.boolean(value, context)
+          return value if value == true || value == false
+
+          raise TypeError, "#{context} must be a boolean"
+        end
+
         sig { params(value: Object, context: String).returns(T::Array[String]) }
         def self.string_array(value, context)
           array(value, context).map do |item|

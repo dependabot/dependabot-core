@@ -872,6 +872,34 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           expect(certifi["version"]).to eq("2025.1.31")
         end
       end
+
+      context "with an extra-only sub-dependency of a PEP 621 only project (no [tool.poetry])" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only_extra.toml" }
+        let(:lockfile_fixture_name) { "poetry_v2_pep621_only_extra.lock" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "2025.1.31",
+            previous_version: "2026.10.23",
+            package_manager: "pip",
+            requirements: [],
+            previous_requirements: [],
+            subdependency_metadata: [{ production: true }]
+          )
+        end
+        let(:dependency_name) { "certifi" }
+
+        it "keeps the pin scoped to the extra, rather than promoting it to an unconditional dependency" do
+          updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+          lockfile_obj = TomlRB.parse(updated_lockfile.content)
+          certifi = lockfile_obj["package"].find { |d| d["name"] == "certifi" }
+
+          expect(certifi["version"]).to eq("2025.1.31")
+          expect(certifi["optional"]).to be(true)
+          expect(certifi["markers"]).to eq("extra == \"security\"")
+        end
+      end
     end
 
     context "with a non-package mode project" do

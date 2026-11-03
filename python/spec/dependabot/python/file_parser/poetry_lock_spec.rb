@@ -31,14 +31,33 @@ RSpec.describe Dependabot::Python::FileParser::PoetryLock do
   it "parses packages and source types" do
     expect(lock.packages.map(&:to_h)).to eq(
       [
-        { name: "requests", version: "2.32.0", source_type: nil },
-        { name: "local", version: "1.0.0", source_type: "directory" }
+        { name: "requests", version: "2.32.0", source_type: nil, optional: false, markers: nil },
+        { name: "local", version: "1.0.0", source_type: "directory", optional: false, markers: nil }
       ]
     )
   end
 
   it "finds a package version by normalized name" do
     expect(lock.version_for("Requests", &:downcase)).to eq("2.32.0")
+  end
+
+  context "with an optional, extra-scoped package" do
+    let(:content) do
+      <<~TOML
+        [[package]]
+        name = "certifi"
+        version = "2024.2.2"
+        optional = true
+        markers = "extra == \\"security\\""
+      TOML
+    end
+
+    it "parses the optional and markers fields" do
+      certifi = lock.packages.first
+
+      expect(certifi.optional).to be(true)
+      expect(certifi.markers).to eq("extra == \"security\"")
+    end
   end
 
   context "with no packages" do

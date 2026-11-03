@@ -276,8 +276,47 @@ module Dependabot
             next if dep.requirements.find { |r| r.file == pyproject&.name }
             next unless dep.version
 
-            (project_object["dependencies"] ||= []) << "#{dep.name}==#{dep.version}"
+            pin_pep621_subdependency!(project_object, dep)
           end
+        end
+
+        sig { params(project_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
+        def pin_pep621_subdependency!(project_object, dep)
+          pin = "#{dep.name}==#{dep.version}"
+          extras = pep621_subdependency_extras(dep)
+
+          if extras.empty?
+            (project_object["dependencies"] ||= []) << pin
+          else
+            optional_deps = (project_object["optional-dependencies"] ||= {})
+            extras.each { |extra| (optional_deps[extra] ||= []) << pin }
+          end
+        end
+
+        # Reads the pre-update lockfile to find which extra(s), if any, a pure sub-dependency was
+        # scoped to (Poetry records this as `markers = "extra == \"name\""` on its package entry),
+        # so the pin doesn't promote an extra-only package into an unconditional main dependency.
+        # PEP 735 dependency-groups aren't handled here - this codebase doesn't otherwise write
+        # [dependency-groups] entries, so a dev-only sub-dependency still falls back to being
+        # pinned as a main dependency on the scratch manifest only.
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[String]) }
+        def pep621_subdependency_extras(dep)
+          package = poetry_lock_packages.find { |pkg| normalise(pkg.name) == dep.name }
+          return [] unless package
+          return [] unless package.optional
+
+          markers = package.markers
+          return [] unless markers
+
+          markers.scan(/extra\s*==\s*"([^"]+)"/).flatten
+        end
+
+        sig { returns(T::Array[Dependabot::Python::FileParser::PoetryLock::Package]) }
+        def poetry_lock_packages
+          @poetry_lock_packages ||= T.let(
+            lockfile ? Dependabot::Python::FileParser::PoetryLock.from_file(T.must(lockfile)).packages : [],
+            T.nilable(T::Array[Dependabot::Python::FileParser::PoetryLock::Package])
+          )
         end
 
         sig { params(pyproject_content: String).returns(String) }

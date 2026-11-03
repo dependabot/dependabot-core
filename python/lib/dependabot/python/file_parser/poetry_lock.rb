@@ -20,6 +20,8 @@ module Dependabot
           const :name, String
           const :version, String
           const :source_type, T.nilable(String), default: nil
+          const :optional, T::Boolean, default: false
+          const :markers, T.nilable(String), default: nil
 
           sig { params(value: Object).returns(Package) }
           def self.from_object(value)
@@ -32,22 +34,33 @@ module Dependabot
                 PyprojectValueParser.object_hash(source, "Poetry lock package source")
               end
 
+            optional =
+              if hash.key?("optional")
+                PyprojectValueParser.boolean(hash["optional"], "Poetry lock package optional")
+              else
+                false
+              end
+
             new(
               name: PyprojectValueParser.string(hash["name"], "Poetry lock package name"),
               version: PyprojectValueParser.string(hash["version"], "Poetry lock package version"),
               source_type: PyprojectValueParser.optional_string(
                 source_hash&.[]("type"),
                 "Poetry lock package source type"
-              )
+              ),
+              optional: optional,
+              markers: PyprojectValueParser.optional_string(hash["markers"], "Poetry lock package markers")
             )
           end
 
-          sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+          sig { returns(T::Hash[Symbol, T.nilable(T.any(String, T::Boolean))]) }
           def to_h
             {
               name: name,
               version: version,
-              source_type: source_type
+              source_type: source_type,
+              optional: optional,
+              markers: markers
             }
           end
         end
