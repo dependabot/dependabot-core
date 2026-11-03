@@ -361,10 +361,11 @@ module Dependabot
                        tag_date.empty? ? nil : tag_date
                      end
 
+              # --no-mailmap: in a bare repository git log otherwise reads .mailmap from HEAD's tree,
+              # which a tree:0 clone would have to fetch from the remote.
               date ||= SharedHelpers.run_shell_command(
-                "git show --no-patch --format=\"%cd\" " \
-                "--date=iso #{commit_ref}",
-                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
+                "git log -1 --no-mailmap --format=\"%cd\" --date=iso #{commit_ref}",
+                fingerprint: "git log -1 --no-mailmap --format=\"%cd\" --date=iso <commit_ref>"
               ).strip
 
               Dependabot.logger.info("Found release date : #{Time.parse(date)}")

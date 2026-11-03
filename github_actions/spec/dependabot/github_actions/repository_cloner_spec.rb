@@ -169,6 +169,9 @@ RSpec.describe Dependabot::GithubActions::RepositoryCloner do
     sig { params(arguments: T::Array[String], chdir: String, env: T::Hash[String, String]).returns(String) }
     def git(arguments, chdir:, env: {})
       git_environment = {
+        # Ignore the machine's git config (for example commit.gpgsign) so the examples are reproducible.
+        "GIT_CONFIG_GLOBAL" => File::NULL,
+        "GIT_CONFIG_NOSYSTEM" => "1",
         "GIT_AUTHOR_EMAIL" => "dependabot@example.com",
         "GIT_AUTHOR_NAME" => "Dependabot",
         "GIT_COMMITTER_EMAIL" => "dependabot@example.com",
@@ -196,7 +199,7 @@ RSpec.describe Dependabot::GithubActions::RepositoryCloner do
       git(%w(switch main), chdir: source_path)
     end
 
-    # The source is removed after cloning, so the lookup passes only if the partial clone
+    # The source is removed after cloning, so each lookup passes only if the partial clone
     # already holds everything it reads.
     it "keeps enough history to find the branch that contains a commit that is not a branch tip" do
       first_commit = git(%w(rev-parse main~1), chdir: source_path)
@@ -217,21 +220,19 @@ RSpec.describe Dependabot::GithubActions::RepositoryCloner do
       sig { returns(T::Boolean) }
       let(:bare) { true }
 
-      it "keeps the tag and commit dates used for cooldown" do
+      it "keeps the tag and commit dates used for cooldown without contacting the remote" do
         tag_date_command = %w(for-each-ref --format=%(creatordate:iso) refs/tags/v1.0.0)
         tag_date = git(tag_date_command, chdir: source_path)
         first_commit = git(%w(rev-parse main~1), chdir: source_path)
 
         clone_repository
+        FileUtils.rm_rf(source_path)
+
         expect(git(%w(config remote.origin.partialclonefilter), chdir: path)).to eq("tree:0")
-
-        # Tag dates are read from the clone alone.
-        FileUtils.mv(source_path, "#{source_path}.offline")
         expect(git(tag_date_command, chdir: path)).to eq(tag_date)
-        FileUtils.mv("#{source_path}.offline", source_path)
-
-        # `git show` also reads the commit's root tree, which a tree:0 clone fetches on demand.
-        expect(git(["show", "--no-patch", "--format=%cd", "--date=iso", first_commit], chdir: path))
+        # Same command as LatestVersionFinder. Without --no-mailmap, git log in a bare repository
+        # reads .mailmap from HEAD's tree, which a tree:0 clone does not have.
+        expect(git(["log", "-1", "--no-mailmap", "--format=%cd", "--date=iso", first_commit], chdir: path))
           .to eq("2024-01-02 03:04:05 +0000")
       end
     end
