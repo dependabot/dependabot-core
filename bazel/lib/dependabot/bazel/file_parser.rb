@@ -173,7 +173,7 @@ module Dependabot
           next unless func_call.name == "bazel_dep"
 
           name = func_call.arguments["name"]
-          version = func_call.arguments["version"]
+          version = resolve_constant(func_call.arguments["version"], parser.string_assignments)
 
           next unless name.is_a?(String) && version.is_a?(String) && !name.empty? && !version.empty?
 
@@ -193,6 +193,18 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      sig do
+        params(
+          value: T.nilable(Object),
+          constants: T::Hash[String, String]
+        ).returns(T.nilable(Object))
+      end
+      def resolve_constant(value, constants)
+        return value unless value.is_a?(StarlarkParser::Identifier)
+
+        constants[value.name]
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }

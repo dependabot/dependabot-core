@@ -566,6 +566,52 @@ RSpec.describe Dependabot::Bazel::FileParser::StarlarkParser do
       end
     end
 
+    context "with identifier values" do
+      let(:content) do
+        <<~BAZEL
+          bazel_dep(name = "rules_kotlin", version = RULES_KOTLIN_VERSION)
+        BAZEL
+      end
+
+      it "returns identifiers distinctly from string literals" do
+        call = parser.parse_function_calls.first
+
+        expect(call.arguments["name"]).to eq("rules_kotlin")
+        expect(call.arguments["version"]).to be_a(described_class::Identifier)
+        expect(call.arguments["version"].name).to eq("RULES_KOTLIN_VERSION")
+      end
+    end
+
+    context "with top-level string assignments" do
+      let(:content) do
+        <<~BAZEL
+          module(name = "example")
+
+          RULES_KOTLIN_VERSION = "2.4.20"
+          RULES_JVM_VERSION='6.8' # trailing comment
+          CONCATENATED = "1.0" + SUFFIX
+          NOT_A_STRING = 42
+          maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+
+          bazel_dep(
+              name = "rules_kotlin",
+          version = "9.9.9",
+          )
+          bazel_dep(name = "rules_kotlin", version = RULES_KOTLIN_VERSION)
+        BAZEL
+      end
+
+      it "collects only top-level string literal assignments" do
+        function_calls = parser.parse_function_calls
+
+        expect(function_calls.map(&:name)).to eq(%w(module use_extension bazel_dep bazel_dep))
+        expect(parser.string_assignments).to eq(
+          "RULES_KOTLIN_VERSION" => "2.4.20",
+          "RULES_JVM_VERSION" => "6.8"
+        )
+      end
+    end
+
     context "with function calls in comments" do
       let(:content) do
         <<~BAZEL

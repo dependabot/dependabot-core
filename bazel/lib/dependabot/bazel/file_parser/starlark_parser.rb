@@ -17,12 +17,23 @@ module Dependabot
           const :line, Integer
         end
 
+        class Identifier < T::Struct
+          const :name, String
+        end
+
+        STATEMENT_TERMINATORS = [nil, "\n", "\r", "#", ";"].freeze
+
+        # Top-level `NAME = "literal"` assignments seen by #parse_function_calls
+        sig { returns(T::Hash[String, String]) }
+        attr_reader :string_assignments
+
         sig { params(content: String).void }
         def initialize(content)
           @content = content
           @position = T.let(0, Integer)
           @line = T.let(1, Integer)
           @length = T.let(content.length, Integer)
+          @string_assignments = T.let({}, T::Hash[String, String])
         end
 
         sig { returns(T::Array[FunctionCall]) }
@@ -85,11 +96,17 @@ module Dependabot
         sig { returns(T.nilable(FunctionCall)) }
         def try_parse_function_call
           start_line = @line
+          top_level_statement = at_line_start?
 
           function_name = parse_identifier
           return nil unless function_name
 
           skip_whitespace_and_comments
+
+          if top_level_statement && assignment_operator?
+            parse_string_assignment(function_name)
+            return nil
+          end
 
           return nil unless current_char == "("
 
@@ -112,6 +129,34 @@ module Dependabot
           move_to_next_char while current_char && current_char != "\n"
           move_to_next_char if current_char == "\n"
           nil
+        end
+
+        sig { returns(T::Boolean) }
+        def at_line_start?
+          @position.zero? || @content[@position - 1] == "\n"
+        end
+
+        sig { returns(T::Boolean) }
+        def assignment_operator?
+          current_char == "=" && peek_char != "="
+        end
+
+        sig { void }
+        def skip_inline_whitespace
+          move_to_next_char while current_char == " " || current_char == "\t"
+        end
+
+        sig { params(name: String).void }
+        def parse_string_assignment(name)
+          move_to_next_char
+          skip_inline_whitespace
+          return unless current_char == '"' || current_char == "'"
+
+          value = parse_string
+          skip_inline_whitespace
+          return unless value && STATEMENT_TERMINATORS.include?(current_char)
+
+          @string_assignments[name] ||= value
         end
 
         sig { returns(T.nilable(String)) }
@@ -207,7 +252,7 @@ module Dependabot
             when "None"
               nil
             else
-              identifier
+              Identifier.new(name: T.must(identifier))
             end
           else
             parse_unknown_value

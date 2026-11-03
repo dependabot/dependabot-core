@@ -323,6 +323,61 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
       end
     end
 
+    context "with the version held in a constant" do
+      let(:module_file_content) do
+        <<~CONTENT
+          module(name = "my-module", version = "1.0")
+
+          RULES_CC_VERSION = "0.1.1"
+          OTHER_RULES_CC_VERSION = '0.1.1'
+
+          bazel_dep(name = "rules_cc", version = RULES_CC_VERSION)
+          bazel_dep(name = "platforms", version = "0.0.11")
+        CONTENT
+      end
+
+      it "updates the constant's value instead of the bazel_dep" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to eq(
+          <<~CONTENT
+            module(name = "my-module", version = "1.0")
+
+            RULES_CC_VERSION = "0.2.0"
+            OTHER_RULES_CC_VERSION = '0.1.1'
+
+            bazel_dep(name = "rules_cc", version = RULES_CC_VERSION)
+            bazel_dep(name = "platforms", version = "0.0.11")
+          CONTENT
+        )
+      end
+    end
+
+    context "with the version held in a single-quoted constant shared by several bazel_deps" do
+      let(:module_file_content) do
+        <<~CONTENT
+          RULES_CC_VERSION = '0.1.1'
+
+          bazel_dep(
+              name = "rules_cc",
+              version = RULES_CC_VERSION,
+          )
+          bazel_dep(name = "rules_cc_extras", version = RULES_CC_VERSION)
+        CONTENT
+      end
+
+      it "updates the constant while preserving its quotes" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        updated_content = updated_files.first.content
+        expect(updated_content).to include("RULES_CC_VERSION = '0.2.0'")
+        expect(updated_content).to include("version = RULES_CC_VERSION,")
+        expect(updated_content).to include('bazel_dep(name = "rules_cc_extras", version = RULES_CC_VERSION)')
+      end
+    end
+
     context "with WORKSPACE file dependencies" do
       let(:dependency_files) { [workspace_file] }
 
