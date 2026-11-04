@@ -19,7 +19,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
-require "dependabot/python/update_checker/poetry_subdependency_pin"
+require "dependabot/python/poetry_subdependency_pin"
 
 module Dependabot
   module Python

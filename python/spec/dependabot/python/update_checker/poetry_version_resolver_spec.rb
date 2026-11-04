@@ -123,7 +123,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         )
 
         expect { resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31") }
-          .to raise_error(Dependabot::Python::UpdateChecker::PoetrySubdependencyPin::ScopeNotReproducible)
+          .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
       end
     end
 

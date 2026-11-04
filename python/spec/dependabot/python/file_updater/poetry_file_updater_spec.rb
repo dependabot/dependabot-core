@@ -869,6 +869,78 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
       end
     end
+
+    context "with a sub-dependency of a PEP 621 only project (no [tool.poetry])" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "certifi",
+          version: "2025.1.31",
+          previous_version: "2024.2.2",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "locks the selected version rather than letting Poetry pick a newer one" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        certifi = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "certifi" }
+
+        expect(certifi["version"]).to eq("2025.1.31")
+      end
+    end
+
+    context "with an extra-only sub-dependency of a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_extra.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_extra.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "certifi",
+          version: "2025.1.31",
+          previous_version: "2026.10.23",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: [],
+          subdependency_metadata: [{ production: true }]
+        )
+      end
+
+      it "keeps the package scoped to the extra" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        certifi = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "certifi" }
+
+        expect(certifi["version"]).to eq("2025.1.31")
+        expect(certifi["optional"]).to be(true)
+        expect(certifi["markers"]).to eq("extra == \"security\"")
+      end
+    end
+
+    context "with a main sub-dependency that has an environment marker" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "colorama",
+          version: "0.4.4",
+          previous_version: "0.4.6",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: [],
+          subdependency_metadata: [{ production: true }]
+        )
+      end
+
+      it "keeps the marker rather than making the pin unconditional" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        colorama = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "colorama" }
+
+        expect(colorama["version"]).to eq("0.4.4")
+        expect(colorama["optional"]).to be(false)
+        expect(colorama["markers"]).to eq("platform_system == \"Windows\"")
+      end
+    end
   end
 
   describe "constraint-only update with unchanged lockfile" do
