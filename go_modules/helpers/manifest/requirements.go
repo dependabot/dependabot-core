@@ -13,8 +13,8 @@ type RestoreRequirementsArgs struct {
 	ReplacedModules []module.Version `json:"replaced_modules"`
 }
 
-// RestoreReplacedRequirements retains requirements whose source was unavailable
-// during an update. An empty replacement cannot establish that they are unused.
+// RestoreReplacedRequirements retains requirements when the source graph is
+// incomplete. Empty replacements cannot prove that a requirement is unused.
 func RestoreReplacedRequirements(args RestoreRequirementsArgs) (string, error) {
 	original, err := modfile.Parse("original go.mod", []byte(args.OriginalContent), nil)
 	if err != nil {
@@ -34,7 +34,7 @@ func RestoreReplacedRequirements(args RestoreRequirementsArgs) (string, error) {
 			}
 		}
 	}
-	if len(protected) == 0 {
+	if len(args.ReplacedModules) == 0 || len(original.Require) == 0 {
 		return args.UpdatedContent, nil
 	}
 
@@ -49,8 +49,9 @@ func RestoreReplacedRequirements(args RestoreRequirementsArgs) (string, error) {
 		present[requirement.Mod.Path] = true
 	}
 	for _, requirement := range original.Require {
-		if protected[requirement.Mod.Path] != nil && !present[requirement.Mod.Path] {
+		if !present[requirement.Mod.Path] {
 			requirements = append(requirements, requirement)
+			protected[requirement.Mod.Path] = requirement
 		}
 	}
 	updated.SetRequire(requirements)

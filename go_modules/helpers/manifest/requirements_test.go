@@ -19,6 +19,7 @@ require (
 	example.com/indirect v1.4.0 // indirect
 	example.com/public v1.0.0
 	example.com/unmatched v1.0.0
+	example.com/transitive v1.2.0 // indirect
 )
 
 replace example.com/direct => ../direct
@@ -30,6 +31,7 @@ go 1.21
 require (
 	example.com/indirect v1.5.0
 	example.com/public v1.1.0
+	example.com/unmatched v1.1.0
 )
 
 replace example.com/direct => ../direct
@@ -55,9 +57,11 @@ replace example.com/direct => ../direct
 		version  string
 		indirect bool
 	}{
-		"example.com/direct":   {"v1.2.3", false},
-		"example.com/indirect": {"v1.4.0", true},
-		"example.com/public":   {"v1.1.0", false},
+		"example.com/direct":     {"v1.2.3", false},
+		"example.com/indirect":   {"v1.4.0", true},
+		"example.com/public":     {"v1.1.0", false},
+		"example.com/unmatched":  {"v1.1.0", false},
+		"example.com/transitive": {"v1.2.0", true},
 	}
 	for _, requirement := range parsed.Require {
 		expected, exists := want[requirement.Mod.Path]
