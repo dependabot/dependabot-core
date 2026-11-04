@@ -518,7 +518,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     describe "path comments in a parsed context" do
       let(:go_mod_content) do
-        fixture("projects", project_name, "go.mod") + <<~GOMOD
+        <<~GOMOD
+          module example.com/root
+
+          go 1.21
 
           require example.com/shared v0.0.0
           // Keep ../external for local development.

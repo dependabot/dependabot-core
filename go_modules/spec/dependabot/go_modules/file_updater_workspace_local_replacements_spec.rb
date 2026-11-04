@@ -70,7 +70,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
 
         expect(modules.map(&:name)).to match_array(expected_names)
         modules.each do |file|
-          expect(file.content).to include("#{dependency_name} #{version}")
+          expect(file.content).to include("#{dependency_name} #{version}", "example.com/shared v0.0.0")
           expect(file.content).not_to include("dependabot-replacements-")
         end
         expect_original_replacements

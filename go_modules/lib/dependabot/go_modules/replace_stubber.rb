@@ -7,6 +7,7 @@ require "tmpdir"
 require "dependabot/errors"
 require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/go_mod_manifest"
+require "dependabot/go_modules/native_helpers"
 
 module Dependabot
   module GoModules
@@ -50,13 +51,17 @@ module Dependabot
       end
       def with_stubs(on_error:, &_block)
         Dir.mktmpdir("dependabot-replacements-") do |stub_root|
-          bindings = replacement_bindings(stub_root, on_error: on_error)
+          manifests = replacement_manifests(on_error: on_error)
+          original_modules = manifests.select { |_, kind| kind == "mod" }.transform_values { "" }
+          original_modules.each_key { |path| original_modules[path] = File.read(path) }
+          bindings = replacement_bindings(manifests, stub_root, on_error: on_error)
           build_module_stubs(bindings.map(&:stub).uniq)
           begin
             edit_replacement_bindings(bindings, restore: false, on_error: on_error)
             yield(!bindings.empty?)
           ensure
             edit_replacement_bindings(bindings, restore: true, on_error: on_error)
+            restore_replaced_requirements(original_modules, bindings)
           end
         end
       end
@@ -151,10 +156,13 @@ module Dependabot
         raise Dependabot::DependencyFileNotResolvable, "Workspace manifest is outside the checkout: #{path}"
       end
 
-      sig { params(stub_root: String, on_error: ErrorHandler).returns(T::Array[ReplacementBinding]) }
-      def replacement_bindings(stub_root, on_error:)
+      sig do
+        params(manifests: T::Hash[String, String], stub_root: String, on_error: ErrorHandler)
+          .returns(T::Array[ReplacementBinding])
+      end
+      def replacement_bindings(manifests, stub_root, on_error:)
         root = replacement_repo_root
-        replacement_manifests(on_error: on_error).flat_map do |path, kind|
+        manifests.flat_map do |path, kind|
           manifest = parse_replacement_manifest(path, kind, on_error: on_error)
           directory = "/#{Pathname.new(File.dirname(path)).realpath.relative_path_from(root)}"
           substitutions = stub_paths(manifest, directory, stub_root: stub_root)
@@ -184,6 +192,21 @@ module Dependabot
           command = Shellwords.join(["go", T.must(entries.first).kind, "edit"] + arguments + [path])
           _, stderr, status = Open3.capture3(command)
           on_error.call(stderr) unless status.success?
+        end
+      end
+
+      sig { params(original_modules: T::Hash[String, String], bindings: T::Array[ReplacementBinding]).void }
+      def restore_replaced_requirements(original_modules, bindings)
+        return if bindings.empty?
+
+        replaced_modules = bindings.map { |binding| { "Path" => binding.old.path, "Version" => binding.old.version || "" } }
+        original_modules.each do |path, original|
+          content = SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path,
+            function: "restoreReplacedRequirements",
+            args: { original_content: original, updated_content: File.read(path), replaced_modules: replaced_modules }
+          )
+          File.write(path, T.cast(content, String))
         end
       end
 

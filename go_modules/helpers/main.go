@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/dependabot/dependabot-core/go_modules/helpers/importresolver"
+	"github.com/dependabot/dependabot-core/go_modules/helpers/manifest"
 )
 
 type HelperParams struct {
@@ -31,6 +32,10 @@ func main() {
 		funcErr error
 	)
 	switch helperParams.Function {
+	case "restoreReplacedRequirements":
+		var args manifest.RestoreRequirementsArgs
+		parseArgs(helperParams.Args, &args)
+		funcOut, funcErr = manifest.RestoreReplacedRequirements(args)
 	case "getVcsRemoteForImport":
 		var args importresolver.Args
 		parseArgs(helperParams.Args, &args)
