@@ -83,6 +83,74 @@ RSpec.describe namespace::PoetryVersionResolver do
 
       expect(target_dependencies(content)).not_to include("certifi==2025.1.31")
     end
+
+    context "with a sub-dependency that has an install marker" do
+      let(:dependency_name) { "colorama" }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }
+
+      it "keeps the marker on the pin" do
+        expect(target_dependencies(pyproject_content))
+          .to include("colorama==2025.1.31; (platform_system == \"Windows\")")
+      end
+    end
+
+    context "with a sub-dependency that is only installed through an extra" do
+      let(:dependency_name) { "certifi" }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_extra.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_extra.lock" }
+
+      it "pins it in that extra rather than in the main dependencies" do
+        project = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31"))["project"]
+
+        expect(project["dependencies"]).not_to include(a_string_starting_with("certifi"))
+        expect(project.dig("optional-dependencies", "security"))
+          .to include("certifi==2025.1.31; (extra == \"security\")")
+      end
+
+      it "pins it in the declared extra when the project spells the name differently" do
+        content = pyproject_content.sub("security = [", "Security = [")
+        extras = TomlRB.parse(resolver.send(:set_target_dependency_req, content, "==2025.1.31"))
+                       .dig("project", "optional-dependencies")
+
+        expect(extras.keys).to eq(["Security"])
+        expect(extras["Security"]).to include(a_string_starting_with("certifi==2025.1.31"))
+      end
+
+      it "declines when the lockfile records no extras for it" do
+        allow(resolver).to receive(:poetry_lock).and_return(
+          Dependabot::DependencyFile.new(name: "poetry.lock", content: lockfile.content.gsub(/^markers = .*\n/, ""))
+        )
+
+        expect { resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31") }
+          .to raise_error(Dependabot::Python::UpdateChecker::PoetrySubdependencyPin::ScopeNotReproducible)
+      end
+    end
+
+    context "with a dependency declared in several places" do
+      let(:dependency_name) { "urllib3" }
+      let(:dependency_version) { "2.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "pyproject.toml", requirement: ">=1.26.0", groups: ["dependencies"], source: nil }]
+      end
+      let(:pyproject_content) do
+        fixture("pyproject_files", pyproject_fixture_name) + <<~TOML
+          [project.optional-dependencies]
+          extra = ["urllib3>=1.26.0"]
+
+          [dependency-groups]
+          dev = ["urllib3>=1.26.0"]
+        TOML
+      end
+
+      it "updates every declaration, including dependency groups" do
+        project = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2.2.0"))
+
+        expect(project.dig("project", "dependencies")).to include("urllib3==2.2.0")
+        expect(project.dig("project", "optional-dependencies", "extra")).to eq(["urllib3==2.2.0"])
+        expect(project.dig("dependency-groups", "dev").first).to eq("urllib3==2.2.0")
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do

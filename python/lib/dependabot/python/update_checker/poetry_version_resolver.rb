@@ -19,6 +19,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/update_checker/poetry_subdependency_pin"
 
 module Dependabot
   module Python
@@ -144,6 +145,8 @@ module Dependabot
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
+              rescue PoetrySubdependencyPin::ScopeNotReproducible
+                nil
               rescue SharedHelpers::HelperSubprocessFailed => e
                 handle_poetry_errors(e)
               end
@@ -355,43 +358,12 @@ module Dependabot
           poetry_object[subdep_type][dependency.name] = updated_requirement
         end
 
-        # PEP 621 projects have no [tool.poetry] table to pin dependencies in, so a sub-dependency
-        # that needs a version bump is instead added straight into project.dependencies. This file is
-        # only ever used as scratch input to run `poetry lock`, so it never reaches the real manifest.
+        # PEP 621 projects have no [tool.poetry] table to pin dependencies in. This file is only ever used
+        # as scratch input to run `poetry lock`, so it never reaches the real manifest.
         sig { params(pyproject_object: T::Hash[String, T.untyped], updated_requirement: String).void }
         def set_pep621_target_dependency_req(pyproject_object, updated_requirement)
-          project_object = pyproject_object["project"]
-          return unless project_object
-
-          dep_arrays = [project_object["dependencies"]]
-          project_object["optional-dependencies"]&.each_value { |opt| dep_arrays << opt }
-          dep_arrays.compact!
-          dep_arrays.select! { |arr| arr.is_a?(Array) }
-
-          updated = dep_arrays.any? { |arr| update_pep621_dependency_requirement(arr, updated_requirement) }
-          return if updated
-
-          # This is a sub-dependency not declared anywhere in the pyproject.toml; add it so Poetry's
-          # solver is forced to consider the target version.
-          (project_object["dependencies"] ||= []) << "#{dependency.name}#{updated_requirement}"
-        end
-
-        sig { params(dep_array: T::Array[String], requirement: String).returns(T::Boolean) }
-        def update_pep621_dependency_requirement(dep_array, requirement)
-          updated = T.let(false, T::Boolean)
-
-          dep_array.each_with_index do |entry, index|
-            match = entry.match(Python::FileUpdater::PyprojectPreparer::PEP508_PREFIX)
-            next unless match
-            next unless normalise(T.must(match[:name])) == dependency.name
-
-            prefix = T.must(match[:prefix])
-            marker = entry[prefix.length..]&.match(/(\s*;.*)/)&.to_a&.fetch(1, "")
-            dep_array[index] = "#{prefix}#{requirement}#{marker}"
-            updated = true
-          end
-
-          updated
+          PoetrySubdependencyPin.new(poetry_lock, dependency.name)
+                                .set_requirement!(pyproject_object, updated_requirement)
         end
 
         sig { params(toml_node: T.nilable(T::Hash[String, T.untyped]), requirement: String).void }
