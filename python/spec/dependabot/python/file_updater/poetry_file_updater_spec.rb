@@ -981,6 +981,37 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         expect(urllib3["markers"]).to eq("python_version < \"3.12\"")
       end
     end
+
+    context "when a direct dependency with a `<` marker needs its requirement changed" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "2.0.7",
+          previous_version: "2.2.3",
+          package_manager: "pip",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.0.7",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=1.26.0",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it "rewrites the requirement and keeps the marker" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(updated_pyproject&.content).to include("\"urllib3>=2.0.7; python_version < '3.12'\"")
+      end
+    end
   end
 
   describe "constraint-only update with unchanged lockfile" do

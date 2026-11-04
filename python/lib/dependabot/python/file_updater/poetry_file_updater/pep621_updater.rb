@@ -139,12 +139,18 @@ module Dependabot
 
           sig { params(old_req: String).returns(Regexp) }
           def declaration_regex(old_req)
-            /(?<declaration>["']#{escape}\s*#{extras_pattern}\s*#{Regexp.escape(old_req)}["'])/mi
+            /(?<declaration>["']#{escape}\s*#{extras_pattern}\s*#{Regexp.escape(old_req)}#{marker_pattern}["'])/mi
           end
 
           sig { params(old_req: String).returns(Regexp) }
           def normalized_declaration_regex(old_req)
-            /(?<declaration>["']#{escape}#{extras_pattern}#{Regexp.escape(old_req)}["'])/mi
+            /(?<declaration>["']#{escape}#{extras_pattern}#{Regexp.escape(old_req)}#{marker_pattern}["'])/mi
+          end
+
+          # Lets a declaration keep its environment marker when only the requirement is rewritten.
+          sig { returns(String) }
+          def marker_pattern
+            "(?:\\s?;[^\"']*)?"
           end
 
           sig { returns(String) }
