@@ -78,6 +78,32 @@ RSpec.describe namespace::PoetryVersionResolver do
       expect(target_dependencies(pyproject_content)).to include("certifi==2025.1.31")
     end
 
+    it "pins a sub-dependency that the lockfile places only in a non-main group into that group" do
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: lockfile.content.gsub(/^groups = \["main"\]$/, 'groups = ["dev"]')
+        )
+      )
+      parsed = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31"))
+
+      expect(parsed.dig("project", "dependencies")).not_to include(a_string_starting_with("certifi"))
+      expect(parsed.dig("dependency-groups", "dev")).to include("certifi==2025.1.31")
+    end
+
+    it "pins into both main and a group when the lockfile places it in both" do
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: lockfile.content.gsub(/^groups = \["main"\]$/, 'groups = ["main", "dev"]')
+        )
+      )
+      parsed = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31"))
+
+      expect(parsed.dig("project", "dependencies")).to include("certifi==2025.1.31")
+      expect(parsed.dig("dependency-groups", "dev")).to include("certifi==2025.1.31")
+    end
+
     it "leaves the manifest untouched when another build backend owns the project" do
       content = pyproject_content.sub("poetry.core.masonry.api", "pdm.backend")
 

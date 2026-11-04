@@ -14,8 +14,6 @@ module Dependabot
     # would promote an extra-only or platform-specific package into every install.
     #
     # TODO: decline when a package is locked at several versions; one pin can't satisfy them all.
-    # TODO: scope pins for packages that are only in non-main groups (group-keyed lock markers).
-    # TODO: pin into the right PEP 735 `[dependency-groups]` entry; only declarations are updated today.
     class PoetrySubdependencyPin
       extend T::Sig
 
@@ -32,7 +30,15 @@ module Dependabot
 
       class LockedEntry < T::Struct
         const :optional, T::Boolean
-        const :markers, T::Array[String]
+        const :groups, T::Array[String]
+        const :markers, T::Hash[String, T::Array[String]]
+
+        extend T::Sig
+
+        sig { params(group: String).returns(T::Array[String]) }
+        def markers_for(group)
+          markers.fetch(group, [])
+        end
       end
       private_constant :LockedEntry
 
@@ -51,51 +57,72 @@ module Dependabot
         return unless project_object
         return if declaration_arrays(pyproject_object).map { |arr| update_declarations!(arr, requirement) }.any?
 
-        pin!(project_object, "#{@name}#{requirement}")
+        pin!(pyproject_object, "#{@name}#{requirement}")
       end
 
-      # Adds a pin that keeps the package's locked scope. Raises ScopeNotReproducible for an optional
-      # package with no extras in its markers.
+      # Adds a pin per place the package is locked (main, extras, other groups), each keeping its locked
+      # markers. Raises ScopeNotReproducible for an optional package with no extras in its markers.
       # rubocop:disable-next Sorbet/ForbidTUntyped
-      sig { params(project_object: T::Hash[String, T.untyped], pin: String).void }
-      def pin!(project_object, pin)
-        main_pin, extra_pins = pins_for(pin)
+      sig { params(pyproject_object: T::Hash[String, T.untyped], pin: String).void }
+      def pin!(pyproject_object, pin)
+        project_object = pyproject_object["project"]
+        return unless project_object
+
+        main_pin, extra_pins, group_pins = pins_for(pin)
 
         (project_object["dependencies"] ||= []) << main_pin if main_pin
-        extra_pins.each do |extra, extra_pin|
-          extras = project_object["optional-dependencies"] ||= {}
-          (extras[declared_extra_name(extras, extra)] ||= []) << extra_pin
-        end
+        append_pins!(project_object["optional-dependencies"] ||= {}, extra_pins)
+        append_pins!(pyproject_object["dependency-groups"] ||= {}, group_pins) if group_pins.any?
       end
 
       private
 
-      # Returns [main_pin, extra_pins]. Raises ScopeNotReproducible for an optional package with no
-      # extras in its markers (legacy lockfile format): pinning it unconditionally would promote it
-      # into the main install.
-      sig { params(pin: String).returns([T.nilable(String), T::Hash[String, String]]) }
-      def pins_for(pin)
-        return [main_pin(pin), {}] if entries.empty? || entries.any? { |entry| !entry.optional }
+      sig { params(table: T::Hash[String, T::Array[DeclarationEntry]], pins: T::Hash[String, String]).void }
+      def append_pins!(table, pins)
+        pins.each { |key, pin| (table[declared_key(table, key)] ||= []) << pin }
+      end
 
-        [nil, extra_pins(pin)]
+      # Returns [main_pin, extra_pins, group_pins]. Raises ScopeNotReproducible for an optional package
+      # with no extras in its markers (legacy lockfile format): pinning it unconditionally would promote
+      # it into the main install.
+      sig { params(pin: String).returns([T.nilable(String), T::Hash[String, String], T::Hash[String, String]]) }
+      def pins_for(pin)
+        return [pin, {}, {}] if entries.empty?
+
+        group_pins = other_groups.to_h { |group| [group, scoped_pin(pin, group)] }
+        return [nil, {}, group_pins] if main_entries.empty?
+        return [scoped_pin(pin, "main"), {}, group_pins] if main_entries.any? { |entry| !entry.optional }
+
+        [nil, extra_pins(pin), group_pins]
+      end
+
+      sig { returns(T::Array[LockedEntry]) }
+      def main_entries
+        entries.select { |entry| entry.groups.include?("main") }
+      end
+
+      sig { returns(T::Array[String]) }
+      def other_groups
+        entries.flat_map(&:groups).uniq - ["main"]
       end
 
       # An entry with no markers applies everywhere, so the combined scope is then unconditional.
-      sig { params(pin: String).returns(String) }
-      def main_pin(pin)
-        return pin if entries.empty? || entries.any? { |entry| entry.markers.empty? }
+      sig { params(pin: String, group: String).returns(String) }
+      def scoped_pin(pin, group)
+        group_entries = entries.select { |entry| entry.groups.include?(group) }
+        return pin if group_entries.any? { |entry| entry.markers_for(group).empty? }
 
-        "#{pin}; #{entries.flat_map(&:markers).uniq.join(' or ')}"
+        "#{pin}; #{group_entries.flat_map { |entry| entry.markers_for(group) }.uniq.join(' or ')}"
       end
 
-      # Lock markers hold the normalised extra name, which may differ from how the project spells it.
-      sig { params(extras: T::Hash[String, T::Array[DeclarationEntry]], name: String).returns(String) }
-      def declared_extra_name(extras, name)
-        extras.keys.find { |key| normalise_extra(key) == normalise_extra(name) } || name
+      # The lock holds normalised extra and group names, which may differ from how the project spells them.
+      sig { params(table: T::Hash[String, T::Array[DeclarationEntry]], name: String).returns(String) }
+      def declared_key(table, name)
+        table.keys.find { |key| normalise_key(key) == normalise_key(name) } || name
       end
 
       sig { params(name: String).returns(String) }
-      def normalise_extra(name)
+      def normalise_key(name)
         name.downcase.gsub(/[-_.]+/, "-")
       end
 
@@ -139,18 +166,28 @@ module Dependabot
         TomlRB.parse(T.must(@lockfile.content)).fetch("package", []).filter_map do |entry|
           next unless entry["name"] && NameNormaliser.normalise(entry["name"]) == @name
 
-          markers = entry["markers"]
-          markers = markers.values if markers.is_a?(Hash)
-          LockedEntry.new(
-            optional: entry["optional"] == true,
-            markers: Array(markers).map { |marker| "(#{marker})" }
-          )
+          # Legacy lockfiles record no groups; those entries are treated as main.
+          groups = Array(entry["groups"])
+          groups = ["main"] if groups.empty?
+          LockedEntry.new(optional: entry["optional"] == true, groups: groups, markers: locked_markers(entry, groups))
         end
+      end
+
+      # Markers are a single string, or a table keyed by group.
+      # rubocop:disable-next Sorbet/ForbidTUntyped
+      sig do
+        params(entry: T::Hash[String, T.untyped], groups: T::Array[String]).returns(T::Hash[String, T::Array[String]])
+      end
+      def locked_markers(entry, groups)
+        markers = entry["markers"]
+        return markers.transform_values { |marker| ["(#{marker})"] } if markers.is_a?(Hash)
+
+        groups.to_h { |group| [group, markers ? ["(#{markers})"] : []] }
       end
 
       sig { params(pin: String).returns(T::Hash[String, String]) }
       def extra_pins(pin)
-        markers = entries.flat_map(&:markers).uniq
+        markers = main_entries.flat_map { |entry| entry.markers_for("main") }.uniq
         extras = markers.flat_map { |marker| marker.scan(EXTRA_NAME).flatten }.uniq
         raise ScopeNotReproducible, "#{@name} is optional but has no recorded extras" if extras.empty?
 

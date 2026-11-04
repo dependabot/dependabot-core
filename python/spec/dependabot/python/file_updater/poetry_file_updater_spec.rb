@@ -917,6 +917,29 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "with a dependency-group-only sub-dependency of a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_dev_group.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_dev_group.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "iniconfig",
+          version: "2.1.0",
+          previous_version: "2.3.1",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "keeps the package in its dependency group rather than promoting it to main" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        iniconfig = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "iniconfig" }
+
+        expect(iniconfig["version"]).to eq("2.1.0")
+        expect(iniconfig["groups"]).to eq(["dev"])
+      end
+    end
+
     context "with a main sub-dependency that has an environment marker" do
       let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
       let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }

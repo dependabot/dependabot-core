@@ -268,15 +268,12 @@ module Dependabot
         # without a pin Poetry could lock it to a newer release than the one selected.
         sig { params(pyproject_object: T::Hash[String, T.untyped]).void }
         def pin_pep621_subdependencies!(pyproject_object)
-          project_object = pyproject_object["project"]
-          return unless project_object
-
           dependencies.each do |dep|
             next if git_dependency_being_updated?(dep)
             next if dep.requirements.find { |r| r.file == pyproject&.name }
             next unless dep.version
 
-            PoetrySubdependencyPin.new(lockfile, dep.name).pin!(project_object, "#{dep.name}==#{dep.version}")
+            PoetrySubdependencyPin.new(lockfile, dep.name).pin!(pyproject_object, "#{dep.name}==#{dep.version}")
           rescue PoetrySubdependencyPin::ScopeNotReproducible
             # The update checker declines these; skipping keeps a direct run from promoting the package.
             next
