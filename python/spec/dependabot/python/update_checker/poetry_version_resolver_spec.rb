@@ -104,6 +104,17 @@ RSpec.describe namespace::PoetryVersionResolver do
       expect(parsed.dig("dependency-groups", "dev")).to include("certifi==2025.1.31")
     end
 
+    it "declines a sub-dependency that is locked at several versions" do
+      second_entry = lockfile.content[/\[\[package\]\]\nname = "certifi".*?(?=\n\[\[package\]\])/m]
+                             .sub('version = "2024.2.2"', 'version = "2023.7.22"')
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+      )
+
+      expect { resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31") }
+        .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
+    end
+
     it "leaves the manifest untouched when another build backend owns the project" do
       content = pyproject_content.sub("poetry.core.masonry.api", "pdm.backend")
 

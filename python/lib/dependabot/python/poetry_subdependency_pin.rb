@@ -13,7 +13,8 @@ module Dependabot
     # the package's locked markers, so Poetry records the same install conditions; an unconditional pin
     # would promote an extra-only or platform-specific package into every install.
     #
-    # TODO: decline when a package is locked at several versions; one pin can't satisfy them all.
+    # A package locked at several versions (one per Python branch) is declined: a single pin can't
+    # satisfy every branch.
     class PoetrySubdependencyPin
       extend T::Sig
 
@@ -61,7 +62,8 @@ module Dependabot
       end
 
       # Adds a pin per place the package is locked (main, extras, other groups), each keeping its locked
-      # markers. Raises ScopeNotReproducible for an optional package with no extras in its markers.
+      # markers. Raises ScopeNotReproducible for a package locked at several versions, or an optional
+      # package with no extras in its markers.
       # rubocop:disable-next Sorbet/ForbidTUntyped
       sig { params(pyproject_object: T::Hash[String, T.untyped], pin: String).void }
       def pin!(pyproject_object, pin)
@@ -82,37 +84,27 @@ module Dependabot
         pins.each { |key, pin| (table[declared_key(table, key)] ||= []) << pin }
       end
 
-      # Returns [main_pin, extra_pins, group_pins]. Raises ScopeNotReproducible for an optional package
-      # with no extras in its markers (legacy lockfile format): pinning it unconditionally would promote
-      # it into the main install.
+      # Returns [main_pin, extra_pins, group_pins]. Raises ScopeNotReproducible for a package locked at
+      # several versions, or an optional package with no extras in its markers (legacy lockfile format):
+      # pinning it unconditionally would promote it into the main install.
       sig { params(pin: String).returns([T.nilable(String), T::Hash[String, String], T::Hash[String, String]]) }
       def pins_for(pin)
-        return [pin, {}, {}] if entries.empty?
+        raise ScopeNotReproducible, "#{@name} is locked at several versions" if entries.size > 1
 
-        group_pins = other_groups.to_h { |group| [group, scoped_pin(pin, group)] }
-        return [nil, {}, group_pins] if main_entries.empty?
-        return [scoped_pin(pin, "main"), {}, group_pins] if main_entries.any? { |entry| !entry.optional }
+        entry = entries.first
+        return [pin, {}, {}] unless entry
 
-        [nil, extra_pins(pin), group_pins]
+        group_pins = (entry.groups - ["main"]).to_h { |group| [group, scoped_pin(pin, entry, group)] }
+        return [nil, {}, group_pins] unless entry.groups.include?("main")
+        return [scoped_pin(pin, entry, "main"), {}, group_pins] unless entry.optional
+
+        [nil, extra_pins(pin, entry), group_pins]
       end
 
-      sig { returns(T::Array[LockedEntry]) }
-      def main_entries
-        entries.select { |entry| entry.groups.include?("main") }
-      end
-
-      sig { returns(T::Array[String]) }
-      def other_groups
-        entries.flat_map(&:groups).uniq - ["main"]
-      end
-
-      # An entry with no markers applies everywhere, so the combined scope is then unconditional.
-      sig { params(pin: String, group: String).returns(String) }
-      def scoped_pin(pin, group)
-        group_entries = entries.select { |entry| entry.groups.include?(group) }
-        return pin if group_entries.any? { |entry| entry.markers_for(group).empty? }
-
-        "#{pin}; #{group_entries.flat_map { |entry| entry.markers_for(group) }.uniq.join(' or ')}"
+      sig { params(pin: String, entry: LockedEntry, group: String).returns(String) }
+      def scoped_pin(pin, entry, group)
+        marker = entry.markers_for(group).first
+        marker ? "#{pin}; #{marker}" : pin
       end
 
       # The lock holds normalised extra and group names, which may differ from how the project spells them.
@@ -185,16 +177,13 @@ module Dependabot
         groups.to_h { |group| [group, markers ? ["(#{markers})"] : []] }
       end
 
-      sig { params(pin: String).returns(T::Hash[String, String]) }
-      def extra_pins(pin)
-        markers = main_entries.flat_map { |entry| entry.markers_for("main") }.uniq
-        extras = markers.flat_map { |marker| marker.scan(EXTRA_NAME).flatten }.uniq
+      sig { params(pin: String, entry: LockedEntry).returns(T::Hash[String, String]) }
+      def extra_pins(pin, entry)
+        marker = entry.markers_for("main").first.to_s
+        extras = marker.scan(EXTRA_NAME).flatten.uniq
         raise ScopeNotReproducible, "#{@name} is optional but has no recorded extras" if extras.empty?
 
-        extras.to_h do |extra|
-          scoped = markers.select { |marker| marker.scan(EXTRA_NAME).flatten.include?(extra) }
-          [extra, "#{pin}; #{scoped.join(' or ')}"]
-        end
+        extras.to_h { |extra| [extra, "#{pin}; #{marker}"] }
       end
     end
   end

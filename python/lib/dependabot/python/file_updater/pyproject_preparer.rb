@@ -236,6 +236,9 @@ module Dependabot
             dep_name = normalise(T.must(match[1]))
             next if excluded_names.include?(dep_name)
 
+            # One pin can't suit every Python branch of a package locked at several versions.
+            next if locked_entry_count(dep_name) > 1
+
             locked_details = locked_details(dep_name)
             next unless (locked_version = locked_details&.fetch("version"))
 
@@ -247,6 +250,11 @@ module Dependabot
         def locked_details(dep_name)
           parsed_lockfile.fetch("package")
                          .find { |d| d["name"] == normalise(dep_name) }
+        end
+
+        sig { params(dep_name: String).returns(Integer) }
+        def locked_entry_count(dep_name)
+          parsed_lockfile.fetch("package").count { |d| d["name"] == normalise(dep_name) }
         end
 
         sig { params(name: String).returns(String) }
