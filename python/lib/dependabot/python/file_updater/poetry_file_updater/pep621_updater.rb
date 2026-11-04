@@ -150,7 +150,7 @@ module Dependabot
           # Lets a declaration keep its environment marker when only the requirement is rewritten.
           sig { returns(String) }
           def marker_pattern
-            "(?:\\s?;[^\"']*)?"
+            "(?:\\s*;[^\"']*)?"
           end
 
           sig { returns(String) }

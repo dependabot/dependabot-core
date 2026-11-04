@@ -1059,6 +1059,21 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
         expect(updated_pyproject&.content).to include("\"urllib3>=2.0.7; python_version < '3.12'\"")
       end
+
+      context "when extra whitespace precedes the marker separator" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", pyproject_fixture_name).sub(">=1.26.0;", ">=1.26.0   ;")
+          )
+        end
+
+        it "rewrites the requirement and keeps the marker" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+          expect(updated_pyproject&.content).to include("\"urllib3>=2.0.7   ; python_version < '3.12'\"")
+        end
+      end
     end
   end
 
