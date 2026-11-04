@@ -7,10 +7,10 @@ require "spec_helper"
 require "dependabot/go_modules/replace_stubber"
 
 RSpec.describe Dependabot::GoModules::ReplaceStubber do
-  subject(:stubbed) { stubber.stub_paths(manifest, directory) }
+  subject(:stubbed) { stubber.stub_paths(manifest, directory, stub_root: stub_root) }
 
   let(:stub_root) { File.join(repo_contents_path, "temporary-stubs") }
-  let(:stubber) { described_class.new(repo_contents_path, stub_root: stub_root) }
+  let(:stubber) { described_class.new(repo_contents_path) }
 
   let(:directory) { "/" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
@@ -37,6 +37,12 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
 
     context "when replacing a module outside of checkout" do
       let(:project_name) { "replace" }
+
+      it "provides module-relative paths when no shared root is requested" do
+        relative = stubber.stub_paths(manifest, directory)
+        expect(relative.keys).to eq(stubbed.keys)
+        expect(relative.values).to all(start_with("./"))
+      end
 
       it "places the external target in the supplied temporary root" do
         expect(stubbed.keys).to eq(["../../../../../../foo"])
