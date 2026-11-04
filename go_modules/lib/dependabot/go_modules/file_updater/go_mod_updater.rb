@@ -239,6 +239,7 @@ module Dependabot
 
               run_go_work_sync
               run_workspace_tidy unless stubbed
+              run_workspace_download if stubbed
               run_go_list_modules
             end
 
@@ -262,6 +263,20 @@ module Dependabot
           workspace_module_paths.each do |mod_path|
             Dir.chdir(mod_path) do
               run_go_mod_tidy(context: mod_path)
+            end
+          end
+        end
+
+        # Sync can raise a member's requirements while their go.mod checksums are recorded only in other
+        # workspace sum files, which breaks standalone builds of that member. Sync has already resolved every
+        # member graph on its own, so the member's own replacements are the complete standalone context.
+        sig { void }
+        def run_workspace_download
+          workspace_module_paths.each do |mod_path|
+            Dir.chdir(mod_path) do
+              command = "go mod download"
+              _, stderr, status = Open3.capture3({ "GOWORK" => "off" }, command)
+              handle_subprocess_error(stderr) unless status.success?
             end
           end
         end
