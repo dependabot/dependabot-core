@@ -404,7 +404,12 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def poetry_based?
-        updating_pyproject? && pyproject_document.poetry?
+        updating_pyproject? && (pyproject_document.poetry? || locked_poetry_build_backend?)
+      end
+
+      sig { returns(T::Boolean) }
+      def locked_poetry_build_backend?
+        !poetry_lock.nil? && pyproject_document.poetry_build_backend?
       end
 
       sig { returns(T::Boolean) }
