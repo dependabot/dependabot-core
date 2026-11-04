@@ -715,6 +715,9 @@ module Dependabot
         else
           dependency.display_name
         end
+      rescue StandardError => e
+        suppress_error("dependency link for #{dependency.name}", e)
+        dependency.display_name
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
@@ -746,6 +749,9 @@ module Dependabot
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         msg
+      rescue StandardError => e
+        suppress_error("metadata links for #{dep.name}", e)
+        ""
       end
 
       sig { params(rows: T::Array[T::Array[String]]).returns(String) }
