@@ -121,7 +121,7 @@ module Dependabot
           new(PyprojectValueParser.object_hash(parsed, "pyproject.toml"))
         end
 
-        POETRY_BUILD_BACKEND = "poetry.core.masonry.api"
+        POETRY_BUILD_BACKEND_PREFIX = "poetry.core"
 
         sig { returns(T::Boolean) }
         def poetry?
@@ -135,7 +135,8 @@ module Dependabot
         sig { returns(T::Boolean) }
         def poetry_build_backend?
           build_system = section(@data, "build-system", "build-system")
-          build_system&.[]("build-backend") == POETRY_BUILD_BACKEND
+          backend = build_system&.[]("build-backend")
+          backend.is_a?(String) && backend.start_with?(POETRY_BUILD_BACKEND_PREFIX)
         end
 
         sig { returns(T::Boolean) }
