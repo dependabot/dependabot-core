@@ -148,8 +148,9 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
-          return pyproject_content unless poetry_object
+          return pyproject_content unless poetry_object || locked_poetry_build_backend?
 
+          poetry_object ||= {}
           excluded_names = dependencies.map(&:name) + ["python"]
 
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
@@ -175,6 +176,11 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { returns(T::Boolean) }
+        def locked_poetry_build_backend?
+          !lockfile.nil? && FileParser::PyprojectDocument.from_content(pyproject_content).poetry_build_backend?
+        end
 
         sig { params(deps_hash: T::Hash[String, T.untyped], dep_name: String).void }
         def freeze_poetry_dep!(deps_hash, dep_name)
