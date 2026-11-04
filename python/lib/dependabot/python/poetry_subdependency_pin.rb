@@ -118,7 +118,8 @@ module Dependabot
           next unless match && NameNormaliser.normalise(T.must(match[:name])) == @name
 
           prefix = T.must(match[:prefix])
-          marker = entry[prefix.length..]&.match(/(\s*;.*)/)&.to_a&.fetch(1, "")
+          head, separator, tail = entry[prefix.length..].to_s.partition(";")
+          marker = separator.empty? ? "" : "#{head[head.rstrip.length..]};#{tail}"
           declarations[index] = "#{prefix}#{requirement}#{marker}"
           updated = true
         end
