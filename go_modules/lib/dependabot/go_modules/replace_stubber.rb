@@ -199,7 +199,8 @@ module Dependabot
       def restore_replaced_requirements(original_modules, bindings)
         return if bindings.empty?
 
-        replaced_modules = bindings.map { |binding| { "Path" => binding.old.path, "Version" => binding.old.version || "" } }
+        replaced_modules =
+          bindings.map { |binding| { "Path" => binding.old.path, "Version" => binding.old.version || "" } }
         original_modules.each do |path, original|
           content = SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
