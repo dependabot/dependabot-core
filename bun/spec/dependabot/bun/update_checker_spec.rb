@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only fixtures and dynamically nested exception constants.
+
 require "spec_helper"
 
 require "dependabot/dependency_file"
@@ -1341,6 +1343,35 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
             }]
           )
         )
+    end
+  end
+
+  context "with a catalog dependency" do
+    let(:dependency_files) { project_dependency_files("bun/catalog_workspace") }
+    let(:dependency) do
+      Dependabot::Bun::FileParser.new(
+        dependency_files: dependency_files,
+        source: nil,
+        credentials: credentials
+      ).parse.find { |dep| dep.name == "etag" }
+    end
+
+    it "updates the catalog requirement and keeps its catalog" do
+      expect(checker.latest_version).to eq(Dependabot::Bun::Version.new("1.7.0"))
+      expect(checker.updated_dependencies(requirements_to_unlock: :own)).to contain_exactly(
+        have_attributes(
+          name: "etag",
+          version: "1.7.0",
+          previous_version: "1.0.1",
+          requirements: [{
+            file: "package.json",
+            requirement: "1.7.0",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { catalog: "testing" }
+          }]
+        )
+      )
     end
   end
 end

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -163,6 +163,7 @@ RSpec.describe Dependabot::Julia::RegistryClient do
               }
             ],
             "weak_dependencies" => [],
+            "extra_dependencies" => [],
             "project_path" => project_path,
             "ignored" => "value"
           }
@@ -199,6 +200,7 @@ RSpec.describe Dependabot::Julia::RegistryClient do
             "julia_version" => "",
             "dependencies" => [{ "name" => 123, "uuid" => "uuid" }],
             "weak_dependencies" => [],
+            "extra_dependencies" => [],
             "project_path" => project_path
           }
         )

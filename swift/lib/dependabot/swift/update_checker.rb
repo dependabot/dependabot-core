@@ -310,7 +310,8 @@ module Dependabot
           XcodeVersionResolver.new(
             dependency: dependency,
             git_commit_checker: git_commit_checker,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            update_cooldown: update_cooldown
           ),
           T.nilable(XcodeVersionResolver)
         )

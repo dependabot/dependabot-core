@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only lock_name fixture.
+
 require "spec_helper"
 require "shared_contexts"
 
@@ -205,6 +207,48 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       it "raises a resolvability error" do
         expect { updater.updated_dependencies }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when Bundler reports a checksum mismatch" do
+      let(:checksum_message) do
+        <<~MESSAGE
+          Bundler found mismatched checksums. This is a potential security risk.
+            #{lock_name} sha256=#{'a' * 64}
+              from the lockfile CHECKSUMS at Gemfile.lock:20:3
+            #{lock_name} sha256=#{'b' * 64}
+              from the API at https://rubygems.org/
+        MESSAGE
+      end
+
+      before do
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: checksum_message,
+            error_context: {},
+            error_class: "Bundler::ChecksumMismatchError"
+          )
+        )
+      end
+
+      context "when the mismatch is on a gem" do
+        let(:lock_name) { "rack (2.2.3)" }
+
+        it "raises a checksum mismatch error" do
+          expect { updater.updated_dependencies }
+            .to raise_error(Dependabot::DependencyChecksumMismatch)
+        end
+      end
+
+      context "when the mismatch is on Bundler itself" do
+        let(:lock_name) { "bundler (4.0.14)" }
+
+        it "re-raises the helper error instead of reporting it as not resolvable" do
+          expect { updater.updated_dependencies }.to raise_error(
+            an_instance_of(Dependabot::SharedHelpers::HelperSubprocessFailed)
+              .and(having_attributes(error_class: "Bundler::ChecksumMismatchError"))
+          )
+        end
       end
     end
 

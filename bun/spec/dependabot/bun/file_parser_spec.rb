@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture and instance calls in generated examples.
+
 require "spec_helper"
 require "dependabot/bun"
 
@@ -211,6 +213,109 @@ RSpec.describe Dependabot::Bun::FileParser do
         let(:files) { project_dependency_files("javascript/file_version_requirements_no_lockfile") }
 
         its(:length) { is_expected.to eq(0) }
+      end
+
+      context "with array workspaces and no catalogs" do
+        let(:files) { project_dependency_files("bun/simple_workspace_v0") }
+
+        it "parses the workspace manifests" do
+          expect(top_level_dependencies.map(&:name)).to contain_exactly("etag", "lodash", "chalk")
+        end
+      end
+
+      context "with catalogs under workspaces" do
+        let(:files) { project_dependency_files("bun/catalog_workspace") }
+
+        it "parses the default catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.version).to eq("6.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "^6.0.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "default" }
+            }]
+          )
+        end
+
+        it "parses named catalogs" do
+          dependency = top_level_dependencies.find { |d| d.name == "etag" }
+
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.1",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "testing" }
+            }]
+          )
+        end
+
+        it "treats catalog dependencies as production dependencies" do
+          expect(top_level_dependencies.map(&:name)).to contain_exactly("is-number", "etag")
+          expect(top_level_dependencies).to all(be_production)
+        end
+      end
+
+      context "with a root catalog and array workspaces" do
+        let(:files) { project_dependency_files("bun/catalog_top_level") }
+
+        it "parses the root catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.version).to eq("6.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "6.0.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "default" }
+            }]
+          )
+        end
+      end
+
+      context "with catalogs.default and a package in two named catalogs" do
+        let(:files) { project_dependency_files("bun/catalog_named") }
+
+        it "parses catalogs.default as the default catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.requirements.map(&:metadata)).to eq([{ catalog: "default" }])
+        end
+
+        it "keeps the requirement from each catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "etag" }
+
+          expect(dependency.requirements.map { |r| [r.requirement, r.metadata] }).to contain_exactly(
+            ["1.0.1", { catalog: "legacy" }],
+            ["1.7.0", { catalog: "current" }]
+          )
+        end
+      end
+
+      context "with catalog fields both at the root and under workspaces" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: JSON.dump(
+                "workspaces" => { "packages" => ["packages/*"], "catalog" => { "is-number" => "7.0.0" } },
+                "catalog" => { "etag" => "1.8.1" }
+              )
+            )
+          ]
+        end
+
+        it "reads only the workspaces fields, as Bun does" do
+          expect(top_level_dependencies.map { |d| [d.name, d.version] }).to eq([["is-number", "7.0.0"]])
+        end
       end
 
       context "with an aliased dependency" do

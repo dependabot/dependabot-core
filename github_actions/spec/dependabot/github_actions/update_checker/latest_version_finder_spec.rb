@@ -1,18 +1,24 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/github_actions/update_checker/latest_version_finder"
+require "dependabot/github_actions/requirement"
 
-namespace = Dependabot::GithubActions::UpdateChecker
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
+  extend T::Sig
+
+  sig { returns(T::Array[Dependabot::Credential]) }
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
+
   let(:upload_pack_fixture) { "setup-node" }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      credentials: github_credentials,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
@@ -58,7 +64,7 @@ RSpec.describe namespace::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: github_credentials,
+      credentials: credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
@@ -181,7 +187,7 @@ RSpec.describe namespace::LatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "github_actions",
-          vulnerable_versions: ["< 1.0"]
+          vulnerable_versions: [Dependabot::GithubActions::Requirement.new("< 1.0")]
         )
       ]
     end
@@ -242,7 +248,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -284,7 +290,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -326,7 +332,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -439,7 +445,7 @@ RSpec.describe namespace::LatestVersionFinder do
         described_class.new(
           dependency: dependency,
           dependency_files: [],
-          credentials: github_credentials,
+          credentials: credentials,
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
@@ -485,7 +491,7 @@ RSpec.describe namespace::LatestVersionFinder do
           described_class.new(
             dependency: dependency,
             dependency_files: [],
-            credentials: github_credentials,
+            credentials: credentials,
             security_advisories: security_advisories,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
@@ -508,7 +514,7 @@ RSpec.describe namespace::LatestVersionFinder do
           described_class.new(
             dependency: dependency,
             dependency_files: [],
-            credentials: github_credentials,
+            credentials: credentials,
             security_advisories: security_advisories,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
@@ -572,7 +578,7 @@ RSpec.describe namespace::LatestVersionFinder do
       described_class.new(
         dependency: dependency,
         dependency_files: [],
-        credentials: github_credentials,
+        credentials: credentials,
         security_advisories: security_advisories,
         ignored_versions: ignored_versions,
         raise_on_ignored: raise_on_ignored,
@@ -621,7 +627,7 @@ RSpec.describe namespace::LatestVersionFinder do
     end
 
     context "when for-each-ref returns empty (lightweight tag not found)" do
-      it "falls back to commit date from git show" do
+      it "falls back to the commit date from git log" do
         commit_date = "2026-06-01 10:00:00 +0000"
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
@@ -644,9 +650,12 @@ RSpec.describe namespace::LatestVersionFinder do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return("")
-        # Fallback to git show
+        # Fallback to the commit date, read without contacting the remote
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .with(
+            'git log -1 --no-mailmap --format="%cd" --date=iso abc123',
+            fingerprint: 'git log -1 --no-mailmap --format="%cd" --date=iso <commit_ref>'
+          )
           .and_return(commit_date)
 
         expect(commit_metadata_details).to eq(commit_date)
@@ -736,6 +745,30 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return(tag_creation_date)
 
         expect(commit_metadata_details).to eq(tag_creation_date)
+      end
+
+      it "clones only commits and tags to read the date" do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("2026-01-01 00:00:00 +0000")
+
+        commit_metadata_details
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          %r{\Agit clone --bare --filter=tree:0 --no-recurse-submodules https://github\.com/},
+          fingerprint: "git clone --bare --filter=tree:0 --no-recurse-submodules <url> <path>"
+        )
       end
     end
   end

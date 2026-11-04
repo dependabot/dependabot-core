@@ -1,10 +1,12 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/python/requirement"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pip_version_resolver"
+require_relative "shared_examples_for_pip_pyproject_reads"
 
 RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   before do
@@ -70,6 +72,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     }]
   end
 
+  it_behaves_like "a pip resolver reading pyproject constraints"
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
@@ -119,7 +123,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "pip",
-          vulnerable_versions: ["<= 2.1.0"]
+          vulnerable_versions: [Dependabot::Python::Requirement.new("<= 2.1.0")]
         )
       ]
     end

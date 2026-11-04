@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/uv/requirement"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/package/release_cooldown_options"
@@ -162,7 +163,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["== 2.33.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("== 2.33.0")]
           )
         ]
       end
@@ -326,6 +327,45 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
         .to have_received(:new).with(hash_including(target_requirement: "==2.34.0"))
     end
 
+    context "with mixed lockfile records" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(name: "uv.lock", content: lockfile_content)]
+      end
+      let(:lockfile_content) do
+        <<~TOML
+          package = [
+            "ignored",
+            { name = "Requests", version = "2.32.3", dependencies = false },
+            { name = "requests", version = "invalid" },
+            { name = "requests" },
+            { version = "2.32.3" },
+          ]
+        TOML
+      end
+
+      it "retains normalized target matching and version validation" do
+        expect(resolver.resolvable?(version: Dependabot::Uv::Version.new("2.33.0"))).to be(true)
+      end
+
+      context "with a malformed version on another package" do
+        let(:lockfile_content) { 'package = [{ name = "unrelated", version = false }]' }
+
+        it "does not hide a field failure behind target-name filtering" do
+          expect { resolver.resolvable?(version: Dependabot::Uv::Version.new("2.33.0")) }
+            .to raise_error(TypeError)
+        end
+      end
+
+      context "with a non-object, non-string record" do
+        let(:lockfile_content) { "package = [false]" }
+
+        it "propagates the malformed record failure" do
+          expect { resolver.resolvable?(version: Dependabot::Uv::Version.new("2.33.0")) }
+            .to raise_error(StandardError)
+        end
+      end
+    end
+
     context "when another locked occurrence already has the target version" do
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -443,7 +483,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["<= 2.1.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("<= 2.1.0")]
           )
         ]
       end
@@ -502,12 +542,12 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("< 2.0.0")]
           ),
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["< 2.5.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("< 2.5.0")]
           )
         ]
       end
@@ -541,7 +581,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("< 2.0.0")]
           )
         ]
       end
@@ -561,7 +601,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "requests",
             package_manager: "uv",
-            vulnerable_versions: ["<= 2.1.0"]
+            vulnerable_versions: [Dependabot::Uv::Requirement.new("<= 2.1.0")]
           )
         ]
       end

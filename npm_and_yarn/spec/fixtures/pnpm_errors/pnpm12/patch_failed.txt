@@ -1,0 +1,18 @@
+Progress: resolved 0, reused 0, downloaded 1, added 0
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /home/dependabot/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +2
+++
+Progress: resolved 2, reused 0, downloaded 2, added 2, done
+Error: ERR_PNPM_PATCH_FAILED
+
+  × installing dependencies
+  ╰─▶ Could not apply patch /tmp/p2/patches/is-odd@3.0.0.patch to /tmp/p2/
+      node_modules/.pnpm/is-
+      odd@3.0.0_patch_hash=901ddcd4bce2a95d0f8a323155c711d423ff237147f752959d4
+      6b1565a261059/node_modules/is-odd: apply to /tmp/p2/node_modules/.pnpm/
+      is-
+      odd@3.0.0_patch_hash=901ddcd4bce2a95d0f8a323155c711d423ff237147f752959d4
+      6b1565a261059/node_modules/is-odd/index.js: error applying hunk #1
+

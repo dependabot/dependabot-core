@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "toml-rb"
+require "dependabot/uv/lockfile_document"
 
 require "dependabot/errors"
 require "dependabot/package/release_cooldown_options"
@@ -278,20 +278,13 @@ module Dependabot
             .returns(T::Array[Dependabot::Uv::Version])
         end
         def locked_versions(lockfile)
-          parsed = T.cast(TomlRB.parse(T.must(lockfile.content)), T::Hash[String, Object])
-          packages = T.cast(parsed["package"], T.nilable(T::Array[T::Hash[String, Object]])) || []
           dependency_name = NameNormaliser.normalise(dependency.name)
-          versions = T.let([], T::Array[Dependabot::Uv::Version])
-          packages.each do |package|
-            package_name = T.cast(package["name"], T.nilable(String))
-            package_version = T.cast(package["version"], T.nilable(String))
-            next unless package_name && NameNormaliser.normalise(package_name) == dependency_name
-            next unless Uv::Version.correct?(package_version)
+          LockfileDocument.from_file(lockfile).resolution_packages.filter_map do |package|
+            next unless NameNormaliser.normalise(package.name) == dependency_name
+            next unless Uv::Version.correct?(package.version)
 
-            versions << Uv::Version.new(package_version)
+            Uv::Version.new(package.version)
           end
-
-          versions
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

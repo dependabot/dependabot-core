@@ -4,7 +4,15 @@ NuGet support for [`dependabot-core`][core-repo].
 
 ### Developing locally
 
-Open the solution file at `helpers/lib/NuGetUpdater/NuGetUpdater.slnx` in your preferred IDE.
+Open the solution file at `nuget/helpers/lib/NuGetUpdater/NuGetUpdater.slnx` in your preferred IDE.
+
+NuGet C# development is an exception to the repository's Docker-only rule. Local builds and tests are supported
+when a compatible .NET SDK is installed:
+
+```
+$ dotnet build nuget/helpers/lib/NuGetUpdater/NuGetUpdater.slnx
+$ dotnet test nuget/helpers/lib/NuGetUpdater/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
+```
 
 ### Running Nuget-ruby locally
 
@@ -19,7 +27,7 @@ Open the solution file at `helpers/lib/NuGetUpdater/NuGetUpdater.slnx` in your p
    [dependabot-core-dev] ~ $ cd nuget && rspec
    ```
 
-Run the reusable C# test suite in the NuGet development container:
+The reusable C# test suite can also run in the NuGet development container:
 
 ```
 $ bin/test nuget ./script/run-csharp-tests

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "json"
@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/dependency_file"
 require "dependabot/composer/file_fetcher"
 require "dependabot/composer/file_parser"
+require "dependabot/composer/lockfile_document"
 
 module Dependabot
   module Composer
@@ -19,7 +20,7 @@ module Dependabot
           @path = path
           @directory = directory
           @lockfile = lockfile
-          @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          @lockfile_document = T.let(nil, T.nilable(LockfileDocument))
         end
 
         sig { returns(T.nilable(DependencyFile)) }
@@ -45,23 +46,20 @@ module Dependabot
         sig { returns(String) }
         attr_reader :path
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
 
         sig { returns(String) }
         attr_reader :directory
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { returns(T.nilable(LockfileDocument::PackageRecord)) }
         def details_from_lockfile
           keys = FileParser::DEPENDENCY_GROUP_KEYS
                  .map { |h| h.fetch(:lockfile) }
 
           keys.each do |key|
-            next unless parsed_lockfile[key]
-
-            parsed_lockfile[key].each do |details|
-              return details if details.dig("dist", "url") == path
-            end
+            package = lockfile_document&.find_path_package(key, path)
+            return package if package
           end
 
           nil
@@ -69,18 +67,16 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def build_path_dep_content
-          return unless details_from_lockfile
-
-          details_from_lockfile.to_json
+          details_from_lockfile&.to_manifest_json
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
-        def parsed_lockfile
-          return {} unless lockfile
+        sig { returns(T.nilable(LockfileDocument)) }
+        def lockfile_document
+          return unless lockfile
 
-          @parsed_lockfile ||= T.let(JSON.parse(lockfile.content), T.nilable(T::Hash[String, T.untyped]))
+          @lockfile_document ||= LockfileDocument.from_file(T.must(lockfile))
         rescue JSON::ParserError
-          {}
+          nil
         end
       end
     end

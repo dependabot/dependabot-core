@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -11,6 +11,7 @@ require "dependabot/logger"
 require "dependabot/vcpkg"
 require "dependabot/vcpkg/language"
 require "dependabot/vcpkg/manifest_baseline"
+require "dependabot/vcpkg/manifest_document"
 require "dependabot/vcpkg/package/versions_database"
 require "dependabot/vcpkg/package_manager"
 require "dependabot/vcpkg/version"
@@ -58,20 +59,20 @@ module Dependabot
         return [] unless dependency_file.content
 
         case dependency_file.name
-        in VCPKG_JSON_FILENAME then parse_vcpkg_json(dependency_file)
-        in VCPKG_CONFIGURATION_JSON_FILENAME then parse_vcpkg_configuration_json(dependency_file)
+        when VCPKG_JSON_FILENAME then parse_vcpkg_json(dependency_file)
+        when VCPKG_CONFIGURATION_JSON_FILENAME then parse_vcpkg_configuration_json(dependency_file)
         else []
         end
       end
 
       sig { params(dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def parse_vcpkg_json(dependency_file)
-        contents = T.must(dependency_file.content)
-        parsed_json = JSON.parse(contents)
+        document = ManifestDocument.from_file(dependency_file)
 
         dependencies = []
 
-        parsed_json["builtin-baseline"]&.then do |baseline|
+        baseline = document.builtin_baseline
+        if baseline
           dependencies << Dependabot::Dependency.new(
             name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
             version: baseline,
@@ -89,63 +90,38 @@ module Dependabot
           )
         end
 
-        parsed_json["dependencies"]&.each do |dep|
-          dependency = parse_port_dependency(dep:, dependency_file:)
+        document.ports.each do |port|
+          dependency = build_port_dependency(name: port.name, constraint: port.constraint, dependency_file:)
           dependencies << dependency if dependency
         end
 
         dependencies.compact
-      rescue JSON::ParserError
-        Dependabot.logger.warn("Failed to parse #{dependency_file.name}: #{dependency_file.content}")
-        raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
+      rescue Dependabot::DependencyFileNotParseable => e
+        Dependabot.logger.warn(e.message)
+        raise
       end
 
       sig { params(dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def parse_vcpkg_configuration_json(dependency_file)
-        contents = T.must(dependency_file.content)
-        parsed_json = JSON.parse(contents)
+        document = ManifestDocument.from_file(dependency_file)
 
         dependencies = []
 
         # Parse default-registry if it exists
-        parsed_json["default-registry"]&.then do |registry|
-          dependency = parse_registry_dependency(registry:, dependency_file:, is_default: true)
-          dependencies << dependency if dependency
+        default_registry = document.default_registry
+        if default_registry
+          dependencies << parse_registry_dependency(registry: default_registry, dependency_file:, is_default: true)
         end
 
         # Parse registries array if it exists
-        parsed_json["registries"]&.each do |registry|
-          dependency = parse_registry_dependency(registry:, dependency_file:, is_default: false)
-          dependencies << dependency if dependency
+        document.registries.each do |registry|
+          dependencies << parse_registry_dependency(registry:, dependency_file:, is_default: false)
         end
 
         dependencies.compact
-      rescue JSON::ParserError
-        Dependabot.logger.warn("Failed to parse #{dependency_file.name}: #{dependency_file.content}")
-        raise Dependabot::DependencyFileNotParseable, dependency_file.path
-      end
-
-      sig do
-        params(
-          dep: Object,
-          dependency_file: Dependabot::DependencyFile
-        )
-          .returns(T.nilable(Dependabot::Dependency))
-      end
-      def parse_port_dependency(dep:, dependency_file:)
-        case dep
-        when String
-          build_port_dependency(name: dep, constraint: nil, dependency_file:)
-        when Hash
-          name = dep["name"]
-          return nil unless name.is_a?(String)
-
-          constraint = dep[VCPKG_VERSION_CONSTRAINT_KEY]
-          build_port_dependency(name:, constraint: constraint.is_a?(String) ? constraint : nil, dependency_file:)
-        else
-          Dependabot.logger.warn("Skipping unknown vcpkg dependency format: #{dep.inspect}")
-          nil
-        end
+      rescue Dependabot::DependencyFileNotParseable => e
+        Dependabot.logger.warn(e.message)
+        raise
       end
 
       # A port's version comes from its `version>=` constraint, the registry baseline, or both.
@@ -226,66 +202,28 @@ module Dependabot
 
       sig do
         params(
-          registry: T::Hash[String, T.untyped],
+          registry: ManifestDocument::Registry,
           dependency_file: Dependabot::DependencyFile,
           is_default: T::Boolean
         )
-          .returns(T.nilable(Dependabot::Dependency))
+          .returns(Dependabot::Dependency)
       end
-      def parse_registry_dependency(registry:, dependency_file:, is_default: false) # rubocop:disable Metrics/MethodLength
-        kind = registry["kind"]
-        baseline = registry["baseline"]
+      def parse_registry_dependency(registry:, dependency_file:, is_default: false)
+        metadata = { default: is_default }
+        metadata[:builtin] = true if registry.builtin
 
-        # Only track git and builtin registries
-        return nil unless VCPKG_SUPPORTED_REGISTRY_TYPES.include?(kind)
-        return nil unless baseline.is_a?(String)
-
-        case kind
-        when "git"
-          repository = registry["repository"]
-          return nil unless repository.is_a?(String)
-
-          reference = registry["reference"] || "HEAD"
-
-          Dependabot::Dependency.new(
-            name: repository,
-            version: baseline,
-            package_manager: "vcpkg",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: repository,
-                ref: reference
-              },
-              file: dependency_file.name
-            }],
-            metadata: {
-              default: is_default
-            }
-          )
-        when "builtin"
-          Dependabot::Dependency.new(
-            name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
-            version: baseline,
-            package_manager: "vcpkg",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: VCPKG_DEFAULT_BASELINE_URL,
-                ref: VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH
-              },
-              file: dependency_file.name
-            }],
-            metadata: {
-              builtin: true,
-              default: is_default
-            }
-          )
-        end
+        Dependabot::Dependency.new(
+          name: registry.name,
+          version: registry.baseline,
+          package_manager: "vcpkg",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: registry.repository, ref: registry.reference },
+            file: dependency_file.name
+          }],
+          metadata: metadata
+        )
       end
 
       # A project relying on a global vcpkg install has no baseline to update.
@@ -301,7 +239,7 @@ module Dependabot
         config = vcpkg_configuration_file
         if config.nil?
           synthetic_baseline_dependency(file_name: manifest.name)
-        elsif default_registry.nil?
+        elsif !parsed_document(config)&.default_registry_present?
           synthetic_baseline_dependency(
             file_name: config.name,
             metadata: { default: true, create_default_registry: true }
@@ -310,7 +248,7 @@ module Dependabot
       end
 
       sig do
-        params(file_name: String, metadata: T::Hash[Symbol, T.untyped]).returns(Dependabot::Dependency)
+        params(file_name: String, metadata: T::Hash[Symbol, T::Boolean]).returns(Dependabot::Dependency)
       end
       def synthetic_baseline_dependency(file_name:, metadata: {})
         Dependabot::Dependency.new(
@@ -341,30 +279,20 @@ module Dependabot
         manifest = vcpkg_manifest_file
         return false unless manifest
 
-        parsed_json(manifest)&.dig("builtin-baseline").is_a?(String)
+        !parsed_document(manifest)&.builtin_baseline.nil?
       end
 
       sig { returns(T::Boolean) }
       def default_registry_baseline_present?
-        registry = default_registry
-        !!(registry && registry["baseline"].is_a?(String))
-      end
-
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def default_registry
         config = vcpkg_configuration_file
-        return nil unless config
+        return false unless config
 
-        registry = parsed_json(config)&.dig("default-registry")
-        registry.is_a?(Hash) ? registry : nil
+        !parsed_document(config)&.default_registry_baseline.nil?
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
       def manifest_declares_dependencies?(file)
-        declared = parsed_json(file)&.dig("dependencies")
-        return false unless declared.is_a?(Array)
-
-        !declared.empty?
+        parsed_document(file)&.dependencies_declared? || false
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -377,14 +305,12 @@ module Dependabot
         dependency_files.find { |file| file.name == VCPKG_CONFIGURATION_JSON_FILENAME }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, T.untyped])) }
-      def parsed_json(file)
-        content = file.content
-        return nil unless content
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(ManifestDocument)) }
+      def parsed_document(file)
+        return nil unless file.content
 
-        parsed = JSON.parse(content)
-        parsed.is_a?(Hash) ? parsed : nil
-      rescue JSON::ParserError
+        ManifestDocument.from_file(file)
+      rescue Dependabot::DependencyFileNotParseable
         nil
       end
 

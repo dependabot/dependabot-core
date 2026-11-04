@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Gradle::Package::DistributionsFetcher do
         JSON.parse(fixture("gradle_distributions_metadata", "resolved_versions.json"), { symbolize_names: true })
             .sort_by { |v| v[:version] }
 
-      actual_versions = described_class.available_versions.sort_by { |v| v[:version] }
+      actual_versions = described_class.available_versions.sort_by { |v| T.cast(v[:version], String) }
 
       expect(actual_versions).to eq(expected_versions)
     }

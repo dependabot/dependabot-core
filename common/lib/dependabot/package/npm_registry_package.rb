@@ -83,6 +83,17 @@ module Dependabot
       end
 
       sig do
+        params(details: T::Hash[String, T.anything], package_name: String, version: String)
+          .returns(T::Hash[String, String])
+      end
+      def self.peer_dependencies(details:, package_name:, version:)
+        value = T.cast(details["peerDependencies"], Object)
+        return {} if value.nil? || value == false
+
+        string_map(value, "#{package_name} version #{version} peerDependencies")
+      end
+
+      sig do
         params(
           version: String,
           details: Object,

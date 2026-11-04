@@ -1737,6 +1737,45 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task ExpandEntryPoints_IgnoresSolutionFolders()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("solution.sln", """
+                Microsoft Visual Studio Solution File, Format Version 12.00
+                Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project", "src\project.csproj", "{00000000-0000-0000-0000-000000000001}"
+                EndProject
+                Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".sln", ".sln", "{2730C57A-D6A7-4A4F-913A-AF211E54B717}"
+                    ProjectSection(SolutionItems) = preProject
+                        .editorconfig = .editorconfig
+                    EndProjectSection
+                EndProject
+                """),
+            ("src/project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        Directory.CreateDirectory(Path.Combine(tempDir.DirectoryPath, ".sln"));
+
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync(
+            [Path.Combine(tempDir.DirectoryPath, "solution.sln")],
+            new ExperimentsManager(),
+            new TestLogger(),
+            repoRootPath: tempDir.DirectoryPath))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project.csproj").NormalizePathToUnix(),
+        };
+
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
     public async Task ExpandEntryPoints_FiltersProjectsInSubmodules()
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
@@ -2385,4 +2424,3 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 }
-

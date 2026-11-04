@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve examples generated from unsupported TOML containers. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -68,6 +69,49 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     expect(document.workspace_globs("exclude")).to eq(["packages/ignored"])
   end
 
+  describe "#uv_git_tag_sources" do
+    let(:content) do
+      <<~TOML
+        [tool.uv.sources]
+        tagged = { git = "https://example.com/tagged.git", tag = "1.2.3" }
+        Odd_Key = { git = "https://example.com/odd.git", tag = "4.5.6" }
+        branch-only = { git = "https://example.com/branch.git", branch = "main" }
+        no-ref = { git = "https://example.com/no-ref.git" }
+        path-only = { path = "./local" }
+        arrayed = [{ git = "https://example.com/arrayed.git", tag = "7.8.9" }]
+        bad-tag = { git = "https://example.com/bad.git", tag = 1.2 }
+        bad-git = { git = { url = "https://example.com/bad.git" }, tag = "1.0.0" }
+      TOML
+    end
+
+    it "returns only the git-and-tag entries, keyed as the author wrote them" do
+      expect(document.uv_git_tag_sources).to eq(
+        "tagged" => { url: "https://example.com/tagged.git", ref: "1.2.3" },
+        "Odd_Key" => { url: "https://example.com/odd.git", ref: "4.5.6" }
+      )
+    end
+
+    context "without a [tool.uv.sources] table" do
+      let(:content) { "[project]\nname = \"x\"\n" }
+
+      it { expect(document.uv_git_tag_sources).to eq({}) }
+    end
+
+    # This runs for every PEP 621 manifest, so a table it cannot read has to yield nothing rather
+    # than stop every dependency in the repository being updated
+    [
+      ["an array of tables", "[[tool.uv.sources]]\nname = \"x\"\n"],
+      ["a string where the table belongs", "[tool.uv]\nsources = \"nope\"\n"],
+      ["a string where tool.uv belongs", "[tool]\nuv = \"nope\"\n"]
+    ].each do |shape, toml|
+      context "with #{shape}" do
+        let(:content) { toml }
+
+        it { expect(document.uv_git_tag_sources).to eq({}) }
+      end
+    end
+  end
+
   context "with Poetry's reserved PyPI source" do
     let(:content) do
       <<~TOML
@@ -129,6 +173,56 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     it "raises an explicit type error" do
       expect { document.workspace_globs("members") }
         .to raise_error(TypeError, "tool.uv.workspace.members must contain only strings")
+    end
+  end
+
+  describe "pip resolver fields" do
+    let(:content) do
+      <<~TOML
+        [project]
+        dependencies = ["requests==2; python_version >= '3.10'", false, 123, ""]
+        [tool.pip]
+        constraints = ["nested/../pins.txt", 123, false, "https://example.com/pins.txt", ""]
+      TOML
+    end
+
+    it "returns only strings without interpreting requirements or paths" do
+      expect(document.pip_dependencies).to eq(["requests==2; python_version >= '3.10'", ""])
+      expect(document.pip_constraint_paths).to eq(["nested/../pins.txt", "https://example.com/pins.txt", ""])
+    end
+
+    context "with a scalar constraint" do
+      let(:content) { "[tool.pip]\nconstraints = \"pins.txt\"\n" }
+
+      it "returns one declared path" do
+        expect(document.pip_constraint_paths).to eq(["pins.txt"])
+        expect(document.pip_dependencies).to eq([])
+      end
+    end
+
+    [
+      "",
+      "project = false\ntool = false",
+      "[project]\ndependencies = false\n[tool]\npip = 123",
+      "[project]\ndependencies = 'not an array'\n[tool.pip]\nconstraints = false"
+    ].each do |value|
+      context "with unsupported containers #{value.inspect}" do
+        let(:content) { value }
+
+        it "retains the pip resolver's empty field results" do
+          expect(document.pip_dependencies).to eq([])
+          expect(document.pip_constraint_paths).to eq([])
+        end
+      end
+    end
+
+    context "with a malformed project section" do
+      let(:content) { "project = false" }
+
+      it "does not weaken the existing metadata reader" do
+        expect(document.pip_dependencies).to eq([])
+        expect { document.project_metadata }.to raise_error(TypeError, "project must be an object")
+      end
     end
   end
 

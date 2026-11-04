@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-only version_string fixture and dynamic predicate matchers.
+
 require "spec_helper"
 require "dependabot/julia/version"
 
@@ -53,6 +55,22 @@ RSpec.describe Dependabot::Julia::Version do
 
     it "round-trips plain versions" do
       expect(described_class.new("1.2.3").to_s).to eq("1.2.3")
+    end
+  end
+
+  describe "#compat_version_string" do
+    it "drops JLL build metadata, which a compat entry cannot carry" do
+      expect(described_class.new("1.6.10+0").compat_version_string).to eq("1.6.10")
+      expect(described_class.new("2.28.6+4").compat_version_string).to eq("2.28.6")
+    end
+
+    it "drops prerelease tags" do
+      expect(described_class.new("1.0.0-rc.1+3").compat_version_string).to eq("1.0.0")
+    end
+
+    it "keeps plain versions" do
+      expect(described_class.new("1.2.3").compat_version_string).to eq("1.2.3")
+      expect(described_class.new("0.5").compat_version_string).to eq("0.5")
     end
   end
 

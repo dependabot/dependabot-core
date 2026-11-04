@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only version fixtures used by the parent subject.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version"
@@ -316,6 +318,25 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
 
         it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
       end
+    end
+
+    context "with a whitespace-padded comma" do
+      let(:requirement_string) { ">= 1.0.0 , < 2.0.0" }
+
+      it "keeps both constraints in one requirement" do
+        expect(reqs.fetch(0).requirements).to eq(
+          [
+            [">=", Dependabot::NpmAndYarn::Version.new("1.0.0")],
+            ["<", Dependabot::NpmAndYarn::Version.new("2.0.0")]
+          ]
+        )
+      end
+    end
+
+    context "with a hyphen range preceded by repeated whitespace" do
+      let(:requirement_string) { "1.0.0#{' ' * 10_000}- 1.5.0" }
+
+      it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
     end
 
     context "with multiple optional requirements" do

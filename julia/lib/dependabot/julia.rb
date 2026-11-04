@@ -69,5 +69,12 @@ Dependabot::PullRequestCreator::Labeler
   .register_label_details("julia", name: "julia", colour: "a270ba")
 
 require "dependabot/dependency"
-Dependabot::Dependency
-  .register_production_check("julia", ->(_) { true })
+# [extras] hold test-only packages; weakdeps are loaded on demand by
+# extensions and count as runtime, like [deps]
+Dependabot::Dependency.register_production_check(
+  "julia",
+  lambda do |groups|
+    groups = T.cast(groups, T::Array[String])
+    groups.empty? || groups.any? { |group| group != "extras" }
+  end
+)

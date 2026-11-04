@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,9 +6,12 @@ require "dependabot/conda"
 require_common_spec "shared_examples_for_autoloading"
 
 RSpec.describe Dependabot::Conda do
+  extend T::Sig
+
   it_behaves_like "it registers the required classes", "conda"
 
   describe "production check" do
+    sig { returns(Dependabot::Dependency::ProductionCheck) }
     subject(:production_check) do
       Dependabot::Dependency.production_check_for_package_manager("conda")
     end
@@ -61,8 +64,9 @@ RSpec.describe Dependabot::Conda do
   end
 
   describe "name normaliser" do
+    sig { returns(T.proc.params(name: String).returns(String)) }
     subject(:name_normaliser) do
-      Dependabot::Dependency.name_normaliser_for_package_manager("conda")
+      T.must(Dependabot::Dependency.name_normaliser_for_package_manager("conda"))
     end
 
     it "normalises package names using Conda::NameNormaliser" do

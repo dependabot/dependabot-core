@@ -1,0 +1,17 @@
+{
+  "groupId": "com.example",
+  "artifactId": "application",
+  "version": "1.0",
+  "type": "jar",
+  "children": [
+    { "groupId": "com.example", "artifactId": "parent-reference", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "parent-managed", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "bom-managed", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "range", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "explicit", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "property", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "shared-one", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "shared-two", "version": "1.0", "type": "jar", "scope": "compile" },
+    { "groupId": "com.example", "artifactId": "locally-managed", "version": "1.0", "type": "jar", "scope": "compile" }
+  ]
+}

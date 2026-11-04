@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve dynamic constants and generated updater examples. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"

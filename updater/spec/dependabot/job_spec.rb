@@ -370,19 +370,19 @@ RSpec.describe Dependabot::Job do
       end
     end
 
-    context "when a dependency whitelist that includes the dependency" do
+    context "when a dependency allowlist that includes the dependency" do
       let(:allowed_updates) { [{ "dependency-name" => "business" }] }
 
       it { is_expected.to be(true) }
 
-      context "with a dependency whitelist that uses a wildcard" do
+      context "with a dependency allowlist that uses a wildcard" do
         let(:allowed_updates) { [{ "dependency-name" => "bus*" }] }
 
         it { is_expected.to be(true) }
       end
     end
 
-    context "when dependency whitelist that excludes the dependency" do
+    context "when dependency allowlist that excludes the dependency" do
       let(:allowed_updates) { [{ "dependency-name" => "rails" }] }
 
       it { is_expected.to be(false) }
@@ -393,7 +393,7 @@ RSpec.describe Dependabot::Job do
         it { is_expected.to be(false) }
       end
 
-      context "with a dependency whitelist that uses a wildcard" do
+      context "with a dependency allowlist that uses a wildcard" do
         let(:allowed_updates) { [{ "dependency-name" => "b.ness*" }] }
 
         it { is_expected.to be(false) }

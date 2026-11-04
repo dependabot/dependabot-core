@@ -40,7 +40,7 @@ module Dependabot
           }x
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX = %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
+            (?<=require\s|requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)
           }x
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
@@ -389,7 +389,7 @@ module Dependabot
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
-          elsif error.message.start_with?("Allowed memory size", "Out of memory")
+          elsif Helpers.out_of_memory_error?(error.message)
             raise Dependabot::OutOfMemory
           elsif error.error_context[:process_termsig] == Dependabot::SharedHelpers::SIGKILL
             # If the helper was SIGKILL-ed, assume the OOMKiller did it
@@ -439,6 +439,7 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { returns(T::Boolean) }
         def check_original_requirements_resolvable
           base_directory = T.must(dependency_files.first).directory
@@ -454,6 +455,8 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::OutOfMemory if Helpers.out_of_memory_error?(e.message)
+
           if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             missing_extensions =
               e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
@@ -475,6 +478,7 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
+        # rubocop:enable Metrics/AbcSize
 
         sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)
@@ -519,16 +523,17 @@ module Dependabot
 
         sig { returns(String) }
         def composer_version
-          parsed_lockfile_or_nil = lockfile ? parsed_lockfile : nil
+          lockfile_document =
+            (LockfileDocument.new(data: parsed_lockfile, context: T.must(lockfile).path) if lockfile)
           @composer_version ||= T.let(
-            Helpers.composer_version(parsed_composer_file, parsed_lockfile_or_nil),
+            Helpers.composer_version(manifest_document, lockfile_document),
             T.nilable(String)
           )
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def initial_platform
-          platform_php = Helpers.capture_platform_php(parsed_composer_file)
+          platform_php = Helpers.capture_platform_php(manifest_document)
 
           platform = {}
           if platform_php.is_a?(String) && requirement_valid?(platform_php)
@@ -538,13 +543,21 @@ module Dependabot
           # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
-          requirement_php = Helpers.php_constraint(parsed_composer_file)
+          requirement_php = Helpers.php_constraint(manifest_document)
           return platform unless requirement_php.is_a?(String)
           return platform unless requirement_valid?(requirement_php)
 
           platform[Dependabot::Composer::Language::NAME] ||= []
           platform[Dependabot::Composer::Language::NAME] << requirement_php
           platform
+        end
+
+        sig { returns(ManifestDocument) }
+        def manifest_document
+          @manifest_document ||= T.let(
+            ManifestDocument.new(data: parsed_composer_file, context: T.must(composer_file).path),
+            T.nilable(ManifestDocument)
+          )
         end
 
         sig { returns(T::Hash[String, T.untyped]) }

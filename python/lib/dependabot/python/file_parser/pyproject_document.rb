@@ -202,6 +202,34 @@ module Dependabot
           PyprojectValueParser.string_array(value, "project.dynamic")
         end
 
+        # Pip resolution ignores malformed containers and non-string entries in these fields.
+        sig { returns(T::Array[String]) }
+        def pip_dependencies
+          project = @data["project"]
+          return [] unless project.is_a?(Hash)
+
+          dependencies = T.cast(project["dependencies"], Object)
+          return [] unless dependencies.is_a?(Array)
+
+          dependencies.grep(String)
+        end
+
+        sig { returns(T::Array[String]) }
+        def pip_constraint_paths
+          tool = @data["tool"]
+          return [] unless tool.is_a?(Hash)
+
+          pip = T.cast(tool["pip"], Object)
+          return [] unless pip.is_a?(Hash)
+
+          constraints = T.cast(pip["constraints"], Object)
+          case constraints
+          when String then [constraints]
+          when Array then constraints.grep(String)
+          else []
+          end
+        end
+
         sig { params(name: String).returns(T::Boolean) }
         def optional_dependency_group?(name)
           project = section(@data, "project", "project")
@@ -245,6 +273,32 @@ module Dependabot
           return false unless keys.intersect?(UNRESOLVABLE_UV_SOURCE_KEYS)
 
           !(keys.include?("git") && keys.include?("tag"))
+        end
+
+        # Keys come back as the author wrote them, which is what a caller has to match the file on.
+        sig { returns(T::Hash[String, T::Hash[Symbol, String]]) }
+        def uv_git_tag_sources
+          tool = section(@data, "tool", "tool")
+          uv = tool && section(tool, "uv", "tool.uv")
+          sources = uv && section(uv, "sources", "tool.uv.sources")
+          return {} unless sources
+
+          result = T.let({}, T::Hash[String, T::Hash[Symbol, String]])
+          sources.each do |name, config|
+            next unless config.is_a?(Hash)
+
+            entry = PyprojectValueParser.object_hash(config, "tool.uv.sources.#{name}")
+            url = entry["git"]
+            ref = entry["tag"]
+            next unless url.is_a?(String) && ref.is_a?(String)
+
+            result[name] = { url: url, ref: ref }
+          end
+          result
+        rescue TypeError
+          # A malformed table is not this method's business either: it runs for every PEP 621
+          # manifest, so raising would stop every dependency in the repository being updated.
+          {}
         end
 
         sig { params(key: String).returns(T::Array[String]) }

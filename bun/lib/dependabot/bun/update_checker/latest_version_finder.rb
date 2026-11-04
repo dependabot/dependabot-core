@@ -172,14 +172,6 @@ module Dependabot
         end
 
         sig do
-          params(filter_ignored: T::Boolean)
-            .returns(T::Array[T::Array[T.untyped]])
-        end
-        def possible_versions_with_details(filter_ignored: true)
-          possible_releases(filter_ignored: filter_ignored).map { |r| [r.version, r.details] }
-        end
-
-        sig do
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
@@ -240,13 +232,6 @@ module Dependabot
             r.version.prerelease? && !related_to_current_pre?(r.version)
           end
             .sort_by(&:version).reverse
-        end
-
-        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.anything]]]) }
-        def possible_previous_versions_with_details
-          possible_previous_releases.map do |r|
-            [r.version, r.details]
-          end
         end
 
         sig { override.returns(T::Boolean) }

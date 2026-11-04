@@ -8,6 +8,7 @@ require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/go_work_parser"
+require "dependabot/go_modules/go_mod_manifest"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
@@ -112,6 +113,12 @@ module Dependabot
 
         GITHUB_403_REGEX =
           %r{https://github\.com/(?<repo>[^/'\s]+/[^/'\s]+)/?': The requested URL returned error: 403}
+
+        # An import that no module provides, as `go mod tidy` and `go get` report it. The package is often inside the
+        # repository's own module, and is generated code (protobuf, mocks) that is not committed.
+        MISSING_PACKAGE_ERROR = /^\s*(?<package>\S+): no matching versions for query "latest"/
+
+        GO_PROGRESS_LINE = /^go: (?:downloading|extracting) /
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
@@ -251,6 +258,7 @@ module Dependabot
 
             run_go_work_sync
             run_workspace_tidy
+            run_go_list_modules
 
             collect_workspace_file_contents
           end
@@ -274,6 +282,20 @@ module Dependabot
               run_go_mod_tidy(context: mod_path)
             end
           end
+        end
+
+        # Go < 1.28 leaves go.work.sum without the checksums that `go list -m all` adds after `go work sync`
+        # (golang/go#63901). Loading the full module list last records them for the final workspace graph.
+        # Best-effort: sync and tidy have already succeeded, so a failure here must not fail the update.
+        sig { void }
+        def run_go_list_modules
+          return unless dependency_files.any? { |f| f.name == "go.work.sum" }
+
+          command = "go list -m all"
+          _, stderr, status = Open3.capture3(command)
+          return if status.success?
+
+          Dependabot.logger.info "Failed to `#{command}` in the workspace: #{stderr}"
         end
 
         sig { returns(T::Array[String]) }
@@ -386,13 +408,13 @@ module Dependabot
           FileUtils.rm_f(T.must(tmp_go_file))
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(GoModManifest) }
         def parse_manifest
           command = "go mod edit -json"
           stdout, stderr, status = Open3.capture3(command)
           handle_subprocess_error(stderr) unless status.success?
 
-          JSON.parse(stdout) || {}
+          GoModManifest.from_json(stdout, file_path: File.join(directory, "go.mod"))
         end
 
         sig do
@@ -426,7 +448,7 @@ module Dependabot
         # the layout of the filesystem with a structure we can reproduce (i.e.
         # no paths such as ../../../foo), run the Go tooling, then reverse the
         # process afterwards.
-        sig { params(manifest: T::Hash[String, T.untyped]).returns(T::Hash[String, String]) }
+        sig { params(manifest: GoModManifest).returns(T::Hash[String, String]) }
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
             T.let(
@@ -497,6 +519,8 @@ module Dependabot
             )
           end
 
+          raise_for_missing_package_error(stderr)
+
           # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependabotError, msg
@@ -528,6 +552,18 @@ module Dependabot
           credentials.any? do |credential|
             credential["type"] == "git_source" && credential["host"] == "github.com"
           end
+        end
+
+        sig { params(stderr: String).void }
+        def raise_for_missing_package_error(stderr)
+          packages = stderr.scan(MISSING_PACKAGE_ERROR).flatten.uniq
+          return if packages.empty?
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Go cannot find a module that provides #{packages.join(', ')}. If they are generated code " \
+                "(for example protobuf or mock output) that is not committed, Dependabot cannot generate it: " \
+                "commit the generated files, or check the import paths.\n\n" \
+                "#{stderr.lines.grep_v(GO_PROGRESS_LINE).join.strip}"
         end
 
         sig { params(stderr: String).void }

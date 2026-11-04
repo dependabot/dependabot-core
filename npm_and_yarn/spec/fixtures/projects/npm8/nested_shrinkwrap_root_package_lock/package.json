@@ -1,0 +1,10 @@
+{
+  "name": "nested-shrinkwrap-root-package-lock",
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}

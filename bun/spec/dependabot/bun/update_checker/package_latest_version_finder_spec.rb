@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,6 +9,7 @@ require "dependabot/credential"
 require "dependabot/security_advisory"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/bun/version"
+require "dependabot/bun/requirement"
 require "dependabot/bun/package/package_details_fetcher"
 
 MAX_COOLDOWN_DAYS = 100 * 365
@@ -1131,7 +1132,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: "rails",
           package_manager: "bun",
-          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
+          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"].map do |requirement|
+            Dependabot::Bun::Requirement.new(requirement)
+          end
         )
       ]
     end
@@ -1244,9 +1247,22 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
     end
   end
 
-  describe "#possible_versions_with_details" do
-    subject(:possible_versions_with_details) do
-      version_finder.possible_versions_with_details
+  describe "#possible_releases" do
+    subject(:possible_releases) do
+      version_finder.possible_releases
+    end
+
+    it "retains the original release objects and metadata" do
+      releases = version_finder.package_details.releases
+
+      possible_releases.each do |release|
+        original = releases.find { |candidate| candidate.version == release.version }
+        expect(release).to be(original)
+        expect(release.details).to be(original.details)
+        expect(release.released_at).to eq(original.released_at)
+        expect(release.language).to be(original.language)
+      end
+      expect(possible_releases).not_to be_empty
     end
 
     context "with versions that would be considered equivalent" do
@@ -1272,7 +1288,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
       end
 
       it "returns a list of versions" do
-        expect(possible_versions_with_details.count).to eq(49)
+        expect(possible_releases.count).to eq(49)
       end
     end
 
@@ -1298,9 +1314,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
       end
 
       it "excludes ignored versions" do
-        versions = possible_versions_with_details
-        latest_version = versions.first.first
-        expect(versions.count).to eq(20)
+        releases = possible_releases
+        latest_version = releases.first.version
+        expect(releases.count).to eq(20)
         expect(latest_version)
           .to eq(Dependabot::Bun::Version.new("15.6.2"))
       end
@@ -1326,14 +1342,20 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
       end
 
       it "returns no versions" do
-        expect(possible_versions_with_details).to eq([])
+        expect(possible_releases).to eq([])
       end
     end
   end
 
-  describe "#possible_previous_versions_with_details" do
-    subject(:possible_previous_versions_with_details) do
-      version_finder.possible_previous_versions_with_details
+  describe "#possible_previous_releases" do
+    subject(:possible_previous_releases) do
+      version_finder.possible_previous_releases
+    end
+
+    it "retains the original releases rather than reconstructing versions and details" do
+      releases = version_finder.package_details.releases
+
+      expect(possible_previous_releases.map(&:object_id)).to eq(releases.map(&:object_id))
     end
 
     context "with ignored versions and non pre-release version requirement" do
@@ -1358,9 +1380,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
       end
 
       it "includes ignored versions and excludes pre-releases" do
-        versions = possible_previous_versions_with_details
-        latest_version = versions.first.first
-        expect(versions.count).to eq(80)
+        releases = possible_previous_releases
+        latest_version = releases.first.version
+        expect(releases.count).to eq(80)
         expect(latest_version)
           .to eq(Dependabot::Bun::Version.new("16.6.0"))
       end
@@ -1387,9 +1409,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
       end
 
       it "includes pre-released versions" do
-        versions = possible_previous_versions_with_details
-        latest_version = versions.first.first
-        expect(versions.count).to eq(103)
+        releases = possible_previous_releases
+        latest_version = releases.first.version
+        expect(releases.count).to eq(103)
         expect(latest_version)
           .to eq(Dependabot::Bun::Version.new("16.6.0"))
       end
@@ -1415,7 +1437,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
       end
 
       it "returns all versions" do
-        expect(possible_previous_versions_with_details.count).to eq(13)
+        expect(possible_previous_releases.count).to eq(13)
       end
     end
   end

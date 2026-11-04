@@ -1,0 +1,8 @@
+{
+  "name": "shrinkwrap_pinned_npm12",
+  "version": "1.0.0",
+  "packageManager": "npm@12.1.0",
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}

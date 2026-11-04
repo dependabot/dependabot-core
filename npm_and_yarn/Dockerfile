@@ -2,11 +2,11 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.34.6
+ARG COREPACK_VERSION=0.36.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
-ARG PNPM_VERSION=11.25.0
+ARG PNPM_VERSION=12.10.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
@@ -21,9 +21,17 @@ ARG NODEJS_VERSION=24
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be aligned with NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
-ARG NPM_VERSION=11.17.0
+ARG NPM_VERSION=12.2.0
 
-# Install Node and npm
+# Route Node's built-in fetch() and http(s) agents through HTTP_PROXY/HTTPS_PROXY.
+# Corepack >=0.35 requires this setting for proxy support, and pnpm 12's
+# npm package is a launcher that downloads the native `@pnpm/exe.<platform>` binary
+# with a bare fetch() on first run. Without this, that download bypasses the
+# Dependabot proxy and fails with "fetch failed".
+ENV NODE_USE_ENV_PROXY=1
+
+# Install Node and npm. npm is installed globally (not only through Corepack) because unpinned projects run plain
+# `npm`, which would otherwise be the version bundled with Node rather than NPM_VERSION.
 RUN mkdir -p /etc/apt/keyrings \
   && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
   && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODEJS_VERSION}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
@@ -31,7 +39,7 @@ RUN mkdir -p /etc/apt/keyrings \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g corepack@$COREPACK_VERSION \
+  && npm install -g corepack@$COREPACK_VERSION npm@$NPM_VERSION \
   && rm -rf ~/.npm
 
 USER dependabot
@@ -40,19 +48,19 @@ RUN <<EOF
   corepack install pnpm@$PNPM_VERSION --global
   corepack install yarn@$YARN_VERSION --global
   corepack install npm@$NPM_VERSION --global
-  # Pre-cache popular older versions of npm for on-demand activation
-  corepack install -g --cache-only npm@10 npm@9 npm@8
+  # Pre-cache the latest of each older npm major for on-demand activation. Exact pins that miss the cache are
+  # resolved to their cached major by PackageManagerHelper#install rather than falling back to the image's npm.
+  corepack install -g --cache-only npm@11 npm@10 npm@9 npm@8
+  # Fail the build if either route to npm drifts from NPM_VERSION: unpinned projects run plain `npm`, while projects
+  # that select a version run it through Corepack. (Explicit exits because heredoc lines are not fail-fast.)
+  [ "$(npm -v)" = "$NPM_VERSION" ] || { echo "plain npm is $(npm -v), expected $NPM_VERSION" >&2; exit 1; }
+  [ "$(corepack npm -v)" = "$NPM_VERSION" ] || { echo "corepack npm is $(corepack npm -v), expected $NPM_VERSION" >&2; exit 1; }
+  # pnpm 12's package is a launcher that downloads its native binary on first run; run it once to cache it in the image
+  pnpm --version
 EOF
 
 # Configure Node to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
-# Route Node's built-in fetch() and http(s) agents through HTTP_PROXY/HTTPS_PROXY.
-# npm, yarn, pnpm and corepack read the proxy variables themselves, but pnpm 12's
-# npm package is a launcher that downloads the native `@pnpm/exe.<platform>` binary
-# with a bare fetch() on first run. Without this, that download bypasses the
-# Dependabot proxy and fails with "fetch failed".
-ENV NODE_USE_ENV_PROXY=1
 
 # Silence warning messages that aren't useful within the Dependabot context.
 # CAUTION: `NPM_CONFIG_*` vars take precedence over the user's .npmrc settings. For these it always makes sense, but for

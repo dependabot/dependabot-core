@@ -3,6 +3,7 @@
 
 require "json"
 require "sorbet-runtime"
+require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
@@ -35,6 +36,7 @@ module Dependabot
       )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
+      BUN_LOCKFILE_NAME = "bun.lock"
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -55,7 +57,7 @@ module Dependabot
         begin
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(@git_lfs_cloned_repo_contents_path) do
-              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
               SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
             end
             @git_lfs_cloned_repo_contents_path
@@ -81,6 +83,8 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        raise_if_bun_lock_misconfigured_as_npm!
+
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
         fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
@@ -231,9 +235,11 @@ module Dependabot
         content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
         return unless content
 
+        policy_lines = NpmAndYarn::FileUpdater::NpmrcBuilder.policy_lines(npmrc&.content)
+
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: content,
+          content: [content, *policy_lines].reject(&:empty?).join("\n"),
           directory: directory
         )
       end
@@ -296,6 +302,29 @@ module Dependabot
         !npm_version && !yarn_version && !pnpm_version
       end
 
+      # Without this check, a bun-managed project misconfigured as "npm" would silently get a
+      # PR that bumps package.json without updating bun.lock (dependabot-core#14223).
+      sig { void }
+      def raise_if_bun_lock_misconfigured_as_npm!
+        return unless no_package_manager_detected?
+        return unless bun_lock
+
+        raise Dependabot::MisconfiguredTooling.new(
+          "Bun",
+          "This project has a `#{BUN_LOCKFILE_NAME}` file but no `package-lock.json`, `yarn.lock` or " \
+          "`pnpm-lock.yaml`, which means it is managed by Bun. Dependabot's `npm_and_yarn` ecosystem " \
+          "cannot update `#{BUN_LOCKFILE_NAME}`. Set `package-ecosystem: \"bun\"` in your dependabot.yml " \
+          "for this directory so Dependabot can update this project's dependencies correctly."
+        )
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def bun_lock
+        return @bun_lock if defined?(@bun_lock)
+
+        @bun_lock ||= T.let(fetch_file_if_present(BUN_LOCKFILE_NAME), T.nilable(DependencyFile))
+      end
+
       sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version
         @npm_version ||= T.let(package_manager_helper.setup(NpmPackageManager::NAME), T.nilable(T.any(Integer, String)))
@@ -333,7 +362,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
+          npm: shrinkwrap || package_lock,
           yarn: yarn_lock,
           pnpm: pnpm_lock
         }
@@ -772,7 +801,9 @@ module Dependabot
       def parsed_pnpm_workspace_yaml
         return {} unless pnpm_workspace_yaml
 
-        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        parsed = YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+        # A file with only comments (or a bare scalar) parses to something other than a mapping
+        parsed.is_a?(Hash) ? parsed : {}
       rescue Psych::SyntaxError, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, T.must(pnpm_workspace_yaml).path
       end
@@ -832,8 +863,10 @@ module Dependabot
         if repo_contents_path.nil?
           Dependabot.logger.info("Repository contents path is nil")
         elsif Dir.exist?(T.must(repo_contents_path))
-          Dir.chdir(T.must(repo_contents_path)) do
-            FileUtils.mkdir_p(".yarn/cache")
+          project_path = File.join(T.must(repo_contents_path), directory)
+          Dir.chdir(Dir.exist?(project_path) ? project_path : T.must(repo_contents_path)) do
+            cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
+            FileUtils.mkdir_p(cache_dir)
           end
         else
           Dependabot.logger.info("Repository contents path does not exist")

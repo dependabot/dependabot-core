@@ -63,21 +63,23 @@ module Dependabot
         nil
       end
 
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      sig { params(command: T.any(String, T::Array[String]), fingerprint: T.nilable(String)).returns(String) }
       def self.run_bun_command(command, fingerprint: nil)
-        full_command = "bun #{command}"
+        full_command = command.is_a?(Array) ? ["bun", *command] : "bun #{command}"
+        display_command = full_command.is_a?(Array) ? full_command.join(" ") : full_command
+        fingerprint_command = command.is_a?(Array) ? command.join(" ") : command
 
-        Dependabot.logger.info("Running bun command: #{full_command}")
+        Dependabot.logger.info("Running bun command: #{display_command}")
 
         result = Dependabot::SharedHelpers.run_shell_command(
           full_command,
-          fingerprint: "bun #{fingerprint || command}"
+          fingerprint: "bun #{fingerprint || fingerprint_command}"
         )
 
-        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        Dependabot.logger.info("Command executed successfully: #{display_command}")
         result
       rescue StandardError => e
-        Dependabot.logger.error("Error running bun command: #{full_command}, Error: #{e.message}")
+        Dependabot.logger.error("Error running bun command: #{display_command}, Error: #{e.message}")
         raise
       end
 

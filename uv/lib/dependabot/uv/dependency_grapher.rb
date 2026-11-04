@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -7,7 +7,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/uv/file_parser"
-require "toml-rb"
+require "dependabot/uv/lockfile_document"
 
 module Dependabot
   module Uv
@@ -42,19 +42,17 @@ module Dependabot
       sig { returns(T::Hash[String, T::Array[String]]) }
       def package_relationships
         @package_relationships ||= T.let(
-          package_relationships_from_lockfile(T.must(T.must(uv_lock).content)),
+          package_relationships_from_lockfile(T.must(uv_lock)),
           T.nilable(T::Hash[String, T::Array[String]])
         )
       end
 
       sig { void }
       def prepare_from_lockfile!
-        lockfile = T.must(uv_lock)
-        parsed = TomlRB.parse(lockfile.content)
-        packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
-        manifest = parsed.fetch("manifest", {})
+        document = LockfileDocument.from_file(T.must(uv_lock))
+        packages = document.graph_packages
 
-        root_names = root_package_names(packages, manifest)
+        root_names = root_package_names(packages, document.workspace_members.to_set)
         direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
 
         @dependencies = packages.filter_map do |pkg|
@@ -73,14 +71,15 @@ module Dependabot
         @prepared = true
       end
 
-      sig { params(lockfile_content: String).returns(T::Hash[String, T::Array[String]]) }
-      def package_relationships_from_lockfile(lockfile_content)
-        lockfile_packages(lockfile_content).each_with_object({}) do |package_data, rels|
-          parent = lockfile_parent_name(package_data)
-          next unless parent
+      sig { params(lockfile: Dependabot::DependencyFile).returns(T::Hash[String, T::Array[String]]) }
+      def package_relationships_from_lockfile(lockfile)
+        relationships = T.let({}, T::Hash[String, T::Array[String]])
+        LockfileDocument.from_file(lockfile).graph_packages.each_with_object(relationships) do |package, rels|
+          name = package.name
+          next unless name
 
-          rels[parent] ||= []
-          rels[parent].concat(lockfile_child_names(package_data))
+          parent = normalised_dependency_name(name)
+          (rels[parent] ||= []).concat(lockfile_child_names(package))
         end
       rescue StandardError => e
         errored_fetching_subdependencies!
@@ -89,46 +88,13 @@ module Dependabot
         {}
       end
 
-      sig { params(lockfile_content: String).returns(T::Array[T.untyped]) }
-      def lockfile_packages(lockfile_content)
-        parsed = TomlRB.parse(lockfile_content)
-        T.cast(parsed.fetch("package", []), T::Array[T.untyped])
-      end
-
-      sig { params(package_data: T.untyped).returns(T.nilable(String)) }
-      def lockfile_parent_name(package_data)
-        return unless package_data.is_a?(Hash)
-
-        package_name = package_data["name"]
-        return unless package_name.is_a?(String)
-
-        normalised_dependency_name(package_name)
-      end
-
       # Mirrors uv's `create_dependencies` (crates/uv-resolver/src/lock/export/cyclonedx_json.rs),
       # which chains a package's `dependencies`, `optional-dependencies`, and
       # `dev-dependencies` when building the SBOM dependency graph.
-      sig { params(package_data: T.untyped).returns(T::Array[String]) }
-      def lockfile_child_names(package_data)
-        return [] unless package_data.is_a?(Hash)
-
-        names = T.let([], T::Array[String])
-        collect_dep_names(package_data["dependencies"], names)
-        collect_dep_names_from_groups(package_data["optional-dependencies"], names)
-        collect_dep_names_from_groups(package_data["dev-dependencies"], names)
+      sig { params(package: LockfileDocument::GraphPackage).returns(T::Array[String]) }
+      def lockfile_child_names(package)
+        names = package.dependencies + package.optional_dependencies + package.dev_dependencies
         names.map { |name| normalised_dependency_name(name) }.uniq
-      end
-
-      sig { params(dependency_data: T.untyped).returns(T.nilable(String)) }
-      def lockfile_dependency_name(dependency_data)
-        if dependency_data.is_a?(Hash)
-          name = dependency_data["name"]
-          return name if name.is_a?(String)
-        end
-
-        return dependency_data if dependency_data.is_a?(String)
-
-        nil
       end
 
       # Identifies the workspace member packages whose `dependencies`,
@@ -144,32 +110,17 @@ module Dependabot
       # Fallback for single-member workspaces (which omit `[manifest] members`):
       # match packages whose `source` is a local variant — `virtual`, `editable`,
       # or `directory` — per the `SourceWire` enum in the same file.
-      sig { params(packages: T::Array[T.untyped], manifest: T.untyped).returns(T::Set[String]) }
-      def root_package_names(packages, manifest)
-        declared = declared_workspace_members(manifest)
+      sig do
+        params(packages: T::Array[LockfileDocument::GraphPackage], declared: T::Set[String]).returns(T::Set[String])
+      end
+      def root_package_names(packages, declared)
         return declared unless declared.empty?
 
         packages.each_with_object(Set.new) do |pkg, set|
-          next unless pkg.is_a?(Hash)
+          next unless pkg.local_source
 
-          source = pkg["source"]
-          next unless source.is_a?(Hash)
-          next unless source.key?("virtual") || source.key?("editable") || source.key?("directory")
-
-          name = pkg["name"]
-          set << name if name.is_a?(String)
-        end
-      end
-
-      sig { params(manifest: T.untyped).returns(T::Set[String]) }
-      def declared_workspace_members(manifest)
-        return Set.new unless manifest.is_a?(Hash)
-
-        members = manifest["members"]
-        return Set.new unless members.is_a?(Array)
-
-        members.each_with_object(Set.new) do |name, set|
-          set << name if name.is_a?(String)
+          name = pkg.name
+          set << name if name
         end
       end
 
@@ -180,7 +131,7 @@ module Dependabot
       # semantics because the dependency graph reports what *could* be installed, not what was
       # selected for a particular sync.
       sig do
-        params(packages: T::Array[T.untyped], root_names: T::Set[String])
+        params(packages: T::Array[LockfileDocument::GraphPackage], root_names: T::Set[String])
           .returns([T::Set[String], T::Set[String]])
       end
       def direct_dependency_names(packages, root_names)
@@ -188,47 +139,29 @@ module Dependabot
         dev = T.let(Set.new, T::Set[String])
 
         packages.each do |pkg|
-          next unless pkg.is_a?(Hash) && root_names.include?(pkg["name"])
+          name = pkg.name
+          next unless name && root_names.include?(name)
 
-          collect_dep_names(pkg["dependencies"], runtime)
-          collect_dep_names_from_groups(pkg["optional-dependencies"], runtime)
-          collect_dep_names_from_groups(pkg["dev-dependencies"], dev)
+          runtime.merge(pkg.dependencies)
+          runtime.merge(pkg.optional_dependencies)
+          dev.merge(pkg.dev_dependencies)
         end
 
         [runtime, dev]
       end
 
-      sig { params(entries: T.untyped, collection: T.any(T::Set[String], T::Array[String])).void }
-      def collect_dep_names(entries, collection)
-        return unless entries.is_a?(Array)
-
-        entries.each do |entry|
-          name = lockfile_dependency_name(entry)
-          collection << name if name.is_a?(String)
-        end
-      end
-
-      sig { params(groups: T.untyped, collection: T.any(T::Set[String], T::Array[String])).void }
-      def collect_dep_names_from_groups(groups, collection)
-        return unless groups.is_a?(Hash)
-
-        groups.each_value { |entries| collect_dep_names(entries, collection) }
-      end
-
       sig do
         params(
-          pkg: T.untyped,
+          pkg: LockfileDocument::GraphPackage,
           root_names: T::Set[String],
           direct_runtime: T::Set[String],
           direct_dev: T::Set[String]
         ).returns(T.nilable(Dependabot::Dependency))
       end
       def build_dependency(pkg, root_names, direct_runtime, direct_dev)
-        return unless pkg.is_a?(Hash)
-
-        name = pkg["name"]
-        version = pkg["version"]
-        return unless name.is_a?(String) && version.is_a?(String)
+        name = pkg.name
+        version = pkg.version
+        return unless name && version
 
         # Root project packages get requirements: [] (indirect, runtime) to
         # match the prior FileParser-derived behaviour where uv.lock packages

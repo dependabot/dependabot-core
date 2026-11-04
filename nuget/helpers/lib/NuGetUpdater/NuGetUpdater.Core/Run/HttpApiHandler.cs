@@ -46,12 +46,7 @@ public class HttpApiHandler : IApiHandler, IApiRetryDelayProvider
         if (!response.IsSuccessStatusCode)
         {
             var responseContent = await response.Content.ReadAsStringAsync();
-            if (!string.IsNullOrEmpty(responseContent))
-            {
-                responseContent = string.Concat(": ", responseContent);
-            }
-
-            throw new HttpRequestException(message: $"{(int)response.StatusCode} ({response.StatusCode}){responseContent}", inner: null, statusCode: response.StatusCode);
+            throw new HttpApiException(method, endpoint, response.StatusCode, responseContent);
         }
     }
 

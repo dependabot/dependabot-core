@@ -42,7 +42,7 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
+            (?<=require\s|requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
           }x
         MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/
 
@@ -235,7 +235,7 @@ module Dependabot
             raise DependencyFileNotResolvable, error.message
           end
 
-          raise Dependabot::OutOfMemory if error.message.start_with?("Allowed memory size")
+          raise Dependabot::OutOfMemory if Helpers.out_of_memory_error?(error.message)
 
           match_data = error.message.match(%r{https?://(?<source>[^/]+)/})
           if error.message.include?("403 Forbidden") && match_data
@@ -457,7 +457,7 @@ module Dependabot
               .gsub(/\}\z/, "}\n")
         end
 
-        sig { params(requirements: T::Array[String]).returns(String) }
+        sig { params(requirements: T::Array[String]).returns(T.nilable(String)) }
         def version_for_reqs(requirements)
           req_arrays =
             requirements
@@ -477,7 +477,7 @@ module Dependabot
             .find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
-          raise "No matching version for #{requirements}!" unless version
+          return unless version
 
           version.to_s
         end
@@ -509,7 +509,10 @@ module Dependabot
         sig { returns(String) }
         def composer_version
           @composer_version ||= T.let(
-            Helpers.composer_version(parsed_composer_json, parsed_lockfile),
+            Helpers.composer_version(
+              manifest_document,
+              LockfileDocument.new(data: parsed_lockfile, context: lockfile.path)
+            ),
             T.nilable(String)
           )
         end
@@ -537,7 +540,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def initial_platform
-          platform_php = Helpers.capture_platform_php(parsed_composer_json)
+          platform_php = Helpers.capture_platform_php(manifest_document)
 
           platform = {}
           platform[Language::NAME] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
@@ -545,7 +548,7 @@ module Dependabot
           # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
-          requirement_php = Helpers.php_constraint(parsed_composer_json)
+          requirement_php = Helpers.php_constraint(manifest_document)
           return platform unless requirement_php.is_a?(String)
           return platform unless requirement_valid?(requirement_php)
 
@@ -560,6 +563,14 @@ module Dependabot
           true
         rescue Gem::Requirement::BadRequirementError
           false
+        end
+
+        sig { returns(ManifestDocument) }
+        def manifest_document
+          @manifest_document ||= T.let(
+            ManifestDocument.new(data: parsed_composer_json, context: composer_json.path),
+            T.nilable(ManifestDocument)
+          )
         end
 
         sig { returns(T::Hash[String, T.untyped]) }

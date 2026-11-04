@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child fixtures and generated checker examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -510,6 +511,130 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           a_string_including("certifi==2025.2.0")
         )
         expect(uv_commands.count { |command| command.include?("certifi==2025.2.0") }).to eq(2)
+      end
+
+      context "with a lockfile-only strategy and a security advisory" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+        let(:pypi_response) do
+          <<~HTML
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <a href="https://files.pythonhosted.org/certifi-2025.1.31.tar.gz">certifi-2025.1.31.tar.gz</a>
+                <a href="https://files.pythonhosted.org/certifi-2025.2.0.tar.gz">certifi-2025.2.0.tar.gz</a>
+                <a href="https://files.pythonhosted.org/certifi-2025.3.0.tar.gz">certifi-2025.3.0.tar.gz</a>
+              </body>
+            </html>
+          HTML
+        end
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "certifi",
+              package_manager: "uv",
+              vulnerable_versions: ["<2025.2.0"]
+            )
+          ]
+        end
+
+        it "updates the lockfile to the lowest fixed version without unlocking requirements" do
+          expect(checker.requirements_unlocked_or_can_be?).to be(false)
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :none).first
+          updated_files = Dependabot::Uv::FileUpdater.new(
+            dependencies: [updated_dependency],
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_dependency_files
+
+          expect(updated_dependency.version).to eq("2025.2.0")
+          expect(updated_dependency.requirements).to eq([])
+          expect(updated_files.map(&:name)).to eq(["uv.lock"])
+          expect(updated_files.first.content).to include('version = "2025.2.0"')
+          expect(uv_commands).to all(include("certifi==2025.2.0"))
+        end
+      end
+
+      context "with a lockfile-only strategy and no security advisory" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+        it "updates the lockfile to the latest resolvable version" do
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :none).first
+          expect(updated_dependency.version).to eq("2025.2.0")
+          expect(updated_dependency.requirements).to eq([])
+          expect(uv_commands).to include(a_string_including("certifi>=2025.1.31,<=2025.2.0"))
+        end
+      end
+
+      context "with a lockfile-only strategy and no newer version" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+        let(:pypi_response) do
+          <<~HTML
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <a href="https://files.pythonhosted.org/certifi-2025.1.31.tar.gz">certifi-2025.1.31.tar.gz</a>
+              </body>
+            </html>
+          HTML
+        end
+
+        it "does not report an update" do
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+          expect(uv_commands).to be_empty
+        end
+      end
+
+      context "with a lockfile-only strategy and a top-level dependency resolved from uv.lock" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "certifi",
+            version: "2025.1.31",
+            requirements: [{
+              file: "requirements.txt",
+              requirement: ">=2025.1,<2025.2",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "uv"
+          )
+        end
+
+        it "keeps the manifest constraint" do
+          expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+          expect(uv_commands).to be_empty
+        end
+      end
+    end
+
+    context "with a lockfile-only strategy and a pip-compile sub-dependency" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "requirements/test.in",
+            content: fixture("pip_compile_files", "unpinned.in")
+          ),
+          Dependabot::DependencyFile.new(
+            name: "requirements/test.txt",
+            content: fixture("requirements", "pip_compile_unpinned.txt")
+          )
+        ]
+      end
+      let(:dependency_requirements) { [] }
+
+      it "keeps the pip-compile behavior" do
+        dummy_resolver = instance_double(described_class::PipCompileVersionResolver)
+        allow(described_class::PipCompileVersionResolver).to receive(:new).and_return(dummy_resolver)
+        allow(dummy_resolver).to receive_messages(resolvable?: true, latest_resolvable_version: nil)
+        allow(dummy_resolver).to receive(:latest_resolvable_version)
+          .with(requirement: nil).and_return(Gem::Version.new("2.0.0"))
+
+        expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
       end
     end
   end
@@ -1161,6 +1286,102 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
 
           it { is_expected.to eq(Gem::Version.new("3.5.2")) }
         end
+      end
+    end
+  end
+
+  describe "Git dependencies" do
+    # The version comes from uv.lock, as it does in any repository that has one: it is the package's
+    # own distribution version, never a commit sha - which is what makes the guards below necessary
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: "0.3.0",
+        requirements: dependency_requirements,
+        package_manager: "uv"
+      )
+    end
+    let(:dependency_requirements) do
+      [{
+        requirement: "*",
+        file: "pyproject.toml",
+        groups: [],
+        source: {
+          type: "git",
+          url: "https://github.com/tiangolo/fastapi",
+          ref: "0.110.0"
+        }
+      }]
+    end
+    let(:dependency_files) { [pyproject] }
+    let(:pyproject_fixture_name) { "uv_git_tag_sources.toml" }
+
+    before do
+      git_header = { "content-type" => "application/x-git-upload-pack-advertisement" }
+      stub_request(:get, "https://github.com/tiangolo/fastapi.git/info/refs?service=git-upload-pack")
+        .to_return(status: 200, body: fixture("git", "upload_packs", "fastapi"), headers: git_header)
+      # Stubbed so that the ref assertion below is what fails when the git path is not taken, rather
+      # than an unhandled request. That the request is never made is asserted on its own.
+      stub_request(:get, "https://pypi.org/pypi/git-sources-project/json/").to_return(status: 404)
+    end
+
+    describe "#lowest_security_fix_version" do
+      let(:security_advisories) do
+        [Dependabot::SecurityAdvisory.new(
+          dependency_name: "fastapi",
+          package_manager: "uv",
+          vulnerable_versions: [Dependabot::Uv::Requirement.new("< 0.120.0")]
+        )]
+      end
+
+      # The version in uv.lock is the package's own, so `existing_version_is_sha?` does not keep a git
+      # pin out of the security path. Answering with a version from that name's index would title the
+      # pull request with a fix the diff does not apply: the diff moves a tag.
+      it "declines to answer for a git dependency" do
+        expect(checker.lowest_security_fix_version).to be_nil
+      end
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      # A branch is not a version, so nothing can say what the next one is. The shared Python path
+      # guards this with pinned_ref_looks_like_version?, and without it the newest tag would be
+      # written over a ref the author deliberately left moving.
+      context "when the source is pinned to a branch rather than a tag" do
+        let(:dependency_requirements) do
+          [{
+            requirement: "*",
+            file: "pyproject.toml",
+            groups: [],
+            source: { type: "git", url: "https://github.com/tiangolo/fastapi", ref: "main" }
+          }]
+        end
+
+        it "leaves the requirement exactly as it was" do
+          expect(updated_requirements).to eq(dependency_requirements)
+        end
+      end
+
+      it "moves the tag to the newest version the remote advertises" do
+        expect(updated_requirements).to eq(
+          [{
+            requirement: "*",
+            file: "pyproject.toml",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/tiangolo/fastapi",
+              ref: "0.128.0"
+            }
+          }]
+        )
+      end
+
+      it "does not consult an index about the manifest's own name" do
+        updated_requirements
+
+        expect(WebMock).not_to have_requested(:get, "https://pypi.org/pypi/git-sources-project/json/")
       end
     end
   end

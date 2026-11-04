@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/updater/semver_grouping_rules"
 require "dependabot/notices"
 
 # This class implements our strategy for iterating over all of the dependencies
@@ -130,6 +131,12 @@ module Dependabot
 
           return if all_versions_ignored?(dependency, checker)
           return log_up_to_date(dependency) if checker.up_to_date?
+
+          if (group = group_claiming_dependency(dependency, checker))
+            return Dependabot.logger.info(
+              "Skipping #{dependency.name} as its update is covered by the '#{group.name}' group"
+            )
+          end
 
           if pr_exists_for_latest_version?(checker)
             latest_version = checker.latest_version&.to_s
@@ -261,6 +268,12 @@ module Dependabot
 
         sig { params(error: StandardError, dependency: Dependabot::Dependency).void }
         def process_dependency_error(error, dependency)
+          # updated_dependencies can raise AllVersionsIgnored after requirements_to_unlock
+          # succeeds; for a non-security job that means "no update possible", so skip it.
+          if error.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
+            return Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          end
+
           if error.class.to_s.include?("RegistryError")
             ex = Dependabot::DependencyFileNotResolvable.new(error.message)
             error_handler.handle_dependency_error(error: ex, dependency: dependency)
@@ -308,6 +321,25 @@ module Dependabot
             created_pull_requests.find { |pr| pr == new_pr }
         end
 
+        # A dependency reaches this operation while a group still has a claim on it when that group was
+        # skipped without resolving any versions, e.g. because it already has an open pull request. Now
+        # that the latest version is known we can apply the group's update-types rules: if they accept
+        # this update the group's own job will raise it, so no individual pull request is opened. If they
+        # reject it the group will never include it, and this is the only chance it has to be updated.
+        sig do
+          params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base)
+            .returns(T.nilable(Dependabot::DependencyGroup))
+        end
+        def group_claiming_dependency(dependency, checker)
+          groups = dependency_snapshot.groups_deferred_by_semver_rules(dependency.name)
+          return nil if groups.empty?
+
+          semver_grouping_rules = SemverGroupingRules.new(job: job)
+          groups.find do |group|
+            semver_grouping_rules.allow_grouping?(group, dependency, checker) { requirements_to_unlock(checker) }
+          end
+        end
+
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
           if !checker.requirements_unlocked_or_can_be?
@@ -320,6 +352,13 @@ module Dependabot
           else
             :update_not_possible
           end
+        rescue Dependabot::AllVersionsIgnored
+          # Security updates rely on this being surfaced to halt the run, so only
+          # non-security jobs treat every ignored version as "no update possible".
+          raise if job.security_updates_only?
+
+          Dependabot.logger.info("All updates for #{checker.dependency.name} were ignored")
+          :update_not_possible
         end
 
         sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }

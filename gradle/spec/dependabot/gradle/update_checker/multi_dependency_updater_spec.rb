@@ -1,12 +1,11 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/gradle/update_checker/multi_dependency_updater"
 
-namespace = Dependabot::Gradle::UpdateChecker
-RSpec.describe namespace::MultiDependencyUpdater do
+RSpec.describe Dependabot::Gradle::UpdateChecker::MultiDependencyUpdater do
   let(:updater) do
     described_class.new(
       dependency: dependency,

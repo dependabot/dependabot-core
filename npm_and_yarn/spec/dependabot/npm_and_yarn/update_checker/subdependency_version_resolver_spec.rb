@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the dynamic describe constant or its child-context-only dependency fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -171,15 +173,15 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           package_manager: "npm_and_yarn"
         )
       end
-      # pnpm refuses the pin on a transitive package, and the retry resolves
-      # acorn to 5.7.4 and 6.4.2 at the depths the dependents' ranges allow,
-      # whatever the bound is. The best resolution within the bound is proposed.
-      let(:latest_allowable_version) { "6.4.2" }
+      # pnpm refuses the pin on a transitive package, and the retry resolves acorn to the newest version
+      # the dependents' ranges allow (5.7.4), whatever the bound is. That resolution is proposed when it
+      # is within the bound.
+      let(:latest_allowable_version) { "5.7.4" }
 
-      it { is_expected.to eq(Gem::Version.new("6.4.2")) }
+      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
 
-      context "when an occurrence resolves above the allowable version" do
-        let(:latest_allowable_version) { "6.0.2" }
+      context "when the resolution is above the allowable version" do
+        let(:latest_allowable_version) { "5.5.0" }
 
         it { is_expected.to be_nil }
       end
@@ -291,7 +293,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         latest_resolvable_version
       end
 
-      it "tries pnpm update --depth Infinity before pnpm audit --fix" do
+      it "tries a deep pnpm update before pnpm audit --fix" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
         allow(Dependabot::NpmAndYarn::NativeHelpers)
           .to receive_messages(run_pnpm_deep_update_command: "", run_pnpm_audit_fix_command: "")
@@ -617,7 +619,7 @@ end
 # at `extra` when given.
 def rewrite_lockfile_lodash(version, extra: nil)
   content = File.read("pnpm-lock.yaml")
-  block = content[%r{^  /lodash@3\.10\.1:\n(?:    .*\n)+}]
+  block = T.must(content[%r{^  /lodash@3\.10\.1:\n(?:    .*\n)+}])
   content = content.gsub("/lodash@3.10.1:", "/lodash@#{version}:").gsub("lodash: 3.10.1", "lodash: #{version}")
   if extra
     content += block.gsub("3.10.1", extra)

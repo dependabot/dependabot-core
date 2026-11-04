@@ -118,6 +118,11 @@ module Dependabot
         "error-type": "dependency_not_found",
         "error-detail": { source: error.source }
       }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
@@ -210,6 +215,11 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
+      }
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
@@ -242,6 +252,13 @@ module Dependabot
         }
       }
     when Dependabot::DependencyFileNotResolvable
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message }
+      }
+    # TODO: switch to a dedicated error type once dependabot-api accepts one.
+    # Until then, reuse a type whose message is shown to users.
+    when Dependabot::DependencyChecksumMismatch
       {
         "error-type": "dependency_file_not_resolvable",
         "error-detail": { message: error.message }
@@ -709,6 +726,27 @@ module Dependabot
   class DependencyFileNotSupported < DependabotError; end
 
   class DependencyFileContentNotChanged < DependabotError; end
+
+  # Raised when the package manager refuses to continue because two sources
+  # (e.g. a lockfile and a registry) report different checksums for the same
+  # dependency version. It deliberately does not inherit from
+  # DependencyFileNotResolvable: callers that treat "not resolvable" as "no
+  # update available" must not hide this error.
+  class DependencyChecksumMismatch < DependabotError
+    extend T::Sig
+
+    # The dependency as the package manager names it, including any platform
+    # suffix (e.g. "nokogiri (1.16.0-x86_64-linux)"). Nil when it can't be
+    # determined.
+    sig { returns(T.nilable(String)) }
+    attr_reader :dependency_name
+
+    sig { params(message: String, dependency_name: T.nilable(String)).void }
+    def initialize(message, dependency_name: nil)
+      @dependency_name = dependency_name
+      super(message)
+    end
+  end
 
   class BadRequirementError < Gem::Requirement::BadRequirementError; end
 

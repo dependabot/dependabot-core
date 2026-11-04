@@ -178,15 +178,17 @@ module Dependabot
       sig do
         params(
           project_path: String,
-          updates: T::Hash[String, T::Hash[String, String]]
+          updates: T::Hash[String, T::Hash[String, String]],
+          manifest_path: T.nilable(String)
         ).returns(T.any(Result::ManifestUpdate, Result::Failure))
       end
-      def update_manifest(project_path:, updates:)
+      def update_manifest(project_path:, updates:, manifest_path: nil)
         Result::ManifestUpdate.from_object(
           call_julia_helper(
             function: "update_manifest",
             args: {
               project_path: project_path,
+              manifest_path: manifest_path,
               updates: updates
             }
           )

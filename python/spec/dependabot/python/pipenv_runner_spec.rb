@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context updated_lockfile_content fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"

@@ -1,15 +1,18 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/julia/package_manager"
 
 RSpec.describe Dependabot::Julia::PackageManager do
+  extend T::Sig
+
   describe "#ecosystem" do
+    sig { returns(Dependabot::Julia::PackageManager) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:package_manager) { described_class.new }
 
+    sig { returns(String) }
     let(:expected_minimum_version) { Dependabot::Julia::PackageManager::MINIMUM_VERSION }
-    let(:expected_current_version) { Dependabot::Julia::PackageManager::CURRENT_VERSION }
 
     before do
       # Mock version detection to return consistent test values
@@ -21,10 +24,7 @@ RSpec.describe Dependabot::Julia::PackageManager do
       # The version will be the MINIMUM_VERSION from the PackageManager
       expect(package_manager.version).to eq(Dependabot::Version.new(expected_minimum_version))
       expect(package_manager.supported_versions)
-        .to contain_exactly(
-          Dependabot::Version.new(expected_minimum_version),
-          Dependabot::Version.new(expected_current_version)
-        )
+        .to contain_exactly(Dependabot::Version.new(expected_minimum_version))
       expect(package_manager.deprecated_versions).to be_empty
     end
 

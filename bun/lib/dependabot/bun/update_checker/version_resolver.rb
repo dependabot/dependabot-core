@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -6,6 +6,8 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
 require "dependabot/logger"
+require "dependabot/package/npm_package_json"
+require "dependabot/package/npm_registry_package"
 require "dependabot/bun/dependency_files_filterer"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/file_updater/npmrc_builder"
@@ -17,6 +19,7 @@ require "dependabot/bun/requirement"
 require "dependabot/bun/update_checker"
 require "dependabot/bun/version"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/peer_dependency_conflict"
 
 # rubocop:disable-next Metrics/ClassLength
 module Dependabot
@@ -26,6 +29,8 @@ module Dependabot
         extend T::Sig
 
         require_relative "latest_version_finder"
+
+        PeerDependencyConflict = Dependabot::UpdateCheckers::PeerDependencyConflict
 
         TIGHTLY_COUPLED_MONOREPOS = T.let(
           {
@@ -70,7 +75,7 @@ module Dependabot
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize( # rubocop:disable Metrics/AbcSize
+        def initialize(
           dependency:,
           dependency_files:,
           credentials:,
@@ -101,9 +106,9 @@ module Dependabot
           @paths_requiring_update_check = T.let(nil, T.nilable(T::Array[String]))
           @top_level_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @old_peer_dependency_errors = T.let(
-            nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
+            nil, T.nilable(T::Array[PeerDependencyConflict])
           )
-          @peer_dependency_errors = T.let(nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]))
+          @peer_dependency_errors = T.let(nil, T.nilable(T::Array[PeerDependencyConflict]))
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -150,7 +155,7 @@ module Dependabot
             )
           }]
           newly_broken_peer_reqs_on_dep.each do |peer_req|
-            dep_name = peer_req.fetch(:requiring_dep_name)
+            dep_name = peer_req.requiring_dep_name
             dep = top_level_dependencies.find { |d| d.name == dep_name }
 
             # Can't handle reqs from sub-deps or git source deps (yet)
@@ -226,8 +231,8 @@ module Dependabot
 
           @resolve_latest_previous_version[dep] ||= begin
             relevant_versions = latest_version_finder(dependency)
-                                .possible_previous_versions_with_details
-                                .map(&:first)
+                                .possible_previous_releases
+                                .map(&:version)
             reqs = dep.requirements.filter_map(&:requirement_string)
                       .map { |r| requirement_class.requirements_array(r) }
 
@@ -388,7 +393,7 @@ module Dependabot
           }]
         end
 
-        sig { returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def peer_dependency_errors
           return @peer_dependency_errors if @peer_dependency_errors
 
@@ -396,7 +401,7 @@ module Dependabot
           @peer_dependency_errors
         end
 
-        sig { returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def old_peer_dependency_errors
           return @old_peer_dependency_errors if @old_peer_dependency_errors
 
@@ -409,7 +414,7 @@ module Dependabot
         sig do
           params(
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def fetch_peer_dependency_errors(version:)
           # TODO: Add all of the error handling that the FileUpdater does
@@ -421,7 +426,7 @@ module Dependabot
 
             paths_requiring_update_check.flat_map do |path|
               run_checker(path: path, version: version)
-            end.compact
+            end
           end
         rescue SharedHelpers::HelperSubprocessFailed
           # Fall back to allowing the version through. Whatever error
@@ -430,12 +435,12 @@ module Dependabot
           []
         end
 
-        sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
+        sig { params(message: String).returns(T::Array[PeerDependencyConflict]) }
         def handle_peer_dependency_errors(message)
-          errors = []
+          errors = T.let([], T::Array[T::Hash[String, T.nilable(String)]])
           if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
             message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match&.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
             message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
@@ -444,45 +449,15 @@ module Dependabot
           else
             raise
           end
-          errors
+          errors.filter_map { |captures| PeerDependencyConflict.from_captures(captures) }
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def unmet_peer_dependencies
-          peer_dependency_errors
-            .map { |captures| error_details_from_captures(captures) }
-        end
-
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def old_unmet_peer_dependencies
-          old_peer_dependency_errors
-            .map { |captures| error_details_from_captures(captures) }
-        end
-
-        sig do
-          params(captures: T.any(T::Hash[String, T.nilable(String)], String))
-            .returns(T::Hash[Symbol, T.nilable(String)])
-        end
-        def error_details_from_captures(captures)
-          return {} unless captures.is_a?(Hash)
-
-          required_dep_captures  = captures.fetch("required_dep")
-          requiring_dep_captures = captures.fetch("requiring_dep")
-          return {} unless required_dep_captures && requiring_dep_captures
-
-          {
-            requirement_name: required_dep_captures.sub(/@[^@]+$/, ""),
-            requirement_version: required_dep_captures.split("@").last&.delete('"'),
-            requiring_dep_name: requiring_dep_captures.sub(/@[^@]+$/, "")
-          }
-        end
-
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def relevant_unmet_peer_dependencies # rubocop:disable Metrics/PerceivedComplexity
           relevant_unmet_peer_dependencies =
-            unmet_peer_dependencies.select do |dep|
-              dep[:requirement_name] == dependency.name ||
-                dep[:requiring_dep_name] == dependency.name
+            peer_dependency_errors.select do |dep|
+              dep.requirement_name == dependency.name ||
+                dep.requiring_dep_name == dependency.name
             end
 
           unless dependency_group.nil?
@@ -490,8 +465,8 @@ module Dependabot
             # the update is also updating those dependencies.
             relevant_unmet_peer_dependencies.reject! do |dep|
               dependency_group&.dependencies&.any? do |group_dep|
-                dep[:requirement_name] == group_dep.name ||
-                  dep[:requiring_dep_name] == group_dep.name
+                dep.requirement_name == group_dep.name ||
+                  dep.requiring_dep_name == group_dep.name
               end
             end
           end
@@ -500,10 +475,7 @@ module Dependabot
 
           # Prune out any pre-existing warnings
           relevant_unmet_peer_dependencies.reject do |issue|
-            old_unmet_peer_dependencies.any? do |old_issue|
-              old_issue.slice(:requirement_name, :requiring_dep_name) ==
-                issue.slice(:requirement_name, :requiring_dep_name)
-            end
+            old_peer_dependency_errors.any? { |old_issue| old_issue.same_dependencies?(issue) }
           end
         end
 
@@ -511,14 +483,18 @@ module Dependabot
         sig { returns(T::Array[T.any(String, Gem::Version)]) }
         def satisfying_versions
           latest_version_finder(dependency)
-            .possible_versions_with_details
-            .select do |versions_with_details|
-              version, details = versions_with_details
+            .possible_releases
+            .select do |release|
+              version = release.version
               next false unless satisfies_peer_reqs_on_dep?(version)
-              next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
 
-              details["peerDependencies"].all? do |dep, req|
+              peer_requirements = Dependabot::Package::NpmRegistryPackage.peer_dependencies(
+                details: release.details,
+                package_name: dependency.name,
+                version: version.to_s
+              )
+              peer_requirements.all? do |dep, req|
                 dep = top_level_dependencies.find { |d| d.name == dep }
                 next false unless dep
                 next git_dependency?(dep) if req.include?("/")
@@ -530,11 +506,7 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
-            end.map do |versions_with_details| # rubocop:disable Style/MultilineBlockChain
-              # Return just the version
-              version, = versions_with_details
-              version
-            end
+            end.map(&:version)
         end
 
         # rubocop:enable Metrics/PerceivedComplexity
@@ -542,7 +514,7 @@ module Dependabot
         sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T::Boolean) }
         def satisfies_peer_reqs_on_dep?(version)
           newly_broken_peer_reqs_on_dep.all? do |peer_req|
-            req = peer_req.fetch(:requirement_version)
+            req = peer_req.requirement_version
 
             # Git requirements can't be satisfied by a version
             next false if req&.include?("/")
@@ -555,18 +527,22 @@ module Dependabot
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.any(String, Gem::Version))) }
-        def latest_version_of_dep_with_satisfied_peer_reqs(dep) # rubocop:disable Metrics/PerceivedComplexity
+        def latest_version_of_dep_with_satisfied_peer_reqs(dep)
           dependency_version = version_for_dependency(dep)
-          version_with_detail =
+          release =
             latest_version_finder(dep)
-            .possible_versions_with_details
-            .find do |version_details|
-              version, details = version_details
+            .possible_releases
+            .find do |candidate|
+              version = candidate.version
 
               next false unless !dependency_version || version > dependency_version
-              next true unless details["peerDependencies"]
 
-              details["peerDependencies"].all? do |peer_dep_name, req|
+              peer_requirements = Dependabot::Package::NpmRegistryPackage.peer_dependencies(
+                details: candidate.details,
+                package_name: dep.name,
+                version: version.to_s
+              )
+              peer_requirements.all? do |peer_dep_name, req|
                 # Can't handle multiple peer dependencies
                 next false unless peer_dep_name == dependency.name
                 next git_dependency?(dependency) if req.include?("/")
@@ -578,7 +554,7 @@ module Dependabot
                 false
               end
             end
-          version_with_detail.is_a?(Array) ? version_with_detail.first : version_with_detail
+          release&.version
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
@@ -589,16 +565,16 @@ module Dependabot
             .git_dependency?
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def newly_broken_peer_reqs_on_dep
           relevant_unmet_peer_dependencies
-            .select { |dep| dep[:requirement_name] == dependency.name }
+            .select { |dep| dep.requirement_name == dependency.name }
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[PeerDependencyConflict]) }
         def newly_broken_peer_reqs_from_dep
           relevant_unmet_peer_dependencies
-            .select { |dep| dep[:requiring_dep_name] == dependency.name }
+            .select { |dep| dep.requiring_dep_name == dependency.name }
         end
 
         sig do
@@ -617,14 +593,16 @@ module Dependabot
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_checker(path:, version:)
           bun_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.bun_locks, path: path)
           return run_bun_checker(path: path, version: version) if bun_lockfiles.any?
 
           root_bun_lock = dependency_files_builder.root_bun_lock
-          run_bun_checker(path: path, version: version) if root_bun_lock
+          return [] unless root_bun_lock
+
+          run_bun_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_peer_dependency_errors(e.message)
         end
@@ -633,17 +611,124 @@ module Dependabot
           params(
             path: String,
             version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.untyped)
+          ).returns(T::Array[PeerDependencyConflict])
         end
         def run_bun_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              Helpers.run_bun_command(
-                "update #{dependency.name}@#{version} --save-text-lockfile --ignore-scripts",
-                fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
-              )
+              workspace_filters(path).flat_map { |filter| run_bun_update(filter: filter, version: version) }
             end
           end
+        end
+
+        sig do
+          params(
+            filter: T.nilable(String),
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T::Array[PeerDependencyConflict])
+        end
+        def run_bun_update(filter:, version:)
+          command = T.let(["update", "#{dependency.name}@#{version}"], T::Array[String])
+          command += ["--filter", filter] if filter
+          command += ["--save-text-lockfile", "--ignore-scripts"]
+
+          Helpers.run_bun_command(
+            command,
+            fingerprint: "update <dependency_name>@<version> --save-text-lockfile --ignore-scripts"
+          )
+          []
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_peer_dependency_errors(e.message)
+        end
+
+        # Returns every workspace filter (nil for the +path+ we've already
+        # chdir'd into, or a workspace path relative to it) for manifests in
+        # the project rooted at +path+ that declare +dependency+. Manifests
+        # are matched by scanning their actual dependency fields (as
+        # BunLockfileUpdater does), rather than dependency.requirements,
+        # since Bun always records catalog entries against the root
+        # package.json even when a nested workspace is the only consumer
+        # (via "catalog:"). Falls back to an unfiltered check at +path+ if
+        # it isn't declared anywhere in this project (e.g. a
+        # sub-dependency).
+        sig { params(path: String).returns(T::Array[T.nilable(String)]) }
+        def workspace_filters(path)
+          manifests = package_jsons_in_project(path)
+          root_file = manifests.find { |file| File.dirname(file.name) == path }
+
+          workspace_filters = manifests.filter_map do |file|
+            next if file == root_file
+            next unless package_json_declares?(file)
+
+            workspace_filter(file, path: path)
+          end.uniq
+
+          declared_at_root = root_file && package_json_declares?(root_file)
+          return workspace_filters if !declared_at_root && workspace_filters.any?
+
+          [nil, *workspace_filters]
+        end
+
+        # Every package.json belonging to the same Bun project as +path+:
+        # its own manifest, plus any workspace members governed by the same
+        # lockfile. Manifests under a *nested* project with its own
+        # lockfile are excluded, so that sibling nested projects (each
+        # checked separately, chdir'd into their own path) don't leak their
+        # declarations into each other's filters.
+        sig { params(path: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def package_jsons_in_project(path)
+          project_lockfile_dir = lockfile_dir_for(path)
+
+          dependency_files.select do |file|
+            next false unless file.name.end_with?("package.json")
+
+            dir = File.dirname(file.name)
+            next false unless path == "." || dir == path || dir.start_with?("#{path}/")
+
+            lockfile_dir_for(dir) == project_lockfile_dir
+          end
+        end
+
+        # The directory of the bun.lock that governs +dir+: the lockfile
+        # whose own directory is the longest ancestor match, since a nested
+        # lockfile takes precedence over the root one for its own subtree.
+        sig { params(dir: String).returns(T.nilable(String)) }
+        def lockfile_dir_for(dir)
+          lockfile_dirs = dependency_files_builder.bun_locks.map { |lockfile| File.dirname(lockfile.name) }
+          lockfile_dirs.select { |lockfile_dir| lockfile_governs_dir?(lockfile_dir, dir) }.max_by(&:length)
+        end
+
+        sig { params(lockfile_dir: String, dir: String).returns(T::Boolean) }
+        def lockfile_governs_dir?(lockfile_dir, dir)
+          lockfile_dir == "." || dir == lockfile_dir || dir.start_with?("#{lockfile_dir}/")
+        end
+
+        sig { params(package_json_file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def package_json_declares?(package_json_file)
+          declared = T.let(false, T::Boolean)
+          Dependabot::Package::NpmPackageJson.from_file(package_json_file).each_dependency do |name, _req, _type|
+            declared ||= name == dependency.name
+          end
+          declared
+        end
+
+        # Path-based --filter target, relative to +path+, for the workspace
+        # at +file+ (e.g. "./packages/app"). Bun's --filter also accepts a
+        # package's declared "name", but names can contain glob
+        # metacharacters that would match unrelated workspaces, so a path is
+        # used instead.
+        sig { params(file: Dependabot::DependencyFile, path: String).returns(String) }
+        def workspace_filter(file, path:)
+          unless Dependabot::Package::NpmPackageJson.from_file(file).name
+            raise Dependabot::DependencyFileNotParseable.new(
+              file.path,
+              "#{file.name} must declare a \"name\" to be targeted for a workspace-scoped check"
+            )
+          end
+
+          workspace_dir = File.dirname(file.name)
+          workspace_dir = workspace_dir.delete_prefix("#{path}/") unless path == "."
+          "./#{workspace_dir}"
         end
 
         sig do

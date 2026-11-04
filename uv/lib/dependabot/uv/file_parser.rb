@@ -16,8 +16,8 @@ require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/language_version_manager"
 require "dependabot/uv/package_manager"
+require "dependabot/uv/lockfile_document"
 require "dependabot/python/file_parser/pep_dependency"
-require "toml-rb"
 
 module Dependabot
   module Uv
@@ -199,15 +199,10 @@ module Dependabot
         dependency_set = DependencySet.new
 
         uv_lock_files.each do |file|
-          lockfile_content = TomlRB.parse(file.content)
-          packages = lockfile_content.fetch("package", [])
-
-          packages.each do |package_data|
-            next unless package_data.is_a?(Hash) && package_data["name"] && package_data["version"]
-
+          LockfileDocument.from_file(file).each_dependency do |package|
             dependency_set << Dependency.new(
-              name: normalised_name(package_data["name"]),
-              version: package_data["version"],
+              name: normalised_name(package.name),
+              version: package.version,
               requirements: [], # Lock files don't contain requirements
               package_manager: "uv"
             )

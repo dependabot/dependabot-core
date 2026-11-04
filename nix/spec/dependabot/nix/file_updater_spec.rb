@@ -1,12 +1,15 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve class-scope generated examples or the variable-size command splat.
+
 require "json"
 require "fileutils"
 require "open3"
 require "tmpdir"
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nix/file_updater"
@@ -47,12 +50,14 @@ RSpec.describe Dependabot::Nix::FileUpdater do
     described_class.new(
       dependency_files: [flake_nix, flake_lock],
       dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 
@@ -871,7 +876,7 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         credentials: []
       )
 
-      updated_lock = JSON.parse(updater.updated_dependency_files.fetch(0).content)
+      updated_lock = JSON.parse(T.must(updater.updated_dependency_files.fetch(0).content))
       node_name = updated_lock.fetch("nodes").fetch("root").fetch("inputs").fetch("local_input")
       input_node = updated_lock.fetch("nodes").fetch(node_name)
 

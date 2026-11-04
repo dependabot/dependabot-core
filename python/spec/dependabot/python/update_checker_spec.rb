@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve dynamic constants and generated checker examples. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -112,6 +113,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     it "widens matching library requirements and caches the result" do
       2.times { expect(checker.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges) }
       expect(a_request(:get, project_url)).to have_been_made.once
+    end
+
+    context "with a replaces-base python index" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://example.com/pypi/",
+            "replaces-base" => true
+          }
+        )]
+      end
+
+      it "does not query public PyPI and falls back to local metadata" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::WidenRanges)
+        expect(a_request(:get, project_url)).not_to have_been_made
+      end
     end
 
     context "with a different summary" do

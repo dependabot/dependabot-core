@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve generated parser examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -892,6 +893,88 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "with dependencies pinned to a uv git source" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_git_tag_sources.toml")
+        )
+      end
+
+      # The requirement goes with the source: keeping the PEP 508 constraint makes
+      # requirements_up_to_date? compare it against the newest tag, so a floor above that tag would
+      # report the pin as current and it would never be updated
+      it "drops the requirement of the ones it enriches, and keeps the others'" do
+        expect(dependencies.map { |dep| [dep.name, dep.requirements.first[:requirement]] }).to eq(
+          [
+            ["requests", ">=2.31.0"],
+            ["malformed-package", "*"],
+            ["tagged-package", nil],
+            ["acme-tagged-package", nil],
+            ["other-tagged-package", nil],
+            ["array-package", "*"],
+            ["quoted-package", nil]
+          ]
+        )
+      end
+
+      it "gives a git source to every tag it can rewrite, and to nothing else" do
+        expect(dependencies.map { |dep| [dep.name, dep.requirements.first[:source]] }).to eq(
+          [
+            ["requests", nil],
+            ["malformed-package", nil],
+            ["tagged-package", { type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3" }],
+            ["acme-tagged-package",
+             { type: "git", url: "https://github.com/example/acme-tagged.git", ref: "1.2.3" }],
+            # The key is written `Other_Tagged_Package`; uv resolves it under PEP 508 normalisation
+            ["other-tagged-package", { type: "git", url: "https://github.com/example/other.git", ref: "7.8.9" }],
+            # Valid uv, in a form the rewrite cannot reach
+            ["array-package", nil],
+            # Quoting is the only legal spelling for a name carrying a dot, so it is supported
+            ["quoted-package",
+             { type: "git", url: "https://github.com/example/quoted.git", ref: "3.2.1" }]
+          ]
+        )
+      end
+
+      context "with the uv.lock a real repository has" do
+        let(:files) { [pyproject, lockfile] }
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "uv.lock",
+            content: fixture("uv_locks", "git_tag_sources.lock")
+          )
+        end
+
+        # The version comes from the lock, and for a git pin it is the package's own distribution
+        # version rather than a commit sha. Several shared code paths key on that difference, so the
+        # shape tested without a lockfile is not the shape a repository actually has.
+        it "carries the locked version alongside the git source" do
+          dep = dependencies.find { |d| d.name == "tagged-package" }
+
+          expect(dep.version).to eq("0.3.0")
+          expect(dep.requirements.first[:source])
+            .to eq(type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3")
+        end
+      end
+
+      context "when a source carries a tag that is not a string" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "uv_git_tag_sources.toml").sub('tag = "1.2.3" }', "tag = 1.2 }")
+          )
+        end
+
+        it "skips that entry rather than failing the whole manifest" do
+          expect(dependencies.map(&:name)).to include("requests", "tagged-package")
+          expect(dependencies.find { |dep| dep.name == "acme-tagged-package" }.requirements.first[:source])
+            .to be_nil
+        end
+      end
+    end
+
     context "with a pyproject.toml file with no dependencies" do
       let(:files) { [pyproject] }
       let(:pyproject) do
@@ -1097,6 +1180,64 @@ RSpec.describe Dependabot::Uv::FileParser do
               }]
             )
           end
+        end
+      end
+    end
+
+    context "with lockfile-only dependency records" do
+      let(:files) { [pyproject, uv_lock] }
+      let(:pyproject) { Dependabot::DependencyFile.new(name: "pyproject.toml", content: "") }
+      let(:lockfile_name) { "uv.lock" }
+      let(:uv_lock) { Dependabot::DependencyFile.new(name: lockfile_name, content: lockfile_content) }
+      let(:lockfile_content) do
+        <<~TOML
+          package = [
+            false,
+            { name = "missing" },
+            { name = false, version = "1" },
+            { name = "Foo_Bar", version = "1.2", dependencies = false },
+            { name = "other", version = "2" },
+          ]
+        TOML
+      end
+
+      it "skips absent values and non-object entries without reading graph fields" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(dependencies.map { |dep| [dep.name, dep.version, dep.requirements] })
+          .to eq([["foo-bar", "1.2", []], ["other", "2", []]])
+      end
+
+      context "when a consumed field is malformed after a valid entry" do
+        let(:lockfile_content) do
+          <<~TOML
+            package = [
+              { name = "before", version = "1" },
+              { name = "invalid", version = 2 },
+              { name = "after", version = "3" },
+            ]
+          TOML
+        end
+
+        it "keeps earlier dependencies and logs the file failure" do
+          expect(Dependabot.logger).to receive(:warn).with(/Error parsing uv.lock:/)
+          expect(dependencies.map(&:name)).to eq(["before"])
+        end
+      end
+
+      context "when package is an object instead of an array" do
+        let(:lockfile_content) { 'package = { name = "ignored", version = "1" }' }
+
+        it "retains the parser's empty result without a warning" do
+          expect(Dependabot.logger).not_to receive(:warn)
+          expect(dependencies).to eq([])
+        end
+      end
+
+      context "when the lockfile is nested" do
+        let(:lockfile_name) { "nested/uv.lock" }
+
+        it "does not add nested lockfile dependencies" do
+          expect(dependencies).to eq([])
         end
       end
     end

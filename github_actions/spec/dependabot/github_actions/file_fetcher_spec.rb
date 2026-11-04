@@ -1,25 +1,37 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/github_actions/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GithubActions::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  sig { returns(String) }
   let(:github_url) { "https://api.github.com/" }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::GithubActions::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -27,6 +39,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       directory: directory
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
@@ -69,6 +82,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
 
+    sig { returns(String) }
     let(:workflow_file_fixture) do
       fixture("github", "contents_githubaction_workflow_file.json")
     end
@@ -82,6 +96,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "when an explicit directory is given" do
+      sig { returns(String) }
       let(:directory) { "/.github/workflows" }
 
       it "fetches the workflow files relatively to the directory" do
@@ -148,6 +163,57 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
           )
       end
 
+      context "when a workflow uses a self repository action" do
+        sig { returns(String) }
+        let(:workflow_file_fixture) do
+          contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - uses: $/tools/setup\n")
+        end
+
+        sig { params(path: String, content: String).returns(String) }
+        def contents_json(path, content)
+          { type: "file", name: File.basename(path), path: path, encoding: "base64",
+            content: Base64.encode64(content) }.to_json
+        end
+
+        before do
+          stub_request(:get, github_url + "repos/gocardless/bump/git/trees/sha?recursive=true")
+            .to_return(
+              status: 200,
+              headers: { "content-type" => "application/json" },
+              body: { truncated: false, tree: [
+                { path: "tools/setup/action.yml", type: "blob" },
+                { path: ".github/actions/inner/action.yaml", type: "blob" },
+                { path: "tools/setup/README.md", type: "blob" }
+              ] }.to_json
+            )
+          %w(tools/setup/action.yml .github/actions/inner/action.yaml).each do |path|
+            stub_request(:get, url + "#{path}?ref=sha")
+              .to_return(status: 200,
+                         body: contents_json(path, "runs: {}\n"),
+                         headers: { "content-type" => "application/json" })
+          end
+        end
+
+        it "fetches every action definition as a support file" do
+          support = file_fetcher_instance.files.select(&:support_file?)
+          expect(support.map(&:path)).to contain_exactly(
+            "/tools/setup/action.yml",
+            "/.github/actions/inner/action.yaml"
+          )
+        end
+
+        context "with a quoted uses key" do
+          sig { returns(String) }
+          let(:workflow_file_fixture) do
+            contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - \"uses\": \"$/tools/setup\"\n")
+          end
+
+          it "still fetches the action definitions" do
+            expect(file_fetcher_instance.files.count(&:support_file?)).to eq(2)
+          end
+        end
+      end
+
       context "when the experiment is disabled" do
         before { Dependabot::Experiments.reset! }
 
@@ -162,14 +228,19 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
 
       context "with a non-github.com source" do
+        # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+        sig { returns(T::Array[Dependabot::Credential]) }
         let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "ghes.other.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "ghes.other.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
         end
+        sig { returns(Dependabot::Source) }
         let(:source) do
           Dependabot::Source.new(
             provider: "github",
@@ -179,6 +250,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
             api_endpoint: github_url
           )
         end
+        # rubocop:enable RSpec/ScatteredLet
 
         it "keeps the existing workflow-only behavior" do
           expect(file_fetcher_instance.files.map(&:name))
@@ -189,9 +261,40 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
           expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
         end
       end
+
+      context "with a ghe.com source" do
+        # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+        sig { returns(T::Array[Dependabot::Credential]) }
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "tenant.ghe.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
+        end
+        sig { returns(Dependabot::Source) }
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "gocardless/bump",
+            directory: directory,
+            hostname: "tenant.ghe.com",
+            api_endpoint: github_url
+          )
+        end
+        # rubocop:enable RSpec/ScatteredLet
+
+        it "fetches the lockfile" do
+          expect(file_fetcher_instance.files.map(&:name)).to include(".github/workflows/actions.lock")
+        end
+      end
     end
 
     context "when it has an invalid encoding" do
+      sig { returns(String) }
       let(:workflow_file_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
@@ -201,6 +304,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "when only one file has an invalid encoding" do
+      sig { returns(String) }
       let(:bad_workflow_file_fixture) do
         fixture("github", "contents_image.json")
       end
@@ -244,6 +348,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "with an additional composite action file" do
+      sig { returns(String) }
       let(:composite_action_file_fixture) do
         fixture("github", "contents_githubaction_composite_file.json")
       end
@@ -328,6 +433,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
   end
 
   context "with a repo containing only a composite action file" do
+    sig { returns(String) }
     let(:composite_action_file_fixture) do
       fixture("github", "contents_githubaction_composite_file.json")
     end
@@ -368,10 +474,14 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
   end
 
   context "with a repo containing a composite action file in a subdirectory" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:composite_action_file_fixture) do
       fixture("github", "contents_githubaction_composite_file.json")
     end
+    sig { returns(String) }
     let(:directory) { "action/subdir" }
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       stub_request(:get, url + "action/subdir?ref=sha")
@@ -398,6 +508,105 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
           %w(action.yaml)
         )
       expect(a_request(:get, url + "action/subdir/actions.lock?ref=sha")).not_to have_been_made
+    end
+  end
+
+  context "with a composite action directory and an actions.lock" do
+    sig { returns(String) }
+    let(:directory) { "/.github/actions/inner" }
+
+    sig { params(path: String, content: String).returns(String) }
+    def contents_json(path, content)
+      { type: "file", name: File.basename(path), path: path, encoding: "base64",
+        content: Base64.encode64(content) }.to_json
+    end
+
+    sig { params(paths: String).returns(String) }
+    def listing_json(*paths)
+      paths.map { |path| { type: "file", name: File.basename(path), path: path } }.to_json
+    end
+
+    before do
+      Dependabot::Experiments.register(:github_actions_lockfile, true)
+      {
+        ".github/actions/inner" => listing_json(".github/actions/inner/action.yml"),
+        ".github/actions/inner/action.yml" =>
+          contents_json(".github/actions/inner/action.yml", "runs:\n  using: composite\n"),
+        ".github/workflows" => listing_json(".github/workflows/ci.yml", ".github/workflows/actions.lock"),
+        ".github/workflows/ci.yml" =>
+          contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - uses: $/.github/actions/inner\n"),
+        ".github/workflows/actions.lock" => contents_json(".github/workflows/actions.lock", "version: v0.0.3\n"),
+        ".github/actions/outer/action.yml" => contents_json(".github/actions/outer/action.yml", "runs: {}\n")
+      }.each do |path, body|
+        stub_request(:get, url + "#{path}?ref=sha")
+          .to_return(status: 200, body: body, headers: { "content-type" => "application/json" })
+      end
+      stub_request(:get, github_url + "repos/gocardless/bump/git/trees/sha?recursive=true")
+        .to_return(
+          status: 200,
+          headers: { "content-type" => "application/json" },
+          body: { truncated: false, tree: [
+            { path: ".github/actions/inner/action.yml", type: "blob" },
+            { path: ".github/actions/outer/action.yml", type: "blob" }
+          ] }.to_json
+        )
+    end
+
+    it "fetches the root lockfile, workflows and $/ actions without making them dependency sources" do
+      files = file_fetcher_instance.files
+      expect(files.map { |f| [f.path, f.support_file?] }).to contain_exactly(
+        ["/.github/actions/inner/action.yml", false],
+        ["/.github/workflows/actions.lock", false],
+        ["/.github/workflows/ci.yml", true],
+        ["/.github/actions/outer/action.yml", true]
+      )
+    end
+
+    context "when the repository has no lockfile" do
+      before do
+        stub_request(:get, url + ".github/workflows?ref=sha")
+          .to_return(
+            status: 200,
+            body: listing_json(".github/workflows/ci.yml"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches only the composite action" do
+        expect(file_fetcher_instance.files.map(&:path)).to eq(["/.github/actions/inner/action.yml"])
+      end
+    end
+
+    context "when the experiment is disabled" do
+      before { Dependabot::Experiments.reset! }
+
+      it "fetches only the composite action" do
+        expect(file_fetcher_instance.files.map(&:path)).to eq(["/.github/actions/inner/action.yml"])
+        expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
+      end
+    end
+
+    context "when a repository workflow is invalidly encoded" do
+      before do
+        stub_request(:get, url + ".github/workflows?ref=sha")
+          .to_return(
+            status: 200,
+            body: listing_json(
+              ".github/workflows/ci.yml", ".github/workflows/bad.yml", ".github/workflows/actions.lock"
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".github/workflows/bad.yml?ref=sha")
+          .to_return(
+            status: 200,
+            body: contents_json(".github/workflows/bad.yml", "\xFF\xFE".b),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches only the composite action" do
+        expect(file_fetcher_instance.files.map(&:path)).to eq(["/.github/actions/inner/action.yml"])
+      end
     end
   end
 end

@@ -1,10 +1,14 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/deno/file_fetcher"
 
 RSpec.describe Dependabot::Deno::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -12,6 +16,7 @@ RSpec.describe Dependabot::Deno::FileFetcher do
       directory: "/"
     )
   end
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     [Dependabot::Credential.new(
       {
@@ -23,6 +28,7 @@ RSpec.describe Dependabot::Deno::FileFetcher do
     )]
   end
 
+  sig { returns(Dependabot::Deno::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(
       source: source,
@@ -30,6 +36,7 @@ RSpec.describe Dependabot::Deno::FileFetcher do
       repo_contents_path: nil
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe ".required_files_in?" do
     it "returns true when deno.json is present" do
@@ -53,7 +60,10 @@ RSpec.describe Dependabot::Deno::FileFetcher do
 
   describe "#files" do
     context "with a workspace using a glob member pattern" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:repo_contents_path) { build_tmp_repo("deno/workspace") }
+      sig { returns(Dependabot::Deno::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:file_fetcher_instance) do
         described_class.new(
           source: source,
@@ -61,6 +71,7 @@ RSpec.describe Dependabot::Deno::FileFetcher do
           repo_contents_path: repo_contents_path
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(file_fetcher_instance).to receive(:clone_repo_contents).and_return(repo_contents_path)
@@ -81,7 +92,10 @@ RSpec.describe Dependabot::Deno::FileFetcher do
     end
 
     context "with unsafe workspace member entries" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:repo_contents_path) { build_tmp_repo("deno/workspace_unsafe") }
+      sig { returns(Dependabot::Deno::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
       let(:file_fetcher_instance) do
         described_class.new(
           source: source,
@@ -89,6 +103,7 @@ RSpec.describe Dependabot::Deno::FileFetcher do
           repo_contents_path: repo_contents_path
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(file_fetcher_instance).to receive(:clone_repo_contents).and_return(repo_contents_path)
