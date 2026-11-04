@@ -337,6 +337,42 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           expect(f.content).to match(%r{github\.com/fatih/color\s+#{Regexp.escape(dependency_version)}})
         end
       end
+
+      context "when the dependency raises the workspace's Go version" do
+        let(:dependency_name) { "golang.org/x/text" }
+        let(:dependency_previous_version) { "v0.0.0-20170915032832-14c0d48ead0c" }
+        let(:dependency_version) { "v0.24.0" }
+
+        it "returns the workspace version bump alongside the updated modules" do
+          work_file = updated_files.find { |file| file.name == "go.work" }
+
+          expect(work_file).not_to be_nil
+          expect(work_file.content).to include("go 1.23.0")
+          expect(work_file.content).to include("./libs", "./services")
+        end
+
+        it "preserves the workspace version for the next grouped dependency update" do
+          updated_by_name = updated_files.to_h { |file| [file.name, file] }
+          next_files = files.map { |file| updated_by_name.fetch(file.name, file) }
+          next_dependency = Dependabot::Dependency.new(
+            name: "github.com/fatih/color",
+            version: "v1.16.0",
+            previous_version: "v1.7.0",
+            requirements: [],
+            previous_requirements: [],
+            package_manager: "go_modules"
+          )
+          next_updater = described_class.new(
+            dependency_files: next_files,
+            dependencies: [next_dependency],
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
+          )
+
+          expect { next_updater.updated_dependency_files }
+            .not_to raise_error
+        end
+      end
     end
 
     describe "#updated_dependency_files when workspace has a vendor directory" do

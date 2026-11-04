@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -490,7 +490,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "composer",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: [Dependabot::Composer::Requirement.new("< 2.0.0")]
           )
         ]
       end
@@ -510,7 +510,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
           package_manager: "composer",
-          vulnerable_versions: ["<= 1.11.0"]
+          vulnerable_versions: [Dependabot::Composer::Requirement.new("<= 1.11.0")]
         )
       ]
     end

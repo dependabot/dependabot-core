@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in the class-scope generated Bazelisk examples.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/bazel/file_parser"

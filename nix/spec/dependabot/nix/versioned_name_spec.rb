@@ -1,10 +1,12 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/nix/versioned_name"
 
 RSpec.describe Dependabot::Nix::VersionedName do
+  extend T::Sig
+
   describe "#versioned?" do
     it "is true for a YY.MM name" do
       expect(described_class.new("nixos-26.05").versioned?).to be(true)
@@ -61,6 +63,7 @@ RSpec.describe Dependabot::Nix::VersionedName do
   end
 
   describe "#same_family?" do
+    sig { returns(Dependabot::Nix::VersionedName) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     let(:current) { described_class.new("nixos-25.05") }
 
     it "matches the same prefix and suffix" do
@@ -81,6 +84,7 @@ RSpec.describe Dependabot::Nix::VersionedName do
   end
 
   describe "#newer_than?" do
+    sig { returns(Dependabot::Nix::VersionedName) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     let(:current) { described_class.new("nixos-25.05") }
 
     it "is true for a later version in the same year" do

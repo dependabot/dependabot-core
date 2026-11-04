@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matchers in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -152,6 +154,52 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
         it "has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"3.3.2\"")
+        end
+
+        %w(require requires).each do |wording|
+          context "when Composer reports an implicit PHP requirement using #{wording}" do
+            it "retries with a PHP version satisfying the dependency requirement" do
+              allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+                .with(hash_including(function: "get_content_hash")).and_return("updated-content-hash")
+
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+                .with(hash_including(function: "update")).ordered do
+                  manifest = JSON.parse(File.read("composer.json"))
+                  expect(manifest.dig("config", "platform", "php")).to eq("5.2.0")
+
+                  raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                    message: "phpdocumentor/reflection-docblock 3.3.2 #{wording} php ^5.3.0 -> " \
+                             "your php version (5.2.0) does not satisfy that requirement.",
+                    error_context: {}
+                  )
+                end
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+                .with(hash_including(function: "update")).ordered do
+                  manifest = JSON.parse(File.read("composer.json"))
+                  expect(manifest.dig("config", "platform", "php")).to eq("5.3.0")
+
+                  lockfile = JSON.parse(files.find { |file| file.name == "composer.lock" }.content)
+                  lockfile.fetch("packages") << { "name" => dependency.name, "version" => dependency.version }
+                  { "composer.lock" => JSON.generate(lockfile) }
+                end
+
+              expect(updated_lockfile_content).to include("\"version\":\"3.3.2\"")
+            end
+
+            it "raises a dependency resolution error when PHP constraints are incompatible" do
+              message = "Your requirements could not be resolved to an installable set of packages.\n" \
+                        "phpdocumentor/reflection-docblock 3.3.2 #{wording} php >=7.0 -> " \
+                        "your php version (5.2.0) does not satisfy that requirement."
+
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+                .with(hash_including(function: "update")).once.and_raise(
+                  Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: message, error_context: {})
+                )
+
+              expect { updater.updated_lockfile_content }
+                .to raise_error(Dependabot::DependencyFileNotResolvable, /#{Regexp.escape(message)}/)
+            end
+          end
         end
       end
 

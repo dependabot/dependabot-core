@@ -1,8 +1,9 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "json"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/experiments"
@@ -10,6 +11,8 @@ require "dependabot/swift/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Swift::FileUpdater do
+  extend T::Sig
+
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -19,8 +22,11 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     )
   end
 
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
+    [Dependabot::Credential.new(
+      { "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }
+    )]
   end
   let(:dependencies) { [] }
   let(:files) { project_dependency_files(project_name) }
