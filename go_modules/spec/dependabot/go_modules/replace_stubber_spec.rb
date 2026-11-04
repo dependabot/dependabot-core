@@ -27,8 +27,8 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
 
     it "retains original checksums alongside new entries when the source graph is incomplete" do
       sum = File.join(repo_contents_path, "go.sum")
-      original = "example.com/private v1.0.0 #{checksum}\n"
-      added = "example.com/public v1.1.0 #{checksum}\n"
+      original = "example.com/public v1.9.0 #{checksum}\n"
+      added = "example.com/public v1.10.0 #{checksum}\n"
       File.write(sum, original)
 
       Dir.chdir(repo_contents_path) do

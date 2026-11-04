@@ -32,6 +32,10 @@ func main() {
 		funcErr error
 	)
 	switch helperParams.Function {
+	case "restoreReplacedChecksums":
+		var args manifest.RestoreChecksumsArgs
+		parseArgs(helperParams.Args, &args)
+		funcOut, funcErr = manifest.RestoreChecksums(args)
 	case "restoreReplacedRequirements":
 		var args manifest.RestoreRequirementsArgs
 		parseArgs(helperParams.Args, &args)

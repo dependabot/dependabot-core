@@ -215,8 +215,12 @@ module Dependabot
         # An incomplete stub graph cannot establish that these checksums are unused.
         original.each do |path, content|
           assert_manifest_in_repo(path)
-          updated = File.file?(path) ? File.readlines(path) : []
-          File.write(path, (content.lines + updated).uniq.sort.join)
+          restored = SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path,
+            function: "restoreReplacedChecksums",
+            args: { original_content: content, updated_content: File.file?(path) ? File.read(path) : "" }
+          )
+          File.write(path, T.cast(restored, String))
         end
       end
 
