@@ -21,6 +21,41 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
     end
   end
 
+  describe "#with_stubs" do
+    let(:project_name) { "replace" }
+    let(:checksum) { "h1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }
+
+    it "retains original checksums alongside new entries when the source graph is incomplete" do
+      sum = File.join(repo_contents_path, "go.sum")
+      original = "example.com/private v1.0.0 #{checksum}\n"
+      added = "example.com/public v1.1.0 #{checksum}\n"
+      File.write(sum, original)
+
+      Dir.chdir(repo_contents_path) do
+        stubber.with_stubs(on_error: ->(error) { raise error }) do
+          File.write(sum, added)
+        end
+      end
+
+      expect(File.read(sum)).to eq(original + added)
+    end
+
+    context "without unavailable replacements" do
+      let(:project_name) { "monorepo" }
+
+      it "allows tooling to prune checksums from a complete source graph" do
+        sum = File.join(repo_contents_path, "go.sum")
+        File.write(sum, "example.com/public v1.0.0 #{checksum}\n")
+
+        Dir.chdir(repo_contents_path) do
+          stubber.with_stubs(on_error: ->(error) { raise error }) { File.write(sum, "") }
+        end
+
+        expect(File.read(sum)).to eq("")
+      end
+    end
+  end
+
   describe "#stub_paths" do
     context "when replacing a module as child" do
       let(:project_name) { "monorepo" }

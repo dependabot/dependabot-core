@@ -52,6 +52,7 @@ module Dependabot
       def with_stubs(on_error:, &_block)
         Dir.mktmpdir("dependabot-replacements-") do |stub_root|
           manifests = replacement_manifests(on_error: on_error)
+          original_checksums = checksum_files(manifests)
           original_modules = manifests.select { |_, kind| kind == "mod" }.transform_values { "" }
           original_modules.each_key { |path| original_modules[path] = File.read(path) }
           bindings = replacement_bindings(manifests, stub_root, on_error: on_error)
@@ -62,6 +63,7 @@ module Dependabot
           ensure
             edit_replacement_bindings(bindings, restore: true, on_error: on_error)
             restore_replaced_requirements(original_modules, bindings)
+            restore_checksums(original_checksums) unless bindings.empty?
           end
         end
       end
@@ -192,6 +194,25 @@ module Dependabot
           command = Shellwords.join(["go", T.must(entries.first).kind, "edit"] + arguments + [path])
           _, stderr, status = Open3.capture3(command)
           on_error.call(stderr) unless status.success?
+        end
+      end
+
+      sig { params(manifests: T::Hash[String, String]).returns(T::Hash[String, String]) }
+      def checksum_files(manifests)
+        checksums = T.let({}, T::Hash[String, String])
+        manifests.each do |path, kind|
+          sum = kind == "work" ? "#{path}.sum" : File.join(File.dirname(path), "go.sum")
+          checksums[sum] = File.read(sum) if File.file?(sum)
+        end
+        checksums
+      end
+
+      sig { params(original: T::Hash[String, String]).void }
+      def restore_checksums(original)
+        # An incomplete stub graph cannot establish that these checksums are unused.
+        original.each do |path, content|
+          updated = File.file?(path) ? File.readlines(path) : []
+          File.write(path, (content.lines + updated).uniq.sort.join)
         end
       end
 
