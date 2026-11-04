@@ -475,7 +475,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotFound, path
           end
 
-          fetch_file_from_host(path).tap { |f| f.support_file = workspace.support_file? }
+          # Keep the submodule flag set by fetch_file_from_host; only add the workspace file's own support status
+          fetch_file_from_host(path).tap { |f| f.support_file = true if workspace.support_file? }
         end
       end
 

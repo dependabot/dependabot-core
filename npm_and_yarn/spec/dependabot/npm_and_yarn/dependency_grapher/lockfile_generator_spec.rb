@@ -201,32 +201,35 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
           expect(included_content).to eq(dependency_files.find { |f| f.name == "pnpm-catalogs.yaml" }.content)
         end
 
-        context "when an included file is outside the project directory" do
-          let(:dependency_files) do
-            [
-              Dependabot::DependencyFile.new(name: "package.json", content: '{"name":"app","version":"1.0.0"}'),
-              Dependabot::DependencyFile.new(
-                name: "pnpm-workspace.yaml",
-                content: "include:\n  ../shared/catalog.yaml: [catalog]\n"
-              ),
-              Dependabot::DependencyFile.new(name: "../shared/catalog.yaml", content: "catalog:\n  a: 1.0.0\n")
-            ]
-          end
-
-          it "does not write it outside the temporary directory" do
-            outside_path = nil
-            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
-              outside_path = File.expand_path("../shared/catalog.yaml")
-              File.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
-              ""
+        # An included file can be named pnpm-workspace.yaml too, which the filename allow-list also matches
+        ["../shared/catalog.yaml", "../shared/pnpm-workspace.yaml"].each do |included_path|
+          context "when an included file is outside the project directory (#{included_path})" do
+            let(:dependency_files) do
+              [
+                Dependabot::DependencyFile.new(name: "package.json", content: '{"name":"app","version":"1.0.0"}'),
+                Dependabot::DependencyFile.new(
+                  name: "pnpm-workspace.yaml",
+                  content: "include:\n  #{included_path}: [catalog]\n"
+                ),
+                Dependabot::DependencyFile.new(name: included_path, content: "catalog:\n  a: 1.0.0\n")
+              ]
             end
 
-            generator.generate
-            written = outside_path && File.exist?(outside_path)
-            FileUtils.rm_f(outside_path) if outside_path
+            it "does not write it outside the temporary directory" do
+              outside_path = nil
+              allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do
+                outside_path = File.expand_path(included_path)
+                File.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+                ""
+              end
 
-            expect(outside_path).not_to be_nil
-            expect(written).to be(false)
+              generator.generate
+              written = outside_path && File.exist?(outside_path)
+              FileUtils.rm_f(outside_path) if outside_path
+
+              expect(outside_path).not_to be_nil
+              expect(written).to be(false)
+            end
           end
         end
       end

@@ -2313,6 +2313,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       expect(catalogs.support_file?).to be(false)
     end
 
+    context "when an included file is in a git submodule" do
+      before do
+        allow(file_fetcher_instance).to receive(:in_submodule?).and_call_original
+        allow(file_fetcher_instance).to receive(:in_submodule?).with("/pnpm-catalogs.yaml").and_return(true)
+      end
+
+      it "keeps it a support file" do
+        catalogs = file_fetcher_instance.files.find { |f| f.name == "pnpm-catalogs.yaml" }
+
+        expect(catalogs.support_file?).to be(true)
+      end
+    end
+
     context "when an included file does not exist" do
       before { FileUtils.rm(File.join(repo_contents_path, "pnpm-catalogs.yaml")) }
 

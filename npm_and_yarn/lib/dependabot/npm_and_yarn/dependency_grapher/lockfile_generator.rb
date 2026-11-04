@@ -69,13 +69,17 @@ module Dependabot
 
         sig { void }
         def write_package_files
-          # Included files can sit above the project (`../shared/catalog.yaml`); never write outside the temp dir
           included_files = PnpmWorkspaceIncludes.included_files(dependency_files)
-                                                .reject { |f| PnpmWorkspaceIncludes.outside?(f.name) }
           dependency_files.each do |file|
-            next unless file.name.end_with?(
-              "package.json", ".npmrc", ".yarnrc", ".yarnrc.yml", "pnpm-workspace.yaml"
-            ) || included_files.include?(file)
+            if included_files.include?(file)
+              # Included files can sit above the project (`../shared/catalog.yaml`); never write outside the temp dir.
+              # Checked before the name allow-list, which an included `pnpm-workspace.yaml` would also match.
+              next if PnpmWorkspaceIncludes.outside?(file.name)
+            else
+              next unless file.name.end_with?(
+                "package.json", ".npmrc", ".yarnrc", ".yarnrc.yml", "pnpm-workspace.yaml"
+              )
+            end
 
             path = file.name
             FileUtils.mkdir_p(File.dirname(path))
