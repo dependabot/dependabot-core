@@ -333,6 +333,10 @@ module Dependabot
 
           if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
              selected.name != version_tag.name
+            # Identical manifests share creation timestamps. A confirmed match
+            # can still refresh a stale pin, so it needs no timestamp validation.
+            return selected if same_image_pinned_digest_update?(selected, version_tag)
+
             if validation_attempts >= MAX_PLATFORM_VALIDATION_ATTEMPTS
               Dependabot.logger.info(
                 "Platform validation: reached max attempts (#{MAX_PLATFORM_VALIDATION_ATTEMPTS}), " \
@@ -380,6 +384,13 @@ module Dependabot
       sig do
         params(candidate: Dependabot::Docker::Tag, current_tag: Dependabot::Docker::Tag).returns(T::Boolean)
       end
+      def same_image_pinned_digest_update?(candidate, current_tag)
+        same_image_digest?(candidate, current_tag) && pinned_digest_update_required?(candidate, current_tag)
+      end
+
+      sig do
+        params(candidate: Dependabot::Docker::Tag, current_tag: Dependabot::Docker::Tag).returns(T::Boolean)
+      end
       def pinned_digest_update_required?(candidate, current_tag)
         return false unless Dependabot::Experiments.enabled?(:docker_digest_only_update_suppression)
 
@@ -418,12 +429,14 @@ module Dependabot
         same_precision_digest = digest_of(best_same_precision.name)
         candidate_digest = digest_of(candidate.name)
 
-        if same_precision_digest == candidate_digest &&
-           best_same_precision.same_but_less_precise?(candidate)
-          best_same_precision
-        else
-          candidate
-        end
+        return candidate unless same_precision_digest == candidate_digest &&
+                                best_same_precision.same_but_less_precise?(candidate)
+
+        # An alias may have been pushed more recently than the original tag.
+        # If it is still in cooldown, validate the original candidate instead.
+        return candidate if tag_within_cooldown?(best_same_precision)
+
+        best_same_precision
       rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
         # Precision preservation is optional. A failed comparison must not prevent
         # the original candidate from undergoing cooldown and content validation.
