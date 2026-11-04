@@ -52,10 +52,10 @@ module Dependabot
       def with_stubs(on_error:, &_block)
         Dir.mktmpdir("dependabot-replacements-") do |stub_root|
           manifests = replacement_manifests(on_error: on_error)
-          original_checksums = checksum_files(manifests)
           original_modules = manifests.select { |_, kind| kind == "mod" }.transform_values { "" }
           original_modules.each_key { |path| original_modules[path] = File.read(path) }
           bindings = replacement_bindings(manifests, stub_root, on_error: on_error)
+          original_checksums = checksum_files(bindings.empty? ? {} : manifests)
           build_module_stubs(bindings.map(&:stub).uniq)
           begin
             edit_replacement_bindings(bindings, restore: false, on_error: on_error)
@@ -152,10 +152,10 @@ module Dependabot
       sig { params(path: String).void }
       def assert_manifest_in_repo(path)
         root = replacement_repo_root
-        resolved = Pathname.new(path).realpath
+        resolved = resolve_existing_ancestor(Pathname.new(path))
         return if resolved.to_s.start_with?("#{root}/")
 
-        raise Dependabot::DependencyFileNotResolvable, "Workspace manifest is outside the checkout: #{path}"
+        raise Dependabot::DependencyFileNotResolvable, "Workspace file is outside the checkout: #{path}"
       end
 
       sig do
@@ -202,7 +202,10 @@ module Dependabot
         checksums = T.let({}, T::Hash[String, String])
         manifests.each do |path, kind|
           sum = kind == "work" ? "#{path}.sum" : File.join(File.dirname(path), "go.sum")
-          checksums[sum] = File.read(sum) if File.file?(sum)
+          next unless File.file?(sum)
+
+          assert_manifest_in_repo(sum)
+          checksums[sum] = File.read(sum)
         end
         checksums
       end
@@ -211,6 +214,7 @@ module Dependabot
       def restore_checksums(original)
         # An incomplete stub graph cannot establish that these checksums are unused.
         original.each do |path, content|
+          assert_manifest_in_repo(path)
           updated = File.file?(path) ? File.readlines(path) : []
           File.write(path, (content.lines + updated).uniq.sort.join)
         end

@@ -40,6 +40,21 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
       expect(File.read(sum)).to eq(original + added)
     end
 
+    it "refuses to restore a checksum symlink outside the checkout" do
+      Dir.mktmpdir("external-checksums-") do |directory|
+        outside = File.join(directory, "go.sum")
+        sum = File.join(repo_contents_path, "go.sum")
+        File.write(outside, "original\n")
+        FileUtils.rm_f(sum)
+        File.symlink(outside, sum)
+
+        expect do
+          Dir.chdir(repo_contents_path) { stubber.with_stubs(on_error: ->(error) { raise error }) {} }
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /outside the checkout/)
+        expect(File.read(outside)).to eq("original\n")
+      end
+    end
+
     context "without unavailable replacements" do
       let(:project_name) { "monorepo" }
 
