@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures in shared examples and class-scope generated examples.
+
 require "spec_helper"
 require "open3"
 require "dependabot/composer/native_helpers"
@@ -22,7 +24,7 @@ RSpec.describe Dependabot::Composer::Package::RegistryPackage do
   end
 
   it "returns typed release fields without normalizing version strings" do
-    expect(package.releases.first).to be_a(described_class::Release)
+    expect(package.releases.first).to be_a(Dependabot::Composer::Package::RegistryPackage::Release)
     expect(package.releases.first).to have_attributes(
       version_string: "v2.0.0",
       released_at: Time.iso8601("2024-01-02T03:04:05+02:00"),

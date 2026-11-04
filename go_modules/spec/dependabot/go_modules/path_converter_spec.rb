@@ -1,34 +1,42 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/go_modules/path_converter"
 
 RSpec.describe Dependabot::GoModules::PathConverter do
+  extend T::Sig
+
   describe ".git_url_for_path" do
+    sig { returns(T.nilable(String)) }
     subject { described_class.git_url_for_path(path) }
 
+    sig { returns(String) }
     let(:path) { "gopkg.in/guregu/null.v3" }
 
     context "with a path that is immediately recognisable as a git source" do
+      sig { returns(String) }
       let(:path) { "github.com/drewolson/testflight" }
 
       it { is_expected.to eq("https://github.com/drewolson/testflight") }
     end
 
     context "with a golang.org path" do
+      sig { returns(String) }
       let(:path) { "golang.org/x/tools" }
 
       it { is_expected.to eq("https://github.com/golang/tools") }
     end
 
     context "with a path that ends in .git" do
+      sig { returns(String) }
       let(:path) { "git.fd.io/govpp.git" }
 
       it { is_expected.to eq("https://git.fd.io/govpp.git") }
     end
 
     context "with a vanity URL that needs to be fetched" do
+      sig { returns(String) }
       let(:path) { "k8s.io/apimachinery" }
 
       it { is_expected.to eq("https://github.com/kubernetes/apimachinery") }
@@ -36,18 +44,21 @@ RSpec.describe Dependabot::GoModules::PathConverter do
 
     context "with a vanity URL that redirects", skip: "temporarily disabled" do
       skip "This test is temporarily disabled due to intermittent failures"
+      sig { returns(String) }
       let(:path) { "code.cloudfoundry.org/bytefmt" }
 
       it { is_expected.to eq("https://github.com/cloudfoundry/bytefmt") }
     end
 
     context "with a vanity URL that 404s, but is otherwise valid" do
+      sig { returns(String) }
       let(:path) { "gonum.org/v1/gonum" }
 
       it { is_expected.to eq("https://github.com/gonum/gonum") }
     end
 
     context "with a path that already includes a scheme" do
+      sig { returns(String) }
       let(:path) { "https://github.com/drewolson/testflight" }
 
       it { is_expected.to eq("https://github.com/drewolson/testflight") }

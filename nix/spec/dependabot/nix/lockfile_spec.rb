@@ -1,13 +1,17 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/nix/lockfile"
 
 RSpec.describe Dependabot::Nix::Lockfile do
+  extend T::Sig
+
   describe "root input resolution" do
+    sig { returns(Dependabot::Nix::Lockfile) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
     subject(:lockfile) { described_class.new(content) }
 
+    sig { returns(String) }
     let(:content) do
       File.read(File.join(__dir__, "fixtures", "flake.lock"))
     end
@@ -31,6 +35,7 @@ RSpec.describe Dependabot::Nix::Lockfile do
     end
 
     context "when a root input follows a nested input path" do
+      sig { returns(String) }
       let(:content) do
         <<~JSON
           {
@@ -81,6 +86,7 @@ RSpec.describe Dependabot::Nix::Lockfile do
     end
 
     context "when a follows path is cyclic" do
+      sig { returns(String) }
       let(:content) do
         <<~JSON
           {

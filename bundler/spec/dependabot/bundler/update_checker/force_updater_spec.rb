@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only lock_name fixture.
+
 require "spec_helper"
 require "shared_contexts"
 

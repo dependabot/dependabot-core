@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/julia"
 
 RSpec.describe Dependabot::Julia do
@@ -39,12 +40,14 @@ RSpec.describe Dependabot::Julia do
       updater = described_class.file_updater_class.new(
         dependencies: [dependency],
         dependency_files: dependency_files,
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
+        credentials: [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        )]
       )
 
       updated_files = updater.updated_dependency_files
@@ -52,8 +55,8 @@ RSpec.describe Dependabot::Julia do
       # Expect files to be updated
       expect(updated_files).not_to be_empty
 
-      project_toml = updated_files.find { |f| f.name == "Project.toml" }
-      manifest_toml = updated_files.find { |f| f.name == "Manifest.toml" }
+      project_toml = T.must(updated_files.find { |f| f.name == "Project.toml" })
+      manifest_toml = T.must(updated_files.find { |f| f.name == "Manifest.toml" })
 
       expect(project_toml).to be_a(Dependabot::DependencyFile)
       expect(project_toml.content).to include('Example = "0.4, 0.5"')
@@ -99,19 +102,19 @@ RSpec.describe Dependabot::Julia do
         dependencies = parser.parse
 
         # Find the JSON dependency which appears in all 3 Project.toml files
-        json_dep = dependencies.find { |d| d.name == "JSON" }
+        json_dep = T.must(dependencies.find { |d| d.name == "JSON" })
         expect(json_dep).not_to be_nil
 
         # Should have requirements from all 3 files with their specific compat specifiers
         expect(json_dep.requirements.length).to eq(3)
 
-        main_req = json_dep.requirements.find { |r| r[:file] == "Project.toml" }
+        main_req = T.must(json_dep.requirements.find { |r| r[:file] == "Project.toml" })
         expect(main_req[:requirement]).to eq("0.21.4")
 
-        docs_req = json_dep.requirements.find { |r| r[:file] == "docs/Project.toml" }
+        docs_req = T.must(json_dep.requirements.find { |r| r[:file] == "docs/Project.toml" })
         expect(docs_req[:requirement]).to eq("0.21")
 
-        test_req = json_dep.requirements.find { |r| r[:file] == "test/Project.toml" }
+        test_req = T.must(json_dep.requirements.find { |r| r[:file] == "test/Project.toml" })
         expect(test_req[:requirement]).to eq("0.21")
       end
 
@@ -139,12 +142,14 @@ RSpec.describe Dependabot::Julia do
         updater = described_class.file_updater_class.new(
           dependencies: [json_dependency],
           dependency_files: dependency_files,
-          credentials: [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }]
+          credentials: [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
         )
 
         updated_files = updater.updated_dependency_files
@@ -154,13 +159,13 @@ RSpec.describe Dependabot::Julia do
         expect(project_files.length).to eq(3)
 
         # Verify each file gets its specific updated requirement
-        main_project = project_files.find { |f| f.name == "Project.toml" }
+        main_project = T.must(project_files.find { |f| f.name == "Project.toml" })
         expect(main_project.content).to include('JSON = "0.21.4, 1"')
 
-        docs_project = project_files.find { |f| f.name == "docs/Project.toml" }
+        docs_project = T.must(project_files.find { |f| f.name == "docs/Project.toml" })
         expect(docs_project.content).to include('JSON = "0.21, 1"')
 
-        test_project = project_files.find { |f| f.name == "test/Project.toml" }
+        test_project = T.must(project_files.find { |f| f.name == "test/Project.toml" })
         expect(test_project.content).to include('JSON = "0.21, 1"')
       end
 
@@ -173,10 +178,10 @@ RSpec.describe Dependabot::Julia do
         dependencies = parser.parse
 
         # Documenter only appears in docs/Project.toml
-        documenter_dep = dependencies.find { |d| d.name == "Documenter" }
+        documenter_dep = T.must(dependencies.find { |d| d.name == "Documenter" })
         expect(documenter_dep).not_to be_nil
         expect(documenter_dep.requirements.length).to eq(1)
-        expect(documenter_dep.requirements.first[:file]).to eq("docs/Project.toml")
+        expect(documenter_dep.requirements.fetch(0)[:file]).to eq("docs/Project.toml")
       end
     end
   end

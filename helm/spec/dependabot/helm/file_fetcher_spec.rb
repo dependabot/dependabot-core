@@ -1,22 +1,33 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/helm/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Helm::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  sig { returns(String) }
   let(:github_url) { "https://api.github.com/" }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::Helm::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(
       source: source,
@@ -24,6 +35,7 @@ RSpec.describe Dependabot::Helm::FileFetcher do
       repo_contents_path: nil
     )
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -31,6 +43,7 @@ RSpec.describe Dependabot::Helm::FileFetcher do
       directory: directory
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -80,6 +93,7 @@ RSpec.describe Dependabot::Helm::FileFetcher do
         )
     end
 
+    sig { returns(String) }
     let(:helmfile_fixture) do
       fixture("github", "contents_helm.json")
     end
@@ -91,6 +105,7 @@ RSpec.describe Dependabot::Helm::FileFetcher do
     end
 
     context "with invalid encoding" do
+      sig { returns(String) }
       let(:helmfile_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do

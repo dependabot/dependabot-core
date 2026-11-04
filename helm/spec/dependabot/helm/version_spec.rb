@@ -1,10 +1,12 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/helm/version"
 
 RSpec.describe Dependabot::Helm::Version do
+  extend T::Sig
+
   describe ".correct?" do
     it "returns true for versions" do
       expect(described_class.correct?("3.7.7-slim-buster")).to be true
@@ -76,6 +78,7 @@ RSpec.describe Dependabot::Helm::Version do
   end
 
   describe ".correct?" do
+    sig { params(version: String).returns(T::Boolean) }
     def check_version_for_correctness?(version)
       docker_version = described_class.new(version)
       described_class.correct?(docker_version)
@@ -142,6 +145,18 @@ RSpec.describe Dependabot::Helm::Version do
 
     it "returns the version string without prefix" do
       expect(described_class.new("img_20230915.3").to_s).to eq("20230915.3")
+    end
+  end
+
+  describe Dependabot::Helm::ImageTag do
+    it "returns the tag exactly as published" do
+      expect(described_class.new("v1.5.0").to_s).to eq("v1.5.0")
+      expect(described_class.new("20.9.0-alpine3.18").to_s).to eq("20.9.0-alpine3.18")
+    end
+
+    it "compares like a Helm::Version" do
+      expect(described_class.new("v1.5.0")).to be > Dependabot::Helm::Version.new("1.4.9")
+      expect(described_class.new("v1.5.0")).to eq(Dependabot::Helm::Version.new("1.5.0"))
     end
   end
 end

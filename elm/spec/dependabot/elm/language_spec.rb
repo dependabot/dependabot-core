@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/elm/language"
@@ -7,14 +7,25 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Elm::Language do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Elm::Language) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:language) { described_class.new(version, requirement) }
+  sig { returns(String) }
   let(:version) { "0.19.1" }
+  sig { returns(T.nilable(Dependabot::Elm::Requirement)) }
   let(:requirement) { Dependabot::Elm::Requirement.new(">= 0.19.0") }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#initialize" do
     context "when version and requirement are both strings initially" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:version) { "0.19.1" }
+      sig { returns(Dependabot::Elm::Requirement) }
       let(:requirement) { Dependabot::Elm::Requirement.new(">= 0.19.0") }
+      # rubocop:enable RSpec/ScatteredLet
 
       it "sets the version correctly as a string" do
         expect(language.version.to_s).to eq(version)
@@ -30,8 +41,12 @@ RSpec.describe Dependabot::Elm::Language do
     end
 
     context "when version is a string and requirement is a Dependabot::Elm::Requirement" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:version) { "0.19.1" }
+      sig { returns(Dependabot::Elm::Requirement) }
       let(:requirement) { Dependabot::Elm::Requirement.new(">= 0.19.0") }
+      # rubocop:enable RSpec/ScatteredLet
 
       it "sets the version correctly" do
         expect(language.version.to_s).to eq(version)
@@ -47,6 +62,7 @@ RSpec.describe Dependabot::Elm::Language do
     end
 
     context "when requirement is nil" do
+      sig { returns(NilClass) }
       let(:requirement) { nil }
 
       it "sets requirement to nil" do
