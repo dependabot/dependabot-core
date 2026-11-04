@@ -115,6 +115,17 @@ RSpec.describe namespace::PoetryVersionResolver do
         .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
     end
 
+    it "keeps each declaration's own constraint when no target requirement is given" do
+      content = pyproject_content.sub(
+        "\"urllib3>=1.26.0\",\n]",
+        "\"urllib3>=1.26,<3\",\n]\n\n[project.optional-dependencies]\nsec = [\"urllib3<2\"]"
+      )
+      project = TomlRB.parse(resolver.send(:set_target_dependency_req, content, nil))["project"]
+
+      expect(project["dependencies"]).to include("urllib3>=1.26,<3")
+      expect(project.dig("optional-dependencies", "sec")).to eq(["urllib3<2"])
+    end
+
     it "leaves the manifest untouched when another build backend owns the project" do
       content = pyproject_content.sub("poetry.core.masonry.api", "pdm.backend")
 
