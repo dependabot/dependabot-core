@@ -322,11 +322,16 @@ module Dependabot
 
           if poetry_object
             set_poetry_target_dependency_req(poetry_object, updated_requirement)
-          else
+          elsif pep621_only_poetry_project?(pyproject_content)
             set_pep621_target_dependency_req(pyproject_object, updated_requirement)
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        sig { params(pyproject_content: String).returns(T::Boolean) }
+        def pep621_only_poetry_project?(pyproject_content)
+          !poetry_lock.nil? && FileParser::PyprojectDocument.from_content(pyproject_content).poetry_build_backend?
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], updated_requirement: String).void }

@@ -63,6 +63,28 @@ RSpec.describe namespace::PoetryVersionResolver do
     }]
   end
 
+  describe "target requirement handling for a project without [tool.poetry]" do
+    let(:dependency_name) { "certifi" }
+    let(:dependency_version) { "2024.2.2" }
+    let(:dependency_requirements) { [] }
+    let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+    let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+
+    def target_dependencies(content)
+      TomlRB.parse(resolver.send(:set_target_dependency_req, content, "==2025.1.31")).dig("project", "dependencies")
+    end
+
+    it "pins a sub-dependency when the Poetry build backend and a lockfile are present" do
+      expect(target_dependencies(pyproject_content)).to include("certifi==2025.1.31")
+    end
+
+    it "leaves the manifest untouched when another build backend owns the project" do
+      content = pyproject_content.sub("poetry.core.masonry.api", "pdm.backend")
+
+      expect(target_dependencies(content)).not_to include("certifi==2025.1.31")
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: updated_requirement) }
 
