@@ -49,7 +49,9 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
         File.symlink(outside, sum)
 
         expect do
-          Dir.chdir(repo_contents_path) { stubber.with_stubs(on_error: ->(error) { raise error }) {} }
+          Dir.chdir(repo_contents_path) do
+            stubber.with_stubs(on_error: ->(error) { raise error }) { raise "checksum boundary must reject before yielding" }
+          end
         end.to raise_error(Dependabot::DependencyFileNotResolvable, /outside the checkout/)
         expect(File.read(outside)).to eq("original\n")
       end
