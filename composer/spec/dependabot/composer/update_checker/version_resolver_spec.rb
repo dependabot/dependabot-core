@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-only project_name fixture or class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -147,6 +149,30 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
 
         it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
+
+        %w(require requires).each do |wording|
+          context "when Composer reports an implicit PHP requirement using #{wording}" do
+            it "retries with a PHP version satisfying the dependency requirement" do
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).ordered do
+                manifest = JSON.parse(File.read("composer.json"))
+                expect(manifest.dig("config", "platform", "php")).to eq("5.2.0")
+
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "phpdocumentor/reflection-docblock 3.2.2 #{wording} php ^5.3.0 -> " \
+                           "your php version (5.2.0) does not satisfy that requirement.",
+                  error_context: {}
+                )
+              end
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).ordered do
+                manifest = JSON.parse(File.read("composer.json"))
+                expect(manifest.dig("config", "platform", "php")).to eq("5.3.0")
+                "3.2.2"
+              end
+
+              expect(resolver.latest_resolvable_version).to eq(Dependabot::Composer::Version.new("3.2.2"))
+            end
+          end
+        end
       end
     end
 
@@ -244,6 +270,28 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when PHP can't allocate memory from the OS" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "mmap() failed: [12] Cannot allocate memory\n\n" \
+                     "mmap() failed: [12] Cannot allocate memory\nOut of memory",
+            error_context: {}
+          )
+        )
+      end
+
+      it "raises a Dependabot::OutOfMemory error" do
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::OutOfMemory)
+      end
+    end
+
     context "with a platform extension that cannot be added" do
       let(:project_name) { "unaddable_platform_req" }
       let(:dependency_name) { "monolog/monolog" }
@@ -311,6 +359,33 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
           .to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
             expect(error.source).to eq("https://example.com:81")
           end
+      end
+    end
+
+    context "when PHP runs out of memory while checking the original requirements" do
+      let(:project_name) { "php_specified_without_lockfile" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_invoke(
+          lambda { |**|
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "Your requirements could not be resolved to an installable set of packages.",
+              error_context: {}
+            )
+          },
+          lambda { |**|
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "mmap() failed: [12] Cannot allocate memory\nOut of memory",
+              error_context: {}
+            )
+          }
+        )
+      end
+
+      it "raises a Dependabot::OutOfMemory error" do
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::OutOfMemory)
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess).twice
       end
     end
 

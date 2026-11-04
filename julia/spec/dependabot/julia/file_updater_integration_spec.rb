@@ -1,10 +1,14 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only dependency and dependency_files fixtures.
+
 require "spec_helper"
 require "dependabot/julia"
 
 RSpec.describe Dependabot::Julia::FileUpdater do
+  extend T::Sig
+
   let(:project_file) do
     Dependabot::DependencyFile.new(
       name: "Project.toml",
@@ -78,7 +82,8 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
   private
 
+  sig { params(path: String).returns(String) }
   def fixture(*path)
-    File.read(File.join(__dir__, "..", "..", "fixtures", *path))
+    File.read(File.join(__dir__, "..", "..", "fixtures", File.join(path)))
   end
 end

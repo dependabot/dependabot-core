@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only ref fixtures.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -1057,7 +1059,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater)
+      expect(Dependabot::Hex::UpdateChecker::RequirementsUpdater)
         .to receive(:new)
         .with(
           requirements: dependency_requirements,
@@ -1114,7 +1116,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater)
+        expect(Dependabot::Hex::UpdateChecker::RequirementsUpdater)
           .to receive(:new)
           .with(
             requirements: dependency_requirements,

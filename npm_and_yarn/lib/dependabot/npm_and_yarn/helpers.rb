@@ -531,13 +531,24 @@ module Dependabot
         flags
       end
 
-      sig { params(key: String, default_value: String).returns(T.untyped) }
-      def self.fetch_yarnrc_yml_value(key, default_value)
-        if File.exist?(".yarnrc.yml") && (yarnrc = YAML.load_file(".yarnrc.yml"))
-          yarnrc.fetch(key, default_value)
-        else
-          default_value
-        end
+      sig do
+        params(
+          key: String,
+          default_value: String,
+          dependency_files: T.nilable(T::Array[DependencyFile])
+        ).returns(T.untyped)
+      end
+      def self.fetch_yarnrc_yml_value(key, default_value, dependency_files: nil)
+        yarnrc_file = dependency_files&.find { |file| file.name.end_with?(".yarnrc.yml") }
+        yarnrc_content = if dependency_files
+                           yarnrc_file&.content
+                         elsif File.exist?(".yarnrc.yml")
+                           File.read(".yarnrc.yml")
+                         end
+        return default_value unless yarnrc_content
+
+        yarnrc = YAML.safe_load(yarnrc_content)
+        yarnrc ? yarnrc.fetch(key, default_value) : default_value
       end
 
       sig { params(package_lock: T.nilable(DependencyFile)).returns(T::Boolean) }

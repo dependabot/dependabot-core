@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only file_name and file_content fixtures.
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/swift/file_parser/pbxproj_parser"

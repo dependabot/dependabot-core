@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve matchers in class-scope generated ref-validation and comparison examples.
+
 require "spec_helper"
 require "dependabot/vcpkg/version"
 
