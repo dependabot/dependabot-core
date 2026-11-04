@@ -393,13 +393,14 @@ module Dependabot
 
         sig do
           type_parameters(:T)
-            .params(_block: T.proc.params(stubbed: T::Boolean).returns(T.type_parameter(:T)))
+            .params(block: T.proc.params(stubbed: T::Boolean).returns(T.type_parameter(:T)))
             .returns(T.type_parameter(:T))
         end
-        def with_stubbed_replacements(&_block)
+        def with_stubbed_replacements(&block)
           ReplaceStubber.new(repo_contents_path || Dir.pwd).with_stubs(
-            on_error: ->(stderr) { handle_subprocess_error(stderr) }
-          ) { |stubbed| yield(stubbed) }
+            on_error: ->(stderr) { handle_subprocess_error(stderr) },
+            &block
+          )
         end
 
         sig do

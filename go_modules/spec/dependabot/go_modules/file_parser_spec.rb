@@ -518,9 +518,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     describe "path comments in a parsed context" do
       let(:go_mod_content) do
-        super() + "\nrequire example.com/shared v0.0.0\n" \
-          "// Keep ../external for local development.\n" \
-          "replace example.com/shared => ../external\n"
+        fixture("projects", project_name, "go.mod") + <<~GOMOD
+
+          require example.com/shared v0.0.0
+          // Keep ../external for local development.
+          replace example.com/shared => ../external
+        GOMOD
       end
 
       it "resolves metadata and restores the original replacement and comment" do

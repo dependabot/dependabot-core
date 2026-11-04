@@ -87,7 +87,7 @@ module Dependabot
         SharedHelpers.in_a_temporary_repo_directory(T.must(source&.directory), repo_contents_path) do |path|
           File.write("go.mod", go_mod&.content)
           ReplaceStubber.new(repo_contents_path || Dir.pwd).with_stubs(
-            on_error: ->(stderr) { handle_parser_error(path, stderr) }
+            on_error: ->(stderr) { handle_parser_error(path, T.cast(stderr, String)) }
           ) do |_stubbed|
             stdout, stderr, status = Open3.capture3(command)
             handle_parser_error(path, stderr) unless status.success?
