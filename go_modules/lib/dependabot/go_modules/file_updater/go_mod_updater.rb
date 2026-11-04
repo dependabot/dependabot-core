@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "tmpdir"
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -122,6 +123,14 @@ module Dependabot
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
+        class ReplacementBinding < T::ImmutableStruct
+          const :manifest, String
+          const :kind, String
+          const :old, GoModManifest::ModuleReference
+          const :original, String
+          const :stub, String
+        end
+
         sig do
           params(
             dependencies: T::Array[Dependabot::Dependency],
@@ -200,33 +209,17 @@ module Dependabot
               File.write(path, file.content)
             end
 
-            # Map paths in local replace directives to path hashes
-            original_manifest = parse_manifest
             original_go_sum = File.read("go.sum") if File.exist?("go.sum")
 
-            substitutions = replace_directive_substitutions(original_manifest)
-            build_module_stubs(substitutions.values)
+            with_stubbed_replacements do |stubbed|
+              run_go_get(dependencies)
+              run_go_get
 
-            # Replace full paths with path hashes in the go.mod
-            substitute_all(substitutions)
-
-            # Bump the deps we want to upgrade using `go get lib@version`
-            run_go_get(dependencies)
-
-            # Run `go get`'s internal validation checks against _each_ module in `go.mod`
-            # by running `go get` w/o specifying any library. It finds problems like when a
-            # module declares itself using a different name than specified in our `go.mod` etc.
-            run_go_get
-
-            # If we stubbed modules, don't run `go mod {tidy,vendor}` as
-            # dependencies are incomplete
-            if substitutions.empty?
-              # go mod tidy should run before go mod vendor to ensure any
-              # dependencies removed by go mod tidy are also removed from vendors.
-              run_go_mod_tidy
-              run_go_vendor
-            else
-              substitute_all(substitutions.invert)
+              # Stubs contain no source, so tidy/vendor cannot resolve their imports.
+              unless stubbed
+                run_go_mod_tidy
+                run_go_vendor
+              end
             end
 
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
@@ -245,20 +238,18 @@ module Dependabot
               File.write(path, file.content)
             end
 
-            # Run `go get dep@version` in each module directory so every go.mod
-            # that requires the dependency gets the version bump, not just the first.
-            # Follow with a bare `go get` validation pass per module, matching the
-            # single-module update path's intent (see run_go_get comment).
-            workspace_module_paths.each do |mod_dir|
-              Dir.chdir(mod_dir) do
-                run_go_get(dependencies)
-                run_go_get
+            with_stubbed_replacements do |stubbed|
+              workspace_module_paths.each do |mod_dir|
+                Dir.chdir(mod_dir) do
+                  run_go_get(dependencies)
+                  run_go_get
+                end
               end
-            end
 
-            run_go_work_sync
-            run_workspace_tidy
-            run_go_list_modules
+              run_go_work_sync
+              run_workspace_tidy unless stubbed
+              run_go_list_modules
+            end
 
             collect_workspace_file_contents
           end
@@ -409,13 +400,104 @@ module Dependabot
           FileUtils.rm_f(T.must(tmp_go_file))
         end
 
-        sig { returns(GoModManifest) }
-        def parse_manifest
-          command = "go mod edit -json"
-          stdout, stderr, status = Open3.capture3(command)
+        sig { params(path: String, kind: String).returns(GoModManifest) }
+        def parse_replacement_manifest(path, kind)
+          command = "go #{kind} edit -json"
+          stdout, stderr, status = Dir.chdir(File.dirname(path)) { Open3.capture3(command) }
           handle_subprocess_error(stderr) unless status.success?
 
-          GoModManifest.from_json(stdout, file_path: File.join(directory, "go.mod"))
+          relative = Pathname.new(path).realpath.relative_path_from(replacement_repo_root)
+          GoModManifest.from_json(stdout, file_path: "/#{relative}", command: command)
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def replacement_manifests
+          paths = T.let({}, T::Hash[String, String])
+          current = File.expand_path("go.mod")
+          paths[current] = "mod" if File.file?(current)
+
+          work_file, stderr, status = Open3.capture3("go env GOWORK")
+          handle_subprocess_error(stderr) unless status.success?
+          work_file = work_file.strip
+          return paths if work_file.empty? || work_file == "off"
+
+          work_file = File.expand_path(work_file)
+          assert_manifest_in_repo(work_file)
+          paths[work_file] = "work"
+          GoWorkParser.use_paths(File.read(work_file)).each do |mod_path|
+            manifest = File.expand_path(File.join(mod_path, "go.mod"), File.dirname(work_file))
+            assert_manifest_in_repo(manifest)
+            paths[manifest] = "mod" if File.file?(manifest)
+          end
+          paths
+        end
+
+        sig { returns(Pathname) }
+        def replacement_repo_root
+          Pathname.new(repo_contents_path || Dir.pwd).realpath
+        end
+
+        sig { params(path: String).void }
+        def assert_manifest_in_repo(path)
+          root = replacement_repo_root
+          resolved = Pathname.new(path).realpath
+          return if resolved.to_s.start_with?("#{root}/")
+
+          raise Dependabot::DependencyFileNotResolvable, "Workspace manifest is outside the checkout: #{path}"
+        end
+
+        sig { params(stub_root: String).returns(T::Array[ReplacementBinding]) }
+        def replacement_bindings(stub_root)
+          root = replacement_repo_root
+          stubber = ReplaceStubber.new(root.to_s, stub_root: stub_root)
+          replacement_manifests.flat_map do |path, kind|
+            manifest = parse_replacement_manifest(path, kind)
+            directory = "/#{Pathname.new(File.dirname(path)).realpath.relative_path_from(root)}"
+            substitutions = stubber.stub_paths(manifest, directory)
+            manifest.replacements.filter_map do |replacement|
+              stub = substitutions[replacement.new.path]
+              next unless stub
+
+              ReplacementBinding.new(
+                manifest: path,
+                kind: kind,
+                old: replacement.old,
+                original: replacement.new.path,
+                stub: stub
+              )
+            end
+          end
+        end
+
+        sig { params(bindings: T::Array[ReplacementBinding], restore: T::Boolean).void }
+        def edit_replacement_bindings(bindings, restore:)
+          bindings.group_by(&:manifest).each do |path, entries|
+            arguments = entries.map do |binding|
+              old = [binding.old.path, binding.old.version].compact.join("@")
+              target = restore ? binding.original : binding.stub
+              "-replace=#{old}=#{target}"
+            end
+            _, stderr, status = Open3.capture3("go", T.must(entries.first).kind, "edit", *arguments, path)
+            handle_subprocess_error(stderr) unless status.success?
+          end
+        end
+
+        sig do
+          type_parameters(:T)
+            .params(_block: T.proc.params(stubbed: T::Boolean).returns(T.type_parameter(:T)))
+            .returns(T.type_parameter(:T))
+        end
+        def with_stubbed_replacements(&_block)
+          Dir.mktmpdir("dependabot-replacements-") do |stub_root|
+            bindings = replacement_bindings(stub_root)
+            build_module_stubs(bindings.map(&:stub).uniq)
+            begin
+              edit_replacement_bindings(bindings, restore: false)
+              yield(!bindings.empty?)
+            ensure
+              edit_replacement_bindings(bindings, restore: true)
+            end
+          end
         end
 
         sig do
@@ -439,33 +521,6 @@ module Dependabot
             FileUtils.touch(File.join(stub_path, "go.mod"))
             FileUtils.touch(File.join(stub_path, "main.go"))
           end
-        end
-
-        # Given a go.mod file, find all `replace` directives pointing to a path
-        # on the local filesystem, and return an array of pairs mapping the
-        # original path to a hash of the path.
-        #
-        # This lets us substitute all parts of the go.mod that are dependent on
-        # the layout of the filesystem with a structure we can reproduce (i.e.
-        # no paths such as ../../../foo), run the Go tooling, then reverse the
-        # process afterwards.
-        sig { params(manifest: GoModManifest).returns(T::Hash[String, String]) }
-        def replace_directive_substitutions(manifest)
-          @replace_directive_substitutions ||=
-            T.let(
-              Dependabot::GoModules::ReplaceStubber.new(T.must(repo_contents_path))
-                                                               .stub_paths(manifest, directory),
-              T.nilable(T::Hash[String, String])
-            )
-        end
-
-        sig { params(substitutions: T::Hash[String, String]).void }
-        def substitute_all(substitutions)
-          body = substitutions.reduce(File.read("go.mod")) do |text, (a, b)|
-            text.sub(a, b)
-          end
-
-          write_go_mod(body)
         end
 
         # rubocop:disable Metrics/AbcSize

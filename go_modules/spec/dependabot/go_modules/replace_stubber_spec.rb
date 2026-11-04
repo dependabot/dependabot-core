@@ -7,7 +7,10 @@ require "spec_helper"
 require "dependabot/go_modules/replace_stubber"
 
 RSpec.describe Dependabot::GoModules::ReplaceStubber do
-  subject(:stubbed) { described_class.new(repo_contents_path).stub_paths(manifest, directory) }
+  subject(:stubbed) { stubber.stub_paths(manifest, directory) }
+
+  let(:stub_root) { File.join(repo_contents_path, "temporary-stubs") }
+  let(:stubber) { described_class.new(repo_contents_path, stub_root: stub_root) }
 
   let(:directory) { "/" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
@@ -35,10 +38,42 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
     context "when replacing a module outside of checkout" do
       let(:project_name) { "replace" }
 
-      it {
-        expected = { "../../../../../../foo" => "./381363a4e394c2f6ca00811041688e9d27392a475483e843808b32a2f01a1088" }
-        expect(stubbed).to eq(expected)
-      }
+      it "places the external target in the supplied temporary root" do
+        expect(stubbed.keys).to eq(["../../../../../../foo"])
+        expect(File.dirname(stubbed.values.fetch(0))).to eq(stub_root)
+      end
+    end
+
+    context "when workspace members share an external target" do
+      let(:project_name) { "monorepo" }
+
+      def external_manifest(path)
+        Dependabot::GoModules::GoModManifest.from_json(
+          JSON.generate("Replace" => [{ "Old" => { "Path" => "example.com/shared" }, "New" => { "Path" => path } }]),
+          file_path: "go.mod"
+        )
+      end
+
+      it "uses the same stub across root and nested directories on one instance" do
+        root = stubber.stub_paths(external_manifest("../shared"), "/")
+        nested = stubber.stub_paths(external_manifest("../../shared"), "/cmd")
+
+        expect(root.values).to eq(nested.values)
+      end
+
+      it "preserves an absolute replacement inside the checkout" do
+        expect(stubber.stub_paths(external_manifest(File.join(repo_contents_path, "cmd")), "/")).to eq({})
+      end
+
+      it "does not confuse a neighboring path with the checkout's prefix" do
+        sibling = "#{repo_contents_path}-neighbor"
+        Dir.mkdir(sibling)
+        begin
+          expect(stubber.stub_paths(external_manifest(sibling), "/").keys).to eq([sibling])
+        ensure
+          Dir.rmdir(sibling)
+        end
+      end
     end
   end
 end
