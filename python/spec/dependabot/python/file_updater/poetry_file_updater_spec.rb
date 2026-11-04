@@ -940,6 +940,31 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "with a direct dependency declared in a dependency group of a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_dev_group.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_dev_group.lock" }
+      let(:requirements) do
+        [{ file: "pyproject.toml", requirement: ">=8", groups: ["dev"], source: nil }]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "8.3.5",
+          previous_version: "9.2.0",
+          package_manager: "pip",
+          requirements: requirements,
+          previous_requirements: requirements
+        )
+      end
+
+      it "locks it to the selected version rather than the newest the range allows" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        pytest = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "pytest" }
+
+        expect(pytest["version"]).to eq("8.3.5")
+      end
+    end
+
     context "with a main sub-dependency that has an environment marker" do
       let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
       let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }

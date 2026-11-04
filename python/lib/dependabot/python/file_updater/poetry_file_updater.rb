@@ -264,16 +264,15 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
-        # Declared dependencies are frozen by freeze_pep621_deps!; a sub-dependency has no declaration, so
-        # without a pin Poetry could lock it to a newer release than the one selected.
+        # freeze_pep621_deps! skips dependency groups and a sub-dependency has no declaration, so without
+        # this Poetry could lock either to a newer release than the one selected.
         sig { params(pyproject_object: T::Hash[String, T.untyped]).void }
         def pin_pep621_subdependencies!(pyproject_object)
           dependencies.each do |dep|
             next if git_dependency_being_updated?(dep)
-            next if dep.requirements.find { |r| r.file == pyproject&.name }
             next unless dep.version
 
-            PoetrySubdependencyPin.new(lockfile, dep.name).pin!(pyproject_object, "#{dep.name}==#{dep.version}")
+            PoetrySubdependencyPin.new(lockfile, dep.name).set_requirement!(pyproject_object, "==#{dep.version}")
           rescue PoetrySubdependencyPin::ScopeNotReproducible
             # The update checker declines these; skipping keeps a direct run from promoting the package.
             next
