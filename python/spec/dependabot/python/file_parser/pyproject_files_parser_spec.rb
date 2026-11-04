@@ -480,6 +480,20 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
+      context "with a locked hybrid project declaring a PEP 621 dependency with a `<` marker" do
+        let(:pyproject_fixture_name) { "poetry_v2_hybrid.toml" }
+        let(:poetry_lock_fixture_name) { "poetry_v2_hybrid.lock" }
+        let(:pyproject_body) do
+          fixture("pyproject_files", pyproject_fixture_name)
+            .sub('"flask>=2.3.0",', %("flask>=2.3.0",\n    "urllib3>=1.26.0; python_version < '3.12'",))
+        end
+
+        it "still skips the marker dependency" do
+          urllib3 = dependencies.find { |d| d.name == "urllib3" }
+          expect(urllib3&.requirements.to_a.map { |r| r[:requirement] }).not_to include(">=1.26.0")
+        end
+      end
+
       context "with a PEP 621 only project that declares the Poetry build backend but has no committed lockfile" do
         let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
         let(:files) { [pyproject] }

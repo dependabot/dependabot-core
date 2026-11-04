@@ -941,6 +941,46 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         expect(colorama["markers"]).to eq("platform_system == \"Windows\"")
       end
     end
+
+    context "with a direct dependency whose marker contains `<`" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.lock" }
+      let(:parsed_dependency) do
+        Dependabot::Python::FileParser.new(
+          dependency_files: dependency_files,
+          source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/"),
+          credentials: credentials
+        ).parse.find { |d| d.name == "urllib3" }
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "2.0.7",
+          previous_version: parsed_dependency.version,
+          package_manager: "pip",
+          requirements: parsed_dependency.requirements,
+          previous_requirements: parsed_dependency.requirements
+        )
+      end
+
+      it "is parsed as a direct dependency with its requirement" do
+        expect(parsed_dependency.requirements.first[:requirement]).to eq(">=1.26.0")
+      end
+
+      it "keeps a single declaration and updates the lockfile" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+        pyproject_content = updated_pyproject&.content || pyproject.content
+
+        expect(pyproject_content.scan("urllib3").length).to eq(1)
+        expect(pyproject_content).not_to include("urllib3==")
+
+        urllib3 = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "urllib3" }
+        expect(urllib3["version"]).to eq("2.0.7")
+        expect(urllib3["markers"]).to eq("python_version < \"3.12\"")
+      end
+    end
   end
 
   describe "constraint-only update with unchanged lockfile" do
