@@ -1993,6 +1993,29 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
     end
 
+    context "with a Poetry resolver" do
+      let(:version) { "2.18.0" }
+      let(:requirements) do
+        [
+          { file: "pyproject.toml", requirement: ">=1.26,<3", groups: [], source: nil },
+          { file: "pyproject.toml", requirement: "<2", groups: ["extra"], source: nil }
+        ]
+      end
+
+      # Every declaration is rewritten to the requirement it is given, so a single declaration's
+      # constraint would overwrite the others.
+      it "leaves each declaration's own constraint in place" do
+        dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+        allow(checker).to receive_messages(resolver_type: :poetry, poetry_version_resolver: dummy_resolver)
+        expect(dummy_resolver)
+          .to receive(:latest_resolvable_version)
+          .with(requirement: nil)
+          .and_return(Gem::Version.new("2.18.0"))
+        expect(checker.latest_resolvable_version_with_no_unlock)
+          .to eq(Gem::Version.new("2.18.0"))
+      end
+    end
+
     context "with a Pipfile" do
       let(:dependency_files) { [pipfile, lockfile] }
       let(:version) { "2.18.0" }

@@ -73,6 +73,8 @@ module Dependabot
         @latest_resolvable_version_with_no_unlock ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version_with_no_unlock
+          elsif resolver_type == :poetry
+            resolver.latest_resolvable_version(requirement: nil)
           else
             resolver.latest_resolvable_version(
               requirement: current_requirement_string
