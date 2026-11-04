@@ -145,6 +145,8 @@ module Dependabot
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
+              rescue PoetryPep621SubdependencyScope::ScopeNotReproducible
+                nil
               rescue SharedHelpers::HelperSubprocessFailed => e
                 handle_poetry_errors(e)
               end

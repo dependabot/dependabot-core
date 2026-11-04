@@ -478,6 +478,26 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect(pin).to eq("colorama==0.4.4; platform_system == \"Windows\"")
       end
     end
+
+    context "with an optional sub-dependency whose lockfile entry records no markers" do
+      subject(:resolvable) { resolver.resolvable?(version: Gem::Version.new("2024.2.2")) }
+
+      let(:dependency_name) { "certifi" }
+      let(:dependency_version) { "2026.10.23" }
+      let(:dependency_requirements) { [] }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_extra.toml" }
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_v2_pep621_only_extra.lock")
+                   .gsub(/^markers = "extra == \\"security\\""\n/, "")
+        )
+      end
+
+      it "declines the update rather than leaving the package unpinned" do
+        expect(resolvable).to be(false)
+      end
+    end
   end
 
   describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do

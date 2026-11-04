@@ -6,6 +6,8 @@ require "dependabot/dependency_file"
 require "dependabot/python/poetry_pep621_subdependency_scope"
 
 RSpec.describe Dependabot::Python::PoetryPep621SubdependencyScope do
+  let(:scope_error) { Dependabot::Python::PoetryPep621SubdependencyScope::ScopeNotReproducible }
+
   describe ".pins_for_dependency" do
     subject(:pins) { described_class.pins_for_dependency(lockfile, "colorama", "colorama==0.4.6") }
 
@@ -60,8 +62,53 @@ RSpec.describe Dependabot::Python::PoetryPep621SubdependencyScope do
     context "when the package is optional but the lockfile records no markers" do
       let(:optional) { true }
 
-      it "leaves it unpinned rather than promoting it into main" do
-        expect(pins).to eq([nil, {}])
+      it "declines, since its extra scope can't be recovered" do
+        expect { pins }.to raise_error(scope_error, /no recorded markers/)
+      end
+    end
+
+    context "when the package is locked as several entries with different markers" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: <<~TOML
+            [[package]]
+            name = "colorama"
+            version = "0.4.4"
+            markers = "python_version < \\"3.11\\""
+
+            [[package]]
+            name = "colorama"
+            version = "0.4.6"
+            markers = "python_version >= \\"3.15\\""
+          TOML
+        )
+      end
+
+      it "pins against the union of every entry's markers" do
+        expect(pins).to eq(['colorama==0.4.6; (python_version < "3.11") or (python_version >= "3.15")', {}])
+      end
+    end
+
+    context "when one of several entries has no markers" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: <<~TOML
+            [[package]]
+            name = "colorama"
+            version = "0.4.4"
+            markers = "python_version < \\"3.11\\""
+
+            [[package]]
+            name = "colorama"
+            version = "0.4.6"
+          TOML
+        )
+      end
+
+      it "pins unconditionally, since that entry applies everywhere" do
+        expect(pins).to eq(["colorama==0.4.6", {}])
       end
     end
 

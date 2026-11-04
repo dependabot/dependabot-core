@@ -929,6 +929,32 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
+      context "with a sub-dependency locked as several entries under disjoint markers" do
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only_paren_marker.toml" }
+        let(:lockfile_fixture_name) { "poetry_v2_pep621_only_paren_marker.lock" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "typing-extensions",
+            version: "4.12.2",
+            previous_version: "4.13.2",
+            package_manager: "pip",
+            requirements: [],
+            previous_requirements: [],
+            subdependency_metadata: [{ production: true }]
+          )
+        end
+
+        it "scopes the pin to every entry's slice, not only the first entry's" do
+          updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+          entries = TomlRB.parse(updated_lockfile.content)["package"].select { |d| d["name"] == "typing-extensions" }
+          pinned = entries.find { |entry| entry["version"] == "4.12.2" }
+
+          # The second entry (python >= 3.15) is only covered if its conditions are part of the pin.
+          expect(pinned["markers"]).not_to include('python_version < "3.15"')
+        end
+      end
+
       context "with a sub-dependency whose marker wraps a compound extra condition in parentheses" do
         let(:pyproject_fixture_name) { "poetry_v2_pep621_only_paren_marker.toml" }
         let(:lockfile_fixture_name) { "poetry_v2_pep621_only_paren_marker.lock" }
