@@ -13,6 +13,10 @@ module Dependabot
       # Pins a sub-dependency of a PEP 621-only project in the resolver's scratch manifest. The pin keeps
       # the package's locked markers, so Poetry records the same install conditions; an unconditional pin
       # would promote an extra-only or platform-specific package into every install.
+      #
+      # TODO: decline when a package is locked at several versions; one pin can't satisfy them all.
+      # TODO: scope pins for packages that are only in non-main groups (group-keyed lock markers).
+      # TODO: pin into the right PEP 735 `[dependency-groups]` entry; only declarations are updated today.
       class PoetrySubdependencyPin
         extend T::Sig
 
