@@ -34,7 +34,7 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621? || using_pep735?
-          dependency_set += lockfile_dependencies if using_poetry? && lockfile
+          dependency_set += lockfile_dependencies if using_locked_poetry?
 
           dependency_set
         end
@@ -218,6 +218,11 @@ module Dependabot
         end
 
         sig { returns(T::Boolean) }
+        def using_locked_poetry?
+          using_poetry? && !lockfile.nil?
+        end
+
+        sig { returns(T::Boolean) }
         def using_pep621?
           pyproject_document.pep621?
         end
@@ -240,8 +245,10 @@ module Dependabot
         sig { params(dep: PepDependency).returns(T::Boolean) }
         def skip_pep621_dep?(dep)
           # If a requirement has a `<` or `<=` marker then updating it is
-          # probably blocked. Ignore it.
-          return true if dep.markers&.include?("<")
+          # probably blocked. Ignore it, unless Poetry has locked it: skipping
+          # would re-surface it from the lockfile as a requirement-less
+          # sub-dependency that the updater can move out of sync with the manifest.
+          return true if dep.markers&.include?("<") && !using_locked_poetry?
 
           # If no requirement, don't add it
           requirement = dep.requirement
