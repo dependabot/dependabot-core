@@ -636,6 +636,31 @@ RSpec.describe Dependabot::Bazel::FileParser::StarlarkParser do
       end
     end
 
+    context "with assignments and function calls inside strings" do
+      let(:content) do
+        <<~BAZEL
+          "bazel_dep(name = 'example', version = '1.0')"
+          """
+          RULES_KOTLIN_VERSION = "1.0"
+          bazel_dep(name = "example", version = RULES_KOTLIN_VERSION)
+          """
+          '''
+          RULES_KOTLIN_VERSION = '1.1'
+          '''
+          RULES_KOTLIN_VERSION = "2.4.20"
+          bazel_dep(name = "rules_kotlin", version = RULES_KOTLIN_VERSION)
+        BAZEL
+      end
+
+      it "ignores strings when collecting assignments and function calls" do
+        calls = parser.parse_function_calls
+
+        expect(calls.map { |call| call.arguments["name"] }).to eq(["rules_kotlin"])
+        expect(parser.string_assignments).to eq("RULES_KOTLIN_VERSION" => "2.4.20")
+        expect(calls.first.line).to eq(10)
+      end
+    end
+
     context "with extremely malformed input" do
       let(:content) do
         <<~BAZEL

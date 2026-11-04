@@ -15,6 +15,7 @@ module Dependabot
           const :arguments, T::Hash[String, Object]
           const :positional_arguments, T::Array[Object]
           const :line, Integer
+          const :argument_ranges, T::Hash[String, T::Range[Integer]]
         end
 
         class Identifier < T::Struct
@@ -27,6 +28,12 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         attr_reader :string_assignments
 
+        sig { returns(T::Hash[String, T::Range[Integer]]) }
+        attr_reader :string_assignment_ranges
+
+        sig { returns(T::Hash[String, T::Array[Integer]]) }
+        attr_reader :identifier_locations
+
         sig { params(content: String).void }
         def initialize(content)
           @content = content
@@ -34,6 +41,8 @@ module Dependabot
           @line = T.let(1, Integer)
           @length = T.let(content.length, Integer)
           @string_assignments = T.let({}, T::Hash[String, String])
+          @string_assignment_ranges = T.let({}, T::Hash[String, T::Range[Integer]])
+          @identifier_locations = T.let({}, T::Hash[String, T::Array[Integer]])
         end
 
         sig { returns(T::Array[FunctionCall]) }
@@ -44,6 +53,11 @@ module Dependabot
             skip_whitespace_and_comments
 
             next unless @position < @length
+
+            if current_char == '"' || current_char == "'"
+              parse_string
+              next
+            end
 
             start_position = @position
             function_call = try_parse_function_call
@@ -112,7 +126,7 @@ module Dependabot
 
           move_to_next_char
 
-          keyword_arguments, positional_arguments = parse_function_arguments
+          keyword_arguments, positional_arguments, argument_ranges = parse_function_arguments
 
           skip_whitespace_and_comments
           return nil unless current_char == ")"
@@ -123,7 +137,8 @@ module Dependabot
             name: function_name,
             arguments: keyword_arguments,
             positional_arguments: positional_arguments,
-            line: start_line
+            line: start_line,
+            argument_ranges: argument_ranges
           )
         rescue StandardError
           move_to_next_char while current_char && current_char != "\n"
@@ -152,17 +167,22 @@ module Dependabot
           skip_inline_whitespace
           return unless current_char == '"' || current_char == "'"
 
+          start_position = @position
           value = parse_string
+          end_position = @position
           skip_inline_whitespace
           return unless value && STATEMENT_TERMINATORS.include?(current_char)
+          return if @string_assignments.key?(name)
 
-          @string_assignments[name] ||= value
+          @string_assignments[name] = value
+          @string_assignment_ranges[name] = start_position...end_position
         end
 
         sig { returns(T.nilable(String)) }
         def parse_identifier
           return nil unless current_char&.match?(/[a-zA-Z_]/)
 
+          start_position = @position
           identifier = T.let("", String)
           while current_char&.match?(/[a-zA-Z0-9_]/)
             char = current_char
@@ -170,24 +190,28 @@ module Dependabot
             move_to_next_char
           end
 
-          identifier.empty? ? nil : identifier
+          (@identifier_locations[identifier] ||= []) << start_position
+          identifier
         end
 
-        sig { returns([T::Hash[String, Object], T::Array[Object]]) }
+        sig { returns([T::Hash[String, Object], T::Array[Object], T::Hash[String, T::Range[Integer]]]) }
         def parse_function_arguments
           keyword_arguments = T.let({}, T::Hash[String, Object])
           positional_arguments = T.let([], T::Array[Object])
+          argument_ranges = T.let({}, T::Hash[String, T::Range[Integer]])
 
           skip_whitespace_and_comments
 
-          return [keyword_arguments, positional_arguments] if current_char == ")"
+          return [keyword_arguments, positional_arguments, argument_ranges] if current_char == ")"
 
           loop do
             skip_whitespace_and_comments
             break if current_char == ")"
 
             if (keyword_arg = parse_keyword_argument)
-              keyword_arguments.merge!(keyword_arg)
+              name, value, range = keyword_arg
+              keyword_arguments[name] = value
+              argument_ranges[name] = range
             else
               positional_value = parse_value
               positional_arguments << positional_value if positional_value
@@ -203,10 +227,10 @@ module Dependabot
             skip_whitespace_and_comments
           end
 
-          [keyword_arguments, positional_arguments]
+          [keyword_arguments, positional_arguments, argument_ranges]
         end
 
-        sig { returns(T.nilable(T::Hash[String, Object])) }
+        sig { returns(T.nilable([String, Object, T::Range[Integer]])) }
         def parse_keyword_argument
           start_pos = @position
           start_line = @line
@@ -225,10 +249,11 @@ module Dependabot
           move_to_next_char
           skip_whitespace_and_comments
 
+          value_start = @position
           value = parse_value
           return nil if value.nil?
 
-          { param_name => value }
+          [param_name, value, value_start...@position]
         end
 
         sig { returns(T.nilable(Object)) }
@@ -264,10 +289,11 @@ module Dependabot
           quote_char = current_char
           return nil unless quote_char == '"' || quote_char == "'"
 
-          move_to_next_char
+          delimiter = @content[@position, 3] == quote_char * 3 ? quote_char * 3 : quote_char
+          delimiter.length.times { move_to_next_char }
           string_value = T.let("", String)
 
-          while current_char && current_char != quote_char
+          while current_char && @content[@position, delimiter.length] != delimiter
             if current_char == "\\"
               string_value += parse_escape_sequence
             elsif current_char
@@ -276,7 +302,7 @@ module Dependabot
             move_to_next_char
           end
 
-          move_to_next_char if current_char == quote_char
+          delimiter.length.times { move_to_next_char } if current_char
           string_value
         end
 
@@ -354,13 +380,22 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def parse_unknown_value
-          value = T.let("", String)
+          start_position = @position
           depth = 0
 
           while current_char && @position < @length
             char = current_char
 
             case char
+            when '"', "'"
+              parse_string
+              next
+            when "#"
+              move_to_next_char while current_char && current_char != "\n"
+              next
+            when /[a-zA-Z_]/
+              parse_identifier
+              next
             when "(", "[", "{"
               depth += 1
             when ")", "]", "}"
@@ -369,14 +404,13 @@ module Dependabot
               depth -= 1
             when ","
               break if depth.zero?
-
             end
-            value += T.must(char)
 
             move_to_next_char
           end
 
-          value.strip.empty? ? nil : value.strip
+          value = T.must(@content[start_position...@position]).strip
+          value.empty? ? nil : value
         end
 
         sig { void }

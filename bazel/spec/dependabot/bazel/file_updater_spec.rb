@@ -352,6 +352,53 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
           CONTENT
         )
       end
+
+      context "with a single-quoted assignment" do
+        let(:module_file_content) { super().sub('RULES_CC_VERSION = "0.1.1"', "RULES_CC_VERSION = '0.1.1'") }
+
+        it "preserves the assignment's quotes" do
+          updated_content = file_updater.updated_dependency_files.first.content
+
+          expect(updated_content).to include("RULES_CC_VERSION = '0.2.0'")
+          expect(updated_content).to include("version = RULES_CC_VERSION)")
+        end
+      end
+    end
+
+    context "with a constant shared with another function" do
+      let(:module_file_content) do
+        <<~CONTENT
+          RULES_CC_VERSION = "0.1.1"
+          bazel_dep(name = "rules_cc", version = RULES_CC_VERSION)
+          extension.configure(version = RULES_CC_VERSION)
+        CONTENT
+      end
+
+      it "preserves the other consumer's version" do
+        updated_content = file_updater.updated_dependency_files.first.content
+
+        expect(updated_content).to include('RULES_CC_VERSION = "0.1.1"')
+        expect(updated_content).to include('bazel_dep(name = "rules_cc", version = "0.2.0")')
+        expect(updated_content).to include("extension.configure(version = RULES_CC_VERSION)")
+      end
+
+      context "with a reference inside a dictionary" do
+        let(:module_file_content) do
+          <<~CONTENT
+            RULES_CC_VERSION = "0.1.1"
+            bazel_dep(name = "rules_cc", version = RULES_CC_VERSION)
+            extension.configure(versions = {"rules_cc": RULES_CC_VERSION})
+          CONTENT
+        end
+
+        it "preserves the version used by the dictionary" do
+          updated_content = file_updater.updated_dependency_files.first.content
+
+          expect(updated_content).to include('RULES_CC_VERSION = "0.1.1"')
+          expect(updated_content).to include('bazel_dep(name = "rules_cc", version = "0.2.0")')
+          expect(updated_content).to include('extension.configure(versions = {"rules_cc": RULES_CC_VERSION})')
+        end
+      end
     end
 
     context "with the version held in a single-quoted constant shared by several bazel_deps" do
@@ -367,14 +414,59 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
         CONTENT
       end
 
-      it "updates the constant while preserving its quotes" do
+      it "updates only the selected dependency without changing the shared constant" do
         updated_files = file_updater.updated_dependency_files
 
         expect(updated_files.count).to eq(1)
         updated_content = updated_files.first.content
-        expect(updated_content).to include("RULES_CC_VERSION = '0.2.0'")
-        expect(updated_content).to include("version = RULES_CC_VERSION,")
+        expect(updated_content).to include("RULES_CC_VERSION = '0.1.1'")
+        expect(updated_content).to include('version = "0.2.0",')
         expect(updated_content).to include('bazel_dep(name = "rules_cc_extras", version = RULES_CC_VERSION)')
+      end
+    end
+
+    context "with a commented-out version argument before the live argument" do
+      let(:module_file_content) do
+        <<~CONTENT
+          OLD_VERSION = "0.1.0"
+          RULES_CC_VERSION = "0.1.1"
+
+          bazel_dep(
+              name = "rules_cc",
+              # version = OLD_VERSION,
+              version = RULES_CC_VERSION,
+          )
+        CONTENT
+      end
+
+      it "updates the live version constant and preserves the comment" do
+        updated_content = file_updater.updated_dependency_files.first.content
+
+        expect(updated_content).to include('OLD_VERSION = "0.1.0"')
+        expect(updated_content).to include('RULES_CC_VERSION = "0.2.0"')
+        expect(updated_content).to include("# version = OLD_VERSION,")
+        expect(updated_content).to include("version = RULES_CC_VERSION,")
+      end
+    end
+
+    context "with a version assignment inside a docstring before the live assignment" do
+      let(:module_file_content) do
+        <<~CONTENT
+          """
+          RULES_CC_VERSION = "0.0.9"
+          bazel_dep(name = "rules_cc", version = RULES_CC_VERSION)
+          """
+          RULES_CC_VERSION = "0.1.1"
+          bazel_dep(name = "rules_cc", version = RULES_CC_VERSION)
+        CONTENT
+      end
+
+      it "updates only the live assignment" do
+        updated_content = file_updater.updated_dependency_files.first.content
+
+        expect(updated_content).to eq(
+          module_file_content.sub('RULES_CC_VERSION = "0.1.1"', 'RULES_CC_VERSION = "0.2.0"')
+        )
       end
     end
 
