@@ -478,7 +478,7 @@ module Dependabot
         def release_age_rejected_entries(message)
           preceding = message.split(RELEASE_AGE_REJECTION_TEXT)
           preceding.pop
-          preceding.filter_map { |text| text.split.reject { |token| token == RELEASE_AGE_VIOLATION_TAG }.last }.uniq
+          preceding.filter_map { |text| text.gsub(RELEASE_AGE_VIOLATION_TAG, "").split.last }.uniq
         end
 
         sig { params(added: T::Array[String], message: String).returns(T.noreturn) }
