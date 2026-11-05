@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only target_version fixtures and shared-example fixtures.
+
 require "spec_helper"
 require "shared_contexts"
 

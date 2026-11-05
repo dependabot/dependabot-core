@@ -17,11 +17,11 @@ module Dependabot
       # Note: uv ecosystem aliases this class, so updates here apply to both ecosystems.
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
         3.15.2
-        3.14.9
-        3.13.17
-        3.12.13
-        3.11.15
-        3.10.20
+        3.14.10
+        3.13.18
+        3.12.16
+        3.11.18
+        3.10.22
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(
