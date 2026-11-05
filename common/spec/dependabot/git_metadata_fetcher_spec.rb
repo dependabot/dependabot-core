@@ -475,10 +475,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         after { FileUtils.rm_rf(workspace) }
 
         it "reads the tag dates from a clone without trees or blobs" do
-          result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
+          result = fetcher.fetch_tags_with_detail(url)
 
-          expect(result.status).to eq(200)
-          expect(result.body).to eq(expected_tags)
+          expect(result).to eq(expected_tags)
           expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(partial_clone_prefix))
           expect(Open3).not_to have_received(:capture3).with(anything, a_string_starting_with(full_clone_prefix))
         end
