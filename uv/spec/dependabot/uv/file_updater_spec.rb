@@ -192,6 +192,30 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
+    context "when the updaters leave every file unchanged" do
+      let(:dependency_files) { [requirements] }
+
+      before do
+        compile_updater = instance_double(described_class::CompileFileUpdater)
+        lock_updater = instance_double(described_class::LockFileUpdater)
+
+        allow(described_class::CompileFileUpdater).to receive(:new).and_return(compile_updater)
+        allow(described_class::LockFileUpdater).to receive(:new).and_return(lock_updater)
+        allow(compile_updater).to receive(:updated_dependency_files).and_return(dependency_files)
+        allow(lock_updater).to receive(:updated_dependency_files).and_return([])
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files have changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["psycopg2"],
+            "dependency-files" => ["requirements.txt"],
+            "updated-files" => ["requirements.txt"]
+          )
+        end
+      end
+    end
+
     describe "#pip_compile_index_urls" do
       let(:instance) do
         described_class.new(
