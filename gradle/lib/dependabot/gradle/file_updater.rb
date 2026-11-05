@@ -29,6 +29,14 @@ module Dependabot
       # to one line.
       INLINE_BLOCK_COMMENT_REGEX = %r{(?<=^|\s)/\*.*?\*/}
 
+      STRING_LITERAL_REGEX = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/
+
+      # A quoted `group:name:version...` string, capturing `group:name`.
+      COORDINATE_STRING_REGEX = /\A['"](?<coordinates>#{FileParser::PART}:#{FileParser::PART}):/o
+
+      # Everything before the first `#` that is outside a TOML string.
+      TOML_COMMENT_REGEX = /\A(?<code>(?:[^"'#]|#{STRING_LITERAL_REGEX})*)#.*/m
+
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
@@ -240,7 +248,7 @@ module Dependabot
           original_buildfile_declarations(dependency, previous_req).reduce(original_content) do |content, declaration|
             content.gsub(
               declaration,
-              updated_buildfile_declaration(declaration, previous_req, requirement)
+              updated_buildfile_declaration(declaration, dependency, buildfile, previous_req, requirement)
             )
           end
 
@@ -268,8 +276,7 @@ module Dependabot
         content.lines.each_with_index.filter_map do |line, index|
           next if substitution_ranges.any? { |range| range.cover?(index) }
 
-          evaluated = evaluate_properties(line, buildfile)
-          evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "")
+          evaluated = without_line_comment(evaluate_properties(line, buildfile), file)
 
           if dependency.name.include?(":")
             next unless declares_dependency?(evaluated, dependency.name)
@@ -289,6 +296,14 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Version catalogs use TOML `#` comments; build scripts use `//`.
+      sig { params(line: String, file: String).returns(String) }
+      def without_line_comment(line, file)
+        return line.sub(TOML_COMMENT_REGEX, '\k<code>') if file.end_with?(".toml")
+
+        line.gsub(%r{(?<=^|\s)//.*$}, "")
+      end
 
       # Matching on the group or name alone would also update other artifacts
       # that share it and the same version (see #14214).
@@ -310,7 +325,7 @@ module Dependabot
       # Keys may also be quoted, as TOML allows `{ "group" = "...", ... }`.
       sig { params(key: String, value: String).returns(Regexp) }
       def map_argument_regex(key, value)
-        /(?:^|\s|,|\(|\{)(?:#{key}|'#{key}'|"#{key}")(\s*=|\s*:)\s*['"]#{Regexp.quote(value)}['"]/
+        /(?:^|\s|,|\(|\{)(?:#{key}|'#{key}'|"#{key}")(\s*=|:)\s*['"]#{Regexp.quote(value)}['"]/
       end
 
       # Returns the (0-based) line-index ranges covered by dependencySubstitution
@@ -376,16 +391,34 @@ module Dependabot
 
       sig do
         params(
-          original_buildfile_declaration: String,
+          declaration: String,
+          dependency: Dependabot::Dependency,
+          buildfile: Dependabot::DependencyFile,
           previous_req: Dependabot::DependencyRequirement,
           requirement: Dependabot::DependencyRequirement
         ).returns(String)
       end
-      def updated_buildfile_declaration(original_buildfile_declaration, previous_req, requirement)
+      def updated_buildfile_declaration(declaration, dependency, buildfile, previous_req, requirement)
         original_req_string = T.must(previous_req.requirement_string)
         new_req_string = T.must(requirement.requirement_string)
+        return declaration.gsub(original_req_string, new_req_string) unless dependency.name.include?(":")
 
-        original_buildfile_declaration.gsub(original_req_string, new_req_string)
+        # A line can hold several declarations (`implementation 'g:a:1.0', 'g:b:1.0'`),
+        # so leave other dependencies' coordinate strings untouched.
+        replaceable_regex = /#{STRING_LITERAL_REGEX}|#{Regexp.quote(original_req_string)}/
+        declaration.gsub(replaceable_regex) do |match|
+          if other_dependency_coordinates?(evaluate_properties(match, buildfile), dependency.name)
+            match
+          else
+            match.gsub(original_req_string, new_req_string)
+          end
+        end
+      end
+
+      sig { params(string: String, dependency_name: String).returns(T::Boolean) }
+      def other_dependency_coordinates?(string, dependency_name)
+        coordinates = string.match(COORDINATE_STRING_REGEX)&.[](:coordinates)
+        !coordinates.nil? && coordinates != dependency_name
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
