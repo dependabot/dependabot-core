@@ -100,4 +100,22 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmResolutions do
       expect(described_class.changed_versions(v6_lockfile, v6_lockfile, "react")).to eq([])
     end
   end
+
+  describe "#locked_packages" do
+    it "lists every package of a v6 lockfile as name@version" do
+      expect(described_class.new(v6_lockfile).locked_packages).to eq(Set["a@1.0.0", "b@1.0.0", "c@1.0.0"])
+    end
+
+    it "reads the project document of a v9 stream and drops peer suffixes" do
+      lockfile = v9_lockfile + <<~YAML
+
+        packages:
+
+          '@scope/d@2.0.0':
+            resolution: {integrity: sha512-d==}
+      YAML
+
+      expect(described_class.new(lockfile).locked_packages).to eq(Set["a@1.0.0", "c@1.0.0", "@scope/d@2.0.0"])
+    end
+  end
 end
