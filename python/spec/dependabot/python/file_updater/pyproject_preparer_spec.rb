@@ -69,6 +69,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     end
   end
 
+  describe "#update_python_requirement" do
+    context "with a Poetry Python constraint containing alternatives" do
+      let(:pyproject_content) do
+        <<~TOML
+          [tool.poetry.dependencies]
+          python = "3.12.16 || 3.13.18"
+        TOML
+      end
+
+      it "preserves the constraint when the Python version satisfies the first alternative" do
+        expect(preparer.update_python_requirement("3.12.16")).to include('python = "3.12.16 || 3.13.18"')
+      end
+
+      it "preserves the constraint when the Python version satisfies the second alternative" do
+        expect(preparer.update_python_requirement("3.13.18")).to include('python = "3.12.16 || 3.13.18"')
+      end
+
+      it "uses a temporary constraint when the Python version satisfies neither alternative" do
+        expect(preparer.update_python_requirement("3.13.17")).to include('python = "~3.13.17"')
+      end
+    end
+
+    context "with an empty Poetry Python constraint" do
+      let(:pyproject_content) do
+        <<~TOML
+          [tool.poetry.dependencies]
+          python = ""
+        TOML
+      end
+
+      it "preserves the constraint" do
+        expect(preparer.update_python_requirement("3.13.17")).to include('python = ""')
+      end
+    end
+  end
+
   describe "#sanitize" do
     subject(:sanitized_content) { preparer.sanitize }
 
