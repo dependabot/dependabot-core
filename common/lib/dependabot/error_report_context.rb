@@ -218,7 +218,9 @@ module Dependabot
       case value
       when String then truncate(value)
       when Symbol then truncate(value.to_s)
-      when Integer, Float, true, false then value
+      when Integer, true, false then value
+      # NaN and Infinity can't be serialised to JSON
+      when Float then value.finite? ? value : nil
       when Array
         strings = value.select { |item| item.is_a?(String) || item.is_a?(Symbol) }
         strings.empty? ? nil : strings.first(MAX_ARRAY_LENGTH).map { |item| truncate(item.to_s) }

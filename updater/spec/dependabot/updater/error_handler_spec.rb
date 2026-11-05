@@ -143,6 +143,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::BACKTRACE => "bees.rb:5:in `buzz`",
             Dependabot::ErrorAttributes::MESSAGE => "There are bees everywhere",
             Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::CONTEXT => {
+              "dependency-name" => "broken-biscuits",
+              "dependency-version" => "1.2.0",
+              "dependency-previous-version" => "1.1.0",
+              "dependency-requirement-files" => ["Gemfile"]
+            },
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
@@ -292,7 +298,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
             Dependabot::ErrorAttributes::FINGERPRINT => ["123456789"],
-            Dependabot::ErrorAttributes::CONTEXT => { "helper-error-class" => "HelperSubprocessFailed" },
+            Dependabot::ErrorAttributes::CONTEXT => {
+              "dependency-name" => "broken-biscuits",
+              "dependency-version" => "1.2.0",
+              "dependency-previous-version" => "1.1.0",
+              "dependency-requirement-files" => ["Gemfile"],
+              "helper-error-class" => "HelperSubprocessFailed"
+            },
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],

@@ -181,7 +181,7 @@ RSpec.describe Dependabot::ErrorReportContext do
   describe ".attach" do
     it "drops values that cannot be safely serialized" do
       error = RuntimeError.new("boom")
-      described_class.attach(error, { file_name: "go.mod", object: Object.new, attempts: 2 })
+      described_class.attach(error, { file_name: "go.mod", object: Object.new, attempts: 2, ratio: Float::NAN })
 
       expect(described_class.build(error: error)).to eq("file-name" => "go.mod", "attempts" => 2)
     end

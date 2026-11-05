@@ -194,6 +194,18 @@ RSpec.describe Dependabot::RegistryClient do
           )
         end
       end
+
+      it "keeps the original request context when replaying a cached error" do
+        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Timeout)
+
+        replayed_url = "#{unreachable_url}/foos"
+        expect { described_class.head(url: replayed_url) }.to raise_error(Excon::Error::Timeout) do |raised|
+          expect(Dependabot::ErrorReportContext.build(error: raised)).to eq(
+            "http-method" => "GET",
+            "host" => "example.local"
+          )
+        end
+      end
     end
 
     describe "when Excon encounters a socket error" do

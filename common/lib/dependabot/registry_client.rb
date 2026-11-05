@@ -67,6 +67,9 @@ module Dependabot
 
     sig { params(error: CachedErrorType, http_method: String, url: String).returns(T.noreturn) }
     private_class_method def self.handle_request_error(error, http_method:, url:)
+      # Replayed cached errors keep the context of the request that originally failed
+      raise error if cached_error_for(url).equal?(error)
+
       cache_error(url, error) if cacheable_error?(error)
       ErrorReportContext.attach(error, { http_method: http_method, host: ErrorReportContext.host_for(url) })
       raise error
