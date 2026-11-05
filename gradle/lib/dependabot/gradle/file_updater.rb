@@ -268,8 +268,7 @@ module Dependabot
           evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "")
 
           if dependency.name.include?(":")
-            dep_parts = dependency.name.split(":")
-            next unless evaluated.include?(T.must(dep_parts.first)) || evaluated.include?(T.must(dep_parts.last))
+            next unless declares_dependency?(evaluated, dependency.name)
           elsif file.end_with?(".properties")
             property = requirement.source_string("property")
             next unless property && evaluated.start_with?(property)
@@ -286,6 +285,25 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Matching on the group or name alone would also update other artifacts
+      # that share it and the same version (see #14214).
+      sig { params(line: String, dependency_name: String).returns(T::Boolean) }
+      def declares_dependency?(line, dependency_name)
+        group, name = dependency_name.split(":", 2)
+        coordinates_regex = /['"]#{Regexp.quote(dependency_name)}(?=[:@'"])/
+
+        line.match?(coordinates_regex) ||
+          (line.match?(map_argument_regex("group", T.must(group))) &&
+            line.match?(map_argument_regex("name", T.must(name))))
+      end
+
+      # Mirrors FileParser#map_value_regex, which handles Groovy/Kotlin map
+      # arguments and version catalog `{ group = "...", name = "..." }` tables.
+      sig { params(key: String, value: String).returns(Regexp) }
+      def map_argument_regex(key, value)
+        /(?:^|\s|,|\(|\{)#{key}(\s*=|:)\s*['"]#{Regexp.quote(value)}['"]/
+      end
 
       # Returns the (0-based) line-index ranges covered by dependencySubstitution
       # blocks, so lines inside them can be excluded regardless of formatting.
