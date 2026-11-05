@@ -25,6 +25,10 @@ module Dependabot
       # dependency declarations, and must never be rewritten.
       SUBSTITUTION_BLOCK_START_REGEX = /\bdependencySubstitution\s*\{/
 
+      # Same block comment pattern FileParser#prepared_content strips, limited
+      # to one line.
+      INLINE_BLOCK_COMMENT_REGEX = %r{(?<=^|\s)/\*.*?\*/}
+
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
@@ -292,17 +296,21 @@ module Dependabot
       def declares_dependency?(line, dependency_name)
         group, name = dependency_name.split(":", 2)
         coordinates_regex = /['"]#{Regexp.quote(dependency_name)}(?=[:@'"])/
+        # FileParser#prepared_content strips block comments before finding
+        # declarations, so `group = /* note */ "g"` must match here too.
+        line = line.gsub(INLINE_BLOCK_COMMENT_REGEX, "")
 
         line.match?(coordinates_regex) ||
           (line.match?(map_argument_regex("group", T.must(group))) &&
             line.match?(map_argument_regex("name", T.must(name))))
       end
 
-      # Mirrors FileParser#map_value_regex, which handles Groovy/Kotlin map
+      # Based on FileParser#map_value_regex, which handles Groovy/Kotlin map
       # arguments and version catalog `{ group = "...", name = "..." }` tables.
+      # Keys may also be quoted, as TOML allows `{ "group" = "...", ... }`.
       sig { params(key: String, value: String).returns(Regexp) }
       def map_argument_regex(key, value)
-        /(?:^|\s|,|\(|\{)#{key}(\s*=|:)\s*['"]#{Regexp.quote(value)}['"]/
+        /(?:^|\s|,|\(|\{)(?:#{key}|'#{key}'|"#{key}")(\s*=|\s*:)\s*['"]#{Regexp.quote(value)}['"]/
       end
 
       # Returns the (0-based) line-index ranges covered by dependencySubstitution

@@ -14,4 +14,6 @@ dependencies {
     implementation(group = "com.example", name = "lib-metrics", version = "4.0.0-RC1")
     testImplementation(group = "com.example", name = "test-support", version = "5.1.0")
     testImplementation(group = "com.example", name = "test-support-extra", version = "5.1.0")
+    implementation(group = /* Maven group */ "com.example", name = "error-reporter", version = "6.0.0")
+    implementation(group = "com.example", name = "error-reporter-extra", version = "6.0.0")
 }

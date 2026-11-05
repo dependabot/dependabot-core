@@ -372,6 +372,21 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
         end
 
+        context "when the declaration contains an inline block comment" do
+          let(:dependency_name) { "com.example:error-reporter" }
+          let(:previous_version) { "6.0.0" }
+          let(:new_version) { "6.1.0" }
+
+          it "only updates the declaration of the dependency" do
+            expect(updated_buildfile.content).to eq(
+              buildfile.content.sub(
+                'name = "error-reporter", version = "6.0.0"',
+                'name = "error-reporter", version = "6.1.0"'
+              )
+            )
+          end
+        end
+
         context "with a version catalog" do
           let(:buildfile) do
             Dependabot::DependencyFile.new(
@@ -397,6 +412,21 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                 buildfile.content.sub(
                   'name = "lib-metrics", version = "4.0.0-RC1"',
                   'name = "lib-metrics", version = "4.0.0"'
+                )
+              )
+            end
+          end
+
+          context "when the dependency is declared with quoted group and name keys" do
+            let(:dependency_name) { "com.example:error-reporter" }
+            let(:previous_version) { "6.0.0" }
+            let(:new_version) { "6.1.0" }
+
+            it "only updates the entry of the dependency" do
+              expect(updated_buildfile.content).to eq(
+                buildfile.content.sub(
+                  '"name" = "error-reporter", version = "6.0.0"',
+                  '"name" = "error-reporter", version = "6.1.0"'
                 )
               )
             end
