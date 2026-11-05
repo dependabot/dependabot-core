@@ -14,6 +14,7 @@ module Dependabot
         extend T::Sig
 
         require_relative "requirements_updater"
+        require_relative "transitive_overrides"
         require_relative "version_finder"
 
         sig do
@@ -23,7 +24,8 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             target_version_details: T.nilable(UpdateChecker::VersionDetails),
-            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+            security_update: T::Boolean
           ).void
         end
         def initialize(
@@ -32,7 +34,8 @@ module Dependabot
           credentials:,
           ignored_versions:,
           target_version_details:,
-          update_cooldown: nil
+          update_cooldown: nil,
+          security_update: false
         )
           @dependency       = dependency
           @dependency_files = dependency_files
@@ -43,6 +46,7 @@ module Dependabot
           @target_version = T.let(target_version, T.nilable(Dependabot::Maven::Version))
           @source_url = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
           @update_cooldown = update_cooldown
+          @security_update = security_update
           @property_value_finder = T.let(nil, T.nilable(Dependabot::Maven::FileParser::PropertyValueFinder))
         end
 
@@ -123,13 +127,21 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies_using_property
           @dependencies_using_property ||= T.let(
+            parsed_dependencies.select do |dep|
+              dep.requirements.any? { |requirement| uses_property?(requirement) }
+            end,
+            T.nilable(T::Array[Dependabot::Dependency])
+          )
+        end
+
+        sig { returns(T::Array[Dependabot::Dependency]) }
+        def parsed_dependencies
+          @parsed_dependencies ||= T.let(
             Maven::FileParser.new(
               dependency_files: dependency_files,
               source: nil,
               options: { skip_dependency_tree: true }
-            ).parse.select do |dep|
-              dep.requirements.any? { |requirement| uses_property?(requirement) }
-            end,
+            ).parse,
             T.nilable(T::Array[Dependabot::Dependency])
           )
         end
@@ -156,7 +168,9 @@ module Dependabot
 
         sig { returns(Dependabot::DependencyRequirement) }
         def property_requirement
-          property_requirements = dependency.requirements.select { |r| r.metadata_string("property_name") }
+          property_requirements = TransitiveOverrides.raisable_property_requirements(
+            dependency.requirements, security_update: @security_update
+          ) { parsed_dependencies }
           matching_requirement = property_requirements.find do |requirement|
             normalized_requirement_version(requirement) == dependency.version
           end
@@ -255,10 +269,23 @@ module Dependabot
               source_url: source_url,
               properties_to_update: [property_name]
             ).updated_requirements.map.with_index do |requirement, index|
+              next dep.requirements.fetch(index) if keep_unchanged?(dep, dep.requirements.fetch(index))
               next requirement unless requirement.metadata_string("property_name")
 
               uses_property?(requirement) ? requirement : dep.requirements.fetch(index)
             end
+        end
+
+        # A literal transitive override isn't tied to the shared property, so the property update leaves
+        # it, and any declaration whose rewrite would also hit it, alone. Only a security update raises
+        # it, and only for the vulnerable dependency.
+        sig { params(dep: Dependabot::Dependency, requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def keep_unchanged?(dep, requirement)
+          return false if @security_update && dep.name == dependency.name
+          return false if requirement.metadata_string("property_name")
+
+          TransitiveOverrides.override?(requirement) ||
+            TransitiveOverrides.rewrites_an_override?(requirement, dep.requirements)
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }

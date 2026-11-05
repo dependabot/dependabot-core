@@ -277,6 +277,130 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
   describe "#updated_dependencies" do
     subject(:updated_dependencies) { updater.updated_dependencies }
 
+    context "when the dependency also has an override that uses a property no declaration uses" do
+      let(:dependency_files) { [pom, tools_pom] }
+      let(:tools_pom) do
+        Dependabot::DependencyFile.new(name: "tools/pom.xml", content: <<~XML)
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.dependabot</groupId>
+            <artifactId>tools</artifactId>
+            <version>0.0.1-RELEASE</version>
+            <properties>
+              <tools.version>4.3.12.RELEASE</tools.version>
+            </properties>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.springframework</groupId>
+                  <artifactId>spring-beans</artifactId>
+                  <version>${tools.version}</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+          </project>
+        XML
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "tools/pom.xml",
+            requirement: "4.3.12.RELEASE",
+            groups: [],
+            source: nil,
+            metadata: {
+              property_name: "tools.version",
+              property_source: "tools/pom.xml",
+              packaging_type: "jar",
+              transitive_override: true
+            }
+          },
+          *super()
+        ]
+      end
+
+      it "raises the declared property, not the override's" do
+        expect(updated_dependencies.map(&:name))
+          .to contain_exactly("org.springframework:spring-beans", "org.springframework:spring-context")
+        beans = updated_dependencies.find { |dep| dep.name == "org.springframework:spring-beans" }
+        expect(beans.requirements.find { |req| req.file == "tools/pom.xml" }.requirement).to eq("4.3.12.RELEASE")
+      end
+    end
+
+    context "when a dependency sharing the property also has a literal transitive override" do
+      let(:dependency_files) { [pom, tools_pom] }
+      let(:tools_pom) do
+        Dependabot::DependencyFile.new(name: "tools/pom.xml", content: <<~XML)
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.dependabot</groupId>
+            <artifactId>tools</artifactId>
+            <version>0.0.1-RELEASE</version>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.springframework</groupId>
+                  <artifactId>spring-context</artifactId>
+                  <version>4.3.10.RELEASE</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-shade-plugin</artifactId>
+                  <version>3.5.1</version>
+                  <dependencies>
+                    <dependency>
+                      <groupId>org.springframework</groupId>
+                      <artifactId>spring-context</artifactId>
+                      <version>4.3.10.RELEASE</version>
+                    </dependency>
+                  </dependencies>
+                </plugin>
+              </plugins>
+            </build>
+          </project>
+        XML
+      end
+
+      def tools_requirements(updated)
+        dep = updated.find { |d| d.name == "org.springframework:spring-context" }
+        dep.requirements.select { |req| req.file == "tools/pom.xml" }.map(&:requirement)
+      end
+
+      def updated_tools_pom(updated)
+        Dependabot::Maven::FileUpdater.new(dependencies: updated, dependency_files: dependency_files, credentials: [])
+                                      .updated_dependency_files
+                                      .find { |file| file.name == "tools/pom.xml" }
+      end
+
+      it "leaves the override, and the plugin copy that would rewrite it, alone in a version update" do
+        expect(tools_requirements(updated_dependencies)).to eq(["4.3.10.RELEASE", "4.3.10.RELEASE"])
+        expect(updated_tools_pom(updated_dependencies)).to be_nil
+      end
+
+      context "when it's a security update for that dependency" do
+        let(:updater) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version_details: target_version_details,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_update: true
+          )
+        end
+        let(:dependency_name) { "org.springframework:spring-context" }
+
+        it "raises the override and the plugin copy" do
+          expect(tools_requirements(updated_dependencies)).to eq(["23.6-jre", "23.6-jre"])
+          expect(updated_tools_pom(updated_dependencies).content).not_to include("4.3.10.RELEASE")
+        end
+      end
+    end
+
     it "updates both dependencies" do
       expect(updated_dependencies).to eq(
         [

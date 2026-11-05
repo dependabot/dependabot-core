@@ -20,6 +20,17 @@ module Dependabot
               <path>.*?</path>|
               <artifactItem>.*?</artifactItem>
             }mx
+
+        # The parts of a requirement the XML match depends on. Scanned-only requirements have no XML
+        # entry and are pinned per `pom_file`, so they're kept whole.
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(Object) }
+        def self.match_key(requirement)
+          return requirement unless requirement.file
+
+          [requirement.file, requirement.requirement_string, requirement.groups] +
+            %w(packaging_type property_name property_source).map { |key| requirement.metadata_string(key) }
+        end
+
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
