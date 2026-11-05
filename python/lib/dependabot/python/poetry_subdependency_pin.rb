@@ -56,6 +56,8 @@ module Dependabot
       def set_requirement!(pyproject_object, requirement)
         project_object = pyproject_object["project"]
         return unless project_object
+
+        raise ScopeNotReproducible, "#{@name} is locked at several versions" if entries.size > 1
         return if declaration_arrays(pyproject_object).map { |arr| update_declarations!(arr, requirement) }.any?
 
         pin!(pyproject_object, "#{@name}#{requirement}")

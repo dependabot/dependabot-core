@@ -115,6 +115,23 @@ RSpec.describe namespace::PoetryVersionResolver do
         .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
     end
 
+    context "with a direct dependency" do
+      let(:dependency_name) { "urllib3" }
+      let(:dependency_version) { "2.1.0" }
+
+      it "declines a direct dependency that is locked at several versions" do
+        second_entry = lockfile.content[/\[\[package\]\]\nname = "urllib3".*?(?=\n\[\[package\]\]|\n\[metadata\])/m]
+                               .sub(/version = "[^"]+"/, 'version = "1.26.18"')
+        allow(resolver).to receive(:poetry_lock).and_return(
+          Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+        )
+        content = pyproject_content.sub("\"urllib3>=1.26.0\"", "\"urllib3>=1.26.0; python_version < '3.12'\"")
+
+        expect { resolver.send(:set_target_dependency_req, content, "==2.2.0") }
+          .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
+      end
+    end
+
     it "keeps each declaration's own constraint when no target requirement is given" do
       content = pyproject_content.sub(
         "\"urllib3>=1.26.0\",\n]",
