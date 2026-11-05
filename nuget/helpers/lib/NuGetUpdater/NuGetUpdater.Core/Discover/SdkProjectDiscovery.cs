@@ -188,8 +188,6 @@ internal static class SdkProjectDiscovery
                 {
                     throw new Exception("Missing SDK, check global.json locations vs. job directories.");
                 }
-
-                return [];
             }
         }
 
@@ -544,7 +542,8 @@ internal static class SdkProjectDiscovery
                 {
                     if (!File.Exists(assetsFilePath))
                     {
-                        throw new FileNotFoundException("The file specified at $(ProjectAssetsFile) does not exist.");
+                        // A failed restore can leave no assets; retain dependencies discovered from the build.
+                        return null;
                     }
 
                     var assetsContent = File.ReadAllText(assetsFilePath);
