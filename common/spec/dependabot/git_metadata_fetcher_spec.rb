@@ -508,10 +508,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
           end
 
           it "falls back to a full clone" do
-            result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
+            result = fetcher.fetch_tags_with_detail(url)
 
-            expect(result.status).to eq(200)
-            expect(result.body).to eq(expected_tags)
+            expect(result).to eq(expected_tags)
             expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(partial_clone_prefix))
             expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(full_clone_prefix))
           end
@@ -520,11 +519,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         context "when the repository does not exist" do
           let(:url) { "file://#{File.join(workspace, 'missing.git')}" }
 
-          it "returns the full clone's error after trying the partial clone" do
-            result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
-
-            expect(result.status).to eq(500)
-            expect(result.body).to include("does not appear to be a git repository")
+          it "raises GitDependenciesNotReachable after both clone attempts fail" do
+            expect { fetcher.fetch_tags_with_detail(url) }
+              .to raise_error(Dependabot::GitDependenciesNotReachable)
             expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(partial_clone_prefix))
             expect(Open3).to have_received(:capture3).with(anything, a_string_starting_with(full_clone_prefix))
           end
