@@ -101,10 +101,9 @@ module Dependabot
             ).returns(T.nilable(String))
           end
           def replace_with_source_requirement(content, source_req, new_r, old_r)
-            match = content.match(declaration_regex(source_req))
-            return unless match
+            declaration = find_declaration(content, declaration_regex(source_req))
+            return unless declaration
 
-            declaration = T.must(match[:declaration])
             new_req_str = rewrite_pep508_requirement(
               source_req,
               T.must(old_r.requirement_string),
@@ -128,29 +127,44 @@ module Dependabot
             old_req = T.must(old_r.requirement_string)
             new_req = T.must(new_r.requirement_string)
 
-            match = content.match(normalized_declaration_regex(old_req))
-            return unless match
-
-            declaration = T.must(match[:declaration])
-            return unless declaration.include?(old_req)
+            declaration = find_declaration(content, normalized_declaration_regex(old_req))
+            return unless declaration&.include?(old_req)
 
             content.sub(declaration, declaration.sub(old_req, new_req))
           end
 
+          # The regexes stop after the requirement. The closing quote and any environment marker are
+          # checked here, since matching an unbounded marker in the regex itself can backtrack badly.
+          sig { params(content: String, prefix_regex: Regexp).returns(T.nilable(String)) }
+          def find_declaration(content, prefix_regex)
+            position = 0
+            while (match = content.match(prefix_regex, position))
+              finish = declaration_end(content, match.end(0))
+              return content[match.begin(0)...finish] if finish
+
+              position = match.begin(0) + 1
+            end
+          end
+
+          sig { params(content: String, start: Integer).returns(T.nilable(Integer)) }
+          def declaration_end(content, start)
+            tail = content[start..].to_s
+            quote = tail.index(/["']/)
+            return unless quote
+
+            trailing = tail[0, quote].to_s
+            start + quote + 1 if trailing.empty? || trailing.lstrip.start_with?(";")
+          end
+
           sig { params(old_req: String).returns(Regexp) }
           def declaration_regex(old_req)
-            /(?<declaration>["']#{escape}\s*#{extras_pattern}\s*#{Regexp.escape(old_req)}#{marker_pattern}["'])/mi
+            spacing = extras_pattern.empty? ? "\\s*" : "\\s*#{extras_pattern}\\s*"
+            /["']#{escape}#{spacing}#{Regexp.escape(old_req)}/mi
           end
 
           sig { params(old_req: String).returns(Regexp) }
           def normalized_declaration_regex(old_req)
-            /(?<declaration>["']#{escape}#{extras_pattern}#{Regexp.escape(old_req)}#{marker_pattern}["'])/mi
-          end
-
-          # Lets a declaration keep its environment marker when only the requirement is rewritten.
-          sig { returns(String) }
-          def marker_pattern
-            "(?:\\s*;[^\"']*)?"
+            /["']#{escape}#{extras_pattern}#{Regexp.escape(old_req)}/mi
           end
 
           sig { returns(String) }
