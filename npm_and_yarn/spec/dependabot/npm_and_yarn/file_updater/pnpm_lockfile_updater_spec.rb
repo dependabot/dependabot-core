@@ -1123,7 +1123,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
             )
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("install --lockfile-only")
+            .with("install --lockfile-only --no-frozen-lockfile")
             .ordered
 
           updated_pnpm_lock_content
@@ -1139,7 +1139,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             )
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("install --lockfile-only")
+            .with("install --lockfile-only --no-frozen-lockfile")
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
@@ -1157,7 +1157,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
             .and_return("")
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("install --lockfile-only")
+            .with("install --lockfile-only --no-frozen-lockfile")
             .ordered
 
           updated_pnpm_lock_content
@@ -1204,7 +1204,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         .with(unpinned_update, fingerprint)
         .ordered
       expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-        .with("install --lockfile-only")
+        .with("install --lockfile-only --no-frozen-lockfile")
         .ordered
 
       updated_pnpm_lock_content
@@ -1300,6 +1300,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         )
       end
 
+      it "does not pass --no-frozen-lockfile to pnpm update, which rejects it as an unknown option" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("frozen-lockfile")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
       it "passes --config.minimum-release-age=0 --config.minimum-release-age-strict=false to pnpm update" do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
@@ -1316,6 +1325,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           expect(cmd).to include("--config.minimum-release-age=0")
           expect(cmd).to include("--config.minimum-release-age-strict=false")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+      end
+
+      it "turns off a frozenLockfile setting, which would refuse the rewrite of the lockfile" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).to start_with("install --lockfile-only --no-frozen-lockfile")
           ""
         end
 

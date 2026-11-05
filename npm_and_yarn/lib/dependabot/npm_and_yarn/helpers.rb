@@ -394,6 +394,11 @@ module Dependabot
         PNPM_FALLBACK_VERSION
       end
 
+      # The updater rewrites the lockfile by definition, so a `frozenLockfile` set in pnpm-workspace.yaml or .npmrc
+      # (which no environment variable overrides) must never apply to the installs it runs. `pnpm update` takes no such
+      # option and rejects it, so this is only for `pnpm install`.
+      PNPM_NO_FROZEN_LOCKFILE = "--no-frozen-lockfile"
+
       # pnpm 11.23+ refuses `update <name>@<version>` when <name> is not a direct
       # dependency of any selected project. Older pnpm ignored the version for such
       # packages and updated them to whatever a fresh install resolves.
