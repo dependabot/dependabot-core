@@ -111,13 +111,16 @@ RSpec.describe namespace::PoetryVersionResolver do
         Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
       )
 
-      expect { resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31") }
-        .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
+      expect(resolver.latest_resolvable_version(requirement: "==2025.1.31")).to be_nil
+      expect(resolver.resolvable?(version: Gem::Version.new("2025.1.31"))).to be(false)
     end
 
     context "with a direct dependency" do
       let(:dependency_name) { "urllib3" }
       let(:dependency_version) { "2.1.0" }
+      let(:pyproject_content) do
+        super().sub("\"urllib3>=1.26.0\"", "\"urllib3>=1.26.0; python_version < '3.12'\"")
+      end
 
       it "declines a direct dependency that is locked at several versions" do
         second_entry = lockfile.content[/\[\[package\]\]\nname = "urllib3".*?(?=\n\[\[package\]\]|\n\[metadata\])/m]
@@ -125,10 +128,9 @@ RSpec.describe namespace::PoetryVersionResolver do
         allow(resolver).to receive(:poetry_lock).and_return(
           Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
         )
-        content = pyproject_content.sub("\"urllib3>=1.26.0\"", "\"urllib3>=1.26.0; python_version < '3.12'\"")
 
-        expect { resolver.send(:set_target_dependency_req, content, "==2.2.0") }
-          .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
+        expect(resolver.latest_resolvable_version(requirement: "==2.2.0")).to be_nil
+        expect(resolver.resolvable?(version: Gem::Version.new("2.2.0"))).to be(false)
       end
     end
 
@@ -187,8 +189,8 @@ RSpec.describe namespace::PoetryVersionResolver do
           Dependabot::DependencyFile.new(name: "poetry.lock", content: lockfile.content.gsub(/^markers = .*\n/, ""))
         )
 
-        expect { resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31") }
-          .to raise_error(Dependabot::Python::PoetrySubdependencyPin::ScopeNotReproducible)
+        expect(resolver.latest_resolvable_version(requirement: "==2025.1.31")).to be_nil
+        expect(resolver.resolvable?(version: Gem::Version.new("2025.1.31"))).to be(false)
       end
     end
 
