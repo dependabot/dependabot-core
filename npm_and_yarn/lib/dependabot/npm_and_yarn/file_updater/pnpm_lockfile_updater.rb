@@ -177,8 +177,12 @@ module Dependabot
         RELEASE_AGE_VERIFICATION_FAILED =
           /ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION|ERR_PNPM_NO_MATURE_MATCHING_VERSION|\[MINIMUM_RELEASE_AGE_VIOLATION\]/
         RELEASE_AGE_VIOLATION_TAG = "[MINIMUM_RELEASE_AGE_VIOLATION]"
-        RELEASE_AGE_REJECTION_TEXT = " was published at"
+        # No leading space: an entry that fills a whole wrapped line is joined to the next line without one
+        # (`<name>@<version>was published at`), since a full line reads the same as a word pnpm cut in two
+        RELEASE_AGE_REJECTION_TEXT = "was published at"
         RELEASE_AGE_ENTRIES_OMITTED = /(?:…|\.\.\.)\s*and \d+ more/
+        # How many entries pnpm rejected, listed or not
+        RELEASE_AGE_ENTRY_COUNT = /(\d+) lockfile entries failed verification/
         # Entries rejected by more than one policy; a release-age entry can be among those pnpm leaves out
         MIXED_POLICY_VERIFICATION_FAILED = /ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION/
 
@@ -440,11 +444,22 @@ module Dependabot
           end
 
           locked = PnpmResolutions.new(original_content).locked_packages
-          added = release_age_rejected_entries(message).reject { |entry| locked.include?(entry) }
-          # pnpm lists at most 20 entries, so an unlisted one may be one the update added.
-          return if added.empty? && !message.match?(RELEASE_AGE_ENTRIES_OMITTED)
+          rejected = release_age_rejected_entries(message)
+          added = rejected.reject { |entry| locked.include?(entry) }
+          # pnpm lists at most 20 entries, and an entry Dependabot cannot read may also be one the update added
+          return if added.empty? && !message.match?(RELEASE_AGE_ENTRIES_OMITTED) && !unread_entries?(message, rejected)
 
           raise_release_age_window_violated(added, message)
+        end
+
+        # Whether pnpm counts more rejected entries than were read. Only a release-age failure is counted: when several
+        # policies fail, pnpm's count includes the entries the other policies rejected.
+        sig { params(message: String, rejected: T::Array[String]).returns(T::Boolean) }
+        def unread_entries?(message, rejected)
+          return false if message.match?(MIXED_POLICY_VERIFICATION_FAILED)
+
+          count = message[RELEASE_AGE_ENTRY_COUNT, 1]
+          !count.nil? && rejected.size < count.to_i
         end
 
         # A listed release-age entry, or a truncated list of entries several policies rejected, where pnpm may have
@@ -470,7 +485,7 @@ module Dependabot
         def raise_release_age_window_violated(added, message)
           names = dependencies.map(&:name)
           blocked = names & added.map { |entry| entry.rpartition("@").first }
-          described = added.empty? ? "(pnpm did not list them all)" : added.join(", ")
+          described = added.empty? ? "(pnpm did not list them all, or some could not be read)" : added.join(", ")
 
           Dependabot.logger.warn(
             "The update would add versions published inside the repository's release-age window: #{described}. " \

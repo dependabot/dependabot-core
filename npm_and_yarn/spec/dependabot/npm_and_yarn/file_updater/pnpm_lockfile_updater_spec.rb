@@ -1935,6 +1935,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      context "when pnpm wraps an added entry whose name and version fill a whole line" do
+        # Real pnpm 12.10.1 output: the new 72-character entry sits alone on a line, so ` was published at` starts
+        # the next one; legacy-young@1.0.0 was already locked
+        let(:full_width_entry) { "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn@1.1.0" }
+        let(:locked_after) { [full_width_entry, "fetch-factory@0.0.2", "legacy-young@1.0.0"] }
+        let(:verification_failure) { fixture("pnpm_errors", "pnpm12", "release_age_violation_full_width_entry.txt") }
+
+        it "does not return a lockfile that adds a version inside the window" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+          expect(Dependabot.logger).to have_received(:warn).with(/window: #{Regexp.escape(full_width_entry)}\./)
+        end
+      end
+
+      context "when pnpm reports more rejected entries than Dependabot can read" do
+        # Constructed from real pnpm 12.10.1 output: the added entry's lines are removed, so the header still counts
+        # 2 entries but only the already locked legacy-young@1.0.0 can be read. It stands in for any entry whose text
+        # the parser does not recognise.
+        let(:verification_failure) do
+          fixture("pnpm_errors", "pnpm12", "release_age_violation.txt")
+            .sub(/^ +cooldown-test-child@2\.0\.0 was published at [^\n]*\n[^\n]*\n/, "")
+        end
+
+        it "does not return the lockfile, since an unread entry may be one the update added" do
+          expect(verification_failure).to include("2 lockfile entries failed verification")
+          expect(verification_failure).not_to include("cooldown-test-child")
+
+          expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+        end
+      end
+
       context "with pnpm 11 output" do
         let(:pnpm_version) { "11.25.0" }
         let(:locked_after) { %w(@types/node@24.19.1 fetch-factory@0.0.2 legacy-young@1.0.0) }
