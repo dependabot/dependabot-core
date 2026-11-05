@@ -318,7 +318,13 @@ module Dependabot
 
         sig { params(pyproject_content: String, updated_requirement: T.nilable(String)).returns(String) }
         def set_target_dependency_req(pyproject_content, updated_requirement)
-          return pyproject_content unless updated_requirement
+          unless updated_requirement
+            # Poetry's lock result for a package locked at several versions can't be read back as one version.
+            if pep621_only_poetry_project?(pyproject_content)
+              PoetrySubdependencyPin.new(poetry_lock, dependency.name).ensure_single_version!
+            end
+            return pyproject_content
+          end
 
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")

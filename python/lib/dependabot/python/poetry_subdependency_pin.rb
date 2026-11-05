@@ -57,10 +57,16 @@ module Dependabot
         project_object = pyproject_object["project"]
         return unless project_object
 
-        raise ScopeNotReproducible, "#{@name} is locked at several versions" if entries.size > 1
+        ensure_single_version!
         return if declaration_arrays(pyproject_object).map { |arr| update_declarations!(arr, requirement) }.any?
 
         pin!(pyproject_object, "#{@name}#{requirement}")
+      end
+
+      # A package locked at several versions has per-marker scopes that one target version can't reproduce.
+      sig { void }
+      def ensure_single_version!
+        raise ScopeNotReproducible, "#{@name} is locked at several versions" if entries.size > 1
       end
 
       # Adds a pin per place the package is locked (main, extras, other groups), each keeping its locked
@@ -91,7 +97,7 @@ module Dependabot
       # pinning it unconditionally would promote it into the main install.
       sig { params(pin: String).returns([T.nilable(String), T::Hash[String, String], T::Hash[String, String]]) }
       def pins_for(pin)
-        raise ScopeNotReproducible, "#{@name} is locked at several versions" if entries.size > 1
+        ensure_single_version!
 
         entry = entries.first
         return [pin, {}, {}] unless entry

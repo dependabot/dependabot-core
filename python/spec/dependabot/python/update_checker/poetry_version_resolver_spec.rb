@@ -115,6 +115,16 @@ RSpec.describe namespace::PoetryVersionResolver do
       expect(resolver.resolvable?(version: Gem::Version.new("2025.1.31"))).to be(false)
     end
 
+    it "declines when no target requirement is given and the dependency is locked at several versions" do
+      second_entry = lockfile.content[/\[\[package\]\]\nname = "certifi".*?(?=\n\[\[package\]\])/m]
+                             .sub('version = "2024.2.2"', 'version = "2023.7.22"')
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+      )
+
+      expect(resolver.latest_resolvable_version(requirement: nil)).to be_nil
+    end
+
     context "with a direct dependency" do
       let(:dependency_name) { "urllib3" }
       let(:dependency_version) { "2.1.0" }
