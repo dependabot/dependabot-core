@@ -1503,6 +1503,7 @@ public class EndToEndTests
         Assert.Contains(apiHandler.ReceivedMessages, m => m.Type == typeof(CreatePullRequest));
         var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
         var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content);
+        Assert.Contains("/src/client/packages.lock.json", updatedFiles.Keys);
         foreach (var (path, frameworks, package, updatedVersion) in lockFiles)
         {
             var lockFileContent = updatedFiles.TryGetValue($"/{path}", out var updatedContent)
