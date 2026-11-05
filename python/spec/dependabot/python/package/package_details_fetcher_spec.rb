@@ -295,6 +295,54 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       end
     end
 
+    # The Dependabot proxy closes the connection without a response when it cannot reach PyPI (for example a
+    # runner whose network blocks or cannot resolve pypi.org), which Excon reports as EOFError; a dropped
+    # connection is reported as a read timeout instead
+    context "when PyPI cannot be reached because the connection is closed without a response" do
+      let(:error) { Excon::Error::Socket.new(EOFError.new("end of file reached")) }
+
+      before do
+        stub_request(:get, json_url).to_raise(error)
+        stub_request(:get, registry_url).to_raise(error)
+      end
+
+      it "reports PyPI as the source that timed out, after trying the HTML index too" do
+        expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut) do |raised|
+          expect(raised.source).to eq("https://pypi.org/simple/")
+        end
+        expect(a_request(:get, json_url)).to have_been_made.at_least_once
+        expect(a_request(:get, registry_url)).to have_been_made.at_least_once
+      end
+
+      context "when only the JSON API fails" do
+        before do
+          stub_request(:get, registry_url).to_return(
+            status: 200,
+            body: fixture("releases_api", "simple", "simple_index.html")
+          )
+        end
+
+        it "falls back to the HTML index" do
+          expect(fetch.releases.map(&:version)).to match_array(expected_releases.map(&:version))
+        end
+      end
+    end
+
+    context "when PyPI cannot be reached because the request times out" do
+      before do
+        stub_request(:get, json_url).to_raise(Excon::Error::Timeout.new("read timeout reached"))
+      end
+
+      # RegistryClient fails fast on a host that timed out, so the HTML index is not requested
+      it "reports PyPI as the source that timed out" do
+        expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut) do |raised|
+          expect(raised.source).to eq("https://pypi.org/simple/")
+        end
+        expect(a_request(:get, json_url)).to have_been_made.at_least_once
+        expect(a_request(:get, registry_url)).not_to have_been_made
+      end
+    end
+
     context "when JSON response contains a malformed version string" do
       let(:dependency_name) { "google-api-python-client" }
       let(:json_url) { "https://pypi.org/pypi/#{dependency_name}/json" }

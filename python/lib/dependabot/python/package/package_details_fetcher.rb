@@ -68,8 +68,7 @@ module Dependabot
                              .flat_map do |index_url|
             fetch_from_registry(index_url) || [] # Ensure it always returns an array
           rescue Excon::Error::Timeout, Excon::Error::Socket
-            raise if main_pypi_index?(index_url)
-
+            # PyPI included: a runner whose network cannot reach it fails every update the same way
             raise PrivateSourceTimedOut, sanitized_url(index_url)
           rescue URI::InvalidURIError
             raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
