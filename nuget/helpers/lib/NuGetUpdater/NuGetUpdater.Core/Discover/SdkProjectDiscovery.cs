@@ -54,24 +54,20 @@ internal static class SdkProjectDiscovery
         "web.config",
     };
 
-    // these are the targets that are necessary to evaluate for a single restore operation
-    private static readonly ImmutableArray<string> SingleRestoreTargetNames =
+    private static readonly ImmutableArray<string> DiscoveryTargetNames =
     [
-        "Restore",
         "ResolveProjectReferences",
         "GenerateBuildDependencyFile"
     ];
 
-    // these targets are required to evaluate a legacy project with a single operation
-    private static readonly ImmutableArray<string> LegacyProjectSingleRestoreTargetNames = ["ResolveProjectReferences"];
+    private static readonly ImmutableArray<string> LegacyProjectDiscoveryTargetNames = ["ResolveProjectReferences"];
 
     private const string TargetFrameworksPropertyName = "TargetFrameworks";
 
     // this property evaluates to a version number in an SDK-style project and is unset or empty otherwise
     private const string NETCoreSdkVersionPropertyName = "NETCoreSdkVersion";
 
-    // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
-    private const int MaximumParallelTargetFrameworkRestores = 2;
+    private const int MaximumParallelTargetFrameworkEvaluations = 2;
 
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, string? solutionDir, ILogger logger)
     {
@@ -130,51 +126,86 @@ internal static class SdkProjectDiscovery
         var netCoreSdkVersionValue = startingProjectProperties?.GetValueOrDefault(NETCoreSdkVersionPropertyName);
         var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
         var requiredTargets = isLegacyProject
-            ? LegacyProjectSingleRestoreTargetNames
-            : SingleRestoreTargetNames;
+            ? LegacyProjectDiscoveryTargetNames
+            : DiscoveryTargetNames;
 
         // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
         // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
         // alternately, if there are too many target frameworks specified, they must be handled individually
         var hasPlatformTfms = projectTfms.Any(tfm => tfm.Contains('-'));
-        var requiresIndividualRestores = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkRestores;
-        var useDirectRestore = requiresIndividualRestores;
-        if (!requiresIndividualRestores)
+        var requiresIndividualEvaluations = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkEvaluations;
+        var useDirectEvaluation = requiresIndividualEvaluations;
+        if (!requiresIndividualEvaluations)
         {
-            logger.Info($"Performing single restore for project {startingProjectPath}");
-            projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+            logger.Info($"Performing single evaluation for project {startingProjectPath}");
+            projectTfms = [string.Empty]; // an empty TFM lets the outer build evaluate all target frameworks
             var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-            useDirectRestore = requiredTargets.All(actualTargets.Contains);
+            useDirectEvaluation = requiredTargets.All(actualTargets.Contains);
         }
         else
         {
-            logger.Info($"Performing individual restores for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
+            logger.Info($"Performing individual evaluations for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
+        }
+
+        var commonArgs = new List<string>() { startingProjectPath };
+        commonArgs.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", requiredTargets)}\"");
+        var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
+        var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
+        commonArgs.Add($"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}");
+        commonArgs.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
+        commonArgs.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
+        if (solutionDir is not null)
+        {
+            var normalizedSolutionDir = $"{solutionDir.TrimEnd('/', Path.DirectorySeparatorChar)}/";
+            commonArgs.Add($"/p:SolutionDir={normalizedSolutionDir}");
+        }
+        commonArgs.Add("/p:TreatWarningsAsErrors=false");
+        commonArgs.Add("/p:MSBuildTreatWarningsAsErrors=false");
+
+        async Task<(int ExitCode, string Output, string Error)> RunMSBuildAsync(List<string> args)
+        {
+            var result = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
+            if (result.ExitCode != 0 && result.Output.Contains("error : Object reference not set to an instance of an object."))
+            {
+                // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
+                args.Add("/RestoreProperty:__Unused__=__Unused__");
+                result = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
+            }
+
+            MSBuildHelper.ThrowOnError(result.Output);
+            MSBuildHelper.ThrowOnError(result.Error);
+            return result;
+        }
+
+        if (!isLegacyProject)
+        {
+            // Restore the graph before inner builds introduce a TargetFramework global property.
+            var (exitCode, stdOut, stdErr) = await RunMSBuildAsync([.. commonArgs, "/t:Restore"]);
+            if (exitCode != 0)
+            {
+                logger.Warn($"Error restoring dependencies.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+                if (stdErr.Contains("A compatible .NET SDK was not found."))
+                {
+                    throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                }
+
+                return [];
+            }
         }
 
         foreach (var tfm in projectTfms)
         {
-            var isIndividualTfmRestore = !string.IsNullOrEmpty(tfm);
+            var isIndividualTfmEvaluation = !string.IsNullOrEmpty(tfm);
 
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // when using single restore, we can directly invoke the relevant targets...
-                var args = new List<string>() { startingProjectPath };
+                var args = new List<string>(commonArgs);
 
-                // ...but determining what the relevant targets are can be complicated
-
-                // For SDK-style projects  the targets `Restore`, `ResolveProjectReferences`, and `GenerateBuildDependencyFile`
-                // are necessary.  If the project has a single target framework, those magic targets will all be present and can
-                // be directly invoked, but if the project has multiple target frameworks, those targets will _NOT_ be directly
-                // present and we instead have to invoke the `Build` target and specify the three magic values as `InnerTargets`.
-
-                // If the project is legacy then those three magic targets will not be present, but we shouldn't use the `Build`
-                // and `InnerTargets` trick because that's an SDK-only mechanism, so we instead only need to invoke
-                // `ResolveProjectReferences` to gather all `PackageReference` items and further down we re-build the transitive
-                // dependency set.  Without the legacy project check, we could incorrectly invoke `Build` which eventually tries
-                // to call `csc.exe` which is unnecessary and can be slow.
-                if (useDirectRestore)
+                // Cross-targeting SDK builds dispatch discovery targets through InnerTargets.
+                // Legacy projects must invoke their targets directly to avoid compiling them.
+                if (useDirectEvaluation)
                 {
                     // directly call the required targets
                     args.Add($"/t:{string.Join(",", requiredTargets)}");
@@ -186,48 +217,14 @@ internal static class SdkProjectDiscovery
                     args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
                 }
 
-                // only execute the desired targets on transitive project references
-                args.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", requiredTargets)}\"");
-
-                // inject various props and targets to help with discovery
-                var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
-                var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
-                args.Add($"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}");
-                args.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
-                args.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
-
-                if (isIndividualTfmRestore)
+                if (isIndividualTfmEvaluation)
                 {
                     args.Add($"/p:TargetFramework={tfm}");
                 }
 
-                // if the project lives alongside a solution file, fake the MSBuild `SolutionDir` property so that
-                // project files referencing `$(SolutionDir)` can be evaluated correctly; MSBuild expects this value
-                // to end with a directory separator so that `$(SolutionDir)foo` concatenations form valid paths
-                if (solutionDir is not null)
-                {
-                    var normalizedSolutionDir = $"{solutionDir.TrimEnd('/', Path.DirectorySeparatorChar)}/";
-                    args.Add($"/p:SolutionDir={normalizedSolutionDir}");
-                }
-
-                // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
-                args.Add("/p:TreatWarningsAsErrors=false");
-                args.Add("/p:MSBuildTreatWarningsAsErrors=false");
                 args.Add($"/bl:{binLogPath}");
 
-                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
-                if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
-                {
-                    // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
-                    // Due to a bug in NuGet, there can be a null reference exception thrown and adding this command line argument will work around it,
-                    // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
-                    // unless we have to.
-                    args.Add("/RestoreProperty:__Unused__=__Unused__");
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
-                }
-
-                MSBuildHelper.ThrowOnError(stdOut);
-                MSBuildHelper.ThrowOnError(stdErr);
+                var (exitCode, stdOut, stdErr) = await RunMSBuildAsync(args);
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
