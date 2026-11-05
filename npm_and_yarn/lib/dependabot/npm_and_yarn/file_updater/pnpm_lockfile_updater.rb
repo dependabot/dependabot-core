@@ -180,6 +180,10 @@ module Dependabot
         # No leading space: an entry that fills a whole wrapped line is joined to the next line without one
         # (`<name>@<version>was published at`), since a full line reads the same as a word pnpm cut in two
         RELEASE_AGE_REJECTION_TEXT = "was published at"
+        # An entry pnpm could not check, for example one with no publish time when the repo sets
+        # `minimumReleaseAgeIgnoreMissingTime: false`. pnpm counts it among the failed entries.
+        RELEASE_AGE_UNCHECKED_TEXT = "could not be checked against minimumReleaseAge"
+        RELEASE_AGE_ENTRY_TEXT = T.let(Regexp.union(RELEASE_AGE_REJECTION_TEXT, RELEASE_AGE_UNCHECKED_TEXT), Regexp)
         RELEASE_AGE_ENTRIES_OMITTED = /(?:…|\.\.\.)\s*and \d+ more/
         # How many entries pnpm rejected, listed or not
         RELEASE_AGE_ENTRY_COUNT = /(\d+) lockfile entries failed verification/
@@ -471,12 +475,13 @@ module Dependabot
           message.match?(MIXED_POLICY_VERIFICATION_FAILED) && message.match?(RELEASE_AGE_ENTRIES_OMITTED)
         end
 
-        # Each rejected entry reads `<name>@<version> was published at ...`, with a `[<code>]` tag after the version
-        # when other policies fail too. Split on the fixed text rather than scan with a pattern that starts with an
-        # unbounded quantifier, which backtracks polynomially on long runs of name characters.
+        # Each rejected entry reads `<name>@<version> was published at ...`, or `<name>@<version> could not be checked
+        # against minimumReleaseAge (...)`, with a `[<code>]` tag after the version when other policies fail too. Split
+        # on the fixed texts rather than scan with a pattern that starts with an unbounded quantifier, which backtracks
+        # polynomially on long runs of name characters.
         sig { params(message: String).returns(T::Array[String]) }
         def release_age_rejected_entries(message)
-          preceding = message.split(RELEASE_AGE_REJECTION_TEXT)
+          preceding = message.split(RELEASE_AGE_ENTRY_TEXT)
           preceding.pop
           preceding.filter_map { |text| text.gsub(RELEASE_AGE_VIOLATION_TAG, "").split.last }.uniq
         end

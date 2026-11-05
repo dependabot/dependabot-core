@@ -1967,6 +1967,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      # The repo sets minimumReleaseAgeIgnoreMissingTime: false, and the registry has no publish time for
+      # notime-field@1.0.0, so pnpm reports it as `could not be checked against minimumReleaseAge`
+      context "when pnpm could not check an entry against the window" do
+        # Real pnpm 12.10.1 output
+        let(:verification_failure) { fixture("pnpm_errors", "pnpm12", "release_age_violation_missing_time.txt") }
+        let(:locked_after) { %w(cooldown-test-child@2.0.0 fetch-factory@0.0.2 legacy-young@1.0.0 notime-field@1.0.0) }
+
+        context "when the entry was already in the lockfile" do
+          let(:locked_before) { %w(fetch-factory@0.0.1 legacy-young@1.0.0 notime-field@1.0.0) }
+
+          it "returns the updated lockfile, since the update did not add it" do
+            expect(updated_pnpm_lock_content).to eq(lockfile_with(locked_after))
+          end
+        end
+
+        context "when the update added the entry" do
+          it "does not return the lockfile, and names the entry" do
+            allow(Dependabot.logger).to receive(:warn)
+
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+            expect(Dependabot.logger).to have_received(:warn).with(/window: notime-field@1\.0\.0\./)
+          end
+        end
+
+        context "when the update also added a version inside the window" do
+          # Real pnpm 12.10.1 output: notime-field@1.0.0 could not be checked, young-dep@1.1.0 is too young
+          let(:verification_failure) do
+            fixture("pnpm_errors", "pnpm12", "release_age_violation_missing_time_and_young.txt")
+          end
+          let(:locked_before) { %w(fetch-factory@0.0.1 notime-field@1.0.0) }
+          let(:locked_after) { %w(fetch-factory@0.0.2 notime-field@1.0.0 young-dep@1.1.0) }
+
+          it "does not return the lockfile, and names only the version the update added" do
+            allow(Dependabot.logger).to receive(:warn)
+
+            expect { updated_pnpm_lock_content }.to raise_error(Dependabot::UpdateNotPossible)
+            expect(Dependabot.logger).to have_received(:warn).with(/window: young-dep@1\.1\.0\./)
+          end
+        end
+      end
+
       context "with pnpm 11 output" do
         let(:pnpm_version) { "11.25.0" }
         let(:locked_after) { %w(@types/node@24.19.1 fetch-factory@0.0.2 legacy-young@1.0.0) }
