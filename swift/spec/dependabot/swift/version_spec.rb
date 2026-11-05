@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot rewrite singleton methods defined on test instances.
+
 require "spec_helper"
 require "dependabot/swift/version"
 require "dependabot/swift/requirement"

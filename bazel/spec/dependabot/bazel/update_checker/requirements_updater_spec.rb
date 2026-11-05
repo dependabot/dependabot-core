@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the requirements fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bazel/update_checker/requirements_updater"
 

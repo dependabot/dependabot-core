@@ -453,6 +453,55 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "when the poetry.lock was written by a Poetry version this Poetry cannot read" do
+      let(:response) do
+        "The \"poetry.dev-dependencies\" section is deprecated and will be removed in a future version. " \
+          "Use \"poetry.group.dev.dependencies\" instead.\n" \
+          "Creating virtualenv interpolate-G5E7wKHY-py3.10 in /home/dependabot/.cache/pypoetry/virtualenvs\n\n" \
+          "The lock file is not compatible with the current version of Poetry.\n" \
+          "Regenerate the lock file with the `poetry lock` command."
+      end
+
+      it "raises a DependencyFileNotResolvable that says how to fix the lock file" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to eq(
+            "The lock file is not compatible with the current version of Poetry. " \
+            "Regenerate the lock file with the `poetry lock` command."
+          )
+        end
+      end
+    end
+
+    context "when the poetry.lock was written by a newer Poetry than this one can read" do
+      let(:response) do
+        "The lock file is not compatible with the current version of Poetry.\n" \
+          "Upgrade Poetry to be able to read the lock file or, alternatively, " \
+          "regenerate the lock file with the `poetry lock` command."
+      end
+
+      it "raises a DependencyFileNotResolvable that says how to fix the lock file" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to eq(
+            "The lock file is not compatible with the current version of Poetry. " \
+            "Upgrade Poetry to be able to read the lock file or, alternatively, " \
+            "regenerate the lock file with the `poetry lock` command."
+          )
+        end
+      end
+    end
+
+    context "when Poetry only warns that the lock file might not be compatible" do
+      let(:response) do
+        "The lock file might not be compatible with the current version of Poetry.\n" \
+          "Upgrade Poetry to ensure the lock file is read properly or, alternatively, " \
+          "regenerate the lock file with the `poetry lock` command.\nSome other failure"
+      end
+
+      it "is not classified as an unreadable lock file" do
+        expect { poetry_error_handler }.not_to raise_error
+      end
+    end
+
     context "with invalid configuration in pyproject.toml file" do
       let(:response) do
         "The Poetry configuration is invalid:

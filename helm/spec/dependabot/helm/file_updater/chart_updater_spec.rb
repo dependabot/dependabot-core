@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,7 +7,12 @@ require "dependabot/dependency_file"
 require "dependabot/helm/file_updater/chart_updater"
 
 RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Helm::FileUpdater::ChartUpdater) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:updater) { described_class.new(dependency: dependency) }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -19,9 +24,13 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     )
   end
 
+  sig { returns(String) }
   let(:dependency_name) { "mysql" }
+  sig { returns(String) }
   let(:dependency_version) { "8.2.0" }
+  sig { returns(String) }
   let(:dependency_previous_version) { "8.1.0" }
+  sig { returns(T::Array[T::Hash[Symbol, Object]]) }
   let(:dependency_requirements) do
     [{
       file: "Chart.yaml",
@@ -31,6 +40,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
       metadata: { type: :helm_chart }
     }]
   end
+  sig { returns(T::Array[T::Hash[Symbol, Object]]) }
   let(:dependency_previous_requirements) do
     [{
       file: "Chart.yaml",
@@ -41,6 +51,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     }]
   end
 
+  sig { returns(Dependabot::DependencyFile) }
   let(:chart_yaml_file) do
     Dependabot::DependencyFile.new(
       name: "Chart.yaml",
@@ -48,7 +59,9 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     )
   end
 
+  sig { returns(String) }
   let(:fixture_name) { "chart_with_dependencies.yaml" }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#updated_chart_yaml_content" do
     context "when the dependency is in the chart dependencies" do
@@ -58,6 +71,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
       end
 
       context "with single quotes" do
+        sig { returns(String) }
         let(:fixture_name) { "chart_with_single_quotes.yaml" }
 
         it "preserves quote style while updating version" do
@@ -68,6 +82,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
       end
 
       context "with double quotes" do
+        sig { returns(String) }
         let(:fixture_name) { "chart_with_double_quotes.yaml" }
 
         it "preserves quote style while updating version" do
@@ -79,6 +94,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when the dependency is not in the chart dependencies" do
+      sig { returns(String) }
       let(:dependency_name) { "postgresql" }
 
       it "returns the content unchanged" do
@@ -87,6 +103,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when the file doesn't contain the dependency" do
+      sig { returns(String) }
       let(:fixture_name) { "chart_without_dependencies.yaml" }
 
       it "returns the content unchanged" do
@@ -95,6 +112,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when the dependency metadata type is not helm_chart" do
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_requirements) do
         [{
           file: "Chart.yaml",
@@ -111,6 +129,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when the file is for a different dependency" do
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_requirements) do
         [{
           file: "another_chart.yaml",
@@ -127,6 +146,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "with multiple dependencies" do
+      sig { returns(String) }
       let(:fixture_name) { "chart_with_multiple_dependencies.yaml" }
 
       it "updates only the specified dependency" do
@@ -138,6 +158,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "with unusual spacing" do
+      sig { returns(String) }
       let(:fixture_name) { "chart_with_unusual_spacing.yaml" }
 
       it "preserves spacing while updating version" do
@@ -148,17 +169,24 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when preserving a range requirement (versioning-strategy)" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:fixture_name) { "chart_with_range_dependency.yaml" }
+      sig { returns(String) }
       let(:dependency_version) { "2.0.0" }
+      sig { returns(String) }
       let(:dependency_previous_version) { "1.0.0" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_requirements) do
         [{ file: "Chart.yaml", requirement: "^2.0.0", groups: [],
            source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } }]
       end
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_previous_requirements) do
         [{ file: "Chart.yaml", requirement: "^1.0.0", groups: [],
            source: { tag: "1.0.0" }, metadata: { type: :helm_chart } }]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "writes the new requirement string, not the bare resolved version" do
         updated_content = updater.updated_chart_yaml_content(chart_yaml_file)
@@ -168,30 +196,43 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when widening an explicit range requirement" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:fixture_name) { "chart_with_explicit_range.yaml" }
+      sig { returns(String) }
       let(:dependency_version) { "2.5.0" }
+      sig { returns(String) }
       let(:dependency_previous_version) { "1.0.0" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_requirements) do
         [{ file: "Chart.yaml", requirement: ">=1.0.0 <3.0.0", groups: [],
            source: { tag: ">=1.0.0 <2.0.0" }, metadata: { type: :helm_chart } }]
       end
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_previous_requirements) do
         [{ file: "Chart.yaml", requirement: ">=1.0.0 <2.0.0", groups: [],
            source: { tag: "1.0.0" }, metadata: { type: :helm_chart } }]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "quotes the range so the YAML stays valid" do
         updated_content = updater.updated_chart_yaml_content(chart_yaml_file)
         expect(updated_content).to include('version: ">=1.0.0 <3.0.0"')
-        expect(YAML.safe_load(updated_content)).to be_a(Hash)
+        expect(YAML.safe_load(T.must(updated_content))).to be_a(Hash)
       end
     end
 
     context "when the same chart appears twice with different constraints" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:fixture_name) { "chart_with_duplicate_dependency.yaml" }
+      sig { returns(String) }
       let(:dependency_name) { "common" }
+      sig { returns(String) }
       let(:dependency_version) { "1.5.0" }
+      sig { returns(String) }
       let(:dependency_previous_version) { "1.0.0" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_requirements) do
         [
           { file: "Chart.yaml", requirement: "^1.5.0", groups: [],
@@ -200,6 +241,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
             source: { tag: "1.2.0" }, metadata: { type: :helm_chart } }
         ]
       end
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_previous_requirements) do
         [
           { file: "Chart.yaml", requirement: "^1.0.0", groups: [],
@@ -208,6 +250,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
             source: { tag: "1.2.0" }, metadata: { type: :helm_chart } }
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "updates each entry by its own authored constraint" do
         updated_content = updater.updated_chart_yaml_content(chart_yaml_file)
@@ -221,10 +264,16 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     context "when one entry's new version equals another duplicate entry's old version" do
       # Regression: a per-entry whole-file gsub would alias — rewriting the first
       # entry to 2.0.0 then re-matching it when updating the second (old 2.0.0).
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:fixture_name) { "chart_with_aliasing_dependency.yaml" }
+      sig { returns(String) }
       let(:dependency_name) { "common" }
+      sig { returns(String) }
       let(:dependency_version) { "2.5.0" }
+      sig { returns(String) }
       let(:dependency_previous_version) { "1.0.0" }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_requirements) do
         [
           { file: "Chart.yaml", requirement: "2.0.0", groups: [],
@@ -233,6 +282,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
             source: { tag: "2.0.0" }, metadata: { type: :helm_chart } }
         ]
       end
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       let(:dependency_previous_requirements) do
         [
           { file: "Chart.yaml", requirement: nil, groups: [],
@@ -241,6 +291,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
             source: { tag: "2.0.0" }, metadata: { type: :helm_chart } }
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "rewrites each entry independently without aliasing" do
         updated_content = updater.updated_chart_yaml_content(chart_yaml_file)
@@ -250,15 +301,21 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     end
 
     context "when the dependency name is quoted" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:dependency_name) { "mysql" }
+      sig { returns(String) }
       let(:dependency_version) { "8.2.0" }
+      sig { returns(String) }
       let(:dependency_previous_version) { "8.1.0" }
+      sig { returns(Dependabot::DependencyFile) }
       let(:chart_yaml_file) do
         Dependabot::DependencyFile.new(
           name: "Chart.yaml",
           content: "apiVersion: v2\ndependencies:\n  - name: \"mysql\"\n    version: 8.1.0\n"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "still updates the entry" do
         expect(updater.updated_chart_yaml_content(chart_yaml_file))
@@ -269,15 +326,21 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
     context "when a changed constraint has no matching entry layout" do
       # A changed requirement that the writer can't locate (here, version listed
       # before name) must be surfaced, not silently dropped into a partial PR.
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:dependency_name) { "mysql" }
+      sig { returns(String) }
       let(:dependency_version) { "8.2.0" }
+      sig { returns(String) }
       let(:dependency_previous_version) { "8.1.0" }
+      sig { returns(Dependabot::DependencyFile) }
       let(:chart_yaml_file) do
         Dependabot::DependencyFile.new(
           name: "Chart.yaml",
           content: "apiVersion: v2\ndependencies:\n  - version: 8.1.0\n    name: mysql\n"
         )
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "raises rather than emitting a partial update" do
         expect { updater.updated_chart_yaml_content(chart_yaml_file) }

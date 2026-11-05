@@ -350,6 +350,80 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
+      context "when the root build includes itself" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_self_included_build.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+          stub_content_request("included?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("included/settings.gradle?ref=sha", "contents_java_simple_settings.json")
+          stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
+          stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
+          stub_no_wrapper_files("included/")
+          stub_no_plugin_source_files("included", "included/app")
+        end
+
+        it "fetches each build only once" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+              )
+            )
+        end
+      end
+
+      context "when included builds form a cycle" do
+        before do
+          stub_content_request("?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
+          stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
+          stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+          stub_content_request("included?ref=sha", "contents_java_with_settings.json")
+          stub_content_request("included/settings.gradle?ref=sha", "contents_java_settings_nested_included_build.json")
+          stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
+          stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
+          stub_content_request("included/nested?ref=sha", "contents_java_with_settings.json")
+          stub_content_request(
+            "included/nested/settings.gradle?ref=sha",
+            "contents_java_settings_parent_included_build.json"
+          )
+          stub_content_request("included/nested/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/nested/gradle.lockfile?ref=sha")
+          stub_content_request("included/nested/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/nested/app/gradle.lockfile?ref=sha")
+          stub_no_wrapper_files("included/")
+          stub_no_wrapper_files("included/nested/")
+          stub_no_plugin_source_files("included", "included/app", "included/nested", "included/nested/app")
+        end
+
+        it "fetches each build only once" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+                included/nested/build.gradle included/nested/settings.gradle
+                included/nested/app/build.gradle
+              )
+            )
+        end
+      end
+
       context "when lockfile updater needs included build plugin sources" do
         before do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
