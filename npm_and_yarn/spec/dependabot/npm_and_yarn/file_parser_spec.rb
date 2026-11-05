@@ -208,6 +208,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         it "keeps the version of the file that is updated" do
           expect(parser.parse.find { |dep| dep.name == "chalk" }.version).to eq("2.0.0")
         end
+
+        context "when the lockfile also has its own copy of that version" do
+          # chalk 1.0.0 is installed for the support package and, independently, under debug
+          let(:manifest) do
+            {
+              "name" => "root",
+              "dependencies" => { "chalk" => "2.0.0", "debug" => "2.0.0", "shared" => "file:../shared" }
+            }
+          end
+          let(:files) do
+            [
+              package_file,
+              support_file,
+              Dependabot::DependencyFile.new(
+                name: "package-lock.json",
+                content: {
+                  "name" => "root",
+                  "lockfileVersion" => 3,
+                  "packages" => {
+                    "" => { "name" => "root", "dependencies" => manifest["dependencies"] },
+                    "../shared" => { "name" => "shared", "dependencies" => { "chalk" => "1.0.0" } },
+                    "../shared/node_modules/chalk" => { "version" => "1.0.0" },
+                    "node_modules/chalk" => { "version" => "2.0.0" },
+                    "node_modules/debug" => { "version" => "2.0.0", "dependencies" => { "chalk" => "1.0.0" } },
+                    "node_modules/debug/node_modules/chalk" => { "version" => "1.0.0" },
+                    "node_modules/shared" => { "resolved" => "../shared", "link" => true }
+                  }
+                }.to_json
+              )
+            ]
+          end
+
+          it "keeps that version in all versions, without the support file's requirement" do
+            chalk = parser.parse.find { |dep| dep.name == "chalk" }
+            versions = chalk.metadata[:all_versions].to_h do |version|
+              [version.version, version.requirements.map { |req| [req.file, req.requirement_string] }]
+            end
+
+            expect(versions).to eq("2.0.0" => [["package.json", "2.0.0"]], "1.0.0" => [])
+          end
+        end
       end
     end
 
