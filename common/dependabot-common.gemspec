@@ -45,7 +45,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "sorbet-runtime", "~> 0.6"
   spec.add_dependency "stackprof", "~> 0.2"
-  spec.add_dependency "toml-rb", "~> 4.0"
+  spec.add_dependency "toml-rb", "~> 6.0"
 
   spec.add_development_dependency "debug", "~> 1.9"
   spec.add_development_dependency "gpgme", "~> 2.0"

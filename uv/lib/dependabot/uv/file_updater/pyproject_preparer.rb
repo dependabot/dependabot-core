@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-require "citrus"
 
 require "dependabot/dependency"
 require "dependabot/uv/file_parser"
