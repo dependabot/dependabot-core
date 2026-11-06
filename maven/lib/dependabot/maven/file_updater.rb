@@ -134,13 +134,8 @@ module Dependabot
       def update_files_for_dependency(original_files:, dependency:)
         files = original_files.dup
 
-        # The UpdateChecker ensures the order of requirements is preserved
-        # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements.to_a)
-                         .reject { |new_req, old_req| new_req == old_req }
-
         # Loop through each changed requirement and update the files
-        reqs.each do |new_req, old_req|
+        changed_requirement_pairs(dependency).each do |new_req, old_req|
           raise "Bad req match" unless new_req.file == T.must(old_req).file
           next if new_req.requirement == T.must(old_req).requirement
 
@@ -160,6 +155,15 @@ module Dependabot
         files
       end
       # rubocop:enable Metrics/AbcSize
+
+      # Requirement order is preserved, so new/old pairs zip together. One rewrite changes every XML
+      # entry that matches it, so pairs that differ only in other metadata (the override tag, or what
+      # the dependency tree scan merged into one of them) collapse into one.
+      sig { params(dependency: Dependency).returns(T::Array[[DependencyRequirement, T.nilable(DependencyRequirement)]]) }
+      def changed_requirement_pairs(dependency)
+        dependency.requirements.zip(dependency.previous_requirements.to_a).reject { |new, old| new == old }
+                  .uniq { |pair| pair.map { |req| req && DeclarationFinder.match_key(req) } }
+      end
 
       sig do
         params(

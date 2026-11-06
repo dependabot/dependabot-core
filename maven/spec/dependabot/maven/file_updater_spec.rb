@@ -5,6 +5,7 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
+require "dependabot/maven/file_parser"
 require "dependabot/maven/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
@@ -1584,6 +1585,75 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
 
       its(:content) { is_expected.to include("<version>0.9.5</version>") }
+    end
+
+    context "when the dependency tree scan merged into one of two identical XML entries" do
+      let(:pom_body) do
+        <<~XML
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.dependabot</groupId>
+            <artifactId>app</artifactId>
+            <version>1.0.0</version>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.ow2.asm</groupId>
+                  <artifactId>asm</artifactId>
+                  <version>9.6</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-shade-plugin</artifactId>
+                  <version>3.5.1</version>
+                  <dependencies>
+                    <dependency>
+                      <groupId>org.ow2.asm</groupId>
+                      <artifactId>asm</artifactId>
+                      <version>9.6</version>
+                    </dependency>
+                  </dependencies>
+                </plugin>
+              </plugins>
+            </build>
+          </project>
+        XML
+      end
+      let(:previous_requirements) do
+        xml = { file: "pom.xml", requirement: "9.6", groups: [], source: nil, metadata: { packaging_type: "jar" } }
+        scanned = {
+          file: nil,
+          requirement: "9.6",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar", scope: "compile", pom_file: "pom.xml" }
+        }
+        Dependabot::Maven::FileParser::MavenDependencyParser.merge_requirements(
+          [xml.merge(metadata: xml[:metadata].merge(transitive_override: true)), xml, scanned]
+            .map { |req| Dependabot::DependencyRequirement.create(req) }
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.ow2.asm:asm",
+          version: "9.7",
+          previous_version: "9.6",
+          requirements: previous_requirements.map { |req| req.merge(requirement: "9.7") },
+          previous_requirements: previous_requirements,
+          package_manager: "maven"
+        )
+      end
+
+      it "rewrites both entries once" do
+        expect(previous_requirements.first.metadata_string("pom_file")).to eq("pom.xml")
+        content = updated_files.find { |file| file.name == "pom.xml" }.content
+        expect(content.scan("<version>9.7</version>").size).to eq(2)
+        expect(content).not_to include("<version>9.6</version>")
+      end
     end
 
     context "with a multimodule pom" do
