@@ -536,57 +536,55 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
   end
 
-  shared_examples "workspace directory configurations" do |experiment_enabled|
+  context "with workspace directory configurations" do
     let(:project_name) { "workspace" }
     let(:dependency_name) { "github.com/fatih/color" }
     let(:dependency_previous_version) { "v1.7.0" }
     let(:dependency_version) { "v1.16.0" }
     let(:requirements) { [] }
     let(:previous_requirements) { [] }
-    let(:files_by_directory) do
-      configured_directories.to_h do |directory|
-        source = Dependabot::Source.new(
-          provider: "github", repo: "example/workspace", directory: directory, directories: configured_directories
-        )
-        fetcher = Dependabot::GoModules::FileFetcher.new(
-          source: source, credentials: credentials, repo_contents_path: repo_contents_path
-        )
-        allow(fetcher).to receive(:clone_repo_contents).and_return(repo_contents_path)
-        [directory, fetcher.files]
-      end
-    end
 
     before do
-      Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
       allow(Open3).to receive(:capture3).and_call_original
     end
 
-    after { FileUtils.rm_rf(repo_contents_path) }
-
-    {
-      "root and all member directories are listed" => [
-        %w(/ /libs /services), %w(/go.mod /libs/go.mod /services/go.mod)
-      ],
-      "root and selected members are listed, with other members omitted" => [
-        %w(/ /libs), %w(/go.mod /libs/go.mod /services/go.mod)
-      ],
-      "only root is listed" => [
-        %w(/), %w(/go.mod /libs/go.mod /services/go.mod)
-      ],
-      "only selected members are listed, with root and other members omitted" => [
-        %w(/libs), %w(/libs/go.mod)
+    it "updates exactly the modules selected by the directory and workspace scopes" do
+      repo_path = repo_contents_path
+      shared_credentials = credentials
+      dependency_to_update = dependency
+      expected_sync_calls = 0
+      configurations = [
+        [%w(/ /libs /services), %w(/go.mod /libs/go.mod /services/go.mod)],
+        [%w(/ /libs), %w(/go.mod /libs/go.mod /services/go.mod)],
+        [%w(/), %w(/go.mod /libs/go.mod /services/go.mod)],
+        [%w(/libs), %w(/libs/go.mod)]
       ]
-    }.each do |description, (directories, expected_module_paths)|
-      context "when #{description}" do
-        let(:configured_directories) { directories }
+      all_module_paths = %w(/go.mod /libs/go.mod /services/go.mod)
 
-        it "updates exactly the modules selected by the directory and workspace scopes" do
+      [true, false].each do |experiment_enabled|
+        Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
+        configurations.each do |configured_directories, expected_module_paths|
+          files_by_directory = configured_directories.to_h do |directory|
+            source = Dependabot::Source.new(
+              provider: "github",
+              repo: "example/workspace",
+              directory: directory,
+              directories: configured_directories
+            )
+            fetcher = Dependabot::GoModules::FileFetcher.new(
+              source: source,
+              credentials: shared_credentials,
+              repo_contents_path: repo_path
+            )
+            allow(fetcher).to receive(:clone_repo_contents).and_return(repo_path)
+            [directory, fetcher.files]
+          end
           updated_files = files_by_directory.flat_map do |_directory, dependency_files|
             described_class.new(
               dependency_files: dependency_files,
-              dependencies: [dependency],
-              credentials: credentials,
-              repo_contents_path: repo_contents_path
+              dependencies: [dependency_to_update],
+              credentials: shared_credentials,
+              repo_contents_path: repo_path
             ).updated_dependency_files
           end
           updated_modules = updated_files.select { |file| File.basename(file.name) == "go.mod" }
@@ -596,30 +594,22 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             expect(file.content).to include("#{dependency_name} #{dependency_version}")
           end
           module_filenames = %w(go.mod go.sum)
-          (%w(/go.mod /libs/go.mod /services/go.mod) - expected_module_paths).each do |path|
+          (all_module_paths - expected_module_paths).each do |path|
             module_filenames.each do |name|
               relative_path = File.join(File.dirname(path), name).delete_prefix("/")
-              expect(File.read(File.join(repo_contents_path, relative_path)))
+              expect(File.read(File.join(repo_path, relative_path)))
                 .to eq(fixture("projects", project_name, relative_path))
               expect(updated_files.map(&:path)).not_to include("/#{relative_path}")
             end
           end
-          if configured_directories.include?("/")
-            expect(Open3).to have_received(:capture3).with("go work sync").once
-          else
-            expect(Open3).not_to have_received(:capture3).with("go work sync")
-          end
+          expected_sync_calls += 1 if configured_directories.include?("/")
+          expect(Open3).to have_received(:capture3).with("go work sync").exactly(expected_sync_calls).times
         end
       end
+    ensure
+      Dependabot::Experiments.reset!
+      FileUtils.rm_rf(repo_path)
     end
-  end
-
-  context "with workspace directory configurations and the experiment enabled" do
-    it_behaves_like "workspace directory configurations", true
-  end
-
-  context "with workspace directory configurations and the experiment disabled" do
-    it_behaves_like "workspace directory configurations", false
   end
 
   context "when updating one module of a workspace whose go.work was fetched as an ancestor file" do
@@ -706,14 +696,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     context "when the other workspace members were fetched as support files" do
       let(:member_files) do
         {
-          "../go.mod" => %w(go.mod),
-          "../go.sum" => %w(go.sum),
-          "../services/go.mod" => %w(services go.mod),
-          "../services/go.sum" => %w(services go.sum)
+          "../go.mod" => "go.mod",
+          "../go.sum" => "go.sum",
+          "../services/go.mod" => "services/go.mod",
+          "../services/go.sum" => "services/go.sum"
         }.map do |name, fixture_path|
           Dependabot::DependencyFile.new(
             name: name,
-            content: fixture("projects", project_name, *fixture_path),
+            content: fixture("projects", project_name, fixture_path),
             directory: directory,
             support_file: true
           )
@@ -826,7 +816,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         )
         next_updated_files = next_updater.updated_dependency_files
 
-        expect(next_updated_files.find { |file| file.name == "go.mod" }.content)
+        expect(T.must(next_updated_files.find { |file| file.name == "go.mod" }).content)
           .to include("golang.org/x/sys v0.33.0")
         expect(next_updated_files.map(&:path)).not_to include("/go.mod", "/go.sum", "/libs/go.mod", "/libs/go.sum")
         %w(go.mod go.sum).each do |name|
