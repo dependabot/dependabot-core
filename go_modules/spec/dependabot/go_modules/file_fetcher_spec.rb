@@ -144,7 +144,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:file_fetcher_instance) do
       described_class.new(
         source: source,
-        credentials: github_credentials,
+        credentials: credentials,
         repo_contents_path: repo_contents_path
       )
     end
@@ -203,27 +203,51 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     end
 
     context "when go.work lists the module without a ./ prefix or with quotes" do
-      let(:repo_contents_path) do
-        path = build_tmp_repo(project_name)
-        File.write(File.join(path, "go.work"), "go 1.21\n\n#{use_directive}\n")
-        Dir.chdir(path) do
-          Dependabot::SharedHelpers.run_shell_command("git add --all")
-          Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
+      context "with an unprefixed path" do
+        let(:repo_contents_path) do
+          path = build_tmp_repo(project_name)
+          File.write(File.join(path, "go.work"), "go 1.21\n\nuse libs\n")
+          Dir.chdir(path) do
+            Dependabot::SharedHelpers.run_shell_command("git add --all")
+            Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
+          end
+          path
         end
-        path
+
+        it "fetches the ancestor go.work" do
+          expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
+        end
       end
 
-      {
-        "an unprefixed path" => "use libs",
-        "a quoted path" => %(use "./libs"),
-        "a quoted path in a use block" => %(use (\n\t"./libs" // libs module\n))
-      }.each do |description, directive|
-        context "with #{description}" do
-          let(:use_directive) { directive }
-
-          it "fetches the ancestor go.work" do
-            expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
+      context "with a quoted path" do
+        let(:repo_contents_path) do
+          path = build_tmp_repo(project_name)
+          File.write(File.join(path, "go.work"), %(go 1.21\n\nuse "./libs"\n))
+          Dir.chdir(path) do
+            Dependabot::SharedHelpers.run_shell_command("git add --all")
+            Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
           end
+          path
+        end
+
+        it "fetches the ancestor go.work" do
+          expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
+        end
+      end
+
+      context "with a quoted path in a use block" do
+        let(:repo_contents_path) do
+          path = build_tmp_repo(project_name)
+          File.write(File.join(path, "go.work"), "go 1.21\n\nuse (\n\t\"./libs\" // libs module\n)\n")
+          Dir.chdir(path) do
+            Dependabot::SharedHelpers.run_shell_command("git add --all")
+            Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
+          end
+          path
+        end
+
+        it "fetches the ancestor go.work" do
+          expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
         end
       end
     end
