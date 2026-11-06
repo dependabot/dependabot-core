@@ -15,6 +15,7 @@ require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirement_suffix_helper"
 require "dependabot/uv/sources_table"
+require "dependabot/uv/uv_executable"
 
 module Dependabot
   module Uv
@@ -403,7 +404,6 @@ module Dependabot
           options = lock_options
           options_fingerprint = lock_options_fingerprint(options)
 
-          # Use pyenv exec to ensure we're using the correct Python environment
           # Include the target version to respect ignore conditions and avoid upgrading
           # to the absolute latest version (which may be blocked by ignore rules)
           dep_name = T.must(dependency).name
@@ -424,10 +424,11 @@ module Dependabot
               base_dep_name
             end
 
-          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
-          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
+          uv = UvExecutable.resolve
+          command = "#{uv.command} lock --upgrade-package #{package_spec} #{options}"
+          fingerprint = "#{uv.command} lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          env_vars = pyproject_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
+          env_vars = uv.env.merge(pyproject_index_env_vars, setuptools_scm_pretend_version_env_vars)
 
           run_command(command, fingerprint: fingerprint, env: env_vars)
         end
@@ -480,8 +481,6 @@ module Dependabot
             python_version = language_version_manager.python_version
             Dependabot.logger.info("Setting Python version to #{python_version}")
             SharedHelpers.run_shell_command("pyenv local #{python_version}")
-
-            Dependabot.logger.info("Using pre-installed uv package")
           rescue StandardError => e
             Dependabot.logger.warn("Error setting up Python environment: #{e.message}")
             Dependabot.logger.info("Falling back to system Python")
