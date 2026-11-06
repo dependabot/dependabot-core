@@ -407,7 +407,11 @@ module Dependabot
           return nil unless cooldown&.included?(dependency.name) && cooldown.default_days.positive?
           return nil unless Helpers.npm_supports_min_release_age?
 
-          "--min-release-age=#{cooldown.default_days}"
+          user_gate = Helpers.max_configured_release_age(
+            dependency_files, [Helpers::NPMRC_MIN_RELEASE_AGE_SETTING]
+          )
+          days = Helpers.higher_release_age_gate(cooldown.default_days, user_gate)
+          "--min-release-age=#{days}" if days
         end
 
         sig { returns(Dependabot::Dependency) }
