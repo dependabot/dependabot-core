@@ -153,6 +153,16 @@ module Dependabot
       end
 
       # Capture the platform PHP version from composer.json
+      sig do
+        params(message: String, regex: Regexp).returns(T::Array[T::Hash[Symbol, String]])
+      end
+      def self.missing_extensions_from(message, regex)
+        message.scan(regex).flatten.map do |extension_string|
+          name, requirement = extension_string.to_s.strip.split(" ", 2)
+          { name: name.to_s, requirement: requirement.to_s }
+        end
+      end
+
       sig { params(parsed_composer_json: ManifestDocument).returns(T.nilable(String)) }
       def self.capture_platform_php(parsed_composer_json)
         capture_platform(parsed_composer_json, Language::NAME)
