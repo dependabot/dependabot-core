@@ -12,6 +12,7 @@ require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
 require "dependabot/npm_and_yarn/update_checker/pnpm_transitive_update"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/security_advisory"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -51,7 +52,8 @@ module Dependabot
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
             repo_contents_path: T.nilable(String),
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
         def initialize(
@@ -61,7 +63,8 @@ module Dependabot
           ignored_versions:,
           latest_allowable_version:,
           repo_contents_path:,
-          security_advisories: []
+          security_advisories: [],
+          update_cooldown: nil
         )
           @dependency = dependency
           @credentials = credentials
@@ -70,6 +73,7 @@ module Dependabot
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
           @security_advisories = security_advisories
+          @update_cooldown = update_cooldown
           @pnpm_update = T.let(nil, T.nilable(PnpmTransitiveUpdate))
         end
 
@@ -344,15 +348,13 @@ module Dependabot
 
               NativeHelpers.run_npm8_subdependency_update_command(
                 [dependency.name],
-                min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
+                min_release_age_arg: min_release_age_arg
               )
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
-                  NativeHelpers.run_npm_audit_fix_command(
-                    min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
-                  )
+                  NativeHelpers.run_npm_audit_fix_command(min_release_age_arg: min_release_age_arg)
                   dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
@@ -392,6 +394,20 @@ module Dependabot
         sig { returns(T::Boolean) }
         def security_updates_only?
           security_advisories.any?
+        end
+
+        # The file updater runs the same npm command under the cooldown, so resolving without it can pick a version
+        # the update then refuses. Its gate is at most `default_days` (the semver window of the chosen version,
+        # capped at the default), so a version that passes `default_days` here also passes there.
+        sig { returns(T.nilable(String)) }
+        def min_release_age_arg
+          return "--min-release-age=0" if security_updates_only?
+
+          cooldown = @update_cooldown
+          return nil unless cooldown&.included?(dependency.name) && cooldown.default_days.positive?
+          return nil unless Helpers.npm_supports_min_release_age?
+
+          "--min-release-age=#{cooldown.default_days}"
         end
 
         sig { returns(Dependabot::Dependency) }
