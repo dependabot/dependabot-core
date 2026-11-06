@@ -118,6 +118,50 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
         it { is_expected.to be false }
       end
 
+      context "when using qualifier suffixes with build counters" do
+        context "when upgrading within the same qualifier/counter series" do
+          let(:dependency_version) { "2.7.18.rhlw-00002" }
+          let(:comparison_version) { "2.7.18.rhlw-00004" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when upgrading within the same hyphen-delimited series" do
+          let(:dependency_version) { "2.7.18-rhlw-00002" }
+          let(:comparison_version) { "2.7.18-rhlw-00003" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when upgrading within the same redhat-qualified series" do
+          let(:dependency_version) { "1.0.0.redhat-00004" }
+          let(:comparison_version) { "1.0.0.redhat-00006" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the qualifiers of the counter series differ" do
+          let(:dependency_version) { "2.7.18.rhlw-00002" }
+          let(:comparison_version) { "2.7.18.lw-00004" }
+
+          it { is_expected.to be false }
+        end
+
+        context "when the qualifier is the same but the counter is not delimiter-separated" do
+          let(:dependency_version) { "1.2.3-vendor4" }
+          let(:comparison_version) { "1.2.3-vendor5" }
+
+          it { is_expected.to be false }
+        end
+
+        context "when only the candidate has a qualifier/counter suffix" do
+          let(:dependency_version) { "2.7.18" }
+          let(:comparison_version) { "2.7.18.rhlw-00004" }
+
+          it { is_expected.to be false }
+        end
+      end
+
       context "when the dependency version has a numeric-only suffix" do
         let(:dependency_version) { "1.0.1-1" }
         let(:comparison_version) { "1.0.2" }
