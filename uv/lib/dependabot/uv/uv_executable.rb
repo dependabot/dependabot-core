@@ -1,9 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "digest"
 require "fileutils"
 require "pathname"
+require "tempfile"
 require "dependabot/credential"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -107,14 +108,17 @@ module Dependabot
         Dependabot.logger.info("Project requires uv #{required}; installing it in place of the bundled uv #{running}")
         # A failed earlier attempt can leave a partial target behind, which pip would not overwrite.
         FileUtils.rm_rf(target)
-        SharedHelpers.run_shell_command(
-          [
-            "pyenv", "exec", "pip", "install", "--disable-pip-version-check", "--no-deps",
-            "--only-binary", ":all:", *index_options(credentials), "--target", target, "uv#{required}"
-          ],
-          fingerprint: "pyenv exec pip install --disable-pip-version-check --no-deps " \
-                       "--only-binary :all: <index_options> --target <target> uv<required_version>"
-        )
+        with_index_config(credentials) do |env|
+          SharedHelpers.run_shell_command(
+            [
+              "pyenv", "exec", "pip", "install", "--disable-pip-version-check", "--no-deps",
+              "--only-binary", ":all:", "--target", target, "uv#{required}"
+            ],
+            env: env,
+            fingerprint: "pyenv exec pip install --disable-pip-version-check --no-deps " \
+                         "--only-binary :all: --target <target> uv<required_version>"
+          )
+        end
         executable
       rescue SharedHelpers::HelperSubprocessFailed => e
         raise Dependabot::OutOfDisk if e.message.include?("[Errno 28] No space left on device")
@@ -127,17 +131,29 @@ module Dependabot
       end
       private_class_method :install
 
-      # Jobs whose index replaces PyPI may have no route to PyPI, so uv comes from that index too.
-      sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[String]) }
-      def self.index_options(credentials)
+      # Jobs whose index replaces PyPI may have no route to PyPI, so uv comes from that index too. The
+      # authenticated URLs go in a 0600 pip config file: command arguments are logged verbatim, and env
+      # values are only redacted for TOKEN keys.
+      sig do
+        params(
+          credentials: T::Array[Dependabot::Credential],
+          block: T.proc.params(env: T::Hash[String, String]).void
+        ).void
+      end
+      def self.with_index_config(credentials, &block)
         base_url, *extra_urls = credentials
                                 .select { |cred| cred["type"] == "python_index" && cred.replaces_base? }
                                 .map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
-        return [] unless base_url
+        return yield({}) unless base_url
 
-        ["--index-url", base_url, *extra_urls.flat_map { |url| ["--extra-index-url", url] }]
+        Tempfile.create(["dependabot-uv-pip", ".conf"]) do |config|
+          config.write("[global]\nindex-url = #{base_url}\n")
+          config.write("extra-index-url =\n#{extra_urls.map { |url| "    #{url}\n" }.join}") if extra_urls.any?
+          config.flush
+          yield({ "PIP_CONFIG_FILE" => config.path })
+        end
       end
-      private_class_method :index_options
+      private_class_method :with_index_config
     end
   end
 end

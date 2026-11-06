@@ -14,6 +14,7 @@ RSpec.describe Dependabot::Uv::UvExecutable do
   let(:pyproject) { "[tool.uv]\nrequired-version = \">=0.8.22, <0.9\"\n" }
   let(:probe) { "pyenv exec uv cache dir" }
   let(:pip_install) { [] }
+  let(:pip_configs) { [] }
   let(:mismatch_error) do
     Dependabot::SharedHelpers::HelperSubprocessFailed.new(
       message: "error: Required uv version `>=0.8.22, <0.9` does not match the running version `0.13.7`",
@@ -34,9 +35,10 @@ RSpec.describe Dependabot::Uv::UvExecutable do
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("pyenv prefix").and_return("/pyenv/versions/3.13.1\n")
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-      array_including("pyenv", "exec", "pip", "install"), fingerprint: anything
-    ) do |argv, **|
+      array_including("pyenv", "exec", "pip", "install"), fingerprint: anything, env: anything
+    ) do |argv, env:, **|
       pip_install << argv
+      pip_configs << (env["PIP_CONFIG_FILE"] && File.read(env["PIP_CONFIG_FILE"]))
       install_uv(argv[argv.index("--target") + 1])
     end
   end
@@ -114,25 +116,30 @@ RSpec.describe Dependabot::Uv::UvExecutable do
       let(:credentials) do
         [
           Dependabot::Credential.new(
-            "type" => "python_index", "index-url" => "https://mirror.example.com/simple", "replaces-base" => true
+            {
+              "type" => "python_index",
+              "index-url" => "https://mirror.example.com/simple",
+              "token" => "user:secret",
+              "replaces-base" => true
+            }
           ),
           Dependabot::Credential.new("type" => "python_index", "index-url" => "https://extra.example.com/simple")
         ]
       end
 
-      it "installs uv from that index" do
+      it "installs uv from that index without putting its credentials on the command line" do
         executable
 
-        argv = pip_install.first
-        expect(argv[argv.index("--index-url") + 1]).to eq("https://mirror.example.com/simple")
-        expect(argv).not_to include("https://extra.example.com/simple")
+        expect(pip_configs.first).to include("index-url = https://user:secret@mirror.example.com/simple")
+        expect(pip_configs.first).not_to include("extra.example.com")
+        expect(pip_install.first.join(" ")).not_to include("secret")
       end
     end
 
     context "when the required uv cannot be installed" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          array_including("pyenv", "exec", "pip", "install"), fingerprint: anything
+          array_including("pyenv", "exec", "pip", "install"), fingerprint: anything, env: anything
         ).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "ERROR: No matching distribution found for uv==99.0",
@@ -152,7 +159,7 @@ RSpec.describe Dependabot::Uv::UvExecutable do
     context "when the disk fills up during the install" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          array_including("pyenv", "exec", "pip", "install"), fingerprint: anything
+          array_including("pyenv", "exec", "pip", "install"), fingerprint: anything, env: anything
         ).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "ERROR: Could not install packages due to an OSError: [Errno 28] No space left on device",
