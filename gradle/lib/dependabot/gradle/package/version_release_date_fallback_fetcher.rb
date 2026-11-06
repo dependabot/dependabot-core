@@ -43,6 +43,8 @@ module Dependabot
               headers = repo["auth_headers"]
               headers = {} unless headers.is_a?(Hash)
               response = Dependabot::RegistryClient.head(url: pom_url, headers: headers)
+              next unless response.status < 400
+
               last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
               next unless last_modified
 
