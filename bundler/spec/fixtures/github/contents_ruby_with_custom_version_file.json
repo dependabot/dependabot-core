@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Gemfile",
+    "path": "Gemfile",
+    "sha": "88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+      "html": "https://github.com/gocardless/bump/blob/master/Gemfile"
+    }
+  },
+  {
+    "name": "Gemfile.lock",
+    "path": "Gemfile.lock",
+    "sha": "d429264c8c2f0f306a422900c2f41123e07c31b4",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile.lock",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/d429264c8c2f0f306a422900c2f41123e07c31b4",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/d429264c8c2f0f306a422900c2f41123e07c31b4",
+      "html": "https://github.com/gocardless/bump/blob/master/Gemfile.lock"
+    }
+  },
+  {
+    "name": "custom-ruby-version",
+    "path": "custom-ruby-version",
+    "sha": "005119baaa0653ca59d923010341d8341daa8c43",
+    "size": 6,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/custom-ruby-version?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/custom-ruby-version",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/005119baaa0653ca59d923010341d8341daa8c43",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/custom-ruby-version",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/custom-ruby-version?ref=master",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/005119baaa0653ca59d923010341d8341daa8c43",
+      "html": "https://github.com/gocardless/bump/blob/master/custom-ruby-version"
+    }
+  }
+]
