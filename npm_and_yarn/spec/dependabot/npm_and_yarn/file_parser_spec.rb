@@ -2052,6 +2052,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           expect(globals.metadata[:all_versions].map(&:version)).to contain_exactly("14.0.0", "17.11.0")
         end
       end
+
+      context "with catalogs in a file that pnpm-workspace.yaml includes" do
+        let(:files) { project_dependency_files("pnpm/catalog_include") }
+
+        it "parses the catalog dependencies with the included file as their requirement file" do
+          expect(top_level_dependencies.map { |dep| [dep.name, dep.version, dep.requirements] }).to contain_exactly(
+            [
+              "prettier", "3.3.0",
+              [{ requirement: "3.3.0", file: "pnpm-catalogs.yaml", groups: ["dependencies"], source: nil }]
+            ],
+            [
+              "is-even", "0.1.2",
+              [{ requirement: "0.1.2", file: "pnpm-catalogs.yaml", groups: ["dependencies"], source: nil }]
+            ]
+          )
+        end
+
+        context "when the included file is not valid YAML" do
+          let(:files) do
+            project_dependency_files("pnpm/catalog_include").map do |file|
+              next file unless file.name == "pnpm-catalogs.yaml"
+
+              Dependabot::DependencyFile.new(name: file.name, content: "catalog:\n  prettier: [3.3.0\n")
+            end
+          end
+
+          it "raises a DependencyFileNotParseable error for that file" do
+            expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_path).to eq("/pnpm-catalogs.yaml")
+            end
+          end
+        end
+      end
+
+      context "with one dependency in catalogs in several included files" do
+        # An included file can itself be named pnpm-workspace.yaml; list it first so the root is not picked by order
+        let(:files) do
+          project_dependency_files("pnpm/catalog_include_multiple")
+            .sort_by { |f| f.name == "config/pnpm-workspace.yaml" ? 0 : 1 }
+        end
+
+        it "gives the dependency a requirement in each file that owns it" do
+          is_even = top_level_dependencies.find { |dep| dep.name == "is-even" }
+
+          expect(is_even.requirements).to contain_exactly(
+            { requirement: "0.1.1", file: "catalogs/legacy.yaml", groups: ["dependencies"], source: nil },
+            { requirement: "0.1.2", file: "config/pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+          )
+        end
+      end
+
+      context "when pnpm-workspace.yaml has only comments" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"name":"test","version":"1.0.0","dependencies":{"is-even":"1.0.0"}}'
+            ),
+            Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "# packages:\n#   - packages/*\n")
+          ]
+        end
+
+        it "parses the manifest dependencies" do
+          expect(top_level_dependencies.map(&:name)).to eq(["is-even"])
+        end
+      end
     end
 
     describe "sub-dependencies" do

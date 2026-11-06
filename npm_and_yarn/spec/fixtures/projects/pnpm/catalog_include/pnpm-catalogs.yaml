@@ -1,0 +1,6 @@
+catalog:
+  prettier: 3.3.0
+
+catalogs:
+  legacy:
+    is-even: 0.1.2
