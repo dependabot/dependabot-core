@@ -101,6 +101,12 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                 if (vulnerableDependenciesToUpdate.Length == 0)
                 {
+                    if (pullRequestUpdated)
+                    {
+                        // an earlier directory already patched this dependency
+                        continue;
+                    }
+
                     var close = ClosePullRequest.WithUpToDate(job);
                     logger.Info(close.GetReport());
                     await apiHandler.ClosePullRequest(close);
