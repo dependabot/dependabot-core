@@ -1629,7 +1629,8 @@ RSpec.describe Dependabot::Updater do
                 # Dependencies are updated in random order, so either one may raise
                 Dependabot::ErrorAttributes::CONTEXT => a_hash_including(
                   "dependency-name" => a_string_matching(/\Adummy-pkg-[ab]\z/),
-                  "dependency-requirement-files" => ["Gemfile"]
+                  "dependency-requirement-files" => ["Gemfile"],
+                  "helper-error-class" => "HelperSubprocessFailed"
                 ),
                 Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
                 Dependabot::ErrorAttributes::JOB_ID => "1",
