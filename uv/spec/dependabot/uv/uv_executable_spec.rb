@@ -1,0 +1,115 @@
+# typed: false
+# frozen_string_literal: true
+
+require "dependabot/uv/uv_executable"
+require_relative "../../spec_helper"
+
+RSpec.describe Dependabot::Uv::UvExecutable do
+  subject(:executable) { described_class.resolve }
+
+  let(:install_root) { Dir.mktmpdir }
+  let(:probe) { "pyenv exec uv cache dir" }
+  let(:mismatch_error) do
+    Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+      message: "error: Required uv version `>=0.8.22, <0.9` does not match the running version `0.13.7`",
+      error_context: {}
+    )
+  end
+
+  before do
+    stub_const("#{described_class}::INSTALL_ROOT", install_root)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("pyenv prefix").and_return("/pyenv/versions/3.13.1\n")
+  end
+
+  after { FileUtils.rm_rf(install_root) }
+
+  def install_uv(target)
+    FileUtils.mkdir_p(File.join(target, "bin"))
+    File.write(File.join(target, "bin", "uv"), "")
+    File.chmod(0o755, File.join(target, "bin", "uv"))
+    ""
+  end
+
+  context "when the bundled uv satisfies the project" do
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(probe, fingerprint: probe).and_return("")
+    end
+
+    it "runs the bundled uv" do
+      expect(executable.command).to eq("pyenv exec uv")
+      expect(executable.env).to eq({})
+    end
+  end
+
+  context "when the probe fails for a reason other than required-version" do
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(probe, fingerprint: probe).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "TOML parse error", error_context: {})
+      )
+    end
+
+    it "leaves the error to the real command" do
+      expect(executable.command).to eq("pyenv exec uv")
+    end
+  end
+
+  context "when the project's required-version rejects the bundled uv" do
+    let(:pip_install) { [] }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(probe, fingerprint: probe).and_raise(mismatch_error)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        array_including("pyenv", "exec", "pip", "install"), fingerprint: anything
+      ) do |argv, **|
+        pip_install << argv
+        install_uv(argv[argv.index("--target") + 1])
+      end
+    end
+
+    it "installs the newest uv satisfying the requirement and runs it on the active Python's PATH" do
+      expect(executable.command).to start_with(install_root).and end_with("/bin/uv")
+      expect(pip_install.map(&:last)).to eq(["uv>=0.8.22, <0.9"])
+      expect(executable.env.fetch("PATH")).to start_with("/pyenv/versions/3.13.1/bin:")
+    end
+
+    it "installs each requirement once per job" do
+      first = described_class.resolve
+      second = described_class.resolve
+
+      expect(second.command).to eq(first.command)
+      expect(pip_install.size).to eq(1)
+    end
+
+    it "replaces a partial install left by a failed attempt" do
+      target = File.dirname(described_class.resolve.command, 2)
+      File.delete(File.join(target, "bin", "uv"))
+
+      described_class.resolve
+
+      expect(pip_install.size).to eq(2)
+    end
+
+    context "when the required uv cannot be installed" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          array_including("pyenv", "exec", "pip", "install"), fingerprint: anything
+        ).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "ERROR: No matching distribution found for uv==99.0",
+            error_context: {}
+          )
+        )
+      end
+
+      it "reports the requirement Dependabot could not meet" do
+        expect { executable }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+          expect(error.detected_version).to eq(">=0.8.22, <0.9")
+          expect(error.supported_versions).to eq("0.13.7")
+        end
+      end
+    end
+  end
+end
