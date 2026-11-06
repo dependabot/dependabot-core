@@ -874,6 +874,7 @@ module Dependabot
 
         patterns = pnpm_workspace_packages(workspace_file.content.to_s)
         return true if patterns.nil?
+        return true if patterns.any? { |pattern| pattern.match?(/[?*+@!]\(/) }
 
         relative = components.last(depth).join("/")
         excluded, included = patterns.partition { |pattern| pattern.start_with?("!") }
@@ -904,7 +905,7 @@ module Dependabot
         # A trailing `**` matches at any depth, and the directory it is under is counted as matched too, which
         # errs towards keeping the workspace.
         base = glob.delete_suffix("**").delete_suffix("/")
-        path == base || File.fnmatch?("#{glob}/*", path, flags)
+        File.fnmatch?(base, path, flags) || File.fnmatch?("#{glob}/*", path, flags)
       end
       private_class_method :pnpm_workspace_pattern_matches?
 
