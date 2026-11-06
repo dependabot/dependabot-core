@@ -155,10 +155,40 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
         end
 
         context "when only the candidate has a qualifier/counter suffix" do
-          let(:dependency_version) { "2.7.18" }
-          let(:comparison_version) { "2.7.18.rhlw-00004" }
+          context "with the exact same numeric base version" do
+            let(:dependency_version) { "2.7.18" }
+            let(:comparison_version) { "2.7.18.rhlw-00004" }
+
+            it { is_expected.to be true }
+          end
+
+          context "with a different numeric base version" do
+            let(:dependency_version) { "2.7.18" }
+            let(:comparison_version) { "2.7.19.rhlw-00004" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when the plain version carries a release qualifier" do
+            let(:dependency_version) { "2.7.18-FINAL" }
+            let(:comparison_version) { "2.7.18.rhlw-00004" }
+
+            it { is_expected.to be false }
+          end
+        end
+
+        context "when only the current version has a qualifier/counter suffix" do
+          let(:dependency_version) { "2.7.18.rhlw-00004" }
+          let(:comparison_version) { "2.7.18" }
 
           it { is_expected.to be false }
+        end
+
+        context "when moving from a plain version to a legacy redhat respin" do
+          let(:dependency_version) { "1.0.0" }
+          let(:comparison_version) { "1.0.0.redhat-00004" }
+
+          it { is_expected.to be true }
         end
       end
 

@@ -188,6 +188,11 @@ module Dependabot
         #   suffix_compatible?("1.0.0-linux", "1.0.0-win")   # => false (different platform)
         #   suffix_compatible?("1.0.0", "1.0.0")             # => true  (both have no suffix)
         #   suffix_compatible?("1.0.0", "1.0.0-beta")        # => false (suffix mismatch)
+        #
+        # @example Remediation respin of a plain version
+        #   suffix_compatible?("6.0.3", "6.0.3.rhlw-00001")   # => true  (same base, remediated respin)
+        #   suffix_compatible?("6.0.3", "6.0.4.rhlw-00001")   # => false (different base)
+        #   suffix_compatible?("6.0.3.rhlw-00001", "6.0.3")   # => false (respins never lose their suffix)
         sig { params(current: T.nilable(String), candidate: String).returns(T::Boolean) }
         def suffix_compatible?(current, candidate)
           current_suffix = extract_version_suffix(current)
@@ -207,8 +212,58 @@ module Dependabot
           # when the counter differs.
           return true if same_qualifier_series?(current_suffix, candidate_suffix)
 
+          # A plain (suffix-less, purely numeric) version may move to a
+          # remediated respin of the exact same upstream version: vendor
+          # respins like "6.0.3.rhlw-00001" are drop-in replacements for
+          # "6.0.3", so the suffix is not a compatibility constraint here.
+          # The reverse direction stays incompatible: a respin must never
+          # "upgrade" back to the plain upstream version.
+          return true if remediation_respin_of_plain?(current, candidate)
+
           # If both versions share the exact suffix or no suffix, they are compatible
           current_suffix == candidate_suffix
+        end
+
+        # Determines whether a purely numeric, suffix-less version (current)
+        # and a qualifier/build-counter respin (candidate) share the exact
+        # same numeric base version (e.g. "6.0.3" vs "6.0.3.rhlw-00001").
+        #
+        # The current version must contain nothing but digits and delimiters
+        # (so release qualifiers like "-RELEASE" are excluded), and the
+        # candidate's suffix must be a qualifier/build-counter series.
+        #
+        # @example
+        #   remediation_respin_of_plain?("6.0.3", "6.0.3.rhlw-00001")    # => true
+        #   remediation_respin_of_plain?("6.0.3", "6.0.4.rhlw-00001")    # => false (base mismatch)
+        #   remediation_respin_of_plain?("6.0.3.rhlw-00001", "6.0.3")    # => false (current has a suffix)
+        #   remediation_respin_of_plain?("6.0.3-RELEASE", "6.0.3.rhlw-00001") # => false (not purely numeric)
+        sig { params(current: T.nilable(String), candidate: String).returns(T::Boolean) }
+        def remediation_respin_of_plain?(current, candidate)
+          return false if current.nil?
+          return false unless extract_version_suffix(current).nil?
+          return false unless current.match?(/\A\d+(?:[.\-_]\d+)*\z/)
+          return false unless extract_version_suffix(candidate)&.match?(QUALIFIER_COUNTER_SERIES)
+
+          leading_numeric_segments(current) == leading_numeric_segments(candidate)
+        end
+
+        # Returns the leading run of purely numeric, delimiter-separated
+        # segments of a version string, i.e. the base version with any
+        # qualifier suffix removed.
+        #
+        # @example
+        #   leading_numeric_segments("6.0.3")             # => ["6", "0", "3"]
+        #   leading_numeric_segments("6.0.3.rhlw-00001")  # => ["6", "0", "3"]
+        #   leading_numeric_segments("1.0.0-redhat-00004") # => ["1", "0", "0"]
+        sig { params(version: String).returns(T::Array[String]) }
+        def leading_numeric_segments(version)
+          base = []
+          version.split(/[.\-_]/).each do |segment|
+            break unless segment.match?(/\A\d+\z/)
+
+            base << segment
+          end
+          base
         end
 
         # Determines whether two version suffixes belong to the same
