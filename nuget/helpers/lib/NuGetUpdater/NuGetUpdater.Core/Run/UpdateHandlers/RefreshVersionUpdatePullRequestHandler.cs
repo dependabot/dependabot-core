@@ -33,6 +33,8 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
         // directories share a working tree, so an earlier directory may already have updated (or created) the PR
         var pullRequestUpdated = false;
+        // closing is deferred until every directory has been evaluated so the outcome doesn't depend on directory order
+        ClosePullRequest? pendingClose = null;
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -57,14 +59,8 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
 
             if (relevantUpdateOperationsToPerform.Count == 0)
             {
-                if (pullRequestUpdated)
-                {
-                    continue;
-                }
-
                 var close = ClosePullRequest.WithDependenciesRemoved(job);
-                logger.Info(close.GetReport());
-                await apiHandler.ClosePullRequest(close);
+                pendingClose ??= close;
                 continue;
             }
 
@@ -74,14 +70,8 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 .ToImmutableArray();
             if (missingDependencies.Length > 0)
             {
-                if (pullRequestUpdated)
-                {
-                    continue;
-                }
-
                 var close = ClosePullRequest.WithDependencyRemoved(job);
-                logger.Info(close.GetReport());
-                await apiHandler.ClosePullRequest(close);
+                pendingClose ??= close;
                 continue;
             }
 
@@ -153,12 +143,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
             if (updatesNotPerformed.Length > 0)
             {
                 logger.Info($"No updates performed for: {string.Join(", ", updatesNotPerformed)}");
-                if (pullRequestUpdated)
-                {
-                    continue;
-                }
-
-                await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
+                pendingClose ??= ClosePullRequest.WithUpdateNoLongerPossible(job);
                 continue;
             }
 
@@ -210,6 +195,12 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                     continue;
                 }
             }
+        }
+
+        if (!pullRequestUpdated && pendingClose is not null)
+        {
+            logger.Info(pendingClose.GetReport());
+            await apiHandler.ClosePullRequest(pendingClose);
         }
     }
 }
