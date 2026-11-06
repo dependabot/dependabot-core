@@ -697,7 +697,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            update_cooldown: update_cooldown
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -763,7 +764,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
               repo_contents_path: nil,
-              security_advisories: security_advisories
+              security_advisories: security_advisories,
+              update_cooldown: update_cooldown
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -933,7 +935,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            update_cooldown: update_cooldown
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -3262,6 +3265,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(checker.update_cooldown.exclude).to be_empty
         expect(checker.update_cooldown.default_days).to eq(5)
       end
+    end
+  end
+
+  describe "a transitive npm dependency under a cooldown" do
+    let(:dependency_files) { project_dependency_files("npm8/subdependency_update") }
+    let(:dependency) do
+      Dependabot::Dependency.new(name: "acorn", version: "5.5.3", requirements: [], package_manager: "npm_and_yarn")
+    end
+    let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3) }
+
+    it "gives the subdependency resolver the cooldown that the update is gated with" do
+      allow(checker).to receive(:latest_version).and_return(Dependabot::NpmAndYarn::Version.new("6.0.2"))
+      allow(described_class::SubdependencyVersionResolver).to receive(:new).and_call_original
+
+      checker.send(:subdependency_version_resolver)
+
+      expect(described_class::SubdependencyVersionResolver).to have_received(:new)
+        .with(hash_including(update_cooldown: have_attributes(default_days: 3)))
     end
   end
 end
