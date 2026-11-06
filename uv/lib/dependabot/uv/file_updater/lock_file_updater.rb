@@ -424,9 +424,9 @@ module Dependabot
               base_dep_name
             end
 
-          uv = UvExecutable.resolve
+          uv = UvExecutable.resolve(credentials: credentials)
           command = "#{uv.command} lock --upgrade-package #{package_spec} #{options}"
-          fingerprint = "#{uv.command} lock --upgrade-package <dependency_name> #{options_fingerprint}"
+          fingerprint = "#{uv.fingerprint} lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
           env_vars = uv.env.merge(pyproject_index_env_vars, setuptools_scm_pretend_version_env_vars)
 
