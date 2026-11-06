@@ -481,8 +481,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           .to receive(:new).and_return(language_version_manager)
         allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
-          # `pyenv exec uv cache dir` is UvExecutable's required-version probe; succeeding keeps the bundled uv.
-          next "" if command.start_with?("pyenv local ") || command == "pyenv exec uv cache dir"
+          next "" if command.start_with?("pyenv local ")
 
           raise "Unexpected command: #{command}" unless command.include?("uv lock --upgrade-package certifi")
 
