@@ -1277,6 +1277,52 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  # pnpm 10 and 11 apply an ancestor pnpm-workspace.yaml to a directory that workspace does not include, and leave
+  # the directory's own lockfile unchanged, so Dependabot runs pnpm as pnpm 12 already treats such a directory.
+  describe "with a project an ancestor pnpm-workspace.yaml does not include" do
+    let(:project_name) { "pnpm/excluded_from_ancestor_workspace" }
+    let(:files) { project_dependency_files(project_name, directory: "/frontend") }
+    let(:pnpm_lock) { files.find { |f| f.name == "pnpm-lock.yaml" } }
+    let(:commands) { [] }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(/\Apnpm /, any_args) do |command, **|
+        commands << command
+        command == "pnpm -v" ? "12.10.1" : ""
+      end
+    end
+
+    it "runs every pnpm command without the ancestor workspace" do
+      updated_pnpm_lock_content
+
+      pnpm_commands = commands - ["pnpm -v"]
+      expect(pnpm_commands).to include(a_string_starting_with("pnpm update fetch-factory@0.0.2"))
+      expect(pnpm_commands).to include(a_string_starting_with("pnpm install --lockfile-only"))
+      expect(pnpm_commands).to all(end_with(" --ignore-workspace"))
+    end
+
+    context "when the ancestor workspace includes the directory" do
+      let(:files) do
+        project_dependency_files(project_name, directory: "/frontend") + [
+          Dependabot::DependencyFile.new(
+            name: "../pnpm-workspace.yaml",
+            content: "packages:\n  - frontend\n",
+            directory: "/frontend",
+            support_file: true
+          )
+        ]
+      end
+
+      it "runs pnpm in that workspace" do
+        updated_pnpm_lock_content
+
+        expect(commands).not_to be_empty
+        expect(commands).to all(satisfy { |c| !c.include?("--ignore-workspace") })
+      end
+    end
+  end
+
   describe "security_updates_only flag" do
     let(:project_name) { "pnpm/simple" }
     let(:files) { project_dependency_files(project_name) }
