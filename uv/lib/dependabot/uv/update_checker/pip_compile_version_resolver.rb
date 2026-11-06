@@ -319,10 +319,10 @@ module Dependabot
             fingerprint: "pyenv local <python_major_minor>"
           )
 
-          uv = UvExecutable.resolve
+          uv = UvExecutable.resolve(credentials: credentials)
           run_command(
             "#{uv.command} #{uv_arguments}",
-            fingerprint: "#{uv.command} #{fingerprint}",
+            fingerprint: "#{uv.fingerprint} #{fingerprint}",
             env: python_env.merge(uv.env)
           )
         end
