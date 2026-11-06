@@ -1629,8 +1629,7 @@ RSpec.describe Dependabot::Updater do
                 Dependabot::ErrorAttributes::CONTEXT => {
                   "dependency-name" => "dummy-pkg-a",
                   "dependency-version" => "2.0.0",
-                  "dependency-requirement-files" => ["Gemfile"],
-                  "helper-error-class" => "HelperSubprocessFailed"
+                  "dependency-requirement-files" => ["Gemfile"]
                 },
                 Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
                 Dependabot::ErrorAttributes::JOB_ID => "1",

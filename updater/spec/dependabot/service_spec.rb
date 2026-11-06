@@ -450,16 +450,9 @@ RSpec.describe Dependabot::Service do
         )
     end
 
-    it "sends an allowlisted error context" do
-      error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-        message: "Something went wrong",
-        error_context: {
-          command: "pip-compile --index-url https://user:secret@example.com",
-          function: "resolve",
-          args: ["secret"],
-          stderr_output: "secret"
-        }
-      )
+    it "sends the error context attached to the error" do
+      error = Dependabot::DependabotError.new("Something went wrong")
+      Dependabot::ErrorReportContext.attach(error, { host: "registry.npmjs.org", http_method: "GET" })
 
       service.capture_exception(error: error)
 
@@ -468,10 +461,7 @@ RSpec.describe Dependabot::Service do
         .with(
           error_type: "unknown_error",
           error_details: hash_including(
-            Dependabot::ErrorAttributes::CONTEXT => {
-              "helper-function" => "resolve",
-              "helper-error-class" => "HelperSubprocessFailed"
-            }
+            Dependabot::ErrorAttributes::CONTEXT => { "host" => "registry.npmjs.org", "http-method" => "GET" }
           )
         )
     end

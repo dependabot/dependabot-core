@@ -1,21 +1,18 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "excon"
 require "sorbet-runtime"
 require "uri"
 
 require "dependabot/dependency"
-require "dependabot/errors"
-require "dependabot/shared_helpers"
 
 module Dependabot
-  # Builds the allowlisted `error-context` hash sent alongside unknown errors so
+  # Builds the `error-context` hash sent alongside unknown errors so
   # they can be debugged from Sentry without reproducing the job.
   #
-  # The context is diagnostic only and must never affect error grouping. It is
-  # assembled exclusively from allowlisted keys: raw helper arguments, commands,
-  # stderr output and credentials are never forwarded.
+  # The context is diagnostic only and must never affect error grouping. Values
+  # are normalised and size-limited; never attach credentials, full URLs,
+  # commands or helper output.
   module ErrorReportContext
     extend T::Sig
 
@@ -26,22 +23,6 @@ module Dependabot
     MAX_ARRAY_LENGTH = 50
     MAX_CAUSE_DEPTH = 5
     REDACTED = "<redacted>"
-
-    # Maps the keys of a HasSentryContext error's `extra` hash that are safe to
-    # forward to their `error-context` key. Anything not listed (e.g. a helper's
-    # `args`, `command` or `stderr_output`) is dropped.
-    SENTRY_EXTRA_KEYS = T.let(
-      {
-        function: "helper-function",
-        process_exit_value: "helper-exit-status",
-        process_termsig: "helper-termsig",
-        time_taken: "helper-time-taken",
-        package_manager: "package-manager-name",
-        updated_files: "updated-files",
-        dependency_files: "dependency-files"
-      }.freeze,
-      T::Hash[Symbol, String]
-    )
 
     ATTACHED_CONTEXT_IVAR = :@__dependabot_error_report_context
 
@@ -68,8 +49,7 @@ module Dependabot
       context = T.let({}, Context)
       context.merge!(dependency_context(dependency)) if dependency
 
-      error_chain(error).reverse_each { |err| context.merge!(context_for_error(err)) }
-      context["cause-class"] = T.must(error.cause).class.name.to_s if error.cause
+      error_chain(error).reverse_each { |err| context.merge!(attached_context(err)) }
 
       context.empty? ? nil : context
     end
@@ -82,18 +62,6 @@ module Dependabot
       host.nil? || host.empty? ? REDACTED : truncate(host)
     rescue URI::Error
       REDACTED
-    end
-
-    sig { params(error: Exception).returns(Context) }
-    private_class_method def self.context_for_error(error)
-      context = T.let({}, Context)
-      context.merge!(excon_context(error))
-      context.merge!(sentry_extra_context(error))
-      if error.is_a?(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        context["helper-error-class"] = truncate(error.error_class)
-      end
-      context.merge!(attached_context(error))
-      context
     end
 
     sig { params(error: Exception).returns(T::Array[Exception]) }
@@ -114,65 +82,6 @@ module Dependabot
       value || {}
     end
 
-    sig { params(error: Exception).returns(Context) }
-    private_class_method def self.sentry_extra_context(error)
-      return {} unless error.is_a?(Dependabot::HasSentryContext)
-
-      extra = T.cast(error.sentry_context[:extra], Object)
-      return {} unless extra.is_a?(Hash)
-
-      context = T.let({}, Context)
-      SENTRY_EXTRA_KEYS.each do |source_key, target_key|
-        value = normalize_value(extra[source_key])
-        value = strip_pid(value) if source_key == :process_exit_value
-        context[target_key] = value unless value.nil?
-      end
-
-      names = dependency_names(extra[:dependencies])
-      context["dependency-names"] = names if names
-      context
-    end
-
-    sig { params(error: Exception).returns(Context) }
-    private_class_method def self.excon_context(error)
-      case error
-      when Excon::Error::Socket
-        { "socket-error-class" => error.socket_error.class.name.to_s }
-      when Excon::Error::HTTPStatus
-        http_status_context(error)
-      else
-        {}
-      end
-    end
-
-    sig { params(error: Excon::Error::HTTPStatus).returns(Context) }
-    private_class_method def self.http_status_context(error)
-      context = T.let({}, Context)
-      request = T.cast(error.request, Object)
-      response = T.cast(error.response, Object)
-
-      if request.is_a?(Hash)
-        method = request[:method]
-        context["http-method"] = method.to_s.upcase if method
-        host = request[:host]
-        context["host"] = truncate(host) if host.is_a?(String)
-      end
-      status = response_status(response)
-      context["http-status"] = status if status
-      context
-    end
-
-    # Excon's own middleware wraps responses in Excon::Response, but status
-    # errors can also be built directly from a raw response hash.
-    sig { params(response: Object).returns(T.nilable(Integer)) }
-    private_class_method def self.response_status(response)
-      status = case response
-               when Excon::Response then response.status
-               when Hash then response[:status]
-               end
-      status.is_a?(Integer) ? status : nil
-    end
-
     sig { params(dependency: Dependabot::Dependency).returns(Context) }
     private_class_method def self.dependency_context(dependency)
       normalize(
@@ -183,26 +92,6 @@ module Dependabot
           "dependency-requirement-files" => dependency.requirements.filter_map { |req| req[:file] }.map(&:to_s).uniq
         }
       )
-    end
-
-    sig { params(dependencies: T.nilable(Object)).returns(T.nilable(T::Array[String])) }
-    private_class_method def self.dependency_names(dependencies)
-      return unless dependencies.is_a?(Array)
-
-      names = dependencies.filter_map do |dependency|
-        case dependency
-        when String then dependency
-        when Hash then (dependency["name"] || dependency[:name])&.to_s
-        when Dependabot::Dependency then dependency.name
-        end
-      end
-      names.empty? ? nil : names.uniq.first(MAX_ARRAY_LENGTH).map { |name| truncate(name) }
-    end
-
-    # `Process::Status#to_s` includes the (meaningless) pid, e.g. "pid 42 exit 1"
-    sig { params(value: T.nilable(Value)).returns(T.nilable(Value)) }
-    private_class_method def self.strip_pid(value)
-      value.is_a?(String) ? value.sub(/\Apid \d+ /, "") : value
     end
 
     sig { params(context: T::Hash[T.any(String, Symbol), T.anything]).returns(Context) }
