@@ -302,7 +302,8 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
               "dependency-name" => "broken-biscuits",
               "dependency-version" => "1.2.0",
               "dependency-previous-version" => "1.1.0",
-              "dependency-requirement-files" => ["Gemfile"]
+              "dependency-requirement-files" => ["Gemfile"],
+              "helper-error-class" => "HelperSubprocessFailed"
             },
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
@@ -347,7 +348,8 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
               "dependency-name" => "broken-biscuits",
               "dependency-version" => "1.2.0",
               "dependency-previous-version" => "1.1.0",
-              "dependency-requirement-files" => ["Gemfile"]
+              "dependency-requirement-files" => ["Gemfile"],
+              "helper-error-class" => "HelperSubprocessFailed"
             )
         end
 
