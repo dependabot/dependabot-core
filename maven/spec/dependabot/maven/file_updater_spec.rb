@@ -183,6 +183,82 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) { is_expected.to include("<version>1.10.0</version>") }
       end
 
+      context "when a plain and a classified managed entry are both updated" do
+        let(:classified_version) { "4.1.100.Final" }
+        let(:pom_body) do
+          <<~XML
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>app</artifactId>
+              <version>1.0.0</version>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <version>4.1.90.Final</version>
+                  </dependency>
+                  <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <version>#{classified_version}</version>
+                    <classifier>linux-x86_64</classifier>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+            </project>
+          XML
+        end
+        let(:requirement_pairs) do
+          plain = { file: "pom.xml", groups: [], source: nil, metadata: { packaging_type: "jar" } }
+          classified = {
+            file: "pom.xml",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar", classifier: "linux-x86_64" }
+          }
+          [
+            [plain.merge(requirement: "4.2.20.Final"), plain.merge(requirement: "4.1.90.Final")],
+            [classified.merge(requirement: "4.2.20.Final"), classified.merge(requirement: classified_version)]
+          ]
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "io.netty:netty-transport-native-epoll",
+            version: "4.2.20.Final",
+            previous_version: "4.1.90.Final",
+            requirements: requirement_pairs.map(&:first),
+            previous_requirements: requirement_pairs.map(&:last),
+            package_manager: "maven"
+          )
+        end
+
+        shared_examples "rewrites each entry in place" do
+          it "without adding a new declaration" do
+            content = updated_pom_file.content
+            expect(content.scan("<version>4.2.20.Final</version>").length).to eq(2)
+            expect(content).not_to include("4.1.90.Final")
+            expect(content).not_to include("4.1.100.Final")
+            expect(content.scan("<artifactId>netty-transport-native-epoll</artifactId>").length).to eq(2)
+          end
+        end
+
+        it_behaves_like "rewrites each entry in place"
+
+        context "when both entries have the same version" do
+          let(:classified_version) { "4.1.90.Final" }
+
+          it_behaves_like "rewrites each entry in place"
+
+          context "when the classified requirement comes first" do
+            let(:requirement_pairs) { super().reverse }
+
+            it_behaves_like "rewrites each entry in place"
+          end
+        end
+      end
+
       context "with rogue whitespace" do
         let(:pom_body) { fixture("poms", "whitespace.xml") }
         let(:dependency_groups) { [] }

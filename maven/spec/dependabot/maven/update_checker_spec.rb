@@ -1191,11 +1191,36 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.3-jre"])
         end
 
-        context "when the first requirement has that classifier" do
+        context "when the override comes first" do
           let(:dependency_requirements) { [override_requirement, declaration] }
+
+          before do
+            stub_request(:head, %r{\Ahttps://repo\.maven\.apache\.org/maven2/com/google/guava/guava/.*\.jar\z})
+              .to_return(status: 200)
+          end
+
+          it "still updates the declaration only" do
+            expect(checker.up_to_date?).to be(false)
+            expect(checker.updated_requirements.map(&:requirement)).to eq(["23.3-jre", "23.6-jre"])
+          end
+        end
+
+        context "when the declaration has the same classifier" do
+          let(:declaration) { super().merge(metadata: { packaging_type: "jar", classifier: "linux" }) }
 
           it "leaves both alone, since the rewrite would hit the override" do
             expect(checker.up_to_date?).to be(true)
+          end
+        end
+
+        context "when a classified plugin copy is listed after a plain declaration" do
+          let(:dependency_requirements) do
+            [declaration, override_requirement,
+             declaration.merge(groups: ["plugin"], metadata: { packaging_type: "jar", classifier: "linux" })]
+          end
+
+          it "holds the plugin copy whose rewrite would hit the override" do
+            expect(checker.updated_requirements.map(&:requirement)).to eq(["23.6-jre", "23.3-jre", "23.3-jre"])
           end
         end
       end

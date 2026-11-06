@@ -18,9 +18,8 @@ module Dependabot
         end
 
         # The file updater rewrites every XML entry that matches a declaration's file, literal version,
-        # packaging type, scope (ignored for plugins) and classifier (an unclassified entry always matches,
-        # a classified one only the dependency's first requirement's classifier). A declaration that
-        # matches a kept override that way can't change on its own, so it's held too.
+        # packaging type, scope (ignored for plugins) and classifier. A declaration that matches a kept
+        # override that way can't change on its own, so it's held too.
         sig do
           params(
             requirement: Dependabot::DependencyRequirement,
@@ -30,11 +29,7 @@ module Dependabot
         def self.rewrites_an_override?(requirement, requirements)
           return false if override?(requirement) || property?(requirement)
 
-          rewritten_classifier = requirements.first&.metadata_string("classifier")
-          requirements.any? do |other|
-            override?(other) && rewrites?(requirement, other) &&
-              [nil, rewritten_classifier].include?(other.metadata_string("classifier"))
-          end
+          requirements.any? { |other| override?(other) && rewrites?(requirement, other) }
         end
 
         # Outside a security update an override follows a version property only when a declaration
@@ -66,8 +61,9 @@ module Dependabot
           return false if property?(override)
           return false unless declaration.file == override.file
           return false unless declaration.requirement_string == override.requirement_string
-          return false unless declaration.metadata_string("packaging_type") ==
-                              override.metadata_string("packaging_type")
+          return false unless %w(packaging_type classifier).all? do |key|
+            declaration.metadata_string(key) == override.metadata_string(key)
+          end
 
           declaration.groups == ["plugin"] || declaration.groups == override.groups
         end
