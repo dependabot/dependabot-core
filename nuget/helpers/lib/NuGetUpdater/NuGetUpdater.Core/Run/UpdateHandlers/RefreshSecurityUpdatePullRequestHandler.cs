@@ -31,6 +31,8 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
+        // directories share a working tree, so an earlier directory may already have updated (or created) the PR
+        var pullRequestUpdated = false;
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -58,6 +60,11 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
             if (groupedUpdateOperationsToPerform.Count == 0)
             {
+                if (pullRequestUpdated)
+                {
+                    continue;
+                }
+
                 var close = ClosePullRequest.WithDependenciesRemoved(job);
                 logger.Info(close.GetReport());
                 await apiHandler.ClosePullRequest(close);
@@ -70,6 +77,11 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 .ToImmutableArray();
             if (missingDependencies.Length > 0)
             {
+                if (pullRequestUpdated)
+                {
+                    continue;
+                }
+
                 var close = ClosePullRequest.WithDependencyRemoved(job);
                 logger.Info(close.GetReport());
                 await apiHandler.ClosePullRequest(close);
@@ -151,6 +163,11 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             if (updatesNotPerformed.Length > 0)
             {
                 logger.Info($"No updates performed for: {string.Join(", ", updatesNotPerformed)}");
+                if (pullRequestUpdated)
+                {
+                    continue;
+                }
+
                 await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
                 continue;
             }
@@ -178,6 +195,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                         PrTitle = prTitle,
                         PrBody = prBody,
                     });
+                    pullRequestUpdated = true;
                     continue;
                 }
                 else
@@ -198,6 +216,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                         PrBody = prBody,
                         DependencyGroup = null,
                     });
+                    pullRequestUpdated = true;
                     continue;
                 }
             }
