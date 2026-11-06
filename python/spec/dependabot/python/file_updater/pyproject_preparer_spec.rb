@@ -281,6 +281,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       end
     end
 
+    context "with a locked PEP 621 only project using the Poetry build backend" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+      let(:poetry_lock_fixture_name) { "poetry_v2_pep621_only.lock" }
+
+      it "freezes PEP 621 dependencies to their locked versions" do
+        project_deps = TomlRB.parse(freeze_top_level_dependencies_except).dig("project", "dependencies")
+        expect(project_deps).to all(include("=="))
+      end
+
+      context "when a dependency is locked at several versions" do
+        let(:poetry_lock_body) do
+          lock = super()
+          requests_block = lock[/\[\[package\]\]\nname = "requests".*?(?=\n\[\[package\]\])/m]
+          "#{lock}\n#{requests_block.sub('version = "2.31.0"', 'version = "2.0.0"')}\n"
+        end
+
+        it "leaves it unfrozen rather than picking one version for every declaration" do
+          project_deps = TomlRB.parse(freeze_top_level_dependencies_except).dig("project", "dependencies")
+
+          expect(project_deps).to include("requests>=2.28.0,<3.0")
+          expect(project_deps).to include(a_string_starting_with("urllib3=="))
+        end
+      end
+
+      context "when the build backend is not Poetry" do
+        let(:pyproject_content) do
+          super().sub("poetry.core.masonry.api", "setuptools.build_meta")
+        end
+
+        it "leaves the content untouched" do
+          expect(freeze_top_level_dependencies_except).to eq(pyproject_content)
+        end
+      end
+    end
+
     context "with PEP 621 dependencies containing direct references" do
       let(:dependencies) { [] }
       let(:pyproject_fixture_name) { "pep621_hybrid_direct_ref.toml" }
