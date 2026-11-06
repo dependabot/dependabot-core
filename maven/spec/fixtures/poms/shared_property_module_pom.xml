@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>module-a</artifactId>
+  <version>1.0</version>
+  <properties>
+    <lib.version>1.0.0</lib.version>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>lib-core</artifactId>
+        <version>${lib.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>lib-extra</artifactId>
+        <version>${lib.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>
