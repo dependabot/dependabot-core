@@ -11,9 +11,11 @@ require "dependabot/python/version"
 require "dependabot/python/requirement"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
+require "dependabot/python/file_parser/pyproject_document"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_subdependency_pin"
 require "dependabot/package/release_cooldown_options"
 
 module Dependabot
@@ -29,6 +31,7 @@ module Dependabot
     end
 
     class FileUpdater
+      # rubocop:disable-next Metrics/ClassLength
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
@@ -249,6 +252,8 @@ module Dependabot
                 create_declaration_at_new_version!(poetry_object, dep)
               end
             end
+          elsif FileParser::PyprojectDocument.from_content(pyproject_content).poetry_build_backend?
+            pin_pep621_subdependencies!(pyproject_object)
           end
 
           # Freeze PEP 621 project.dependencies and project.optional-dependencies
@@ -257,6 +262,21 @@ module Dependabot
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        # freeze_pep621_deps! skips dependency groups and a sub-dependency has no declaration, so without
+        # this Poetry could lock either to a newer release than the one selected.
+        sig { params(pyproject_object: T::Hash[String, T.untyped]).void }
+        def pin_pep621_subdependencies!(pyproject_object)
+          dependencies.each do |dep|
+            next if git_dependency_being_updated?(dep)
+            next unless dep.version
+
+            PoetrySubdependencyPin.new(lockfile, dep.name).set_requirement!(pyproject_object, "==#{dep.version}")
+          rescue PoetrySubdependencyPin::ScopeNotReproducible
+            # The update checker declines these; skipping keeps a direct run from promoting the package.
+            next
+          end
         end
 
         sig { params(pyproject_content: String).returns(String) }
