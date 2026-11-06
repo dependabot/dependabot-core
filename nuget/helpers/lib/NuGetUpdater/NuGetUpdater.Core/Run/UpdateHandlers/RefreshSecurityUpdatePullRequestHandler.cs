@@ -78,7 +78,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 continue;
             }
 
-            var upToDate = false;
+            var noVulnerableDependencies = false;
             var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
@@ -94,7 +94,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 {
                     var close = ClosePullRequest.WithUpToDate(job);
                     pendingClose ??= close;
-                    upToDate = true;
+                    noVulnerableDependencies = true;
                     break;
                 }
 
@@ -144,7 +144,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
-            if (upToDate)
+            if (noVulnerableDependencies)
             {
                 continue;
             }
