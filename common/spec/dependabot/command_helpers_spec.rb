@@ -123,6 +123,38 @@ RSpec.describe Dependabot::CommandHelpers do
       end
     end
 
+    context "when waiting for subprocess output" do
+      let(:select_timeouts) { [] }
+
+      before do
+        allow(IO).to receive(:select).and_wrap_original do |original, *arguments|
+          select_timeouts << arguments.last
+          original.call(*arguments)
+        end
+      end
+
+      it "blocks until output or the remaining inactivity deadline" do
+        described_class.capture3_with_timeout(
+          [RbConfig.ruby, "-e", "sleep 0.05; puts 'done'"],
+          timeout: timeout
+        )
+
+        expect(select_timeouts).not_to be_empty
+        expect(select_timeouts).to all(be > 0)
+        expect(select_timeouts).to all(be <= timeout)
+      end
+
+      it "blocks without a deadline when the inactivity timeout is disabled" do
+        described_class.capture3_with_timeout(
+          [RbConfig.ruby, "-e", "sleep 0.05; puts 'done'"],
+          timeout: Dependabot::CommandHelpers::TIMEOUTS::NO_TIME_OUT
+        )
+
+        expect(select_timeouts).not_to be_empty
+        expect(select_timeouts).to all(be_nil)
+      end
+    end
+
     context "when output_observer requests graceful stop" do
       before do
         stub_const("Dependabot::CommandHelpers::TIMEOUTS::GRACEFULLY_STOP", 1)
