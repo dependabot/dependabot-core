@@ -30,6 +30,9 @@ module Dependabot
       # uv reads `required-version` from these files in the working directory or an ancestor. Dependabot
       # images ship no user- or system-level uv config.
       CONFIG_FILES = %w(uv.toml pyproject.toml).freeze
+      # A quoted TOML key can spell `required-version` with escapes (`"required\u002dversion"`), so any
+      # \u, \U or \x escape also triggers the probe.
+      PIN_DECLARATION = /required-version|\\[uUx]\h/
 
       # Shell prefix for uv commands, e.g. "pyenv exec uv" in `"#{command} lock"`.
       sig { returns(String) }
@@ -90,7 +93,7 @@ module Dependabot
         Pathname.pwd.ascend.any? do |dir|
           CONFIG_FILES.any? do |name|
             file = dir.join(name)
-            file.file? && file.read.include?("required-version")
+            file.file? && file.read.match?(PIN_DECLARATION)
           end
         end
       end

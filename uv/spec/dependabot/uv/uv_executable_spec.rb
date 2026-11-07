@@ -59,6 +59,19 @@ RSpec.describe Dependabot::Uv::UvExecutable do
     end
   end
 
+  context "when the pin's key is spelled with a TOML escape" do
+    let(:pyproject) { "[tool.uv]\n\"required\\u002dversion\" = \">=0.8.22, <0.9\"\n" }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(probe, fingerprint: probe).and_raise(mismatch_error)
+    end
+
+    it "probes uv and runs the uv satisfying the pin" do
+      expect(executable.command).to start_with(install_root)
+    end
+  end
+
   context "when the bundled uv satisfies the project" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(probe, fingerprint: probe).and_return("")
