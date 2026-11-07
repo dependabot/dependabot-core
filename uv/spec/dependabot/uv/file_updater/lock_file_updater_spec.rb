@@ -1558,6 +1558,26 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       )
     end
 
+    context "when the project's required-version needs a uv other than the bundled one" do
+      before do
+        allow(Dependabot::Uv::UvExecutable).to receive(:resolve).with(credentials: credentials).and_return(
+          Dependabot::Uv::UvExecutable.new(
+            command: "/tmp/uv/abc/bin/uv", fingerprint: "<uv_executable>", env: { "PATH" => "/pyenv/bin:/usr/bin" }
+          )
+        )
+      end
+
+      it "runs uv lock with that uv and its PATH" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          start_with("/tmp/uv/abc/bin/uv lock --upgrade-package requests==2.23.0 "),
+          fingerprint: start_with("<uv_executable> lock --upgrade-package <dependency_name> "),
+          env: include("PATH" => "/pyenv/bin:/usr/bin")
+        )
+      end
+    end
+
     context "when the dependency is pinned to a git tag" do
       let(:credentials) { [] }
       let(:dependency) do
