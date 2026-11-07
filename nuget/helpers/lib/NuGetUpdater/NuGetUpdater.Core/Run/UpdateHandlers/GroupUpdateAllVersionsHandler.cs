@@ -189,6 +189,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updatedDependencyList = directoryDiscovery.UpdatedDependencyList;
             var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
+            var operationsPerformedBeforeDirectory = updateOperationsPerformed.Count;
             try
             {
                 foreach (var (projectPath, dependency) in directoryDiscovery.UpdateOperations)
@@ -260,6 +261,11 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     {
                         logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
                     }
+                }
+
+                if (updateOperationsPerformed.Count > operationsPerformedBeforeDirectory)
+                {
+                    await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
                 }
             }
             finally
@@ -398,6 +404,11 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     {
                         logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
                     }
+                }
+
+                if (updateOperationsPerformed.Count > 0)
+                {
+                    await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
                 }
 
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
