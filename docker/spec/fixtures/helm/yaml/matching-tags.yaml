@@ -1,0 +1,61 @@
+api:
+  image:
+    repository: registry.example.com/example/api
+    tag: 1.2.0 # API release 1.2.0
+
+worker:
+  image:
+    repository: registry.example.com/example/worker
+    tag: 1.2.0
+
+other_registry:
+  image:
+    repository: other.example.com/example/api
+    tag: 1.2.0
+
+settings:
+  version: 1.2.0
+  tag: 1.2.0
+
+jobs:
+  - image:
+      version: '1.2.0'
+      registry: registry.example.com
+      repository: example/api
+  - image:
+      repository: example/worker
+      registry: registry.example.com
+      version: '1.2.0'
+  - image:
+      repository: registry.example.com/example/api
+      tag: 1.2.1
+---
+api:
+  image: {repository: registry.example.com/example/api, tag: "1.2.0"}
+worker:
+  image: {repository: registry.example.com/example/worker, tag: "1.2.0"}
+defaults: &defaults
+  repository: &api_repository registry.example.com/example/api
+aliased_repository:
+  image:
+    repository: *api_repository
+    tag: 1.2.0
+merged_repository:
+  image:
+    <<: *defaults
+    tag: 1.2.0
+overridden_repository:
+  image:
+    <<: *defaults
+    repository: registry.example.com/example/worker
+    tag: 1.2.0
+worker_repository: &api_repository registry.example.com/example/worker
+reused_worker_alias:
+  image:
+    repository: *api_repository
+    tag: 1.2.0
+api_repository: &api_repository registry.example.com/example/api
+reused_api_alias:
+  image:
+    repository: *api_repository
+    tag: 1.2.0
