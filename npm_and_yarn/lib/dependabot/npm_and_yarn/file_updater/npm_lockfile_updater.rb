@@ -894,6 +894,7 @@ module Dependabot
         sig { params(update_package_json: T::Boolean).void }
         def write_temporary_dependency_files(update_package_json: true)
           write_lockfiles
+          write_patch_files
 
           File.write(File.join(lockfile_directory, ".npmrc"), npmrc_content)
 
@@ -960,6 +961,30 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
 
             File.write(f.name, f.content)
+          end
+        end
+
+        # npm 12 reads the files `patchedDependencies` names on every install, relative to the manifest that names
+        # them, and checks each one against the integrity recorded in the lockfile.
+        sig { void }
+        def write_patch_files
+          by_name = dependency_files.to_h { |f| [f.name, f] }
+          package_files.each do |manifest|
+            patches = JSON.parse(manifest.content.to_s)["patchedDependencies"]
+            next unless patches.is_a?(Hash)
+
+            patches.values.grep(String).each do |path|
+              name = Pathname.new(File.join(File.dirname(manifest.name), path)).cleanpath.to_path
+              next if name.start_with?("/", "../") || name == ".."
+
+              patch = by_name[name]
+              next unless patch
+
+              FileUtils.mkdir_p(File.dirname(name))
+              File.write(name, patch.content)
+            end
+          rescue JSON::ParserError
+            next
           end
         end
 
