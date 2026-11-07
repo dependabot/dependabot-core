@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Run with ruby script/test-smoke-discovery; requires bash and jq, but no network or token.
+require "fileutils"
+require "json"
+require "open3"
+require "tmpdir"
+require "yaml"
+
+root = File.expand_path("..", __dir__)
+workflow = YAML.load_file(File.join(root, ".github/workflows/smoke.yml"))
+step = workflow.fetch("jobs").fetch("discover").fetch("steps").find { |entry| entry["id"] == "suites" }
+shell = ["bash", "--noprofile", "--norc", "-e"]
+shell += ["-o", "pipefail"] if step["shell"] == "bash"
+
+run = step.fetch("run")
+expression = "${{ toJson(steps.changes.outputs.changes) }}"
+
+response = [
+  { "name" => "smoke-gradle.yaml", "sha" => "gradle-sha" },
+  { "name" => "smoke-npm.yaml", "sha" => "npm-sha" },
+  { "name" => "smoke-npm-rules.yaml", "sha" => "npm-rules-sha" },
+  { "name" => "smoke-bundler.yaml", "sha" => "unselected-sha" }
+]
+expected = [
+  { "core" => "gradle", "ecosystem" => "gradle", "name" => "smoke-gradle.yaml", "sha" => "gradle-sha" },
+  { "core" => "npm_and_yarn", "ecosystem" => "npm", "name" => "smoke-npm.yaml", "sha" => "npm-sha" },
+  { "core" => "npm_and_yarn", "ecosystem" => "npm", "name" => "smoke-npm-rules.yaml", "sha" => "npm-rules-sha" }
+]
+selected = %w(npm_and_yarn gradle)
+cases = [
+  ["complete success", selected, response, 0, expected],
+  ["legitimate empty selection", [], [], 0, []],
+  ["API failure with a valid body", selected, response, 1, nil],
+  ["suite-generation failure", selected, { "unexpected" => "directory response" }, 0, nil]
+]
+
+cases.each do |name, changes, body, api_status, suites|
+  Dir.mktmpdir("smoke-discovery-") do |dir|
+    FileUtils.mkdir_p(File.join(dir, ".github"))
+    FileUtils.cp(File.join(root, ".github/smoke-matrix.json"), File.join(dir, ".github"))
+    File.write(File.join(dir, "response.json"), JSON.generate(body))
+    output = File.join(dir, "output")
+    File.write(output, "")
+    env = {
+      "GITHUB_OUTPUT" => output,
+      "GH_TOKEN" => "test-token",
+      "SMOKE_TEST_REPO" => "test/smoke-tests",
+      "SMOKE_TEST_BRANCH" => "test-branch",
+      "API_STATUS" => api_status.to_s
+    }
+    stub = <<~BASH
+      gh() {
+        cat response.json
+        return "$API_STATUS"
+      }
+    BASH
+    script = stub + run.gsub(expression) { JSON.generate(JSON.generate(changes)) }
+    stdout, stderr, status = Open3.capture3(env, *shell, "-c", script, chdir: dir)
+    published = File.read(output)
+    if suites.nil?
+      raise "#{name}: expected failure without output\n#{stdout}\n#{stderr}" if status.success? || !published.empty?
+    else
+      raise "#{name}: discovery failed\n#{stdout}\n#{stderr}" unless status.success?
+      unless published == "suites=#{JSON.generate(suites)}\n"
+        raise "#{name}: unexpected suites output #{published.inspect}"
+      end
+    end
+    puts "PASS: #{name}"
+  end
+end
