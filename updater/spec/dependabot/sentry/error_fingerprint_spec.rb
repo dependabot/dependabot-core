@@ -44,6 +44,31 @@ RSpec.describe Dependabot::Sentry::ErrorFingerprint do
       it { is_expected.to be_nil }
     end
 
+    context "with an error carrying a Dependabot call site" do
+      let(:error) do
+        Dependabot::DependabotError.new("Security update failed for lodash 1.2.3").tap do |raised|
+          raised.set_backtrace(
+            [
+              "/home/dependabot/dependabot-updater/lib/dependabot/updater/operations/" \
+              "create_group_update_pull_request.rb:148:in 'report_failed_dependency_updates_for_security_updates'",
+              "/home/dependabot/dependabot-updater/lib/dependabot/updater.rb:70:in 'run'"
+            ]
+          )
+        end
+      end
+
+      it "groups by error class, package manager and call site, ignoring the message" do
+        expect(fingerprint).to eq(
+          [
+            "Dependabot::DependabotError",
+            "pip",
+            "dependabot-updater/lib/dependabot/updater/operations/create_group_update_pull_request.rb:" \
+            "report_failed_dependency_updates_for_security_updates"
+          ]
+        )
+      end
+    end
+
     context "with an unrelated error" do
       let(:error) { StandardError.new }
 
