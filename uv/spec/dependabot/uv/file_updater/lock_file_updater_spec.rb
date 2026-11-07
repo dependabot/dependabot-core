@@ -491,6 +491,52 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "#updated_dependency_files when the project's required-version needs a uv other than the bundled one" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:events) { [] }
+    let(:uv_runs) { [] }
+
+    before do
+      language_version_manager = instance_double(Dependabot::Uv::LanguageVersionManager, python_version: "3.11.9")
+      allow(language_version_manager).to receive(:install_required_python) { events << :install_required_python }
+      allow(Dependabot::Uv::LanguageVersionManager).to receive(:new).and_return(language_version_manager)
+      # uv must be resolved in the populated project directory, after the Python it will run on is selected.
+      allow(Dependabot::Uv::UvExecutable).to receive(:resolve).with(credentials: credentials) do
+        events << [:resolve_uv, File.read("pyproject.toml")]
+        Dependabot::Uv::UvExecutable.new(
+          command: "/tmp/uv/abc/bin/uv", fingerprint: "<uv_executable>", env: { "PATH" => "/pyenv/bin:/usr/bin" }
+        )
+      end
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, fingerprint: nil, env: {}, **|
+        next "" if command.start_with?("git ")
+
+        events << command
+        next "" if command.start_with?("pyenv local ")
+        raise "Unexpected command: #{command}" unless command.start_with?("/tmp/uv/abc/bin/uv lock ")
+
+        uv_runs << { command: command, fingerprint: fingerprint, env: env }
+        File.write("uv.lock", lockfile_content.sub('version = "2.32.3"', 'version = "2.23.0"'))
+        ""
+      end
+    end
+
+    it "selects Python, then resolves uv in the project, then locks with that uv and its PATH" do
+      lock = updated_files.find { |f| f.name == "uv.lock" }
+      expect(lock.content).to include('version = "2.23.0"')
+
+      expect(events.map { |e| e.is_a?(Array) ? e.first : e }).to eq(
+        [:install_required_python, "pyenv local 3.11.9", :resolve_uv, uv_runs.first[:command]]
+      )
+      expect(events[2].last).to include("requests==2.23.0")
+
+      expect(uv_runs.size).to eq(1)
+      expect(uv_runs.first[:command]).to start_with("/tmp/uv/abc/bin/uv lock --upgrade-package requests==2.23.0")
+      expect(uv_runs.first[:fingerprint]).to start_with("<uv_executable> lock --upgrade-package <dependency_name>")
+      expect(uv_runs.first[:env]).to include("PATH" => "/pyenv/bin:/usr/bin")
+    end
+  end
+
   describe "#updated_pyproject_content_for" do
     subject(:updated_content) { updater.send(:updated_pyproject_content_for, pyproject_file) }
 
@@ -1556,26 +1602,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         fingerprint: expected_fingerprint,
         env: {}
       )
-    end
-
-    context "when the project's required-version needs a uv other than the bundled one" do
-      before do
-        allow(Dependabot::Uv::UvExecutable).to receive(:resolve).with(credentials: credentials).and_return(
-          Dependabot::Uv::UvExecutable.new(
-            command: "/tmp/uv/abc/bin/uv", fingerprint: "<uv_executable>", env: { "PATH" => "/pyenv/bin:/usr/bin" }
-          )
-        )
-      end
-
-      it "runs uv lock with that uv and its PATH" do
-        run_update_command
-
-        expect(updater).to have_received(:run_command).with(
-          start_with("/tmp/uv/abc/bin/uv lock --upgrade-package requests==2.23.0 "),
-          fingerprint: start_with("<uv_executable> lock --upgrade-package <dependency_name> "),
-          env: include("PATH" => "/pyenv/bin:/usr/bin")
-        )
-      end
     end
 
     context "when the dependency is pinned to a git tag" do
