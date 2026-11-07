@@ -193,6 +193,29 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when updating a transitive dependency" do
+      let(:mixfile_fixture_name) { "minor_version" }
+      let(:lockfile_fixture_name) { "minor_version" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "poison",
+          version: "2.2.0",
+          requirements: [],
+          previous_version: "2.0.1",
+          previous_requirements: [],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :poison, "2.2.0")
+      end
+
+      it "doesn't update the dependency that requires it" do
+        expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.2.5")
+      end
+    end
+
     context "with a mix.exs that opens another file" do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }
