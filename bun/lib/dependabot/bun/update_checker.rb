@@ -271,18 +271,21 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       sig { returns(T::Array[Dependabot::Dependency]) }
       def conflicting_updated_dependencies
-        top_level_dependencies = top_level_dependency_lookup
+        parsed_dependencies = parsed_dependency_lookup
 
         updated_deps = []
         vulnerability_audit.fix_updates.each do |update|
           dependency_name = update.dependency_name
-          requirements = top_level_dependencies[dependency_name]&.requirements || []
+          parsed_dependency = parsed_dependencies[dependency_name]
 
           updated_deps << build_updated_dependency(
             dependency: Dependency.new(
               name: dependency_name,
               package_manager: "bun",
-              requirements: requirements
+              requirements: parsed_dependency&.requirements || [],
+              metadata: parsed_dependency&.metadata || {},
+              # Carries the type of a fix update that is itself a transitive dependency.
+              subdependency_metadata: parsed_dependency&.subdependency_metadata
             ),
             version: update.target_version,
             previous_version: update.current_version
@@ -310,15 +313,16 @@ module Dependabot
           updated_deps.reject { |dep| dep.name == dependency.name }
       end
 
+      # Every parsed dependency, not only the top-level ones. A fix update can name a
+      # transitive dependency, which keeps its development or production type in
+      # subdependency_metadata rather than in a manifest group.
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
-      def top_level_dependency_lookup
-        top_level_dependencies = FileParser.new(
+      def parsed_dependency_lookup
+        FileParser.new(
           dependency_files: dependency_files,
           credentials: credentials,
           source: nil
-        ).parse.select(&:top_level?)
-
-        top_level_dependencies.to_h { |dep| [dep.name, dep] }
+        ).parse.to_h { |dep| [dep.name, dep] }
       end
 
       sig do
@@ -331,7 +335,14 @@ module Dependabot
         removed = update_details.fetch(:removed, false)
         version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
-        metadata = update_details.fetch(:metadata, {})
+        # Keep the type flags the parser recorded (such as reachable_from_production) and
+        # let explicit details such as information_only add to them. Only those flags
+        # carry over: the rest of the parsed metadata, such as the all_versions list,
+        # describes the dependency before this update.
+        metadata = Dependency.combine_metadata(
+          original_dep.metadata.slice(*Dependency::ANY_TRUE_METADATA_KEYS),
+          update_details.fetch(:metadata, {})
+        )
 
         Dependency.new(
           name: original_dep.name,
@@ -346,7 +357,9 @@ module Dependabot
           previous_requirements: original_dep.requirements,
           package_manager: original_dep.package_manager,
           removed: removed,
-          metadata: metadata
+          metadata: metadata,
+          # Carries the development or production type of transitive dependencies.
+          subdependency_metadata: original_dep.subdependency_metadata
         )
       end
 
