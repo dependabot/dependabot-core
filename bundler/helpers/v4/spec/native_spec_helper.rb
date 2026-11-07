@@ -32,7 +32,7 @@ require "gem_net_http_adapter"
 extend T::Sig # rubocop:disable Style/MixinUsage
 
 RSpec.configure do |config|
-  config.color = true
+  config.color_mode = :automatic
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
