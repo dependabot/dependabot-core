@@ -21,10 +21,16 @@ module Dependabot
         ).returns(T.nilable(T::Array[String]))
       end
       def self.for(error:, package_manager:)
-        return unless eof_socket_error?(error)
+        category =
+          if error.is_a?(Excon::Error::Timeout)
+            "excon-timeout"
+          elsif eof_socket_error?(error)
+            "excon-eof"
+          end
+        return unless category
 
         [
-          "excon-eof",
+          category,
           package_manager || "unknown-package-manager",
           dependabot_call_site(error) || "unknown-call-site"
         ]
