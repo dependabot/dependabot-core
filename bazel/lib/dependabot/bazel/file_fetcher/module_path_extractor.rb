@@ -38,7 +38,8 @@ module Dependabot
             extract_lock_file_paths(content) +
             extract_requirements_lock_paths(content) +
             extract_patches_paths(content) +
-            extract_from_file_paths(content)
+            extract_from_file_paths(content) +
+            extract_from_file_tag_go_mod_paths(content)
           ).compact
         end
 
@@ -69,6 +70,18 @@ module Dependabot
         sig { params(content: String).returns(T::Array[String]) }
         def extract_from_file_paths(content)
           content.scan(/from_file\s*=\s*"([^"]+)"/).map { |match| PathConverter.label_to_path(T.must(match[0])) }
+        end
+
+        # Extracts the go.mod named by a `from_file(go_mod = ...)` tag, as used by gazelle's
+        # go_deps, plus the go.sum next to it, which gazelle reads as well.
+        sig { params(content: String).returns(T::Array[String]) }
+        def extract_from_file_tag_go_mod_paths(content)
+          content.scan(/from_file\s*\(([^)]*)\)/).flat_map do |match|
+            T.must(match[0]).scan(/go_mod\s*=\s*"([^"]+)"/).flat_map do |go_mod|
+              go_mod_path = PathConverter.label_to_path(T.must(go_mod[0]))
+              [go_mod_path, go_mod_path.sub(/go\.mod\z/, "go.sum")]
+            end
+          end
         end
 
         # Extracts directory paths from local_path_override attributes.
