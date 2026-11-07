@@ -1,12 +1,16 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::DependencySource do
+  extend T::Sig
+
   include_context "when in a temporary bundler directory"
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Functions::DependencySource) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:dependency_source) do
     described_class.new(
       gemfile_name: "Gemfile",
@@ -14,13 +18,18 @@ RSpec.describe Functions::DependencySource do
     )
   end
 
+  sig { returns(String) }
   let(:dependency_name) { "business" }
 
+  sig { returns(String) }
   let(:project_name) { "specified_source_no_lockfile" }
+  sig { returns(String) }
   let(:registry_url) { "https://repo.fury.io/greysteil/" }
+  sig { returns(String) }
   let(:gemfury_business_url) do
     "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     stub_request(:get, registry_url + "versions")
@@ -35,6 +44,7 @@ RSpec.describe Functions::DependencySource do
   end
 
   describe "#private_registry_versions" do
+    sig { returns(T::Array[Gem::Version]) }
     subject(:private_registry_versions) do
       in_tmp_folder { dependency_source.private_registry_versions }
     end
@@ -50,6 +60,7 @@ RSpec.describe Functions::DependencySource do
     end
 
     context "when specified as the default source" do
+      sig { returns(String) }
       let(:project_name) { "specified_default_source_no_lockfile" }
 
       it "returns all versions from the private source" do
@@ -158,9 +169,14 @@ RSpec.describe Functions::DependencySource do
     end
 
     context "when only the old Bundler index format is implemented" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:project_name) { "sidekiq_pro" }
+      sig { returns(String) }
       let(:dependency_name) { "sidekiq-pro" }
+      sig { returns(String) }
       let(:registry_url) { "https://gems.contribsys.com/" }
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         stub_request(:get, registry_url + "versions")

@@ -16,3 +16,6 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+# Native Go specs can finish more than ten minutes after the other parallel workers.
+SimpleCov.merge_timeout(3600)

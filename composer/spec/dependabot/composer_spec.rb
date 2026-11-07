@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,6 +6,8 @@ require "dependabot/composer"
 require_common_spec "shared_examples_for_autoloading"
 
 RSpec.describe Dependabot::Composer do
+  extend T::Sig
+
   it_behaves_like "it registers the required classes", "composer"
 
   it "has the same binary version of composer 2 installed as specified in the native helper" do
@@ -23,6 +25,7 @@ RSpec.describe Dependabot::Composer do
 
   private
 
+  sig { params(major_version: String).returns(String) }
   def helper_composer_version(major_version:)
     composer_lock = File.read(
       File.join(Dependabot::Composer::NativeHelpers.composer_helpers_dir, major_version, "composer.lock")
@@ -30,8 +33,9 @@ RSpec.describe Dependabot::Composer do
     JSON.parse(composer_lock)["packages"].find { |p| p["name"] == "composer/composer" }["version"]
   end
 
+  sig { returns(String) }
   def native_composer_version
     native_composer_output = Dependabot::SharedHelpers.run_shell_command("composer --version")
-    native_composer_output.match(/composer\s+version\s+(\d+\.\d+\.\d+)/i).captures.first
+    T.must(native_composer_output.match(/composer\s+version\s+(\d+\.\d+\.\d+)/i)).captures.fetch(0)
   end
 end

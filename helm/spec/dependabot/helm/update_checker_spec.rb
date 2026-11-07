@@ -205,6 +205,97 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
         it { is_expected.to be_nil }
       end
+
+      context "when the image name already includes its registry host" do
+        let(:dependency_name) { "quay.io/library/ubuntu" }
+        let(:source) { { registry: "quay.io", tag: version } }
+        let(:version) { "v1.3.5" }
+        let(:repo_url) { "https://quay.io/v2/library/ubuntu/" }
+        let(:repo_tags) { { name: "library/ubuntu", tags: %w(v1.3.5 v1.4.0 v1.5.0) }.to_json }
+
+        before do
+          # A registry answers 404 for a repository path that starts with its own host name
+          stub_request(:get, "https://quay.io/v2/quay.io/library/ubuntu/tags/list")
+            .and_return(status: 404, body: { errors: [{ code: "NAME_UNKNOWN" }] }.to_json)
+        end
+
+        it "asks the registry for the repository without its host name" do
+          expect(latest_version).to eq(Dependabot::Helm::Version.new("1.5.0"))
+        end
+
+        it "keeps the tag as the registry publishes it" do
+          expect(latest_version.to_s).to eq("v1.5.0")
+        end
+
+        it "proposes the published tag as the new version and requirement" do
+          updated = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect([updated.version, updated.previous_version, updated.requirements.first[:requirement]])
+            .to eq(%w(v1.5.0 v1.3.5 v1.5.0))
+        end
+      end
+
+      context "when cooldown patterns name the registry host" do
+        let(:dependency_name) { "quay.io/library/ubuntu" }
+        let(:source) { { registry: "quay.io", tag: version } }
+        let(:version) { "v1.3.5" }
+        let(:repo_url) { "https://quay.io/v2/library/ubuntu/" }
+        let(:repo_tags) { { name: "library/ubuntu", tags: %w(v1.3.5 v1.4.0 v1.5.0) }.to_json }
+        let(:cooldown_options) { { default_days: 5, include: include_patterns, exclude: exclude_patterns } }
+        let(:include_patterns) { ["quay.io/*"] }
+        let(:exclude_patterns) { [] }
+        let(:cooldown_checker) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(**cooldown_options)
+          )
+        end
+        let(:delegated_cooldown) do
+          received = nil
+          allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_call_original
+          allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).with("docker").and_wrap_original do |m, *a|
+            klass = m.call(*a)
+            allow(klass).to receive(:new).and_wrap_original do |new, **kwargs|
+              received = kwargs[:update_cooldown]
+              new.call(**kwargs)
+            end
+            klass
+          end
+          cooldown_checker.send(:latest_version)
+          received
+        end
+
+        before do
+          stub_request(:get, %r{quay\.io/v2/.*})
+            .and_return(status: 200, body: repo_tags)
+        end
+
+        it "applies cooldown when the original name matches an include pattern" do
+          expect(delegated_cooldown&.default_days).to eq(5)
+        end
+
+        context "when the original name matches an exclude pattern" do
+          let(:include_patterns) { [] }
+          let(:exclude_patterns) { ["quay.io/*"] }
+
+          it "does not delegate a cooldown" do
+            expect(delegated_cooldown).to be_nil
+          end
+        end
+      end
+
+      context "when the tag has a variant suffix" do
+        let(:version) { "17.04-alpine" }
+        let(:repo_tags) { { name: "library/ubuntu", tags: %w(17.04-alpine 17.10-alpine 17.10 18.04) }.to_json }
+
+        it "keeps the suffix" do
+          expect(latest_version.to_s).to eq("17.10-alpine")
+        end
+      end
     end
 
     context "when oci is not in repo" do

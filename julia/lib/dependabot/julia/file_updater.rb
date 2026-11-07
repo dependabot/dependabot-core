@@ -184,7 +184,7 @@ module Dependabot
       end
       def handle_julia_helper_error(result, manifest)
         error_message = result.message
-        raise error_message unless resolver_error?(error_message)
+        raise error_message unless resolver_error?(error_message) || newer_julia_error?(error_message)
 
         # The Project.toml changes still go out without this manifest
         add_manifest_update_notice(manifest.name, error_message)
@@ -195,6 +195,12 @@ module Dependabot
         error_message.start_with?("Pkg resolver error:") ||
           error_message.include?("Unsatisfiable requirements") ||
           error_message.include?("ResolverError")
+      end
+
+      # Pkg cannot write a manifest for a newer Julia than the updater's
+      sig { params(error_message: String).returns(T::Boolean) }
+      def newer_julia_error?(error_message)
+        error_message.start_with?("Manifest written by a newer Julia:")
       end
 
       sig { params(manifest_path: String, error_message: String).void }

@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -11,8 +11,13 @@ require "dependabot/vcpkg/package/versions_database"
 require "dependabot/vcpkg/update_checker/security_fix_resolver"
 
 RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
+  extend T::Sig
+
+  sig { returns(T.nilable(Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver::Fix)) }
   subject(:fix) { resolver.fix }
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -24,14 +29,22 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     )
   end
 
+  sig { returns(Dependabot::Vcpkg::Package::VersionsDatabase) }
   let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+  sig { returns(String) }
   let(:baseline_sha) { "fe1cde61e971d53c9687cf9a46308f8f55da19fa" }
+  sig { returns(String) }
   let(:port) { "zlib" }
+  sig { returns(T.nilable(String)) }
   let(:current_version) { "1.2.11" }
+  sig { returns(T.nilable(Integer)) }
   let(:constraint) { nil }
+  sig { returns(T::Array[String]) }
   let(:ignored_versions) { [] }
+  sig { returns(T.nilable(Dependabot::Vcpkg::Version)) }
   let(:lowest_comparable_version) { nil }
 
+  sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -41,6 +54,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     ]
   end
 
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: port,
@@ -50,17 +64,19 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     )
   end
 
+  sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
   let(:security_advisories) do
     [
       Dependabot::SecurityAdvisory.new(
         dependency_name: port,
         package_manager: "vcpkg",
-        vulnerable_versions: ["<= 1.2.12"]
+        vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array("<= 1.2.12")
       )
     ]
   end
 
   # Release tags oldest first, with the version floor each one sets for the port.
+  sig { returns(T::Hash[String, String]) }
   let(:tag_baselines) do
     {
       "2021.04.30" => "1.2.11",
@@ -71,7 +87,9 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     }
   end
 
+  sig { returns(T::Array[String]) }
   let(:published_versions) { %w(1.3.1 1.2.13 1.2.12 1.2.11#10 1.2.11) }
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(versions_database).to receive_messages(
@@ -114,12 +132,13 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     it "resolves the advisory even when a constraint is declared below the new floor" do
-      dependency.requirements.first[:requirement] = ">=1.2.11"
+      T.must(dependency.requirements.first)[:requirement] = ">=1.2.11"
 
-      expect(fix.kind).to eq(:baseline)
+      expect(T.must(fix).kind).to eq(:baseline)
     end
 
     context "with a malformed declared constraint" do
+      sig { returns(Integer) }
       let(:constraint) { 1 }
 
       it "raises a type error" do
@@ -129,12 +148,13 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     context "when the release floors are all still vulnerable" do
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: ["<= 1.3.1"]
+            vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array("<= 1.3.1")
           )
         ]
       end
@@ -147,6 +167,8 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     # Advisories enumerate affected versions rather than describing ranges, so a safe floor can sit
     # between two vulnerable ones. Bisecting the tag list would step over it.
     context "when safe floors are not contiguous" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(T::Hash[String, String]) }
       let(:tag_baselines) do
         {
           "2021.04.30" => "7.50.0",
@@ -156,21 +178,24 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
           "2024.01.12" => "7.84.0"
         }
       end
+      sig { returns(String) }
       let(:current_version) { "7.10.0" }
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: ["< 7.79.0"]
+            vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array("< 7.79.0")
           ),
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: [">= 7.80.0, < 7.84.0"]
+            vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array(">= 7.80.0, < 7.84.0")
           )
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "picks the earliest safe floor rather than skipping past it" do
         expect(fix).to have_attributes(kind: :baseline, baseline_tag: "2021.05.12")
@@ -178,6 +203,8 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     context "when only the earliest candidate floor is safe" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(T::Hash[String, String]) }
       let(:tag_baselines) do
         {
           "2021.04.30" => "1.9.0",
@@ -186,21 +213,24 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
           "2023.01.09" => "2.2.0"
         }
       end
+      sig { returns(String) }
       let(:current_version) { "1.5.0" }
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array("< 2.0.0")
           ),
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: [">= 2.1.0"]
+            vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array(">= 2.1.0")
           )
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "still finds it" do
         expect(fix).to have_attributes(kind: :baseline, baseline_tag: "2021.05.12")
@@ -208,6 +238,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     context "when the manifest pins no baseline" do
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       let(:dependency_files) do
         [Dependabot::DependencyFile.new(name: "vcpkg.json", content: %({ "dependencies": ["zlib"] }))]
       end
@@ -219,17 +250,22 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
   end
 
   describe "raising the version constraint" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
           dependency_name: port,
           package_manager: "vcpkg",
-          vulnerable_versions: ["<= 1.3.1"]
+          vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array("<= 1.3.1")
         )
       ]
     end
+    sig { returns(T::Array[String]) }
     let(:published_versions) { %w(1.3.2 1.3.1 1.2.13 1.2.12 1.2.11#10 1.2.11) }
+    sig { returns(Dependabot::Vcpkg::Version) }
     let(:lowest_comparable_version) { Dependabot::Vcpkg::Version.new("1.3.2") }
+    # rubocop:enable RSpec/ScatteredLet
 
     it "falls back to the constraint when no release floor carries the fix" do
       expect(fix).to have_attributes(
@@ -241,16 +277,20 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
   end
 
   describe "pinning with an override" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
           dependency_name: port,
           package_manager: "vcpkg",
-          vulnerable_versions: ["<= 1.3.1"]
+          vulnerable_versions: Dependabot::Vcpkg::Requirement.requirements_array("<= 1.3.1")
         )
       ]
     end
+    sig { returns(T::Array[String]) }
     let(:published_versions) { %w(1.3.2 1.3.1 1.2.13 1.2.12 1.2.11#10 1.2.11) }
+    # rubocop:enable RSpec/ScatteredLet
 
     it "pins the earliest safe version published after the current one" do
       expect(fix).to have_attributes(
@@ -260,25 +300,31 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     context "when several safe versions were published after the current one" do
+      sig { returns(T::Array[String]) }
       let(:published_versions) { %w(1.4.0 1.3.2 1.3.1 1.2.13 1.2.12 1.2.11#10 1.2.11) }
 
       it "chooses the smallest upgrade" do
-        expect(fix.version).to eq(Dependabot::Vcpkg::Version.new("1.3.2"))
+        expect(T.must(fix).version).to eq(Dependabot::Vcpkg::Version.new("1.3.2"))
       end
     end
 
     context "when the only safe versions were published before the current one" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:current_version) { "1.3.1" }
+      sig { returns(T::Array[String]) }
       let(:published_versions) { %w(1.3.1 1.2.13 1.2.12) }
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: ["= 1.3.1", "= 1.2.13"]
+            vulnerable_versions: ["= 1.3.1", "= 1.2.13"].map { |value| Dependabot::Vcpkg::Requirement.new(value) }
           )
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "offers no fix" do
         expect(fix).to be_nil
@@ -286,17 +332,22 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
     end
 
     context "when the current version is absent from the versions database" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:current_version) { "1.3.5" }
+      sig { returns(T::Array[String]) }
       let(:published_versions) { %w(1.4.0 1.3.1 1.2.13 1.0.0) }
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: port,
             package_manager: "vcpkg",
-            vulnerable_versions: ["= 1.3.5", ">= 1.4.0"]
+            vulnerable_versions: ["= 1.3.5", ">= 1.4.0"].map { |value| Dependabot::Vcpkg::Requirement.new(value) }
           )
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       it "offers no pin, rather than downgrading the port" do
         expect(fix).to be_nil
@@ -305,6 +356,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
   end
 
   describe "ignore conditions" do
+    sig { returns(T::Array[String]) }
     let(:ignored_versions) { ["> 1.2.11#10"] }
 
     it "does not offer an ignored version" do
@@ -314,12 +366,14 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver do
 
   describe "when the dependency is not vulnerable data" do
     context "with no advisories" do
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       let(:security_advisories) { [] }
 
       it { expect(fix).to be_nil }
     end
 
     context "with an unparseable current version" do
+      sig { returns(NilClass) }
       let(:current_version) { nil }
 
       it { expect(fix).to be_nil }

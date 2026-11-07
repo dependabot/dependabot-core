@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-only project_name fixture or class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -147,6 +149,30 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
 
         it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
+
+        %w(require requires).each do |wording|
+          context "when Composer reports an implicit PHP requirement using #{wording}" do
+            it "retries with a PHP version satisfying the dependency requirement" do
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).ordered do
+                manifest = JSON.parse(File.read("composer.json"))
+                expect(manifest.dig("config", "platform", "php")).to eq("5.2.0")
+
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "phpdocumentor/reflection-docblock 3.2.2 #{wording} php ^5.3.0 -> " \
+                           "your php version (5.2.0) does not satisfy that requirement.",
+                  error_context: {}
+                )
+              end
+              expect(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).ordered do
+                manifest = JSON.parse(File.read("composer.json"))
+                expect(manifest.dig("config", "platform", "php")).to eq("5.3.0")
+                "3.2.2"
+              end
+
+              expect(resolver.latest_resolvable_version).to eq(Dependabot::Composer::Version.new("3.2.2"))
+            end
+          end
+        end
       end
     end
 
