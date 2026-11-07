@@ -363,5 +363,41 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       tag = T.must(resolver.latest_resolvable_version_tag)
       expect(tag[:version]).to be > Dependabot::Swift::Version.new("5.15.0")
     end
+
+    context "with update_cooldown" do
+      let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+      let(:resolver) do
+        described_class.new(
+          dependency: dependency,
+          git_commit_checker: git_commit_checker,
+          security_advisories: security_advisories,
+          update_cooldown: cooldown
+        )
+      end
+
+      before do
+        allow(git_commit_checker).to receive(:local_tags_for_allowed_versions)
+          .with(cooldown).and_return(tags_out_of_cooldown)
+      end
+
+      context "when the newest in-range tag is still within its cooldown window" do
+        let(:tags_out_of_cooldown) { all_tags.reject { |t| t.tag == "5.19.0" } }
+
+        it "returns the newest in-range tag that is out of cooldown" do
+          tag = resolver.latest_resolvable_version_tag
+          expect(tag[:version]).to eq(Dependabot::Swift::Version.new("5.18.0"))
+          expect(git_commit_checker).to have_received(:local_tags_for_allowed_versions).with(cooldown)
+        end
+      end
+
+      context "when every tag is within its cooldown window" do
+        let(:tags_out_of_cooldown) { [] }
+
+        it "returns nil so no update is proposed" do
+          expect(resolver.latest_resolvable_version_tag).to be_nil
+        end
+      end
+    end
   end
 end
