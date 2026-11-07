@@ -91,6 +91,26 @@ RSpec.describe Dependabot::Python::Requirement do
 
         it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.dev")) }
       end
+
+      context "with a zero major version only" do
+        let(:requirement_string) { "^0" }
+
+        it { is_expected.to eq(described_class.new(">= 0", "< 1.0.0.dev")) }
+        it { is_expected.to be_satisfied_by(version_class.new("0.5.0")) }
+      end
+
+      context "with zero major and minor versions only" do
+        let(:requirement_string) { "^0.0" }
+
+        it { is_expected.to eq(described_class.new(">= 0.0", "< 0.1.0.dev")) }
+        it { is_expected.to be_satisfied_by(version_class.new("0.0.5")) }
+      end
+
+      context "with zero major, minor and patch versions" do
+        let(:requirement_string) { "^0.0.0" }
+
+        it { is_expected.to eq(described_class.new(">= 0.0.0", "< 0.0.1")) }
+      end
     end
 
     context "with an *" do
