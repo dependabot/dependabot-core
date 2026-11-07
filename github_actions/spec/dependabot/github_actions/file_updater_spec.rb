@@ -466,6 +466,55 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(updated_workflow_file.content).to include "# tag=v#{dependency.version}"
         end
 
+        context "with stale standalone comments for a tagged SHA pin" do
+          let(:workflow_file_body) do
+            fixture("workflow_files", "pinned_source_stale_standalone_comments.yml")
+          end
+
+          it "repairs a stale full version comment" do
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+
+            expect(updated_workflow_file.content).to include(
+              "    - uses: 'actions/checkout@#{new_sha}' # v#{dependency.version}\n"
+            )
+          end
+
+          it "replaces a no-v prerelease comment using its literal token" do
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+
+            expect(updated_workflow_file.content).to include "actions/checkout@#{new_sha} # #{dependency.version}"
+          end
+
+          it "preserves the v prefix in a quoted source comment" do
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+
+            expect(updated_workflow_file.content).to include(
+              "\"actions/checkout@#{new_sha}\" # v#{dependency.version}"
+            )
+          end
+
+          context "when an old tag is a suffix of the standalone comment" do
+            let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+            before do
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+              allow(git_checker).to receive_messages(
+                ref_looks_like_commit_sha?: true,
+                most_specific_version_tags_for_sha: ["v1"],
+                most_specific_version_tag_for_sha: "v2"
+              )
+            end
+
+            it "replaces v11 as a whole version instead of producing v22" do
+              new_sha = dependency.requirements.first.dig(:source, :ref)
+
+              expect(updated_workflow_file.content).to include(
+                "    - uses: actions/checkout@#{new_sha} #v2\n"
+              )
+            end
+          end
+        end
+
         context "when the workflow uses CRLF line endings" do
           let(:workflow_file_body) do
             fixture("workflow_files", "pinned_sources_version_comments.yml").gsub("\n", "\r\n")
@@ -531,26 +580,59 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         context "when the previous SHA is not tagged" do
           before do
             dependency.previous_requirements.first[:source][:ref] = "85b1f35505da871133b65f059e96210c65650a8b"
+            dependency.previous_requirements.first[:metadata][:declaration_string] =
+              "actions/checkout@85b1f35505da871133b65f059e96210c65650a8b"
           end
 
-          it "updates SHA version but not the comment" do
+          it "repairs standalone version comments" do
             new_sha = dependency.requirements.first.dig(:source, :ref)
-            expect(updated_workflow_file.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
+            expected_comment = "#{new_sha} # v#{dependency.version}"
+            expect(updated_workflow_file.content.scan(expected_comment).length).to eq(2)
+          end
+
+          it "preserves descriptive comments" do
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+            expect(updated_workflow_file.content).to include "#{new_sha} # v2.1.0 - historical note"
+            expect(updated_workflow_file.content).to include(
+              "#{new_sha} # Versions older than v2.1.0 have a security vulnerability"
+            )
+          end
+
+          context "when the new SHA has no version tag" do
+            let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+            before do
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+              allow(git_checker).to receive_messages(
+                ref_looks_like_commit_sha?: true,
+                most_specific_version_tags_for_sha: [],
+                most_specific_version_tag_for_sha: nil
+              )
+            end
+
+            it "preserves the standalone version comment" do
+              new_sha = dependency.requirements.first.dig(:source, :ref)
+              expect(updated_workflow_file.content).to include "#{new_sha} # v2.1.0"
+            end
           end
         end
 
         context "when version tag for new ref is nil" do
           let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+          let(:workflow_file_body) do
+            fixture("workflow_files", "pinned_source_tagged_version_comment.yml")
+          end
 
-          it "doesn't update version comments" do
+          it "preserves a matching old-tag comment when the new SHA has no tag" do
             allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
             allow(git_checker).to receive_messages(
               ref_looks_like_commit_sha?: true,
-              most_specific_version_tags_for_sha: ["v2.1.0"]
+              most_specific_version_tags_for_sha: ["v2"]
             )
             allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return(nil, nil)
-            old_version = dependency.previous_requirements[1].dig(:source, :ref)
-            expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+
+            expect(updated_workflow_file.content).to include "actions/checkout@#{new_sha} # v2"
           end
         end
       end
