@@ -54,24 +54,23 @@ internal static class SdkProjectDiscovery
         "web.config",
     };
 
-    // these are the targets that are necessary to evaluate for a single restore operation
-    private static readonly ImmutableArray<string> SingleRestoreTargetNames =
+    // restore runs separately so these targets can evaluate individual frameworks without rewriting assets or lock files
+    private static readonly ImmutableArray<string> DependencyDiscoveryTargetNames =
     [
-        "Restore",
         "ResolveProjectReferences",
         "GenerateBuildDependencyFile"
     ];
 
     // these targets are required to evaluate a legacy project with a single operation
-    private static readonly ImmutableArray<string> LegacyProjectSingleRestoreTargetNames = ["ResolveProjectReferences"];
+    private static readonly ImmutableArray<string> LegacyProjectDiscoveryTargetNames = ["ResolveProjectReferences"];
 
     private const string TargetFrameworksPropertyName = "TargetFrameworks";
 
     // this property evaluates to a version number in an SDK-style project and is unset or empty otherwise
     private const string NETCoreSdkVersionPropertyName = "NETCoreSdkVersion";
 
-    // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
-    private const int MaximumParallelTargetFrameworkRestores = 2;
+    // larger target sets are evaluated separately to avoid MSBuild evaluation races
+    private const int MaximumParallelTargetFrameworkEvaluations = 2;
 
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, string? solutionDir, ILogger logger)
     {
@@ -130,51 +129,63 @@ internal static class SdkProjectDiscovery
         var netCoreSdkVersionValue = startingProjectProperties?.GetValueOrDefault(NETCoreSdkVersionPropertyName);
         var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
         var requiredTargets = isLegacyProject
-            ? LegacyProjectSingleRestoreTargetNames
-            : SingleRestoreTargetNames;
+            ? LegacyProjectDiscoveryTargetNames
+            : DependencyDiscoveryTargetNames;
 
         // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
         // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
         // alternately, if there are too many target frameworks specified, they must be handled individually
         var hasPlatformTfms = projectTfms.Any(tfm => tfm.Contains('-'));
-        var requiresIndividualRestores = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkRestores;
-        var useDirectRestore = requiresIndividualRestores;
-        if (!requiresIndividualRestores)
+        var requiresIndividualEvaluations = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkEvaluations;
+        var useDirectEvaluation = requiresIndividualEvaluations;
+        if (!requiresIndividualEvaluations)
         {
-            logger.Info($"Performing single restore for project {startingProjectPath}");
-            projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+            logger.Info($"Performing single evaluation for project {startingProjectPath}");
+            projectTfms = [string.Empty]; // an empty TFM lets MSBuild evaluate all declared frameworks
             var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-            useDirectRestore = requiredTargets.All(actualTargets.Contains);
+            useDirectEvaluation = requiredTargets.All(actualTargets.Contains);
         }
         else
         {
-            logger.Info($"Performing individual restores for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
+            logger.Info($"Performing individual evaluations for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
         }
 
-        foreach (var tfm in projectTfms)
+        var discoveryPasses = projectTfms.Select(tfm => (TargetFramework: tfm, RestoreOnly: false));
+        if (!isLegacyProject)
         {
-            var isIndividualTfmRestore = !string.IsNullOrEmpty(tfm);
+            // A restore inside an inner build inherits its TargetFramework and overwrites the shared lock and assets files.
+            // Restore the complete project graph once, without a framework override, before evaluating individual frameworks.
+            discoveryPasses = discoveryPasses.Prepend((TargetFramework: string.Empty, RestoreOnly: true));
+        }
+
+        foreach (var (tfm, restoreOnly) in discoveryPasses)
+        {
+            var isIndividualTfmEvaluation = !string.IsNullOrEmpty(tfm);
 
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // when using single restore, we can directly invoke the relevant targets...
+                // when using a single evaluation, we can directly invoke the relevant targets...
                 var args = new List<string>() { startingProjectPath };
 
                 // ...but determining what the relevant targets are can be complicated
 
-                // For SDK-style projects  the targets `Restore`, `ResolveProjectReferences`, and `GenerateBuildDependencyFile`
-                // are necessary.  If the project has a single target framework, those magic targets will all be present and can
+                // For SDK-style projects the targets `ResolveProjectReferences` and `GenerateBuildDependencyFile`
+                // are necessary.  If the project has a single target framework, those targets will all be present and can
                 // be directly invoked, but if the project has multiple target frameworks, those targets will _NOT_ be directly
-                // present and we instead have to invoke the `Build` target and specify the three magic values as `InnerTargets`.
+                // present and we instead have to invoke the `Build` target and specify them as `InnerTargets`.
 
-                // If the project is legacy then those three magic targets will not be present, but we shouldn't use the `Build`
+                // If the project is legacy then those targets will not all be present, but we shouldn't use the `Build`
                 // and `InnerTargets` trick because that's an SDK-only mechanism, so we instead only need to invoke
                 // `ResolveProjectReferences` to gather all `PackageReference` items and further down we re-build the transitive
                 // dependency set.  Without the legacy project check, we could incorrectly invoke `Build` which eventually tries
                 // to call `csc.exe` which is unnecessary and can be slow.
-                if (useDirectRestore)
+                if (restoreOnly)
+                {
+                    args.Add("/t:Restore");
+                }
+                else if (useDirectEvaluation)
                 {
                     // directly call the required targets
                     args.Add($"/t:{string.Join(",", requiredTargets)}");
@@ -196,7 +207,7 @@ internal static class SdkProjectDiscovery
                 args.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
                 args.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
 
-                if (isIndividualTfmRestore)
+                if (isIndividualTfmEvaluation)
                 {
                     args.Add($"/p:TargetFramework={tfm}");
                 }
@@ -242,6 +253,17 @@ internal static class SdkProjectDiscovery
                     }
 
                     throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
+                }
+
+                if (restoreOnly)
+                {
+                    if (exitCode != 0)
+                    {
+                        // Do not evaluate assets left by a failed restore.
+                        return [];
+                    }
+
+                    continue;
                 }
 
                 var buildRoot = BinaryLog.ReadBuild(binLogPath);

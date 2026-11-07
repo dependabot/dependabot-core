@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
+using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.DependencySolver;
@@ -230,6 +231,87 @@ public class FileWriterWorkerTests : TestBase
                 Assert.Contains("\"resolved\": \"2.0.0\"", lockFileContent);
             }
         );
+    }
+
+    [Theory]
+    [InlineData("net8.0")]
+    [InlineData("net8.0;net472")]
+    [InlineData("net472;net8.0")]
+    [InlineData("net8.0;net9.0;net472")]
+    public async Task EndToEnd_LockFilesPreserveDeclaredTargetFrameworks(string targetFrameworks)
+    {
+        var targetFrameworkProperty = targetFrameworks.Contains(';') ? "TargetFrameworks" : "TargetFramework";
+        var testsProject = $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <{{targetFrameworkProperty}}>{{targetFrameworks}}</{{targetFrameworkProperty}}>
+                <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                <IsTestProject>true</IsTestProject>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Test.Dependency" Version="1.0.0" />
+                <ProjectReference Include="../Library/Library.csproj" />
+              </ItemGroup>
+            </Project>
+            """;
+        var libraryProject = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Library.Dependency" Version="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Tests/Tests.csproj", testsProject),
+            ("Library/Library.csproj", libraryProject));
+        var repoRoot = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Test.Dependency", "1.0.0", "netstandard2.0"),
+            MockNuGetPackage.CreateSimplePackage("Test.Dependency", "2.0.0", "netstandard2.0"),
+            MockNuGetPackage.CreateSimplePackage("Library.Dependency", "1.0.0", "netstandard2.0"),
+        ], repoRoot);
+
+        var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            ["restore", "Tests/Tests.csproj"], repoRoot);
+        Assert.True(exitCode == 0, $"Initial restore failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+        AssertProjectState("Tests", targetFrameworks.Split(';'), "Test.Dependency", "1.0.0");
+        AssertProjectState("Library", ["netstandard2.0"], "Library.Dependency", "1.0.0");
+
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+        var result = await worker.RunAsync(repoRoot, "Tests/Tests.csproj", "Test.Dependency", "1.0.0", "2.0.0", true);
+
+        Assert.Null(result.Error);
+        Assert.NotEmpty(result.UpdateOperations);
+        Assert.Equal(testsProject.Replace("Version=\"1.0.0\"", "Version=\"2.0.0\""),
+            await File.ReadAllTextAsync(Path.Combine(repoRoot, "Tests", "Tests.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(libraryProject,
+            await File.ReadAllTextAsync(Path.Combine(repoRoot, "Library", "Library.csproj"), TestContext.Current.CancellationToken));
+        Assert.Multiple(
+            () => AssertProjectState("Tests", targetFrameworks.Split(';'), "Test.Dependency", "2.0.0"),
+            () => AssertProjectState("Library", ["netstandard2.0"], "Library.Dependency", "1.0.0"));
+
+        void AssertProjectState(string project, string[] expectedFrameworks, string dependencyName, string expectedVersion)
+        {
+            using var lockFile = JsonDocument.Parse(File.ReadAllText(Path.Combine(repoRoot, project, "packages.lock.json")));
+            var frameworks = lockFile.RootElement.GetProperty("dependencies").EnumerateObject().ToArray();
+            Assert.Equal(
+                expectedFrameworks.Order(),
+                frameworks.Select(framework => NuGetFramework.Parse(framework.Name).GetShortFolderName()).Order());
+            foreach (var framework in frameworks)
+            {
+                Assert.Equal(expectedVersion, framework.Value.GetProperty(dependencyName).GetProperty("resolved").GetString());
+            }
+
+            using var assetsFile = JsonDocument.Parse(File.ReadAllText(Path.Combine(repoRoot, project, "obj", "project.assets.json")));
+            Assert.Equal(
+                expectedFrameworks.Order(),
+                assetsFile.RootElement.GetProperty("targets").EnumerateObject()
+                    .Select(framework => NuGetFramework.Parse(framework.Name).GetShortFolderName()).Order());
+        }
     }
 
     [Fact]
