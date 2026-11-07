@@ -35,6 +35,7 @@ module Dependabot
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
+        require_relative "poetry_file_updater/locked_version_checker"
         extend T::Sig
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -199,6 +200,7 @@ module Dependabot
           @updated_lockfile_content ||=
             begin
               new_lockfile = updated_lockfile_content_for(prepared_pyproject)
+              LockedVersionChecker.new(dependencies: dependencies).check(new_lockfile)
 
               original_locked_python = TomlRB.parse(T.must(lockfile).content)["metadata"]["python-versions"]
 
@@ -291,7 +293,7 @@ module Dependabot
           return unless pinned_version
 
           poetry_dependency_tables(poetry_object).each do |deps_hash|
-            pkg_name = deps_hash.keys.find { |nm| normalise(nm) == dep.name }
+            pkg_name = deps_hash.keys.find { |nm| NameNormaliser.normalise(nm) == dep.name }
             next unless pkg_name
 
             entry = deps_hash[pkg_name]
@@ -449,11 +451,6 @@ module Dependabot
           updated_file = file.dup
           updated_file.content = content
           updated_file
-        end
-
-        sig { params(name: String).returns(String) }
-        def normalise(name)
-          NameNormaliser.normalise(name)
         end
 
         sig { returns(FileParser::PythonRequirementParser) }
