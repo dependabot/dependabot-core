@@ -266,11 +266,11 @@ module Dependabot
         # We only look for version catalogs in the root project, not in included builds.
         return [] unless root_dir == "."
 
-        paths = [File.join(root_dir, "gradle", "libs.versions.toml")]
+        paths = [clean_join([root_dir, "gradle", "libs.versions.toml"])]
 
         if (settings = settings_file(root_dir))
           parser = SettingsFileParser.new(settings_file: settings)
-          paths += parser.version_catalog_paths.map { |p| File.join(root_dir, p) }
+          paths += parser.version_catalog_paths.map { |p| clean_join([root_dir, p]) }
         end
 
         paths.uniq.filter_map { |p| fetch_file_if_present(p) }

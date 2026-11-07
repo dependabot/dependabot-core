@@ -746,7 +746,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def version_catalog_files
         @version_catalog_files ||= T.let(
-          dependency_files.select { |f| f.name.end_with?(".toml") },
+          dependency_files.reject(&:support_file?).select { |f| f.name.end_with?(".toml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

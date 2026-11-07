@@ -1372,6 +1372,20 @@ RSpec.describe Dependabot::Gradle::FileParser do
         expect(dependencies.map(&:name)).to include("org.jmailen.kotlinter")
         expect(dependencies.length).to eq(2)
       end
+
+      context "when one of them is a support file" do
+        let(:plugins_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "build-logic/src/main/resources/plugins.versions.toml",
+            content: fixture("version_catalog_file", "plugins.versions.toml"),
+            support_file: true
+          )
+        end
+
+        it "only parses dependencies from the version catalogs" do
+          expect(dependencies.map(&:name)).to eq(["junit:junit"])
+        end
+      end
     end
   end
 
