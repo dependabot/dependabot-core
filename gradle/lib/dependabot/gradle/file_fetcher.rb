@@ -31,10 +31,6 @@ module Dependabot
         gradle/wrapper/gradle-wrapper.properties
       ).freeze
 
-      # For now Gradle only supports library .toml files in the main gradle folder
-      SUPPORTED_VERSION_CATALOG_FILE_PATH =
-        %w(/gradle/libs.versions.toml).freeze
-
       PLUGIN_SOURCE_SET_DIRS =
         %w(src/main/java src/main/kotlin src/main/groovy src/main/resources).freeze
 
@@ -88,9 +84,8 @@ module Dependabot
       def all_buildfiles_in_build(root_dir, visited = Set.new)
         return [] unless visited.add?(root_dir)
 
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir),
-                 properties_file(root_dir)]
-                .compact
+        files = [buildfile(root_dir), settings_file(root_dir), lockfile(root_dir), properties_file(root_dir)].compact
+        files += version_catalog_files(root_dir)
         files += wrapper_files(root_dir)
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
@@ -266,11 +261,19 @@ module Dependabot
         end
       end
 
-      sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
-      def version_catalog_file(root_dir)
-        return nil unless root_dir == "."
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def version_catalog_files(root_dir)
+        # We only look for version catalogs in the root project, not in included builds.
+        return [] unless root_dir == "."
 
-        gradle_toml_file(root_dir)
+        paths = [clean_join([root_dir, "gradle", "libs.versions.toml"])]
+
+        if (settings = settings_file(root_dir))
+          parser = SettingsFileParser.new(settings_file: settings)
+          paths += parser.version_catalog_paths.map { |p| clean_join([root_dir, p]) }
+        end
+
+        paths.uniq.filter_map { |p| fetch_file_if_present(p) }
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -328,11 +331,6 @@ module Dependabot
         file = find_first(dir, SUPPORTED_BUILD_FILE_NAMES) || return
         @buildfile_name ||= File.basename(file.name)
         file
-      end
-
-      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
-      def gradle_toml_file(dir)
-        find_first(dir, SUPPORTED_VERSION_CATALOG_FILE_PATH)
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }
