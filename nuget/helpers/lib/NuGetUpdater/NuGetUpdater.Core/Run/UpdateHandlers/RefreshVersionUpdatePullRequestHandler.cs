@@ -175,12 +175,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 }
                 else
                 {
-                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false, treatEmptyDirectoryAsWildcard: true);
-                    if (existingPrButDifferent is not null)
-                    {
-                        await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
-                    }
-
+                    // an existing PR for an older version is superseded by create_pull_request; an explicit close here races with it
                     await apiHandler.CreatePullRequest(new CreatePullRequest()
                     {
                         Dependencies = [.. updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory))],
