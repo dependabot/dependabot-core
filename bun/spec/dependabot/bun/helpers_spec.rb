@@ -196,6 +196,55 @@ RSpec.describe Dependabot::Bun::Helpers do
       end
     end
 
+    # Text inside a TOML multiline string is a value, not a table header or a setting
+    {
+      "a multiline literal string that contains a table header" => [
+        "[install]\nglobalDir = '''\n[run]\n'''\nfrozenLockfile = true\n",
+        "[install]\nglobalDir = '''\n[run]\n'''\nfrozenLockfile = false\n"
+      ],
+      "a multiline basic string that contains a table header" => [
+        "[install]\nglobalDir = \"\"\"\n[run]\n\"\"\"\nfrozenLockfile = true\n",
+        "[install]\nglobalDir = \"\"\"\n[run]\n\"\"\"\nfrozenLockfile = false\n"
+      ],
+      "an escaped quote run inside a multiline basic string" => [
+        "[install]\nnote = \"\"\"\n\\\"\"\"\n[run]\n\"\"\"\nfrozenLockfile = true\n",
+        "[install]\nnote = \"\"\"\n\\\"\"\"\n[run]\n\"\"\"\nfrozenLockfile = false\n"
+      ],
+      "a multiline string closed by extra quotes" => [
+        "[install]\nnote = \"\"\"a\n[run]\nb\"\"\"\"\"\nfrozenLockfile = true\n",
+        "[install]\nnote = \"\"\"a\n[run]\nb\"\"\"\"\"\nfrozenLockfile = false\n"
+      ],
+      "triple quotes inside a one-line string" => [
+        "[install]\nnote = \"'''\"\nfrozenLockfile = true\n",
+        "[install]\nnote = \"'''\"\nfrozenLockfile = false\n"
+      ],
+      "triple quotes in a comment" => [
+        "[install] # \"\"\"\nfrozenLockfile = true\n",
+        "[install] # \"\"\"\nfrozenLockfile = false\n"
+      ]
+    }.each do |description, (before, after)|
+      context "with #{description}" do
+        before { write_bunfig(before) }
+
+        it "turns off only the real freeze" do
+          expect(bunfig_seen_by_block).to eq(after)
+        end
+      end
+    end
+
+    {
+      "a multiline basic string" => "[install]\nnote = \"\"\"\nfrozenLockfile = true\n\"\"\"\n",
+      "a multiline literal string" => "[install]\nnote = '''\nfrozenLockfile = true\n'''\n"
+    }.each do |description, content|
+      context "when #{description} contains the setting's text" do
+        before { write_bunfig(content) }
+
+        it "leaves the string as it is" do
+          expect(bunfig_seen_by_block).to eq(content)
+        end
+      end
+    end
+
     context "when a header has a long run of spaces and no closing bracket" do
       before { write_bunfig("[#{' ' * 50_000}-\nfrozenLockfile = true\n") }
 

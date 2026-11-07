@@ -6,6 +6,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
+require "strscan"
 
 module Dependabot
   module Bun
@@ -89,6 +90,8 @@ module Dependabot
       TOML_KEY_PATH = /#{TOML_KEY_SEGMENT}(?:[ \t]*\.[ \t]*#{TOML_KEY_SEGMENT})*/
       TOML_TABLE_HEADER = /\A[ \t]*(?<array>\[)?\[[ \t]*(?<path>#{TOML_KEY_PATH})[ \t]*\]\]?[ \t]*(?:#.*)?\z/
       FROZEN_LOCKFILE_SETTING = /\A(?<before>[ \t]*(?<path>#{TOML_KEY_PATH})[ \t]*=[ \t]*)true\b/
+      TOML_BASIC_MULTILINE_END = /"{3,5}/
+      TOML_LITERAL_MULTILINE_END = /'{3,5}/
       TOML_ESCAPES = T.let(
         {
           "b" => "\b", "t" => "\t", "n" => "\n", "f" => "\f", "r" => "\r", "e" => "\e", '"' => '"', "\\" => "\\"
@@ -120,12 +123,15 @@ module Dependabot
 
       # Only the key `install.frozenLockfile` is the setting bun reads, however TOML spells it: under an `[install]`
       # table, as a dotted key, with quoted names or with spaces around the dots. A key of that name in another table is
-      # left alone, and so is everything else in the file.
+      # left alone, and so is everything else in the file, including text inside a multiline string.
       sig { params(bunfig: String).returns(String) }
       def self.without_frozen_lockfile(bunfig)
         table = T.let([], T::Array[String])
+        in_strings = lines_inside_multiline_strings(bunfig)
 
-        bunfig.lines.map do |line|
+        bunfig.lines.each_with_index.map do |line, index|
+          next line if in_strings.include?(index)
+
           if (header = line.chomp.match(TOML_TABLE_HEADER))
             table = header[:array] ? ["[[#{header[:path]}]]"] : toml_key_path(T.must(header[:path]))
             next line
@@ -136,6 +142,51 @@ module Dependabot
 
           line.sub(FROZEN_LOCKFILE_SETTING, "\\k<before>false")
         end.join
+      end
+
+      # Indexes of the lines that start inside a multiline string (`"""` or `'''`), which hold a value rather than a
+      # table header or a setting.
+      sig { params(bunfig: String).returns(T::Set[Integer]) }
+      def self.lines_inside_multiline_strings(bunfig)
+        inside = T.let(Set.new, T::Set[Integer])
+        line = 0
+        closing = T.let(nil, T.nilable(Regexp))
+        scanner = StringScanner.new(bunfig)
+
+        until scanner.eos?
+          if scanner.scan("\n")
+            line += 1
+            inside << line if closing
+          elsif closing
+            closing = nil if closed_multiline_string?(scanner, closing)
+          else
+            closing = skip_outside_multiline_string(scanner)
+          end
+        end
+
+        inside
+      end
+
+      # Consumes one token inside a multiline string. True when it was the run of quotes (up to five) that closes it.
+      sig { params(scanner: StringScanner, closing: Regexp).returns(T::Boolean) }
+      def self.closed_multiline_string?(scanner, closing)
+        return true if scanner.scan(closing)
+
+        # A backslash escapes the next character in a basic string, so `\"""` does not close it
+        escaped = closing == TOML_BASIC_MULTILINE_END && scanner.scan(/\\[^\n]/)
+        scanner.scan(/[^\n"'\\]+|./) unless escaped
+        false
+      end
+
+      # Consumes one token outside a multiline string. Returns the pattern that closes the string it opened, if any.
+      sig { params(scanner: StringScanner).returns(T.nilable(Regexp)) }
+      def self.skip_outside_multiline_string(scanner)
+        return TOML_BASIC_MULTILINE_END if scanner.scan('"""')
+        return TOML_LITERAL_MULTILINE_END if scanner.scan("'''")
+
+        # One-line strings and comments are skipped whole, so the quotes inside them don't open a multiline string
+        scanner.scan(/#[^\n]*|"(?:[^"\\\n]|\\.)*"?|'[^'\n]*'?|[^\n"'#]+/) || scanner.getch
+        nil
       end
 
       # Splits a TOML key such as `"install" . frozenLockfile` into its unquoted names.
