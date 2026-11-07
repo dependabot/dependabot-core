@@ -203,6 +203,27 @@ RSpec.describe Dependabot::ApiClient do
              end)
       end
 
+      it "sends the configured group and dependency identity for a dynamic subgroup" do
+        group = Dependabot::DependencyGroup.new(
+          name: "monorepo/business", rules: { "patterns" => ["business"], "group-by" => "dependency-name" }
+        )
+        change = Dependabot::DependencyChange.new(
+          job: job,
+          updated_dependencies: dependencies,
+          updated_dependency_files: dependency_files,
+          dependency_group: group
+        )
+        client.create_pull_request(change, base_commit)
+
+        expect(WebMock).to(
+          have_requested(:post, create_pull_request_url).with do |request|
+            data = JSON.parse(request.body)["data"]
+            expect(data["dependency-group"]).to eq("name" => "monorepo")
+            expect(data["dependencies"].map { |dep| dep["name"] }).to eq(["business"])
+          end
+        )
+      end
+
       it "flags the PR as having dependency-groups if the dependency change has a dependency group assigned" do
         group = Dependabot::DependencyGroup.new(name: "dummy-group-name", rules: { patterns: ["*"] })
 

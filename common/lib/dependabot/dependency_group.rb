@@ -76,7 +76,32 @@ module Dependabot
 
     sig { returns(T::Hash[String, String]) }
     def to_h
-      { "name" => name }
+      { "name" => parent_name || name }
+    end
+
+    # Dynamic names identify an update within the updater, but only the parent
+    # exists in the configuration understood by the hosted service.
+    sig { returns(T.nilable(String)) }
+    def parent_name
+      return unless group_by_dependency_name?
+
+      names = patterns
+      return unless names&.one?
+
+      self.class.parent_name_from_subgroup(subgroup_name: name, dependency_name: T.must(names.first))
+    end
+
+    sig do
+      params(group_name: T.nilable(String), dependency_names: T::Array[T.nilable(String)])
+        .returns(T::Boolean)
+    end
+    def matches_identity?(group_name:, dependency_names:)
+      parent = parent_name
+      # A group-by parent is a container, not an update of all its children.
+      return false if group_by_dependency_name? && parent.nil?
+      return true if group_name == name
+
+      !parent.nil? && group_name == parent && dependency_names.uniq == patterns
     end
 
     # Provides a debug utility to view the group as it appears in the config file.
