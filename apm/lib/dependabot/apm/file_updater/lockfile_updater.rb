@@ -9,14 +9,19 @@ require "dependabot/shared_helpers"
 require "dependabot/apm/file_updater"
 require "dependabot/apm/lockfile"
 require "dependabot/apm/native_helpers"
+require "dependabot/apm/targets"
 
 module Dependabot
   module Apm
     class FileUpdater < Dependabot::FileUpdaters::Base
-      # Regenerates `apm.lock.yaml` with `apm lock`, which resolves the updated
-      # manifest without deploying any package files. APM only re-resolves the
-      # entries whose manifest ref changed, keeping every other entry on its
-      # locked commit, so tag and SHA updates are picked up from the manifest.
+      # Regenerates `apm.lock.yaml` for the updated manifest. It runs
+      # `apm install` when it can tell which harnesses to deploy to (see
+      # #apm_command): `apm lock` doesn't deploy, so it would keep the old
+      # version's deployed file list and hashes, which `apm install --frozen`
+      # rejects. Otherwise it runs `apm lock`, which needs no harness. APM only
+      # re-resolves the entries whose manifest ref changed, keeping every other
+      # entry on its locked commit, so tag and SHA updates are picked up from
+      # the manifest.
       # A branch pin's ref doesn't change, so its lock entry is first moved to
       # the branch's new head commit for APM to verify and re-hash.
       class LockfileUpdater
@@ -73,7 +78,7 @@ module Dependabot
         sig { returns(String) }
         def updated_lockfile_content
           SharedHelpers.in_a_temporary_repo_directory(lockfile.directory, repo_contents_path) do
-            # `apm lock` downloads packages into apm_modules/ and resolves
+            # APM downloads packages into apm_modules/ and resolves
             # transitive dependencies from what is already there. The git reset
             # between updates doesn't remove that ignored directory, so clear it
             # to keep one update's packages from leaking into the next.
@@ -82,15 +87,15 @@ module Dependabot
             File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              NativeHelpers.run_apm_command("lock")
+              NativeHelpers.run_apm_command(apm_command)
             end
 
             File.read(FileUpdater::LOCKFILE_FILENAME)
           ensure
-            FileUtils.rm_rf(APM_MODULES_DIRECTORY)
+            remove_apm_output
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_apm_lock_error(e)
+          handle_apm_error(e)
         end
 
         private
@@ -109,6 +114,47 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
+        # Chooses targets in the order `apm audit` does: the manifest's, then
+        # the lockfile's. Passing the recorded targets keeps `apm install` from
+        # auto-detecting harnesses from the checkout, where ignored harness
+        # directories are missing. APM maps some MCP runtimes (e.g. `intellij`)
+        # to a different file target, which `--target` can't express, so a
+        # service runtime outside the recorded targets falls back to `apm lock`.
+        sig { returns(String) }
+        def apm_command
+          return "install" if Targets.declared_in_manifest?(manifest_content)
+
+          recorded = Lockfile.new(lockfile)
+          targets = recorded.deployment_targets
+          return "lock" if targets.empty?
+
+          targets &= supported_targets
+          return "lock" if targets.empty? || (recorded.service_runtimes - targets).any?
+
+          "install --target #{targets.join(',')}"
+        end
+
+        # The harnesses the installed APM CLI supports, so a new APM release
+        # needs no change here.
+        sig { returns(T::Array[String]) }
+        def supported_targets
+          Targets.supported(NativeHelpers.run_apm_command("targets --json --all"))
+        rescue SharedHelpers::HelperSubprocessFailed
+          []
+        end
+
+        # `apm install` deploys files, and the git reset between updates keeps
+        # ignored directories, so a later update in the same checkout would
+        # find files it doesn't own. The checkout starts as a clean clone, so
+        # every untracked file here was written by APM.
+        sig { void }
+        def remove_apm_output
+          FileUtils.rm_rf(APM_MODULES_DIRECTORY)
+          return unless repo_contents_path
+
+          SharedHelpers.run_shell_command("git clean -fdx -- .", fingerprint: "git clean -fdx -- .")
+        end
 
         sig { returns(String) }
         def prepared_lockfile_content
@@ -135,7 +181,7 @@ module Dependabot
         end
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
-        def handle_apm_lock_error(error)
+        def handle_apm_error(error)
           message = error.message
 
           unreachable_url = unreachable_repository_url(message)

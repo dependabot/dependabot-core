@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     )
   end
 
-  context "when apm lock succeeds" do
+  context "when the lockfile records no deployed files" do
     before do
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
         File.write("apm.lock.yaml", "lockfile_version: '1'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
@@ -52,8 +52,257 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       end
     end
 
-    it "returns the lockfile apm wrote for the updated manifest" do
+    it "returns the lockfile apm lock wrote for the updated manifest" do
       expect(updated_lockfile_content).to eq("lockfile_version: '1'\n# - microsoft/edge-ai#v1.2.0\n")
+    end
+  end
+
+  context "when the lockfile records deployed files" do
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "apm.lock.yaml",
+        content: <<~YAML
+          lockfile_version: '2'
+          dependencies: []
+          deployments:
+          - kind: project-relative
+            target: copilot
+            value: .github/skills/edge-ai/SKILL.md
+            scope: project
+          - kind: project-relative
+            target: claude
+            value: .claude/skills/edge-ai/SKILL.md
+            scope: project
+          - kind: project-relative
+            target: copilot
+            value: .github/skills/edge-ai/README.md
+            scope: project
+          - kind: uri
+            target: mcp
+            value: context7
+            runtime: claude
+            scope: project
+          - kind: uri
+            target: lsp
+            value: pyright
+            runtime: claude
+            scope: project
+          - kind: project-relative
+            target: codex
+            value: .codex/skills/edge-ai/SKILL.md
+            scope: user
+          - kind: project-relative
+            target: legacy
+            value: .agents/skills/edge-ai/SKILL.md
+            scope: project
+          - kind: project-relative
+            target: "claude; touch pwned"
+            value: .claude/skills/edge-ai/README.md
+            scope: project
+        YAML
+      )
+    end
+    let(:apm_targets_output) do
+      JSON.generate(%w(claude copilot codex agent-skills).map { |target| { target: target, status: "inactive" } })
+    end
+
+    before do
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+        .with("targets --json --all").and_return(apm_targets_output)
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --target claude,copilot") do
+        File.write("apm.lock.yaml", "lockfile_version: '2'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
+        ""
+      end
+    end
+
+    it "runs apm install for each supported harness with project files" do
+      expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# - microsoft/edge-ai#v1.2.0\n")
+    end
+
+    context "when an MCP server is configured for a runtime outside the recorded targets" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '2'
+            dependencies: []
+            deployments:
+            - kind: project-relative
+              target: copilot
+              value: .github/skills/edge-ai/SKILL.md
+              scope: project
+            - kind: uri
+              target: mcp
+              value: context7
+              runtime: intellij
+              scope: project
+          YAML
+        )
+      end
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+          File.write("apm.lock.yaml", "lockfile_version: '2'\n# locked\n")
+          ""
+        end
+      end
+
+      it "runs apm lock rather than reconciling the MCP server for another runtime" do
+        expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# locked\n")
+      end
+    end
+
+    context "when apm targets fails" do
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("targets --json --all").and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "No such command", error_context: {})
+        )
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+          File.write("apm.lock.yaml", "lockfile_version: '2'\n# locked\n")
+          ""
+        end
+      end
+
+      it "runs apm lock" do
+        expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# locked\n")
+      end
+    end
+
+    context "when the manifest declares its targets" do
+      let(:manifest_content) { "targets:\n  - intellij\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+      let(:lockfile_updater) do
+        described_class.new(
+          dependencies: [dependency],
+          lockfile: lockfile,
+          manifest_content: manifest_content,
+          credentials: [],
+          repo_contents_path: nil
+        )
+      end
+
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+          File.write("apm.lock.yaml", "lockfile_version: '2'\n# installed for the manifest's targets\n")
+          ""
+        end
+      end
+
+      it "runs apm install and lets APM use the manifest's targets" do
+        expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
+      end
+
+      context "when the manifest uses a YAML alias" do
+        let(:manifest_content) do
+          "x-skills: &skills microsoft/edge-ai#v1.2.0\ntargets: [claude]\ndependencies:\n  apm:\n    - *skills\n"
+        end
+
+        it "still reads the declared targets" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
+        end
+      end
+
+      context "when the manifest declares targets as a comma-separated string" do
+        let(:manifest_content) { "target: claude,copilot\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+
+        it "runs apm install" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# installed for the manifest's targets\n")
+        end
+      end
+
+      context "when the manifest declares the legacy all target" do
+        let(:manifest_content) { "targets: [claude, all]\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+
+        it "treats the targets as unspecified and uses the recorded ones" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n# - microsoft/edge-ai#v1.2.0\n")
+        end
+      end
+    end
+  end
+
+  context "when apm install deploys files into a reused checkout" do
+    let(:repo_contents_path) { Dir.mktmpdir }
+    let(:deployed_file) { File.join(repo_contents_path, ".claude", "skills", "edge-ai", "SKILL.md") }
+    let(:tracked_file) { File.join(repo_contents_path, ".claude", "settings.json") }
+    let(:lockfile_updater) do
+      described_class.new(
+        dependencies: [dependency],
+        lockfile: lockfile,
+        manifest_content: "targets: [claude]\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n",
+        credentials: [],
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    before do
+      Dir.chdir(repo_contents_path) do
+        FileUtils.mkdir_p(".claude")
+        File.write(".gitignore", ".claude/skills/\n")
+        File.write(".claude/settings.json", "{}\n")
+        system(
+          "git init -q && git add . && git -c user.name=test -c user.email=test@example.com commit -qm init",
+          exception: true
+        )
+      end
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    context "when the install succeeds" do
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+          FileUtils.mkdir_p(".claude/skills/edge-ai")
+          File.write(".claude/skills/edge-ai/SKILL.md", "skill")
+          File.write("apm.lock.yaml", "lockfile_version: '2'\n")
+          ""
+        end
+      end
+
+      it "removes the deployed files and keeps tracked harness files" do
+        expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
+        expect(File.exist?(deployed_file)).to be(false)
+        expect(File.exist?(tracked_file)).to be(true)
+      end
+    end
+
+    context "when the install fails after deploying files" do
+      before do
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+          FileUtils.mkdir_p(".claude/skills/edge-ai")
+          File.write(".claude/skills/edge-ai/SKILL.md", "skill")
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
+        end
+      end
+
+      it "still removes the deployed files" do
+        expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect(File.exist?(deployed_file)).to be(false)
+      end
+    end
+  end
+
+  context "when a legacy lockfile records deployed files without deployments" do
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "apm.lock.yaml",
+        content: <<~YAML
+          lockfile_version: '1'
+          dependencies:
+          - repo_url: microsoft/edge-ai
+            deployed_files:
+            - .claude/skills/edge-ai
+        YAML
+      )
+    end
+
+    before do
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+        File.write("apm.lock.yaml", "lockfile_version: '1'\n# locked\n")
+        ""
+      end
+    end
+
+    it "runs apm lock rather than inferring harnesses from the deployed paths" do
+      expect(updated_lockfile_content).to eq("lockfile_version: '1'\n# locked\n")
     end
   end
 
