@@ -52,6 +52,16 @@ module Dependabot
             boolean("bundled")
           end
 
+          sig { returns(T::Boolean) }
+          def in_bundle?
+            boolean("inBundle")
+          end
+
+          sig { returns(T::Boolean) }
+          def link?
+            boolean("link")
+          end
+
           sig { returns(T::Hash[String, Record]) }
           def dependency_entries
             field = object["dependencies"] ? "dependencies" : "packages"
@@ -67,6 +77,11 @@ module Dependabot
           sig { returns(T::Hash[String, Record]) }
           def legacy_entries
             entries(object.fetch("dependencies", {}), "#{@context}.dependencies")
+          end
+
+          sig { returns(T::Hash[String, Record]) }
+          def package_entries
+            entries(object.fetch("packages", {}), "#{@context}.packages")
           end
 
           sig { params(name: String).returns(T.nilable(Record)) }
