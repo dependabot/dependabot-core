@@ -1399,6 +1399,220 @@ public class EndToEndTests
     }
 
     [Fact]
+    public async Task LockFileIsUpdatedWhenRestoreLockedModeIsEnabled()
+    {
+        // repos commonly enable `RestoreLockedMode` for CI builds, e.g., when `$(GITHUB_ACTIONS)` is `true`, but that's also set in the
+        // updater container; the updater's own restores must still be able to rewrite the lock file after the version has changed
+
+        // arrange
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Directory.Build.props", """
+                <Project>
+                  <PropertyGroup>
+                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                    <RestoreLockedMode>true</RestoreLockedMode>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("repo.slnx", """
+                <Solution>
+                  <Project Path="src/library/library.csproj" />
+                </Solution>
+                """),
+            ("src/library/library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                </Project>
+                """)
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+        ], repoContentsPath);
+        await CreateLockFilesAsync(repoContentsPath, "src/library/library.csproj");
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "Directory.Build.props",
+                "Directory.Packages.props",
+                "repo.slnx",
+                "src/library/library.csproj",
+                "src/library/packages.lock.json",
+            ]);
+
+        // act
+        var updatedFiles = await RunVersionUpdateAndGetUpdatedFilesAsync(repoContentsPath);
+
+        // assert
+        Assert.Contains("""<PackageVersion Include="Some.Package" Version="2.0.0" />""", updatedFiles["/Directory.Packages.props"]);
+        Assert.Equal("2.0.0", GetResolvedLockFileVersion(updatedFiles["/src/library/packages.lock.json"], "Some.Package"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LockFilesOfReferencingProjectsAreUpdated(bool restoreLockedMode)
+    {
+        // `Some.Package` is only directly referenced by `src/library`, but `test/client` reaches it through a `<ProjectReference>` so that
+        // lock file also has to be updated or a locked restore of `test/client` will fail with NU1004
+
+        // arrange
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Directory.Build.props", $"""
+                <Project>
+                  <PropertyGroup>
+                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                    <RestoreLockedMode>{restoreLockedMode}</RestoreLockedMode>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("repo.slnx", """
+                <Solution>
+                  <Project Path="src/library/library.csproj" />
+                  <Project Path="test/client/client.csproj" />
+                </Solution>
+                """),
+            ("src/library/library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("test/client/client.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="..\..\src\library\library.csproj" />
+                  </ItemGroup>
+                </Project>
+                """)
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+        ], repoContentsPath);
+        await CreateLockFilesAsync(repoContentsPath, "test/client/client.csproj");
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "Directory.Build.props",
+                "Directory.Packages.props",
+                "repo.slnx",
+                "src/library/library.csproj",
+                "src/library/packages.lock.json",
+                "test/client/client.csproj",
+                "test/client/packages.lock.json",
+            ]);
+
+        // act
+        var updatedFiles = await RunVersionUpdateAndGetUpdatedFilesAsync(repoContentsPath);
+
+        // assert
+        Assert.Contains("""<PackageVersion Include="Some.Package" Version="2.0.0" />""", updatedFiles["/Directory.Packages.props"]);
+        Assert.Equal("2.0.0", GetResolvedLockFileVersion(updatedFiles["/src/library/packages.lock.json"], "Some.Package"));
+
+        Assert.True(updatedFiles.ContainsKey("/test/client/packages.lock.json"), "Lock file of the referencing project was not updated.");
+        var clientLockFile = updatedFiles["/test/client/packages.lock.json"];
+        Assert.Equal("2.0.0", GetResolvedLockFileVersion(clientLockFile, "Some.Package"));
+        var libraryDependencyInClient = JsonDocument.Parse(clientLockFile).RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0")
+            .GetProperty("library")
+            .GetProperty("dependencies")
+            .GetProperty("Some.Package")
+            .GetString();
+        Assert.Equal("[2.0.0, )", libraryDependencyInClient);
+    }
+
+    private static async Task CreateLockFilesAsync(string repoContentsPath, params string[] projectPaths)
+    {
+        foreach (var projectPath in projectPaths)
+        {
+            var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", "-p:RestoreLockedMode=false", projectPath], repoContentsPath);
+            Assert.True(exitCode == 0, $"Unable to create lock file for {projectPath}.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+        }
+
+        // the updater always starts from a clean clone
+        foreach (var objDirectory in Directory.EnumerateDirectories(repoContentsPath, "obj", SearchOption.AllDirectories).ToArray())
+        {
+            Directory.Delete(objDirectory, recursive: true);
+        }
+    }
+
+    private static async Task<Dictionary<string, string>> RunVersionUpdateAndGetUpdatedFilesAsync(string repoContentsPath)
+    {
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new TestLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+        var updaterWorker = new UpdaterWorker(jobId, experimentsManager, logger);
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "/",
+            }
+        };
+
+        var repoContentsPathDirectoryInfo = new DirectoryInfo(repoContentsPath);
+        await worker.RunAsync(job, repoContentsPathDirectoryInfo, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA", experimentsManager);
+
+        var createPrMessages = apiHandler.ReceivedMessages.Where(m => m.Type == typeof(CreatePullRequest)).ToArray();
+        Assert.True(createPrMessages.Length == 1, $"Expected a single pull request, but received:\n{string.Join("\n", apiHandler.ReceivedMessages.Select(m => JsonSerializer.Serialize(m.Object, RunWorker.SerializerOptions)))}");
+        var createPr = (CreatePullRequest)createPrMessages[0].Object;
+        return createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content.Replace("\r", ""));
+    }
+
+    private static string? GetResolvedLockFileVersion(string lockFileContents, string packageName)
+    {
+        return JsonDocument.Parse(lockFileContents).RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0")
+            .GetProperty(packageName)
+            .GetProperty("resolved")
+            .GetString();
+    }
+
+    [Fact]
     public async Task FindRootDirectory_ExpandsDirectoryThroughProjChain()
     {
         // Job starts at /src/client, but a .proj chain leads up to the repo root.

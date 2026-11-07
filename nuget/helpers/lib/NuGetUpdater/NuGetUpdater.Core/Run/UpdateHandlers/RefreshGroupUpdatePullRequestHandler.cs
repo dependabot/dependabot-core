@@ -162,6 +162,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
+            await LockFileUpdater.UpdateLockFilesOfAffectedProjectsAsync(repoContentsPath, discoveryResult, updateOperationsPerformed, logger);
             var updatedDependencyFiles = await tracker.StopTrackingAsync();
             allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
         }

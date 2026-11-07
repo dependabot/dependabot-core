@@ -261,6 +261,8 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
                     }
                 }
+
+                await LockFileUpdater.UpdateLockFilesOfAffectedProjectsAsync(repoContentsPath, discoveryResult, updateOperationsPerformed, logger);
             }
             finally
             {
@@ -400,6 +402,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
                 }
 
+                await LockFileUpdater.UpdateLockFilesOfAffectedProjectsAsync(repoContentsPath, discoveryResult, updateOperationsPerformed, logger);
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 if (updateOperationsPerformed.Count > 0)
                 {
