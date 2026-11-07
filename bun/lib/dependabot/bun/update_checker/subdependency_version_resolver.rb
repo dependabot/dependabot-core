@@ -126,10 +126,12 @@ module Dependabot
         def run_bun_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              Helpers.run_bun_command(
-                "update #{dependency.name} --save-text-lockfile --ignore-scripts",
-                fingerprint: "update <dependency_name> --save-text-lockfile --ignore-scripts"
-              )
+              Helpers.with_lockfile_changes_allowed do
+                Helpers.run_bun_command(
+                  "update #{dependency.name} --save-text-lockfile --ignore-scripts",
+                  fingerprint: "update <dependency_name> --save-text-lockfile --ignore-scripts"
+                )
+              end
               { lockfile_name => File.read(lockfile_name) }
             end
           end
