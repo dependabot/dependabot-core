@@ -2962,6 +2962,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
         end
       end
+
+      context "with an npm override keyed by name and version range for a sub-dependency" do
+        let(:files) do
+          project_dependency_files("npm8/subdep_with_override").map do |file|
+            next file unless file.name == "package.json"
+
+            parsed = JSON.parse(file.content)
+            parsed["overrides"] = { "undici@<6.24.0" => "6.23.0" }
+            Dependabot::DependencyFile.new(name: file.name, content: JSON.pretty_generate(parsed))
+          end
+        end
+
+        let(:dependency_name) { "undici" }
+        let(:version) { "6.24.1" }
+        let(:previous_version) { "6.23.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          lockfile = files.find { |f| f.name == "package-lock.json" }
+          updated_lockfile = Dependabot::DependencyFile.new(
+            name: lockfile.name,
+            content: lockfile.content.gsub("6.23.0", "6.24.1")
+          )
+          npm_updater = instance_double(
+            Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
+            updated_lockfile: updated_lockfile,
+            updated_package_json_files: {}
+          )
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+            .to receive(:new).and_return(npm_updater)
+        end
+
+        it "includes both package.json and package-lock.json in updated_files" do
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+        end
+
+        it "updates the override value and keeps its key" do
+          parsed = JSON.parse(updated_package_json.content)
+          expect(parsed.fetch("overrides")).to eq("undici@<6.24.0" => "6.24.1")
+        end
+      end
     end
 
     #############################

@@ -674,5 +674,98 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         expect(parsed.dig("pnpm", "overrides", "undici")).to eq(">=6.24.1")
       end
     end
+
+    context "with an npm override keyed by name and version range for a sub-dependency" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "@actions/http-client": "^2.2.3" },
+            overrides: {
+              "undici@>=5.0.0 <5.29.0": "5.29.0",
+              "undici@>=6.0.0 <6.23.1": "6.23.1"
+            }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.1",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates only the override whose value is the previous version" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.fetch("overrides")).to eq(
+          "undici@>=5.0.0 <5.29.0" => "5.29.0",
+          "undici@>=6.0.0 <6.23.1" => "6.24.1"
+        )
+      end
+    end
+
+    context "with a yarn resolution keyed by a glob path for a sub-dependency" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "some-parent": "^1.0.0" },
+            resolutions: { "**/undici": "^6.23.0" }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates the resolution" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("resolutions", "**/undici")).to eq("^6.24.1")
+      end
+    end
+
+    context "with an override keyed by a scoped name and version range for a sub-dependency" do
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "some-parent": "^1.0.0" },
+            overrides: { "@scope/pkg@<2.1.0": "2.1.0", "pkg@<2.1.0": "2.1.0" }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@scope/pkg",
+          version: "2.2.0",
+          previous_version: "2.1.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "updates only the override for the scoped package" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.fetch("overrides")).to eq("@scope/pkg@<2.1.0" => "2.2.0", "pkg@<2.1.0" => "2.1.0")
+      end
+    end
   end
 end
