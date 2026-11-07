@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "support/dummy_package_manager/dummy"
 
 require "dependabot/bundler"
+require "dependabot/docker"
 
 RSpec.describe Dependabot::Job do
   subject(:job) { described_class.new(attributes) }
@@ -1084,6 +1085,61 @@ RSpec.describe Dependabot::Job do
 
       it "returns true when any advisory matches" do
         expect(vulnerability?).to be(true)
+      end
+    end
+  end
+
+  context "with a docker image from a non-default registry" do
+    let(:package_manager) { "docker" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "dotnet/sdk",
+        package_manager: "docker",
+        version: "10.0.401-noble",
+        requirements: [{
+          file: "Dockerfile",
+          requirement: nil,
+          groups: [],
+          source: { registry: "mcr.microsoft.com", tag: "10.0.401-noble" }
+        }]
+      )
+    end
+
+    describe "#allowed_update?" do
+      let(:allowed_updates) do
+        [{ "dependency-name" => "mcr.microsoft.com/dotnet/*", "dependency-type" => "direct" }]
+      end
+
+      it "matches allow rules that include the registry host" do
+        expect(job.allowed_update?(dependency)).to be(true)
+      end
+
+      context "when the allow rule targets another registry" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "ghcr.io/dotnet/*", "dependency-type" => "direct" }]
+        end
+
+        it "does not match" do
+          expect(job.allowed_update?(dependency)).to be(false)
+        end
+      end
+    end
+
+    describe "#ignore_conditions_for" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "mcr.microsoft.com/dotnet/*",
+              "version-requirement" => ">= 0",
+              "source" => "multi-ecosystem-group"
+            }
+          ]
+        )
+      end
+
+      it "matches ignore conditions that include the registry host" do
+        expect(job.ignore_conditions_for(dependency)).to include(">= 0")
       end
     end
   end
