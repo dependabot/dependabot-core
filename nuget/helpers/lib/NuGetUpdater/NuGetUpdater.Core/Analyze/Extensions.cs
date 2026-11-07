@@ -16,13 +16,26 @@ internal static class Extensions
             {
                 if (dependencies.TryGetValue(dependency.Name, out Dependency? value))
                 {
-                    if (NuGetVersion.Parse(value.Version!) < NuGetVersion.Parse(dependency.Version!))
+                    var selectedDependency = NuGetVersion.Parse(value.Version!) < NuGetVersion.Parse(dependency.Version!)
+                        ? dependency
+                        : value;
+                    var assetFlags = (value.AssetFlags ?? [])
+                        .Concat(dependency.AssetFlags ?? [])
+                        .GroupBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+                        .ToImmutableDictionary(
+                            group => group.Key,
+                            group => group.Select(kvp => kvp.Value).Aggregate((left, right) => left | right),
+                            StringComparer.OrdinalIgnoreCase);
+                    dependencies[dependency.Name] = selectedDependency with
                     {
-                        dependencies[dependency.Name] = dependency with
-                        {
-                            TargetFrameworks = [.. value.TargetFrameworks ?? [], .. dependency.TargetFrameworks ?? []]
-                        };
-                    }
+                        TargetFrameworks = value.TargetFrameworks
+                            .GetValueOrDefault()
+                            .Concat(dependency.TargetFrameworks.GetValueOrDefault())
+                            .Select(targetFramework => NuGetFramework.Parse(targetFramework).GetShortFolderName())
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToImmutableArray(),
+                        AssetFlags = assetFlags,
+                    };
                 }
                 else
                 {
