@@ -65,5 +65,29 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/satori/go.uuid") }
     end
+
+    context "with a subdirectory module in a monorepo" do
+      let(:dependency_name) { "github.com/opentdf/platform/protocol/go" }
+      let(:requirements) { [] }
+
+      it { is_expected.to eq("https://github.com/opentdf/platform") }
+
+      it "sets directory to the module subdirectory" do
+        finder.source_url
+        source = finder.send(:source)
+        expect(source.directory).to eq("protocol/go")
+      end
+    end
+
+    context "with a root module" do
+      let(:dependency_name) { "github.com/satori/go.uuid" }
+      let(:requirements) { [] }
+
+      it "does not set a directory" do
+        finder.source_url
+        source = finder.send(:source)
+        expect(source.directory).to be_nil
+      end
+    end
   end
 end
