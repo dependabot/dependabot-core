@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context requirements_file fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -146,7 +147,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         json_lockfile = JSON.parse(updated_lockfile.content)
 
         expect(updated_pipfile.content)
-          .to include('python_full_version = "3.9.4"')
+          .to include('python_full_version = "3.10.22"')
         expect(json_lockfile["default"]["requests"]["version"])
           .to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
@@ -174,7 +175,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:python_version_file) do
           Dependabot::DependencyFile.new(
             name: ".python-version",
-            content: "3.9.4\n"
+            content: "3.10.22\n"
           )
         end
 
@@ -742,7 +743,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               [dev-packages]
 
               [requires]
-              python_version = "3.9.13"
+              python_version = "3.10.22"
             PIPFILE
           )
         end
@@ -758,7 +759,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9.13"
+                          "python_version": "3.10.22"
                       },
                       "sources": [
                           {
@@ -841,7 +842,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               pytest = {extras = ["coverage"], version = "==6.0.0"}
 
               [requires]
-              python_version = "3.9"
+              python_version = "3.10"
             PIPFILE
           )
         end
@@ -857,7 +858,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9"
+                          "python_version": "3.10"
                       },
                       "sources": [
                           {
@@ -935,7 +936,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               pytest = {extras = ["coverage"], version = "==6.0.0"}
 
               [requires]
-              python_version = "3.9"
+              python_version = "3.10"
             PIPFILE
           )
         end
@@ -951,7 +952,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9"
+                          "python_version": "3.10"
                       },
                       "sources": [
                           {
@@ -1059,7 +1060,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               pytest = {extras = ["coverage"], version = "==6.0.0"}
 
               [requires]
-              python_version = "3.9"
+              python_version = "3.10"
             PIPFILE
           )
         end
@@ -1075,7 +1076,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9"
+                          "python_version": "3.10"
                       },
                       "sources": [
                           {

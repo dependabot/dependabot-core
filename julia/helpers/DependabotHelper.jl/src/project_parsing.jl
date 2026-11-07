@@ -41,85 +41,75 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             # Get project information
             project_info = ctx.env.project
 
-            # Extract basic information
+            # Extract basic information. Non-package environments (a plain
+            # [deps]/[compat] Project.toml) have no name/version/uuid; emit
+            # JSON null rather than the literal string "nothing".
             name = project_info.name
-            version = string(project_info.version)
-            uuid = string(project_info.uuid)
+            version = project_info.version === nothing ? nothing : string(project_info.version)
+            uuid = project_info.uuid === nothing ? nothing : string(project_info.uuid)
 
             # Note: Following CompatHelper.jl's approach, we don't use Manifest.toml
             # for version information. Dependabot should update based on [compat]
             # constraints in Project.toml, not locked versions in Manifest.toml.
 
-            # Parse Project.toml directly to get weakdeps (Julia's Pkg may not populate this field)
-            project_toml = TOML.parsefile(project_path)
+            # Packages pinned to a path or git source via [sources] (Julia 1.11+)
+            # are not registry-updatable; Dependabot must not propose version
+            # updates for them.
+            sources = project_info.sources
 
-            # Get dependencies and add compat requirements
-            dependencies = []
-            for (dep_name, dep_uuid) in project_info.deps
-                dep_info = Dict{String,Any}(
-                    "name" => dep_name,
-                    "uuid" => string(dep_uuid)
-                )
-
-                # Add version constraint if available in compat
-                if haskey(project_info.compat, dep_name)
-                    compat_spec = project_info.compat[dep_name]
-                    # Extract the original constraint string
-                    constraint_str = if isa(compat_spec, Pkg.Types.Compat)
-                        compat_spec.str
-                    else
-                        string(compat_spec)
-                    end
-                    dep_info["requirement"] = constraint_str
+            # Packages that ship with any Julia release the project supports
+            # must not have their compat entries track registry releases; they
+            # get the versions the project has to accept instead. An
+            # environment is bounded by the julia compat of the projects it
+            # resolves with too, so those must be laid out on disk around it.
+            julia_compat = effective_julia_compat(ctx.env)
+            stdlib_julia_versions = julia_versions_for_compat(julia_compat)
+            function add_stdlib_info!(dep_info, dep_uuid)
+                dep_info["stdlib"] = is_stdlib_for_julia_versions(dep_uuid, stdlib_julia_versions)
+                if dep_info["stdlib"]
+                    dep_info["stdlib_versions"] = [string(v) for v in stdlib_versions_for_julia_compat(dep_uuid, julia_compat)]
                 end
-                # Note: If no compat entry exists, we don't add a requirement field
-                # Missing compat entry means any version is acceptable in Julia
-
-                push!(dependencies, dep_info)
+                return dep_info
             end
 
-            # Note: We don't process [extras] to match CompatHelper.jl behavior
-            # CompatHelper only processes [deps] and [weakdeps]
+            # The [compat] entry for a package as written in the project file
+            function compat_string(dep_name)
+                compat_spec = project_info.compat[dep_name]
+                return isa(compat_spec, Pkg.Types.Compat) ? compat_spec.str : string(compat_spec)
+            end
 
-            # Get weak dependencies (weakdeps) - available in Julia 1.9+
-            # Read directly from TOML since Pkg may not populate project_info.weakdeps
-            weak_dependencies = []
-            if haskey(project_toml, "weakdeps")
-                weakdeps_section = project_toml["weakdeps"]
-                for (dep_name, dep_uuid_str) in weakdeps_section
-                    weak_dep_info = Dict{String,Any}(
+            # A [deps], [weakdeps] or [extras] section as dependency records
+            function section_dependencies(section)
+                deps = []
+                for (dep_name, dep_uuid) in section
+                    haskey(sources, dep_name) && continue
+
+                    dep_info = Dict{String,Any}(
                         "name" => dep_name,
-                        "uuid" => dep_uuid_str
+                        "uuid" => string(dep_uuid)
                     )
-
-                    # Add version constraint if available in compat
+                    add_stdlib_info!(dep_info, dep_uuid)
+                    # No compat entry means any version is acceptable in Julia,
+                    # so no requirement field is emitted
                     if haskey(project_info.compat, dep_name)
-                        compat_spec = project_info.compat[dep_name]
-                        # Extract the original constraint string
-                        constraint_str = if isa(compat_spec, Pkg.Types.Compat)
-                            compat_spec.str
-                        else
-                            string(compat_spec)
-                        end
-                        weak_dep_info["requirement"] = constraint_str
+                        dep_info["requirement"] = compat_string(dep_name)
                     end
-                    # Note: If no compat entry exists, we don't add a requirement field
-                    # Missing compat entry means any version is acceptable in Julia
-
-                    push!(weak_dependencies, weak_dep_info)
+                    push!(deps, dep_info)
                 end
+                return deps
             end
 
-            # Get Julia version requirement
-            julia_version = ""
-            if haskey(project_info.compat, "julia")
-                compat_spec = project_info.compat["julia"]
-                julia_version = if isa(compat_spec, Pkg.Types.Compat)
-                    compat_spec.str
-                else
-                    string(compat_spec)
-                end
+            dependencies = section_dependencies(project_info.deps)
+            weak_dependencies = section_dependencies(project_info.weakdeps)
+            # Pkg allows a package under [extras] as well as [deps] or
+            # [weakdeps] (the documented way to test an extension); that
+            # section already covers it
+            extras = filter(project_info.extras) do (dep_name, _)
+                !haskey(project_info.deps, dep_name) && !haskey(project_info.weakdeps, dep_name)
             end
+            extra_dependencies = section_dependencies(extras)
+
+            julia_version = haskey(project_info.compat, "julia") ? compat_string("julia") : ""
 
             return Dict{String,Any}(
                 "name" => name,
@@ -128,6 +118,7 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 "julia_version" => julia_version,
                 "dependencies" => dependencies,
                 "weak_dependencies" => weak_dependencies,
+                "extra_dependencies" => extra_dependencies,
                 "project_path" => ctx.env.project_file
             )
         end
@@ -248,12 +239,13 @@ function get_version_from_manifest(manifest_path::String, name::String, uuid::St
 end
 
 """
-    update_manifest(project_path::String, updates::Dict)
+    update_manifest(project_path::String, updates::Dict, manifest_file=nothing)
 
 Update the manifest with new package versions.
-Enhanced version with better error handling and validation.
+`manifest_file` picks one of the environment's manifests, such as a
+version-specific `Manifest-v1.12.toml`; by default it is the one the running Julia uses.
 """
-function update_manifest(project_path::String, updates::Dict)
+function update_manifest(project_path::String, updates::Dict, manifest_file::Union{String,Nothing}=nothing)
     try
         # Validate inputs
         if !isdir(project_path)
@@ -261,7 +253,8 @@ function update_manifest(project_path::String, updates::Dict)
         end
 
         # Find the actual environment files (handles JuliaProject.toml, etc.)
-        project_file, manifest_file = find_environment_files(project_path)
+        project_file, default_manifest_file = find_environment_files(project_path)
+        manifest_file = something(manifest_file, default_manifest_file)
 
         if !isfile(project_file)
             return Dict("error" => "Project file not found in directory")
@@ -275,42 +268,46 @@ function update_manifest(project_path::String, updates::Dict)
         # constraints. The Ruby FileUpdater should update the project file first, then call
         # this function to update the manifest file based on the new constraints.
 
-        # Activate the project directory and update directly
-        Pkg.activate(project_path) do
-            with_autoprecompilation_disabled() do
-                # Process each update - updates is keyed by UUID
-                pkg_specs = Pkg.PackageSpec[]
-                for (uuid_str, update_info) in updates
-                    package_name = update_info["name"]
-                    target_version = update_info["version"]
-                    uuid_obj = Base.UUID(uuid_str)
+        # Pkg.add promotes packages into [deps], so it must only ever see
+        # packages that are already direct dependencies of this project.
+        # Updates for weakdeps (or [sources]-pinned packages) only change
+        # Project.toml; the manifest doesn't lock them for the root project.
+        project_toml = TOML.parsefile(project_file)
+        direct_deps = get(project_toml, "deps", Dict{String,Any}())
+        sources = get(project_toml, "sources", Dict{String,Any}())
 
-                    push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=uuid_obj, version=target_version))
-                end
-                # Try to add/update the packages with the specific versions
-                Pkg.add(pkg_specs)
+        pkg_specs = Pkg.PackageSpec[]
+        for (uuid_str, update_info) in updates
+            package_name = update_info["name"]
+            target_version = update_info["version"]
+
+            if get(direct_deps, package_name, nothing) != uuid_str || haskey(sources, package_name)
+                @info "update_manifest: skipping $(package_name) (not a registry-sourced direct dependency)"
+                continue
             end
+
+            push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=Base.UUID(uuid_str), version=VersionNumber(target_version)))
         end
 
-        # After Pkg.add, find where the manifest actually is
-        # For workspace packages, Pkg might have updated a different manifest location
-        actual_project_file, actual_manifest_file = find_environment_files(project_path)
+        isempty(pkg_specs) || add_packages(project_path, manifest_file, pkg_specs)
 
-        # Read the updated manifest from the actual location
-        if !isfile(actual_manifest_file)
-            return Dict("error" => "Updated manifest file not found")
+        updated_manifest_content = read(manifest_file, String)
+        # Pkg only reads a manifest by the name it expects, which a version-specific
+        # manifest may not have in the running Julia, so parse a copy.
+        updated_manifest = mktempdir() do dir
+            path = joinpath(dir, "Manifest.toml")
+            write(path, updated_manifest_content)
+            parse_manifest(path)
         end
-
-        updated_manifest = parse_manifest(actual_manifest_file)
         if haskey(updated_manifest, "error")
             return updated_manifest
         end
 
-        updated_manifest_content = read(actual_manifest_file, String)
-
         # Calculate the relative path from project to manifest for Ruby
         # This handles workspace cases where manifest might be ../Manifest.toml
-        manifest_relative_path = relpath(actual_manifest_file, dirname(actual_project_file))
+        # Real paths, since the caller's manifest path and Pkg's project path may
+        # reach the same directory through different symlinks
+        manifest_relative_path = relpath(realpath(manifest_file), dirname(realpath(project_file)))
 
         return Dict(
             "result" => "success",
@@ -319,17 +316,84 @@ function update_manifest(project_path::String, updates::Dict)
             "updated_manifest" => updated_manifest
         )
     catch ex
-        @error "update_manifest: Failed to update manifest" exception=(ex, catch_backtrace())
+        if ex isa NewerJuliaManifest
+            @warn "update_manifest: $(sprint(showerror, ex))"
+        else
+            @error "update_manifest: Failed to update manifest" exception=(ex, catch_backtrace())
+        end
 
         # Check if this is a Pkg resolver error - these indicate version conflicts
         error_prefix = if ex isa Pkg.Resolve.ResolverError
             "Pkg resolver error: "
+        elseif ex isa NewerJuliaManifest
+            "Manifest written by a newer Julia: "
         else
             "Failed to update manifest: "
         end
 
         return Dict("error" => error_prefix * sprint(showerror, ex))
     end
+end
+
+"""
+    add_packages(project_path, manifest_file, pkg_specs)
+
+`Pkg.add` the packages to the project, resolving for the Julia version that wrote the manifest.
+
+A resolve for another Julia version rewrites `julia_version` and the stdlib entries,
+leaving a manifest the project's own Julia may not load. Pkg can resolve for that
+version instead, given its `julia_version` and the stdlib versions it shipped from
+HistoricalStdlibVersions.jl, as BinaryBuilder does. Pkg also writes the manifest in
+that version's format and with its project hash. A manifest without a
+`julia_version` is resolved for the running Julia, and one written by a newer Julia
+is not updated.
+"""
+function add_packages(project_path::String, manifest_file::String, pkg_specs::Vector{Pkg.PackageSpec})
+    julia_version = resolve_julia_version(manifest_file)
+    project_file, _ = find_environment_files(project_path)
+    env = Pkg.Types.EnvCache(project_file)
+    if !(isfile(env.manifest_file) && samefile(env.manifest_file, manifest_file))
+        # Pkg only finds a manifest by the name the running Julia reads, which a
+        # version-specific manifest such as `Manifest-v1.12.toml` may not have
+        env.manifest_file = manifest_file
+        env.manifest = Pkg.Types.read_manifest(manifest_file)
+        env.original_manifest = deepcopy(env.manifest)
+    end
+    ctx = Pkg.Types.Context(; env)
+    with_autoprecompilation_disabled() do
+        # Versions loaded in the running Julia say nothing about another release
+        Pkg.respect_sysimage_versions(false)
+        try
+            Pkg.add(ctx, pkg_specs; julia_version)
+        finally
+            Pkg.respect_sysimage_versions(true)
+        end
+    end
+end
+
+# Pkg only knows how the releases up to its own write a manifest. A newer one may use
+# a newer format or project hash, so its manifest is left alone.
+struct NewerJuliaManifest <: Exception
+    julia_version::VersionNumber
+end
+
+Base.showerror(io::IO, ex::NewerJuliaManifest) =
+    print(io, "Julia $(ex.julia_version) wrote the manifest, and Julia $VERSION cannot write a manifest for it")
+
+"""
+    resolve_julia_version(manifest_file) -> VersionNumber
+
+The Julia version to resolve the manifest for: the `julia_version` it records, or the
+running Julia's when it records none. Throws `NewerJuliaManifest` for a manifest
+written by a newer Julia than the running one.
+"""
+function resolve_julia_version(manifest_file::String)
+    raw = get(TOML.parsefile(manifest_file), "julia_version", nothing)
+    julia_version = raw isa String ? tryparse(VersionNumber, raw) : nothing
+    (julia_version === nothing || julia_version == VERSION) && return VERSION
+    julia_version > VERSION && throw(NewerJuliaManifest(julia_version))
+    isempty(Pkg.Types.STDLIBS_BY_VERSION) && HistoricalStdlibVersions.register!()
+    return julia_version
 end
 
 """
@@ -360,5 +424,7 @@ function update_manifest(args::AbstractDict)
         return Dict("error" => "Both project_path and updates are required")
     end
 
-    return update_manifest(project_path, updates)
+    manifest_path = get(args, "manifest_path", nothing)
+    manifest_file = manifest_path === nothing ? nothing : abspath(project_path, string(manifest_path))
+    return update_manifest(project_path, updates, manifest_file)
 end

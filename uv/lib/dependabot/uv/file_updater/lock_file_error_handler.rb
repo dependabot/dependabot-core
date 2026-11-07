@@ -11,37 +11,48 @@ module Dependabot
       class LockFileErrorHandler
         extend T::Sig
 
-        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
-        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
-        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        UV_UNRESOLVABLE_REGEX = /× No solution found when resolving dependencies.*[\s\S]*$/
+        UV_BUILD_FAILED_REGEX = /× Failed to build.*[\s\S]*$/
+        RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
 
-        GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(%r{git clone.*(?<url>https?://[^\s]+)}, Regexp)
-        GIT_REFERENCE_NOT_FOUND_REGEX = T.let(
-          /Did not find branch or tag '(?<tag>[^\n"']+)'/m,
-          Regexp
-        )
-        PYTHON_VERSION_ERROR_REGEX = T.let(
-          /Requires-Python|requires-python|python_requires|Python version/i,
-          Regexp
-        )
-        AUTH_ERROR_REGEX = T.let(
-          /401|403|authentication|unauthorized|forbidden|HTTP status code: 40[13]/i,
-          Regexp
-        )
-        TIMEOUT_ERROR_REGEX = T.let(
-          /timed?\s*out|connection.*reset|read timeout|connect timeout/i,
-          Regexp
-        )
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = %r{git clone.*(?<url>https?://[^\s]+)}
+        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"']+)'/m
+        GIT_CREDENTIALS_ERROR_REGEX = /could not read Username for '(?<url>[^']+)'/
+        GIT_DEPENDENCY_URL_FROM_UV_REGEX = %r{git\+(?<url>https?://[^\s@#]+)}
+        PYTHON_VERSION_ERROR_REGEX = /Requires-Python|requires-python|python_requires|Python version/i
+        AUTH_ERROR_REGEX = /authentication|unauthorized|forbidden|HTTP status code: 40[13]/i
+        TIMEOUT_ERROR_REGEX = /timed?\s*out|connection.*reset|read timeout|connect timeout/i
         NETWORK_ERROR_REGEX = T.let(
-          /ConnectionError|NetworkError|SSLError|certificate verify failed/i,
+          Regexp.union(
+            /ConnectionError/i,
+            /NetworkError/i,
+            /SSLError/i,
+            /certificate verify failed/i,
+            /connection refused/i,
+            /dns.*failed/i,
+            /error sending request/i
+          ),
           Regexp
         )
-        PACKAGE_NOT_FOUND_REGEX = T.let(
-          /No matching distribution found|package.*not found|No versions found/i,
-          Regexp
-        )
-        UV_REQUIRED_VERSION_REGEX = T.let(
-          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+        PACKAGE_NOT_FOUND_REGEX = /No matching distribution found|package.*not found|No versions found/i
+        UV_REQUIRED_VERSION_REGEX =
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/
+        TOML_PARSE_ERROR_REGEX = /Failed to parse:?\s*`?(?<file>[^`\n]+\.toml)`?|TOML parse error/i
+        # uv prefixes errors with interpreter info that should be stripped
+        USING_CPYTHON_LINE_REGEX = /\AUsing CPython \S+ interpreter at: [^\n]+\n?/
+        PYPROJECT_SCHEMA_ERROR_REGEX =
+          /missing field `project`|missing.*\[project\].*table|Field `project\.name` is required/i
+        WORKSPACE_MEMBER_ERROR_REGEX = /Failed to find workspace member|No `pyproject\.toml` found in workspace member/i
+        PATH_DEPENDENCY_ERROR_REGEX = /Failed to read `(?<path>[^`]+)`|failed to read from file `(?<path>[^`]+)`/i
+        HTTP_STATUS_ERROR_REGEX = /HTTP status code: (?<code>\d{3})/i
+        UV_MISCONFIGURED_REGEX = T.let(
+          Regexp.union(
+            /unknown field `[^`]+`, expected one of/i,
+            /Unrecognized.*value:/i,
+            /URL scheme `[^`]+` is not supported/i,
+            /Failed to parse URL/i,
+            /the argument '--[^']+' cannot be used/i
+          ),
           Regexp
         )
 
@@ -49,13 +60,14 @@ module Dependabot
         # This limit ensures error messages remain readable while providing enough
         # context for debugging. Most uv error messages convey the key information
         # within the first few lines.
-        MAX_ERROR_LINES = T.let(10, Integer)
+        MAX_ERROR_LINES = 10
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_uv_error(error)
           message = error.message
 
           handle_required_version_errors(message)
+          handle_pyproject_errors(message)
           handle_resolution_errors(message)
           handle_git_errors(message)
           handle_authentication_errors(message)
@@ -63,6 +75,7 @@ module Dependabot
           handle_python_version_errors(message)
           handle_resource_errors(message)
           handle_package_not_found_errors(message)
+          handle_uv_fallback_error(message)
 
           raise error
         end
@@ -78,6 +91,53 @@ module Dependabot
             T.must(version_match[:required]),
             T.must(version_match[:running])
           )
+        end
+
+        sig { params(message: String).void }
+        def handle_pyproject_errors(message)
+          handle_toml_parse_errors(message)
+          handle_pyproject_schema_errors(message)
+          handle_workspace_member_errors(message)
+          handle_path_dependency_errors(message)
+          handle_uv_misconfiguration_errors(message)
+        end
+
+        sig { params(message: String).void }
+        def handle_toml_parse_errors(message)
+          return unless message.match?(TOML_PARSE_ERROR_REGEX)
+
+          match = message.match(TOML_PARSE_ERROR_REGEX)
+          file_path = match&.named_captures&.fetch("file", nil) || "pyproject.toml"
+          raise Dependabot::DependencyFileNotParseable, file_path
+        end
+
+        sig { params(message: String).void }
+        def handle_pyproject_schema_errors(message)
+          return unless message.match?(PYPROJECT_SCHEMA_ERROR_REGEX)
+
+          raise Dependabot::DependencyFileNotParseable, "pyproject.toml"
+        end
+
+        sig { params(message: String).void }
+        def handle_workspace_member_errors(message)
+          return unless message.match?(WORKSPACE_MEMBER_ERROR_REGEX)
+
+          raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
+        end
+
+        sig { params(message: String).void }
+        def handle_path_dependency_errors(message)
+          return unless (match = message.match(PATH_DEPENDENCY_ERROR_REGEX))
+
+          path = match.named_captures.fetch("path")
+          raise Dependabot::PathDependenciesNotReachable, T.must(path)
+        end
+
+        sig { params(message: String).void }
+        def handle_uv_misconfiguration_errors(message)
+          return unless message.match?(UV_MISCONFIGURED_REGEX)
+
+          raise Dependabot::MisconfiguredTooling.new("uv", clean_error_message(message))
         end
 
         sig { params(message: String).void }
@@ -103,8 +163,6 @@ module Dependabot
 
         sig { params(error_message: String).returns(T::Array[String]) }
         def extract_conflicting_dependencies(error_message)
-          # Extract conflicting dependency names from the error message
-          # Pattern: "Because <pkg>==<ver> depends on <dep>>=<ver> and your project depends on <dep>==<ver>"
           normalized_message = error_message.gsub(/\s+/, " ")
           conflict_pattern = /Because (\S+)==\S+ depends on (\S+)[><=!]+\S+ and your project depends on \2==\S+/
 
@@ -121,10 +179,24 @@ module Dependabot
             raise Dependabot::GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
-          return unless (match = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX))
+          if (match = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX))
+            url = match.named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, T.must(url)
+          end
 
-          url = match.named_captures.fetch("url")
+          return unless message.match?(GIT_CREDENTIALS_ERROR_REGEX)
+
+          url = extract_git_url_from_message(message)
           raise Dependabot::GitDependenciesNotReachable, T.must(url)
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def extract_git_url_from_message(message)
+          if (url_match = message.match(GIT_DEPENDENCY_URL_FROM_UV_REGEX))
+            return url_match.named_captures.fetch("url")
+          end
+
+          message.match(GIT_CREDENTIALS_ERROR_REGEX)&.named_captures&.fetch("url")
         end
 
         sig { params(message: String).void }
@@ -137,6 +209,8 @@ module Dependabot
 
         sig { params(message: String).void }
         def handle_network_errors(message)
+          handle_http_status_errors(message)
+
           if message.match?(TIMEOUT_ERROR_REGEX)
             source = extract_source_from_message(message)
             raise Dependabot::PrivateSourceTimedOut, source
@@ -151,6 +225,17 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable,
                 "Network error while resolving dependencies: #{clean_error_message(message)}"
+        end
+
+        sig { params(message: String).void }
+        def handle_http_status_errors(message)
+          return unless (match = message.match(HTTP_STATUS_ERROR_REGEX))
+
+          code = match.named_captures.fetch("code").to_i
+          source = extract_source_from_message(message)
+          return if code >= 400 && code < 404 # already handled by AUTH_ERROR_REGEX
+
+          raise Dependabot::PrivateSourceBadResponse, source if code >= 400
         end
 
         sig { params(message: String).void }
@@ -174,6 +259,13 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
         end
 
+        sig { params(message: String).void }
+        def handle_uv_fallback_error(message)
+          return unless message.match?(USING_CPYTHON_LINE_REGEX)
+
+          raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
+        end
+
         sig { params(match: T.untyped).returns(T.nilable(String)) }
         def extract_match_string(match)
           return nil unless match
@@ -192,6 +284,7 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
           message
+            .sub(USING_CPYTHON_LINE_REGEX, "")
             .gsub(/#{Regexp.escape(Utils::BUMP_TMP_DIR_PATH)}[^\s]*/o, "")
             .lines
             .reject { |line| line.strip.empty? }

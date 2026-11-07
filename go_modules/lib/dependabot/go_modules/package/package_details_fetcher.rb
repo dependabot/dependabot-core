@@ -9,7 +9,10 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
+require "dependabot/go_modules/go_mod_manifest"
+require "dependabot/go_modules/module_info"
 require "dependabot/go_modules/resolvability_errors"
+require "dependabot/go_modules/azure_devops_path_normalizer"
 
 module Dependabot
   module GoModules
@@ -72,16 +75,17 @@ module Dependabot
               # appears to be a side effect of operating with modules included in GOPRIVATE. We'll
               # retain any exclude directives to omit those versions.
               File.write("go.mod", "module dummy\n")
-              manifest["Exclude"]&.each do |r|
-                SharedHelpers.run_shell_command("go mod edit -exclude=#{r['Path']}@#{r['Version']}")
+              manifest.exclusions.each do |exclusion|
+                SharedHelpers.run_shell_command("go mod edit -exclude=#{exclusion.path}@#{exclusion.version}")
               end
 
               # Turn off the module proxy for private dependencies
-              versions_json = SharedHelpers.run_shell_command(
-                "go list -m -versions -json #{dependency.name}",
-                fingerprint: "go list -m -versions -json <dependency_name>"
-              )
-              version_strings = JSON.parse(versions_json)["Versions"]
+              dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
+              version_strings = fetch_module_versions(dependency_name)
+
+              # If no versions found, the path may be a sub-package rather than a module root.
+              # Try progressively shorter paths to find the actual module.
+              version_strings = resolve_module_versions_from_subpath(dependency_name) if version_strings.nil?
 
               return [package_release(version: T.must(dependency.version))] if version_strings.nil?
 
@@ -100,6 +104,8 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if e.is_a?(GoModManifest::InvalidOutput) || e.is_a?(ModuleInfo::InvalidOutput)
+
           retry_count ||= 0
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
@@ -118,7 +124,18 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def go_mod
-          @go_mod ||= T.let(dependency_files.find { |f| f.name == "go.mod" }, T.nilable(Dependabot::DependencyFile))
+          @go_mod ||= T.let(
+            begin
+              req_file = dependency.requirements.first&.fetch(:file, nil)
+              if req_file
+                dependency_files.find { |f| f.name == req_file }
+              else
+                dependency_files.find { |f| f.name == "go.mod" } ||
+                  dependency_files.find { |f| f.name.end_with?("/go.mod") }
+              end
+            end,
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig do
@@ -133,19 +150,54 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(GoModManifest) }
         def parse_manifest
           SharedHelpers.in_a_temporary_directory do
             File.write("go.mod", T.must(go_mod).content)
             json = SharedHelpers.run_shell_command("go mod edit -json")
 
-            JSON.parse(json) || {}
+            GoModManifest.from_json(json, file_path: T.must(go_mod).path)
           end
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
+        end
+
+        sig { params(module_path: String).returns(T.nilable(T::Array[String])) }
+        def fetch_module_versions(module_path)
+          versions_json = SharedHelpers.run_shell_command(
+            "go list -m -versions -json #{module_path}",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          ModuleInfo.from_json(
+            versions_json,
+            command: "go list -m -versions -json <dependency_name>"
+          ).versions
+        end
+
+        # When a full import path (e.g. github.com/owner/repo/cmd/tool) is not a module,
+        # try progressively shorter paths to find the actual module root.
+        sig { params(full_path: String).returns(T.nilable(T::Array[String])) }
+        def resolve_module_versions_from_subpath(full_path)
+          parts = full_path.split("/")
+          # Valid Go module roots can be as short as 2 segments (e.g., k8s.io/kubernetes)
+          min_parts = 2
+          return nil if parts.length <= min_parts
+
+          (parts.length - 1).downto(min_parts).each do |i|
+            candidate = T.must(parts[0...i]).join("/")
+            Dependabot.logger.debug("Trying shorter module path: #{candidate}")
+            versions = fetch_module_versions(candidate)
+            return versions if versions&.any?
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise if e.is_a?(ModuleInfo::InvalidOutput)
+
+            next
+          end
+
+          nil
         end
 
         sig do

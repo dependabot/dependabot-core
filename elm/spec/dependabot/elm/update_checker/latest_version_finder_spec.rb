@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,8 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/elm/update_checker/latest_version_finder"
 
-namespace = Dependabot::Elm::UpdateChecker
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::Elm::UpdateChecker::LatestVersionFinder do
   def elm_version(version_string)
     Dependabot::Elm::Version.new(version_string)
   end
@@ -124,6 +123,31 @@ RSpec.describe namespace::LatestVersionFinder do
         it "doesn't raise an error" do
           expect { latest_version }.not_to raise_error
         end
+      end
+    end
+
+    context "when the release date is unavailable" do
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Elm::Version.new("1.2.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Elm::Package::PackageDetailsFetcher,
+          fetch_package_releases: [release]
+        )
+      end
+
+      before do
+        allow(Dependabot::Elm::Package::PackageDetailsFetcher)
+          .to receive(:new).with(dependency: dependency).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(latest_version).to eq(Dependabot::Elm::Version.new("1.2.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
   end

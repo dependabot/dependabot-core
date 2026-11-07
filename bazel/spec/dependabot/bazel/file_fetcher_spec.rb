@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve filenames and project_name fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bazel/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
@@ -1402,6 +1404,48 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
 
       it "does not attempt to fetch additional included files" do
         expect(fetched_files.map(&:name)).to eq(["MODULE.bazel"])
+      end
+    end
+  end
+
+  describe "bzl file fetching (cloned repo)" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
+    end
+    let(:repo_contents_path) { build_tmp_repo(project_name) }
+    let(:directory) { "/" }
+
+    context "with recursive .bzl dependencies via load()" do
+      let(:project_name) { "module_with_bzl_extensions" }
+
+      it "fetches .bzl files and their load() dependencies recursively" do
+        names = fetched_files.map(&:name)
+        expect(names).to include("tools/extensions.bzl")
+        expect(names).to include("lib/helpers.bzl")
+      end
+    end
+
+    context "with Label() references in .bzl files (regression #13718)" do
+      let(:project_name) { "module_with_bzl_label_refs" }
+
+      it "does not follow Label() references" do
+        names = fetched_files.map(&:name)
+        expect(names).to include("java/kotlin-extractor/deps.bzl")
+        expect(names).to include("lib/utils.bzl")
+        expect(names).not_to include("java/kotlin-extractor/src")
+        expect(names).not_to include("tools/template.txt")
+      end
+    end
+
+    context "with circular .bzl load() dependencies" do
+      let(:project_name) { "module_with_circular_bzl" }
+
+      it "does not loop infinitely and fetches both files" do
+        names = fetched_files.map(&:name)
+        expect(names).to include("a/first.bzl")
+        expect(names).to include("b/second.bzl")
       end
     end
   end

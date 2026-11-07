@@ -83,6 +83,18 @@ internal static class PathHelper
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
         => Path.GetFullPath(JoinPath(rootPath, relativePath.NormalizePathToUnix()));
 
+    /// <summary>
+    /// Returns the directory of <paramref name="filePath"/> as a unix-style path relative to
+    /// <paramref name="rootPath"/>, prefixed with "/".  When the file is directly inside the
+    /// root, the result is "/".
+    /// </summary>
+    public static string GetRelativeDirectoryOf(string filePath, string rootPath)
+    {
+        var directory = Path.GetDirectoryName(filePath)!;
+        var relative = Path.GetRelativePath(rootPath, directory).NormalizePathToUnix();
+        return relative == "." ? "/" : "/" + relative;
+    }
+
     public static string[] GetAllDirectoriesToRoot(string initialDirectoryPath, string rootDirectoryPath)
     {
         var candidatePaths = new List<string>();
@@ -316,7 +328,7 @@ internal static class PathHelper
             pb.Append('$');
         }
 
-        var pattern = new Regex(pb.ToString(), caseSensitive ? RegexOptions.IgnoreCase : RegexOptions.None);
+        var pattern = new Regex(pb.ToString(), caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase);
 
         // find all directories
         var allDirectories = Directory.EnumerateDirectories(rootDirectory, "*", SearchOption.AllDirectories)

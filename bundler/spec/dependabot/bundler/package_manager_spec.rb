@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only detected_version and raw_version fixtures.
+
 require "dependabot/bundler/package_manager"
 require "dependabot/ecosystem"
 require "spec_helper"
@@ -123,6 +125,15 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
       it "returns true based on detected_version" do
         expect(package_manager.unsupported?).to be true
+      end
+    end
+
+    context "when detected_version is bundler major 4" do
+      let(:detected_version) { "4" }
+      let(:raw_version) { "4.0.11" }
+
+      it "returns false" do
+        expect(package_manager.unsupported?).to be false
       end
     end
   end

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "package.json",
+    "path": "package.json",
+    "sha": "1393fcaa2e31945e9599741fbf04ed271cb7de22",
+    "size": 1371,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/package.json?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/package.json",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/1393fcaa2e31945e9599741fbf04ed271cb7de22",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/package.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/package.json?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/1393fcaa2e31945e9599741fbf04ed271cb7de22",
+      "html": "https://github.com/gocardless/bump/blob/sha/package.json"
+    }
+  },
+  {
+    "name": "package-lock.json",
+    "path": "package-lock.json",
+    "sha": "88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "size": 2433,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/package-lock.json?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/package-lock.json",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/package-lock.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/package-lock.json?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+      "html": "https://github.com/gocardless/bump/blob/sha/package-lock.json"
+    }
+  },
+  {
+    "name": "bun.lock",
+    "path": "bun.lock",
+    "sha": "5b0a45fe1229f38af2dedd390b9c531458b07262",
+    "size": 102275,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/bun.lock?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/bun.lock",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/5b0a45fe1229f38af2dedd390b9c531458b07262",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/bun.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/bun.lock?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/5b0a45fe1229f38af2dedd390b9c531458b07262",
+      "html": "https://github.com/gocardless/bump/blob/sha/bun.lock"
+    }
+  }
+]

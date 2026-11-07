@@ -13,10 +13,10 @@ module Dependabot
       extend T::Sig
 
       # The package manager name for GitHub Actions
-      NAME = T.let("github_actions", String)
+      NAME = "github_actions"
 
       # The version of the package manager
-      VERSION = T.let("1.0.0", String)
+      VERSION = "1.0.0"
 
       sig { void }
       def initialize

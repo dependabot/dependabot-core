@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child-context fixtures and shared-context methods. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -29,7 +30,7 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       repo_contents_path: repo_contents_path,
-      credentials: github_credentials,
+      credentials: github_credentials.map { |credential| Dependabot::Credential.new(credential) },
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
@@ -98,6 +99,43 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker do
       end
 
       it { is_expected.to eq(Dependabot::Version.new("8.0.300")) }
+    end
+  end
+
+  describe "#updated_dependencies" do
+    subject(:updated_dependency) do
+      checker.updated_dependencies(requirements_to_unlock: :own).first
+    end
+
+    include_context "when the config is in root"
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "dotnet-sdk",
+        version: "11.0.100-preview.5.26302.115",
+        requirements: [{
+          requirement: "11.0.100-preview.5.26302.115",
+          file: "global.json",
+          groups: nil,
+          source: nil
+        }],
+        package_manager: "dotnet_sdk",
+        metadata: { allow_prerelease: true }
+      )
+    end
+    let(:target_version) do
+      Dependabot::DotnetSdk::Version.new("11.0.100-preview.6.26359.118")
+    end
+
+    before do
+      allow(Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder)
+        .to receive(:new).and_return(latest_version_finder)
+      allow(latest_version_finder).to receive(:latest_version).and_return(target_version)
+    end
+
+    it "preserves the preview version" do
+      expect(updated_dependency.version).to eq("11.0.100-preview.6.26359.118")
+      expect(updated_dependency.requirements.first[:requirement]).to eq("11.0.100-preview.6.26359.118")
     end
   end
 end

@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@aws-sdk/client-polly": "npm:@aws-sdk/client-polly@^3.600.0",
+    "@sentry/deno": "npm:@sentry/deno@^8.0.0",
+    "chalk": "npm:chalk@^5.3.0"
+  }
+}

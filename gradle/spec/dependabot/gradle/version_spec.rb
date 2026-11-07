@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context other_version fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -127,6 +128,24 @@ RSpec.describe Dependabot::Gradle::Version do
 
       it { is_expected.to be(true) }
     end
+
+    context "with a preview token" do
+      let(:version_string) { "1.0.0-preview" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with an experimental token" do
+      let(:version_string) { "1.0.0-experimental" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with an unstable token" do
+      let(:version_string) { "1.0.0-unstable" }
+
+      it { is_expected.to be(true) }
+    end
   end
 
   describe "#<=>" do
@@ -194,6 +213,13 @@ RSpec.describe Dependabot::Gradle::Version do
         let(:other_version) { described_class.new("1.0.0a1") }
 
         it { is_expected.to eq(1) }
+      end
+
+      context "when comparing dev to alpha (dev < alpha)" do
+        let(:version) { described_class.new("1.0.0-dev1") }
+        let(:other_version) { described_class.new("1.0.0-alpha1") }
+
+        it { is_expected.to eq(-1) }
       end
 
       context "when the other version is non-numeric" do

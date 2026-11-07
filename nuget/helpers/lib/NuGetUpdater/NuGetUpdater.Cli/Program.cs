@@ -20,6 +20,7 @@ internal sealed class Program
         {
             CloneCommand.GetCommand(setExitCode),
             RunCommand.GetCommand(setExitCode),
+            GraphCommand.GetCommand(setExitCode),
         };
         command.TreatUnmatchedTokensAsErrors = true;
 

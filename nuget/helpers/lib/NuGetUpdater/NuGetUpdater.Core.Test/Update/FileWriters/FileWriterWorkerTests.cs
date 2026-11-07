@@ -927,6 +927,52 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task EndToEnd_WildcardVersionShapeIsRetained()
+    {
+        await TestAsync(
+            dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.3.4",
+            newDependencyVersion: "2.5.6",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.*" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.3.4", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.5.6", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedFiles: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="2.*" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.5.6"), UpdatedFiles = ["/src/project.csproj"] }
+            ]
+        );
+    }
+
     private static async Task TestAsync(
         string dependencyName,
         string oldDependencyVersion,

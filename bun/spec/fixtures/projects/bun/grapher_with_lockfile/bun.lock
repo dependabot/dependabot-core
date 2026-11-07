@@ -1,0 +1,22 @@
+{
+  "lockfileVersion": 0,
+  "workspaces": {
+    "": {
+      "name": "grapher-test",
+      "dependencies": {
+        "is-number": "^7.0.0",
+        "@scope/package": "^1.0.0",
+      },
+      "devDependencies": {
+        "etag": "^1.0.0",
+      },
+    },
+  },
+  "packages": {
+    "@scope/package": ["@scope/package@1.2.0", "", {}, "sha512-abc123=="],
+
+    "etag": ["etag@1.8.1", "", {}, "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg=="],
+
+    "is-number": ["is-number@7.0.0", "", {}, "sha512-uQPm8kcs47jx38atAcWTVxyltQYoPT68y9aWYdV6yWXSyW8mzSat0TL6CiWdZeCdF3KrAvpVtnHbTv4RN+rqdQ=="],
+  }
+}

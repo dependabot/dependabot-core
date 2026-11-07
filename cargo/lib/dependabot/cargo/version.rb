@@ -104,7 +104,14 @@ module Dependabot
 
       # Determines the correct update type for a version change according to Cargo's semantic versioning rules
       # For pre-1.0 versions, Cargo treats changes in the leftmost non-zero component as breaking
-      sig { params(from_version: T.any(String, Dependabot::Cargo::Version), to_version: T.any(String, Dependabot::Cargo::Version)).returns(String) }
+      sig do
+        override
+          .params(
+            from_version: T.any(String, Dependabot::Cargo::Version),
+            to_version: T.any(String, Dependabot::Cargo::Version)
+          )
+          .returns(String)
+      end
       def self.update_type(from_version, to_version)
         from_v, to_v = normalize_versions(from_version, to_version)
         from_major, from_minor, from_patch, to_major, to_minor, to_patch = extract_version_parts(from_v, to_v)

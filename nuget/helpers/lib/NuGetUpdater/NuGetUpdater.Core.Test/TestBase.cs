@@ -1,7 +1,7 @@
 using System.Text.Json;
 
-using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 

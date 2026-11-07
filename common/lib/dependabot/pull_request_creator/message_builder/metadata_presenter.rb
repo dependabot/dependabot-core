@@ -27,10 +27,12 @@ module Dependabot
         attr_reader :github_redirection_service
 
         def_delegators :metadata_finder,
+                       :attestation_changes,
                        :changelog_url,
                        :changelog_text,
                        :commits_url,
                        :commits,
+                       :install_script_changes,
                        :maintainer_changes,
                        :releases_url,
                        :releases_text,
@@ -71,6 +73,8 @@ module Dependabot
           msg += upgrade_guide_cascade
           msg += commits_cascade
           msg += maintainer_changes_cascade
+          msg += install_script_changes_cascade
+          msg += attestation_changes_cascade
           msg += break_tag unless msg == ""
           "\n" + sanitize_links_and_mentions(msg, unsafe: true)
         end
@@ -81,13 +85,11 @@ module Dependabot
         def vulnerabilities_cascade
           return "" unless vulnerabilities_fixed&.any?
 
-          msg = ""
-          T.must(vulnerabilities_fixed).each do |v|
-            msg += serialized_vulnerability_details(v)
+          msg = T.must(vulnerabilities_fixed).map do |vulnerability|
+            details = sanitize_template_tags(serialized_vulnerability_details(vulnerability))
+            sanitize_links_and_mentions(details, metadata_source_url: vulnerability["source_url"])
           end
-
-          msg = sanitize_template_tags(msg)
-          msg = sanitize_links_and_mentions(msg)
+          msg = msg.join
 
           build_details_tag(summary: "Vulnerabilities fixed", body: msg)
         end
@@ -105,7 +107,7 @@ module Dependabot
             base_url: source_url + "/blob/HEAD/"
           )
           msg = sanitize_template_tags(msg)
-          msg = sanitize_links_and_mentions(msg)
+          msg = sanitize_links_and_mentions(msg, metadata_source_url: releases_url)
 
           build_details_tag(summary: "Release notes", body: msg)
         end
@@ -121,7 +123,7 @@ module Dependabot
           msg = link_issues(text: msg)
           msg = fix_relative_links(text: msg, base_url: changelog_url)
           msg = sanitize_template_tags(msg)
-          msg = sanitize_links_and_mentions(msg)
+          msg = sanitize_links_and_mentions(msg, metadata_source_url: changelog_url)
 
           build_details_tag(summary: "Changelog", body: msg)
         end
@@ -137,7 +139,7 @@ module Dependabot
           msg = link_issues(text: msg)
           msg = fix_relative_links(text: msg, base_url: upgrade_guide_url)
           msg = sanitize_template_tags(msg)
-          msg = sanitize_links_and_mentions(msg)
+          msg = sanitize_links_and_mentions(msg, metadata_source_url: upgrade_guide_url)
 
           build_details_tag(summary: "Upgrade guide", body: msg)
         end
@@ -166,7 +168,7 @@ module Dependabot
               "- See full diff in [compare view](#{commits_url})\n"
             end
           msg = link_issues(text: msg)
-          msg = sanitize_links_and_mentions(msg)
+          msg = sanitize_links_and_mentions(msg, metadata_source_url: commits_url)
 
           build_details_tag(summary: "Commits", body: msg)
         end
@@ -178,6 +180,26 @@ module Dependabot
           build_details_tag(
             summary: "Maintainer changes",
             body: sanitize_links_and_mentions(maintainer_changes) + "\n"
+          )
+        end
+
+        sig { returns(String) }
+        def install_script_changes_cascade
+          return "" unless install_script_changes
+
+          build_details_tag(
+            summary: "Install script changes",
+            body: sanitize_links_and_mentions(install_script_changes) + "\n"
+          )
+        end
+
+        sig { returns(String) }
+        def attestation_changes_cascade
+          return "" unless attestation_changes
+
+          build_details_tag(
+            summary: "Attestation changes",
+            body: sanitize_links_and_mentions(attestation_changes) + "\n"
           )
         end
 
@@ -223,7 +245,7 @@ module Dependabot
           end
         end
 
-        sig { params(details: T::Hash[String, T.untyped]).returns(String) }
+        sig { params(details: T::Hash[String, T.anything]).returns(String) }
         def vulnerability_version_range_lines(details)
           msg = ""
           %w(
@@ -232,9 +254,12 @@ module Dependabot
             affected_versions
           ).each do |tp|
             type = T.must(tp.split("_").first).capitalize
-            next unless details[tp]
+            versions = case (value = details[tp])
+                       when Array then value
+                       end
+            next unless versions
 
-            versions_string = details[tp].any? ? details[tp].join("; ") : "none"
+            versions_string = versions.any? ? versions.join("; ") : "none"
             versions_string = versions_string.gsub(/(?<!\\)~/, '\~')
             msg += "> #{type} versions: #{versions_string}\n"
           end
@@ -290,10 +315,19 @@ module Dependabot
           !%w(bitbucket codecommit).include?(source.provider)
         end
 
-        sig { params(text: String, unsafe: T::Boolean).returns(String) }
-        def sanitize_links_and_mentions(text, unsafe: false)
+        sig do
+          params(
+            text: String,
+            unsafe: T::Boolean,
+            metadata_source_url: T.nilable(String)
+          ).returns(String)
+        end
+        def sanitize_links_and_mentions(text, unsafe: false, metadata_source_url: source_url)
           LinkAndMentionSanitizer
-            .new(github_redirection_service: github_redirection_service)
+            .new(
+              github_redirection_service: github_redirection_service,
+              metadata_source_url: metadata_source_url
+            )
             .sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
         end
 

@@ -18,6 +18,8 @@ require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_subdependency_pin"
 
 module Dependabot
   module Python
@@ -77,10 +79,10 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = T.let(dependency, Dependabot::Dependency)
-          @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
-          @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
+          @dependency               = dependency
+          @dependency_files         = dependency_files
+          @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
           @error_handler = T.let(
             PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
             Dependabot::Python::PoetryErrorHandler
@@ -90,6 +92,7 @@ module Dependabot
           @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
+          @poetry_plugin_installer = T.let(nil, T.nilable(PoetryPluginInstaller))
         end
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
@@ -129,6 +132,9 @@ module Dependabot
 
                 language_version_manager.install_required_python
 
+                # Install any required Poetry plugins declared in pyproject.toml
+                poetry_plugin_installer.install_required_plugins
+
                 # use system git instead of the pure Python dulwich
                 run_poetry_command("pyenv exec poetry config system-git-client true")
 
@@ -139,6 +145,8 @@ module Dependabot
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
+              rescue PoetrySubdependencyPin::ScopeNotReproducible
+                nil
               rescue SharedHelpers::HelperSubprocessFailed => e
                 handle_poetry_errors(e)
               end
@@ -310,11 +318,33 @@ module Dependabot
 
         sig { params(pyproject_content: String, updated_requirement: T.nilable(String)).returns(String) }
         def set_target_dependency_req(pyproject_content, updated_requirement)
-          return pyproject_content unless updated_requirement
+          unless updated_requirement
+            # Poetry's lock result for a package locked at several versions can't be read back as one version.
+            if pep621_only_poetry_project?(pyproject_content)
+              PoetrySubdependencyPin.new(poetry_lock, dependency.name).ensure_single_version!
+            end
+            return pyproject_content
+          end
 
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
+          if poetry_object
+            set_poetry_target_dependency_req(poetry_object, updated_requirement)
+          elsif pep621_only_poetry_project?(pyproject_content)
+            set_pep621_target_dependency_req(pyproject_object, updated_requirement)
+          end
+
+          TomlRB.dump(pyproject_object)
+        end
+
+        sig { params(pyproject_content: String).returns(T::Boolean) }
+        def pep621_only_poetry_project?(pyproject_content)
+          !poetry_lock.nil? && FileParser::PyprojectDocument.from_content(pyproject_content).poetry_build_backend?
+        end
+
+        sig { params(poetry_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def set_poetry_target_dependency_req(poetry_object, updated_requirement)
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             dependencies = poetry_object[type]
             next unless dependencies
@@ -328,16 +358,24 @@ module Dependabot
           end
 
           # If this is a sub-dependency, add the new requirement
-          unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
-            poetry_object[subdep_type] ||= {}
-            poetry_object[subdep_type][dependency.name] = updated_requirement
-          end
+          return if dependency.requirements.find { |r| r.file == T.must(pyproject).name }
 
-          TomlRB.dump(pyproject_object)
+          poetry_object[subdep_type] ||= {}
+          poetry_object[subdep_type][dependency.name] = updated_requirement
         end
 
-        sig { params(toml_node: T::Hash[String, T.untyped], requirement: String).void }
+        # PEP 621 projects have no [tool.poetry] table to pin dependencies in. This file is only ever used
+        # as scratch input to run `poetry lock`, so it never reaches the real manifest.
+        sig { params(pyproject_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def set_pep621_target_dependency_req(pyproject_object, updated_requirement)
+          PoetrySubdependencyPin.new(poetry_lock, dependency.name)
+                                .set_requirement!(pyproject_object, updated_requirement)
+        end
+
+        sig { params(toml_node: T.nilable(T::Hash[String, T.untyped]), requirement: String).void }
         def update_dependency_requirement(toml_node, requirement)
+          return unless toml_node
+
           names = toml_node.keys
           pkg_name = names.find { |nm| normalise(nm) == dependency.name }
           return unless pkg_name
@@ -385,6 +423,14 @@ module Dependabot
           poetry_lock
         end
 
+        sig { returns(PoetryPluginInstaller) }
+        def poetry_plugin_installer
+          @poetry_plugin_installer ||= T.let(
+            PoetryPluginInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryPluginInstaller)
+          )
+        end
+
         sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
         def run_poetry_command(command, fingerprint: nil)
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
@@ -405,6 +451,14 @@ module Dependabot
 
       # if .toml has incorrect version specification i.e. <0.2.0app
       INVALID_VERSION = /Could not parse version constraint: (?<ver>.*)/
+
+      # Poetry cannot read the poetry.lock: it has no lock-version (written by Poetry before 1.1), or its lock-version
+      # is newer than this Poetry reads. The warning for a merely newer lock-version says "might not be compatible".
+      LOCK_FILE_NOT_COMPATIBLE = /
+        The\slock\sfile\sis\snot\scompatible\swith\sthe\scurrent\sversion\sof\sPoetry\.\s+
+        (?:Upgrade\sPoetry\sto\sbe\sable\sto\sread\sthe\slock\sfile\sor,\salternatively,\sregenerate|Regenerate)
+        \sthe\slock\sfile\swith\sthe\s`poetry\slock`\scommand\.
+      /x
 
       # dependency source link not accessible
       INVALID_LINK = /No valid distribution links found for package: "(?<dep>.*)" version: "(?<ver>.*)"/
@@ -475,8 +529,8 @@ module Dependabot
         ).void
       end
       def initialize(dependencies:, dependency_files:)
-        @dependencies = T.let(dependencies, Dependabot::Dependency)
-        @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+        @dependencies = dependencies
+        @dependency_files = dependency_files
       end
 
       private
@@ -515,6 +569,7 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
+        handle_lock_file_not_compatible(error)
         handle_enrich_constraints(error)
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
@@ -556,6 +611,13 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
 
       private
+
+      sig { params(error: Exception).void }
+      def handle_lock_file_not_compatible(error)
+        return unless (msg = error.message.match(LOCK_FILE_NOT_COMPATIBLE))
+
+        raise DependencyFileNotResolvable, msg[0].to_s.gsub(/\s+/, " ")
+      end
 
       sig { params(error: Exception).void }
       def handle_enrich_constraints(error)

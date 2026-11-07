@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -26,7 +26,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
 
       sig do
@@ -35,7 +35,7 @@ module Dependabot
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
           repo_contents_path: T.nilable(String),
-          options: T::Hash[Symbol, T.untyped]
+          options: T::Hash[Symbol, T.anything]
         ).void
       end
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
@@ -79,7 +79,7 @@ module Dependabot
       def requirement_changed?(file, dependency)
         changed_requirements = dependency.requirements - T.must(dependency.previous_requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |f| f.file == file.name }
       end
 
       sig { params(file: Dependabot::DependencyFile, content: String).returns(Dependabot::DependencyFile) }

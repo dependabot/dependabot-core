@@ -5,6 +5,7 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Run.PullRequestBodyGenerator;
+using NuGetUpdater.Core.Test.Utilities;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -171,6 +172,89 @@ public class DetailedPullRequestBodyGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratePrBody_GitHub_PackageScopedReleases()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "This.Package", OldVersion = NuGetVersion.Parse("1.1.2"), NewVersion = NuGetVersion.Parse("3.1.1"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "This.Package",
+                    PreviousVersion = "1.1.2",
+                    Version = "3.1.1",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "3.1.1",
+                            Source = new()
+                            {
+                                SourceUrl = "https://github.com/Some.Owner/Some.Repo",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://api.github.com/repos/Some.Owner/Some.Repo/releases?per_page=100", """
+                    [
+                      {
+                        "name": "This.Package v3.1.1",
+                        "tag_name": "This.Package-v3.1.1",
+                        "body": "* this package point 3"
+                      },
+                      {
+                        "name": "Another.Package v2.1.1",
+                        "tag_name": "Another.Package-v2.1.1",
+                        "body": "* another package point"
+                      },
+                      {
+                        "name": "v2.5.0",
+                        "tag_name": "v2.5.0",
+                        "body": "* repo point"
+                      },
+                      {
+                        "name": "This.Package v2.0.0",
+                        "tag_name": "This.Package-v2.0.0",
+                        "body": "* this package point 2"
+                      },
+                      {
+                        "name": "v1.1.2",
+                        "tag_name": "v1.1.2",
+                        "body": "* old repo point"
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: """
+                Updated [This.Package](https://github.com/Some.Owner/Some.Repo) from 1.1.2 to 3.1.1.
+
+                <details>
+                <summary>Release notes</summary>
+
+                _Sourced from [This.Package's releases](https://github.com/Some.Owner/Some.Repo/releases)._
+
+                ## 3.1.1
+
+                * this package point 3
+
+                ## 2.5.0
+
+                * repo point
+
+                ## 2.0.0
+
+                * this package point 2
+
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Repo/compare/v1.1.2...This.Package-v3.1.1).
+                </details>
+                """
+        );
+    }
+
+    [Fact]
     public async Task GeneratePrBody_GitHub_EmptyApiResponses()
     {
         await TestAsync(
@@ -323,6 +407,99 @@ public class DetailedPullRequestBodyGeneratorTests
                 ## 1.0.1
 
                 Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Dependency/-/compare/1.0.0...2.0.0).
+                </details>
+                """
+        );
+    }
+
+    [Fact]
+    public async Task GeneratePrBody_GitLab_PackageScopedReleases()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "This.Package", OldVersion = NuGetVersion.Parse("1.1.2"), NewVersion = NuGetVersion.Parse("3.1.1"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "This.Package",
+                    PreviousVersion = "1.1.2",
+                    Version = "3.1.1",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "3.1.1",
+                            Source = new()
+                            {
+                                SourceUrl = "https://gitlab.com/Some.Owner/Some.Repo",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://gitlab.com/api/v4/projects/Some.Owner%2FSome.Repo/repository/tags", """
+                    [
+                      {
+                        "name": "This.Package v3.1.1",
+                        "release": {
+                          "tag_name": "This.Package-v3.1.1",
+                          "description": "* this package point 3"
+                        }
+                      },
+                      {
+                        "name": "Another.Package v2.1.1",
+                        "release": {
+                          "tag_name": "Another.Package-v2.1.1",
+                          "description": "* another package point"
+                        }
+                      },
+                      {
+                        "name": "v2.5.0",
+                        "release": {
+                          "tag_name": "v2.5.0",
+                          "description": "* repo point"
+                        }
+                      },
+                      {
+                        "name": "This.Package v2.0.0",
+                        "release": {
+                          "tag_name": "This.Package-v2.0.0",
+                          "description": "* this package point 2"
+                        }
+                      },
+                      {
+                        "name": "v1.1.2",
+                        "release": {
+                          "tag_name": "v1.1.2",
+                          "description": "* old repo point"
+                        }
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: """
+                Updated [This.Package](https://gitlab.com/Some.Owner/Some.Repo) from 1.1.2 to 3.1.1.
+
+                <details>
+                <summary>Release notes</summary>
+
+                _Sourced from [This.Package's releases](https://gitlab.com/Some.Owner/Some.Repo/-/releases)._
+
+                ## 3.1.1
+
+                * this package point 3
+
+                ## 2.5.0
+
+                * repo point
+
+                ## 2.0.0
+
+                * this package point 2
+
+                Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Repo/-/compare/v1.1.2...This.Package-v3.1.1).
                 </details>
                 """
         );
@@ -912,6 +1089,131 @@ public class DetailedPullRequestBodyGeneratorTests
         );
     }
 
+    [Fact]
+    public async Task ExceptionDuringDetailFetchDoesNotAbortDetailsBuilding()
+    {
+        // arrange
+        var throwingHttpFetcher = new TestHttpFetcher(_ => throw new HttpRequestException("this endpoint cannot be queried"));
+        var prGenerator = new DetailedPullRequestBodyGenerator(throwingHttpFetcher);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo"
+            },
+        };
+        var updateOperationsPerformed = ImmutableArray.Create<UpdateOperationBase>(
+            new DirectUpdate()
+            {
+                DependencyName = "Some.Dependency",
+                OldVersion = NuGetVersion.Parse("1.0.0"),
+                NewVersion = NuGetVersion.Parse("2.0.0"),
+                UpdatedFiles = []
+            }
+        );
+        var updatedDependencies = ImmutableArray.Create(
+            new ReportedDependency()
+            {
+                Name = "Some.Dependency",
+                PreviousVersion = "1.0.0",
+                Version = "2.0.0",
+                Requirements = [
+                    new ReportedRequirement()
+                    {
+                        File = "",
+                        Requirement = "2.0.0",
+                        Source = new()
+                        {
+                            SourceUrl = "https://github.com/Some.Owner/Some.Dependency",
+                        },
+                    }
+                ]
+            }
+        );
+
+        // act
+        var prBody = await prGenerator.GeneratePullRequestBodyTextAsync(job, updateOperationsPerformed, updatedDependencies);
+
+        // assert
+        Assert.Contains("No release notes found for this version range.", prBody);
+    }
+
+    [Fact]
+    public async Task FetchesReleaseNotesConcurrentlyWithoutReorderingOrLosingFallbacks()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        const string releaseResponse = """[{"name":"2.0.0","tag_name":"2.0.0","body":"Release notes."},{"name":"1.0.0","tag_name":"1.0.0","body":"Initial release."}]""";
+        var packageNames = Enumerable.Range(0, 8).Select(i => $"Package.{i}").ToArray();
+        var responses = new GatedRequests<string?>(packageNames.Select(name => $"https://api.github.com/repos/test/{name}/releases?per_page=100"));
+        using var generator = new DetailedPullRequestBodyGenerator(new GatedHttpFetcher(responses));
+        var operations = packageNames.Reverse().Select(name => (UpdateOperationBase)new DirectUpdate()
+        {
+            DependencyName = name,
+            OldVersion = NuGetVersion.Parse("1.0.0"),
+            NewVersion = NuGetVersion.Parse("2.0.0"),
+            UpdatedFiles = [],
+        }).ToImmutableArray();
+        var dependencies = packageNames.Select(name => new ReportedDependency()
+        {
+            Name = name,
+            Version = "2.0.0",
+            Requirements = [
+                new() { File = "", Requirement = "2.0.0", Source = new() { SourceUrl = $"https://github.com/test/{name}" } },
+            ],
+        }).ToImmutableArray();
+        var job = new Job() { Source = new() { Provider = "github", Repo = "test/repo" } };
+        var bodyTask = generator.GeneratePullRequestBodyTextAsync(job, operations, dependencies);
+        try
+        {
+            for (var batch = 0; batch < 2; batch++)
+            {
+                var requests = await responses.ReadRequestsAsync(4, cancellationToken);
+                Assert.Equal(4, responses.PeakConcurrency);
+                foreach (var url in requests.Reverse())
+                {
+                    if (url.Contains("/Package.3/"))
+                    {
+                        responses.Fail(url, new HttpRequestException("Release notes are unavailable."));
+                    }
+                    else
+                    {
+                        responses.Respond(url, releaseResponse);
+                    }
+                }
+            }
+
+            var body = await bodyTask.WaitAsync(cancellationToken);
+            var expectedSections = packageNames.Select(name => $"""
+                Updated [{name}](https://github.com/test/{name}) from 1.0.0 to 2.0.0.
+
+                <details>
+                <summary>Release notes</summary>
+
+                _Sourced from [{name}'s releases](https://github.com/test/{name}/releases)._
+
+                {(name == "Package.3" ? "No release notes found for this version range." : "## 2.0.0\n\nRelease notes.")}
+
+                Commits viewable in [compare view](https://github.com/test/{name}/{(name == "Package.3" ? "commits" : "compare/1.0.0...2.0.0")}).
+                </details>
+                """);
+            Assert.Equal(string.Join("\n\n", expectedSections), body);
+            Assert.Equal(8, responses.RequestCount);
+            Assert.Equal(0, responses.ActiveRequests);
+        }
+        finally
+        {
+            responses.RespondAll(_ => releaseResponse);
+            await bodyTask.WaitAsync(cancellationToken);
+        }
+    }
+
+    private sealed class GatedHttpFetcher(GatedRequests<string?> responses) : IHttpFetcher
+    {
+        public Task<string?> GetStringAsync(string url) => responses.GetResponseAsync(url);
+        public void Dispose() { }
+    }
+
     private static async Task TestAsync(
         ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
         ImmutableArray<ReportedDependency> updatedDependencies,
@@ -932,7 +1234,7 @@ public class DetailedPullRequestBodyGeneratorTests
 
         // act
         var responses = httpResponses.ToDictionary(x => x.Url, x => x.Body);
-        var httpFetcher = new TestHttpFetcher(responses);
+        var httpFetcher = new TestStringResponseHttpFetcher(responses);
         var generator = new DetailedPullRequestBodyGenerator(httpFetcher);
         var actualBody = await generator.GeneratePullRequestBodyTextAsync(job, updateOperationsPerformed, updatedDependencies);
 

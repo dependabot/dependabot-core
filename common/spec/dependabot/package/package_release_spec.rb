@@ -57,6 +57,58 @@ RSpec.describe Dependabot::Package::PackageRelease do
     end
   end
 
+  describe "#released_at=" do
+    let(:details) { { "version_string" => "v2.0.0" } }
+    let(:release) do
+      described_class.new(
+        version: version,
+        released_at: released_at,
+        latest: true,
+        yanked: true,
+        yanked_reason: "Security issue",
+        downloads: 5000,
+        url: "https://example.com/package-2.0.0.gem",
+        package_type: "gem",
+        language: language,
+        tag: "v2.0.0",
+        details: details
+      )
+    end
+
+    it "updates the timestamp without changing other metadata" do
+      new_time = Time.utc(2024, 1, 2)
+      expect(release.public_send(:released_at=, new_time)).to eq(new_time)
+      expect(release).to have_attributes(
+        version: version,
+        released_at: new_time,
+        latest: true,
+        yanked: true,
+        yanked_reason: "Security issue",
+        downloads: 5000,
+        url: "https://example.com/package-2.0.0.gem",
+        package_type: "gem",
+        language: language,
+        tag: "v2.0.0",
+        details: details
+      )
+    end
+
+    it "clears the timestamp on the same release object" do
+      cached_release = release
+      release.released_at = nil
+
+      expect(cached_release).to equal(release)
+      expect(cached_release.released_at).to be_nil
+    end
+
+    [false, "2024-01-02", 123, {}].each do |value|
+      it "rejects assigning #{value.inspect}" do
+        expect { release.released_at = value }.to raise_error(TypeError)
+        expect(release.released_at).to eq(released_at)
+      end
+    end
+  end
+
   describe "#yanked?" do
     it "returns true if package is yanked" do
       release = described_class.new(version: version, yanked: true)

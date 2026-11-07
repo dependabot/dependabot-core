@@ -58,6 +58,19 @@ RSpec.describe Dependabot::Clients::Azure do
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
     end
 
+    context "when the response has a malformed commit ID" do
+      before do
+        stub_request(:get, branch_url)
+          .with(basic_auth: [username, password])
+          .to_return(status: 200, body: '{"commit":{"commitId":42}}')
+      end
+
+      it "raises a bad response error" do
+        expect { fetch_commit }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed Azure response for branch stats/)
+      end
+    end
+
     context "when response is 404" do
       before do
         stub_request(:get, branch_url)
@@ -254,7 +267,7 @@ RSpec.describe Dependabot::Clients::Azure do
     end
 
     context "when response is 200" do
-      response_body = fixture("azure", "update_pull_request_details.json")
+      let(:response_body) { fixture("azure", "update_pull_request_details.json") }
 
       before do
         request_body = {
@@ -308,7 +321,7 @@ RSpec.describe Dependabot::Clients::Azure do
     let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
 
     context "when response is 200" do
-      response_body = fixture("azure", "pull_request_details.json")
+      let(:response_body) { fixture("azure", "pull_request_details.json") }
 
       before do
         stub_request(:get, pull_request_url)
@@ -386,49 +399,42 @@ RSpec.describe Dependabot::Clients::Azure do
 
   describe "#get" do
     context "when using auth headers" do
-      token = ":test_token"
-      encoded_token = Base64.encode64(":test_token").delete("\n")
-      bearer_token = "test_token"
-      basic_non_encoded_token_data =
-        {
-          "token_type" => "basic non encoded",
-          "credentials" => Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "dev.azure.com",
-              "token" => token
-            }
-          ),
-          "headers" => { "Authorization" => "Basic #{encoded_token}" }
-        }
-      basic_encoded_token_data =
-        {
-          "token_type" => "basic encoded",
-          "credentials" => Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "dev.azure.com",
-              "token" => encoded_token.to_s
-            }
-          ),
-          "headers" => { "Authorization" => "Basic #{encoded_token}" }
-        }
-      bearer_token_data =
-        {
-          "token_type" => "bearer",
-          "credentials" => Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "dev.azure.com",
-              "token" => bearer_token
-            }
-          ),
-          "headers" => { "Authorization" => "Bearer #{bearer_token}" }
-        }
-
-      include_examples "#get using auth headers", basic_non_encoded_token_data
-      include_examples "#get using auth headers", basic_encoded_token_data
-      include_examples "#get using auth headers", bearer_token_data
+      include_examples "#get using auth headers",
+                       {
+                         "token_type" => "basic non encoded",
+                         "credentials" => Dependabot::Credential.new(
+                           {
+                             "type" => "git_source",
+                             "host" => "dev.azure.com",
+                             "token" => ":test_token"
+                           }
+                         ),
+                         "headers" => { "Authorization" => "Basic #{Base64.encode64(':test_token').delete("\n")}" }
+                       }
+      include_examples "#get using auth headers",
+                       {
+                         "token_type" => "basic encoded",
+                         "credentials" => Dependabot::Credential.new(
+                           {
+                             "type" => "git_source",
+                             "host" => "dev.azure.com",
+                             "token" => Base64.encode64(":test_token").delete("\n")
+                           }
+                         ),
+                         "headers" => { "Authorization" => "Basic #{Base64.encode64(':test_token').delete("\n")}" }
+                       }
+      include_examples "#get using auth headers",
+                       {
+                         "token_type" => "bearer",
+                         "credentials" => Dependabot::Credential.new(
+                           {
+                             "type" => "git_source",
+                             "host" => "dev.azure.com",
+                             "token" => "test_token"
+                           }
+                         ),
+                         "headers" => { "Authorization" => "Bearer test_token" }
+                       }
     end
 
     context "when dealing with Retries" do

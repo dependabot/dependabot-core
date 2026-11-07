@@ -41,8 +41,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
 
-        # rubocop:disable Metrics/PerceivedComplexity
-
         sig { returns(T.nilable(String)) }
         def updated_package_json_content
           # checks if we are updating single dependency in package.json
@@ -59,27 +57,14 @@ module Dependabot
                 new_req: new_req
               )
 
-              if Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) &&
-                 content == new_content && unique_deps_count > 1
-
-                # (we observed that) package.json does not always contains the same dependencies compared to
-                # "dependencies" list, for example, dependencies object can contain same name dependency "dep"=> "1.0.0"
-                # and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0",the other dependency is
-                # not present in package.json so we don't have to update it, this is most likely (as observed)
-                # a transitive dependency which only needs update in lockfile, So we avoid throwing exception and let
-                # the update continue.
-
-                Dependabot.logger.info(
-                  "experiment: avoid_duplicate_updates_package_json.
-                Updating package.json for #{dep.name} "
-                )
-
-                raise "Expected content to change!"
-              end
-
-              if !Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) && (content == new_content)
-                raise "Expected content to change!"
-              end
+              # package.json does not always contain the same dependencies compared to the
+              # "dependencies" list. For example, the dependencies object can contain same name dependency
+              # "dep" => "1.0.0" and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0".
+              # The other dependency is not present in package.json so we don't have to update it — this is
+              # most likely a transitive dependency which only needs an update in the lockfile. For a batch
+              # with a single unique dependency name we tolerate this no-op update, but when multiple unique
+              # dependencies are being updated and none change the content we treat that as unexpected and raise.
+              raise "Expected content to change!" if content == new_content && unique_deps_count > 1
 
               content = new_content
             end
@@ -95,29 +80,35 @@ module Dependabot
               )
             end
 
+            if dep.previous_version && new_requirements(dep).empty?
+              content = update_overrides_for_subdependency(
+                package_json_content: T.must(content),
+                dependency: dep
+              )
+            end
+
             content
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
         sig do
           params(
             dependency: Dependabot::Dependency,
-            new_requirement: T::Hash[Symbol, T.untyped]
+            new_requirement: Dependabot::DependencyRequirement
           )
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Dependabot::DependencyRequirement))
         end
         def old_requirement(dependency, new_requirement)
           T.must(dependency.previous_requirements)
-           .select { |r| r[:file] == package_json.name }
-           .find { |r| r[:groups] == new_requirement[:groups] }
+           .select { |r| r.file == package_json.name }
+           .find { |r| r.groups == new_requirement.groups }
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def new_requirements(dependency)
-          dependency.requirements.select { |r| r[:file] == package_json.name }
+          dependency.requirements.select { |r| r.file == package_json.name }
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
         def updated_requirements(dependency)
           return unless dependency.previous_requirements
 
@@ -127,22 +118,22 @@ module Dependabot
             dependency.requirements.zip(T.must(dependency.previous_requirements))
                       .reject do |new_req, old_req|
               next true if new_req == old_req
-              next false unless old_req&.fetch(:source).nil?
+              next false unless old_req&.source.nil?
 
-              new_req[:requirement] == old_req&.fetch(:requirement)
+              new_req.requirement == old_req&.requirement
             end
 
           updated_requirement_pairs
             .map(&:first)
-            .select { |r| r[:file] == package_json.name }
+            .select { |r| r.file == package_json.name }
         end
 
         sig do
           params(
             package_json_content: String,
-            new_req: T::Hash[Symbol, T.untyped],
+            new_req: Dependabot::DependencyRequirement,
             dependency_name: String,
-            old_req: T.nilable(T::Hash[Symbol, T.untyped])
+            old_req: T.nilable(Dependabot::DependencyRequirement)
           )
             .returns(String)
         end
@@ -159,7 +150,7 @@ module Dependabot
             new_req: new_req
           )
 
-          groups = new_req.fetch(:groups)
+          groups = T.must(new_req.groups).map(&:to_s)
 
           update_package_json_sections(
             groups,
@@ -175,19 +166,15 @@ module Dependabot
         sig do
           params(
             package_json_content: String,
-            new_req: T::Hash[Symbol, T.untyped],
+            new_req: Dependabot::DependencyRequirement,
             dependency: Dependabot::Dependency,
-            old_req: T.nilable(T::Hash[Symbol, T.untyped])
+            old_req: T.nilable(Dependabot::DependencyRequirement)
           )
             .returns(String)
         end
         def update_package_json_resolutions(package_json_content:, new_req:, dependency:, old_req:)
           dep = dependency
-          parsed_json_content = JSON.parse(package_json_content)
-          resolutions =
-            parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {})
-                               .reject { |_, v| v != old_req && v != dep.previous_version }
-                               .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+          resolutions = matching_resolutions(package_json_content, dep, old_req)
 
           return package_json_content unless resolutions.any?
 
@@ -195,16 +182,16 @@ module Dependabot
           resolutions.each do |_, resolution|
             original_line = declaration_line(
               dependency_name: dep.name,
-              dependency_req: { requirement: resolution },
+              dependency_req: Dependabot::DependencyRequirement.create(requirement: resolution),
               content: content
             )
 
-            new_resolution = resolution == old_req ? new_req : dep.version
+            new_resolution = resolution == old_req&.requirement ? new_req.requirement : dep.version
 
             replacement_line = replacement_declaration_line(
               original_line: original_line,
-              old_req: { requirement: resolution },
-              new_req: { requirement: new_resolution }
+              old_req: Dependabot::DependencyRequirement.create(requirement: resolution),
+              new_req: Dependabot::DependencyRequirement.create(requirement: new_resolution)
             )
 
             content = update_package_json_sections(
@@ -216,17 +203,83 @@ module Dependabot
 
         sig do
           params(
+            package_json_content: String,
+            dependency: Dependabot::Dependency
+          ).returns(String)
+        end
+        def update_overrides_for_subdependency(package_json_content:, dependency:)
+          parsed = JSON.parse(package_json_content)
+          entries = resolution_entries(parsed)
+          return package_json_content unless entries.any?
+
+          matching = entries
+                     .select { |_, v| v.is_a?(String) }
+                     .select { |k, _| k == dependency.name || k.end_with?("/#{dependency.name}") }
+                     .select { |_, v| v.include?(T.must(dependency.previous_version)) }
+          return package_json_content unless matching.any?
+
+          content = package_json_content
+          matching.each do |_, resolution|
+            original_line = declaration_line(
+              dependency_name: dependency.name,
+              dependency_req: Dependabot::DependencyRequirement.create(requirement: resolution),
+              content: content
+            )
+
+            new_resolution = resolution.sub(T.must(dependency.previous_version), T.must(dependency.version))
+
+            replacement_line = replacement_declaration_line(
+              original_line: original_line,
+              old_req: Dependabot::DependencyRequirement.create(requirement: resolution),
+              new_req: Dependabot::DependencyRequirement.create(requirement: new_resolution)
+            )
+
+            content = update_package_json_sections(
+              %w(resolutions overrides), content, original_line, replacement_line
+            )
+          end
+          content
+        end
+
+        sig do
+          params(
+            package_json_content: String,
+            dep: Dependabot::Dependency,
+            old_req: T.nilable(Dependabot::DependencyRequirement)
+          )
+            .returns(T::Hash[String, String])
+        end
+        def matching_resolutions(package_json_content, dep, old_req)
+          parsed = JSON.parse(package_json_content)
+          old_requirement = old_req&.requirement
+
+          resolution_entries(parsed)
+            .select { |_, v| v.is_a?(String) }
+            .select { |_, v| v == old_requirement || v == dep.previous_version }
+            .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+        end
+
+        sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T.untyped]) }
+        def resolution_entries(parsed)
+          parsed["resolutions"] ||
+            parsed["overrides"] ||
+            parsed.dig("pnpm", "overrides") ||
+            {}
+        end
+
+        sig do
+          params(
             dependency_name: String,
-            dependency_req: T.nilable(T::Hash[Symbol, T.untyped]),
+            dependency_req: T.nilable(Dependabot::DependencyRequirement),
             content: String
           )
             .returns(String)
         end
         def declaration_line(dependency_name:, dependency_req:, content:)
-          git_dependency = dependency_req&.dig(:source, :type) == "git"
+          git_dependency = dependency_req&.source_string("type") == "git"
 
           unless git_dependency
-            requirement = dependency_req&.fetch(:requirement)
+            requirement = T.must(dependency_req&.requirement)
             return content.match(
               /"#{Regexp.escape(dependency_name)}"\s*:\s*
                                                 "#{Regexp.escape(requirement)}"/x
@@ -234,37 +287,37 @@ module Dependabot
           end
 
           username, repo =
-            dependency_req&.dig(:source, :url)&.split("/")&.last(2)
+            T.must(dependency_req&.source_string("url")).split("/").last(2)
 
           content.match(
             %r{"#{Regexp.escape(dependency_name)}"\s*:\s*
-               ".*?#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
+               ".*?#{Regexp.escape(T.must(username))}/#{Regexp.escape(T.must(repo))}.*"}x
           ).to_s
         end
 
         sig do
           params(
             original_line: String,
-            old_req: T.nilable(T::Hash[Symbol, T.untyped]),
-            new_req: T::Hash[Symbol, T.untyped]
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
           )
             .returns(String)
         end
         def replacement_declaration_line(original_line:, old_req:, new_req:)
-          was_git_dependency = old_req&.dig(:source, :type) == "git"
-          now_git_dependency = new_req.dig(:source, :type) == "git"
+          was_git_dependency = old_req&.source_string("type") == "git"
+          now_git_dependency = new_req.source_string("type") == "git"
 
           unless was_git_dependency
             return original_line.gsub(
-              %("#{old_req&.fetch(:requirement)}"),
-              %("#{new_req.fetch(:requirement)}")
+              %("#{old_req&.requirement}"),
+              %("#{new_req.requirement}")
             )
           end
 
           unless now_git_dependency
             return original_line.gsub(
               /(?<=\s").*[^\\](?=")/,
-              new_req.fetch(:requirement)
+              T.must(new_req.requirement_string)
             )
           end
 
@@ -277,32 +330,32 @@ module Dependabot
           end
 
           original_line.gsub(
-            %(##{old_req&.dig(:source, :ref)}"),
-            %(##{new_req.dig(:source, :ref)}")
+            %(##{old_req&.source_string('ref')}"),
+            %(##{new_req.source_string('ref')}")
           )
         end
 
         sig do
           params(
             original_line: String,
-            old_req: T.nilable(T::Hash[Symbol, String]),
-            new_req: T::Hash[Symbol, String]
+            old_req: T.nilable(Dependabot::DependencyRequirement),
+            new_req: Dependabot::DependencyRequirement
           )
             .returns(String)
         end
         def update_git_semver_requirement(original_line:, old_req:, new_req:)
           if original_line.include?("semver:")
             return original_line.gsub(
-              %(semver:#{old_req&.fetch(:requirement)}"),
-              %(semver:#{new_req.fetch(:requirement)}")
+              %(semver:#{old_req&.requirement}"),
+              %(semver:#{new_req.requirement}")
             )
           end
 
           raise "Not a semver req!" unless original_line.match?(/#[\^~=<>]/)
 
           original_line.gsub(
-            %(##{old_req&.fetch(:requirement)}"),
-            %(##{new_req.fetch(:requirement)}")
+            %(##{old_req&.requirement}"),
+            %(##{new_req.requirement}")
           )
         end
 
@@ -355,13 +408,14 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).void }
         def preliminary_check_for_update(dependency)
           T.must(dependency.previous_requirements).each do |req, _dep|
-            next if req.fetch(:requirement).nil?
+            requirement = req.requirement
+            next if requirement.nil?
 
             # some deps are patched with local patches, we don't need to update them
-            if req.fetch(:requirement).match?(Regexp.union(PATCH_PACKAGE))
+            if requirement.match?(Regexp.union(PATCH_PACKAGE))
               Dependabot.logger.info(
                 "Func: updated_requirements. dependency patched #{dependency.name}," \
-                " Requirement: '#{req.fetch(:requirement)}'"
+                " Requirement: '#{requirement}'"
               )
 
               raise DependencyFileNotResolvable,
@@ -369,11 +423,11 @@ module Dependabot
             end
 
             # some deps are added as local packages, we don't need to update them as they are referred to a local path
-            next unless req.fetch(:requirement).match?(Regexp.union(LOCAL_PACKAGE))
+            next unless requirement.match?(Regexp.union(LOCAL_PACKAGE))
 
             Dependabot.logger.info(
               "Func: updated_requirements. local package #{dependency.name}," \
-              " Requirement: '#{req.fetch(:requirement)}'"
+              " Requirement: '#{requirement}'"
             )
 
             raise DependencyFileNotResolvable,

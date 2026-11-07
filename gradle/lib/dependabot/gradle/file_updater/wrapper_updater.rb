@@ -2,9 +2,12 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "base64"
 require "shellwords"
+require "pathname"
 
 require "dependabot/gradle/distributions"
+require "dependabot/gradle/version"
 
 module Dependabot
   module Gradle
@@ -12,6 +15,11 @@ module Dependabot
       class WrapperUpdater
         extend T::Sig
         include Dependabot::Gradle::Distributions
+
+        require_relative "wrapper/command_builder"
+        require_relative "wrapper/executing_version_detector"
+        require_relative "wrapper/properties_document"
+        require_relative "wrapper/properties_reconciler"
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency).void }
         def initialize(dependency_files:, dependency:)
@@ -39,22 +47,19 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
           # We only run this updater if it's a distribution dependency
           return [] unless Distributions.distribution_requirements?(dependency.requirements)
 
-          local_files = dependency_files.select do |file|
-            file.directory == build_file.directory && target_file?(file)
-          end
+          local_files = local_wrapper_files(build_file)
 
           # If we don't have any files in the build files don't generate one
           return [] unless local_files.any?
 
           # we only run this updater if the build file has a requirement for this dependency
           target_requirements = dependency.requirements.select do |req|
-            T.let(req[:file], String) == build_file.name
+            req.file == build_file.name
           end
           return [] unless target_requirements.any?
 
@@ -64,33 +69,40 @@ module Dependabot
             cwd = File.join(temp_dir, base_path(build_file))
 
             has_local_script = File.exist?(File.join(cwd, "./gradlew"))
-            command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements)
-            command = Shellwords.join([has_local_script ? "./gradlew" : "gradle"] + command_parts)
 
             Dir.chdir(cwd) do
               FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
-              validate_option = get_validate_distribution_url_option(properties_file)
+              original_properties_content = read_file(properties_file)
+              original_document = original_properties_content && Wrapper::PropertiesDocument.parse(original_properties_content)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
+              command = local_wrapper_command(has_local_script, target_requirements, original_document, cwd, env)
+
               begin
-                # first attempt: run the wrapper task via the local gradle wrapper (if present)
-                # `gradle-wrapper.jar` might be too old to run on host's Java version
+                # first attempt: run the wrapper task via the local Gradle wrapper (if present)
+                # `gradle-wrapper.jar` might not be compatible with the host's Java version or
+                # the `gradlew` script may be corrupted, so we try and fall back to system Gradle before giving up
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env)
               rescue SharedHelpers::HelperSubprocessFailed => e
-                raise e unless has_local_script # already field with system one, there is no point to retry
+                raise e unless has_local_script # already failed with system one, there is no point to retry
 
                 Dependabot.logger.warn("Running #{command} failed, retrying first with system Gradle: #{e.message}")
 
-                # second attempt: run the wrapper task via system gradle and then retry via local wrapper
-                system_command = Shellwords.join(["gradle"] + command_parts)
+                # second attempt: run the wrapper task via system gradle and then retry via local wrapper.
+                # The system Gradle may be a different (often older) version than the wrapper, so we rebuild
+                # the command against its detected version to avoid passing unsupported, version-gated flags.
+                system_command = system_wrapper_command(target_requirements, original_document, cwd, env)
                 SharedHelpers.run_shell_command(system_command, cwd: cwd, env: env) # run via system gradle
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
               end
 
-              # Restore previous validateDistributionUrl option if it existed
-              override_validate_distribution_url_option(properties_file, validate_option)
+              # Gradle's wrapper task regenerates gradle-wrapper.properties from hardcoded defaults
+              # (https://github.com/gradle/gradle/issues/36172), discarding comments, ordering, custom
+              # keys and user-customized values. Reconcile the regenerated file back onto the user's
+              # original so only the version-bump keys change.
+              reconcile_properties(properties_file, original_properties_content)
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -102,7 +114,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -111,31 +122,103 @@ module Dependabot
           @target_files.any? { |r| "/#{file.name}".end_with?(r) }
         end
 
-        sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[String]) }
-        def command_args(requirements)
-          version = T.let(requirements[0]&.[](:requirement), String)
-          checksum = T.let(requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
-          distribution_url = T.let(requirements[0]&.[](:source), T::Hash[Symbol, String])[:url]
-          distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
+        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+        def local_wrapper_files(build_file)
+          wrapper_root = wrapper_root_for(build_file)
 
-          args = %W(wrapper --gradle-version #{version})
+          dependency_files.select do |file|
+            file.directory == build_file.directory && target_file_for_wrapper_root?(file, wrapper_root)
+          end
+        end
 
-          # Executing the wrapper task with `validateDistributionUrl=true`,
-          # issues a HEAD request to ensure that the file exists and is reachable.
-          # Example: HEAD https://services.gradle.org/distributions/gradle-9.3.0-bin.zip
-          # Unfortunately, Dependabot's proxy does not seem to support something about this request
-          # This causes the validation to fail and the wrapper task to error out
-          # To work around this, we pass `--no-validate-url` to skip the url validation step,
-          # Note: this temporarily sets `validateDistributionUrl=false` in `gradle-wrapper.properties`.
-          # After the wrapper task completes, we restore the original value, since `--no-validate-url` would otherwise
-          # persist the change in the properties file, which is not the behavior we want for users.
-          # TODO: Investigate and fix the root cause of the proxy issue and remove this workaround
-          # See https://github.com/dependabot/dependabot-core/issues/14036
-          args += %w(--no-validate-url)
+        sig { params(file: Dependabot::DependencyFile, wrapper_root: String).returns(T::Boolean) }
+        def target_file_for_wrapper_root?(file, wrapper_root)
+          @target_files.any? do |target_file|
+            target_path = target_file.delete_prefix("/")
+            expected_path = wrapper_root.empty? ? target_path : File.join(wrapper_root, target_path)
+            file_path(file) == Pathname.new(expected_path).cleanpath.to_path
+          end
+        end
 
-          args += %W(--distribution-type #{distribution_type}) if distribution_type
-          args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
-          args
+        sig { params(build_file: Dependabot::DependencyFile).returns(String) }
+        def wrapper_root_for(build_file)
+          path = file_path(build_file)
+          root = if target_file?(build_file)
+                   File.dirname(path, 3)
+                 else
+                   File.dirname(path)
+                 end
+
+          root == "." ? "" : root
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def file_path(file)
+          Pathname.new(file.name).cleanpath.to_path
+        end
+
+        # Builds the command for the first wrapper attempt.
+        #
+        # When the project ships a `gradlew` script we run it: it downloads and executes the Gradle
+        # version pinned in the current gradle-wrapper.properties, so wrapper flags are gated on that
+        # distributionUrl version. When `gradlew` is missing we instead invoke system Gradle directly,
+        # so flags must be gated on the system Gradle's detected version (not the wrapper's) to avoid
+        # forwarding options that an older system Gradle does not understand and aborting the run.
+        sig do
+          params(
+            has_local_script: T::Boolean,
+            requirements: T::Array[Dependabot::DependencyRequirement],
+            original_document: T.nilable(Wrapper::PropertiesDocument),
+            cwd: String,
+            env: T::Hash[String, String]
+          ).returns(String)
+        end
+        def local_wrapper_command(has_local_script, requirements, original_document, cwd, env)
+          return system_wrapper_command(requirements, original_document, cwd, env) unless has_local_script
+
+          distribution_url = original_document&.value_for("distributionUrl")
+          gradle_version = Wrapper::ExecutingVersionDetector.from_distribution_url(distribution_url)
+          Shellwords.join(["./gradlew"] + build_command_parts(requirements, original_document, gradle_version))
+        end
+
+        # Builds the system-Gradle fallback command, gating wrapper flags on the system Gradle's own
+        # version (which may differ from the project's wrapper version).
+        sig do
+          params(
+            requirements: T::Array[Dependabot::DependencyRequirement],
+            original_document: T.nilable(Wrapper::PropertiesDocument),
+            cwd: String,
+            env: T::Hash[String, String]
+          ).returns(String)
+        end
+        def system_wrapper_command(requirements, original_document, cwd, env)
+          gradle_version = detect_system_gradle_version(cwd, env)
+          Shellwords.join(["gradle"] + build_command_parts(requirements, original_document, gradle_version))
+        end
+
+        sig do
+          params(
+            requirements: T::Array[Dependabot::DependencyRequirement],
+            original_document: T.nilable(Wrapper::PropertiesDocument),
+            gradle_version: T.nilable(Dependabot::Gradle::Version)
+          ).returns(T::Array[String])
+        end
+        def build_command_parts(requirements, original_document, gradle_version)
+          wrapper_args = Wrapper::CommandBuilder.new(
+            requirements: requirements,
+            original_properties: original_document,
+            gradle_version: gradle_version
+          ).build
+          %w(--no-daemon --stacktrace) + wrapper_args
+        end
+
+        sig { params(cwd: String, env: T::Hash[String, String]).returns(T.nilable(Dependabot::Gradle::Version)) }
+        def detect_system_gradle_version(cwd, env)
+          output = SharedHelpers.run_shell_command("gradle --version", cwd: cwd, env: env)
+          Wrapper::ExecutingVersionDetector.from_version_output(output)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.warn("Unable to detect system Gradle version: #{e.message}")
+          nil
         end
 
         # Gradle builds can be complex, to maximize the chances of a successful we just keep related wrapper files
@@ -167,7 +250,11 @@ module Dependabot
         end
         def update_files_content(temp_dir, local_files, updated_files)
           local_files.each do |file|
-            f_content = File.read(File.join(temp_dir, file.directory, file.name))
+            f_content = if file.binary?
+                          File.binread(File.join(temp_dir, file.directory, file.name))
+                        else
+                          File.read(File.join(temp_dir, file.directory, file.name))
+                        end
             tmp_file = file.dup
             tmp_file.content = tmp_file.binary? ? Base64.encode64(f_content) : f_content
             updated_files[T.must(updated_files.index(file))] = tmp_file
@@ -179,28 +266,28 @@ module Dependabot
           files_to_populate.each do |file|
             in_path_name = File.join(temp_dir, file.directory, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+            File.binwrite(in_path_name, file.decoded_content)
           end
         end
 
-        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
-        def get_validate_distribution_url_option(properties_file)
-          return nil unless File.exist?(properties_file)
+        sig { params(path: T.any(Pathname, String)).returns(T.nilable(String)) }
+        def read_file(path)
+          return nil unless File.exist?(path)
 
-          properties_content = File.read(properties_file)
-          properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
+          File.read(path)
         end
 
-        sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
-        def override_validate_distribution_url_option(properties_file, value)
-          return unless File.exist?(properties_file)
-
-          properties_content = File.read(properties_file)
-          updated_content = properties_content.gsub(
-            /^validateDistributionUrl=(.*)\n/,
-            value ? "validateDistributionUrl=#{value}\n" : ""
+        # Reconciles the wrapper-regenerated properties file back onto the user's original content,
+        # overwriting only the keys that legitimately change for a version bump. Preserves comments,
+        # ordering, custom keys and all other user-customized values.
+        sig { params(properties_file: T.any(Pathname, String), original_content: T.nilable(String)).void }
+        def reconcile_properties(properties_file, original_content)
+          regenerated_content = read_file(properties_file)
+          reconciled = Wrapper::PropertiesReconciler.reconcile(
+            original_content: original_content,
+            regenerated_content: regenerated_content
           )
-          File.write(properties_file, updated_content)
+          File.write(properties_file, reconciled) if reconciled && reconciled != regenerated_content
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

@@ -1,0 +1,10 @@
+on: [push]
+
+name: Non-colliding sequence comment
+jobs:
+  inline:
+    runs-on: ubuntu-latest
+    steps: [
+      { uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 },
+      { uses: actions/setup-node@v3.0.0 }
+    ] # v2.1.0

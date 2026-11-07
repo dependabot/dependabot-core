@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,7 +7,10 @@ require "dependabot/rust_toolchain/package/package_details_fetcher"
 RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
   subject(:finder) { described_class.new(dependency: dependency) }
 
-  let(:manifests_url_with_timestamp) { /\A#{Regexp.escape(described_class::MANIFESTS_URL)}(\?t=\d+)?\z/o }
+  let(:manifests_url_with_timestamp) do
+    manifests_url = Dependabot::RustToolchain::Package::PackageDetailsFetcher::MANIFESTS_URL
+    /\A#{Regexp.escape(manifests_url)}(\?t=\d+)?\z/o
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -81,7 +84,7 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(nightly_channel.version).to be_nil
     end
 
-    # rubocop:disable Naming/VariableNumber
+    # rubocop:disable-next Naming/VariableNumber
     it "parses specific version releases correctly" do
       package_details = finder.fetch
       version_releases = package_details.releases.select do |r|
@@ -107,7 +110,6 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(channel_1_42_0.date).to be_nil
       expect(channel_1_42_0.stability).to be_nil
     end
-    # rubocop:enable Naming/VariableNumber
 
     it "handles network errors gracefully" do
       allow(Dependabot::RegistryClient).to receive(:get)

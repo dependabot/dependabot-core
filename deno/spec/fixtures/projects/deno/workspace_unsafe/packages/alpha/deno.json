@@ -1,0 +1,8 @@
+{
+  "name": "@example/alpha",
+  "version": "0.1.0",
+  "exports": "./mod.ts",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.0"
+  }
+}

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -27,12 +27,12 @@ module Dependabot
       sig do
         params(
           dependency_name: String,
-          versions: T.any(NilClass, T::Array[String]),
-          update_types: T.any(NilClass, T::Array[String])
+          versions: T.nilable(T::Array[String]),
+          update_types: T.nilable(T::Array[String])
         ).void
       end
       def initialize(dependency_name:, versions: nil, update_types: nil)
-        @dependency_name = T.let(dependency_name, String)
+        @dependency_name = dependency_name
         @versions = T.let(versions || [], T::Array[String])
         @update_types = T.let(update_types || [], T::Array[String])
       end
@@ -52,7 +52,7 @@ module Dependabot
         update_types.map(&:downcase).filter_map(&:strip)
       end
 
-      sig { params(dependency: Dependency).returns(T::Array[T.untyped]) }
+      sig { params(dependency: Dependency).returns(T::Array[String]) }
       def versions_by_type(dependency)
         version = correct_version_for(dependency)
         return [] unless version

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/bundler/file_updater"
@@ -13,8 +13,8 @@ module Dependabot
 
         sig { params(dependencies: T::Array[Dependabot::Dependency], gemspec: Dependabot::DependencyFile).void }
         def initialize(dependencies:, gemspec:)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @gemspec = T.let(gemspec, Dependabot::DependencyFile)
+          @dependencies = dependencies
+          @gemspec = gemspec
         end
 
         sig { returns(String) }
@@ -51,21 +51,21 @@ module Dependabot
           updated_requirement =
             T.must(
               dependency.requirements
-                                    .find { |r| r[:file] == gemspec.name }
+                                    .find { |r| r.file == gemspec.name }
             )
-             .fetch(:requirement)
+             .requirement_string
 
           previous_requirement =
             T.must(
               T.must(dependency.previous_requirements)
-                                    .find { |r| r[:file] == gemspec.name }
+                                    .find { |r| r.file == gemspec.name }
             )
-             .fetch(:requirement)
+             .requirement_string
 
           RequirementReplacer.new(
             dependency: dependency,
             file_type: :gemspec,
-            updated_requirement: updated_requirement,
+            updated_requirement: T.must(updated_requirement),
             previous_requirement: previous_requirement
           ).rewrite(content)
         end
@@ -75,7 +75,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |f| f.file == file.name }
         end
       end
     end

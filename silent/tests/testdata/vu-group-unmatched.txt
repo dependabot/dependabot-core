@@ -20,6 +20,8 @@ stdout create_pull_request
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directory: "/"
     provider: example

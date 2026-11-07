@@ -4,6 +4,9 @@ on: # yamllint disable-line rule:truthy
     branches:
       - "main"
   pull_request:
+  merge_group:
+    types:
+      - checks_requested
   workflow_dispatch:
 
 permissions:
@@ -14,11 +17,11 @@ jobs:
     name: Sorbet
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@4fc31e1c823882afd7ef55985266a526c589de90 # v1.282.0
+      - uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
         with:
           bundler-cache: true
 
@@ -26,7 +29,37 @@ jobs:
 
       - run: bundle exec srb tc
 
+      - name: Check Bundler v2 helper specs
+        working-directory: bundler/helpers/v2
+        env:
+          BUNDLE_GEMFILE: ${{ github.workspace }}/Gemfile
+        run: |
+          bundle exec srb tc
+          # Spoom resets Bundler's environment before launching the compiler.
+          sorbet="$(bundle exec ruby -e '
+            puts File.join(Gem.loaded_specs.fetch("sorbet-static").full_gem_path, "libexec", "sorbet")
+          ')"
+          bundle exec spoom srb coverage --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=false --to=true --dry --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=true --to=strict --dry --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=strict --to=strong --dry --sorbet="$sorbet"
+
       - run: bundle exec spoom srb coverage
+
+      - name: Check Bundler v4 helper specs
+        working-directory: bundler/helpers/v4
+        env:
+          BUNDLE_GEMFILE: ${{ github.workspace }}/Gemfile
+        run: |
+          bundle exec srb tc
+          # Spoom resets Bundler's environment before launching the compiler.
+          sorbet="$(bundle exec ruby -e '
+            puts File.join(Gem.loaded_specs.fetch("sorbet-static").full_gem_path, "libexec", "sorbet")
+          ')"
+          bundle exec spoom srb coverage --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=false --to=true --dry --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=true --to=strict --dry --sorbet="$sorbet"
+          bundle exec spoom srb bump --from=strict --to=strong --dry --sorbet="$sorbet"
 
       - run: |
           bundle exec spoom srb bump --from=false --to=true --dry
@@ -36,7 +69,7 @@ jobs:
       - run: bundle exec spoom srb coverage snapshot --save
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: spoom_data
           path: ./spoom_data/
@@ -47,7 +80,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: spoom_report
           path: ./spoom_report.html

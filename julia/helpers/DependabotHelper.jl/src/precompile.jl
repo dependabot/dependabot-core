@@ -54,10 +54,6 @@
         run_check_result("""{"function": "batch_get_available_versions", "args": {"packages": [{"name": "JSON", "uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6"}]}}""")
         run_check_result("""{"function": "batch_get_version_release_dates", "args": {"packages_versions": [{"name": "JSON", "uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6", "versions": ["0.21.0"]}]}}""")
 
-        # Compatibility functions (use nonexistent paths to avoid actual updates)
-        run("""{"function": "check_update_compatibility", "args": {"project_path": "/tmp/nonexistent", "package_name": "JSON", "target_version": "0.21.4"}}""")
-        run("""{"function": "resolve_dependencies_with_constraints", "args": {"project_path": "/tmp/nonexistent", "target_updates": {"JSON": "0.21.4"}}}""")
-
         # Test unknown function path - exercises error handling (expected to return error)
         run("""{"function": "unknown_function", "args": {}}""")
 

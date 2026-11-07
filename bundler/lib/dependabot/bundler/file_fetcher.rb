@@ -113,7 +113,7 @@ module Dependabot
         []
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[Pathname]) }
       def gemspec_directories
         gemfiles = ([gemfile] + child_gemfiles).compact
         directories =
@@ -121,7 +121,7 @@ module Dependabot
             GemspecFinder.new(gemfile: file).gemspec_directories
           end.uniq
 
-        directories.empty? ? ["."] : directories
+        directories.empty? ? [Pathname.new(".")] : directories
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -144,6 +144,9 @@ module Dependabot
         unfetchable_gems = []
 
         path_gemspec_paths.each do |path|
+          gem_name = path.basename.to_s
+          ignored = dependency_ignored?(gem_name)
+
           # Get any gemspecs at the path itself
           gemspecs_at_path = fetch_gemspecs_from_directory(path)
 
@@ -158,11 +161,11 @@ module Dependabot
           end
 
           # Add the fetched gemspecs to the main array, and note an error if
-          # none were found for this path
+          # none were found for this path (unless the dependency is ignored)
           gemspec_files += gemspecs_at_path
-          unfetchable_gems << path.basename.to_s if gemspecs_at_path.empty?
+          unfetchable_gems << gem_name if gemspecs_at_path.empty? && !ignored
         rescue Octokit::NotFound, Gitlab::Error::NotFound
-          unfetchable_gems << path.basename.to_s
+          unfetchable_gems << gem_name unless ignored
         end
 
         raise Dependabot::PathDependenciesNotReachable, unfetchable_gems if unfetchable_gems.any?
@@ -203,13 +206,23 @@ module Dependabot
           .map { |fp| fetch_file_from_host(fp, fetch_submodules: true) }
       end
 
+      # `Bundler::Source::Path#path` is not the value the lockfile declared: it is re-relativised
+      # against `Bundler.root`, and `..` segments that escape the filesystem root are dropped
+      # rather than preserved. A `remote:` reaching further up than `Bundler.root` is deep
+      # therefore resolves to a shallower, wrong directory. The lockfile's own value survives
+      # verbatim in the source's options, so read it from there.
+      sig { params(source: ::Bundler::Source::Path).returns(String) }
+      def lockfile_path_source_path(source)
+        (source.options["path"] || source.path).to_s
+      end
+
       sig { returns(T::Array[String]) }
       def fetch_path_gemspec_paths
         if lockfile
           parsed_lockfile = CachedLockfileParser.parse(T.must(sanitized_lockfile_content))
           parsed_lockfile.specs
                          .select { |s| s.source.instance_of?(::Bundler::Source::Path) }
-                         .map { |s| s.source.path }.uniq
+                         .map { |s| lockfile_path_source_path(s.source) }.uniq
         else
           gemfiles = ([gemfile] + child_gemfiles).compact
           gemfiles.flat_map do |file|
@@ -256,8 +269,7 @@ module Dependabot
           next if file.name == path
 
           # Skip excluded child Gemfiles
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
             raise Dependabot::DependencyFileNotEvaluatable,
                   "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
                   "Please either remove the reference from '#{file.name}' " \

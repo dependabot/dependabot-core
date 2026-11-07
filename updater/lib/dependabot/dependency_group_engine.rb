@@ -25,10 +25,7 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
-    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
-      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
-      T::Array[String]
-    )
+    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
@@ -36,10 +33,9 @@ module Dependabot
 
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(
-          name: group["name"],
-          rules: group["rules"],
-          applies_to: group["applies-to"],
-          group_by: group.dig("rules", "group-by")
+          name: T.must(group.name),
+          rules: group.rules || {},
+          applies_to: group.applies_to
         )
       end
 
@@ -66,14 +62,14 @@ module Dependabot
       return unless job.dependency_groups.any?
 
       unsupported_groups = job.dependency_groups.select do |group|
-        rules = group["rules"] || {}
+        rules = group.rules || {}
         rules.key?("dependency-type") &&
           !PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.include?(job.package_manager)
       end
 
       return unless unsupported_groups.any?
 
-      group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
+      group_names = unsupported_groups.map(&:name).join(", ")
       Dependabot.logger.warn <<~WARN
         The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
         It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
@@ -146,7 +142,7 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def matches_group_by_parent_group?(dependency)
       @dependency_groups.any? do |group|
-        group.group_by_dependency_name? && group.contains?(dependency)
+        @group_by_name_parent_names.include?(group.name) && group.contains?(dependency)
       end
     end
 
@@ -154,6 +150,10 @@ module Dependabot
     def initialize(dependency_groups:)
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = T.let([], T::Array[Dependabot::Dependency])
+      @group_by_name_parent_names = T.let(
+        dependency_groups.select(&:group_by_dependency_name?).to_set(&:name),
+        T::Set[String]
+      )
     end
 
     sig { void }
@@ -187,17 +187,30 @@ module Dependabot
       ).returns(T::Boolean)
     end
     def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
-      return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       applies_to = group.applies_to if group.respond_to?(:applies_to)
+
+      # Groups with update-types rules are complementary, not competing.
+      # Filter out groups with non-overlapping update-types so they don't
+      # prevent each other from receiving dependencies during assignment.
+      current_update_types = group.update_types
+      eligible_groups = if current_update_types
+                          @dependency_groups.reject do |other|
+                            other_update_types = other.update_types
+                            next false unless other_update_types
+
+                            !current_update_types.intersect?(other_update_types)
+                          end
+                        else
+                          @dependency_groups
+                        end
 
       Dependabot.logger.info(
         "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
 
       more_specific_group_name = specificity_calculator.find_most_specific_group_name(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
+        group, dependency, eligible_groups, contains_checker, dependency.directory, applies_to:
       )
 
       if more_specific_group_name
@@ -213,20 +226,31 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def create_dynamic_subgroups_for_dependency_name_groups(dependencies)
-      parent_groups = @dependency_groups.select(&:group_by_dependency_name?)
+      parent_groups = @dependency_groups.select { |g| @group_by_name_parent_names.include?(g.name) }
 
       parent_groups.each do |parent_group|
         matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
 
         matching_deps.group_by(&:name).each do |dep_name, deps|
-          subgroup = Dependabot::DependencyGroup.new(
-            name: "#{parent_group.name}/#{dep_name}",
-            rules: parent_group.rules.merge("patterns" => [dep_name]),
-            applies_to: parent_group.applies_to
-            # NOTE: subgroups don't inherit group_by to prevent infinite recursion
+          subgroup_name = Dependabot::DependencyGroup.subgroup_name(
+            parent_name: parent_group.name,
+            dependency_name: dep_name
           )
-          subgroup.dependencies.concat(deps)
-          @dependency_groups << subgroup
+          existing_subgroup = @dependency_groups.find { |g| g.name == subgroup_name }
+
+          if existing_subgroup
+            new_deps = deps.reject { |d| existing_subgroup.dependencies.include?(d) }
+            existing_subgroup.dependencies.concat(new_deps)
+          else
+            subgroup_rules = parent_group.rules.merge("patterns" => [dep_name])
+            subgroup = Dependabot::DependencyGroup.new(
+              name: subgroup_name,
+              rules: subgroup_rules,
+              applies_to: parent_group.applies_to
+            )
+            subgroup.dependencies.concat(deps)
+            @dependency_groups << subgroup
+          end
         end
 
         parent_group.dependencies.clear

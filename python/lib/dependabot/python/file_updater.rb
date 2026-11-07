@@ -5,6 +5,7 @@ require "toml-rb"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
+require "dependabot/python/file_parser/pyproject_document"
 require "sorbet-runtime"
 
 module Dependabot
@@ -46,7 +47,7 @@ module Dependabot
         changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements))
                            .reject { |(new_req, old_req)| new_req == old_req }
                            .map(&:first)
-        changed_req_files = changed_reqs.map { |r| r.fetch(:file) }
+        changed_req_files = changed_reqs.filter_map(&:file)
 
         # If there are no requirements then this is a sub-dependency. It
         # must come from one of Pipenv, Poetry or pip-tools, and can't come
@@ -93,7 +94,8 @@ module Dependabot
         PoetryFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          cooldown: T.cast(options[:update_cooldown], T.nilable(Dependabot::Package::ReleaseCooldownOptions))
         ).updated_dependency_files
       end
 
@@ -153,8 +155,7 @@ module Dependabot
 
         return false unless poetry_lock
 
-        build_backend = parsed_pyproject.dig("build-system", "build-backend")
-        !build_backend.nil? && build_backend.start_with?("poetry.core")
+        FileParser::PyprojectDocument.from_content(T.must(pyproject&.content)).poetry_build_backend?
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

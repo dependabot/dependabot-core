@@ -66,15 +66,25 @@ public static class XmlExtensions
 
     public static IXmlElementSyntax WithAttribute(this IXmlElementSyntax parent, string name, string value)
     {
-        var singleSpanceTrivia = SyntaxFactory.WhitespaceTrivia(" ");
-
-        return parent.AddAttribute(SyntaxFactory.XmlAttribute(
+        var singleSpaceTrivia = SyntaxFactory.WhitespaceTrivia(" ");
+        var newAttribute = SyntaxFactory.XmlAttribute(
             SyntaxFactory.XmlName(null, SyntaxFactory.XmlNameToken(name, null, null)),
             SyntaxFactory.Punctuation(SyntaxKind.EqualsToken, "=", null, null),
             SyntaxFactory.XmlString(
                 SyntaxFactory.Punctuation(SyntaxKind.SingleQuoteToken, "\"", null, null),
                 SyntaxFactory.XmlTextLiteralToken(value, null, null),
-                SyntaxFactory.Punctuation(SyntaxKind.SingleQuoteToken, "\"", null, singleSpanceTrivia))));
+                SyntaxFactory.Punctuation(SyntaxKind.SingleQuoteToken, "\"", null, singleSpaceTrivia)));
+        var lastAttribute = parent.Attributes.LastOrDefault();
+        if (lastAttribute is not null &&
+            string.IsNullOrEmpty(lastAttribute.GetTrailingTrivia().ToFullString()))
+        {
+            // ensure there's a space at the end of the previous attribute so we don't end up with this:
+            //   <Element ExistingAttribute="ExistingValue"NewAttribute="NewValue" />
+            parent = parent.RemoveAttribute(lastAttribute)
+                .AddAttribute(lastAttribute.WithTrailingTrivia(singleSpaceTrivia));
+        }
+
+        return parent.AddAttribute(newAttribute);
     }
 
     public static XmlElementSyntax CreateOpenCloseXmlElementSyntax(string name, int indentation = 2, bool spaces = true)

@@ -1,0 +1,18 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "bun-v2-project",
+      "dependencies": {
+        "etag": "1.0.1",
+        "is-number": "7.0.0",
+      },
+    },
+  },
+  "packages": {
+    "etag": ["etag@1.0.1", "", {}, "sha512-UT24BZefQnjqe7po1hLOvkRz16uzIRkfFhtNfcj0mKc3PBakEv9eS7Ms68d5ueHygFtxftF9gzFiiay0eZJrOQ=="],
+
+    "is-number": ["is-number@7.0.0", "", {}, "sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng=="],
+  }
+}

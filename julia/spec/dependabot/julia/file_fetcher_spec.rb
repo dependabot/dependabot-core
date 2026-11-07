@@ -1,22 +1,31 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/julia/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Julia::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     # Basic git credentials for testing - the file fetcher uses these for repository access
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   # let(:github_url) { "https://api.github.com/" } # Not used in simplified spec
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::Julia::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(
       source: source,
@@ -24,6 +33,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       repo_contents_path: nil # repo_contents_path is optional for testing
     )
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     # Standard test source configuration for Julia repository
     Dependabot::Source.new(
@@ -33,15 +43,20 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       branch: "main"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   # Test that the FileFetcher implements the required interface from the base class
   # If this fails, it indicates missing or incorrectly implemented methods
   it_behaves_like "a dependency file fetcher"
 
   describe "#fetch_files" do
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(Dependabot::Julia::RegistryClient) }
     let(:registry_client) { instance_double(Dependabot::Julia::RegistryClient) }
+    sig { returns(Dependabot::DependencyFile) }
     let(:project_file) do
       Dependabot::DependencyFile.new(
         name: "Project.toml",
@@ -49,12 +64,15 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       )
     end
 
+    sig { returns(Dependabot::DependencyFile) }
     let(:manifest_file) do
       Dependabot::DependencyFile.new(
         name: "Manifest.toml",
         content: fixture("projects", "basic", "Manifest.toml")
       )
     end
+
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       # Mock the registry client
@@ -68,11 +86,13 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => ["/tmp/test/Project.toml"],
-            "manifest_file" => "/tmp/test/Manifest.toml",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest.toml",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -94,11 +114,13 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => ["/tmp/test/Project.toml"],
-            "manifest_file" => "",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -111,6 +133,8 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     context "when Julia helper finds workspace with multiple Project.toml files" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::DependencyFile) }
       let(:docs_project_file) do
         Dependabot::DependencyFile.new(
           name: "docs/Project.toml",
@@ -118,6 +142,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         )
       end
 
+      sig { returns(Dependabot::DependencyFile) }
       let(:test_project_file) do
         Dependabot::DependencyFile.new(
           name: "test/Project.toml",
@@ -125,18 +150,22 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         )
       end
 
+      # rubocop:enable RSpec/ScatteredLet
+
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => [
-              "/tmp/test/Project.toml",
-              "/tmp/test/docs/Project.toml",
-              "/tmp/test/test/Project.toml"
-            ],
-            "manifest_file" => "/tmp/test/Manifest.toml",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: [
+                "/tmp/test/Project.toml",
+                "/tmp/test/docs/Project.toml",
+                "/tmp/test/test/Project.toml"
+              ],
+              manifest_file: "/tmp/test/Manifest.toml",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -168,6 +197,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     context "when Julia helper finds versioned manifest" do
+      sig { returns(Dependabot::DependencyFile) }
       let(:versioned_manifest_file) do
         Dependabot::DependencyFile.new(
           name: "Manifest-v1.12.toml",
@@ -178,11 +208,13 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({
-            "project_files" => ["/tmp/test/Project.toml"],
-            "manifest_file" => "/tmp/test/Manifest-v1.12.toml",
-            "workspace_root" => "/tmp/test"
-          })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest-v1.12.toml",
+              workspace_root: "/tmp/test"
+            )
+          )
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
@@ -200,17 +232,102 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       end
     end
 
+    context "when Julia helper finds a manifest per Julia release" do
+      sig { returns(Dependabot::DependencyFile) }
+      let(:versioned_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.12.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+        )
+      end
+
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::WorkspaceFiles.new(
+              project_files: ["/tmp/test/Project.toml"],
+              manifest_file: "/tmp/test/Manifest.toml",
+              manifest_files: ["/tmp/test/Manifest-v1.12.toml", "/tmp/test/Manifest.toml"],
+              workspace_root: "/tmp/test"
+            )
+          )
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest-v1.12.toml")
+          .and_return(versioned_manifest_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest.toml")
+          .and_return(manifest_file)
+
+        allow(File).to receive(:exist?).and_return(true)
+      end
+
+      it "fetches every manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest-v1.12.toml", "Manifest.toml")
+      end
+    end
+
     context "when no Project.toml found" do
       before do
         allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({ "error" => "No project file found", "project_files" => [] })
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(message: "No project file found")
+          )
       end
 
       it "raises an error" do
         expect do
           fetched_files
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
+      end
+    end
+
+    context "when Pkg cannot read the Project.toml" do
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return(
+            Dependabot::Julia::RegistryClient::Result::Failure.new(
+              message: "Failed to find workspace project files: Compat `Gone` not listed in `deps`, " \
+                       "`weakdeps` or `extras` section at \"/tmp/test/Project.toml\"."
+            )
+          )
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with("/tmp/test/Project.toml").and_return(true)
+      end
+
+      it "reports Pkg's reason against the project file" do
+        expect { fetched_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_path).to eq("/Project.toml")
+          expect(error.message).to include("Compat `Gone` not listed", "section at \"Project.toml\"")
+        end
+      end
+
+      context "when Pkg reports the realpath of the temporary directory" do
+        before do
+          allow(registry_client).to receive(:find_workspace_project_files)
+            .with("/tmp/test")
+            .and_return(
+              Dependabot::Julia::RegistryClient::Result::Failure.new(
+                message: "Compat `Gone` not listed at \"/private/tmp/test/Project.toml\"."
+              )
+            )
+          allow(File).to receive(:exist?).with("/tmp/test").and_return(true)
+          allow(File).to receive(:realpath).with("/tmp/test").and_return("/private/tmp/test")
+        end
+
+        it "strips it whole" do
+          expect { fetched_files }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.message).to eq("Compat `Gone` not listed at \"Project.toml\".")
+          end
+        end
       end
     end
   end
@@ -245,11 +362,5 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       expect(message).to be_a(String)
       expect(message.length).to be > 10
     end
-  end
-
-  private
-
-  def fixture(type, *names)
-    File.read(File.join("spec", "fixtures", type, *names))
   end
 end

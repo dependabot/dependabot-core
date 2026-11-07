@@ -11,7 +11,7 @@ module Dependabot
       def self.requirements_array(requirement_string)
         # Julia version specifiers can be:
         # - Exact: "1.2.3"
-        # - Range: "1.2-1.3", ">=1.0, <2.0"
+        # - Range: "1.2 - 1.3", ">=1.0, <2.0"
         # - Caret: "^1.2" (compatible within major version)
         # - Tilde: "~1.2.3" (compatible within minor version)
         # Note: Missing compat entry (nil/empty) means any version is acceptable
@@ -35,7 +35,17 @@ module Dependabot
         # Separate constraints (e.g., "^1.10, 2" or "0.34, 0.35") use version specs
         # (with or without ^/~) as OR conditions - any matching spec is acceptable.
         # Only treat as compound if ALL constraints use explicit comparison operators.
+        #
+        # NOTE: Julia's Pkg unions *all* comma-separated compat specs, including
+        # operator-style ones, so ">= 1.0, < 2.0" is `*` to the resolver. We keep
+        # intersection semantics for operator-style lists anyway because this
+        # method also parses Dependabot ignore conditions (e.g. ">= 2.a, < 3"),
+        # which are always intersections; treating those as unions would make
+        # every ignore condition match all versions. A list of equalities only
+        # ("=0.5.4, =0.5.5") would admit nothing as an intersection, so it is
+        # read as the union Pkg takes.
         return false if constraints.length <= 1
+        return false if constraints.all? { |c| c.start_with?("=") }
 
         constraints.all? { |c| c.match?(/^[<>=]/) }
       end
@@ -58,6 +68,18 @@ module Dependabot
         requirements_array(requirement_string)
       end
 
+      # Whether a compat entry admits the version. Pkg compares a bound
+      # against major.minor.patch only, so a JLL rebuild ("0.0.43+1") is
+      # admitted by "=0.0.43" or "0.0.42 - 0.0.43" exactly as the version it
+      # rebuilds is, and a prerelease exactly as its release ("1" rejects
+      # "2.0.0-rc1"). Ignore conditions go through satisfied_by? instead and
+      # keep the ordering between builds ("> 1.6.10" ignores "1.6.10+1").
+      sig { params(version: T.any(Gem::Version, String)).returns(T::Boolean) }
+      def admits?(version)
+        release = Dependabot::Julia::Version.new(version.to_s).compat_version_string
+        T.cast(satisfied_by?(Dependabot::Julia::Version.new(release)), T::Boolean)
+      end
+
       sig { params(version: String).returns(String) }
       def self.normalize_version(version)
         # Remove 'v' prefix if present (common in Julia)
@@ -65,11 +87,15 @@ module Dependabot
         version
       end
 
+      # Julia hyphen ranges require whitespace around the hyphen ("1.2 - 3.4");
+      # without spaces the hyphen introduces a prerelease tag instead.
+      HYPHEN_RANGE_PATTERN = /^(\d+(?:\.\d+)*)\s+-\s+(\d+(?:\.\d+)*)$/
+
       sig { params(constraint: String).returns(T::Array[String]) }
       def self.normalize_julia_constraint(constraint)
         return normalize_caret_constraint(constraint) if constraint.match?(/^\^(\d+(?:\.\d+)*)/)
         return normalize_tilde_constraint(constraint) if constraint.match?(/^~(\d+(?:\.\d+)*)/)
-        return normalize_range_constraint(constraint) if constraint.match?(/^(\d+(?:\.\d+)*)-(\d+(?:\.\d+)*)$/)
+        return normalize_range_constraint(constraint) if constraint.match?(HYPHEN_RANGE_PATTERN)
 
         # Julia treats plain version numbers as caret constraints (implicit ^)
         # e.g., "1.2.3" is equivalent to "^1.2.3" which means ">= 1.2.3, < 2.0.0"
@@ -134,18 +160,21 @@ module Dependabot
 
       sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_range_constraint(constraint)
-        start_version, end_version = constraint.split("-")
-        end_parts = T.must(end_version).split(".")
+        match = T.must(constraint.match(HYPHEN_RANGE_PATTERN))
+        start_version = T.must(match[1])
+        end_version = T.must(match[2])
+        end_parts = end_version.split(".")
 
-        next_minor = if end_parts.length >= 2
-                       major = T.must(end_parts[0])
-                       minor = T.must(end_parts[1])
-                       "#{major}.#{minor.to_i + 1}.0"
-                     else
-                       "#{T.must(end_parts[0]).to_i + 1}.0.0"
-                     end
+        # Julia hyphen-range semantics (https://pkgdocs.julialang.org/v1/compatibility/):
+        # a fully-specified end is inclusive ("1.2.3 - 4.5.6" admits exactly 4.5.6),
+        # while a partial end acts as a wildcard ("0.2 - 0.5" means up to 0.5.*).
+        upper_bound = case end_parts.length
+                      when 1 then "< #{T.must(end_parts[0]).to_i + 1}.0.0"
+                      when 2 then "< #{T.must(end_parts[0])}.#{T.must(end_parts[1]).to_i + 1}.0"
+                      else "<= #{end_version}"
+                      end
 
-        [">= #{start_version}", "< #{next_minor}"]
+        [">= #{start_version}", upper_bound]
       end
     end
   end

@@ -18,7 +18,7 @@ module Dependabot
       #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
       #   <---parent--->        <----child------>
       #
-      GO_MOD_GRAPH_LINE_REGEX = T.let(/^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/, Regexp)
+      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -31,10 +31,6 @@ module Dependabot
 
       private
 
-      # TODO: Build subdependency in this class and assign here -or- assign metadata in the parser
-      #
-      # We can do whichever makes most sense on a case-by-case basis, for Go the trade off on
-      # doing this in the parser shouldn't add a huge overhead.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
         # go mod graph returns all dependencies it finds, even if it has been pruned. So filter those out.

@@ -1,0 +1,14 @@
+{
+  "info": {
+    "home_page": null,
+    "download_url": null,
+    "docs_url": null,
+    "project_urls": {
+      "Benchmark Results": "https://github.com/example-org/location-bench",
+      "Documentation": "https://github.com/example-org/geohelper",
+      "Issues": "https://github.com/example-org/geohelper/issues",
+      "Online Demo": "https://example-org.github.io/geohelper-demo/",
+      "Source Code": "https://github.com/example-org/geohelper"
+    }
+  }
+}

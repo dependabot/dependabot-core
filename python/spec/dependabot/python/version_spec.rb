@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve examples generated from invalid version values. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -127,6 +128,12 @@ RSpec.describe Dependabot::Python::Version do
       let(:version_string) { "1.0.0+gc.1" }
 
       it { is_expected.to eq "1.0.0+gc.1" }
+    end
+
+    context "with leading and trailing whitespace" do
+      let(:version_string) { "\n        2.20.0   \n" }
+
+      it { is_expected.to eq "2.20.0" }
     end
   end
 

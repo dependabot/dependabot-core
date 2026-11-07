@@ -9,7 +9,7 @@ class BaseUpdater
 
   sig { params(ecosystem_name: String).void }
   def initialize(ecosystem_name)
-    @ecosystem_name = T.let(ecosystem_name, String)
+    @ecosystem_name = ecosystem_name
     @changes_made = T.let([], T::Array[String])
   end
 

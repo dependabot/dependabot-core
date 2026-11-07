@@ -1,7 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "parser/current"
+require "parser"
+require "prism"
 require "sorbet-runtime"
 
 require "dependabot/bundler/file_updater"
@@ -53,7 +54,7 @@ module Dependabot
 
           buffer = Parser::Source::Buffer.new("(gemfile_content)")
           buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
+          ast = Prism::Translation::ParserCurrent.new.parse(buffer)
 
           updated_content = Rewriter.new(
             dependency: dependency,
@@ -116,7 +117,7 @@ module Dependabot
 
           # TODO: Ideally we wouldn't have to ignore all of these, but
           # implementing each one will be tricky.
-          SKIPPED_TYPES = T.let(%i(send lvar dstr begin if case splat const or).freeze, T::Array[Symbol])
+          SKIPPED_TYPES = %i(send lvar dstr begin if case splat const or).freeze
 
           sig do
             params(
@@ -132,10 +133,10 @@ module Dependabot
             updated_requirement:,
             insert_if_bare:
           )
-            @dependency = T.let(dependency, Dependabot::Dependency)
-            @file_type = T.let(file_type, Symbol)
-            @updated_requirement = T.let(updated_requirement, String)
-            @insert_if_bare = T.let(insert_if_bare, T::Boolean)
+            @dependency = dependency
+            @file_type = file_type
+            @updated_requirement = updated_requirement
+            @insert_if_bare = insert_if_bare
 
             return if %i(gemfile gemspec).include?(file_type)
 
@@ -230,7 +231,7 @@ module Dependabot
               end
 
             ops = Gem::Requirement::OPS.keys
-            return true if ops.none? { |op| req_string.include?(op) }
+            return true if ops.none? { |op| req_string.index(op) }
 
             req_string.include?(" ")
           end

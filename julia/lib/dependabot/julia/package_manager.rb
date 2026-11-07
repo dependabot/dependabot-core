@@ -11,14 +11,9 @@ module Dependabot
     class PackageManager < Ecosystem::VersionManager
       extend T::Sig
 
-      ECOSYSTEM = T.let("julia", String)
-      PACKAGE_MANAGER = T.let("julia", String)
-      # Julia versions as of June 2025:
-      # - 1.10 is the LTS (Long Term Support) version
-      # - 1.12 is the current stable version
-      # Update these constants when new LTS or major versions are released
-      MINIMUM_VERSION = T.let("1.10", String) # LTS version
-      CURRENT_VERSION = T.let("1.12", String) # Current stable version
+      ECOSYSTEM = "julia"
+      PACKAGE_MANAGER = "julia"
+      MINIMUM_VERSION = "1.10" # LTS version
 
       sig { returns(T.nilable(String)) }
       def self.detected_version
@@ -52,15 +47,12 @@ module Dependabot
           name: "julia",
           detected_version: Dependabot::Version.new(T.must(detected_ver_str)),
           version: Dependabot::Version.new(T.must(detected_ver_str)),
-          supported_versions: [
-            Dependabot::Version.new(MINIMUM_VERSION),
-            Dependabot::Version.new(CURRENT_VERSION)
-          ],
+          supported_versions: [Dependabot::Version.new(MINIMUM_VERSION)],
           deprecated_versions: []
         )
       end
 
-      sig { returns(T::Hash[T.untyped, T.untyped]) }
+      sig { returns(T::Hash[Symbol, Object]) }
       def ecosystem
         {
           package_manager: "julia",

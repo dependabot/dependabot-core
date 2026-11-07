@@ -1,24 +1,35 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/composer/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Composer::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::Composer::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -26,6 +37,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       directory: directory
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -116,6 +128,22 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     it "fetches the auth.json" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(composer.json composer.lock auth.json))
+    end
+  end
+
+  context "with an invalid lockfile" do
+    before do
+      stub_request(:get, url + "composer.lock?ref=sha")
+        .to_return(
+          status: 200,
+          body: { type: "file", encoding: "base64", content: Base64.strict_encode64("{ invalid") }.to_json,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "still fetches the original files and detects Composer" do
+      expect(file_fetcher_instance.files.map(&:name)).to eq(%w(composer.json composer.lock))
+      expect(file_fetcher_instance.ecosystem_versions).to eq(package_managers: { "composer" => "2" })
     end
   end
 
@@ -350,6 +378,28 @@ RSpec.describe Dependabot::Composer::FileFetcher do
           .to match_array(%w(composer.json composer.lock))
       end
 
+      context "with malformed distribution URLs outside the missing directory" do
+        before do
+          content = {
+            "packages" => [
+              { "dist" => { "type" => "path", "url" => nil } },
+              { "dist" => { "type" => "path", "url" => 123 } },
+              { "dist" => { "type" => "zip", "url" => false } }
+            ]
+          }.to_json
+          stub_request(:get, url + "composer.lock?ref=sha")
+            .to_return(
+              status: 200,
+              body: { type: "file", encoding: "base64", content: Base64.strict_encode64(content) }.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "does not consume unmatched URLs" do
+          expect(file_fetcher_instance.files.map(&:name)).to eq(%w(composer.json composer.lock))
+        end
+      end
+
       context "when there is no lockfile" do
         before do
           stub_request(:get, url + "?ref=sha")
@@ -373,11 +423,16 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     end
 
     context "with a directory" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(String) }
       let(:directory) { "my/app/" }
+      sig { returns(String) }
       let(:base_url) do
         "https://api.github.com/repos/gocardless/bump/contents/"
       end
+      sig { returns(String) }
       let(:url) { base_url + "my/app/" }
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         stub_request(:get, base_url + "my/app?ref=sha")

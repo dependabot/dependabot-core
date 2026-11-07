@@ -5,7 +5,7 @@ name = "a-dependency"
 version = "0.1.0"
 description = ""
 optional = false
-python-versions = ">=3.9.10,<3.10"
+python-versions = ">=3.10.0,<3.11"
 files = []
 develop = false
 
@@ -145,5 +145,5 @@ files = [
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.9.10,<3.10"
+python-versions = ">=3.10.0,<3.11"
 content-hash = "193d0b7dd2f5320281d2826ae32ed983f375e40a1f769a3ed68550d9ba700618"

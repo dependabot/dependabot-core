@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -21,6 +21,7 @@ module Dependabot
         case new_source_type
         when "git" then find_source_from_git_url
         when "registry", "provider" then find_source_from_registry_details
+        when "oci" then find_source_from_oci_details
         else raise "Unexpected source type: #{new_source_type}"
         end
       end
@@ -32,16 +33,32 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-
-        url = info[:url] || info.fetch("url")
+        url = T.must(dependency.source_string("url", allowed_types: ["git"]))
         Source.from_url(url)
       end
 
       sig { returns(T.nilable(Dependabot::Source)) }
+      def find_source_from_oci_details
+        artifact_identifier = dependency.source_string("artifact_identifier", allowed_types: ["oci"])
+        return unless artifact_identifier
+
+        hostname, repo = artifact_identifier.split("/", 2)
+        return unless repo
+
+        Source.new(
+          provider: "oci",
+          repo: repo,
+          hostname: hostname,
+          api_endpoint: "https://#{hostname}/"
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_registry_details
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-        hostname = info[:registry_hostname] || info["registry_hostname"]
+        hostname = dependency.source_string(
+          "registry_hostname",
+          allowed_types: %w(registry provider)
+        ) || RegistryClient::PUBLIC_HOSTNAME
 
         RegistryClient
           .new(hostname: hostname, credentials: credentials)

@@ -32,32 +32,25 @@ module Dependabot
         # This supports mirrors/proxies of both Maven Central and Gradle Plugin Portal.
         sig do
           params(
-            repositories: T::Array[T::Hash[String, T.untyped]],
+            repositories: T::Array[T::Hash[String, Object]],
             dependency_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::XML::Document),
             release_info_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::HTML::Document)
-          ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+          ).returns(T::Hash[String, T::Hash[Symbol, Object]])
         end
         def extract(repositories:, dependency_metadata_fetcher:, release_info_metadata_fetcher:)
-          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, Object]])
 
           begin
-            repositories.each do |repository_details|
-              parse_gradle_plugin_portal_release(
-                repository_details,
-                release_date_info,
-                dependency_metadata_fetcher
-              )
-
-              parse_maven_central_releases(
-                repository_details,
-                release_date_info,
-                release_info_metadata_fetcher
-              )
-            end
+            parse_repository_release_dates(
+              repositories: repositories,
+              release_date_info: release_date_info,
+              dependency_metadata_fetcher: dependency_metadata_fetcher,
+              release_info_metadata_fetcher: release_info_metadata_fetcher
+            )
 
             release_date_info
           rescue StandardError => e
@@ -77,22 +70,54 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         attr_reader :version_class
 
+        sig do
+          params(
+            repositories: T::Array[T::Hash[String, Object]],
+            release_date_info: T::Hash[String, T::Hash[Symbol, Object]],
+            dependency_metadata_fetcher: T.proc.params(
+              repo: T::Hash[String, Object]
+            ).returns(Nokogiri::XML::Document),
+            release_info_metadata_fetcher: T.proc.params(
+              repo: T::Hash[String, Object]
+            ).returns(Nokogiri::HTML::Document)
+          ).void
+        end
+        def parse_repository_release_dates(
+          repositories:,
+          release_date_info:,
+          dependency_metadata_fetcher:,
+          release_info_metadata_fetcher:
+        )
+          repositories.each do |repository_details|
+            parse_gradle_plugin_portal_release(
+              repository_details,
+              release_date_info,
+              dependency_metadata_fetcher
+            )
+
+            parse_maven_central_releases(
+              repository_details,
+              release_date_info,
+              release_info_metadata_fetcher
+            )
+          end
+        end
+
         # Parses Maven-style HTML directory listings to extract release dates.
         sig do
           params(
-            repository_details: T::Hash[String, T.untyped],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
+            repository_details: T::Hash[String, Object],
+            release_date_info: T::Hash[String, T::Hash[Symbol, Object]],
             metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::HTML::Document)
           ).void
         end
         def parse_maven_central_releases(repository_details, release_date_info, metadata_fetcher)
-          metadata_fetcher.call(repository_details).css("a[title]").each do |link|
-            title = link["title"]
-            next unless title
+          metadata_fetcher.call(repository_details).css("a[href]").each do |link|
+            version = T.let(extract_version_from_link(link), T.nilable(String))
+            next unless version
 
-            version = title.gsub(%r{/$}, "")
             next unless version_class.correct?(version)
             next if release_date_info.key?(version)
 
@@ -109,10 +134,10 @@ module Dependabot
         # Parses Gradle Plugin Portal maven-metadata.xml for release dates.
         sig do
           params(
-            repository_details: T::Hash[String, T.untyped],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
+            repository_details: T::Hash[String, Object],
+            release_date_info: T::Hash[String, T::Hash[Symbol, Object]],
             metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::XML::Document)
           ).void
         end
@@ -136,11 +161,24 @@ module Dependabot
           )
         end
 
+        sig { params(link: Nokogiri::XML::Element).returns(T.nilable(String)) }
+        def extract_version_from_link(link)
+          href = link["href"]&.strip
+          return unless href&.end_with?("/")
+
+          identifier = link["title"] || link.text || href
+
+          identifier.to_s.strip.gsub(%r{/$}, "")
+        end
+
         # Extracts release date from HTML link element's adjacent text.
         sig { params(link: Nokogiri::XML::Element, version: String).returns(T.nilable(Time)) }
         def extract_release_date_from_link(link, version)
-          raw_date_text = link.next.text.strip.split("\n").last.strip
-          Time.parse(raw_date_text)
+          raw_date_text = link.next&.text.to_s
+          date_match = raw_date_text.match(/\b(?:\d{4}-\d{2}-\d{2}|\d{2}-[A-Za-z]{3}-\d{4}) \d{2}:\d{2}\b/)
+          return Time.parse(date_match[0]) if date_match
+
+          Time.parse(raw_date_text.strip)
         rescue StandardError => e
           Dependabot.logger.debug(
             "Failed to parse release date for #{dependency_name} version #{version}: #{e.message}"

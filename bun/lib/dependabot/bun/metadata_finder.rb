@@ -16,6 +16,10 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
+      # RFC 3986 unreserved; others need encoding (explicit ASCII class avoids UTF-8 \w issues)
+      CHARS_REQUIRING_ENCODING = /[^A-Za-z0-9._~-]/
+      private_constant :CHARS_REQUIRING_ENCODING
+
       sig { override.returns(T.nilable(String)) }
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
@@ -28,16 +32,28 @@ module Dependabot
 
       sig { override.returns(T.nilable(String)) }
       def maintainer_changes
-        return unless npm_releaser
+        releaser = npm_releaser
+        return unless releaser
         return unless npm_listing.dig("time", dependency.version)
-        return if previous_releasers&.include?(npm_releaser)
+        return if previous_releasers&.include?(releaser)
 
+        encoded_releaser = encode_npm_releaser(releaser)
         "This version was pushed to npm by " \
-          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "[#{releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
           "releaser for #{dependency.name} since your current version."
       end
 
       private
+
+      # Percent-encodes npm releaser names for safe inclusion in npmjs.com profile URLs.
+      sig { params(releaser: String).returns(String) }
+      def encode_npm_releaser(releaser)
+        return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
+
+        releaser.gsub(CHARS_REQUIRING_ENCODING) do |char|
+          char.bytes.map { |byte| "%#{format('%02X', byte)}" }.join
+        end
+      end
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
@@ -101,11 +117,11 @@ module Dependabot
         potential_sources.first
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), String])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def new_source
         sources = dependency.requirements
-                            .map { |r| r.fetch(:source) }.uniq.compact
-                            .sort_by { |source| Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+                            .map(&:source_hash).uniq.compact
+                            .sort_by { |source| Package::RegistryFinder.central_registry?(T.cast(source[:url], String)) ? 1 : 0 }
 
         sources.first
       end
@@ -155,28 +171,32 @@ module Dependabot
       sig { returns(T.nilable(Source)) }
       def find_source_from_git_url
         url = new_source&.[](:url) || new_source&.fetch("url")
-        Source.from_url(url)
+        Source.from_url(T.cast(url, T.nilable(String)))
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
       def latest_version_listing
         return @latest_version_listing unless @latest_version_listing.nil?
 
+        @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+
         response = Dependabot::RegistryClient.get(
           url: "#{dependency_url}/latest",
           headers: registry_auth_headers
         )
-        return @latest_version_listing = {} if response.status >= 500
+        return T.must(@latest_version_listing) if response.status >= 500
 
         begin
-          @latest_version_listing = JSON.parse(response.body)
+          # A registry can answer a missing package with a bare JSON string such as "Not Found"
+          parsed = JSON.parse(response.body)
+          @latest_version_listing = parsed if parsed.is_a?(Hash)
         rescue JSON::ParserError
           raise unless non_standard_registry?
-
-          @latest_version_listing = {}
         end
+
+        T.must(@latest_version_listing)
       rescue JSON::ParserError, Excon::Error::Timeout
-        @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        T.must(@latest_version_listing)
       end
 
       sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
@@ -193,18 +213,21 @@ module Dependabot
       def npm_listing
         return @npm_listing unless @npm_listing.nil?
 
+        @npm_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+
         response = Dependabot::RegistryClient.get(url: dependency_url, headers: registry_auth_headers)
-        return @npm_listing = {} if response.status >= 500
+        return T.must(@npm_listing) if response.status >= 500
 
         begin
-          @npm_listing = JSON.parse(response.body)
+          parsed = JSON.parse(response.body)
+          @npm_listing = parsed if parsed.is_a?(Hash)
         rescue JSON::ParserError
           raise unless non_standard_registry?
-
-          @npm_listing = {}
         end
+
+        T.must(@npm_listing)
       rescue Excon::Error::Timeout
-        @npm_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+        T.must(@npm_listing)
       end
 
       sig { returns(String) }
@@ -250,10 +273,10 @@ module Dependabot
 
       sig { returns(String) }
       def dependency_registry
-        if new_source.nil? then "registry.npmjs.org"
-        else
-          T.must(new_source).fetch(:url).gsub("https://", "").gsub("http://", "")
-        end
+        source = new_source
+        return "registry.npmjs.org" if source.nil?
+
+        T.cast(source.fetch(:url), String).gsub("https://", "").gsub("http://", "")
       end
 
       sig { returns(T.nilable(String)) }

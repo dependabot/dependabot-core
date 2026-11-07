@@ -15,9 +15,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
   subject(:error_handler) do
     described_class.new(
       service: mock_service,
-      job: mock_job
+      job: mock_job,
+      operation_name: operation_name
     )
   end
+
+  let(:operation_name) { "update_all_versions" }
 
   let(:mock_service) do
     instance_double(Dependabot::Service).tap do |service|
@@ -55,6 +58,54 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         )
 
         handle_dependency_error
+      end
+    end
+
+    context "when a blocked version is enforced" do
+      let(:error) do
+        Dependabot::BlockedDependencyVersion.new(
+          dependency_name: "transitive-dep",
+          blocked_version: "1.5.0",
+          version_requirement: "= 1.5.0",
+          reason: "malware"
+        )
+      end
+
+      # operation_name is the canonical "update_all_versions" tag; the metric maps
+      # it onto the curated "version_update" label shared with blocked_versions.ignored.
+      it "increments blocked_versions.enforced metric with operation and package manager" do
+        expect(mock_service).to receive(:increment_metric).with(
+          "blocked_versions.enforced",
+          tags: { operation: "version_update", package_manager: "bundler" }
+        )
+
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "blocked_dependency_version",
+          error_details: {
+            "dependency-name": "transitive-dep",
+            "blocked-version": "1.5.0",
+            "version-requirement": "= 1.5.0",
+            reason: "malware"
+          },
+          dependency: dependency
+        )
+
+        handle_dependency_error
+      end
+
+      context "when the operation has no curated label" do
+        let(:operation_name) { "some_future_operation" }
+
+        it "falls back to the raw operation name" do
+          expect(mock_service).to receive(:increment_metric).with(
+            "blocked_versions.enforced",
+            tags: { operation: "some_future_operation", package_manager: "bundler" }
+          )
+
+          allow(mock_service).to receive(:record_update_job_error)
+
+          handle_dependency_error
+        end
       end
     end
 
@@ -108,6 +159,46 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         )
         expect(Dependabot.logger).to receive(:error).with(
           "bees.rb:5:in `buzz`"
+        )
+
+        handle_dependency_error
+      end
+    end
+
+    context "with an EOF socket error (cloud)" do
+      let(:error) do
+        Excon::Error::Socket.new(EOFError.new).tap do |socket_error|
+          socket_error.set_backtrace(
+            [
+              "/home/dependabot/common/lib/dependabot/registry_client.rb:32:in 'get'",
+              "/home/dependabot/bundler/lib/dependabot/bundler/package/package_details_fetcher.rb:100:" \
+              "in 'package_json_response'"
+            ]
+          )
+        end
+      end
+
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+        allow(mock_service).to receive(:capture_exception)
+        allow(mock_service).to receive(:record_update_job_error)
+        allow(Dependabot.logger).to receive(:error)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "records a package manager and call-site fingerprint" do
+        expect(mock_service).to receive(:record_update_job_unknown_error).with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::FINGERPRINT => [
+              "excon-eof",
+              "bundler",
+              "bundler/lib/dependabot/bundler/package/package_details_fetcher.rb:package_json_response"
+            ]
+          )
         )
 
         handle_dependency_error
@@ -194,7 +285,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::BACKTRACE => "****** ERROR 8335 -- 101",
             Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
-            Dependabot::ErrorAttributes::FINGERPRINT => anything,
+            Dependabot::ErrorAttributes::FINGERPRINT => ["123456789"],
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
@@ -355,6 +446,34 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
 
         expect(Dependabot.logger).to receive(:info).with(
           a_string_starting_with("Handled error whilst processing job:")
+        )
+
+        handle_job_error
+      end
+    end
+
+    context "when a blocked version is enforced" do
+      let(:error) do
+        Dependabot::BlockedDependencyVersion.new(
+          dependency_name: "transitive-dep",
+          blocked_version: "1.5.0",
+          version_requirement: "= 1.5.0"
+        )
+      end
+
+      it "increments blocked_versions.enforced metric with operation and package manager" do
+        expect(mock_service).to receive(:increment_metric).with(
+          "blocked_versions.enforced",
+          tags: { operation: "version_update", package_manager: "bundler" }
+        )
+
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "blocked_dependency_version",
+          error_details: {
+            "dependency-name": "transitive-dep",
+            "blocked-version": "1.5.0",
+            "version-requirement": "= 1.5.0"
+          }
         )
 
         handle_job_error

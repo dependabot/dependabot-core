@@ -12,7 +12,7 @@ module Dependabot
       class WorkspaceFetcher
         extend T::Sig
 
-        README_FILENAMES = T.let(%w(README.md README.rst README.txt README).freeze, T::Array[String])
+        README_FILENAMES = %w(README.md README.rst README.txt README).freeze
 
         sig do
           params(
@@ -277,8 +277,8 @@ module Dependabot
           normalized_directory = directory.gsub(%r{(^/|/$)}, "")
 
           repo_contents(dir: base_dir, raise_errors: false)
-            .select { |file| T.unsafe(file).type == "dir" }
-            .map { |f| T.unsafe(f).path.gsub(%r{^/?#{Regexp.escape(normalized_directory)}/?}, "") }
+            .select { |file| file.type == "dir" }
+            .map { |file| file.path.gsub(%r{^/?#{Regexp.escape(normalized_directory)}/?}, "") }
         end
 
         sig { params(paths: T::Array[String], pattern: String).returns(T::Array[String]) }
@@ -321,7 +321,7 @@ module Dependabot
           params(
             dir: T.nilable(String),
             raise_errors: T::Boolean
-          ).returns(T::Array[OpenStruct])
+          ).returns(T::Array[Dependabot::FileFetchers::RepositoryContent])
         end
         def repo_contents(dir: nil, raise_errors: true)
           @file_fetcher.send(:repo_contents, dir: dir, raise_errors: raise_errors)

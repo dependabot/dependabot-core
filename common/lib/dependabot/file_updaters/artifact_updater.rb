@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -36,19 +36,21 @@ module Dependabot
         return [] unless repo_contents_path && target_directory
 
         Dir.chdir(T.must(repo_contents_path)) do
-          # rubocop:disable Performance/DeletePrefix
+          # rubocop:disable-next Performance/DeletePrefix
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(T.must(target_directory))
-          # rubocop:enable Performance/DeletePrefix
 
+          # Pass the path as a single argument and use NUL-separated output so
+          # paths containing whitespace are preserved. Keep stderr separate so
+          # warnings (e.g. a missing target directory) aren't parsed as entries
           status = T.let(
             SharedHelpers.run_shell_command(
-              "git status --untracked-files all --porcelain v1 #{relative_dir}",
-              fingerprint: "git status --untracked-files all --porcelain v1 <relative_dir>"
+              ["git", "status", "--untracked-files=all", "--porcelain=v1", "-z", "--", relative_dir.to_s],
+              fingerprint: "git status --untracked-files=all --porcelain=v1 -z -- <relative_dir>",
+              stderr_to_stdout: false
             ),
             String
           )
-          changed_paths = status.split("\n").map(&:split)
-          changed_paths.filter_map do |type, path|
+          parse_status(status).filter_map do |type, path|
             project_root = Pathname.new(File.expand_path(File.join(Dir.pwd, base_directory)))
             file_path = Pathname.new(path).expand_path.relative_path_from(project_root)
 
@@ -63,7 +65,7 @@ module Dependabot
             operation = Dependabot::DependencyFile::Operation::DELETE if type == "D"
             operation = Dependabot::DependencyFile::Operation::CREATE if type == "??"
 
-            encoded_content, encoding = get_encoded_file_contents(T.must(path), operation)
+            encoded_content, encoding = get_encoded_file_contents(path, operation)
 
             create_dependency_file(
               name: file_path.to_s,
@@ -78,10 +80,30 @@ module Dependabot
 
       private
 
-      TEXT_ENCODINGS = T.let(%w(us-ascii utf-8).freeze, T::Array[String])
+      TEXT_ENCODINGS = %w(us-ascii utf-8).freeze
 
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
+
+      # Parses `git status --porcelain=v1 -z` output into [type, path] pairs.
+      # Each entry is "XY <path>"; renames and copies are followed by an extra
+      # entry holding the original path, which we skip.
+      sig { params(status: String).returns(T::Array[[String, String]]) }
+      def parse_status(status)
+        entries = status.split("\0")
+        changes = T.let([], T::Array[[String, String]])
+
+        until entries.empty?
+          entry = T.must(entries.shift)
+          next if entry.empty?
+
+          code = T.must(entry[0, 2])
+          changes << [code.strip, T.must(entry[3..])]
+          entries.shift if code.match?(/[RC]/)
+        end
+
+        changes
+      end
 
       sig { returns(T.nilable(String)) }
       attr_reader :target_directory
@@ -112,19 +134,58 @@ module Dependabot
       def binary_file?(path)
         return false unless File.exist?(path)
 
-        command = SharedHelpers.escape_command("file -b --mime-encoding #{path}")
-        encoding = `#{command}`.strip
+        encoding = SharedHelpers.run_shell_command(
+          ["file", "-b", "--mime-encoding", "--", path],
+          fingerprint: "file -b --mime-encoding -- <path>",
+          stderr_to_stdout: false
+        ).strip
 
         !TEXT_ENCODINGS.include?(encoding)
       end
 
       sig do
         overridable
-          .params(parameters: T::Hash[Symbol, T.untyped])
+          .params(
+            name: String,
+            content: T.nilable(String),
+            directory: String,
+            type: String,
+            support_file: T::Boolean,
+            vendored_file: T::Boolean,
+            symlink_target: T.nilable(String),
+            content_encoding: String,
+            deleted: T::Boolean,
+            operation: String,
+            mode: T.nilable(String)
+          )
           .returns(Dependabot::DependencyFile)
       end
-      def create_dependency_file(parameters)
-        Dependabot::DependencyFile.new(**T.unsafe(parameters))
+      def create_dependency_file(
+        name:,
+        content: nil,
+        directory: "/",
+        type: "file",
+        support_file: false,
+        vendored_file: false,
+        symlink_target: nil,
+        content_encoding: Dependabot::DependencyFile::ContentEncoding::UTF_8,
+        deleted: false,
+        operation: Dependabot::DependencyFile::Operation::UPDATE,
+        mode: nil
+      )
+        Dependabot::DependencyFile.new(
+          name: name,
+          content: content,
+          directory: directory,
+          type: type,
+          support_file: support_file,
+          vendored_file: vendored_file,
+          symlink_target: symlink_target,
+          content_encoding: content_encoding,
+          deleted: deleted,
+          operation: operation,
+          mode: mode
+        )
       end
     end
   end

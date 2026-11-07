@@ -11,5 +11,13 @@ module Gem
 
     sig { params(version: VersionParameter).void }
     def initialize(version); end
+
+    # RubyGems 4 internals used by Dependabot::Version to keep the eager sort-key
+    # computation from raising on versions with alphabetic segments.
+    sig { returns(T::Array[T.any(String, Integer)]) }
+    def canonical_segments; end
+
+    sig { returns(T.nilable(Integer)) }
+    def compute_sort_key; end
   end
 end

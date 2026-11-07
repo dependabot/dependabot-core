@@ -4,12 +4,17 @@
 require "excon"
 require "sorbet-runtime"
 
+require "dependabot/clients/json_response_parser"
 require "dependabot/shared_helpers"
 
 module Dependabot
   module Clients
     class Bitbucket
       extend T::Sig
+      include JsonResponseParser
+
+      JsonObject = T.type_alias { JsonResponseParser::JsonObject }
+      JsonObjects = T.type_alias { T::Array[JsonObject] }
 
       class NotFound < StandardError; end
 
@@ -54,14 +59,18 @@ module Dependabot
         path = "#{repo}/refs/branches/#{branch}"
         response = get(base_url + path)
 
-        JSON.parse(response.body).fetch("target").fetch("hash")
+        root = parse_json_object(response.body, "branch")
+        target = object_field(root, "target", "branch")
+        string_field(target, "hash", "branch")
       end
 
       sig { params(repo: String).returns(String) }
       def fetch_default_branch(repo)
         response = get(base_url + repo)
 
-        JSON.parse(response.body).fetch("mainbranch").fetch("name")
+        root = parse_json_object(response.body, "repository")
+        main_branch = object_field(root, "mainbranch", "repository")
+        string_field(main_branch, "name", "repository")
       end
 
       sig do
@@ -70,7 +79,7 @@ module Dependabot
           commit: T.nilable(String),
           path: T.nilable(String)
         )
-          .returns(T::Array[T::Hash[String, T.untyped]])
+          .returns(JsonObjects)
       end
       def fetch_repo_contents(repo, commit = nil, path = nil)
         raise "Commit is required if path provided!" if commit.nil? && path
@@ -81,7 +90,8 @@ module Dependabot
         api_path += "?pagelen=100"
         response = get(base_url + api_path)
 
-        JSON.parse(response.body).fetch("values")
+        root = parse_json_object(response.body, "repository contents")
+        object_array_field(root, "values", "repository contents")
       end
 
       sig do
@@ -104,7 +114,7 @@ module Dependabot
           repo: String,
           branch_name: T.nilable(String)
         )
-          .returns(T::Enumerator[T::Hash[String, T.untyped]])
+          .returns(T::Enumerator[JsonObject])
       end
       def commits(repo, branch_name = nil)
         commits_path = "#{repo}/commits/#{branch_name}?pagelen=100"
@@ -117,13 +127,13 @@ module Dependabot
           repo: String,
           branch_name: String
         )
-          .returns(T::Hash[String, T.untyped])
+          .returns(JsonObject)
       end
       def branch(repo, branch_name)
         branch_path = "#{repo}/refs/branches/#{branch_name}"
         response = get(base_url + branch_path)
 
-        JSON.parse(response.body)
+        parse_json_object(response.body, "branch")
       end
 
       sig do
@@ -133,7 +143,7 @@ module Dependabot
           target_branch: T.nilable(String),
           status: T::Array[String]
         )
-          .returns(T::Array[T::Hash[String, T.untyped]])
+          .returns(JsonObjects)
       end
       def pull_requests(repo, source_branch, target_branch, status = %w(OPEN MERGED DECLINED SUPERSEDED))
         pr_path = "#{repo}/pullrequests?"
@@ -148,10 +158,14 @@ module Dependabot
           if source_branch.nil?
             source_branch_matches = true
           else
-            pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
+            source = object_field(pr, "source", "pull request")
+            source_branch_details = object_field(source, "branch", "pull request")
+            pr_source_branch = string_field(source_branch_details, "name", "pull request")
             source_branch_matches = pr_source_branch == source_branch
           end
-          pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
+          destination = object_field(pr, "destination", "pull request")
+          target_branch_details = object_field(destination, "branch", "pull request")
+          pr_target_branch = string_field(target_branch_details, "name", "pull request")
           source_branch_matches && pr_target_branch == target_branch
         end
       end
@@ -262,12 +276,13 @@ module Dependabot
       def current_user
         base_url = "https://api.bitbucket.org/2.0/user?fields=uuid"
         response = get(base_url)
-        JSON.parse(response.body).fetch("uuid")
+        root = parse_json_object(response.body, "current user")
+        string_field(root, "uuid", "current user")
       rescue Unauthorized
         nil
       end
 
-      sig { params(repo: String).returns(T::Array[T::Hash[String, String]]) }
+      sig { params(repo: String).returns(T::Array[T::Hash[Symbol, String]]) }
       def default_reviewers(repo)
         current_uuid = current_user
         path = "#{repo}/default-reviewers?pagelen=100&fields=values.uuid,next"
@@ -278,18 +293,20 @@ module Dependabot
         reviewer_data = []
 
         default_reviewers.each do |reviewer|
-          reviewer_data.append({ uuid: reviewer.fetch("uuid") }) unless current_uuid == reviewer.fetch("uuid")
+          uuid = string_field(reviewer, "uuid", "default reviewer")
+          reviewer_data.append({ uuid: uuid }) unless current_uuid == uuid
         end
 
         reviewer_data
       end
 
-      sig { params(repo: String).returns(T::Array[T::Hash[String, String]]) }
+      sig { params(repo: String).returns(JsonObjects) }
       def tags(repo)
         path = "#{repo}/refs/tags?pagelen=100"
         response = get(base_url + path)
 
-        JSON.parse(response.body).fetch("values")
+        root = parse_json_object(response.body, "tags")
+        object_array_field(root, "values", "tags")
       end
 
       sig do
@@ -298,13 +315,18 @@ module Dependabot
           previous_tag: String,
           new_tag: String
         )
-          .returns(T::Array[T::Hash[String, T.untyped]])
+          .returns(JsonObjects)
       end
       def compare(repo, previous_tag, new_tag)
         path = "#{repo}/commits/?include=#{new_tag}&exclude=#{previous_tag}"
         response = get(base_url + path)
 
-        JSON.parse(response.body).fetch("values")
+        root = parse_json_object(response.body, "commit comparison")
+        commits = object_array_field(root, "values", "commit comparison")
+        commits.each do |commit|
+          validate_string_paths(commit, "commit comparison", [%w(hash), %w(summary raw), %w(links html href)])
+        end
+        commits
       end
 
       sig { params(url: String).returns(Excon::Response) }
@@ -396,21 +418,25 @@ module Dependabot
       #     response = post(url, body)
       #     first_page = JSON.parse(response.body)
       #     paginate(first_page)
-      sig do
-        type_parameters(:T)
-          .params(page: T.all(T.type_parameter(:T), T::Hash[String, T.untyped]))
-          .returns(T::Enumerator[T.type_parameter(:T)])
-      end
+      sig { params(page: JsonObject).returns(T::Enumerator[JsonObject]) }
       def paginate(page)
         Enumerator.new do |yielder|
           loop do
-            page.fetch("values", []).each { |value| yielder << value }
-            break unless page.key?("next")
+            values = page["values"]
+            object_array(values, "paginated response").each { |value| yielder << value } if values
 
-            next_page_url = page.fetch("next")
-            page = T.cast(JSON.parse(get(next_page_url).body), T.all(T::Hash[String, T.untyped], T.type_parameter(:T)))
+            next_page = page["next"]
+            break unless next_page
+
+            next_page_url = string_value(next_page, "paginated response")
+            page = parse_json_object(get(next_page_url).body, "paginated response")
           end
         end
+      end
+
+      sig { returns([String, String]) }
+      def response_identity
+        ["Bitbucket", base_url]
       end
 
       sig { returns(T::Hash[String, String]) }

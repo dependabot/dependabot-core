@@ -16,8 +16,8 @@ module Dependabot
           @mixfile_content = mixfile_content
         end
 
-        FILE_READ      = /File.read\(.*?\)/
-        FILE_READ_BANG = /File.read!\(.*?\)/
+        FILE_READ      = /File\.read\([^)]*\)/
+        FILE_READ_BANG = /File\.read!\([^)]*\)/
         PIPE           = T.let(Regexp.escape("|>").freeze, String)
         VERSION_FILE   = /"VERSION"/i
 

@@ -89,6 +89,23 @@ public class JobErrorBaseTests : TestBase
             new PrivateSourceAuthenticationFailure(["http://nuget.example.com/v3/index.json"]),
         ];
 
+        // a forbidden response from a package feed turns into private_source_authentication_failure
+        yield return
+        [
+            new HttpRequestException("nope", null, HttpStatusCode.Forbidden),
+            new PrivateSourceAuthenticationFailure(["http://nuget.example.com/v3/index.json"]),
+        ];
+
+        // a forbidden response from the Dependabot API is an unknown updater error
+        yield return
+        [
+            new HttpApiException("POST", "create_pull_request", HttpStatusCode.Forbidden, "forbidden"),
+            new UnknownError(
+                new HttpApiException("POST", "create_pull_request", HttpStatusCode.Forbidden, "forbidden"),
+                "TEST-JOB-ID"
+            ),
+        ];
+
         // inner exception turns into private_source_authentication_failure
         yield return
         [

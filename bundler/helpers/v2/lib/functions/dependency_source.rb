@@ -41,9 +41,10 @@ module Functions
 
       bundler_source
         .fetchers.flat_map do |fetcher|
-          fetcher
-            .specs([dependency_name], bundler_source)
-            .search_all(dependency_name).map(&:version)
+          index = fetcher.specs([dependency_name], bundler_source)
+          # Bundler 4 removed Index#search_all; use #search which returns all matches
+          specs = index.respond_to?(:search_all) ? index.search_all(dependency_name) : index.search(dependency_name)
+          specs.map(&:version)
         end
     end
 

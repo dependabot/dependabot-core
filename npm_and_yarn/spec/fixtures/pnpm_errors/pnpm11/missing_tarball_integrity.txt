@@ -1,0 +1,4 @@
+Scope: all 33 workspace projects
+[ERR_PNPM_MISSING_TARBALL_INTEGRITY] Cannot install package "@example/widget@https://github.com/example/widget/releases/download/v1.0.0/build.tgz": its lockfile entry has no "integrity" field, so pnpm cannot verify the downloaded tarball.
+
+The lockfile may be corrupted or have been tampered with. Restore it from a trusted source, or delete it and re-run installation without --frozen-lockfile to regenerate.

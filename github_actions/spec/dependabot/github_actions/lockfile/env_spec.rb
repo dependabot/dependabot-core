@@ -1,0 +1,90 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "spec_helper"
+require "dependabot/credential"
+require "dependabot/github_actions/lockfile"
+
+RSpec.describe Dependabot::GithubActions::Lockfile::Env do
+  extend T::Sig
+
+  sig { params(hash: T::Hash[String, String]).returns(Dependabot::Credential) }
+  def cred(hash)
+    Dependabot::Credential.new(hash)
+  end
+
+  describe ".build" do
+    context "with no github credential (hosted/tokenless mode)" do
+      it "sets a non-empty dummy GH_TOKEN so go-gh runs and the proxy injects auth" do
+        env = described_class.build([])
+        expect(env["GH_TOKEN"]).to eq("x-access-token")
+        expect(env["GH_TOKEN"]).not_to be_empty
+        expect(env["GH_ACTIONS_LOCK_DEPENDABOT_PROXY"]).to eq("1")
+      end
+    end
+
+    context "with a real github.com credential (proxyless mode)" do
+      sig { returns(T::Array[Dependabot::Credential]) }
+      let(:credentials) do
+        [cred(
+          { "type" => "git_source", "host" => "github.com",
+            "username" => "x-access-token", "password" => "real-token" }
+        )]
+      end
+
+      it "passes the real token through as GH_TOKEN" do
+        expect(described_class.build(credentials)).to eq("GH_TOKEN" => "real-token")
+      end
+    end
+
+    context "with both an app token and a deliberate token" do
+      sig { returns(T::Array[Dependabot::Credential]) }
+      let(:credentials) do
+        [
+          cred({ "type" => "git_source", "host" => "github.com", "password" => "v1.app-token" }),
+          cred({ "type" => "git_source", "host" => "github.com", "password" => "pat-token" })
+        ]
+      end
+
+      it "prefers the non-app token" do
+        expect(described_class.build(credentials)["GH_TOKEN"]).to eq("pat-token")
+      end
+    end
+
+    context "with a ghe.com home host" do
+      sig { returns(T::Array[Dependabot::Credential]) }
+      let(:credentials) do
+        [
+          cred({ "type" => "git_source", "host" => "github.com", "password" => "dotcom-token" }),
+          cred({ "type" => "git_source", "host" => "tenant.ghe.com", "password" => "tenant-token" })
+        ]
+      end
+
+      it "uses only the home-host token" do
+        expect(described_class.build(credentials, "tenant.ghe.com")).to eq("GH_TOKEN" => "tenant-token")
+      end
+
+      it "never forwards a dotcom token when the home host has none" do
+        expect(described_class.build(credentials.first(1), "tenant.ghe.com")).to eq(
+          "GH_TOKEN" => "x-access-token",
+          "GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"
+        )
+      end
+    end
+
+    context "with a non-GitHub git credential" do
+      sig { returns(T::Array[Dependabot::Credential]) }
+      let(:credentials) do
+        [cred({ "type" => "git_source", "host" => "gitlab.com", "password" => "gitlab-token" })]
+      end
+
+      it "does not redirect gh to another provider" do
+        env = described_class.build(credentials)
+        expect(env).to eq(
+          "GH_TOKEN" => "x-access-token",
+          "GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"
+        )
+      end
+    end
+  end
+end

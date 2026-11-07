@@ -1,0 +1,6 @@
+bun add v1.4.2 (744846f84)
+Resolving dependencies
+Resolved, downloaded and extracted [2]
+Attempting to install security scanner from npm...
+Security scanner installed successfully.
+error: Security scanner failed: Socket Security Scanner: Received 403 from server

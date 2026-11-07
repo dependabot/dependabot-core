@@ -2,16 +2,11 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NUGET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # PowerShell unit tests
-pushd ./updater
-pwsh ./test.ps1
-popd
+pwsh "$NUGET_DIR/updater/test.ps1"
 
 # C# unit tests
-pushd ./helpers/lib/NuGetUpdater
-dotnet restore
-dotnet build --configuration Release
-dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./DotNetPackageCorrelation.Test/DotNetPackageCorrelation.Test.csproj
-dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj
-dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
-popd
+"$SCRIPT_DIR/run-csharp-tests"

@@ -30,6 +30,11 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
+        // directories share a working tree, so an earlier directory may already have updated (or created) the PR
+        var pullRequestUpdated = false;
+        // closing is deferred until every directory has been evaluated so the outcome doesn't depend on directory order
+        ClosePullRequest? pendingClose = null;
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -41,7 +46,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialFiles);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -58,8 +63,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             if (groupedUpdateOperationsToPerform.Count == 0)
             {
                 var close = ClosePullRequest.WithDependenciesRemoved(job);
-                logger.Info(close.GetReport());
-                await apiHandler.ClosePullRequest(close);
+                pendingClose ??= close;
                 continue;
             }
 
@@ -70,12 +74,12 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             if (missingDependencies.Length > 0)
             {
                 var close = ClosePullRequest.WithDependencyRemoved(job);
-                logger.Info(close.GetReport());
-                await apiHandler.ClosePullRequest(close);
+                pendingClose ??= close;
                 continue;
             }
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+            var noVulnerableDependencies = false;
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
@@ -89,9 +93,9 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 if (vulnerableDependenciesToUpdate.Length == 0)
                 {
                     var close = ClosePullRequest.WithUpToDate(job);
-                    logger.Info(close.GetReport());
-                    await apiHandler.ClosePullRequest(close);
-                    return;
+                    pendingClose ??= close;
+                    noVulnerableDependencies = true;
+                    break;
                 }
 
                 foreach (var (projectPath, dependency, dependencyInfo) in vulnerableDependenciesToUpdate)
@@ -112,7 +116,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     logger.Info($"Attempting update of {dependency.Name} from {dependency.Version} to {analysisResult.UpdatedVersion} for {projectPath}.");
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
-                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
+                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
@@ -140,6 +144,11 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
+            if (noVulnerableDependencies)
+            {
+                continue;
+            }
+
             // ensure we did something
             var updatesNotPerformed = jobDependencies
                 .Except(updatedDependencies.Select(d => d.Name), StringComparer.OrdinalIgnoreCase)
@@ -150,7 +159,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             if (updatesNotPerformed.Length > 0)
             {
                 logger.Info($"No updates performed for: {string.Join(", ", updatesNotPerformed)}");
-                await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
+                pendingClose ??= ClosePullRequest.WithUpdateNoLongerPossible(job);
                 continue;
             }
 
@@ -163,7 +172,8 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
                 var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
+                var reportedDependencies = updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory)).ToArray();
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true);
                 if (existingPullRequest is not null)
                 {
                     await apiHandler.UpdatePullRequest(new UpdatePullRequest()
@@ -176,11 +186,12 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                         PrTitle = prTitle,
                         PrBody = prBody,
                     });
+                    pullRequestUpdated = true;
                     continue;
                 }
                 else
                 {
-                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
+                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false);
                     if (existingPrButDifferent is not null)
                     {
                         await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
@@ -188,7 +199,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     await apiHandler.CreatePullRequest(new CreatePullRequest()
                     {
-                        Dependencies = [.. updatedDependencies],
+                        Dependencies = [.. updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory))],
                         UpdatedDependencyFiles = [.. updatedDependencyFiles],
                         BaseCommitSha = baseCommitSha,
                         CommitMessage = commitMessage,
@@ -196,9 +207,16 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                         PrBody = prBody,
                         DependencyGroup = null,
                     });
+                    pullRequestUpdated = true;
                     continue;
                 }
             }
+        }
+
+        if (!pullRequestUpdated && pendingClose is not null)
+        {
+            logger.Info(pendingClose.GetReport());
+            await apiHandler.ClosePullRequest(pendingClose);
         }
     }
 }

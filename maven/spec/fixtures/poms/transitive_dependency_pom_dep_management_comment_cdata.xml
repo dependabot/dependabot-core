@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.dependabot</groupId>
+  <artifactId>basic-pom</artifactId>
+  <version>0.0.1-RELEASE</version>
+  <name>Dependabot Plugin POM</name>
+
+  <!-- This comment mentions <profiles> and </dependencyManagement> on purpose -->
+  <description><![CDATA[Build notes that also mention <profiles> and </dependencyManagement>.]]></description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.11.12</version>
+    </dependency>
+  </dependencies>
+
+  <dependencyManagement />
+
+  <profiles>
+    <profile>
+      <id>integration</id>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>profile-managed</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+  </profiles>
+</project>

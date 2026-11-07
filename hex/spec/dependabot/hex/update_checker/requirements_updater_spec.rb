@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve class-scope generated its examples and their fixtures.
+
 require "spec_helper"
 require "dependabot/hex/update_checker/requirements_updater"
 
@@ -34,6 +36,17 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
     let(:mixfile_req_string) { "~> 1.0.0" }
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
+
+    context "with a malformed requirement" do
+      let(:mixfile_req) do
+        { file: "mix.exs", requirement: 123, groups: [], source: nil }
+      end
+
+      it "raises a type error" do
+        expect { updater.updated_requirements }
+          .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      end
+    end
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }

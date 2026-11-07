@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/uv/language"
@@ -6,6 +6,10 @@ require "dependabot/ecosystem"
 require_relative "../../spec_helper"
 
 RSpec.describe Dependabot::Uv::Language do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Uv::Language) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:language) do
     described_class.new(
       detected_version: detected_version,
@@ -13,27 +17,22 @@ RSpec.describe Dependabot::Uv::Language do
     )
   end
 
+  sig { returns(String) }
   let(:detected_version) { "3.11" }
+
+  sig { returns(String) }
   let(:raw_version) { "3.13.1" }
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#deprecated?" do
     it "returns false" do
       expect(language.deprecated?).to be false
     end
 
-    context "when detected version is deprecated but not unsupported" do
-      let(:detected_version) { "3.8.1" }
-
-      before do
-        allow(language).to receive(:unsupported?).and_return(false)
-      end
-
-      it "returns true" do
-        expect(language.deprecated?).to be true
-      end
-    end
-
     context "when detected version is unsupported" do
+      sig { override.returns(String) }
+      let(:detected_version) { "3.9.1" }
+
       it "returns false, as unsupported takes precedence" do
         expect(language.deprecated?).to be false
       end
@@ -46,7 +45,8 @@ RSpec.describe Dependabot::Uv::Language do
     end
 
     context "when detected version is unsupported" do
-      let(:detected_version) { "3.8" }
+      sig { override.returns(String) }
+      let(:detected_version) { "3.9" }
 
       it "returns true" do
         expect(language.unsupported?).to be true
@@ -60,7 +60,8 @@ RSpec.describe Dependabot::Uv::Language do
     end
 
     context "when detected version is unsupported" do
-      let(:detected_version) { "3.8" }
+      sig { override.returns(String) }
+      let(:detected_version) { "3.9" }
 
       it "raises a ToolVersionNotSupported error" do
         expect { language.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)

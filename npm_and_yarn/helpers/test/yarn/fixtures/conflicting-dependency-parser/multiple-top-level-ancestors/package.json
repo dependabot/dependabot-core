@@ -1,0 +1,8 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": {
+    "top-level-a": "1.0.0",
+    "top-level-b": "1.0.0"
+  }
+}

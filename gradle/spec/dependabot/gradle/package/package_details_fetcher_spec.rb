@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve parameterized its examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,13 +8,14 @@ require "dependabot/dependency_file"
 require "dependabot/gradle/update_checker/version_finder"
 
 RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
+  let(:cooldown_options) { nil }
   let(:packagedetailsfetcher) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-
-      forbidden_urls: []
+      forbidden_urls: [],
+      cooldown_options: cooldown_options
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
@@ -45,8 +47,9 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }
 
+  let(:metadata_base_url) { "https://repo.maven.apache.org/maven2" }
   let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
+    "#{metadata_base_url}/" \
       "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
@@ -60,6 +63,27 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
   describe "#versions" do
     subject(:versions) { packagedetailsfetcher.fetch_available_versions }
+
+    context "when cooldown_options is nil" do
+      it "does not fetch release metadata" do
+        expect(packagedetailsfetcher).not_to receive(:release_details)
+        packagedetailsfetcher.fetch_available_versions
+      end
+    end
+
+    context "when cooldown_options is configured" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+      before do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
+          .to_return(status: 200, body: "")
+      end
+
+      it "fetches release metadata" do
+        expect(packagedetailsfetcher).to receive(:release_details).and_call_original
+        packagedetailsfetcher.fetch_available_versions
+      end
+    end
 
     its(:count) { is_expected.to eq(70) }
 
@@ -80,6 +104,72 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
+      end
+    end
+
+    context "with a replaces-base credential" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
+    context "with multiple private registry credentials" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) do
+        "https://mirror.example.com/maven/" \
+          "com/google/guava/guava/maven-metadata.xml"
+      end
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://mirror.example.com/maven/",
+              "username" => "hello",
+              "password" => "world"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, mirror_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
       end
     end
 
@@ -110,6 +200,21 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/"
       end
+      let(:gradle_plugin_html_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
+      let(:spring_boot_plugin_pom_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/2.0.5.RELEASE/" \
+          "org.springframework.boot.gradle.plugin-2.0.5.RELEASE.pom"
+      end
+      let(:fallback_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: version_class.new("2.0.5.RELEASE"),
+          url: "https://plugins.gradle.org/m2"
+        )
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
@@ -124,6 +229,85 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         expect(release_info).to be_a(Hash)
         expect(release_info).to have_key("2.1.4.RELEASE")
         expect(release_info["2.1.4.RELEASE"][:release_date]).to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+      end
+
+      it "uses pom last-modified fallback when listing omits release date" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: fallback_release)
+
+        expect(hydrated_release.released_at).to eq(Time.utc(2026, 5, 11, 10, 8, 43))
+      end
+
+      it "returns the original release when a release date is already present" do
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("2.0.5.RELEASE"),
+          released_at: Time.utc(2026, 5, 10, 9, 0, 0),
+          url: "https://plugins.gradle.org/m2"
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release).to equal(release)
+        expect(a_request(:head, spring_boot_plugin_pom_url)).not_to have_been_made
+      end
+
+      it "does not eagerly populate fallback release dates in version listings" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        release = versions.find { |v| v[:version].to_s == "2.0.5.RELEASE" }
+        expect(release).not_to be_nil
+        expect(release[:released_at]).to be_nil
+        expect(a_request(:head, spring_boot_plugin_pom_url)).not_to have_been_made
+      end
+
+      it "caches fallback lookups per version" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        2.times do
+          packagedetailsfetcher.fetch_release_metadata(release: fallback_release)
+        end
+
+        expect(a_request(:head, spring_boot_plugin_pom_url)).to have_been_made.once
       end
 
       describe "the first version" do
@@ -149,10 +333,32 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
 
-        its([:released_at]) do
-          # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
-          is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+        context "without cooldown configured" do
+          its([:released_at]) { is_expected.to be_nil }
         end
+
+        context "with cooldown configured" do
+          let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+          its([:released_at]) do
+            # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
+            is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+          end
+        end
+      end
+    end
+
+    context "with a non-plugin dependency" do
+      it "does not attempt pom last-modified fallback when release date is missing" do
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("23.3-jre"),
+          url: "https://repo.maven.apache.org/maven2"
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to be_nil
+        expect(WebMock).not_to have_requested(:head, /.*/)
       end
     end
 
@@ -215,9 +421,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
 
-        its([:released_at]) do
-          # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
-          is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
+        context "without cooldown configured" do
+          its([:released_at]) { is_expected.to be_nil }
+        end
+
+        context "with cooldown configured" do
+          let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+          its([:released_at]) do
+            # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
+            is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
+          end
         end
       end
     end
@@ -321,17 +535,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
       context "when the details come from gradle distributions" do
         before do
-          Dependabot::Experiments.register(:gradle_wrapper_updater, true)
-
           stub_request(:get, "https://services.gradle.org/versions/all")
             .to_return(
               status: 200,
               body: fixture("gradle_distributions_metadata", "versions_all.json")
             )
-        end
-
-        after do
-          Dependabot::Experiments.reset!
         end
 
         describe "the last version" do
@@ -363,6 +571,114 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
             is_expected.to eq("https://services.gradle.org")
           end
         end
+      end
+    end
+
+    context "when fetching from Maven Central raises EOF" do
+      context "when EOF is transient" do
+        before do
+          stub_request(:get, maven_central_metadata_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new)).then
+            .to_return(status: 200, body: maven_central_releases)
+        end
+
+        it "retries and returns available versions" do
+          expect(versions.count).to eq(70)
+        end
+      end
+
+      context "when EOF is persistent" do
+        before do
+          stub_request(:get, maven_central_metadata_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new))
+        end
+
+        it "raises after exhausting retries" do
+          expect { versions }.to raise_error(Excon::Error::Socket)
+        end
+      end
+    end
+
+    context "when Maven Central is rate limited" do
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 429, body: "Too Many Requests")
+      end
+
+      it "raises a RegistryError instead of returning no versions" do
+        expect { versions }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+      end
+    end
+
+    context "when Maven Central returns a server error" do
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 503, body: "Service Unavailable")
+      end
+
+      it "raises a RegistryError instead of returning no versions" do
+        expect { versions }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(503) }
+      end
+    end
+
+    context "when Maven Central returns a 404" do
+      before do
+        stub_request(:get, maven_central_metadata_url).to_return(status: 404, body: "")
+      end
+
+      it "returns no versions" do
+        expect(versions).to eq([])
+      end
+    end
+
+    context "when a private repository returns a server error" do
+      let(:private_repo) { "https://private.repo.example.com/maven2" }
+      let(:credentials) do
+        [Dependabot::Credential.new({ "type" => "maven_repository", "url" => private_repo })]
+      end
+      let(:private_metadata_url) { "#{private_repo}/com/google/guava/guava/maven-metadata.xml" }
+
+      before do
+        stub_request(:get, private_metadata_url).to_return(status: 502, body: "Bad Gateway")
+      end
+
+      context "when no other repository has versions" do
+        before do
+          stub_request(:get, maven_central_metadata_url).to_return(status: 404, body: "")
+        end
+
+        it "raises PrivateSourceBadResponse" do
+          expect { versions }
+            .to raise_error(Dependabot::PrivateSourceBadResponse) { |e| expect(e.source).to eq(private_repo) }
+        end
+      end
+
+      context "when another repository has versions" do
+        it "returns the versions from the other repository" do
+          expect(versions.count).to eq(70)
+        end
+      end
+    end
+
+    context "when a registry that replaces Maven Central is rate limited" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) { "https://mirror.example.com/maven/com/google/guava/guava/maven-metadata.xml" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://mirror.example.com/maven/" }),
+          Dependabot::Credential.new(
+            { "type" => "maven_repository", "url" => "https://registry.example.com/maven/", "replaces-base" => true }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url).to_return(status: 429, body: "Too Many Requests")
+        stub_request(:get, mirror_metadata_url).to_return(status: 200, body: maven_central_releases)
+      end
+
+      it "raises a RegistryError even when another repository has versions" do
+        expect { versions }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
       end
     end
   end

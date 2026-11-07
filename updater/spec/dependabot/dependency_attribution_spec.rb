@@ -25,12 +25,12 @@ RSpec.describe Dependabot::DependencyAttribution do
 
       # Check that attribution metadata is properly set
       attribution = described_class.get_attribution(dependency)
-      expect(attribution).to include(
+      expect(attribution.to_h).to include(
         source_group: "backend",
         selection_reason: :direct,
         directory: "/api"
       )
-      expect(attribution[:timestamp]).to be_a(Time)
+      expect(attribution.timestamp).to be_a(Time)
     end
 
     it "validates selection reason" do
@@ -70,14 +70,14 @@ RSpec.describe Dependabot::DependencyAttribution do
         )
       end
 
-      it "returns attribution hash" do
+      it "returns attribution details" do
         attribution = described_class.get_attribution(dependency)
-        expect(attribution).to include(
+        expect(attribution.to_h).to include(
           source_group: "backend",
           selection_reason: :direct,
           directory: "/api"
         )
-        expect(attribution[:timestamp]).to be_a(Time)
+        expect(attribution.timestamp).to be_a(Time)
       end
     end
 
@@ -86,9 +86,9 @@ RSpec.describe Dependabot::DependencyAttribution do
         expect(described_class.extract_attribution_data([])).to eq([])
 
         summary = described_class.telemetry_summary([])
-        expect(summary[:total_dependencies]).to eq(0)
-        expect(summary[:attributed_dependencies]).to eq(0)
-        expect(summary[:attribution_coverage]).to eq(0.0)
+        expect(summary.total_dependencies).to eq(0)
+        expect(summary.attributed_dependencies).to eq(0)
+        expect(summary.attribution_coverage).to eq(0.0)
       end
     end
   end
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::DependencyAttribution do
     it "extracts attribution data from attributed dependencies" do
       data = described_class.extract_attribution_data(dependencies)
       expect(data.length).to eq(1)
-      expect(data[0]).to include(
+      expect(data[0].to_h).to include(
         name: "attributed-dep",
         version: "1.0.0",
         previous_version: "0.9.0",
@@ -185,20 +185,20 @@ RSpec.describe Dependabot::DependencyAttribution do
 
     it "generates telemetry summary" do
       summary = described_class.telemetry_summary(dependencies)
-      expect(summary).to include(
+      expect(summary.to_h).to include(
         total_dependencies: 3,
         attributed_dependencies: 2,
         attribution_coverage: 2.0 / 3
       )
-      expect(summary[:selection_reasons]).to include(
+      expect(summary.selection_reasons).to include(
         "direct" => 1,
         "already_updated" => 1
       )
-      expect(summary[:source_groups]).to include(
+      expect(summary.source_groups).to include(
         "backend" => 1,
         "frontend" => 1
       )
-      expect(summary[:directories]).to include(
+      expect(summary.directories).to include(
         "/api" => 1,
         "/web" => 1
       )
@@ -213,6 +213,7 @@ RSpec.describe Dependabot::DependencyAttribution do
         :dependency_drift,
         :not_in_group,
         :filtered_by_config,
+        :belongs_to_more_specific_group,
         :unknown
       )
     end

@@ -59,8 +59,8 @@ module Dependabot
 
     # Converts the Notice object to a hash.
     # @return [Hash] The hash representation of the notice.
-    sig { returns(T::Hash[Symbol, T.untyped]) }
-    def to_hash
+    sig { returns(T::Hash[Symbol, T.any(String, T::Boolean)]) }
+    def to_h
       {
         mode: @mode,
         type: @type,
@@ -158,15 +158,16 @@ module Dependabot
 
     sig { params(mode: String).returns(String) }
     def self.markdown_mode(mode)
+      # GitHub has no INFO alert; it renders NOTE, TIP, IMPORTANT, WARNING and CAUTION
       case mode
       when NoticeMode::INFO
-        "INFO"
+        "NOTE"
       when NoticeMode::WARN
         "WARNING"
       when NoticeMode::ERROR
         "IMPORTANT"
       else
-        "INFO"
+        "NOTE"
       end
     end
   end

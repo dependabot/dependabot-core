@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only hex_response fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/hex/metadata_finder"
@@ -108,6 +110,33 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
         end
 
         it { is_expected.to be_nil }
+      end
+    end
+
+    context "when the dependency has a hex package name alias" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pulsar",
+          version: "2.8.7",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 2.8.7",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex",
+          metadata: { hex_package: "pulsar_elixir" }
+        )
+      end
+
+      let(:hex_url) { "https://hex.pm/api/packages/pulsar_elixir" }
+      let(:hex_response) do
+        fixture("registry_api", "phoenix_response.json")
+      end
+
+      it "queries the hex.pm API using the hex package name" do
+        source_url
+        expect(WebMock).to have_requested(:get, hex_url).once
       end
     end
   end

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -78,6 +78,28 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       it "uses the custom declarations" do
         expect(subproject_paths)
           .to match_array(%w(subprojects/chrome-trace examples/java))
+      end
+    end
+  end
+
+  describe "#subproject_path_to_name_map" do
+    subject(:subproject_path_to_name_map) { finder.subproject_path_to_name_map }
+
+    context "with simple subproject declarations" do
+      let(:fixture_name) { "simple_settings.gradle" }
+
+      it "maps filesystem paths to Gradle project names" do
+        expect(subproject_path_to_name_map).to eq("app" => ":app")
+      end
+    end
+
+    context "with custom projectDir mappings" do
+      let(:fixture_name) { "custom_dir_settings.gradle" }
+
+      it "maps the custom filesystem paths to the declared Gradle project names" do
+        expect(subproject_path_to_name_map).to include(
+          "subprojects/chrome-trace" => ":chrome-trace"
+        )
       end
     end
   end

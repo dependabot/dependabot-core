@@ -431,7 +431,9 @@ RSpec.describe Dependabot::DependencyChange do
         instance_double(
           Dependabot::Job,
           dependencies: updated_dependencies.map(&:name),
-          existing_group_pull_requests: existing_group_pull_requests
+          existing_group_pull_requests: existing_group_pull_requests.map do |pr|
+            Dependabot::Job::ExistingGroupPullRequest.from_hash(pr)
+          end
         )
       end
       let(:existing_group_pull_requests) do
@@ -480,7 +482,9 @@ RSpec.describe Dependabot::DependencyChange do
         instance_double(
           Dependabot::Job,
           dependencies: updated_dependencies.map(&:name),
-          existing_group_pull_requests: existing_group_pull_requests
+          existing_group_pull_requests: existing_group_pull_requests.map do |pr|
+            Dependabot::Job::ExistingGroupPullRequest.from_hash(pr)
+          end
         )
       end
       let(:existing_group_pull_requests) do

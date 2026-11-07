@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the version_string fixture defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bazel/version"
 
@@ -201,6 +203,32 @@ RSpec.describe Dependabot::Bazel::Version do
         expect([v1, v2, v3].max).to eq(v3)
         expect([v3, v1, v2].sort).to eq([v1, v2, v3])
       end
+    end
+  end
+
+  describe ".correct?" do
+    it "accepts standard versions" do
+      expect(described_class.correct?("1.2.3")).to be true
+    end
+
+    it "accepts v-prefixed versions" do
+      expect(described_class.correct?("v1.2.3")).to be true
+    end
+
+    it "accepts .bcr.N suffixed versions" do
+      expect(described_class.correct?("1.2.3.bcr.1")).to be true
+    end
+
+    it "accepts v-prefixed prerelease versions" do
+      expect(described_class.correct?("v1.2.3-rc1")).to be true
+    end
+
+    it "rejects malformed strings" do
+      expect(described_class.correct?("not_valid!!!")).to be false
+    end
+
+    it "rejects nil" do
+      expect(described_class.correct?(nil)).to be false
     end
   end
 end

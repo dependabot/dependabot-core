@@ -1,0 +1,7 @@
+{
+  "name": "app",
+  "dependencies": {
+    "etag": "catalog:current",
+    "is-number": "catalog:"
+  }
+}

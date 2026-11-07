@@ -1,0 +1,594 @@
+# typed: false
+# frozen_string_literal: true
+
+# Sorbet cannot resolve fixtures and matcher calls in class-scope generated examples.
+
+require "spec_helper"
+require "json"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
+require "dependabot/command_helpers"
+require "dependabot/github_actions/lockfile"
+
+# These specs lock the exit-code contract validated live against the real
+# gh-actions-lock binary: the CLI uses a non-zero exit purely to signal
+# `valid:false` (findings exist) while still writing the full structured result
+# to stdout. CliEngine#run must therefore parse stdout regardless of exit status,
+# and the findings — not the exit code — drive control flow. We stub the
+# subprocess layer so no binary or network is needed.
+RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
+  subject(:engine) { described_class.new([]) }
+
+  let(:workflow) do
+    Dependabot::DependencyFile.new(
+      name: ".github/workflows/ci.yml",
+      content: "on: push\njobs: {}\n"
+    )
+  end
+
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(name: ".github/workflows/actions.lock", content: "version: v0.0.2\n")
+  end
+
+  # Fake ProcessStatus exposing just the process state CliEngine#invoke reads.
+  def process_double(exitstatus, termsig: nil)
+    instance_double(Process::Status, exitstatus: exitstatus, termsig: termsig, success?: exitstatus.zero?)
+  end
+
+  def stub_subprocess(stdout:, exitstatus:, stderr: "Scanning 1 workflow\nResolving actions\n", termsig: nil)
+    allow(Dependabot::CommandHelpers)
+      .to receive(:capture3_with_timeout)
+      .and_return([stdout, stderr, process_double(exitstatus, termsig: termsig)])
+  end
+
+  # The run/invoke exit-code contract, exercised through the sole public entrypoint
+  # (relock). The CLI writes structured JSON to stdout regardless of exit status, so
+  # parse failures and tool failures must be told apart by exit code, not presence of
+  # output. (Exit 2 + stderr is covered by the corrupt-lockfile block below.)
+  describe "#relock when stdout is genuinely unparseable at a parse-expected exit (1)" do
+    before { stub_subprocess(stdout: "not json at all", exitstatus: 1, stderr: "") }
+
+    it "raises EngineError — exit 0/1 must carry JSON" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /unparseable JSON/)
+    end
+  end
+
+  describe "#relock home host" do
+    subject(:engine) { described_class.new([], hostname: "tenant.ghe.com") }
+
+    before { stub_subprocess(stdout: "{}", exitstatus: 0, stderr: "") }
+
+    it "always passes --hostname to the engine" do
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+
+      expect(Dependabot::CommandHelpers).to have_received(:capture3_with_timeout)
+        .with([hash_including("GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"), anything,
+               "--no-onboard", "--no-narrow", "--ignore-local-actions", "--no-interactive", "--json=findings",
+               "--hostname", "tenant.ghe.com", ".github/workflows/ci.yml", anything])
+    end
+  end
+
+  describe "#relock with self repository actions" do
+    let(:action) { Dependabot::DependencyFile.new(name: "tools/setup/action.yml", content: "runs: {}\n") }
+
+    it "materializes them at repo-relative paths under the named repo root" do
+      seen = T.let(nil, T.nilable([T::Boolean, String]))
+      allow(Dependabot::CommandHelpers).to receive(:capture3_with_timeout) do |cmd|
+        dir = cmd.last[:chdir]
+        seen = [cmd.first["GH_ACTIONS_LOCK_REPO_ROOT"] == dir, File.read(File.join(dir, "tools/setup/action.yml"))]
+        ["{}", "", process_double(0)]
+      end
+
+      engine.relock(workflow_files: [workflow], lockfile: lockfile, action_files: [action])
+
+      expect(seen).to eq([true, "runs: {}\n"])
+    end
+  end
+
+  describe "#relock when the engine cannot verify a pin's host identity" do
+    before do
+      stub_subprocess(
+        stdout: "",
+        exitstatus: 2,
+        stderr: "verifying repository identity for actions/checkout on tenant.ghe.com: " \
+                "HTTP 404: Not Found (https://api.tenant.ghe.com/repos/actions/checkout)\n"
+      )
+    end
+
+    it "raises a user-actionable DependencyFileNotResolvable, not EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::DependencyFileNotResolvable, /verifying repository identity/)
+    end
+  end
+
+  describe "#relock when host identity verification fails transiently" do
+    before do
+      stub_subprocess(
+        stdout: "",
+        exitstatus: 2,
+        stderr: "verifying repository identity for actions/checkout on github.com: " \
+                "HTTP 502: Bad Gateway (https://api.github.com/repos/actions/checkout)\n"
+      )
+    end
+
+    it "raises a retryable EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /HTTP 502/)
+    end
+  end
+
+  {
+    "a uses: cycle" => "committing pins: refusing to write .github/workflows/ci.yml: o/a@v1 uses o/b@v1, " \
+                       "which uses o/a@v1; the lockfile can't record actions that use each other, " \
+                       "so pin one of them to a different commit\n",
+    "an incomplete lock graph" => "committing pins: refusing to write .github/workflows/ci.yml: its lock " \
+                                  "graph is incomplete: o/a@v1 is missing; run `gh actions-lock --relock` " \
+                                  "to rebuild it\n"
+  }.each do |reason, stderr|
+    describe "#relock when the engine refuses the write for #{reason}" do
+      before { stub_subprocess(stdout: "", exitstatus: 2, stderr: stderr) }
+
+      it "raises a user-actionable DependencyFileNotResolvable, not EngineError" do
+        expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /refusing to write/)
+      end
+    end
+  end
+
+  describe "#relock when stdout is valid non-object JSON" do
+    before { stub_subprocess(stdout: "[]", exitstatus: 0, stderr: "") }
+
+    it "raises EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /non-object JSON/)
+    end
+  end
+
+  describe "#relock when the binary fails to start (capture3 returns a nil status)" do
+    # capture3_with_timeout swallows Errno::ENOENT (binary missing / not executable)
+    # by returning a nil status with the OS error on stderr. Without the guard in
+    # CliEngine#invoke this coerces to exit 0 and surfaces as a misleading
+    # "unparseable JSON" error. It must instead be a clear "failed to start".
+    before do
+      allow(Dependabot::CommandHelpers)
+        .to receive(:capture3_with_timeout)
+        .and_return(["", "No such file or directory - gh-actions-lock", nil])
+    end
+
+    it "raises EngineError reporting the binary failed to start, not unparseable JSON" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(
+          Dependabot::GithubActions::Lockfile::EngineError,
+          /failed to start.*No such file or directory/m
+        )
+    end
+  end
+
+  describe "#relock when the binary is terminated by a signal" do
+    before { stub_subprocess(stdout: '{"findings":[]}', exitstatus: 0, termsig: 9) }
+
+    it "raises EngineError before accepting the output" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /terminated by signal 9/)
+    end
+  end
+
+  describe "#relock surfacing a structured blocking finding (exit 1)" do
+    let(:body) do
+      {
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
+        "findings" => [
+          { "category" => "unreachable-pin", "severity" => "error",
+            "dependency" => "actions/checkout@v5", "detail" => "locked SHA not reachable from any branch" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "reaches the finding mapper (previously dead code) and raises the mapped error" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::UnresolvableDependency, %r{actions/checkout@v5})
+    end
+
+    it "maps resolver failures to a user-facing updater error" do
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+    rescue Dependabot::GithubActions::Lockfile::UnresolvableDependency => e
+      expect(T.must(Dependabot.updater_error_details(e)).error_type).to eq("dependency_file_not_resolvable")
+    end
+  end
+
+  describe "#relock with an unknown error finding (exit 1)" do
+    let(:body) do
+      {
+        "findings" => [
+          { "category" => "new-unhandled-error", "severity" => "error" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "fails closed" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /new-unhandled-error/)
+    end
+  end
+
+  # Blocking lock-integrity findings fix mode can't repair. They need the user to
+  # relock, so they must surface as user-actionable, not as an unknown error.
+  %w(tag-commit-mismatch incomplete-lockfile ref-missing invalid-workflow).each do |category|
+    describe "#relock with a #{category} finding (exit 1)" do
+      let(:body) do
+        {
+          "findings" => [
+            { "workflow" => ".github/workflows/ci.yml", "category" => "ref-changed",
+              "severity" => "error", "dependency" => "actions/checkout@v4.2.2" },
+            { "workflow" => ".github/workflows/ci.yml", "category" => category, "severity" => "error",
+              "dependency" => "actions/setup-node@v4.0.0", "detail" => "#{category} detail" }
+          ]
+        }
+      end
+
+      before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+      it "raises a user-actionable dependency_file_not_resolvable" do
+        engine.relock(workflow_files: [workflow], lockfile: lockfile)
+        raise "expected an error"
+      rescue Dependabot::GithubActions::Lockfile::UnresolvableDependency => e
+        expect(e.message).to include("actions/setup-node@v4.0.0", "#{category} detail")
+        expect(T.must(Dependabot.updater_error_details(e)).error_type).to eq("dependency_file_not_resolvable")
+      end
+    end
+  end
+
+  describe "#relock with a blocking finding that names no dependency (exit 1)" do
+    let(:body) do
+      {
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "local-action", "severity" => "error",
+            "detail" => "./setup runs whatever is in the workspace" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "names the workflow instead of 'unknown'" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(
+          Dependabot::GithubActions::Lockfile::UnresolvableDependency,
+          %r{Could not resolve \.github/workflows/ci\.yml: \./setup}
+        )
+    end
+  end
+
+  describe "#relock with only an onboarding-required finding (exit 0)" do
+    # The real binary's mixed default (no-onboard) response: three arrays populate
+    # concurrently regardless of the --json selector.
+    let(:body) do
+      {
+        "updated" => [],
+        "workflows" => [{ "path" => ".github/workflows/a.yml" }],
+        "findings" => [
+          { "workflow" => ".github/workflows/b.yml", "category" => "onboarding-required",
+            "severity" => "error", "confidence" => "high",
+            "detail" => "workflow .github/workflows/b.yml is not tracked in the lockfile" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
+
+    it "does not raise — onboarding-required is a skip, not a blocker" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .not_to raise_error
+    end
+  end
+
+  describe "#relock when the engine reports a lock-PINNED action as un-onboarded (lock unreadable)" do
+    # The lock pins actions/checkout@v4 under ci.yml, but the engine reports
+    # onboarding-required for that very action — the symptom of a malformed
+    # dependencies entry it silently swallowed to empty (it could not see a pin we
+    # can). This is the contradiction we must fail loud on, distinct from a NEW
+    # action the lock genuinely does not pin (the next describe block).
+    let(:tracked_lockfile) do
+      Dependabot::DependencyFile.new(
+        name: ".github/workflows/actions.lock",
+        content: <<~LOCK
+          version: v0.0.2
+          workflows:
+            ".github/workflows/ci.yml":
+              - "actions/checkout@v4"
+        LOCK
+      )
+    end
+
+    let(:body) do
+      {
+        "updated" => [], "workflows" => [],
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "onboarding-required",
+            "severity" => "error", "confidence" => "high", "dependency" => "actions/checkout@v4",
+            "detail" => "actions/checkout@v4 has no lockfile entry; --no-onboard refuses to add new " \
+                        "workflows or actions" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
+
+    it "raises DependencyFileNotParseable rather than silently skipping the relock" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile) }
+        .to raise_error(Dependabot::DependencyFileNotParseable, /could not read.*malformed or unreadable/m)
+    end
+  end
+
+  describe "#relock when a tracked workflow gains a NEW unpinned action (the dry-run case)" do
+    # Reproduces the real bin/dry-run.rb failure: a workflow the lock DOES track
+    # (ci.yml, pinning checkout@v4) references a second action with no pin
+    # (actions/setup-node@v4). Under --no-onboard the engine refuses to add the new
+    # action and emits onboarding-required AT ACTION GRANULARITY (`dependency` names
+    # the unpinned action, `workflow` is the tracked file). This is a legitimate
+    # skip-and-log, NOT a corrupt-lock error: the lock simply does not pin that action
+    # yet. Before the action-level discriminator, this falsely raised
+    # DependencyFileNotParseable and aborted the whole update.
+    let(:tracked_lockfile) do
+      Dependabot::DependencyFile.new(
+        name: ".github/workflows/actions.lock",
+        content: <<~LOCK
+          version: v0.0.2
+          workflows:
+            ".github/workflows/ci.yml":
+              - "actions/checkout@v4"
+        LOCK
+      )
+    end
+
+    let(:body) do
+      {
+        "updated" => [], "workflows" => [{ "path" => ".github/workflows/ci.yml" }],
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "onboarding-required",
+            "severity" => "error", "confidence" => "high", "dependency" => "actions/setup-node@v4",
+            "detail" => "actions/setup-node@v4 has no lockfile entry; --no-onboard refuses to add new " \
+                        "workflows or actions" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
+
+    it "does not raise — a new unpinned action in a tracked workflow is a skip, not a corrupt lock" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile) }
+        .not_to raise_error
+    end
+  end
+
+  describe "#relock with multiple new actions in one workflow" do
+    let(:body) do
+      {
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "onboarding-required",
+            "severity" => "error", "dependency" => "actions/setup-node@v4" },
+          { "workflow" => ".github/workflows/ci.yml", "category" => "onboarding-required",
+            "severity" => "error", "dependency" => "actions/cache@v4" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
+
+    it "counts the skipped workflow once" do
+      allow(Dependabot.logger).to receive(:info)
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+
+      expect(Dependabot.logger).to have_received(:info).with(/skipped onboarding in 1 workflow/)
+    end
+  end
+
+  describe "#relock on a corrupt/unreadable lockfile (exit 2, empty stdout)" do
+    # Current CLI contract: a lockfile
+    # that exists but cannot be parsed — malformed YAML, or a dependencies entry
+    # missing a required key — is no longer silently swallowed to empty on the
+    # headless `update` path. It fails loud: exit 2, empty stdout, file untouched.
+    # That lands in our exit>1 → EngineError branch, NOT a parsed empty result.
+    before do
+      stub_subprocess(
+        stdout: "",
+        exitstatus: 2,
+        stderr: "lockfile is unreadable: .github/workflows/actions.lock: " \
+                "missing required action field \"owner_id\""
+      )
+    end
+
+    it "raises EngineError, not a parsed empty result" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(
+          Dependabot::GithubActions::Lockfile::EngineError,
+          /failed \(exit 2\).*lockfile is unreadable/m
+        )
+    end
+  end
+
+  describe "#relock with onboarding-required AND a genuine blocker (exit 1)" do
+    let(:body) do
+      {
+        "updated" => [], "workflows" => [],
+        "findings" => [
+          { "workflow" => ".github/workflows/b.yml", "category" => "onboarding-required",
+            "severity" => "error", "detail" => "not tracked" },
+          { "category" => "unreachable-pin", "severity" => "error",
+            "dependency" => "actions/checkout@v6", "detail" => "locked SHA not reachable" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "still raises the genuine blocker — a skip never masks a real finding" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::UnresolvableDependency, %r{actions/checkout@v6})
+    end
+  end
+
+  describe "#relock on a fix-mode happy path that auto-fixed a tracked bump (exit 0)" do
+    # The load-bearing Dependabot case, reproduced against the real binary: a
+    # tracked workflow whose `uses:` ref was bumped surfaces a `ref-changed`
+    # (severity:error) finding — but `findings` is the PRE-fix diagnosis, and the
+    # exit code is 0 because fix-mode already re-pinned the lock. The engine must
+    # NOT treat that auto-fixed finding as a blocker; it must return the re-pinned
+    # lock. (Before the exit-code gate, raise_on_findings wrongly raised here.)
+    let(:body) do
+      {
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "ref-changed",
+            "severity" => "error", "confidence" => "high",
+            "dependency" => "actions/checkout@v5",
+            "detail" => "workflow uses ref \"v5\" but lockfile pins \"v4\"" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 0) }
+
+    it "does not raise — a pre-fix finding that exit 0 already resolved is not a blocker" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .not_to raise_error
+    end
+
+    it "returns the re-pinned lock content read back from disk" do
+      result = engine.relock(workflow_files: [workflow], lockfile: lockfile)
+      expect(result).to eq(lockfile.content)
+    end
+
+    it "uses the root fix interface" do
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+
+      expect(Dependabot::CommandHelpers).to have_received(:capture3_with_timeout).with(
+        include(
+          described_class.binary_path,
+          "--no-onboard",
+          "--no-narrow",
+          "--ignore-local-actions",
+          "--no-interactive",
+          "--json=findings",
+          ".github/workflows/ci.yml"
+        )
+      )
+    end
+  end
+
+  describe "#relock at exit 1 with only pre-fix diagnoses" do
+    # `findings` is the PRE-fix diagnosis, so ref-changed/stale list every bump. Exit 1
+    # wrote nothing, so without an actionable finding the run must retry, not ship.
+    let(:body) do
+      {
+        "findings" => [
+          { "category" => "ref-changed", "severity" => "error", "dependency" => "actions/checkout@v5" },
+          { "category" => "reachability-unknown", "severity" => "error", "dependency" => "actions/checkout@v5" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "raises a retryable EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /reachability-unknown/)
+    end
+  end
+
+  describe "#relock returns the pruned lock the CLI wrote to disk (stale-pin GC)" do
+    # The engine is the sole reader of the lock the CLI rewrites: whatever the
+    # binary saves to `.github/workflows/actions.lock` is what relock returns.
+    # gh-actions-lock prunes a stale pin on a ref bump — after
+    # softprops/action-gh-release@v1 -> @v2 the lock lists ONLY @v2, with the
+    # orphaned @v1 ref and its `dependencies:` entry GC'd. This was proven
+    # credentialed end-to-end through this exact path; here we stub the subprocess
+    # to write that pruned lock so core encodes the post-prune read-back contract
+    # without a binary or network. The stub captures the chdir CliEngine passes and
+    # overwrites the on-disk lock exactly as the real binary would.
+    let(:bumped_workflow) do
+      Dependabot::DependencyFile.new(
+        name: ".github/workflows/release.yml",
+        content: "on: push\njobs:\n  r:\n    steps:\n      - uses: softprops/action-gh-release@v2\n"
+      )
+    end
+
+    let(:stale_lock) do
+      Dependabot::DependencyFile.new(
+        name: ".github/workflows/actions.lock",
+        content: <<~LOCK
+          version: 'v0.0.2'
+          workflows:
+              '.github/workflows/release.yml':
+                  - 'softprops/action-gh-release@v1'
+          dependencies:
+              'softprops/action-gh-release@v1':
+                  ref: 'v1'
+                  commit: 'sha1-de2c0eb89ae2a093876385947365aca7b0e5f844'
+                  owner_id: 2242
+                  repo_id: 204253808
+        LOCK
+      )
+    end
+
+    let(:pruned_lock) do
+      <<~LOCK
+        version: 'v0.0.2'
+        workflows:
+            '.github/workflows/release.yml':
+                - 'softprops/action-gh-release@v2'
+        dependencies:
+            'softprops/action-gh-release@v2':
+                ref: 'v2'
+                commit: 'sha1-3bb12739c298aeb8a4eeaf626c5b8d85266b0e65'
+                owner_id: 2242
+                repo_id: 204253808
+      LOCK
+    end
+
+    # exit 0 + a pre-fix `stale` finding for the dropped v1 pin — the binary
+    # diagnoses v1 as stale, prunes it, and exits clean. (Plus `ref-changed` for
+    # the bump itself.) Neither survives auto-fix, so relock must not raise.
+    let(:body) do
+      {
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
+        "findings" => [
+          { "workflow" => ".github/workflows/release.yml", "category" => "ref-changed",
+            "severity" => "error", "dependency" => "softprops/action-gh-release@v2",
+            "detail" => "workflow uses \"v2\" but lockfile pins \"v1\"" },
+          { "workflow" => ".github/workflows/release.yml", "category" => "stale",
+            "severity" => "warning", "dependency" => "softprops/action-gh-release@v1",
+            "detail" => "no workflow references this pin" }
+        ]
+      }
+    end
+
+    before do
+      allow(Dependabot::CommandHelpers)
+        .to receive(:capture3_with_timeout) do |env_cmd|
+          chdir = env_cmd.last[:chdir]
+          File.write(File.join(chdir, ".github/workflows/actions.lock"), pruned_lock)
+          [JSON.generate(body), "", process_double(0)]
+        end
+    end
+
+    it "returns only the v2 pin — the stale v1 ref and its SHA are gone" do
+      result = engine.relock(workflow_files: [bumped_workflow], lockfile: stale_lock)
+
+      expect(result).to eq(pruned_lock)
+      expect(result).not_to include("@v1")
+      expect(result).not_to include("de2c0eb89ae2a093876385947365aca7b0e5f844")
+      expect(result).to include("@v2")
+    end
+
+    it "does not raise — pruned `stale` and `ref-changed` are pre-fix diagnoses at exit 0" do
+      expect { engine.relock(workflow_files: [bumped_workflow], lockfile: stale_lock) }
+        .not_to raise_error
+    end
+  end
+end

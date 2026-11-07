@@ -3,7 +3,6 @@
 
 require "json"
 require "time"
-require "cgi"
 require "excon"
 require "sorbet-runtime"
 require "dependabot/swift"
@@ -21,10 +20,7 @@ module Dependabot
         # https://api.opentofu.org/registry/docs/providers/hashicorp/aws/index.json
         # https://api.opentofu.org/registry/docs/modules/hashicorp/consul/aws/index.json
 
-        ELIGIBLE_SOURCE_TYPES = T.let(
-          %w(git provider registry).freeze,
-          T::Array[String]
-        )
+        ELIGIBLE_SOURCE_TYPES = %w(git provider registry).freeze
 
         sig do
           params(
@@ -104,8 +100,6 @@ module Dependabot
           # Sort the result lines by tag in descending order
           result_lines.sort_by(&:tag).reverse
         end
-        # RuboCop:enable Metrics/AbcSize, Metrics/MethodLength
-
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date_from_module
           return [] unless dependency_source_details

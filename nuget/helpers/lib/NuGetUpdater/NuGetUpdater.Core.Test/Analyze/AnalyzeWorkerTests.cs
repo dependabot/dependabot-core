@@ -1,10 +1,19 @@
+using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 
 using NuGet;
+using NuGet.Common;
+using NuGet.Configuration;
+using NuGet.Frameworks;
+using NuGet.Packaging.Core;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
 
@@ -53,7 +62,110 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task FindsCompatibleVersionAfterSkippingNewerIncompatibleVersion()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "2.0.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task FindsLowestCompatibleVersionForSecurityUpdate()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.3.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = true,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse("= 1.0.0")],
+                        SafeVersions = [Requirement.Parse(">= 1.1.0")],
+                    },
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.2.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.2.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );
@@ -104,9 +216,116 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "4.9.2", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                    new("Some.Package", "4.9.2", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                     new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task FindsLaterUpdatedVersionWhenEarlierVersionHasMissingTransitiveDependency()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Missing.Transitive.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = true,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse("= 1.0.0")],
+                        SafeVersions = [Requirement.Parse(">= 1.1.0")],
+                    },
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.2.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.2.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ReturnsUpToDateWhenAllUpdatedVersionsHaveMissingTransitiveDependencies()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Missing.Transitive.Dependency", "1.0.0")])]),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = true,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse("= 1.0.0")],
+                        SafeVersions = [Requirement.Parse(">= 1.1.0")],
+                    },
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
             }
         );
     }
@@ -362,7 +581,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedVersion = "1.1.0",
                 CanUpdate = true,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );
@@ -409,7 +628,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -464,7 +683,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -517,7 +736,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true),
+                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"]),
                 ],
             }
         );
@@ -739,7 +958,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -937,7 +1156,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -1125,7 +1344,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );
@@ -1367,6 +1586,445 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task CandidatePackageIsDownloadedOnceDuringVersionSelection()
+    {
+        var packageDownloadCount = 0;
+        var packageId = "Some.Package.SingleCompatibilityCheck";
+        var packageIdLower = packageId.ToLowerInvariant();
+        var packageBytes = MockNuGetPackage.CreateSimplePackage(packageId, "1.1.0", "net8.0").GetZipStream().ReadAllBytes();
+
+        (int, byte[]) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            if (uri.AbsolutePath == $"/download/{packageIdLower}/1.1.0/{packageIdLower}.1.1.0.nupkg")
+            {
+                Interlocked.Increment(ref packageDownloadCount);
+                return (200, packageBytes);
+            }
+
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """)),
+                var path when path == $"/registrations/{packageIdLower}/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {
+                        "count": 1,
+                        "items": [
+                            {
+                                "lower": "1.0.0",
+                                "upper": "1.1.0",
+                                "items": [
+                                    {
+                                        "catalogEntry": {
+                                            "listed": true,
+                                            "version": "1.0.0"
+                                        }
+                                    },
+                                    {
+                                        "catalogEntry": {
+                                            "listed": true,
+                                            "version": "1.1.0"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                    """)),
+                var path when path == $"/download/{packageIdLower}/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {
+                        "versions": [
+                            "1.0.0",
+                            "1.1.0"
+                        ]
+                    }
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}")),
+            };
+        }
+
+        using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", $"""
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = packageId,
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            CancellationToken.None);
+        Assert.Equal(0, packageDownloadCount);
+
+        var selectedVersion = await AnalyzeWorker.FindUpdatedVersionAsync(
+            ImmutableHashSet.Create(packageId),
+            dependencyInfo,
+            versionResult,
+            [NuGetFramework.Parse("net8.0")],
+            findLowestVersion: false,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            candidateValidator: null,
+            CancellationToken.None);
+
+        Assert.Equal(NuGetVersion.Parse("1.1.0"), selectedVersion);
+        Assert.Equal(1, packageDownloadCount);
+    }
+
+    [Fact]
+    public async Task CandidatePackageInJobCacheIsReusedAfterSourceDiscovery()
+    {
+        var packageDownloadCount = 0;
+        var packageId = "Some.Package.CachedCompatibilityCheck";
+        var packageIdLower = packageId.ToLowerInvariant();
+
+        (int, byte[]) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            if (uri.AbsolutePath.EndsWith(".nupkg", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref packageDownloadCount);
+                return (404, Array.Empty<byte>());
+            }
+
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """)),
+                var path when path == $"/registrations/{packageIdLower}/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {
+                        "count": 1,
+                        "items": [
+                            {
+                                "lower": "1.0.0",
+                                "upper": "1.1.0",
+                                "items": [
+                                    {
+                                        "catalogEntry": {
+                                            "listed": true,
+                                            "version": "1.0.0"
+                                        }
+                                    },
+                                    {
+                                        "catalogEntry": {
+                                            "listed": true,
+                                            "version": "1.1.0"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                    """)),
+                var path when path == $"/download/{packageIdLower}/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {
+                        "versions": [
+                            "1.0.0",
+                            "1.1.0"
+                        ]
+                    }
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}")),
+            };
+        }
+
+        using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", $"""
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = packageId,
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        foreach (var version in new[] { "1.0.0", "1.1.0" })
+        {
+            var package = MockNuGetPackage.CreateSimplePackage(packageId, version, "net8.0");
+            var identity = new PackageIdentity(packageId, NuGetVersion.Parse(version));
+            var packagePath = CompatibilityChecker.GetPackagePath(identity, nugetContext);
+            using var packageStream = package.GetZipStream();
+            using var cacheStream = File.Create(packagePath);
+            packageStream.CopyTo(cacheStream);
+        }
+
+        // Candidate discovery confirms that the version is available from an allowed source.
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
+            dependencyInfo,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            CancellationToken.None);
+        Assert.Contains(NuGetVersion.Parse("1.1.0"), versionResult.GetVersions());
+
+        // Compatibility inspection can then reuse the package archive already downloaded during this job.
+        var selectedVersion = await AnalyzeWorker.FindUpdatedVersionAsync(
+            ImmutableHashSet.Create(packageId),
+            dependencyInfo,
+            versionResult,
+            [NuGetFramework.Parse("net8.0")],
+            findLowestVersion: false,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            logger,
+            candidateValidator: null,
+            CancellationToken.None);
+
+        Assert.Equal(NuGetVersion.Parse("1.1.0"), selectedVersion);
+        Assert.Equal(0, packageDownloadCount);
+    }
+
+    [Fact]
+    public async Task SharedPropertyVersionRequiresEveryPackageToBeCompatible()
+    {
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.A", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.A", "3.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+        var source = new PackageSource(Path.Join(tempDir.DirectoryPath, "nuget_feed"));
+        var versionResult = new VersionResult(NuGetVersion.Parse("1.0.0"));
+        versionResult.Add(source, NuGetVersion.Parse("2.0.0"));
+        versionResult.Add(source, NuGetVersion.Parse("3.0.0"));
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Package.A",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+
+        var selectedVersion = await AnalyzeWorker.FindUpdatedVersionAsync(
+            ImmutableHashSet.Create("Package.A", "Package.B"),
+            dependencyInfo,
+            versionResult,
+            [NuGetFramework.Parse("net8.0")],
+            findLowestVersion: false,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            new TestLogger(),
+            candidateValidator: null,
+            CancellationToken.None);
+
+        Assert.Equal(NuGetVersion.Parse("2.0.0"), selectedVersion);
+    }
+
+    [Fact]
+    public async Task CurrentIncompatiblePackageStillRequiresCompatiblePrimaryCandidate()
+    {
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+        var source = new PackageSource(Path.Join(tempDir.DirectoryPath, "nuget_feed"));
+        var versionResult = new VersionResult(NuGetVersion.Parse("1.0.0"));
+        versionResult.Add(source, NuGetVersion.Parse("2.0.0"));
+        versionResult.Add(source, NuGetVersion.Parse("3.0.0"));
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+
+        var selectedVersion = await AnalyzeWorker.FindUpdatedVersionAsync(
+            ImmutableHashSet.Create("Some.Package"),
+            dependencyInfo,
+            versionResult,
+            [NuGetFramework.Parse("net8.0")],
+            findLowestVersion: false,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            new TestLogger(),
+            candidateValidator: null,
+            CancellationToken.None);
+
+        Assert.Equal(NuGetVersion.Parse("2.0.0"), selectedVersion);
+    }
+
+    [Fact]
+    public async Task CachedSiblingPackageMustBeAvailableFromAnAllowedSource()
+    {
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.A", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.A", "3.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net8.0"),
+            ],
+            tempDir.DirectoryPath);
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        var cachedSibling = MockNuGetPackage.CreateSimplePackage("Package.B", "3.0.0", "net8.0");
+        var cachedSiblingPath = CompatibilityChecker.GetPackagePath(
+            new PackageIdentity("Package.B", NuGetVersion.Parse("3.0.0")),
+            nugetContext);
+        using (var packageStream = cachedSibling.GetZipStream())
+        using (var cacheStream = File.Create(cachedSiblingPath))
+        {
+            packageStream.CopyTo(cacheStream);
+        }
+
+        var source = nugetContext.PackageSources.Single();
+        var versionResult = new VersionResult(NuGetVersion.Parse("1.0.0"));
+        versionResult.Add(source, NuGetVersion.Parse("2.0.0"));
+        versionResult.Add(source, NuGetVersion.Parse("3.0.0"));
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Package.A",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+
+        var selectedVersion = await AnalyzeWorker.FindUpdatedVersionAsync(
+            ImmutableHashSet.Create("Package.A", "Package.B"),
+            dependencyInfo,
+            versionResult,
+            [NuGetFramework.Parse("net8.0")],
+            findLowestVersion: false,
+            DateTimeOffset.UtcNow,
+            nugetContext,
+            new TestLogger(),
+            candidateValidator: null,
+            CancellationToken.None);
+
+        Assert.Equal(NuGetVersion.Parse("2.0.0"), selectedVersion);
+    }
+
+    [Fact]
+    public async Task IncompatibleCandidateDoesNotRequestCooldownMetadata()
+    {
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+        var packageMetadataResource = new SelectivePackageMetadataResource(
+            NuGetVersion.Parse("3.0.0"));
+        var providers = new INuGetResourceProvider[]
+        {
+            new TestResourceProvider<PackageMetadataResource>(packageMetadataResource),
+        }.Concat(Repository.Provider.GetCoreV3().Select(provider => provider.Value));
+        using var nugetContext = new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(source, providers));
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+            Cooldown = new Cooldown
+            {
+                DefaultDays = 1,
+                Include = ["Some.Package"],
+                Exclude = [],
+            },
+        };
+        var currentTime = DateTimeOffset.UtcNow;
+        var versionResult = await VersionFinder.GetCandidateVersionsAsync(
+            dependencyInfo,
+            currentTime,
+            nugetContext,
+            new TestLogger(),
+            CancellationToken.None);
+
+        var selectedVersion = await AnalyzeWorker.FindUpdatedVersionAsync(
+            ImmutableHashSet.Create("Some.Package"),
+            dependencyInfo,
+            versionResult,
+            [NuGetFramework.Parse("net8.0")],
+            findLowestVersion: false,
+            currentTime,
+            nugetContext,
+            new TestLogger(),
+            candidateValidator: null,
+            CancellationToken.None);
+
+        Assert.Equal(NuGetVersion.Parse("2.0.0"), selectedVersion);
+        Assert.Equal(["2.0.0"], packageMetadataResource.RequestedVersions);
+    }
+
+    [Fact]
     public async Task NuGetSourceDoesNotExist()
     {
         // this test simulates a `NuGet.Config` that points to an internal-only domain that dependabot doesn't have access to
@@ -1445,5 +2103,297 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         Assert.Single(dependencyInfo.IgnoredVersions);
         Assert.Equal("< 1.0.1", dependencyInfo.IgnoredVersions.Single().ToString());
         Assert.Empty(dependencyInfo.Vulnerabilities);
+    }
+
+    [Fact]
+    public async Task MisbehavingNuGetFeedDoesNotTakeDownURLDiscovery()
+    {
+        using var http = TestHttpServer.CreateTestStringServer(url =>
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // registration index returns a range with @id but no inlined items;
+                // this causes the URL specified in @id to be queried but if that isn't present, the NuGet libraries will eventually throw
+                "/registrations/some.package/index.json" => (200, $$"""
+                    {
+                        "count": 1,
+                        "items": [
+                            {
+                                "@id": "{{baseUrl}}/registrations/some.package/page1.json",
+                                "lower": "1.0.0",
+                                "upper": "2.0.0"
+                            }
+                        ]
+                    }
+                    """),
+                _ => (404, "")
+            };
+        });
+        var feedUrl = $"{http.BaseUrl.TrimEnd('/')}/index.json";
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", $"""
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="private_feed" value="{feedUrl}" allowInsecureConnections="true" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+
+        var context = new NuGetContext(tempDir.DirectoryPath);
+        var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
+        Assert.Null(infoUrl);
+    }
+
+    [Fact]
+    public async Task GetPackageInfoUrlAsyncFallsBackToMetadataWhenDownloadResourceIsNull()
+    {
+        var expectedUrl = new Uri("https://example.com/package");
+        using var context = await CreateNuGetContextAsync(downloadResource: null, expectedUrl);
+
+        var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
+
+        Assert.Equal(expectedUrl.ToString(), infoUrl);
+    }
+
+    [Fact]
+    public async Task GetPackageInfoUrlAsyncFallsBackToMetadataWhenAvailableDownloadHasNoPackageReader()
+    {
+        var expectedUrl = new Uri("https://example.com/package");
+        var downloadResource = new TestDownloadResource(
+            new DownloadResourceResult(new MemoryStream(), packageReader: null, source: "test"));
+        using var context = await CreateNuGetContextAsync(downloadResource, expectedUrl);
+
+        var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
+
+        Assert.Equal(expectedUrl.ToString(), infoUrl);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CompletedPackageInfoLookupsAreCached(bool hasUrl)
+    {
+        var requestCount = 0;
+        var expectedUrl = hasUrl ? new Uri("https://example.com/package") : null;
+        using var context = await CreateNuGetContextAsync(null, expectedUrl, (_, _) =>
+        {
+            requestCount++;
+            return Task.CompletedTask;
+        });
+
+        var first = await context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", TestContext.Current.CancellationToken);
+        var second = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedUrl?.ToString(), first);
+        Assert.Equal(first, second);
+        Assert.Equal(1, requestCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FailedPackageInfoLookupsAreRetried(bool cancel)
+    {
+        var requestCount = 0;
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var expectedUrl = new Uri("https://example.com/package");
+        using var context = await CreateNuGetContextAsync(null, expectedUrl, (_, token) =>
+        {
+            if (++requestCount == 1)
+            {
+                if (cancel)
+                {
+                    cancellationSource.Cancel();
+                    token.ThrowIfCancellationRequested();
+                }
+
+                throw new HttpRequestException("Package metadata is unavailable.");
+            }
+
+            return Task.CompletedTask;
+        });
+        var first = context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", cancellationSource.Token);
+        if (cancel)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+        }
+        else
+        {
+            await Assert.ThrowsAsync<HttpRequestException>(() => first);
+        }
+
+        var second = await context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", TestContext.Current.CancellationToken);
+        var third = await context.GetPackageInfoUrlAsync("Some.Package", "1.0.0", TestContext.Current.CancellationToken);
+        Assert.Equal(expectedUrl.ToString(), second);
+        Assert.Equal(second, third);
+        Assert.Equal(2, requestCount);
+    }
+
+    private static async Task<NuGetContext> CreateNuGetContextAsync(
+        DownloadResource? downloadResource,
+        Uri? projectUrl,
+        Func<PackageIdentity, CancellationToken, Task>? beforeGetMetadata = null)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+
+        return new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(
+                source,
+                [
+                    new TestResourceProvider<MetadataResource>(new TestMetadataResource()),
+                    new TestResourceProvider<DownloadResource>(downloadResource),
+                    new TestResourceProvider<PackageMetadataResource>(new TestPackageMetadataResource(projectUrl, beforeGetMetadata)),
+                ]));
+    }
+
+    private sealed class TestResourceProvider<TResource>(TResource? resource) : INuGetResourceProvider
+        where TResource : class, INuGetResource
+    {
+        public Type ResourceType => typeof(TResource);
+        public string Name => typeof(TResource).Name;
+        public IEnumerable<string> Before => [];
+        public IEnumerable<string> After => [];
+
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(SourceRepository source, CancellationToken token) =>
+            Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+    }
+
+    private sealed class TestMetadataResource : MetadataResource
+    {
+        public override Task<bool> Exists(
+            PackageIdentity identity,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult(true);
+
+        public override Task<bool> Exists(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult(true);
+
+        public override Task<IEnumerable<NuGetVersion>> GetVersions(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult<IEnumerable<NuGetVersion>>([]);
+
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+            IEnumerable<string> packageIds,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion>>>([]);
+    }
+
+    private sealed class TestDownloadResource(DownloadResourceResult result) : DownloadResource
+    {
+        public override Task<DownloadResourceResult> GetDownloadResourceResultAsync(
+            PackageIdentity identity,
+            PackageDownloadContext downloadContext,
+            string globalPackagesFolder,
+            NuGet.Common.ILogger logger,
+            CancellationToken token) => Task.FromResult(result);
+    }
+
+    private sealed class TestPackageMetadataResource(
+        Uri? projectUrl,
+        Func<PackageIdentity, CancellationToken, Task>? beforeGetMetadata = null) : PackageMetadataResource
+    {
+        public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult<IEnumerable<IPackageSearchMetadata>>([]);
+
+        public override async Task<IPackageSearchMetadata> GetMetadataAsync(
+            PackageIdentity package,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            if (beforeGetMetadata is not null)
+            {
+                await beforeGetMetadata(package, token);
+            }
+
+            return new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+            {
+                Identity = package,
+                ProjectUrl = projectUrl,
+            };
+        }
+    }
+
+    private sealed class SelectivePackageMetadataResource(NuGetVersion failingVersion) : PackageMetadataResource
+    {
+        private readonly List<string> _requestedVersions = [];
+
+        public ImmutableArray<string> RequestedVersions => [.. _requestedVersions];
+
+        public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => throw new NotImplementedException();
+
+        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+            PackageIdentity package,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token)
+        {
+            _requestedVersions.Add(package.Version.ToString());
+            if (package.Version == failingVersion)
+            {
+                throw new InvalidDataException("Metadata should not be requested for an incompatible candidate.");
+            }
+
+            return Task.FromResult<IPackageSearchMetadata>(
+                new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+                {
+                    Identity = package,
+                    Published = DateTimeOffset.UtcNow.AddDays(-2),
+                });
+        }
     }
 }
