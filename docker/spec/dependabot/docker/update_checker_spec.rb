@@ -3827,6 +3827,92 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(mock_client).not_to have_received(:dohead)
       end
     end
+
+    context "when the registry is not Docker Hub" do
+      let(:config_digest) { "sha256:#{'b' * 64}" }
+      let(:image_created) { (Time.now - (2 * 86_400)).utc.iso8601 }
+      let(:labels) { { "org.opencontainers.image.created" => image_created } }
+      let(:config_body) { { created: "2000-01-01T00:00:00Z", config: { Labels: labels } }.to_json }
+
+      before do
+        allow(checker).to receive(:using_dockerhub?).and_return(false)
+        allow(mock_client).to receive(:manifest)
+          .and_return({ "mediaType" => "application/vnd.oci.image.manifest.v1+json",
+                        "config" => { "digest" => config_digest } })
+        allow(mock_client).to receive(:doget)
+          .with("v2/ubuntu/blobs/#{config_digest}")
+          .and_return(instance_double(Excon::Response, body: config_body))
+      end
+
+      it "holds a tag whose org.opencontainers.image.created label is within cooldown" do
+        expect(latest_version).to eq(version)
+        expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+      end
+
+      context "when the label is older than cooldown" do
+        let(:image_created) { (Time.now - (30 * 86_400)).utc.iso8601 }
+
+        it "selects the new tag" do
+          expect(latest_version).to eq(candidate_version)
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+
+      it "fetches the manifest by the candidate digest" do
+        latest_version
+
+        expect(mock_client).to have_received(:manifest).with("ubuntu", "sha256:#{'a' * 64}").at_least(:once)
+      end
+
+      context "when the manifest list has a Windows amd64 entry before Linux amd64" do
+        let(:windows_digest) { "sha256:#{'c' * 64}" }
+        let(:linux_digest) { "sha256:#{'d' * 64}" }
+        let(:windows_config) { "sha256:#{'e' * 64}" }
+        let(:old_label) { (Time.now - (30 * 86_400)).utc.iso8601 }
+
+        before do
+          allow(mock_client).to receive(:manifest)
+            .and_return({ "mediaType" => "application/vnd.oci.image.index.v1+json",
+                          "manifests" => [
+                            { "digest" => windows_digest,
+                              "platform" => { "architecture" => "amd64", "os" => "windows" } },
+                            { "digest" => linux_digest, "platform" => { "architecture" => "amd64", "os" => "linux" } }
+                          ] })
+          allow(mock_client).to receive(:doget).with("v2/ubuntu/manifests/#{linux_digest}")
+                                               .and_return(instance_double(
+                                                             Excon::Response,
+                                                             body: { config: { digest: config_digest } }.to_json
+                                                           ))
+        end
+
+        it "uses the Linux image config" do
+          expect(latest_version).to eq(version)
+          expect(mock_client).not_to have_received(:doget).with("v2/ubuntu/manifests/#{windows_digest}")
+        end
+      end
+
+      context "when the registry request fails" do
+        before do
+          allow(mock_client).to receive(:manifest).and_raise(DockerRegistry2::NotFound)
+        end
+
+        it "marks the date unavailable without crashing" do
+          expect(latest_version).to eq(candidate_version)
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
+
+      [{}, { "org.opencontainers.image.created" => "not-a-timestamp" }].each do |missing_labels|
+        context "when the label is #{missing_labels.empty? ? 'absent' : 'unparsable'}" do
+          let(:labels) { missing_labels }
+
+          it "marks the date unavailable" do
+            expect(latest_version).to eq(candidate_version)
+            expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+          end
+        end
+      end
+    end
   end
 
   describe "#digest_up_to_date?" do
