@@ -12,6 +12,7 @@ module Dependabot
   module ErrorAttributes
     BACKTRACE         = "error-backtrace"
     CLASS             = "error-class"
+    CONTEXT           = "error-context"
     DETAILS           = "error-details"
     FINGERPRINT       = "fingerprint"
     MESSAGE           = "error-message"

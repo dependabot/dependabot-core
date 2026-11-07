@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "terminal-table"
 
 require "dependabot/api_client"
+require "dependabot/error_report_context"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
@@ -224,6 +225,7 @@ module Dependabot
         ErrorAttributes::MESSAGE => error.message,
         ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
         ErrorAttributes::FINGERPRINT => fingerprint,
+        ErrorAttributes::CONTEXT => ErrorReportContext.build(error: error, dependency: dependency),
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,

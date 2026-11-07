@@ -450,6 +450,33 @@ RSpec.describe Dependabot::Service do
         )
     end
 
+    it "sends the error context attached to the error" do
+      error = Dependabot::DependabotError.new("Something went wrong")
+      Dependabot::ErrorReportContext.attach(error, { host: "registry.npmjs.org", http_method: "GET" })
+
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CONTEXT => { "host" => "registry.npmjs.org", "http-method" => "GET" }
+          )
+        )
+    end
+
+    it "omits the error context when there is none" do
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_excluding(Dependabot::ErrorAttributes::CONTEXT)
+        )
+    end
+
     it "extracts information from a dependency if provided" do
       dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
@@ -461,7 +488,8 @@ RSpec.describe Dependabot::Service do
           error_details: hash_including(
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
-            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
+            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash",
+            Dependabot::ErrorAttributes::CONTEXT => { "dependency-name" => "lodash" }
           )
         )
     end
