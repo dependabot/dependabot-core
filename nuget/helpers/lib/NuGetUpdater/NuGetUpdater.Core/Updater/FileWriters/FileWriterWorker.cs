@@ -44,9 +44,13 @@ public class FileWriterWorker
             // then try packages.config updates
             var packagesConfigUpdates = await ProcessPackagesConfigUpdatesAsync(repoContentsPath, projectPath, dependencyName, oldDependencyVersion, newDependencyVersion);
             updateOperations.AddRange(packagesConfigUpdates);
+        }
 
+        if (XmlFileWriter.SupportedProjectFileExtensions.Contains(projectExtension) ||
+            projectExtension == CSharpFileBasedAppFileWriter.SupportedFileExtension)
+        {
             // then try project updates
-            var packageReferenceUpdates = await ProcessPackageReferenceUpdatesAsync(repoContentsPath, initialProjectDirectory, projectPath, dependencyName, newDependencyVersion);
+            var packageReferenceUpdates = await ProcessPackageReferenceUpdatesAsync(repoContentsPath, initialProjectDirectory, projectPath, dependencyName, oldDependencyVersion, newDependencyVersion);
             updateOperations.AddRange(packageReferenceUpdates);
         }
 
@@ -139,6 +143,7 @@ public class FileWriterWorker
         DirectoryInfo initialProjectDirectory,
         FileInfo projectPath,
         string dependencyName,
+        NuGetVersion oldDependencyVersion,
         NuGetVersion newDependencyVersion
     )
     {
@@ -159,7 +164,12 @@ public class FileWriterWorker
             return [];
         }
 
-        var initialDependencyVersion = NuGetVersion.Parse(initialRequestedDependency.Version);
+        if (!TryGetCurrentVersion(initialRequestedDependency.Version, oldDependencyVersion, out var initialDependencyVersion))
+        {
+            _logger.Warn($"Unable to parse discovered version number from string: {initialRequestedDependency.Version}");
+            return [];
+        }
+
         if (initialDependencyVersion >= newDependencyVersion)
         {
             _logger.Info($"Dependency {dependencyName} is already at version {initialDependencyVersion}, no update needed.");
@@ -206,6 +216,7 @@ public class FileWriterWorker
             var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, initialProjectDirectory, orderedProjectDiscovery);
 
             var allUpdatedFiles = new List<string>();
+            var fileUpdateFailed = false;
             foreach (var projectDiscovery in orderedProjectDiscovery)
             {
                 var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
@@ -230,7 +241,7 @@ public class FileWriterWorker
                     continue;
                 }
 
-                if (!NuGetVersion.TryParse(candidateDependencyToUpdate.Version, out var candidateDependencyCurrentVersion))
+                if (!TryGetCurrentVersion(candidateDependencyToUpdate.Version, oldDependencyVersion, out var candidateDependencyCurrentVersion))
                 {
                     _logger.Warn($"  Unable to parse discovered version number from string: {candidateDependencyToUpdate.Version}");
                     continue;
@@ -255,7 +266,7 @@ public class FileWriterWorker
                     continue;
                 }
 
-                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery!, resolvedDependenciesInThisproject.Value);
+                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery, resolvedDependenciesInThisproject.Value);
                 if (updatedFiles.Length == 0)
                 {
                     _logger.Info("  Files were unable to be updated.");
@@ -263,9 +274,27 @@ public class FileWriterWorker
                 else
                 {
                     _logger.Info($"  Successfully updated the following files: {string.Join(", ", updatedFiles)}");
-                }
+                    var updatedLockFiles = await TryUpdateFileBasedAppLockFilesAsync(
+                        repoContentsPath,
+                        projectFullPath,
+                        projectDiscovery,
+                        originalFileContents,
+                        _logger);
+                    if (updatedLockFiles is null)
+                    {
+                        fileUpdateFailed = true;
+                        break;
+                    }
 
-                allUpdatedFiles.AddRange(updatedFiles);
+                    allUpdatedFiles.AddRange(updatedFiles);
+                    allUpdatedFiles.AddRange(updatedLockFiles.Value);
+                }
+            }
+
+            if (fileUpdateFailed)
+            {
+                await RestoreOriginalFileContentsAsync(originalFileContents);
+                continue;
             }
 
             if (allUpdatedFiles.Count == 0)
@@ -294,10 +323,9 @@ public class FileWriterWorker
                 continue;
             }
 
-            var resolvedVersion = NuGetVersion.Parse(finalRequestedDependency.Version);
-            if (resolvedVersion != newDependencyVersion)
+            if (!DependencyVersionSatisfies(finalRequestedDependency.Version, newDependencyVersion))
             {
-                _logger.Warn($"Final dependency version for {dependencyName} is {resolvedVersion}, expected {newDependencyVersion}.");
+                _logger.Warn($"Final dependency version for {dependencyName} is {finalRequestedDependency.Version}, expected {newDependencyVersion}.");
                 await RestoreOriginalFileContentsAsync(originalFileContents);
                 continue;
             }
@@ -314,7 +342,8 @@ public class FileWriterWorker
                     var initialDependency = initialProjectDiscovery.Dependencies.FirstOrDefault(d => d.Name.Equals(op.DependencyName, StringComparison.OrdinalIgnoreCase));
                     return initialDependency is not null
                         && initialDependency.Version is not null
-                        && NuGetVersion.Parse(initialDependency.Version) < op.NewVersion;
+                        && TryGetCurrentVersion(initialDependency.Version, oldDependencyVersion, out var initialVersion)
+                        && initialVersion < op.NewVersion;
                 })
                 .ToImmutableArray();
             var computedOperationsWithUpdatedFiles = filteredUpdateOperations
@@ -324,6 +353,36 @@ public class FileWriterWorker
         }
 
         return [.. updateOperations];
+    }
+
+    private static bool TryGetCurrentVersion(string versionText, NuGetVersion oldDependencyVersion, out NuGetVersion currentVersion)
+    {
+        if (NuGetVersion.TryParse(versionText, out var parsedVersion))
+        {
+            currentVersion = parsedVersion;
+            return true;
+        }
+
+        if (VersionRange.TryParse(versionText, out var versionRange) &&
+            versionRange.Satisfies(oldDependencyVersion))
+        {
+            currentVersion = oldDependencyVersion;
+            return true;
+        }
+
+        currentVersion = oldDependencyVersion;
+        return false;
+    }
+
+    private static bool DependencyVersionSatisfies(string versionText, NuGetVersion expectedVersion)
+    {
+        if (NuGetVersion.TryParse(versionText, out var version))
+        {
+            return version == expectedVersion;
+        }
+
+        return VersionRange.TryParse(versionText, out var versionRange) &&
+            versionRange.Satisfies(expectedVersion);
     }
 
     internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)
@@ -427,5 +486,52 @@ public class FileWriterWorker
 
         var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal).ToImmutableArray();
         return sortedUpdatedFiles;
+    }
+
+    private static async Task<ImmutableArray<string>?> TryUpdateFileBasedAppLockFilesAsync(
+        DirectoryInfo repoContentsPath,
+        string projectFullPath,
+        ProjectDiscoveryResult projectDiscovery,
+        IReadOnlyDictionary<string, string> originalFileContents,
+        ILogger logger)
+    {
+        if (!CSharpFileBasedAppFileWriter.IsSupportedFilePath(projectFullPath))
+        {
+            return [];
+        }
+
+        var lockFileRelativePaths = projectDiscovery.AdditionalFiles
+            .Where(path => Path.GetFileName(path).Equals(ProjectHelper.PackagesLockJsonFileName, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToImmutableArray();
+        if (lockFileRelativePaths.IsEmpty)
+        {
+            return [];
+        }
+
+        if (!await LockFileUpdater.UpdateLockFileAsync(repoContentsPath.FullName, projectFullPath, logger))
+        {
+            return null;
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectFullPath)!;
+        var updatedLockFiles = new List<string>();
+        foreach (var lockFileRelativePath in lockFileRelativePaths)
+        {
+            var lockFileFullPath = Path.Join(projectDirectory, lockFileRelativePath).FullyNormalizedRootedPath();
+            if (!originalFileContents.TryGetValue(lockFileFullPath, out var originalContents))
+            {
+                logger.Warn($"  Unable to compare lock file {lockFileRelativePath} because its original contents were not tracked.");
+                continue;
+            }
+
+            var currentContents = await File.ReadAllTextAsync(lockFileFullPath);
+            if (currentContents.Replace("\r", "") != originalContents.Replace("\r", ""))
+            {
+                updatedLockFiles.Add(Path.GetRelativePath(repoContentsPath.FullName, lockFileFullPath).FullyNormalizedRootedPath());
+            }
+        }
+
+        return [.. updatedLockFiles.OrderBy(path => path, StringComparer.Ordinal)];
     }
 }

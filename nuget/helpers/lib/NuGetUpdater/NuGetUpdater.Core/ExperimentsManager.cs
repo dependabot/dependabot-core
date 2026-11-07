@@ -7,8 +7,11 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    internal const string UpdateFileBasedAppsExperimentName = "nuget_update_file_based_apps";
+
     public bool GenerateSimplePrBody { get; init; } = false;
     public bool FindRootDirectory { get; init; } = false;
+    public bool UpdateFileBasedApps { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
@@ -16,6 +19,7 @@ public record ExperimentsManager
         {
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_find_root_directory"] = FindRootDirectory,
+            [UpdateFileBasedAppsExperimentName] = UpdateFileBasedApps,
         };
     }
 
@@ -25,6 +29,7 @@ public record ExperimentsManager
         {
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             FindRootDirectory = IsEnabled(experiments, "nuget_find_root_directory"),
+            UpdateFileBasedApps = IsEnabled(experiments, UpdateFileBasedAppsExperimentName),
         };
     }
 
