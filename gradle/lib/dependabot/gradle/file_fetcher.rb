@@ -84,8 +84,9 @@ module Dependabot
       def all_buildfiles_in_build(root_dir, visited = Set.new)
         return [] unless visited.add?(root_dir)
 
-        files = [buildfile(root_dir), settings_file(root_dir), lockfile(root_dir), properties_file(root_dir)].compact
-        files += version_catalog_files(root_dir)
+        files = [buildfile(root_dir), settings_file(root_dir), *version_catalog_files(root_dir), lockfile(root_dir),
+                 properties_file(root_dir)]
+                .compact
         files += wrapper_files(root_dir)
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
