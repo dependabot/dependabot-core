@@ -100,6 +100,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the current registry digest is malformed" do
+      let(:sources) { [{ tag: "1.0.0", digest: "c" * 64 }] }
+      let(:digests) { super().merge("1.0.0" => "invalid") }
+
+      it "keeps the candidate when the stale pin cannot be verified" do
+        expect(checker.latest_version).to eq("1.1.0")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+    end
+
     context "when the candidate digest has an unparseable registry error" do
       let(:sources) { [{ tag: "1.0.0", digest: "c" * 64 }] }
 

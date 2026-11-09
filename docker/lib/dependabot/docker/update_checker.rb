@@ -365,10 +365,13 @@ module Dependabot
         params(candidate: Dependabot::Docker::Tag, current_tag: Dependabot::Docker::Tag).returns(T::Boolean)
       end
       def skip_candidate?(candidate, current_tag)
+        # The current tag is not an update, and must not end the search or
+        # trigger a release-date lookup for a nonexistent version change.
+        return true if candidate.name == current_tag.name
+
         # Check cooldown on demand so rejecting a no-op or invalid candidate
         # doesn't discard the remaining candidates or bypass their cooldown.
         return true if tag_within_cooldown?(candidate)
-        return false if candidate.name == current_tag.name
 
         # Content checks apply regardless of experiments or tag precision.
         return false unless same_image_contents?(candidate, current_tag)
@@ -401,7 +404,7 @@ module Dependabot
         # multi-platform indexes can have different manifest digests. Only keep
         # a candidate if it actually refreshes a pin that is stale for this tag.
         current_digest = digest_of(current_tag.name)
-        return true if current_digest.to_s.empty?
+        return true unless valid_manifest_digest?(current_digest)
 
         stale_requirements = pinned_requirements.reject do |req|
           matching_digest?(req.source_string("digest"), current_digest)
@@ -409,7 +412,7 @@ module Dependabot
         return false if stale_requirements.empty?
 
         candidate_digest = digest_of(candidate.name)
-        return true if candidate_digest.to_s.empty?
+        return true unless valid_manifest_digest?(candidate_digest)
 
         stale_requirements.any? { |req| !matching_digest?(req.source_string("digest"), candidate_digest) }
       rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
@@ -434,16 +437,15 @@ module Dependabot
         end
 
         return candidate unless best_same_precision
+        # Selecting the current tag would stop searching, and its publication
+        # date says nothing about whether the candidate can be selected.
+        return candidate if best_same_precision.name == version_tag.name
 
         same_precision_digest = digest_of(best_same_precision.name)
         candidate_digest = digest_of(candidate.name)
 
-        return candidate if same_precision_digest.to_s.empty?
-        return candidate unless same_precision_digest == candidate_digest &&
+        return candidate unless matching_manifest_digests?(same_precision_digest, candidate_digest) &&
                                 best_same_precision.same_but_less_precise?(candidate)
-
-        # Substituting the current tag would suppress a required digest refresh.
-        return candidate if precision_alias_hides_pin_refresh?(best_same_precision, candidate, version_tag)
 
         # An alias may have been pushed more recently than the original tag.
         # If it is still in cooldown, validate the original candidate instead.
@@ -456,17 +458,6 @@ module Dependabot
         # the original candidate from undergoing cooldown and content validation.
         Dependabot.logger.info("Unable to compare tag precision for #{candidate.name}: #{e.class}")
         candidate
-      end
-
-      sig do
-        params(
-          alias_tag: Dependabot::Docker::Tag,
-          candidate: Dependabot::Docker::Tag,
-          current_tag: Dependabot::Docker::Tag
-        ).returns(T::Boolean)
-      end
-      def precision_alias_hides_pin_refresh?(alias_tag, candidate, current_tag)
-        alias_tag.name == current_tag.name && pinned_digest_update_required?(candidate, current_tag)
       end
 
       sig do
@@ -1514,9 +1505,9 @@ module Dependabot
       end
       def same_image_digest?(candidate_tag, current_tag)
         current_digest = digest_of(current_tag.name)
-        return false if current_digest.nil? || current_digest.empty?
+        return false unless valid_manifest_digest?(current_digest)
 
-        current_digest == digest_of(candidate_tag.name)
+        matching_manifest_digests?(current_digest, digest_of(candidate_tag.name))
       rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
              DockerRegistry2::RegistryHTTPException => e
         # This is an optional no-op check, not a prerequisite for a tag update.
@@ -1525,6 +1516,16 @@ module Dependabot
           "Unable to compare image digests for #{current_tag.name} and #{candidate_tag.name}: #{e.class}"
         )
         false
+      end
+
+      sig { params(digest: T.nilable(String)).returns(T::Boolean) }
+      def valid_manifest_digest?(digest)
+        digest.is_a?(String) && digest.match?(/\A[0-9a-f]{64}\z/i)
+      end
+
+      sig { params(first: T.nilable(String), second: T.nilable(String)).returns(T::Boolean) }
+      def matching_manifest_digests?(first, second)
+        valid_manifest_digest?(first) && valid_manifest_digest?(second) && matching_digest?(first, second)
       end
 
       # Returns true when a tag points at a single-platform image rather than a

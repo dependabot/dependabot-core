@@ -17,13 +17,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:recent_date) { (Time.now - 86_400).iso8601 }
   let(:dates) { {} }
   let(:package_manager) { "docker" }
+  let(:source) { { tag: current } }
   let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "example-image",
       version: current,
       package_manager: package_manager,
-      requirements: [{ requirement: nil, groups: [], file: "Dockerfile", source: { tag: current } }]
+      requirements: [{ requirement: nil, groups: [], file: "Dockerfile", source: source }]
     )
   end
   let(:checker) do
@@ -143,6 +144,63 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "keeps searching for the newer pinned patch" do
         expect(checker.latest_version).to eq(fallback)
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+    end
+
+    context "when precision selection substitutes the current tag" do
+      let(:highest) { "1.0.0.1" }
+      let(:fallback) { "1.0.0.0" }
+      let(:tags) { [current, fallback, highest] }
+      let(:source) { { tag: current, digest: "a" * 64 } }
+
+      before { Dependabot::Experiments.register(:docker_digest_only_update_suppression, true) }
+
+      it "continues to a different-content candidate rather than returning the current tag" do
+        expect(checker.latest_version).to eq(fallback)
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first.source_hash).to eq(tag: fallback, digest: "b" * 64)
+        expect(WebMock).not_to have_requested(:get, metadata_url + current)
+      end
+
+      context "without cooldown" do
+        let(:update_cooldown) { nil }
+
+        it "also continues searching without cooldown" do
+          expect(checker.latest_version).to eq(fallback)
+        end
+      end
+    end
+
+    context "when the current tag is the only candidate" do
+      let(:tags) { [current] }
+      let(:dates) { { current => nil } }
+
+      it "does not look up its publication date or mark a cooldown warning" do
+        expect(checker.latest_version).to eq(current)
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(WebMock).not_to have_requested(:get, metadata_url + current)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be_nil
+      end
+    end
+
+    context "when a no-op precision alias is checked repeatedly" do
+      let(:highest) { "1.2.0.1" }
+      let(:fallback) { "1.2.0" }
+      let(:digests) { { current => "a" * 64, highest => "a" * 64, fallback => "a" * 64, lower => "b" * 64 } }
+
+      it "fetches the alias publication details only once" do
+        expect(checker.latest_version).to eq(lower)
+        expect(WebMock).to have_requested(:get, metadata_url + fallback).once
+      end
+
+      context "when the alias publication date is unavailable" do
+        let(:dates) { { fallback => nil } }
+
+        it "caches the missing details while still recording the cooldown warning" do
+          expect(checker.latest_version).to eq(lower)
+          expect(WebMock).to have_requested(:get, metadata_url + fallback).once
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
       end
     end
   end

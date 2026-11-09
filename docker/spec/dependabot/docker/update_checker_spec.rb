@@ -4125,7 +4125,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         .and_return(
           status: 200,
           body: "",
-          headers: JSON.parse(headers_response.gsub(/"sha256:(.*)"/, "\"sha256:#{'a' * 40}\""))
+          headers: JSON.parse(headers_response.gsub(/"sha256:(.*)"/, "\"sha256:#{'a' * 64}\""))
         )
     end
   end
