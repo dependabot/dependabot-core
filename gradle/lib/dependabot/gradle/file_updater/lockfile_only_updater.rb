@@ -85,23 +85,36 @@ module Dependabot
         end
 
         # `--update-locks` only unlocks a module; Gradle may resolve a vulnerable
-        # version again (e.g. a parent still requires it), so every vulnerable
-        # version must be gone from the regenerated lockfiles.
+        # version again, or move to a different vulnerable one (e.g. a parent
+        # still requires it). Every regenerated version must therefore be either
+        # a resolution that was already safe or at least the target version.
         sig do
           params(files: T::Array[Dependabot::DependencyFile], dependencies: T::Array[Dependabot::Dependency]).void
         end
         def verify_versions_changed(files, dependencies)
           dependencies.each do |dependency|
-            vulnerable = dependency.metadata_string_array(:vulnerable_versions) || [dependency.previous_version].compact
             lockfile_names = dependency.metadata_string_array(:lockfiles).to_a
             resolved = resolved_versions(files.select { |f| lockfile_names.include?(f.name) }, dependency.name)
-            remaining = vulnerable & resolved
-            next if remaining.empty?
+            unfixed = resolved.reject { |version| acceptable_version?(dependency, version) }
+            next if unfixed.empty?
 
             raise DependencyFileNotResolvable,
-                  "#{dependency.name} still resolves to #{remaining.join(', ')} after unlocking " \
-                  "(resolved: #{resolved.join(', ')}); another dependency may require it"
+                  "#{dependency.name} still resolves to #{unfixed.join(', ')} after unlocking, below the " \
+                  "target #{dependency.version} (resolved: #{resolved.join(', ')}); " \
+                  "another dependency may require it"
           end
+        end
+
+        sig { params(dependency: Dependabot::Dependency, version: String).returns(T::Boolean) }
+        def acceptable_version?(dependency, version)
+          vulnerable = dependency.metadata_string_array(:vulnerable_versions) || [dependency.previous_version].compact
+          original = dependency.metadata_string_array(:resolved_versions) || []
+          return true if (original - vulnerable).include?(version)
+
+          target = dependency.version
+          return false unless target && Gradle::Version.correct?(version) && Gradle::Version.correct?(target)
+
+          Gradle::Version.new(version) >= Gradle::Version.new(target)
         end
 
         sig { params(lockfiles: T::Array[Dependabot::DependencyFile], name: String).returns(T::Array[String]) }
