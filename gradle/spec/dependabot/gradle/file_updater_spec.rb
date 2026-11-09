@@ -269,6 +269,29 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end
     end
 
+    it "rejects a safe version introduced into another lockfile that is neither original nor the target" do
+      other = Dependabot::DependencyFile.new(name: "other/gradle.lockfile", content: "")
+      allow_any_instance_of(Dependabot::Gradle::FileUpdater::LockfileUpdater) # rubocop:disable RSpec/AnyInstance
+        .to receive(:update_lockfiles).and_return(
+          [
+            Dependabot::DependencyFile.new(
+              name: "gradle.lockfile", content: "com.fasterxml.jackson.core:jackson-core:2.22.3=a\n"
+            ),
+            Dependabot::DependencyFile.new(
+              name: "other/gradle.lockfile", content: "com.fasterxml.jackson.core:jackson-core:2.30.0=a\n"
+            )
+          ]
+        )
+
+      expect do
+        described_class.new(
+          dependency_files: [buildfile, lockfile, other],
+          dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
+          credentials: registry_credentials
+        ).updated_dependency_files
+      end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.30\.0/)
+    end
+
     context "when the dependency is resolved by two independent Gradle roots" do
       let(:dependency_files) do
         %w(app tools).flat_map do |dir|

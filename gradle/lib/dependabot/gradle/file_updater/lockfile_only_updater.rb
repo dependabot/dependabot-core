@@ -99,7 +99,7 @@ module Dependabot
             resolved = resolved_versions(files.select { |f| lockfile_names.include?(f.name) }, dependency.name)
             unfixed = resolved.reject { |version| acceptable_version?(dependency, version) }
             introduced = introduced_versions(files, dependency, lockfile_names)
-            unfixed |= introduced.select { |v| affected?(dependency, v) }
+            unfixed |= introduced.reject { |v| acceptable_version?(dependency, v) }
             resolved |= introduced
             next if unfixed.empty? && resolved.include?(dependency.version)
 
