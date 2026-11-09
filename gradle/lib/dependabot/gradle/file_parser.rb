@@ -365,7 +365,8 @@ module Dependabot
 
         ownership = {
           lockfiles: versions.flat_map { |dep| dep.metadata[:lockfiles] || [] }.uniq,
-          owning_buildfiles: versions.flat_map { |dep| dep.metadata[:owning_buildfiles] || [] }.uniq
+          owning_buildfiles: versions.flat_map { |dep| dep.metadata[:owning_buildfiles] || [] }.uniq,
+          resolved_versions: versions.filter_map(&:version)
         }
         with_ownership = versions.map do |dep|
           Dependency.new(

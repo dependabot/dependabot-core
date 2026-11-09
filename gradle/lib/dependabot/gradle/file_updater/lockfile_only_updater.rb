@@ -84,27 +84,31 @@ module Dependabot
           end
         end
 
-        # `--update-locks` only unlocks a module; Gradle may resolve the same
-        # version again (e.g. a parent still requests it), which would leave the
-        # vulnerable version in place.
+        # `--update-locks` only unlocks a module; Gradle may resolve a vulnerable
+        # version again (e.g. a parent still requires it), so every vulnerable
+        # version must be gone from the regenerated lockfiles.
         sig do
           params(files: T::Array[Dependabot::DependencyFile], dependencies: T::Array[Dependabot::Dependency]).void
         end
         def verify_versions_changed(files, dependencies)
           dependencies.each do |dependency|
-            previous = dependency.previous_version
-            next unless previous
-
+            vulnerable = dependency.metadata_string_array(:vulnerable_versions) || [dependency.previous_version].compact
             lockfile_names = dependency.metadata_string_array(:lockfiles).to_a
-            stale = files.select { |f| lockfile_names.include?(f.name) }.select do |f|
-              T.must(f.content).include?("#{dependency.name}:#{previous}=")
-            end
-            next if stale.empty?
+            resolved = resolved_versions(files.select { |f| lockfile_names.include?(f.name) }, dependency.name)
+            remaining = vulnerable & resolved
+            next if remaining.empty?
 
             raise DependencyFileNotResolvable,
-                  "#{dependency.name} still resolves to #{previous} in #{stale.map(&:name).join(', ')} " \
-                  "after unlocking; another dependency may require it"
+                  "#{dependency.name} still resolves to #{remaining.join(', ')} after unlocking " \
+                  "(resolved: #{resolved.join(', ')}); another dependency may require it"
           end
+        end
+
+        sig { params(lockfiles: T::Array[Dependabot::DependencyFile], name: String).returns(T::Array[String]) }
+        def resolved_versions(lockfiles, name)
+          lockfiles.flat_map do |lockfile|
+            T.must(lockfile.content).scan(/^#{Regexp.escape(name)}:([^=\s]+)=/).flatten
+          end.uniq
         end
       end
     end

@@ -15,6 +15,50 @@ module Dependabot
       require_relative "update_checker/version_finder"
       require_relative "update_checker/multi_dependency_updater"
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          credentials: T::Array[Dependabot::Credential],
+          repo_contents_path: T.nilable(String),
+          ignored_versions: T::Array[String],
+          raise_on_ignored: T::Boolean,
+          security_advisories: T::Array[Dependabot::SecurityAdvisory],
+          requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
+          dependency_group: T.nilable(Dependabot::DependencyGroup),
+          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+          options: T::Hash[Symbol, T.anything]
+        )
+          .void
+      end
+      def initialize(
+        dependency:,
+        dependency_files:,
+        credentials:,
+        repo_contents_path: nil,
+        ignored_versions: [],
+        raise_on_ignored: false,
+        security_advisories: [],
+        requirements_update_strategy: nil,
+        dependency_group: nil,
+        update_cooldown: nil,
+        options: {}
+      )
+        super(
+          dependency: with_vulnerable_resolution(dependency, security_advisories),
+          dependency_files: dependency_files,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          security_advisories: security_advisories,
+          requirements_update_strategy: requirements_update_strategy,
+          dependency_group: dependency_group,
+          update_cooldown: update_cooldown,
+          options: options
+        )
+      end
+
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
         return if git_dependency?
@@ -84,6 +128,36 @@ module Dependabot
       end
 
       private
+
+      # A lockfile-only dependency can resolve to several versions. Whichever
+      # entry the caller passes (the lowest one, or a vulnerable one), the
+      # update is based on the highest vulnerable resolved version so the fix
+      # covers every vulnerable resolution, and the vulnerable versions are
+      # recorded so the updater can verify none of them remain.
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          security_advisories: T::Array[Dependabot::SecurityAdvisory]
+        ).returns(Dependabot::Dependency)
+      end
+      def with_vulnerable_resolution(dependency, security_advisories)
+        resolved = dependency.metadata_string_array(:resolved_versions)
+        return dependency if security_advisories.empty? || !dependency.requirements.empty? || resolved.nil?
+
+        vulnerable = resolved.select do |version|
+          Gradle::Version.correct?(version) &&
+            security_advisories.any? { |advisory| advisory.vulnerable?(Gradle::Version.new(version)) }
+        end
+        return dependency if vulnerable.empty?
+
+        Dependency.new(
+          name: dependency.name,
+          version: T.must(vulnerable.max_by { |version| Gradle::Version.new(version) }),
+          requirements: [],
+          package_manager: dependency.package_manager,
+          metadata: dependency.metadata.merge(vulnerable_versions: vulnerable)
+        )
+      end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?

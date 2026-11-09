@@ -187,6 +187,22 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         )
       end
 
+      let(:checker) do
+        Dependabot::Gradle::UpdateChecker.new(
+          dependency: parsed_dependency,
+          dependency_files: dependency_files,
+          credentials: registry_credentials,
+          security_advisories: [advisory]
+        )
+      end
+      let(:updater) do
+        described_class.new(
+          dependency_files: dependency_files,
+          dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
+          credentials: registry_credentials
+        )
+      end
+
       it "retains every version so the vulnerable one is not hidden by the lowest" do
         expect(parsed_dependency.version).to eq("1.9.0")
         expect(parsed_dependency.all_versions).to contain_exactly("1.9.0", "2.22.2")
@@ -195,6 +211,50 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         )
         expect(parsed_dependency.all_versions.map { |v| Dependabot::Gradle::Version.new(v) })
           .to include(satisfy { |version| advisory.vulnerable?(version) })
+      end
+
+      it "bases the update on the vulnerable resolution even when given the lowest version" do
+        expect(checker.dependency.version).to eq("2.22.2")
+        expect(checker.vulnerable?).to be(true)
+        expect(checker.updated_dependencies(requirements_to_unlock: :own).first.previous_version).to eq("2.22.2")
+      end
+
+      it "accepts the update when only the safe version remains alongside the fix" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(
+            File.join(cwd, "gradle.lockfile"),
+            "com.fasterxml.jackson.core:jackson-core:1.9.0=compileClasspath\n" \
+            "com.fasterxml.jackson.core:jackson-core:2.22.3=runtimeClasspath\n"
+          )
+        end
+
+        expect(updater.updated_dependency_files.first.content).to include("jackson-core:2.22.3")
+      end
+
+      context "when several resolved versions are vulnerable" do
+        let(:advisory) do
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "gradle",
+            vulnerable_versions: ["< 2.22.3"]
+          )
+        end
+
+        it "rejects a regenerated lockfile that still resolves one of them" do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+            File.write(
+              File.join(cwd, "gradle.lockfile"),
+              "com.fasterxml.jackson.core:jackson-core:1.9.0=compileClasspath\n" \
+              "com.fasterxml.jackson.core:jackson-core:2.22.3=runtimeClasspath\n"
+            )
+          end
+
+          expect { updater.updated_dependency_files }
+            .to raise_error(
+              Dependabot::DependencyFileNotResolvable,
+              /still resolves to 1\.9\.0.*resolved: 1\.9\.0, 2\.22\.3/
+            )
+        end
       end
     end
   end
