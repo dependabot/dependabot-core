@@ -353,12 +353,13 @@ module Dependabot
 
       # Callers that mark requirements files as support files, so they are only read through `-r`/`-c` references,
       # opt in with the `requirement_roots` option. Files from git submodules are support files too, so the flag
-      # alone isn't enough.
+      # alone isn't enough, and a directory inside a submodule has no roots, so it falls back to parsing everything.
       sig { returns(T.nilable(T::Array[String])) }
       def requirement_roots
         return unless options[:requirement_roots] && requirement_files.any?(&:support_file?)
 
-        requirement_files.reject(&:support_file?).map(&:name)
+        roots = requirement_files.reject(&:support_file?).map(&:name)
+        roots unless roots.empty?
       end
 
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(T::Boolean) }

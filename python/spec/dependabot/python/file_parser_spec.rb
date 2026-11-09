@@ -666,6 +666,14 @@ RSpec.describe Dependabot::Python::FileParser do
               { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil }
             )
           end
+
+          context "when every requirements file is a support file, as in a git submodule" do
+            let(:files) { [requirements, constraints].map { |f| f.dup.tap { |c| c.support_file = true } } }
+
+            it "parses every file rather than none" do
+              expect(dependencies.map(&:name)).to contain_exactly("certifi", "requests")
+            end
+          end
         end
       end
     end
