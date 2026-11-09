@@ -179,6 +179,22 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         it { is_expected.to include("https://included.example.com") }
       end
 
+      context "when the target is in a nested build whose ancestor directory has settings" do
+        let(:ancestor_settings) do
+          Dependabot::DependencyFile.new(
+            name: "app/settings.gradle",
+            content: "dependencyResolutionManagement { repositories { maven { url 'https://ancestor.example.com' } } }"
+          )
+        end
+        let(:nested_buildfile) do
+          Dependabot::DependencyFile.new(name: "app/nested/build.gradle", content: "plugins { id 'java' }")
+        end
+        let(:dependency_files) { [buildfile, ancestor_settings, nested_buildfile] }
+        let(:target_dependency_file) { nested_buildfile }
+
+        it { is_expected.to include("https://ancestor.example.com") }
+      end
+
       context "with dependencyResolutionManagement in the settings file" do
         let(:dependency_files) { [buildfile, settings_file] }
         let(:settings_file) do

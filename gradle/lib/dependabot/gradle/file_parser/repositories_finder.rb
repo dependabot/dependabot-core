@@ -125,14 +125,17 @@ module Dependabot
         def included_build_repository_urls
           return [] if target_dependency_file == top_level_buildfile
 
-          dir = File.dirname(target_dependency_file.name)
-          return [] if dir == "."
-
           urls = repository_urls_from(comment_free_content(target_dependency_file))
-          settings = dependency_files.find do |f|
-            SUPPORTED_SETTINGS_FILE_NAMES.any? { |name| f.name == File.join(dir, name) }
+          dir = File.dirname(target_dependency_file.name)
+          # Settings of every ancestor build apply to a nested build
+          until dir == "."
+            settings = dependency_files.find do |f|
+              SUPPORTED_SETTINGS_FILE_NAMES.any? { |name| f.name == File.join(dir, name) }
+            end
+            urls += settings_file_repository_urls(settings)
+            dir = File.dirname(dir)
           end
-          urls + settings_file_repository_urls(settings)
+          urls
         end
 
         sig { params(settings_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
