@@ -13,7 +13,7 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
-        RELEASES_INDEX_URL = "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json"
+        RELEASES_INDEX_URL = "https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json"
 
         sig do
           params(
