@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Pub::Requirement do
   describe ".parse_dep_string" do
     context "with exact version" do
       it "parses package:version format" do
-        result = described_class.parse_dep_string("intl:0.18.0")
+        result = T.must(described_class.parse_dep_string("intl:0.18.0"))
         expect(result[:name]).to eq("intl")
         expect(result[:normalised_name]).to eq("intl")
         expect(result[:version]).to eq("0.18.0")
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with caret version" do
       it "parses package:^version format" do
-        result = described_class.parse_dep_string("json_annotation:^4.8.0")
+        result = T.must(described_class.parse_dep_string("json_annotation:^4.8.0"))
         expect(result[:name]).to eq("json_annotation")
         expect(result[:normalised_name]).to eq("json_annotation")
         expect(result[:version]).to eq("4.8.0")
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with tilde version" do
       it "parses package:~version format" do
-        result = described_class.parse_dep_string("yaml:~3.1.0")
+        result = T.must(described_class.parse_dep_string("yaml:~3.1.0"))
         expect(result[:name]).to eq("yaml")
         expect(result[:version]).to eq("3.1.0")
         expect(result[:requirement]).to eq("~3.1.0")
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with >= constraint" do
       it "parses package:>=version format" do
-        result = described_class.parse_dep_string("collection:>=1.17.0")
+        result = T.must(described_class.parse_dep_string("collection:>=1.17.0"))
         expect(result[:name]).to eq("collection")
         expect(result[:version]).to eq("1.17.0")
         expect(result[:requirement]).to eq(">=1.17.0")
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with > constraint" do
       it "parses package:>version format" do
-        result = described_class.parse_dep_string("http:>1.0.0")
+        result = T.must(described_class.parse_dep_string("http:>1.0.0"))
         expect(result[:name]).to eq("http")
         expect(result[:version]).to eq("1.0.0")
         expect(result[:requirement]).to eq(">1.0.0")
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with underscore in name" do
       it "normalises the name" do
-        result = described_class.parse_dep_string("flutter_lints:2.0.0")
+        result = T.must(described_class.parse_dep_string("flutter_lints:2.0.0"))
         expect(result[:name]).to eq("flutter_lints")
         expect(result[:normalised_name]).to eq("flutter_lints")
       end
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with hyphen in name" do
       it "normalises the name by replacing hyphens with underscores" do
-        result = described_class.parse_dep_string("my-package:1.0.0")
+        result = T.must(described_class.parse_dep_string("my-package:1.0.0"))
         expect(result[:name]).to eq("my-package")
         expect(result[:normalised_name]).to eq("my_package")
       end
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with pre-release version" do
       it "parses pre-release versions" do
-        result = described_class.parse_dep_string("package:1.0.0-beta.1")
+        result = T.must(described_class.parse_dep_string("package:1.0.0-beta.1"))
         expect(result[:name]).to eq("package")
         expect(result[:version]).to eq("1.0.0-beta.1")
         expect(result[:requirement]).to eq("1.0.0-beta.1")
@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with build metadata" do
       it "parses build metadata in versions" do
-        result = described_class.parse_dep_string("package:1.0.0+build.123")
+        result = T.must(described_class.parse_dep_string("package:1.0.0+build.123"))
         expect(result[:name]).to eq("package")
         expect(result[:version]).to eq("1.0.0+build.123")
       end
@@ -172,13 +172,13 @@ RSpec.describe Dependabot::Pub::Requirement do
 
     context "with whitespace" do
       it "handles leading and trailing whitespace" do
-        result = described_class.parse_dep_string("  intl:0.18.0  ")
+        result = T.must(described_class.parse_dep_string("  intl:0.18.0  "))
         expect(result[:name]).to eq("intl")
         expect(result[:version]).to eq("0.18.0")
       end
 
       it "handles whitespace around constraint" do
-        result = described_class.parse_dep_string("intl: 0.18.0")
+        result = T.must(described_class.parse_dep_string("intl: 0.18.0"))
         expect(result[:name]).to eq("intl")
         expect(result[:version]).to eq("0.18.0")
       end

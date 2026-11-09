@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-only dependency_files or fixtures and matchers in generated malformed-input examples.
+
 require "spec_helper"
 
 require "dependabot/dependency_file"

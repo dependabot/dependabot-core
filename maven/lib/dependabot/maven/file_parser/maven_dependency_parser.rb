@@ -199,6 +199,8 @@ module Dependabot
         end
         private_class_method :node_string
 
+        # The classifier names which XML entry this is (unclassified means the plain artifact), so
+        # it's never taken from the scan, which matches artifacts by name only.
         sig do
           params(
             declared: Dependabot::DependencyRequirement,
@@ -207,7 +209,8 @@ module Dependabot
         end
         def self.merge_requirement_pair(declared, scanned)
           declared_metadata = declared.metadata || {}
-          metadata = (scanned.metadata || {}).merge(declared_metadata) { |_key, scan, xml| xml.nil? ? scan : xml }
+          scanned_metadata = (scanned.metadata || {}).except(:classifier, "classifier")
+          metadata = scanned_metadata.merge(declared_metadata) { |_key, scan, xml| xml.nil? ? scan : xml }
 
           Dependabot::DependencyRequirement.create(
             requirement: declared.requirement,

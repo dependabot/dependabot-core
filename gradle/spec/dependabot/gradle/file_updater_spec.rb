@@ -414,6 +414,197 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
       end
 
+      context "with other dependencies sharing the group or artifact name and the version" do
+        subject(:updated_buildfile) { updated_files.find { |f| f.name == buildfile.name } }
+
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "build.gradle.kts",
+            content: fixture("buildfiles", "same_group_and_version.gradle.kts")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: new_version,
+            requirements: [{
+              file: buildfile.name, requirement: new_version, groups: [], source: nil, metadata: nil
+            }],
+            previous_requirements: [{
+              file: buildfile.name, requirement: previous_version, groups: [], source: nil, metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+        let(:dependency_name) { "com.example:error-handler" }
+        let(:previous_version) { "4.0.0-RC1" }
+        let(:new_version) { "4.0.0" }
+
+        it "only updates the coordinate string of the dependency" do
+          expect(updated_buildfile.content).to eq(
+            buildfile.content.sub(
+              'implementation("com.example:error-handler:4.0.0-RC1")',
+              'implementation("com.example:error-handler:4.0.0")'
+            )
+          )
+        end
+
+        it "leaves the same artifact name in another group unchanged" do
+          expect(updated_buildfile.content).to include('implementation("org.other:error-handler:4.0.0-RC1")')
+        end
+
+        context "when the dependency is declared with group and name arguments" do
+          let(:dependency_name) { "com.example:test-support" }
+          let(:previous_version) { "5.1.0" }
+          let(:new_version) { "5.2.0" }
+
+          it "only updates the declaration of the dependency" do
+            expect(updated_buildfile.content).to eq(
+              buildfile.content.sub(
+                'name = "test-support", version = "5.1.0"',
+                'name = "test-support", version = "5.2.0"'
+              )
+            )
+          end
+        end
+
+        context "when the declaration contains an inline block comment" do
+          let(:dependency_name) { "com.example:error-reporter" }
+          let(:previous_version) { "6.0.0" }
+          let(:new_version) { "6.1.0" }
+
+          it "only updates the declaration of the dependency" do
+            expect(updated_buildfile.content).to eq(
+              buildfile.content.sub(
+                'name = "error-reporter", version = "6.0.0"',
+                'name = "error-reporter", version = "6.1.0"'
+              )
+            )
+          end
+        end
+
+        context "with a version catalog" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/libs.versions.toml",
+              content: fixture("version_catalog_file", "same_group_and_version.toml")
+            )
+          end
+
+          it "only updates the module entry of the dependency" do
+            expect(updated_buildfile.content).to eq(
+              buildfile.content.sub(
+                'module = "com.example:error-handler", version = "4.0.0-RC1"',
+                'module = "com.example:error-handler", version = "4.0.0"'
+              )
+            )
+          end
+
+          context "when the dependency is declared with group and name keys" do
+            let(:dependency_name) { "com.example:lib-metrics" }
+
+            it "only updates the entry of the dependency" do
+              expect(updated_buildfile.content).to eq(
+                buildfile.content.sub(
+                  'name = "lib-metrics", version = "4.0.0-RC1"',
+                  'name = "lib-metrics", version = "4.0.0"'
+                )
+              )
+            end
+          end
+
+          context "when the dependency is declared with quoted group and name keys" do
+            let(:dependency_name) { "com.example:error-reporter" }
+            let(:previous_version) { "6.0.0" }
+            let(:new_version) { "6.1.0" }
+
+            it "only updates the entry of the dependency" do
+              expect(updated_buildfile.content).to eq(
+                buildfile.content.sub(
+                  '"name" = "error-reporter", version = "6.0.0"',
+                  '"name" = "error-reporter", version = "6.1.0"'
+                )
+              )
+            end
+          end
+
+          context "when another entry's comment mentions the dependency" do
+            let(:dependency_name) { "com.example:lib-tracing-extra" }
+            let(:previous_version) { "7.0.0" }
+            let(:new_version) { "7.1.0" }
+
+            it "only updates the entry of the dependency" do
+              expect(updated_buildfile.content).to eq(
+                buildfile.content.sub(
+                  'module = "com.example:lib-tracing-extra", version = "7.0.0"',
+                  'module = "com.example:lib-tracing-extra", version = "7.1.0"'
+                )
+              )
+            end
+          end
+        end
+
+        context "with a Groovy buildfile, using dependencies from the FileParser" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "build.gradle",
+              content: fixture("buildfiles", "same_group_and_version.gradle")
+            )
+          end
+          let(:parsed_dependency) do
+            Dependabot::Gradle::FileParser.new(
+              dependency_files: [buildfile],
+              source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/")
+            ).parse.find { |dep| dep.name == dependency_name }
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: parsed_dependency.name,
+              version: new_version,
+              previous_version: parsed_dependency.version,
+              requirements: parsed_dependency.requirements.map { |req| req.merge(requirement: new_version) },
+              previous_requirements: parsed_dependency.requirements,
+              package_manager: "gradle"
+            )
+          end
+
+          it "only updates the dependency's declaration on a line with several declarations" do
+            expect(updated_buildfile.content).to eq(
+              buildfile.content.sub(
+                "'com.example:error-handler:4.0.0-RC1'",
+                "'com.example:error-handler:4.0.0'"
+              )
+            )
+          end
+
+          context "when the dependency is declared with group and name arguments" do
+            let(:dependency_name) { "com.example:lib-metrics" }
+
+            it "only updates the declaration of the dependency" do
+              expect(updated_buildfile.content).to eq(
+                buildfile.content.sub(
+                  "name: 'lib-metrics', version: '4.0.0-RC1'",
+                  "name: 'lib-metrics', version: '4.0.0'"
+                )
+              )
+            end
+          end
+
+          context "when the group comes from a property" do
+            let(:dependency_name) { "com.example:lib-tracing" }
+
+            it "only updates the declaration of the dependency" do
+              expect(updated_buildfile.content).to eq(
+                buildfile.content.sub(
+                  '"$exampleGroup:lib-tracing:4.0.0-RC1"',
+                  '"$exampleGroup:lib-tracing:4.0.0"'
+                )
+              )
+            end
+          end
+        end
+      end
+
       context "with multiple buildfiles" do
         let(:dependency_files) { [buildfile, subproject_buildfile] }
         let(:subproject_buildfile) do

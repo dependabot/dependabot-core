@@ -2042,6 +2042,125 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       )
     end
 
+    describe "with several locked versions of the dependency" do
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_all_versions") }
+      let(:dependency_name) { "abind" }
+      let(:dependency_version) { "1.0.5" }
+      let(:locked_versions) { %w(1.0.5 1.0.6 2.0.1) }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [],
+          package_manager: "npm_and_yarn",
+          metadata: {
+            all_versions: locked_versions.map do |v|
+              Dependabot::Dependency.new(
+                name: dependency_name, version: v, requirements: [], package_manager: "npm_and_yarn"
+              )
+            end
+          }
+        )
+      end
+      let(:vulnerable_versions) { ["< 1.0.9"] }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: vulnerable_versions
+          )
+        ]
+      end
+      let(:lowest_fix) { "1.0.9" }
+      let(:registry_response) { "{}" }
+      let(:blockers) { checker.conflicting_dependencies.map { |c| c["name"] } }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_yarn_berry_conflicting_dependencies).and_return(true)
+        allow(checker).to receive(:lowest_security_fix_version)
+          .and_return(Dependabot::NpmAndYarn::Version.new(lowest_fix))
+      end
+
+      it "keeps blockers of every vulnerable version and drops those of unaffected versions" do
+        expect(blockers).to contain_exactly("pin")
+      end
+
+      context "when the fix crosses major versions into another vulnerable instance" do
+        let(:vulnerable_versions) { ["< 2.0.9"] }
+        let(:lowest_fix) { "2.0.9" }
+
+        it "keeps blockers of the source release line" do
+          expect(blockers).to contain_exactly("old", "pin")
+        end
+      end
+
+      context "when the representative version is a git commit SHA" do
+        let(:dependency_version) { "d9a1b2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9" }
+        let(:vulnerable_versions) { ["< 1.0.9", ">= 2.0.0, < 2.0.9"] }
+
+        it "ignores the SHA when selecting release lines" do
+          expect { blockers }.not_to raise_error
+        end
+      end
+
+      context "when the lockfile keeps a v prefix on the locked version" do
+        let(:dependency_files) do
+          project_dependency_files("yarn/subdependency_all_versions").map do |file|
+            next file unless file.name == "yarn.lock"
+
+            file.content = file.content.sub('version "1.0.5"', 'version "v1.0.5"')
+            file
+          end
+        end
+
+        it "still reports blockers of the affected instance" do
+          expect(blockers).to contain_exactly("pin")
+        end
+      end
+
+      context "when the fix crosses minor versions of a 0.x release" do
+        let(:dependency_files) { project_dependency_files("yarn/subdependency_all_versions_zero_major") }
+        let(:dependency_version) { "0.1.5" }
+        let(:locked_versions) { %w(0.1.5 0.2.1 0.3.0) }
+        let(:vulnerable_versions) { ["< 0.2.9"] }
+        let(:lowest_fix) { "0.2.9" }
+
+        it "keeps the source minor line and excludes unrelated minors" do
+          expect(blockers).to contain_exactly("old")
+        end
+      end
+
+      context "when the experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_yarn_berry_conflicting_dependencies).and_return(false)
+        end
+
+        it "keeps reporting blockers of every locked version" do
+          expect(blockers).to contain_exactly("pin", "mid")
+        end
+      end
+
+      context "when the dependency has no version" do
+        let(:dependency_version) { nil }
+
+        it "still scopes to the target's release line" do
+          expect(blockers).to contain_exactly("pin")
+        end
+      end
+
+      context "when no locked version is vulnerable" do
+        let(:vulnerable_versions) { ["< 0.1.0"] }
+        let(:lowest_fix) { "3.0.0" }
+
+        it "falls back to checking every locked version" do
+          expect(blockers).to contain_exactly("old", "pin", "mid")
+        end
+      end
+    end
+
     context "with a conflicting dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }

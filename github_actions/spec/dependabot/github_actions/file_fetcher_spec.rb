@@ -1,25 +1,37 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/github_actions/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GithubActions::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  sig { returns(String) }
   let(:github_url) { "https://api.github.com/" }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(Dependabot::GithubActions::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -27,6 +39,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       directory: directory
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
@@ -69,6 +82,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
 
+    sig { returns(String) }
     let(:workflow_file_fixture) do
       fixture("github", "contents_githubaction_workflow_file.json")
     end
@@ -82,6 +96,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "when an explicit directory is given" do
+      sig { returns(String) }
       let(:directory) { "/.github/workflows" }
 
       it "fetches the workflow files relatively to the directory" do
@@ -149,10 +164,12 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
 
       context "when a workflow uses a self repository action" do
+        sig { returns(String) }
         let(:workflow_file_fixture) do
           contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - uses: $/tools/setup\n")
         end
 
+        sig { params(path: String, content: String).returns(String) }
         def contents_json(path, content)
           { type: "file", name: File.basename(path), path: path, encoding: "base64",
             content: Base64.encode64(content) }.to_json
@@ -186,6 +203,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         end
 
         context "with a quoted uses key" do
+          sig { returns(String) }
           let(:workflow_file_fixture) do
             contents_json(".github/workflows/ci.yml", "jobs:\n  a:\n    steps:\n      - \"uses\": \"$/tools/setup\"\n")
           end
@@ -210,14 +228,19 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
 
       context "with a non-github.com source" do
+        # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+        sig { returns(T::Array[Dependabot::Credential]) }
         let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "ghes.other.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "ghes.other.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
         end
+        sig { returns(Dependabot::Source) }
         let(:source) do
           Dependabot::Source.new(
             provider: "github",
@@ -227,6 +250,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
             api_endpoint: github_url
           )
         end
+        # rubocop:enable RSpec/ScatteredLet
 
         it "keeps the existing workflow-only behavior" do
           expect(file_fetcher_instance.files.map(&:name))
@@ -239,14 +263,19 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
 
       context "with a ghe.com source" do
+        # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+        sig { returns(T::Array[Dependabot::Credential]) }
         let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "tenant.ghe.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "tenant.ghe.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
         end
+        sig { returns(Dependabot::Source) }
         let(:source) do
           Dependabot::Source.new(
             provider: "github",
@@ -256,6 +285,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
             api_endpoint: github_url
           )
         end
+        # rubocop:enable RSpec/ScatteredLet
 
         it "fetches the lockfile" do
           expect(file_fetcher_instance.files.map(&:name)).to include(".github/workflows/actions.lock")
@@ -264,6 +294,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "when it has an invalid encoding" do
+      sig { returns(String) }
       let(:workflow_file_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
@@ -273,6 +304,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "when only one file has an invalid encoding" do
+      sig { returns(String) }
       let(:bad_workflow_file_fixture) do
         fixture("github", "contents_image.json")
       end
@@ -316,6 +348,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
 
     context "with an additional composite action file" do
+      sig { returns(String) }
       let(:composite_action_file_fixture) do
         fixture("github", "contents_githubaction_composite_file.json")
       end
@@ -400,6 +433,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
   end
 
   context "with a repo containing only a composite action file" do
+    sig { returns(String) }
     let(:composite_action_file_fixture) do
       fixture("github", "contents_githubaction_composite_file.json")
     end
@@ -440,10 +474,14 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
   end
 
   context "with a repo containing a composite action file in a subdirectory" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
     let(:composite_action_file_fixture) do
       fixture("github", "contents_githubaction_composite_file.json")
     end
+    sig { returns(String) }
     let(:directory) { "action/subdir" }
+    # rubocop:enable RSpec/ScatteredLet
 
     before do
       stub_request(:get, url + "action/subdir?ref=sha")
@@ -474,13 +512,16 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
   end
 
   context "with a composite action directory and an actions.lock" do
+    sig { returns(String) }
     let(:directory) { "/.github/actions/inner" }
 
+    sig { params(path: String, content: String).returns(String) }
     def contents_json(path, content)
       { type: "file", name: File.basename(path), path: path, encoding: "base64",
         content: Base64.encode64(content) }.to_json
     end
 
+    sig { params(paths: String).returns(String) }
     def listing_json(*paths)
       paths.map { |path| { type: "file", name: File.basename(path), path: path } }.to_json
     end

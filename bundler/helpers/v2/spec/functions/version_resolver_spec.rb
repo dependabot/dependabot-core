@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-only requirement_string fixture or generated its examples.
+
 require "native_spec_helper"
 require "shared_contexts"
 

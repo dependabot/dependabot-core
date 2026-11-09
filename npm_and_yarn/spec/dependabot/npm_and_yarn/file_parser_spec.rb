@@ -131,6 +131,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
     end
 
+    context "when the project is named like one of its own dependencies" do
+      let(:manifest) { { "name" => "next", "dependencies" => { "next" => "13.3.0", "chalk" => "0.3.0" } } }
+
+      it "parses it as a dependency from the registry, which npm installs like any other" do
+        expect(parser.parse.map(&:name)).to contain_exactly("next", "chalk")
+        expect(parser.parse.find { |dep| dep.name == "next" }.requirements.map(&:requirement_string))
+          .to eq(["13.3.0"])
+      end
+
+      context "with a yarn lockfile" do
+        let(:files) do
+          [
+            package_file,
+            Dependabot::DependencyFile.new(name: "yarn.lock", content: "# yarn lockfile v1\n")
+          ]
+        end
+
+        it "still leaves it out" do
+          expect(parser.parse.map(&:name)).to eq(["chalk"])
+        end
+      end
+
+      context "when another package in the workspace has that name" do
+        let(:manifest) { { "name" => "root", "dependencies" => { "next" => "13.3.0", "chalk" => "0.3.0" } } }
+        let(:files) do
+          [
+            package_file,
+            Dependabot::DependencyFile.new(name: "packages/next/package.json", content: JSON.dump("name" => "next"))
+          ]
+        end
+
+        it "still leaves it out, as it refers to that package" do
+          expect(parser.parse.map(&:name)).to eq(["chalk"])
+        end
+      end
+    end
+
     context "with a flat manifest and malformed dependencies" do
       let(:manifest) { { "flat" => true, "dependencies" => [] } }
 

@@ -8,6 +8,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
 require "dependabot/bundler/cached_lockfile_parser"
+require "dependabot/bundler/checksum_mismatch"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 
@@ -124,6 +125,9 @@ module Dependabot
           post_process_lockfile(lockfile_body)
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise Dependabot::DependencyFileNotResolvable, e.message if e.error_class == "Bundler::SolveFailure"
+
+          checksum_mismatch = ChecksumMismatch.error_for(e)
+          raise checksum_mismatch if checksum_mismatch
 
           raise
         end

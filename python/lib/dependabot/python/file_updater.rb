@@ -5,6 +5,7 @@ require "toml-rb"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
+require "dependabot/python/file_parser/pyproject_document"
 require "sorbet-runtime"
 
 module Dependabot
@@ -154,8 +155,7 @@ module Dependabot
 
         return false unless poetry_lock
 
-        build_backend = parsed_pyproject.dig("build-system", "build-backend")
-        !build_backend.nil? && build_backend.start_with?("poetry.core")
+        FileParser::PyprojectDocument.from_content(T.must(pyproject&.content)).poetry_build_backend?
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
