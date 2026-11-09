@@ -127,12 +127,13 @@ module Dependabot
 
           urls = repository_urls_from(comment_free_content(target_dependency_file))
           dir = File.dirname(target_dependency_file.name)
-          # Settings of every ancestor build apply to a nested build
+          # A nested build only uses its nearest settings file
           until dir == "."
             settings = dependency_files.find do |f|
               SUPPORTED_SETTINGS_FILE_NAMES.any? { |name| f.name == File.join(dir, name) }
             end
-            urls += settings_file_repository_urls(settings)
+            return urls + settings_file_repository_urls(settings) if settings
+
             dir = File.dirname(dir)
           end
           urls
