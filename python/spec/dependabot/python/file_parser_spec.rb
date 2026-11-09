@@ -671,6 +671,36 @@ RSpec.describe Dependabot::Python::FileParser do
             it "reports the loop rather than parsing nothing" do
               expect { dependencies }.to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
             end
+
+            context "when another file is a root" do
+              let(:files) { [requirements, constraints, other_requirements] }
+              let(:other_requirements) do
+                Dependabot::DependencyFile.new(name: "requirements-other.txt", content: "certifi==2024.2.2\n")
+              end
+
+              it "reports the loop rather than parsing only that root" do
+                expect { dependencies }
+                  .to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
+              end
+            end
+          end
+
+          context "when a pip-compile input is constrained by its own compiled output" do
+            let(:files) { [requirements_in, requirements] }
+            let(:requirements_in) do
+              Dependabot::DependencyFile.new(name: "requirements.in", content: "-c requirements.txt\nrequests\n")
+            end
+            let(:requirements) do
+              Dependabot::DependencyFile.new(
+                name: "requirements.txt",
+                content: "certifi==2024.2.2\nrequests==2.0.0\n"
+              )
+            end
+
+            it "still parses the compiled output, as it is what gets installed" do
+              expect(dependencies.map { |d| [d.name, d.version] })
+                .to contain_exactly(["certifi", "2024.2.2"], ["requests", "2.0.0"])
+            end
           end
         end
       end

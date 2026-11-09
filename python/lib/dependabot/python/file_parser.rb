@@ -354,17 +354,27 @@ module Dependabot
 
       # Updates need every file parsed as a manifest so they can update pins in constraints files, so parsing
       # from roots is opt-in. A root is any requirements file not pulled in by another via `-r`/`-c`, as pip
-      # would only read those through the reference. A reference loop leaves no roots; parse everything so pip
-      # reports it.
+      # would only read those through the reference. A reference loop leaves files no root reaches; parse
+      # everything so pip reports it.
       sig { returns(T.nilable(T::Array[String])) }
       def requirement_roots
         return unless options[:requirement_roots]
 
-        referenced = requirement_files.flat_map { |f| RequirementReferences.paths(f) }
-        roots = requirement_files.map(&:name).reject do |name|
-          referenced.include?(Pathname.new(name).cleanpath.to_path)
+        references = requirement_files.to_h do |file|
+          name = Pathname.new(file.name).cleanpath.to_path
+          # A pip-compile input may constrain itself to its own output, which is still installed directly.
+          [name, RequirementReferences.paths(file) - [name.sub(/\.in\z/, ".txt")]]
         end
-        roots unless roots.empty?
+        roots = references.keys - references.values.flatten
+        roots if reaches_every_file?(roots, references)
+      end
+
+      sig { params(roots: T::Array[String], references: T::Hash[String, T::Array[String]]).returns(T::Boolean) }
+      def reaches_every_file?(roots, references)
+        reached = T.let(Set.new(roots), T::Set[String])
+        queue = roots.dup
+        references.fetch(T.must(queue.shift), []).each { |path| queue << path if reached.add?(path) } until queue.empty?
+        references.keys.all? { |name| reached.include?(name) }
       end
 
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(T::Boolean) }
