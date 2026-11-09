@@ -70,6 +70,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     )
   end
 
+  def resolved_package_names(snapshot)
+    snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+  end
+
   describe "#relevant_dependency_file" do
     context "when poetry.lock is not present" do
       it "falls back to pyproject.toml" do
@@ -1296,10 +1300,6 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     # dev-requirements.txt precedes requirements.txt (the pre-fix collapse target).
     let(:dependency_files) { [dev_requirements_txt, app_requirements_txt] }
 
-    def resolved_package_names(snapshot)
-      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
-    end
-
     it "produces one manifest group per requirements file" do
       manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
 
@@ -1337,10 +1337,6 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
 
     let(:dependency_files) { [dev_requirements_txt, app_requirements_txt, setup_py] }
-
-    def resolved_package_names(snapshot)
-      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
-    end
 
     it "emits a self-attributed group for the non-requirements manifest alongside each layer (no drop)" do
       manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
@@ -1403,10 +1399,6 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
     let(:dependency_files) do
       [app_requirements_in, app_requirements_txt, test_requirements_in, test_requirements_txt]
-    end
-
-    def resolved_package_names(snapshot)
-      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
     end
 
     it "does not attribute the constraint target's packages to the referencing layer" do
