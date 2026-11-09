@@ -403,22 +403,43 @@ module Dependabot
         # Compare pins to the current tag, not just the candidate: equivalent
         # multi-platform indexes can have different manifest digests. Only keep
         # a candidate if it actually refreshes a pin that is stale for this tag.
-        current_digest = digest_of(current_tag.name)
-        return true unless valid_manifest_digest?(current_digest)
-
-        stale_requirements = pinned_requirements.reject do |req|
-          matching_digest?(req.source_string("digest"), current_digest)
-        end
+        current_digest = current_digest_for_pin_comparison(current_tag.name)
+        stale_requirements = stale_pins_for_current_digest(pinned_requirements, current_digest)
         return false if stale_requirements.empty?
 
+        # When the current digest is unavailable, a candidate matching every
+        # pin is still known not to refresh any of them.
         candidate_digest = digest_of(candidate.name)
         return true unless valid_manifest_digest?(candidate_digest)
 
-        stale_requirements.any? { |req| !matching_digest?(req.source_string("digest"), candidate_digest) }
+        stale_requirements.any? do |req|
+          !matching_digest?(req.source_string("digest"), candidate_digest)
+        end
       rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
              DockerRegistry2::RegistryHTTPException => e
         Dependabot.logger.info("Unable to compare pinned digests for #{candidate.name}: #{e.class}")
         true
+      end
+
+      sig { params(tag: String).returns(T.nilable(String)) }
+      def current_digest_for_pin_comparison(tag)
+        digest_of(tag)
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
+             DockerRegistry2::RegistryHTTPException => e
+        Dependabot.logger.info("Unable to compare pinned digests for #{tag}: #{e.class}")
+        nil
+      end
+
+      sig do
+        params(
+          requirements: T::Array[Dependabot::DependencyRequirement],
+          current_digest: T.nilable(String)
+        ).returns(T::Array[Dependabot::DependencyRequirement])
+      end
+      def stale_pins_for_current_digest(requirements, current_digest)
+        return requirements unless valid_manifest_digest?(current_digest)
+
+        requirements.reject { |req| matching_digest?(req.source_string("digest"), current_digest) }
       end
 
       sig do
