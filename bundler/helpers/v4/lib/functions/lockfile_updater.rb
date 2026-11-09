@@ -14,10 +14,11 @@ module Functions
       /x
     DEPENDENCY_DROPPED = "_dependency_dropped_"
 
-    def initialize(gemfile_name:, lockfile_name:, dependencies:)
+    def initialize(gemfile_name:, lockfile_name:, dependencies:, conservative: false)
       @gemfile_name = gemfile_name
       @lockfile_name = lockfile_name
       @dependencies = dependencies
+      @conservative = conservative
     end
 
     def run
@@ -29,6 +30,7 @@ module Functions
     attr_reader :gemfile_name
     attr_reader :lockfile_name
     attr_reader :dependencies
+    attr_reader :conservative
 
     def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
       dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }
@@ -208,11 +210,13 @@ module Functions
     end
 
     def build_definition(dependencies_to_unlock)
-      defn = Bundler::Definition.build(
-        gemfile_name,
-        lockfile_name,
-        gems: dependencies_to_unlock
-      )
+      unlock = { gems: dependencies_to_unlock }
+      # Like `bundle lock --update <gems> --conservative`: keep the
+      # sub-dependencies of the gems being updated locked unless the
+      # resolver has to move them.
+      unlock[:conservative] = true if conservative
+
+      defn = Bundler::Definition.build(gemfile_name, lockfile_name, unlock)
 
       # Bundler unlocks the sub-dependencies of gems it is passed even
       # if those sub-deps are top-level dependencies. We only want true
