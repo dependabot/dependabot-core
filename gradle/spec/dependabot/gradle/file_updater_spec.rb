@@ -186,6 +186,41 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.22\.1.*target 2\.22\.3/)
     end
 
+    context "when the advisory has disjoint vulnerable ranges" do
+      let(:advisory) do
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "gradle",
+          vulnerable_versions: ["< 2.22.3", ">= 2.23.0, < 2.23.2"]
+        )
+      end
+      let(:checker) do
+        Dependabot::Gradle::UpdateChecker.new(
+          dependency: parsed_dependency,
+          dependency_files: dependency_files,
+          credentials: registry_credentials,
+          security_advisories: [advisory]
+        )
+      end
+
+      it "rejects a regenerated version above the target that is still vulnerable" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(
+            File.join(cwd, "gradle.lockfile"),
+            "com.fasterxml.jackson.core:jackson-core:2.23.1=compileClasspath\n"
+          )
+        end
+
+        expect do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
+            credentials: registry_credentials
+          ).updated_dependency_files
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.23\.1/)
+      end
+    end
+
     context "when the dependency resolves to several versions and only the higher one is vulnerable" do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
@@ -234,6 +269,20 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         expect(checker.dependency.version).to eq("2.22.2")
         expect(checker.vulnerable?).to be(true)
         expect(checker.updated_dependencies(requirements_to_unlock: :own).first.previous_version).to eq("2.22.2")
+      end
+
+      it "does not rebase individual entries, so the safe one is not reported vulnerable" do
+        entries = parsed_dependency.metadata[:all_versions]
+        checkers = entries.to_h do |entry|
+          [entry.version, Dependabot::Gradle::UpdateChecker.new(
+            dependency: entry,
+            dependency_files: dependency_files,
+            credentials: registry_credentials,
+            security_advisories: [advisory]
+          )]
+        end
+
+        expect(checkers.transform_values(&:vulnerable?)).to eq("1.9.0" => false, "2.22.2" => true)
       end
 
       it "accepts the update when only the safe version remains alongside the fix" do

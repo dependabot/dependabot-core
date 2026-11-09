@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/security_advisory"
 require "dependabot/gradle/file_updater"
 require "dependabot/gradle/file_updater/lockfile_updater"
 
@@ -86,8 +87,8 @@ module Dependabot
 
         # `--update-locks` only unlocks a module; Gradle may resolve a vulnerable
         # version again, or move to a different vulnerable one (e.g. a parent
-        # still requires it). Every regenerated version must therefore be either
-        # a resolution that was already safe or at least the target version.
+        # still requires it). Every regenerated version must therefore not be
+        # affected by the advisories the update was computed from.
         sig do
           params(files: T::Array[Dependabot::DependencyFile], dependencies: T::Array[Dependabot::Dependency]).void
         end
@@ -99,14 +100,16 @@ module Dependabot
             next if unfixed.empty?
 
             raise DependencyFileNotResolvable,
-                  "#{dependency.name} still resolves to #{unfixed.join(', ')} after unlocking, below the " \
-                  "target #{dependency.version} (resolved: #{resolved.join(', ')}); " \
+                  "#{dependency.name} still resolves to #{unfixed.join(', ')} after unlocking " \
+                  "(target #{dependency.version}, resolved: #{resolved.join(', ')}); " \
                   "another dependency may require it"
           end
         end
 
         sig { params(dependency: Dependabot::Dependency, version: String).returns(T::Boolean) }
         def acceptable_version?(dependency, version)
+          return !vulnerable_by_advisories?(dependency, version) if advisories?(dependency)
+
           vulnerable = dependency.metadata_string_array(:vulnerable_versions) || [dependency.previous_version].compact
           original = dependency.metadata_string_array(:resolved_versions) || []
           return true if (original - vulnerable).include?(version)
@@ -115,6 +118,30 @@ module Dependabot
           return false unless target && Gradle::Version.correct?(version) && Gradle::Version.correct?(target)
 
           Gradle::Version.new(version) >= Gradle::Version.new(target)
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def advisories?(dependency)
+          !dependency.metadata_array(:advisories).to_a.empty?
+        end
+
+        # Validates against the advisories' own ranges, since a version above the
+        # target can still be affected when an advisory has disjoint ranges.
+        sig { params(dependency: Dependabot::Dependency, version: String).returns(T::Boolean) }
+        def vulnerable_by_advisories?(dependency, version)
+          return true unless Gradle::Version.correct?(version)
+
+          dependency.metadata_array(:advisories).to_a.any? do |raw|
+            advisory = T.cast(raw, T::Hash[Symbol, T::Array[String]])
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency.name,
+              package_manager: "gradle",
+              vulnerable_versions: advisory.fetch(:vulnerable).flat_map do |r|
+                Gradle::Requirement.requirements_array(r)
+              end,
+              safe_versions: advisory.fetch(:safe)
+            ).vulnerable?(Gradle::Version.new(version))
+          end
         end
 
         sig { params(lockfiles: T::Array[Dependabot::DependencyFile], name: String).returns(T::Array[String]) }

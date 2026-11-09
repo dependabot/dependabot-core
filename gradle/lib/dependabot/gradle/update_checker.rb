@@ -129,11 +129,13 @@ module Dependabot
 
       private
 
-      # A lockfile-only dependency can resolve to several versions. Whichever
-      # entry the caller passes (the lowest one, or a vulnerable one), the
-      # update is based on the highest vulnerable resolved version so the fix
-      # covers every vulnerable resolution, and the vulnerable versions are
-      # recorded so the updater can verify none of them remain.
+      # A lockfile-only dependency can resolve to several versions. The combined
+      # dependency (the one carrying `all_versions`) is re-based onto its highest
+      # vulnerable resolved version, so the fix covers every vulnerable resolution
+      # whichever security-update path built the checker. Individual `all_versions`
+      # entries keep their own version, so selecting the vulnerable entry still
+      # works. The advisories are recorded so the updater can validate every
+      # regenerated version against them.
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -141,22 +143,53 @@ module Dependabot
         ).returns(Dependabot::Dependency)
       end
       def with_vulnerable_resolution(dependency, security_advisories)
-        resolved = dependency.metadata_string_array(:resolved_versions)
-        return dependency if security_advisories.empty? || !dependency.requirements.empty? || resolved.nil?
+        return dependency if security_advisories.empty? || !dependency.requirements.empty?
+        return dependency if dependency.metadata_string_array(:lockfiles).to_a.empty?
 
-        vulnerable = resolved.select do |version|
-          Gradle::Version.correct?(version) &&
-            security_advisories.any? { |advisory| advisory.vulnerable?(Gradle::Version.new(version)) }
+        metadata = dependency.metadata.merge(advisories: advisory_metadata(security_advisories))
+        version = dependency.version
+        vulnerable = vulnerable_resolved_versions(dependency, security_advisories)
+        unless vulnerable.empty?
+          version = vulnerable.max_by { |candidate| Gradle::Version.new(candidate) }
+          metadata = metadata.merge(vulnerable_versions: vulnerable)
         end
-        return dependency if vulnerable.empty?
 
         Dependency.new(
           name: dependency.name,
-          version: T.must(vulnerable.max_by { |version| Gradle::Version.new(version) }),
+          version: version,
           requirements: [],
           package_manager: dependency.package_manager,
-          metadata: dependency.metadata.merge(vulnerable_versions: vulnerable)
+          metadata: metadata
         )
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          security_advisories: T::Array[Dependabot::SecurityAdvisory]
+        ).returns(T::Array[String])
+      end
+      def vulnerable_resolved_versions(dependency, security_advisories)
+        resolved = dependency.metadata_string_array(:resolved_versions)
+        return [] unless dependency.metadata[:all_versions] && resolved
+
+        resolved.select do |candidate|
+          Gradle::Version.correct?(candidate) &&
+            security_advisories.any? { |advisory| advisory.vulnerable?(Gradle::Version.new(candidate)) }
+        end
+      end
+
+      sig do
+        params(security_advisories: T::Array[Dependabot::SecurityAdvisory])
+          .returns(T::Array[T::Hash[Symbol, T::Array[String]]])
+      end
+      def advisory_metadata(security_advisories)
+        security_advisories.map do |advisory|
+          {
+            vulnerable: advisory.vulnerable_version_strings.map(&:to_s),
+            safe: advisory.safe_versions.map(&:to_s)
+          }
+        end
       end
 
       sig { override.returns(T::Boolean) }
