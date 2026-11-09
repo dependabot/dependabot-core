@@ -701,6 +701,20 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependencies.map { |d| [d.name, d.version] })
                 .to contain_exactly(["certifi", "2024.2.2"], ["requests", "2.0.0"])
             end
+
+            context "when the input is itself only reached through a constraint" do
+              let(:files) { [tests_requirements_in, requirements_in, requirements] }
+              let(:tests_requirements_in) do
+                Dependabot::DependencyFile.new(
+                  name: "requirements-tests.in",
+                  content: "-c requirements.in\npytest==8.3.3\n"
+                )
+              end
+
+              it "uses the compiled output only to pin versions" do
+                expect(dependencies.map(&:name)).to eq(["pytest"])
+              end
+            end
           end
         end
       end

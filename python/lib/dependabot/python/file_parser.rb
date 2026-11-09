@@ -361,11 +361,11 @@ module Dependabot
         return unless options[:requirement_roots]
 
         references = requirement_files.to_h do |file|
-          name = Pathname.new(file.name).cleanpath.to_path
-          # A pip-compile input may constrain itself to its own output, which is still installed directly.
-          [name, RequirementReferences.paths(file) - [name.sub(/\.in\z/, ".txt")]]
+          [Pathname.new(file.name).cleanpath.to_path, RequirementReferences.paths(file)]
         end
         roots = references.keys - references.values.flatten
+        # A root pip-compile input may constrain itself to its own output, which is still installed directly.
+        roots |= roots.filter_map { |name| name.sub(/\.in\z/, ".txt") if name.end_with?(".in") } & references.keys
         roots if reaches_every_file?(roots, references)
       end
 
