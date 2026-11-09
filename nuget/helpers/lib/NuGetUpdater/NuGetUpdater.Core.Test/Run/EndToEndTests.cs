@@ -1628,6 +1628,136 @@ public class EndToEndTests
         );
     }
 
+    [Fact]
+    public async Task WithMSBuildSdkInImportedFile()
+    {
+        await RunAsync(
+            packages: [
+                MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("Aspire.AppHost.Sdk", "9.0.1"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [
+                ("Directory.Build.props", """
+                    <Project>
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+                    </Project>
+                    """),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: null, // use real worker
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Aspire.AppHost.Sdk",
+                            Version = "9.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "9.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/Directory.Build.props",
+                        "/Directory.Build.targets",
+                        "/Directory.Packages.props",
+                        "/project.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Aspire.AppHost.Sdk",
+                            Directory = "/",
+                            Version = "9.0.1",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "9.0.1",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "9.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "9.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "Directory.Build.props",
+                            Content = """
+                                <Project>
+                                  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.1" />
+                                </Project>
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
     public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
     public const string TestPullRequestTitle = "test-pull-request-title";
     public const string TestPullRequestBody = "test-pull-request-body";
