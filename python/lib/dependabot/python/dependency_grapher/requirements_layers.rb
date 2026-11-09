@@ -140,6 +140,7 @@ module Dependabot
           paired = requirement_family_files.select do |f|
             f != primary && requirements_stem(f.name) == stem
           end
+          paired += compiled_outputs_of([primary] + paired) - paired
 
           # When the primary is a compiled `.txt`, the `-r`/`-c` directives live in the paired `.in` files.
           # Constraints files join every layer below, so they are seeded here too: a constraints file
@@ -160,14 +161,35 @@ module Dependabot
         end
 
         # Files named as constraints join every layer so `-c` references to them resolve. A pip-compile output is
-        # a lockfile whatever its name, so it stays out and is only marked as support where it is referenced.
+        # a lockfile whatever its name, so it stays out and is paired with the layer that owns its `.in` instead.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def constraints_files
-          compiled = PipCompileFileMatcher.new(requirement_family_files.select { |f| f.name.end_with?(".in") })
+          requirement_family_files.select do |f|
+            File.basename(f.name).include?("constraint") && !pip_compile_matcher.lockfile_for_pip_compile_file?(f)
+          end
+        end
+
+        # Compiled outputs whose names don't pair them by stem, e.g. `pip-compile requirements.in -o constraints.txt`.
+        # Manifest-named outputs are layer primaries in their own right, so they are left out.
+        sig do
+          params(owners: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile])
+        end
+        def compiled_outputs_of(owners)
+          owner_names = owners.map(&:name)
 
           requirement_family_files.select do |f|
-            File.basename(f.name).include?("constraint") && !compiled.lockfile_for_pip_compile_file?(f)
+            f.name.end_with?(".txt") &&
+              !self.class.manifest_txt_filename?(f.name) &&
+              owner_names.include?(pip_compile_matcher.manifest_for_pip_compile_lockfile(f)&.name)
           end
+        end
+
+        sig { returns(PipCompileFileMatcher) }
+        def pip_compile_matcher
+          @pip_compile_matcher ||= T.let(
+            PipCompileFileMatcher.new(requirement_family_files.select { |f| f.name.end_with?(".in") }),
+            T.nilable(PipCompileFileMatcher)
+          )
         end
 
         # Collects sibling files referenced via `-r`/`-c`, walking the chain transitively. Returns only newly

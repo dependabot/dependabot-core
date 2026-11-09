@@ -1512,6 +1512,24 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           "pkg:pypi/certifi@2024.2.2", "pkg:pypi/requests@2.31.0"
         )
       end
+
+      context "when the directory has another layer" do
+        let(:requirements_dev_txt) do
+          Dependabot::DependencyFile.new(name: "requirements-dev.txt", content: "pytest==8.3.3\n", directory: "/")
+        end
+
+        let(:dependency_files) { [constraints_txt, requirements_in, requirements_dev_txt] }
+
+        it "keeps the compiled versions with the layer that owns them" do
+          snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+          owning = snapshots.except("requirements-dev.txt").values
+
+          expect(owning.flat_map { |s| s.resolved_dependencies.keys }).to include(
+            "pkg:pypi/certifi@2024.2.2", "pkg:pypi/requests@2.31.0"
+          )
+          expect(resolved_package_names(snapshots.fetch("requirements-dev.txt"))).to contain_exactly("pytest")
+        end
+      end
     end
   end
 
