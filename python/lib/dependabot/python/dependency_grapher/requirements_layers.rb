@@ -84,9 +84,9 @@ module Dependabot
         end
 
         # Builds one manifest group per requirements layer. A layer's primary is its compiled `.txt` (the
-        # most specific file, akin to a lockfile) when present, otherwise its `.in`. Each group also includes
-        # the paired `.in`/`.txt`, any constraints files, and any sibling files referenced via `-r`/`-c` so
-        # the parser can resolve the layer in isolation.
+        # most specific file, akin to a lockfile) when present, otherwise its `.in`. The primary and its paired
+        # `.in`/`.txt` are parsed as the layer's manifests. Constraints files and siblings referenced via `-r`/`-c`
+        # join as support files, so the parser only reads them through those references.
         sig { returns(T::Array[Dependabot::DependencyGraphers::ManifestGroup]) }
         def groups
           layer_primaries.map do |primary|
@@ -119,7 +119,7 @@ module Dependabot
         end
 
         # All the files a single layer needs to parse: the primary, its paired `.in`/`.txt`, constraints
-        # files and any `-r`/`-c` referenced siblings (added as support files so they never win attribution).
+        # files and any `-r`/`-c` referenced siblings.
         sig { params(primary: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def files_for_layer(primary)
           stem = requirements_stem(primary.name)
@@ -133,11 +133,9 @@ module Dependabot
           # that references siblings needs those siblings on disk for the layer to parse.
           referenced = referenced_requirement_files([primary] + paired + constraints_files)
 
-          support = (paired + referenced + constraints_files).uniq.map do |f|
-            as_support_file(f)
-          end
+          support = (referenced + constraints_files).uniq - paired - [primary]
 
-          [primary] + support
+          [primary] + paired + support.map { |f| as_support_file(f) }
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -184,8 +182,8 @@ module Dependabot
           collected
         end
 
-        # Returns a support-file copy of the given file so it can be parsed for cross-reference resolution
-        # without becoming an attribution target. Never mutates the shared DependencyFile.
+        # Returns a support-file copy of the given file so the parser only reads it through `-r`/`-c`
+        # references, never as a manifest of the layer. Never mutates the shared DependencyFile.
         sig { params(file: Dependabot::DependencyFile).returns(Dependabot::DependencyFile) }
         def as_support_file(file)
           return file if file.support_file?

@@ -83,12 +83,12 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
         expect(layers.groups.map { |g| g.primary.name }).to eq(["requirements.txt"])
       end
 
-      it "includes the paired .in as a support file" do
+      it "includes the paired .in as a non-support file so it is parsed alongside the primary" do
         group = layers.groups.first
         in_file = group.files.find { |f| f.name == "requirements.in" }
 
         expect(in_file).not_to be_nil
-        expect(in_file).to be_support_file
+        expect(in_file).not_to be_support_file
       end
 
       it "keeps the primary as a non-support file" do
@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
           .to contain_exactly(
             "requirements-dev.txt", "requirements-dev.in", "requirements.in", "requirements.txt"
           )
-        expect(support_names).to include("requirements-dev.in", "requirements.in", "requirements.txt")
+        expect(support_names).to contain_exactly("requirements.in", "requirements.txt")
       end
     end
 
