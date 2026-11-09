@@ -40,6 +40,7 @@ module Dependabot
       VSN_PART = %r{[^\s,'":/\\]+}
       DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
 
+      OWNING_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
       LOCKFILE_ENTRY_REGEX = /\A(?<group>#{PART}):(?<name>#{PART}):(?<version>#{VSN_PART})=/o
       DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
       DEPENDENCY_SET_COORDINATES_REGEX = /\A\s*['"](?<group>#{PART}):(?<version>#{VSN_PART})['"]\s*\z/o
@@ -333,17 +334,28 @@ module Dependabot
         end
       end
 
-      # The build file of the project a lockfile belongs to: the one next to
-      # it, or the settings file for a root lockfile without a root build file.
+      # The build file of the project a lockfile belongs to: the nearest build or
+      # settings file in its directory or an ancestor directory. Walking up covers
+      # subprojects configured from the root build, and stops at the first match
+      # so an included build is never attributed to the outer one.
       sig { params(lockfile: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
       def owning_buildfile_for(lockfile)
         dir = File.dirname(lockfile.name)
-        candidates = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).map do |basename|
-          dir == "." ? basename : File.join(dir, basename)
+        loop do
+          OWNING_BUILD_FILE_NAMES.each do |basename|
+            name = dir == "." ? basename : File.join(dir, basename)
+            file = dependency_files.find { |f| f.name == name }
+            return file if file
+          end
+          return nil if dir == "."
+
+          dir = File.dirname(dir)
         end
-        candidates.filter_map { |name| dependency_files.find { |f| f.name == name } }.first
       end
 
+      # Every resolved version carries the lockfiles and owning builds of all
+      # versions: a security update targets whichever version is vulnerable, but
+      # must regenerate every build that resolves the module.
       sig { params(dependency: Dependabot::Dependency, dependency_set: DependencySet).returns(Dependabot::Dependency) }
       def with_all_versions(dependency, dependency_set)
         return dependency unless dependency.requirements.empty?
@@ -351,16 +363,26 @@ module Dependabot
         versions = dependency_set.all_versions_for_name(dependency.name)
         return dependency if versions.length < 2
 
+        ownership = {
+          lockfiles: versions.flat_map { |dep| dep.metadata[:lockfiles] || [] }.uniq,
+          owning_buildfiles: versions.flat_map { |dep| dep.metadata[:owning_buildfiles] || [] }.uniq
+        }
+        with_ownership = versions.map do |dep|
+          Dependency.new(
+            name: dep.name,
+            version: dep.version,
+            requirements: [],
+            package_manager: dep.package_manager,
+            metadata: ownership
+          )
+        end
+
         Dependency.new(
           name: dependency.name,
           version: dependency.version,
           requirements: [],
           package_manager: dependency.package_manager,
-          metadata: {
-            lockfiles: versions.flat_map { |dep| dep.metadata[:lockfiles] || [] }.uniq,
-            owning_buildfiles: versions.flat_map { |dep| dep.metadata[:owning_buildfiles] || [] }.uniq,
-            all_versions: versions
-          }
+          metadata: ownership.merge(all_versions: with_ownership)
         )
       end
 

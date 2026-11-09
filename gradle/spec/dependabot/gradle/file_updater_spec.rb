@@ -156,6 +156,19 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       expect(updated_files.first.content).to include("jackson-core:2.22.3")
     end
 
+    it "fails when Gradle resolves the vulnerable version again" do
+      updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+
+      expect do
+        described_class.new(
+          dependency_files: dependency_files,
+          dependencies: updated_dependencies,
+          credentials: registry_credentials
+        ).updated_dependency_files
+      end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.22\.2/)
+    end
+
     context "when the dependency resolves to several versions and only the higher one is vulnerable" do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
@@ -177,6 +190,9 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       it "retains every version so the vulnerable one is not hidden by the lowest" do
         expect(parsed_dependency.version).to eq("1.9.0")
         expect(parsed_dependency.all_versions).to contain_exactly("1.9.0", "2.22.2")
+        expect(parsed_dependency.metadata[:all_versions]).to all(
+          have_attributes(metadata: include(lockfiles: ["gradle.lockfile"], owning_buildfiles: ["build.gradle"]))
+        )
         expect(parsed_dependency.all_versions.map { |v| Dependabot::Gradle::Version.new(v) })
           .to include(satisfy { |version| advisory.vulnerable?(version) })
       end

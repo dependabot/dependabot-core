@@ -15,6 +15,7 @@ module Dependabot
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/lockfile_updater"
+      require_relative "file_updater/lockfile_only_updater"
       require_relative "file_updater/wrapper_updater"
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
@@ -69,8 +70,6 @@ module Dependabot
         dependency.requirements.empty? && !dependency.metadata_string_array(:lockfiles).to_a.empty?
       end
 
-      # Regenerates the lockfiles that resolve transitive dependencies, which
-      # have no declaration in a build file to edit.
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
@@ -80,39 +79,10 @@ module Dependabot
       def update_lockfile_only_dependencies(files, lockfile_only)
         return files if lockfile_only.empty?
 
-        updated = files.dup
-        support_files = dependency_files.select(&:support_file?)
-        lockfile_updater = LockfileUpdater.new(
-          dependency_files: updated + support_files,
+        LockfileOnlyUpdater.new(
+          dependency_files: dependency_files,
           repo_contents_path: repo_contents_path
-        )
-
-        names = lockfile_only.map(&:name)
-        owners_by_root(updated, lockfile_only, lockfile_updater).each_value do |owners|
-          result = lockfile_updater.update_lockfiles(T.must(owners.first), build_files: owners, update_locks: names)
-          replace_updated_files(updated, result.reject(&:support_file?))
-        end
-
-        updated
-      end
-
-      sig do
-        params(
-          files: T::Array[Dependabot::DependencyFile],
-          lockfile_only: T::Array[Dependabot::Dependency],
-          lockfile_updater: LockfileUpdater
-        ).returns(T::Hash[String, T::Array[Dependabot::DependencyFile]])
-      end
-      def owners_by_root(files, lockfile_only, lockfile_updater)
-        owners = lockfile_only.flat_map do |dependency|
-          found = dependency.metadata_string_array(:owning_buildfiles).to_a.filter_map do |name|
-            files.find { |f| f.name == name }
-          end
-          raise DependencyFileNotResolvable, "No build file found to update the dependency" if found.empty?
-
-          found
-        end
-        owners.uniq.group_by { |owner| lockfile_updater.determine_root_dir(build_file: owner) }
+        ).update(files, lockfile_only)
       end
 
       sig { override.void }

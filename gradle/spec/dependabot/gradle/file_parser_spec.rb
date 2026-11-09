@@ -113,6 +113,20 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
+    context "when a subproject lockfile has no adjacent build script" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "sub/gradle.lockfile",
+          content: "com.fasterxml.jackson.core:jackson-core:2.22.3=runtimeClasspath\n"
+        )
+      end
+
+      it "falls back to the enclosing build file as owner" do
+        jackson = dependencies.find { |d| d.name == "com.fasterxml.jackson.core:jackson-core" }
+        expect(jackson.metadata[:owning_buildfiles]).to eq([buildfile.name])
+      end
+    end
+
     it "does not override dependencies declared in build files" do
       declared = parser.parse.select { |d| d.name == "com.google.inject:guice" }
       expect(declared.length).to eq(1)
