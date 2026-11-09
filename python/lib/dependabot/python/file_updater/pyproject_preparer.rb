@@ -8,6 +8,7 @@ require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/requirement"
 require "securerandom"
 
 module Dependabot
@@ -122,8 +123,8 @@ module Dependabot
           pyproject_object = TomlRB.parse(@pyproject_content)
 
           if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
-            python_req = Python::Requirement.new(python_specification)
-            unless python_req.satisfied_by?(requirement)
+            python_requirements = Python::Requirement.requirements_array(python_specification)
+            unless python_requirements.empty? || python_requirements.any? { |req| req.satisfied_by?(requirement) }
               pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
             end
           end
