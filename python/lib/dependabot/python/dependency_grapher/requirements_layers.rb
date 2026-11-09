@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency_graphers/base"
+require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/shared_file_fetcher"
 
 module Dependabot
@@ -158,9 +159,15 @@ module Dependabot
           )
         end
 
+        # Files named as constraints join every layer so `-c` references to them resolve. A pip-compile output is
+        # a lockfile whatever its name, so it stays out and is only marked as support where it is referenced.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def constraints_files
-          requirement_family_files.select { |f| File.basename(f.name).include?("constraint") }
+          compiled = PipCompileFileMatcher.new(requirement_family_files.select { |f| f.name.end_with?(".in") })
+
+          requirement_family_files.select do |f|
+            File.basename(f.name).include?("constraint") && !compiled.lockfile_for_pip_compile_file?(f)
+          end
         end
 
         # Collects sibling files referenced via `-r`/`-c`, walking the chain transitively. Returns only newly

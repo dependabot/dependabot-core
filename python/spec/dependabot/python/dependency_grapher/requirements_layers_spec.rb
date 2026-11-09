@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
         b_group = layers.groups.find { |g| g.primary.name == "b.in" }
 
         expect(b_group.files.map(&:name))
-          .to contain_exactly("b.in", "b.txt", "constraints.in", "constraints.txt", "a.in")
+          .to contain_exactly("b.in", "b.txt", "constraints.in", "a.in")
         expect(b_group.files.find { |f| f.name == "a.in" }).to be_support_file
       end
 
