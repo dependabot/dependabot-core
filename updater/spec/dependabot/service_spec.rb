@@ -395,7 +395,7 @@ RSpec.describe Dependabot::Service do
         )
     end
 
-    it "groups EOF socket errors by package manager and Dependabot call site" do
+    it "does not fingerprint EOF socket errors" do
       job = instance_double(
         Dependabot::Job,
         id: 1234,
@@ -422,12 +422,8 @@ RSpec.describe Dependabot::Service do
         .to have_received(:record_update_job_unknown_error)
         .with(
           error_type: "unknown_error",
-          error_details: hash_including(
-            Dependabot::ErrorAttributes::FINGERPRINT => [
-              "excon-eof",
-              "pip",
-              "python/lib/dependabot/python/package/package_details_fetcher.rb:registry_response_for_dependency"
-            ]
+          error_details: hash_excluding(
+            Dependabot::ErrorAttributes::FINGERPRINT
           )
         )
     end

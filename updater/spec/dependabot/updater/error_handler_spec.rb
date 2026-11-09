@@ -189,15 +189,11 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         Dependabot::Experiments.reset!
       end
 
-      it "records a package manager and call-site fingerprint" do
+      it "records the unknown error without a fingerprint" do
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
-          error_details: hash_including(
-            Dependabot::ErrorAttributes::FINGERPRINT => [
-              "excon-eof",
-              "bundler",
-              "bundler/lib/dependabot/bundler/package/package_details_fetcher.rb:package_json_response"
-            ]
+          error_details: hash_excluding(
+            Dependabot::ErrorAttributes::FINGERPRINT
           )
         )
 
