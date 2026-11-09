@@ -74,6 +74,35 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
         it { is_expected.to eq(["libs"]) }
       end
 
+      context "with mixed spaces and tabs before an escaped quoted path" do
+        let(:content) { "use \t \t\"./libs\\u002fapi\"\n" }
+
+        it { is_expected.to eq(["libs/api"]) }
+      end
+
+      context "with similarly prefixed non-use directives" do
+        let(:content) { "useful ./ignored\nuse./also-ignored\nuse ./libs\n" }
+
+        it { is_expected.to eq(["libs"]) }
+      end
+
+      context "with long runs of tabs after use" do
+        let(:tabs) { "\t\t" * 50_000 }
+        let(:content) { "use\t#{tabs}./libs\nuse\t#{tabs}(\n\t./services\n)\n" }
+
+        it "parses single-line and block paths" do
+          expect(paths).to eq(%w(libs services))
+        end
+
+        context "without a path on the same line" do
+          let(:content) { "use\t#{tabs}\nuse ./libs\n" }
+
+          it "does not consume the next directive as a path" do
+            expect(paths).to eq(["libs"])
+          end
+        end
+      end
+
       context "with quoted and unprefixed entries in a use block" do
         let(:content) do
           <<~GOWORK

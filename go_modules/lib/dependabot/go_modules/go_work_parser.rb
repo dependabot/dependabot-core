@@ -37,10 +37,9 @@ module Dependabot
               next
             end
           else
-            directive = line.match(/\Ause[ \t]+(.+)\z/)
-            next unless directive
+            next unless line.start_with?("use ", "use\t")
 
-            line = T.must(directive[1])
+            line = T.must(line[3..]).lstrip
             if line.start_with?("(")
               in_use_block = true
               next
