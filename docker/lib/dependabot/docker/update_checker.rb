@@ -401,7 +401,7 @@ module Dependabot
         # multi-platform indexes can have different manifest digests. Only keep
         # a candidate if it actually refreshes a pin that is stale for this tag.
         current_digest = digest_of(current_tag.name)
-        return true if current_digest.nil? || current_digest.empty?
+        return true if current_digest.to_s.empty?
 
         stale_requirements = pinned_requirements.reject do |req|
           matching_digest?(req.source_string("digest"), current_digest)
@@ -409,7 +409,7 @@ module Dependabot
         return false if stale_requirements.empty?
 
         candidate_digest = digest_of(candidate.name)
-        return true if candidate_digest.nil? || candidate_digest.empty?
+        return true if candidate_digest.to_s.empty?
 
         stale_requirements.any? { |req| !matching_digest?(req.source_string("digest"), candidate_digest) }
       rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
@@ -438,14 +438,12 @@ module Dependabot
         same_precision_digest = digest_of(best_same_precision.name)
         candidate_digest = digest_of(candidate.name)
 
-        return candidate if same_precision_digest.nil? || same_precision_digest.empty?
+        return candidate if same_precision_digest.to_s.empty?
         return candidate unless same_precision_digest == candidate_digest &&
                                 best_same_precision.same_but_less_precise?(candidate)
 
         # Substituting the current tag would suppress a required digest refresh.
-        if best_same_precision.name == version_tag.name && pinned_digest_update_required?(candidate, version_tag)
-          return candidate
-        end
+        return candidate if precision_alias_hides_pin_refresh?(best_same_precision, candidate, version_tag)
 
         # An alias may have been pushed more recently than the original tag.
         # If it is still in cooldown, validate the original candidate instead.
@@ -458,6 +456,17 @@ module Dependabot
         # the original candidate from undergoing cooldown and content validation.
         Dependabot.logger.info("Unable to compare tag precision for #{candidate.name}: #{e.class}")
         candidate
+      end
+
+      sig do
+        params(
+          alias_tag: Dependabot::Docker::Tag,
+          candidate: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag
+        ).returns(T::Boolean)
+      end
+      def precision_alias_hides_pin_refresh?(alias_tag, candidate, current_tag)
+        alias_tag.name == current_tag.name && pinned_digest_update_required?(candidate, current_tag)
       end
 
       sig do

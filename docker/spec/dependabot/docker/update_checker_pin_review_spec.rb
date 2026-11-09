@@ -13,7 +13,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:cooldown) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "example-image", version: "1.0.0", package_manager: package_manager,
+      name: "example-image",
+      version: "1.0.0",
+      package_manager: package_manager,
       requirements: sources.each_with_index.map do |source, index|
         { requirement: nil, groups: [], file: "Dockerfile.#{index}", source: source }
       end
@@ -23,6 +25,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     described_class.new(dependency: dependency, dependency_files: [], credentials: [], update_cooldown: cooldown)
   end
   let(:registry) { instance_double(DockerRegistry2::Registry) }
+  let(:unknown_error) { DockerRegistry2::RegistryHTTPException.new("Registry request failed") }
   let(:media_type) { "application/vnd.oci.image.index.v1+json" }
   let(:response) { instance_double(RestClient::Response, headers: { content_type: media_type }) }
   let(:platforms) do
@@ -33,7 +36,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     Dependabot::Experiments.register(:docker_digest_only_update_suppression, true)
     allow(checker).to receive(:docker_registry_client).and_return(registry)
     allow(registry).to receive_messages(
-      tags: { "tags" => digests.keys }, dohead: response,
+      tags: { "tags" => digests.keys },
+      dohead: response,
       manifest: { "mediaType" => media_type, "manifests" => platforms }
     )
     allow(registry).to receive(:manifest_digest) do |_repo, tag|
@@ -87,7 +91,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         allow(registry).to receive(:manifest_digest).with("library/example-image", "1.0.0")
-          .and_raise(DockerRegistry2::RegistryHTTPException, "Registry request failed")
+                                                    .and_raise(unknown_error)
       end
 
       it "keeps the candidate when pin comparison is inconclusive" do
@@ -101,7 +105,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         allow(registry).to receive(:manifest_digest).with("library/example-image", "1.1.0")
-          .and_raise(DockerRegistry2::RegistryHTTPException, "Registry request failed")
+                                                    .and_raise(unknown_error)
       end
 
       it "keeps the candidate when pin comparison is inconclusive" do
