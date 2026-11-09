@@ -397,14 +397,23 @@ module Dependabot
         pinned_requirements = digest_requirements.select { |req| req.source_string("tag") == current_tag.name }
         return false if pinned_requirements.empty?
 
-        # Matching registry tags do not prove that the image pinned in the file
-        # is current. Keep the version update eligible when a digest-only refresh
-        # would be suppressed, unless every pin already matches the candidate.
+        # Compare pins to the current tag, not just the candidate: equivalent
+        # multi-platform indexes can have different manifest digests. Only keep
+        # a candidate if it actually refreshes a pin that is stale for this tag.
+        current_digest = digest_of(current_tag.name)
+        return true if current_digest.nil? || current_digest.empty?
+
+        stale_requirements = pinned_requirements.reject do |req|
+          matching_digest?(req.source_string("digest"), current_digest)
+        end
+        return false if stale_requirements.empty?
+
         candidate_digest = digest_of(candidate.name)
         return true if candidate_digest.nil? || candidate_digest.empty?
 
-        pinned_requirements.any? { |req| !matching_digest?(req.source_string("digest"), candidate_digest) }
-      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
+        stale_requirements.any? { |req| !matching_digest?(req.source_string("digest"), candidate_digest) }
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
+             DockerRegistry2::RegistryHTTPException => e
         Dependabot.logger.info("Unable to compare pinned digests for #{candidate.name}: #{e.class}")
         true
       end
@@ -429,15 +438,22 @@ module Dependabot
         same_precision_digest = digest_of(best_same_precision.name)
         candidate_digest = digest_of(candidate.name)
 
+        return candidate if same_precision_digest.nil? || same_precision_digest.empty?
         return candidate unless same_precision_digest == candidate_digest &&
                                 best_same_precision.same_but_less_precise?(candidate)
+
+        # Substituting the current tag would suppress a required digest refresh.
+        if best_same_precision.name == version_tag.name && pinned_digest_update_required?(candidate, version_tag)
+          return candidate
+        end
 
         # An alias may have been pushed more recently than the original tag.
         # If it is still in cooldown, validate the original candidate instead.
         return candidate if tag_within_cooldown?(best_same_precision)
 
         best_same_precision
-      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
+             DockerRegistry2::RegistryHTTPException => e
         # Precision preservation is optional. A failed comparison must not prevent
         # the original candidate from undergoing cooldown and content validation.
         Dependabot.logger.info("Unable to compare tag precision for #{candidate.name}: #{e.class}")
@@ -1492,7 +1508,8 @@ module Dependabot
         return false if current_digest.nil? || current_digest.empty?
 
         current_digest == digest_of(candidate_tag.name)
-      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError => e
+      rescue PrivateSourceAuthenticationFailure, PrivateSourceBadResponse, RegistryError,
+             DockerRegistry2::RegistryHTTPException => e
         # This is an optional no-op check, not a prerequisite for a tag update.
         # If equality cannot be established, preserve normal candidate selection.
         Dependabot.logger.info(

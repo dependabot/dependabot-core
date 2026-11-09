@@ -52,7 +52,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     {
       authentication: DockerRegistry2::RegistryAuthenticationException.new,
       transient: DockerRegistry2::RegistryUnknownException.new,
-      rate_limit: DockerRegistry2::RegistryHTTPException.new("Registry request failed with status 429")
+      rate_limit: DockerRegistry2::RegistryHTTPException.new("Registry request failed with status 429"),
+      unknown_status: DockerRegistry2::RegistryHTTPException.new("Registry request failed")
     }.each do |reason, error|
       context "when the same-precision lookup fails (#{reason})" do
         before do
