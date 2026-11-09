@@ -203,6 +203,41 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.30\.0.*target 2\.22\.3/)
     end
 
+    context "when the dependency is resolved by two independent Gradle roots" do
+      let(:dependency_files) do
+        %w(app tools).flat_map do |dir|
+          [
+            Dependabot::DependencyFile.new(
+              name: "#{dir}/build.gradle",
+              content: buildfile.content
+            ),
+            Dependabot::DependencyFile.new(
+              name: "#{dir}/gradle.lockfile",
+              content: lockfile.content
+            )
+          ]
+        end
+      end
+
+      it "regenerates each root and keeps the lockfiles of earlier roots" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(
+            File.join(cwd, "gradle.lockfile"),
+            "com.fasterxml.jackson.core:jackson-core:2.22.3=compileClasspath,runtimeClasspath\n"
+          )
+        end
+
+        updated_files = described_class.new(
+          dependency_files: dependency_files,
+          dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
+          credentials: registry_credentials
+        ).updated_dependency_files
+
+        expect(updated_files.map(&:name)).to contain_exactly("app/gradle.lockfile", "tools/gradle.lockfile")
+        expect(updated_files.map(&:content)).to all(include("jackson-core:2.22.3"))
+      end
+    end
+
     context "when the advisory has disjoint vulnerable ranges" do
       let(:advisory) do
         Dependabot::SecurityAdvisory.new(
