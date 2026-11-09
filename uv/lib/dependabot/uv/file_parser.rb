@@ -297,7 +297,10 @@ module Dependabot
 
       sig { returns(Dependabot::Python::MarkerEvaluator) }
       def marker_evaluator
-        @marker_evaluator ||= T.let(Dependabot::Python::MarkerEvaluator.new, T.nilable(Dependabot::Python::MarkerEvaluator))
+        @marker_evaluator ||= T.let(
+          Dependabot::Python::MarkerEvaluator.new(non_python_markers_satisfied: true),
+          T.nilable(Dependabot::Python::MarkerEvaluator)
+        )
       end
 
       sig { returns(T::Array[Dependabot::Python::FileParser::PepDependency]) }

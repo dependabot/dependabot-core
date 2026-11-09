@@ -400,6 +400,24 @@ RSpec.describe Dependabot::Uv::FileParser do
           end
         end
 
+        context "when an unsatisfied python_version is joined to a non-numeric marker using 'or'" do
+          let(:marker) { 'python_version >= "3.9" or platform_machine == "x86_64"' }
+          let(:python_version) { "3.8" }
+
+          it "keeps the dependency, since the other marker is assumed satisfied" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to another numeric marker using 'or'" do
+          let(:marker) { 'python_version < "3.0" or implementation_version >= "3.0"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency, since the other marker is assumed satisfied" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
         context "with a satisfied python_full_version" do
           let(:marker) { 'python_full_version >= "3.9.0"' }
           let(:python_version) { "3.11.2" }
