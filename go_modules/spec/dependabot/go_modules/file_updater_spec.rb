@@ -339,6 +339,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
 
+      context "with unprefixed and escaped quoted workspace members" do
+        let(:go_work_body) { "go 1.21\n\nuse .\nuse libs\nuse \"./ser\\u0076ices\"\n" }
+
+        before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
+
+        it "updates the additional members selected by the shared parser" do
+          updated_modules = updated_files.select { |file| file.name.end_with?("go.mod") }
+
+          expect(updated_modules.map(&:name)).to contain_exactly("go.mod", "libs/go.mod", "services/go.mod")
+          expect(updated_modules).to all(have_attributes(content: include("#{dependency_name} #{dependency_version}")))
+        end
+      end
+
       context "when the dependency raises the workspace's Go version" do
         let(:dependency_name) { "golang.org/x/text" }
         let(:dependency_previous_version) { "v0.0.0-20170915032832-14c0d48ead0c" }
@@ -615,6 +628,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
   context "when updating one module of a workspace whose go.work was fetched as an ancestor file" do
     let(:project_name) { "workspace" }
     let(:directory) { "/libs" }
+    let(:module_support_files) { false }
     let(:go_work_body) { fixture("projects", project_name, "go.work") }
     let(:ancestor_go_work) do
       Dependabot::DependencyFile.new(
@@ -624,10 +638,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     let(:files) do
       [
         Dependabot::DependencyFile.new(
-          name: "go.mod", content: fixture("projects", project_name, "libs", "go.mod"), directory: directory
+          name: "go.mod",
+          content: fixture("projects", project_name, "libs", "go.mod"),
+          directory: directory,
+          support_file: module_support_files
         ),
         Dependabot::DependencyFile.new(
-          name: "go.sum", content: fixture("projects", project_name, "libs", "go.sum"), directory: directory
+          name: "go.sum",
+          content: fixture("projects", project_name, "libs", "go.sum"),
+          directory: directory,
+          support_file: module_support_files
         ),
         ancestor_go_work
       ]
@@ -667,28 +687,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "when the module's own go.mod and go.sum are support files (e.g. in a git submodule)" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "go.mod",
-            content: fixture("projects", project_name, "libs", "go.mod"),
-            directory: directory,
-            support_file: true
-          ),
-          Dependabot::DependencyFile.new(
-            name: "go.sum",
-            content: fixture("projects", project_name, "libs", "go.sum"),
-            directory: directory,
-            support_file: true
-          )
-        ]
-      end
+      let(:module_support_files) { true }
 
       it "does not treat them as workspace files" do
         allow(Open3).to receive(:capture3).and_call_original
 
-        updater.updated_dependency_files
-
+        expect(updated_files).to contain_exactly(
+          have_attributes(name: "go.mod", support_file: true),
+          have_attributes(name: "go.sum", support_file: true)
+        )
         expect(Open3).not_to have_received(:capture3).with("go work sync")
       end
     end
@@ -733,6 +740,39 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:dependency_version) { "v0.33.0" }
       let(:previous_requirements) { [] }
       let(:requirements) { [] }
+
+      context "when the module's own go.mod and go.sum are support files" do
+        let(:module_support_files) { true }
+
+        it "promotes the changed member files alongside the ancestor workspace" do
+          expect(updated_files).to contain_exactly(
+            have_attributes(
+              path: "/libs/go.mod", support_file: false, content: include("golang.org/x/sys v0.33.0")
+            ),
+            have_attributes(path: "/libs/go.sum", support_file: false),
+            have_attributes(path: "/go.work", support_file: false, content: start_with("go 1.23"))
+          )
+        end
+
+        it "does not promote or modify the original member files" do
+          updater.updated_dependency_files
+
+          expect(files).to all(have_attributes(support_file: true))
+          expect(files.first&.content).to eq(fixture("projects", project_name, "libs", "go.mod"))
+          expect(files[1]&.content).to eq(fixture("projects", project_name, "libs", "go.sum"))
+        end
+
+        context "when the experiment is disabled" do
+          before { Dependabot::Experiments.register(:enable_go_work_version_sync, false) }
+
+          it "preserves the support-only module update without returning the ancestor" do
+            expect(updated_files).to contain_exactly(
+              have_attributes(name: "go.mod", support_file: true),
+              have_attributes(name: "go.sum", support_file: true)
+            )
+          end
+        end
+      end
 
       context "when the experiment is disabled" do
         before { Dependabot::Experiments.register(:enable_go_work_version_sync, false) }

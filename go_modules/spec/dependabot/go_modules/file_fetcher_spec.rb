@@ -134,6 +134,41 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       expect(file_names).to include("libs/go.sum")
       expect(file_names).to include("services/go.sum")
     end
+
+    context "with unprefixed and escaped quoted members at the workspace root" do
+      let(:experiment_enabled) { true }
+
+      before do
+        Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
+        File.write(File.join(repo_contents_path, "go.work"), "go 1.21\n\nuse .\nuse libs\nuse \"./ser\\u0076ices\"\n")
+        Dir.chdir(repo_contents_path) do
+          Dependabot::SharedHelpers.run_shell_command("git add go.work")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")
+        end
+      end
+
+      it "includes the additional members when the shared parser experiment is enabled" do
+        expect(file_fetcher_instance.files.map(&:name)).to contain_exactly(
+          "go.work",
+          "go.work.sum",
+          "go.mod",
+          "go.sum",
+          "libs/go.mod",
+          "libs/go.sum",
+          "services/go.mod",
+          "services/go.sum"
+        )
+      end
+
+      context "when the experiment is disabled" do
+        let(:experiment_enabled) { false }
+
+        it "retains legacy root-workspace member selection" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to contain_exactly("go.work", "go.work.sum", "go.mod", "go.sum")
+        end
+      end
+    end
   end
 
   context "when the job directory is a single module inside a go.work workspace" do
@@ -248,6 +283,46 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
 
         it "fetches the ancestor go.work" do
           expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
+        end
+      end
+    end
+
+    context "when go.work escapes a path separator in a nested member path" do
+      let(:directory) { "/libs/api" }
+      let(:use_directive) { 'use "./libs\u002fapi"' }
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        FileUtils.mkdir_p(File.join(path, "libs", "api"))
+        FileUtils.cp(File.join(path, "libs", "go.mod"), File.join(path, "libs", "api", "go.mod"))
+        File.write(File.join(path, "go.work"), "go 1.21\n\n#{use_directive}\n")
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add --all")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m escaped-member")
+        end
+        path
+      end
+
+      it "fetches the ancestor workspace files without fetching siblings" do
+        expect(fetched_files).to contain_exactly(
+          have_attributes(name: "go.mod", path: "/libs/api/go.mod", support_file: false),
+          have_attributes(name: "../../go.work", path: "/go.work", support_file: true),
+          have_attributes(name: "../../go.work.sum", path: "/go.work.sum", support_file: true)
+        )
+      end
+
+      context "with an escaped path in a use block" do
+        let(:use_directive) { "use (\n\t\"./libs\\u002fapi\" // member\n)" }
+
+        it "fetches the ancestor workspace files" do
+          expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "../../go.work", "../../go.work.sum")
+        end
+      end
+
+      context "when the experiment is disabled" do
+        let(:experiment_enabled) { false }
+
+        it "does not discover the ancestor workspace" do
+          expect(fetched_files.map(&:name)).to contain_exactly("go.mod")
         end
       end
     end
