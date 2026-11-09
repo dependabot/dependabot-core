@@ -20,6 +20,17 @@ module Dependabot
               <path>.*?</path>|
               <artifactItem>.*?</artifactItem>
             }mx
+
+        # The parts of a requirement the XML match depends on. Scanned-only requirements have no XML
+        # entry and are pinned per `pom_file`, so they're kept whole.
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(Object) }
+        def self.match_key(requirement)
+          return requirement unless requirement.file
+
+          [requirement.file, requirement.requirement_string, requirement.groups] +
+            %w(packaging_type classifier property_name property_source).map { |key| requirement.metadata_string(key) }
+        end
+
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
@@ -137,13 +148,13 @@ module Dependabot
           type == packaging_type(node)
         end
 
+        # A classifier names a distinct artifact, so an entry only matches the requirement parsed from
+        # an entry with the same classifier (none for the plain artifact).
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def classifier_matches?(node)
-          return true unless node.at_xpath("./*/classifier")
-
-          classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
-          dep_classifier = dependency.requirements.first&.metadata_string("classifier")
-          classifier == dep_classifier
+          classifier_node = node.at_xpath("./*/classifier")
+          classifier = classifier_node && evaluated_value(classifier_node.content.strip)
+          classifier == declaring_requirement.metadata_string("classifier")
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
