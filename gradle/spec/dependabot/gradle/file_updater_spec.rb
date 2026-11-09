@@ -6,6 +6,8 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/gradle/file_updater"
+require "dependabot/gradle/update_checker"
+require "dependabot/security_advisory"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Gradle::FileUpdater do
@@ -63,6 +65,96 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
   end
 
   it_behaves_like "a dependency file updater"
+
+  describe "security updates for lockfile-only dependencies" do
+    let(:dependency_name) { "com.fasterxml.jackson.core:jackson-core" }
+    let(:registry_credentials) { [] }
+    let(:buildfile) do
+      Dependabot::DependencyFile.new(
+        name: "build.gradle",
+        content: <<~GRADLE
+          plugins { id 'java' }
+          repositories { mavenCentral() }
+          dependencies { implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.2' }
+          dependencyLocking { lockAllConfigurations() }
+        GRADLE
+      )
+    end
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "gradle.lockfile",
+        content: "com.fasterxml.jackson.core:jackson-core:2.22.2=compileClasspath,runtimeClasspath\n"
+      )
+    end
+    let(:dependency_files) { [buildfile, lockfile] }
+    let(:parsed_dependency) do
+      Dependabot::Gradle::FileParser.new(
+        dependency_files: dependency_files,
+        source: nil
+      ).parse.find { |candidate| candidate.name == dependency_name }
+    end
+    let(:checker) do
+      Dependabot::Gradle::UpdateChecker.new(
+        dependency: parsed_dependency,
+        dependency_files: dependency_files,
+        credentials: registry_credentials,
+        security_advisories: [Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "gradle",
+          vulnerable_versions: ["<= 2.22.2"]
+        )]
+      )
+    end
+    let(:metadata_url) do
+      "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/maven-metadata.xml"
+    end
+
+    before do
+      stub_request(:get, metadata_url)
+        .to_return(status: 200, body: <<~XML)
+          <metadata>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <versioning>
+              <release>2.22.3</release>
+              <versions><version>2.22.2</version><version>2.22.3</version></versions>
+            </versioning>
+          </metadata>
+        XML
+    end
+
+    it "discovers the vulnerable dependency but cannot discover its build-file repository" do
+      expect(parsed_dependency).not_to be_nil
+      expect(parsed_dependency.requirements).to be_empty
+      expect(checker.vulnerable?).to be(true)
+      expect(checker.lowest_resolvable_security_fix_version).to be_nil
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+      expect(a_request(:get, metadata_url)).not_to have_been_made
+    end
+
+    context "with an explicitly configured Maven repository" do
+      let(:registry_credentials) do
+        [{ "type" => "maven_repository", "url" => "https://repo.maven.apache.org/maven2" }]
+      end
+
+      it "selects a safe version but cannot generate updated files" do
+        expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("2.22.3")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+        expect(updated_dependencies.first.version).to eq("2.22.3")
+        expect(updated_dependencies.first.requirements).to be_empty
+
+        expect do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: updated_dependencies,
+            credentials: registry_credentials
+          ).updated_dependency_files
+        end.to raise_error(RuntimeError, "No files changed!")
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
