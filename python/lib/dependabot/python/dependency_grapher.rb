@@ -64,6 +64,10 @@ module Dependabot
           generate_ephemeral_lockfile!
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
+
+        # Graphs report what each manifest installs, and pip installs only what a `-c` target pins, not the rest of it.
+        # Checked last, as the package manager is memoised and must see any generated lockfile.
+        file_parser.options[:requirement_roots] = true if supports_layering?
         super
       end
 
