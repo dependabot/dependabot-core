@@ -98,10 +98,11 @@ module Dependabot
             lockfile_names = dependency.metadata_string_array(:lockfiles).to_a
             resolved = resolved_versions(files.select { |f| lockfile_names.include?(f.name) }, dependency.name)
             unfixed = resolved.reject { |version| acceptable_version?(dependency, version) }
-            next if unfixed.empty?
+            next if unfixed.empty? && resolved.include?(dependency.version)
 
+            problem = unfixed.empty? ? "does not resolve to the target" : "still resolves to #{unfixed.join(', ')}"
             raise DependencyFileNotResolvable,
-                  "#{dependency.name} still resolves to #{unfixed.join(', ')} after unlocking " \
+                  "#{dependency.name} #{problem} after unlocking " \
                   "(target #{dependency.version}, resolved: #{resolved.join(', ')}); " \
                   "another dependency may require it"
           end

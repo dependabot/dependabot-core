@@ -349,6 +349,18 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         expect(updater.updated_dependency_files.first.content).to include("jackson-core:2.22.3")
       end
 
+      it "rejects a regenerated lockfile that never resolves to the reported target" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(
+            File.join(cwd, "gradle.lockfile"),
+            "com.fasterxml.jackson.core:jackson-core:1.9.0=compileClasspath\n"
+          )
+        end
+
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /does not resolve to the target.*target 2\.22\.3/)
+      end
+
       context "when several resolved versions are vulnerable" do
         let(:advisory) do
           Dependabot::SecurityAdvisory.new(
