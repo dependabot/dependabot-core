@@ -1564,6 +1564,35 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           expect(resolved_package_names(snapshots.fetch("base.in"))).to contain_exactly("pytest")
         end
       end
+
+      context "when the output was compiled from a manifest that is not an .in file" do
+        let(:base_in) do
+          Dependabot::DependencyFile.new(name: "base.in", content: "pytest==8.3.3\n", directory: "/")
+        end
+
+        let(:requirements_dev_txt) do
+          Dependabot::DependencyFile.new(name: "requirements-dev.txt", content: "flask==3.0.0\n", directory: "/")
+        end
+
+        let(:constraints_txt) do
+          Dependabot::DependencyFile.new(
+            name: "constraints.txt",
+            content: <<~TXT,
+              #    pip-compile --output-file=constraints.txt pyproject.toml
+              certifi==2024.2.2
+            TXT
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [base_in, requirements_dev_txt, constraints_txt] }
+
+        it "does not pair the output with an unrelated .in" do
+          snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+          expect(resolved_package_names(snapshots.fetch("base.in"))).to contain_exactly("pytest")
+        end
+      end
     end
   end
 

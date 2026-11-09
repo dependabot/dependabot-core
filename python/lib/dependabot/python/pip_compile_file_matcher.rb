@@ -23,11 +23,13 @@ module Dependabot
         !!manifest_for_lockfile_name(name)
       end
 
+      # Returns nil when neither the name nor the compile command ties the output to an `.in`, as it may have been
+      # compiled from another manifest such as `pyproject.toml`.
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
       def manifest_for_pip_compile_lockfile(file)
         return nil unless lockfile_for_pip_compile_file?(file)
 
-        manifest_for_lockfile_name(file.name) || manifest_named_in_header(file) || requirements_in_files.first
+        manifest_for_lockfile_name(file.name) || manifest_named_in_header(file)
       end
 
       private
