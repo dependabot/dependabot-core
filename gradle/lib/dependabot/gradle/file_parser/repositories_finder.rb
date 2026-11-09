@@ -55,6 +55,7 @@ module Dependabot
           end
           repository_urls += own_buildfile_repository_urls
           repository_urls += settings_file_repository_urls(top_level_settings_file)
+          repository_urls += included_build_repository_urls
           repository_urls = repository_urls.uniq
 
           return repository_urls unless repository_urls.empty?
@@ -116,6 +117,22 @@ module Dependabot
           own_buildfile_urls += repository_urls_from(buildfile_content)
           own_buildfile_urls += repository_urls_from(subproject_buildfile_content)
           own_buildfile_urls
+        end
+
+        # A target in a nested (e.g. included) build resolves against its own
+        # settings and build repositories, not only the root build's.
+        sig { returns(T::Array[String]) }
+        def included_build_repository_urls
+          return [] if target_dependency_file == top_level_buildfile
+
+          dir = File.dirname(target_dependency_file.name)
+          return [] if dir == "."
+
+          urls = repository_urls_from(comment_free_content(target_dependency_file))
+          settings = dependency_files.find do |f|
+            SUPPORTED_SETTINGS_FILE_NAMES.any? { |name| f.name == File.join(dir, name) }
+          end
+          urls + settings_file_repository_urls(settings)
         end
 
         sig { params(settings_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }

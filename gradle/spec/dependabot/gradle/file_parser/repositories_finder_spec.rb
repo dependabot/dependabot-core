@@ -163,6 +163,22 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
+      context "when the target is in an included build with its own settings file" do
+        let(:included_settings) do
+          Dependabot::DependencyFile.new(
+            name: "app/settings.gradle",
+            content: "dependencyResolutionManagement { repositories { maven { url 'https://included.example.com' } } }"
+          )
+        end
+        let(:included_buildfile) do
+          Dependabot::DependencyFile.new(name: "app/build.gradle", content: "plugins { id 'java' }")
+        end
+        let(:dependency_files) { [buildfile, included_buildfile, included_settings] }
+        let(:target_dependency_file) { included_buildfile }
+
+        it { is_expected.to include("https://included.example.com") }
+      end
+
       context "with dependencyResolutionManagement in the settings file" do
         let(:dependency_files) { [buildfile, settings_file] }
         let(:settings_file) do
