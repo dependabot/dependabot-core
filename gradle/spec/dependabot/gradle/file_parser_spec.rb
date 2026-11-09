@@ -103,6 +103,21 @@ RSpec.describe Dependabot::Gradle::FileParser do
       expect(dependencies.map(&:name)).not_to include(a_string_including("commented"))
     end
 
+    context "when a lockfile is a support file" do
+      let(:support_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "buildSrc/gradle.lockfile",
+          content: "com.example:build-only:1.0.0=compileClasspath\n",
+          support_file: true
+        )
+      end
+      let(:files) { [buildfile, lockfile, support_lockfile] }
+
+      it "does not attribute its entries to the project" do
+        expect(dependencies.map(&:name)).not_to include("com.example:build-only")
+      end
+    end
+
     context "when a lockfile-only dependency resolves to multiple versions" do
       let(:other_lockfile) do
         Dependabot::DependencyFile.new(

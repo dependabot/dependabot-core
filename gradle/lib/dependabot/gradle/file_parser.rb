@@ -399,7 +399,8 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def lockfiles
-        dependency_files.select { |f| f.name.end_with?(".lockfile") }
+        # Support files (e.g. buildSrc) lock the build's own classpath, not the project's
+        dependency_files.select { |f| f.name.end_with?(".lockfile") && !f.support_file? }
       end
 
       sig { params(toml_file: Dependabot::DependencyFile).returns(DependencySet) }
