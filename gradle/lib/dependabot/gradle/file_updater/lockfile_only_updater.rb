@@ -88,7 +88,8 @@ module Dependabot
         # `--update-locks` only unlocks a module; Gradle may resolve a vulnerable
         # version again, or move to a different vulnerable one (e.g. a parent
         # still requires it). Every regenerated version must therefore not be
-        # affected by the advisories the update was computed from.
+        # affected by the advisories the update was computed from, and must be
+        # either a version that was already resolved or the target version.
         sig do
           params(files: T::Array[Dependabot::DependencyFile], dependencies: T::Array[Dependabot::Dependency]).void
         end
@@ -106,18 +107,17 @@ module Dependabot
           end
         end
 
+        # A version Gradle picked on its own (neither already resolved nor the
+        # target) may be ignored by the job's ignore conditions and would not match
+        # the version reported in the PR, so only those two are accepted.
         sig { params(dependency: Dependabot::Dependency, version: String).returns(T::Boolean) }
         def acceptable_version?(dependency, version)
+          original = dependency.metadata_string_array(:resolved_versions) || [dependency.previous_version].compact
+          return false unless original.include?(version) || version == dependency.version
           return !vulnerable_by_advisories?(dependency, version) if advisories?(dependency)
 
           vulnerable = dependency.metadata_string_array(:vulnerable_versions) || [dependency.previous_version].compact
-          original = dependency.metadata_string_array(:resolved_versions) || []
-          return true if (original - vulnerable).include?(version)
-
-          target = dependency.version
-          return false unless target && Gradle::Version.correct?(version) && Gradle::Version.correct?(target)
-
-          Gradle::Version.new(version) >= Gradle::Version.new(target)
+          !vulnerable.include?(version)
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }

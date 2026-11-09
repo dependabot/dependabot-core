@@ -186,6 +186,23 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.22\.1.*target 2\.22\.3/)
     end
 
+    it "rejects a safe version Gradle picked that differs from the reported target" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+        File.write(
+          File.join(cwd, "gradle.lockfile"),
+          "com.fasterxml.jackson.core:jackson-core:2.30.0=compileClasspath\n"
+        )
+      end
+
+      expect do
+        described_class.new(
+          dependency_files: dependency_files,
+          dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
+          credentials: registry_credentials
+        ).updated_dependency_files
+      end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.30\.0.*target 2\.22\.3/)
+    end
+
     context "when the advisory has disjoint vulnerable ranges" do
       let(:advisory) do
         Dependabot::SecurityAdvisory.new(
