@@ -1547,6 +1547,23 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           expect(resolved_package_names(snapshots.fetch("requirements-dev.txt"))).to contain_exactly("pytest")
         end
       end
+
+      context "when another .in file is listed before the one the output was compiled from" do
+        let(:base_in) do
+          Dependabot::DependencyFile.new(name: "base.in", content: "pytest==8.3.3\n", directory: "/")
+        end
+
+        let(:dependency_files) { [base_in, requirements_in, constraints_txt] }
+
+        it "keeps the compiled versions with the .in named in the compile command" do
+          snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+          expect(snapshots.fetch("requirements.in").resolved_dependencies.keys).to include(
+            "pkg:pypi/certifi@2024.2.2", "pkg:pypi/requests@2.31.0"
+          )
+          expect(resolved_package_names(snapshots.fetch("base.in"))).to contain_exactly("pytest")
+        end
+      end
     end
   end
 
