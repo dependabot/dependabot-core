@@ -1477,6 +1477,23 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(snapshots.map { |s| s.manifest_file.name }).to eq(["requirements.txt"])
         expect(snapshots.first.resolved_dependencies.keys).to contain_exactly("pkg:pypi/requests@2.25.1")
       end
+
+      context "when the manifest was fetched from a git submodule" do
+        let(:requirements_txt) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content: "-c constraints.txt\nrequests\n",
+            directory: "/",
+            support_file: true
+          )
+        end
+
+        it "still treats the manifest as the layer's root" do
+          snapshots = grapher.manifest_group_snapshots
+
+          expect(snapshots.first.resolved_dependencies.keys).to contain_exactly("pkg:pypi/requests@2.25.1")
+        end
+      end
     end
 
     context "when a pip-compile output is named as a constraints file" do

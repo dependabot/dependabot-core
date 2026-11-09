@@ -149,7 +149,7 @@ module Dependabot
 
           support = (referenced + constraints_files).uniq - paired - [primary]
 
-          [primary] + paired + support.map { |f| as_support_file(f) }
+          [primary, *paired].map { |f| with_support_flag(f, false) } + support.map { |f| with_support_flag(f, true) }
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -223,18 +223,19 @@ module Dependabot
           collected
         end
 
-        # Returns a support-file copy of the given file so the parser only reads it through `-r`/`-c`
-        # references, never as a manifest of the layer. Never mutates the shared DependencyFile.
-        sig { params(file: Dependabot::DependencyFile).returns(Dependabot::DependencyFile) }
-        def as_support_file(file)
-          return file if file.support_file?
+        # Returns a copy flagged as a root or a support file, so the parser reads support files only through
+        # `-r`/`-c` references. Files from git submodules arrive as support files, so a layer's own manifests are
+        # reset to roots. Never mutates the shared DependencyFile.
+        sig { params(file: Dependabot::DependencyFile, support: T::Boolean).returns(Dependabot::DependencyFile) }
+        def with_support_flag(file, support)
+          return file if file.support_file? == support
 
           Dependabot::DependencyFile.new(
             name: file.name,
             content: file.content,
             directory: file.directory,
             type: file.type,
-            support_file: true,
+            support_file: support,
             vendored_file: file.vendored_file,
             symlink_target: file.symlink_target,
             content_encoding: file.content_encoding,
