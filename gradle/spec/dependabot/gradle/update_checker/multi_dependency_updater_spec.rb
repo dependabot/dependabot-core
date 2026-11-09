@@ -226,6 +226,26 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::MultiDependencyUpdater do
       end
 
       it { is_expected.to be(true) }
+
+      context "when the dependency is also declared in the other catalog" do
+        let(:dependency_requirements) do
+          [{
+            file: "gradle/tools.versions.toml",
+            requirement: "4.13.2",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "junit" }
+          }, {
+            file: "gradle/testing.versions.toml",
+            requirement: "5.10.0",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "junit" }
+          }]
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
   end
 
