@@ -81,6 +81,18 @@ RSpec.describe Dependabot::Python::PipCompileFileMatcher do
         it "returns the manifest named in the compile command" do
           expect(matcher.manifest_for_pip_compile_lockfile(lockfile)).to eq(dev_manifest)
         end
+
+        it "ignores .in files passed as constraints or overrides" do
+          ["--constraint=base.in", "-c base.in", "--override base.in"].each do |option|
+            output = Dependabot::DependencyFile.new(
+              name: "constraints.txt",
+              content: "#    pip-compile #{option} --output-file=constraints.txt dev.in\npytest==8.3.3\n",
+              directory: "/"
+            )
+
+            expect(matcher.manifest_for_pip_compile_lockfile(output)).to eq(dev_manifest), option
+          end
+        end
       end
     end
 

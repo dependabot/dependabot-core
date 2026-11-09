@@ -6,6 +6,8 @@ module Dependabot
     class PipCompileFileMatcher
       extend T::Sig
 
+      NON_SOURCE_FILE_OPTION = /\A(?:-[cb]|--(?:build-)?constraints?|--overrides?)\z/
+
       sig { params(requirements_in_files: T::Array[DependencyFile]).void }
       def initialize(requirements_in_files)
         @requirements_in_files = requirements_in_files
@@ -40,10 +42,24 @@ module Dependabot
       # pip-compile and uv record their command in the output's header, which names the source manifest.
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
       def manifest_named_in_header(file)
-        header = file.content.to_s.lines.take_while { |line| line.start_with?("#") }.join
+        sources = compile_command_sources(file)
 
         requirements_in_files.find do |f|
-          header.match?(%r{(?:\s|/|=)#{Regexp.escape(f.name)}(?:\s|$)})
+          sources.any? { |source| source == f.name || source.end_with?("/#{f.name}") }
+        end
+      end
+
+      # Constraint and override files are inputs too, so they're excluded to leave only the sources.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+      def compile_command_sources(file)
+        header = file.content.to_s.lines.take_while { |line| line.start_with?("#") }
+        tokens = header.flat_map { |line| line.delete_prefix("#").split }
+
+        tokens.each_with_index.filter_map do |token, i|
+          next if token.start_with?("-")
+          next if i.positive? && tokens.fetch(i - 1).match?(NON_SOURCE_FILE_OPTION)
+
+          token
         end
       end
 
