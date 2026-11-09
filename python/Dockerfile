@@ -4,11 +4,11 @@
 # python/spec/dependabot/python/file_fetcher_spec.rb: exposes the expected ecosystem_versions metric spec
 # Python versions are pinned to the release of each minor/patch version.
 ARG PY_3_15=3.15.2
-ARG PY_3_14=3.14.9
-ARG PY_3_13=3.13.17
-ARG PY_3_12=3.12.13
-ARG PY_3_11=3.11.15
-ARG PY_3_10=3.10.20
+ARG PY_3_14=3.14.10
+ARG PY_3_13=3.13.18
+ARG PY_3_12=3.12.16
+ARG PY_3_11=3.11.18
+ARG PY_3_10=3.10.22
 # https://github.com/pyenv/pyenv/releases
 ARG PYENV_VERSION=v2.6.16
 
