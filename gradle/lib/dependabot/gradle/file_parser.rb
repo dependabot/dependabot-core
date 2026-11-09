@@ -280,17 +280,68 @@ module Dependabot
       # Adds dependencies that only appear in a gradle.lockfile (e.g. transitive
       # ones) as sub-dependencies, without requirements. Dependencies declared
       # in build files or version catalogs take precedence. Every resolved
-      # version is retained so that it is reachable through `all_versions`.
+      # version is retained so that it is reachable through `all_versions`, and
+      # the lockfiles and owning build files are recorded in the metadata so the
+      # update checker and updater can locate the project that resolves them.
       sig { params(dependency_set: DependencySet).returns(DependencySet) }
       def add_lockfile_dependencies(dependency_set)
         declared_names = dependency_set.dependencies.map(&:name)
         lockfile_set = DependencySet.new
-        lockfiles.each do |lockfile|
-          lockfile_dependencies(lockfile).each do |dependency|
-            lockfile_set << dependency unless declared_names.include?(dependency.name)
-          end
+        lockfile_entries.each do |entry|
+          next if declared_names.include?(entry.name)
+
+          lockfile_set << Dependency.new(
+            name: entry.name,
+            version: entry.version,
+            requirements: [],
+            package_manager: "gradle",
+            metadata: { lockfiles: entry.lockfiles, owning_buildfiles: entry.owning_buildfiles }
+          )
         end
         dependency_set + lockfile_set
+      end
+
+      class LockfileEntry < T::Struct
+        const :name, String
+        const :version, String
+        const :lockfiles, T::Array[String]
+        const :owning_buildfiles, T::Array[String]
+      end
+
+      sig { returns(T::Array[LockfileEntry]) }
+      def lockfile_entries
+        found = T.let({}, T::Hash[[String, String], T::Array[Dependabot::DependencyFile]])
+        lockfiles.each do |lockfile|
+          T.must(lockfile.content).each_line do |line|
+            match = line.strip.match(LOCKFILE_ENTRY_REGEX)
+            next unless match
+
+            version = T.must(match[:version])
+            next unless Gradle::Version.correct?(version)
+
+            (found[["#{match[:group]}:#{match[:name]}", version]] ||= []) << lockfile
+          end
+        end
+
+        found.map do |(name, version), files|
+          LockfileEntry.new(
+            name: name,
+            version: version,
+            lockfiles: files.map(&:name).uniq,
+            owning_buildfiles: files.filter_map { |f| owning_buildfile_for(f)&.name }.uniq
+          )
+        end
+      end
+
+      # The build file of the project a lockfile belongs to: the one next to
+      # it, or the settings file for a root lockfile without a root build file.
+      sig { params(lockfile: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def owning_buildfile_for(lockfile)
+        dir = File.dirname(lockfile.name)
+        candidates = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).map do |basename|
+          dir == "." ? basename : File.join(dir, basename)
+        end
+        candidates.filter_map { |name| dependency_files.find { |f| f.name == name } }.first
       end
 
       sig { params(dependency: Dependabot::Dependency, dependency_set: DependencySet).returns(Dependabot::Dependency) }
@@ -305,26 +356,12 @@ module Dependabot
           version: dependency.version,
           requirements: [],
           package_manager: dependency.package_manager,
-          metadata: { all_versions: versions }
+          metadata: {
+            lockfiles: versions.flat_map { |dep| dep.metadata[:lockfiles] || [] }.uniq,
+            owning_buildfiles: versions.flat_map { |dep| dep.metadata[:owning_buildfiles] || [] }.uniq,
+            all_versions: versions
+          }
         )
-      end
-
-      sig { params(lockfile: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
-      def lockfile_dependencies(lockfile)
-        T.must(lockfile.content).each_line.filter_map do |line|
-          match = line.strip.match(LOCKFILE_ENTRY_REGEX)
-          next unless match
-
-          version = T.must(match[:version])
-          next unless Gradle::Version.correct?(version)
-
-          Dependency.new(
-            name: "#{match[:group]}:#{match[:name]}",
-            version: version,
-            requirements: [],
-            package_manager: "gradle"
-          )
-        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

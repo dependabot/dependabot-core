@@ -401,10 +401,11 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[String, Object]]) }
         def dependency_repository_details
-          requirement_files =
-            dependency.requirements
-                      .filter_map(&:file)
-                      .map { |nm| dependency_files.find { |f| f.name == nm } }
+          # Lockfile-only dependencies have no requirements, so repositories come
+          # from the build files of the projects whose lockfiles resolve them.
+          file_names = dependency.requirements.filter_map(&:file)
+          file_names = dependency.metadata_string_array(:owning_buildfiles).to_a if dependency.requirements.empty?
+          requirement_files = file_names.map { |nm| dependency_files.find { |f| f.name == nm } }
 
           @dependency_repository_details ||=
             requirement_files.flat_map do |target_file|

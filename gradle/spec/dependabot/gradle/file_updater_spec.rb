@@ -123,25 +123,62 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         XML
     end
 
-    it "discovers the vulnerable dependency but cannot discover its build-file repository" do
-      expect(parsed_dependency).not_to be_nil
+    it "carries the lockfile and owning project in metadata and keeps requirements empty" do
       expect(parsed_dependency.requirements).to be_empty
-      expect(checker.vulnerable?).to be(true)
-      expect(checker.lowest_resolvable_security_fix_version).to be_nil
-      expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
-      expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
-      expect(a_request(:get, metadata_url)).not_to have_been_made
+      expect(parsed_dependency.metadata[:lockfiles]).to eq(["gradle.lockfile"])
+      expect(parsed_dependency.metadata[:owning_buildfiles]).to eq(["build.gradle"])
     end
 
-    context "with an explicitly configured Maven repository" do
-      let(:registry_credentials) do
-        [{ "type" => "maven_repository", "url" => "https://repo.maven.apache.org/maven2" }]
+    it "fixes a vulnerable transitive dependency without registry credentials" do
+      expect(checker.vulnerable?).to be(true)
+      expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("2.22.3")
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+
+      updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+      expect(updated_dependencies.first.version).to eq("2.22.3")
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+        expect(command).to include("--update-locks com.fasterxml.jackson.core:jackson-core")
+        expect(command).not_to include("--write-locks")
+        File.write(
+          File.join(cwd, "gradle.lockfile"),
+          "com.fasterxml.jackson.core:jackson-core:2.22.3=compileClasspath,runtimeClasspath\n"
+        )
       end
 
-      it "reports the update as unsupported instead of failing in the updater" do
-        expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("2.22.3")
-        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
-        expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+      updated_files = described_class.new(
+        dependency_files: dependency_files,
+        dependencies: updated_dependencies,
+        credentials: registry_credentials
+      ).updated_dependency_files
+
+      expect(updated_files.map(&:name)).to eq(["gradle.lockfile"])
+      expect(updated_files.first.content).to include("jackson-core:2.22.3")
+    end
+
+    context "when the dependency resolves to several versions and only the higher one is vulnerable" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "gradle.lockfile",
+          content: <<~LOCK
+            com.fasterxml.jackson.core:jackson-core:1.9.0=compileClasspath
+            com.fasterxml.jackson.core:jackson-core:2.22.2=runtimeClasspath
+          LOCK
+        )
+      end
+      let(:advisory) do
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "gradle",
+          vulnerable_versions: [">= 2.0.0, <= 2.22.2"]
+        )
+      end
+
+      it "retains every version so the vulnerable one is not hidden by the lowest" do
+        expect(parsed_dependency.version).to eq("1.9.0")
+        expect(parsed_dependency.all_versions).to contain_exactly("1.9.0", "2.22.2")
+        expect(parsed_dependency.all_versions.map { |v| Dependabot::Gradle::Version.new(v) })
+          .to include(satisfy { |version| advisory.vulnerable?(version) })
       end
     end
   end

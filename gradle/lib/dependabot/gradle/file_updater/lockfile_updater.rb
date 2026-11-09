@@ -34,10 +34,11 @@ module Dependabot
         sig do
           params(
             build_file: Dependabot::DependencyFile,
-            build_files: T::Array[Dependabot::DependencyFile]
+            build_files: T::Array[Dependabot::DependencyFile],
+            update_locks: T::Array[String]
           ).returns(T::Array[Dependabot::DependencyFile])
         end
-        def update_lockfiles(build_file, build_files: [build_file])
+        def update_lockfiles(build_file, build_files: [build_file], update_locks: [])
           root_dir = determine_root_dir(build_file: build_file)
           lockfiles = lockfiles_for_root(root_dir)
 
@@ -60,7 +61,8 @@ module Dependabot
               gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
               "--init-script", init_script_path,
               *lockfile_tasks_for(build_files),
-              "--write-locks",
+              # `--update-locks` unlocks only the named modules
+              *(update_locks.empty? ? ["--write-locks"] : ["--update-locks", update_locks.join(",")]),
               "--no-daemon"
             ]
             command = Shellwords.join(command_parts)

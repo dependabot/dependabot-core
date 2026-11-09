@@ -110,8 +110,8 @@ module Dependabot
       sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def numeric_version_can_update?(requirements_to_unlock:)
         return false unless version_class.correct?(dependency.version)
-        # Lockfile-only dependencies have no build file to update
-        return false if dependency.requirements.empty?
+        # Without requirements or a lockfile to regenerate there is nothing to update
+        return false if dependency.requirements.empty? && dependency.metadata_string_array(:lockfiles).to_a.empty?
 
         super
       end
