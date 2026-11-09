@@ -5,26 +5,24 @@ require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
-require "dependabot/python/shared_file_fetcher"
 
 module Dependabot
   module Python
     module RequirementReferences
       extend T::Sig
 
+      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+
       # Resolves the sibling paths a requirements file references via `-r`/`-c`, returning repo-relative
       # cleanpaths (matching fetched DependencyFile names).
-      #
-      # Reuses SharedFileFetcher's reference regexes so callers see exactly the children the file fetcher pulled in.
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def self.paths(file)
         content = file.content
         return [] if content.nil?
 
         current_dir = File.dirname(file.name)
-        referenced =
-          content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-          content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
+        referenced = content.scan(CHILD_REQUIREMENT_REGEX).flatten + content.scan(CONSTRAINT_REGEX).flatten
 
         referenced.map do |path|
           resolved = current_dir == "." ? path : File.join(current_dir, path)
