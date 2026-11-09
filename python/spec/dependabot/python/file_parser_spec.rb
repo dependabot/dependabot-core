@@ -641,6 +641,38 @@ RSpec.describe Dependabot::Python::FileParser do
             end
           end
         end
+
+        context "when parsing from requirement roots" do
+          let(:constraints) do
+            Dependabot::DependencyFile.new(
+              name: "constraints.txt",
+              content: "requests==2.0.0\ncertifi==2024.2.2\n"
+            )
+          end
+
+          before { parser.options[:requirement_roots] = true }
+
+          it "uses the referenced constraints file to pin versions without adding its requirements" do
+            expect(dependencies.map(&:name)).to eq(["requests"])
+            expect(dependencies.first.version).to eq("2.0.0")
+            expect(dependencies.first.requirements).to contain_exactly(
+              { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil }
+            )
+          end
+
+          context "when the files reference each other" do
+            let(:constraints) do
+              Dependabot::DependencyFile.new(
+                name: "constraints.txt",
+                content: "-r requirements.txt\nrequests==2.0.0\n"
+              )
+            end
+
+            it "reports the loop rather than parsing nothing" do
+              expect { dependencies }.to raise_error(Dependabot::DependencyFileNotEvaluatable, /recursively references/)
+            end
+          end
+        end
       end
     end
 
