@@ -642,6 +642,24 @@ RSpec.describe Dependabot::Python::FileParser do
           end
         end
       end
+
+      context "when the constraints file is a support file" do
+        let(:constraints) do
+          Dependabot::DependencyFile.new(
+            name: "constraints.txt",
+            content: "requests==2.0.0\ncertifi==2024.2.2\n",
+            support_file: true
+          )
+        end
+
+        it "uses it to pin versions without adding its requirements" do
+          expect(dependencies.map(&:name)).to eq(["requests"])
+          expect(dependencies.first.version).to eq("2.0.0")
+          expect(dependencies.first.requirements).to contain_exactly(
+            { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil }
+          )
+        end
+      end
     end
 
     context "with requirements-dev.txt" do

@@ -293,14 +293,16 @@ module Dependabot
       sig { returns(DependencySet) }
       def requirement_dependencies
         dependencies = DependencySet.new
-        parsed_requirement_files.each do |dep|
-          # If a requirement has a `<`, `<=` or '==' marker then updating it is
-          # probably blocked. Ignore it.
-          next if blocking_marker?(dep)
+        # If a requirement has a `<`, `<=` or '==' marker then updating it is
+        # probably blocked. Ignore it.
+        unblocked = parsed_requirement_files.reject { |dep| blocking_marker?(dep) }
+        entries, constraints = split_constraints(unblocked)
+        pins = constraint_pins(constraints)
 
+        entries.each do |dep|
           name = dep.name
           file = dep.file
-          version = dep.version
+          version = dep.version || pins[NameNormaliser.normalise(name)]
           original_file = get_original_file(file)
 
           requirements =
@@ -327,6 +329,35 @@ module Dependabot
             )
         end
         dependencies
+      end
+
+      # Without root files every requirements file is parsed as its own manifest, so `-c` entries are kept as
+      # requirements of the constraints file. From roots, they follow pip and only pin versions.
+      sig do
+        params(parsed: T::Array[PepDependency])
+          .returns([T::Array[PepDependency], T::Array[PepDependency]])
+      end
+      def split_constraints(parsed)
+        return [parsed, []] unless requirement_roots
+
+        parsed.partition { |dep| !dep.constraint }
+      end
+
+      sig { params(constraints: T::Array[PepDependency]).returns(T::Hash[String, String]) }
+      def constraint_pins(constraints)
+        constraints.each_with_object({}) do |dep, pins|
+          version = dep.version
+          pins[NameNormaliser.normalise(dep.name)] ||= version if version
+        end
+      end
+
+      # Callers mark requirements files as support files when they should only be read through `-r`/`-c`
+      # references from the others, rather than parsed as manifests in their own right.
+      sig { returns(T.nilable(T::Array[String])) }
+      def requirement_roots
+        return unless requirement_files.any?(&:support_file?)
+
+        requirement_files.reject(&:support_file?).map(&:name)
       end
 
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(T::Boolean) }
@@ -384,7 +415,7 @@ module Dependabot
           result = SharedHelpers.run_helper_subprocess(
             command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "parse_requirements",
-            args: [Dir.pwd]
+            args: [Dir.pwd, requirement_roots].compact
           )
 
           requirements = PepDependency.from_requirements_helper_result(result)
