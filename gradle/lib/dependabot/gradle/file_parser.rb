@@ -64,7 +64,8 @@ module Dependabot
           dependency_set += version_catalog_dependencies(toml_file)
         end
         dependency_set = add_lockfile_dependencies(dependency_set)
-        dependency_set.dependencies.reject do |dependency|
+        dependencies = dependency_set.dependencies.map { |dep| with_all_versions(dep, dependency_set) }
+        dependencies.reject do |dependency|
           dependency.version == "latest.integration" || dependency.version == "latest.release"
         end
       end
@@ -278,7 +279,8 @@ module Dependabot
 
       # Adds dependencies that only appear in a gradle.lockfile (e.g. transitive
       # ones) as sub-dependencies, without requirements. Dependencies declared
-      # in build files or version catalogs take precedence.
+      # in build files or version catalogs take precedence. Every resolved
+      # version is retained so that it is reachable through `all_versions`.
       sig { params(dependency_set: DependencySet).returns(DependencySet) }
       def add_lockfile_dependencies(dependency_set)
         declared_names = dependency_set.dependencies.map(&:name)
@@ -289,6 +291,22 @@ module Dependabot
           end
         end
         dependency_set + lockfile_set
+      end
+
+      sig { params(dependency: Dependabot::Dependency, dependency_set: DependencySet).returns(Dependabot::Dependency) }
+      def with_all_versions(dependency, dependency_set)
+        return dependency unless dependency.requirements.empty?
+
+        versions = dependency_set.all_versions_for_name(dependency.name)
+        return dependency if versions.length < 2
+
+        Dependency.new(
+          name: dependency.name,
+          version: dependency.version,
+          requirements: [],
+          package_manager: dependency.package_manager,
+          metadata: { all_versions: versions }
+        )
       end
 
       sig { params(lockfile: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }

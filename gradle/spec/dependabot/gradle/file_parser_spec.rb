@@ -98,6 +98,21 @@ RSpec.describe Dependabot::Gradle::FileParser do
       expect(jackson).not_to be_top_level
     end
 
+    context "when a lockfile-only dependency resolves to multiple versions" do
+      let(:other_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "lib/gradle.lockfile",
+          content: "com.fasterxml.jackson.core:jackson-core:2.0.0=runtimeClasspath\n"
+        )
+      end
+      let(:files) { [buildfile, lockfile, other_lockfile] }
+
+      it "retains every resolved version in all_versions" do
+        jackson = dependencies.find { |d| d.name == "com.fasterxml.jackson.core:jackson-core" }
+        expect(jackson.all_versions).to contain_exactly("2.22.3", "2.0.0")
+      end
+    end
+
     it "does not override dependencies declared in build files" do
       declared = parser.parse.select { |d| d.name == "com.google.inject:guice" }
       expect(declared.length).to eq(1)

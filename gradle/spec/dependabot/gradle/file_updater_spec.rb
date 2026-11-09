@@ -138,20 +138,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         [{ "type" => "maven_repository", "url" => "https://repo.maven.apache.org/maven2" }]
       end
 
-      it "selects a safe version but cannot generate updated files" do
+      it "reports the update as unsupported instead of failing in the updater" do
         expect(checker.lowest_resolvable_security_fix_version.to_s).to eq("2.22.3")
-        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
-        expect(updated_dependencies.first.version).to eq("2.22.3")
-        expect(updated_dependencies.first.requirements).to be_empty
-
-        expect do
-          described_class.new(
-            dependency_files: dependency_files,
-            dependencies: updated_dependencies,
-            credentials: registry_credentials
-          ).updated_dependency_files
-        end.to raise_error(RuntimeError, "No files changed!")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
       end
     end
   end
