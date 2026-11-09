@@ -376,8 +376,6 @@ module Dependabot
         # Highest first so security jobs, which pick the first vulnerable entry,
         # target the highest vulnerable resolution.
         sorted = highest_first(versions)
-          Gradle::Version.new(dep.version || "0")
-        end.reverse
         with_ownership = sorted.map do |dep|
           Dependency.new(
             name: dep.name,
