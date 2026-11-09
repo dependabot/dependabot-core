@@ -63,6 +63,8 @@ module Dependabot
           generate_ephemeral_lockfile!
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
+
+        dependency_files.replace(RequirementsLayers.new(dependency_files:).with_support_files) if supports_layering?
         super
       end
 

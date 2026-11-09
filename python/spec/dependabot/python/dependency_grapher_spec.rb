@@ -1451,6 +1451,33 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(resolved_package_names(snapshots.fetch("requirements-tests.txt"))).to contain_exactly("pytest")
       end
     end
+
+    context "when the directory has a single manifest constrained by a sibling file" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c constraints.txt\nrequests\n",
+          directory: "/"
+        )
+      end
+
+      let(:constraints_txt) do
+        Dependabot::DependencyFile.new(
+          name: "constraints.txt",
+          content: "certifi==2024.2.2\nrequests==2.25.1\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [constraints_txt, requirements_txt] }
+
+      it "attributes only the manifest's own requirements, pinned by the constraints file" do
+        snapshots = grapher.manifest_group_snapshots
+
+        expect(snapshots.map { |s| s.manifest_file.name }).to eq(["requirements.txt"])
+        expect(snapshots.first.resolved_dependencies.keys).to contain_exactly("pkg:pypi/requests@2.25.1")
+      end
+    end
   end
 
   describe "#manifest_group_snapshots for package managers that do not support layering" do

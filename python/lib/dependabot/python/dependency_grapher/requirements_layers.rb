@@ -97,6 +97,17 @@ module Dependabot
           end
         end
 
+        # A directory that forms a single layer is parsed whole rather than per group, so this applies that
+        # layer's support files to the directory. Any other directory is returned unchanged.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def with_support_files
+          layers = groups
+          return dependency_files unless layers.one?
+
+          layer_files = T.must(layers.first).files.to_h { |f| [f.name, f] }
+          dependency_files.map { |f| layer_files.fetch(f.name, f) }
+        end
+
         private
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
