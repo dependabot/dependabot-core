@@ -652,12 +652,20 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        it "uses it to pin versions without adding its requirements" do
-          expect(dependencies.map(&:name)).to eq(["requests"])
-          expect(dependencies.first.version).to eq("2.0.0")
-          expect(dependencies.first.requirements).to contain_exactly(
-            { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil }
-          )
+        it "keeps its requirements, as files from git submodules are support files too" do
+          expect(dependencies.map(&:name)).to contain_exactly("certifi", "requests")
+        end
+
+        context "when parsing from requirement roots" do
+          before { parser.options[:requirement_roots] = true }
+
+          it "uses it to pin versions without adding its requirements" do
+            expect(dependencies.map(&:name)).to eq(["requests"])
+            expect(dependencies.first.version).to eq("2.0.0")
+            expect(dependencies.first.requirements).to contain_exactly(
+              { requirement: nil, file: "requirements.txt", groups: ["dependencies"], source: nil }
+            )
+          end
         end
       end
     end

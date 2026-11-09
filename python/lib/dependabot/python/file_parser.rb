@@ -351,11 +351,12 @@ module Dependabot
         end
       end
 
-      # Callers mark requirements files as support files when they should only be read through `-r`/`-c`
-      # references from the others, rather than parsed as manifests in their own right.
+      # Callers that mark requirements files as support files, so they are only read through `-r`/`-c` references,
+      # opt in with the `requirement_roots` option. Files from git submodules are support files too, so the flag
+      # alone isn't enough.
       sig { returns(T.nilable(T::Array[String])) }
       def requirement_roots
-        return unless requirement_files.any?(&:support_file?)
+        return unless options[:requirement_roots] && requirement_files.any?(&:support_file?)
 
         requirement_files.reject(&:support_file?).map(&:name)
       end
