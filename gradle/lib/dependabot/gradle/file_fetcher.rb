@@ -271,10 +271,19 @@ module Dependabot
 
         if (settings = settings_file(root_dir))
           parser = SettingsFileParser.new(settings_file: settings)
-          paths += parser.version_catalog_paths.map { |p| clean_join([root_dir, p]) }
+          paths += parser.version_catalog_paths.filter_map { |p| catalog_path_in_repo(root_dir, p) }
         end
 
         paths.uniq.filter_map { |p| fetch_file_if_present(p) }
+      end
+
+      sig { params(root_dir: String, path: String).returns(T.nilable(String)) }
+      def catalog_path_in_repo(root_dir, path)
+        joined = clean_join([root_dir, path])
+        return joined unless path.start_with?("/") || clean_join([".", directory, joined]).start_with?("../")
+
+        Dependabot.logger.warn("Ignoring version catalog path outside the repository: #{path}")
+        nil
       end
 
       # rubocop:disable Metrics/PerceivedComplexity

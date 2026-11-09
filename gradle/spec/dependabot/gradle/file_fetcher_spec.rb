@@ -143,6 +143,25 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           )
         )
       end
+
+      context "when a catalog path escapes the repository" do
+        before do
+          stub_content_request("settings.gradle.kts?ref=sha", "contents_escaping_catalog_settings.json")
+          stub_content_request("shared?ref=sha", "content_gradle_toml.json")
+          stub_content_request("shared/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+          allow(Dependabot.logger).to receive(:warn)
+        end
+
+        it "skips it with a warning" do
+          expect(file_fetcher_instance.files.map(&:name)).to match_array(
+            %w(build.gradle.kts settings.gradle.kts gradle/libs.versions.toml)
+          )
+          expect(Dependabot.logger).to have_received(:warn)
+            .with("Ignoring version catalog path outside the repository: ../shared/libs.versions.toml")
+          expect(Dependabot.logger).to have_received(:warn)
+            .with("Ignoring version catalog path outside the repository: /shared/libs.versions.toml")
+        end
+      end
     end
 
     context "with a settings.gradle" do
