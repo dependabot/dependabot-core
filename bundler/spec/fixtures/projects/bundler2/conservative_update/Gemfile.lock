@@ -1,0 +1,21 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    concurrent-ruby (1.1.5)
+    dummy-pkg-a (1.0.0)
+    dummy-pkg-b (1.0.0)
+      dummy-pkg-a (< 2.0.0)
+    i18n (1.5.1)
+      concurrent-ruby (~> 1.0)
+    ibandit (1.0.0)
+      i18n
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  dummy-pkg-b
+  ibandit
+
+BUNDLED WITH
+   2.7.2

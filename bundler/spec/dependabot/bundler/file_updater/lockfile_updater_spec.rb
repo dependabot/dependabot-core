@@ -488,7 +488,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
     end
   end
 
-  describe "updating a gem whose sub-dependency has a newer version" do
+  describe "the bundler_conservative_update option" do
     let(:updater) do
       described_class.new(
         dependencies: [dependency],
@@ -499,56 +499,40 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
     end
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "omniauth",
-        version: dependency_version,
-        previous_version: "1.9.1",
+        name: "ibandit",
+        version: "1.1.0",
+        previous_version: "1.0.0",
         requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [:default], source: nil }],
         previous_requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [:default], source: nil }],
         package_manager: "bundler"
       )
     end
-    let(:dependency_version) { "1.9.2" }
+    let(:files) { bundler_project_dependency_files("conservative_update") }
+    let(:generated_lockfile) do
+      files.find { |f| f.name == "Gemfile.lock" }.content.sub("ibandit (1.0.0)", "ibandit (1.1.0)")
+    end
 
-    %w(2 4).each do |bundler_major|
-      context "with Bundler #{bundler_major}" do
-        let(:files) { bundler_project_dependency_files("conservative_update_subdep_#{bundler_major}") }
+    before do
+      allow(Dependabot::Bundler::NativeHelpers)
+        .to receive(:run_bundler_subprocess)
+        .and_return(generated_lockfile)
+    end
 
-        context "without the bundler_conservative_update option" do
-          let(:options) { {} }
+    {
+      "is not set" => [{}, false],
+      "is set to false" => [{ bundler_conservative_update: "false" }, false],
+      "is set to true" => [{ bundler_conservative_update: true }, true],
+      "is set to \"true\"" => [{ bundler_conservative_update: "true" }, true]
+    }.each do |description, (option_values, expected)|
+      context "when the option #{description}" do
+        let(:options) { option_values }
 
-          it "updates the gem and moves its sub-dependency" do
-            expect(updated_lockfile_content).to include("omniauth (1.9.2)")
-            expect(updated_lockfile_content).to match(/^    rack \(2\.2\.\d+\)$/)
-            expect(updated_lockfile_content).not_to include("rack (2.2.14)")
-          end
-        end
+        it "passes conservative: #{expected} to the native helper" do
+          updated_lockfile_content
 
-        context "with the bundler_conservative_update option set to false" do
-          let(:options) { { bundler_conservative_update: "false" } }
-
-          it "behaves as if the option were not set" do
-            expect(updated_lockfile_content).to include("omniauth (1.9.2)")
-            expect(updated_lockfile_content).not_to include("rack (2.2.14)")
-          end
-        end
-
-        context "with the bundler_conservative_update option" do
-          let(:options) { { bundler_conservative_update: true } }
-
-          it "updates the gem and keeps its sub-dependency at the locked version" do
-            expect(updated_lockfile_content).to include("omniauth (1.9.2)")
-            expect(updated_lockfile_content).to include("rack (2.2.14)")
-          end
-
-          context "when the new version needs a newer sub-dependency" do
-            # omniauth 2.3.1 adds rack-protection, whose latest release needs rack 3
-            let(:dependency_version) { "2.3.1" }
-
-            it "still lets the resolver move the sub-dependency" do
-              expect(updated_lockfile_content).to include("omniauth (2.3.1)")
-              expect(updated_lockfile_content).not_to include("rack (2.2.14)")
-            end
-          end
+          expect(Dependabot::Bundler::NativeHelpers)
+            .to have_received(:run_bundler_subprocess)
+            .with(hash_including(function: "update_lockfile", args: hash_including(conservative: expected)))
         end
       end
     end
