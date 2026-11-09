@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       it "retains every resolved version in all_versions" do
         jackson = dependencies.find { |d| d.name == "com.fasterxml.jackson.core:jackson-core" }
-        expect(jackson.all_versions).to contain_exactly("2.22.3", "2.0.0")
+        expect(jackson.all_versions).to eq(%w(2.22.3 2.0.0))
       end
     end
 

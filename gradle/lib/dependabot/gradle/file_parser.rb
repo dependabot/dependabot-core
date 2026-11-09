@@ -353,6 +353,11 @@ module Dependabot
         end
       end
 
+      sig { params(versions: T::Array[Dependabot::Dependency]).returns(T::Array[Dependabot::Dependency]) }
+      def highest_first(versions)
+        versions.sort_by { |dep| Gradle::Version.new(dep.version || "0") }.reverse
+      end
+
       # Every resolved version carries the lockfiles and owning builds of all
       # versions: a security update targets whichever version is vulnerable, but
       # must regenerate every build that resolves the module.
@@ -368,7 +373,12 @@ module Dependabot
           owning_buildfiles: versions.flat_map { |dep| dep.metadata[:owning_buildfiles] || [] }.uniq,
           resolved_versions: versions.filter_map(&:version)
         }
-        with_ownership = versions.map do |dep|
+        # Highest first so security jobs, which pick the first vulnerable entry,
+        # target the highest vulnerable resolution.
+        sorted = highest_first(versions)
+          Gradle::Version.new(dep.version || "0")
+        end.reverse
+        with_ownership = sorted.map do |dep|
           Dependency.new(
             name: dep.name,
             version: dep.version,
