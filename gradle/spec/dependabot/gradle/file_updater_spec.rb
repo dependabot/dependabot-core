@@ -239,6 +239,36 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end
     end
 
+    context "when regeneration introduces a vulnerable version into a lockfile that did not list the module" do
+      let(:other_lockfile) { Dependabot::DependencyFile.new(name: "other/gradle.lockfile", content: "") }
+      let(:dependency_files) { [buildfile, lockfile, other_lockfile] }
+
+      it "rejects the update" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(File.join(cwd, "gradle.lockfile"), "com.fasterxml.jackson.core:jackson-core:2.22.3=a\n")
+        end
+        allow_any_instance_of(Dependabot::Gradle::FileUpdater::LockfileUpdater) # rubocop:disable RSpec/AnyInstance
+          .to receive(:update_lockfiles).and_return(
+            [
+              Dependabot::DependencyFile.new(
+                name: "gradle.lockfile", content: "com.fasterxml.jackson.core:jackson-core:2.22.3=a\n"
+              ),
+              Dependabot::DependencyFile.new(
+                name: "other/gradle.lockfile", content: "com.fasterxml.jackson.core:jackson-core:2.22.2=a\n"
+              )
+            ]
+          )
+
+        expect do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: checker.updated_dependencies(requirements_to_unlock: :own),
+            credentials: registry_credentials
+          ).updated_dependency_files
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.22\.2/)
+      end
+    end
+
     context "when the dependency is resolved by two independent Gradle roots" do
       let(:dependency_files) do
         %w(app tools).flat_map do |dir|

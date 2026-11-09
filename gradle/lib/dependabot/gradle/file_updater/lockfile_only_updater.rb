@@ -98,6 +98,9 @@ module Dependabot
             lockfile_names = dependency.metadata_string_array(:lockfiles).to_a
             resolved = resolved_versions(files.select { |f| lockfile_names.include?(f.name) }, dependency.name)
             unfixed = resolved.reject { |version| acceptable_version?(dependency, version) }
+            introduced = introduced_versions(files, dependency, lockfile_names)
+            unfixed |= introduced.select { |v| affected?(dependency, v) }
+            resolved |= introduced
             next if unfixed.empty? && resolved.include?(dependency.version)
 
             problem = unfixed.empty? ? "does not resolve to the target" : "still resolves to #{unfixed.join(', ')}"
@@ -108,6 +111,19 @@ module Dependabot
           end
         end
 
+        # A declared update may introduce the module into a lockfile that did not list it
+        sig do
+          params(
+            files: T::Array[Dependabot::DependencyFile],
+            dependency: Dependabot::Dependency,
+            owned: T::Array[String]
+          ).returns(T::Array[String])
+        end
+        def introduced_versions(files, dependency, owned)
+          others = files.select { |f| f.name.end_with?(".lockfile") && !owned.include?(f.name) }
+          resolved_versions(others, dependency.name)
+        end
+
         # A version Gradle picked on its own (neither already resolved nor the
         # target) may be ignored by the job's ignore conditions and would not match
         # the version reported in the PR, so only those two are accepted.
@@ -115,10 +131,16 @@ module Dependabot
         def acceptable_version?(dependency, version)
           original = dependency.metadata_string_array(:resolved_versions) || [dependency.previous_version].compact
           return false unless original.include?(version) || version == dependency.version
-          return !vulnerable_by_advisories?(dependency, version) if advisories?(dependency)
+
+          !affected?(dependency, version)
+        end
+
+        sig { params(dependency: Dependabot::Dependency, version: String).returns(T::Boolean) }
+        def affected?(dependency, version)
+          return vulnerable_by_advisories?(dependency, version) if advisories?(dependency)
 
           vulnerable = dependency.metadata_string_array(:vulnerable_versions) || [dependency.previous_version].compact
-          !vulnerable.include?(version)
+          vulnerable.include?(version)
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
