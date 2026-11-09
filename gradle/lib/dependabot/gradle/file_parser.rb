@@ -314,6 +314,8 @@ module Dependabot
         found = T.let({}, T::Hash[[String, String], T::Array[Dependabot::DependencyFile]])
         lockfiles.each do |lockfile|
           T.must(lockfile.content).each_line do |line|
+            next if line.lstrip.start_with?("#")
+
             match = line.strip.match(LOCKFILE_ENTRY_REGEX)
             next unless match
 

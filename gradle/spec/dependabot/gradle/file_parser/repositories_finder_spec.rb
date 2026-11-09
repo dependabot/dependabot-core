@@ -220,6 +220,23 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
+      context "when a nested build inherits repositories from its build root" do
+        let(:root_settings) { Dependabot::DependencyFile.new(name: "included/settings.gradle", content: "") }
+        let(:root_build) do
+          Dependabot::DependencyFile.new(
+            name: "included/build.gradle",
+            content: "allprojects { repositories { maven { url 'https://root.example.com' } } }"
+          )
+        end
+        let(:leaf_build) do
+          Dependabot::DependencyFile.new(name: "included/lib/build.gradle", content: "plugins { id 'java' }")
+        end
+        let(:dependency_files) { [buildfile, root_settings, root_build, leaf_build] }
+        let(:target_dependency_file) { leaf_build }
+
+        it { is_expected.to include("https://root.example.com") }
+      end
+
       context "with dependencyResolutionManagement in the settings file" do
         let(:dependency_files) { [buildfile, settings_file] }
         let(:settings_file) do

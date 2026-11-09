@@ -132,11 +132,22 @@ module Dependabot
             settings = dependency_files.find do |f|
               SUPPORTED_SETTINGS_FILE_NAMES.any? { |name| f.name == File.join(dir, name) }
             end
-            return urls + settings_file_repository_urls(settings) if settings
+            return urls + build_root_repository_urls(dir) + settings_file_repository_urls(settings) if settings
 
             dir = File.dirname(dir)
           end
           urls
+        end
+
+        # Repositories a nested build inherits from allprojects/subprojects of its build root
+        sig { params(dir: String).returns(T::Array[String]) }
+        def build_root_repository_urls(dir)
+          root_buildfile = dependency_files.find do |f|
+            SUPPORTED_BUILD_FILE_NAMES.any? { |name| f.name == File.join(dir, name) }
+          end
+          return [] if root_buildfile.nil? || root_buildfile == target_dependency_file
+
+          inherited_repository_urls(root_buildfile)
         end
 
         sig { params(settings_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }

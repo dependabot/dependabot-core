@@ -203,6 +203,42 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end.to raise_error(Dependabot::DependencyFileNotResolvable, /still resolves to 2\.30\.0.*target 2\.22\.3/)
     end
 
+    context "when the batch also updates a declared parent dependency" do
+      let(:parent) do
+        Dependabot::Dependency.new(
+          name: "com.fasterxml.jackson.core:jackson-databind",
+          version: "2.22.3",
+          previous_version: "2.22.2",
+          package_manager: "gradle",
+          requirements: [{
+            file: "build.gradle", requirement: "2.22.3", groups: [], source: nil,
+            metadata: { property_name: nil }
+          }],
+          previous_requirements: [{
+            file: "build.gradle", requirement: "2.22.2", groups: [], source: nil,
+            metadata: { property_name: nil }
+          }]
+        )
+      end
+
+      it "regenerates the lockfile-only dependencies against the already-updated build files" do
+        seen = nil
+        allow_any_instance_of(Dependabot::Gradle::FileUpdater::LockfileOnlyUpdater) # rubocop:disable RSpec/AnyInstance
+          .to receive(:update) do |_updater, files, _deps|
+          seen = files.find { |f| f.name == "build.gradle" }&.content
+          files
+        end
+
+        described_class.new(
+          dependency_files: dependency_files,
+          dependencies: [parent] + checker.updated_dependencies(requirements_to_unlock: :own),
+          credentials: registry_credentials
+        ).updated_dependency_files
+
+        expect(seen).to include("jackson-databind:2.22.3")
+      end
+    end
+
     context "when the dependency is resolved by two independent Gradle roots" do
       let(:dependency_files) do
         %w(app tools).flat_map do |dir|

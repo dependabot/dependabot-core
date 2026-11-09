@@ -85,6 +85,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           # This is a Gradle generated file for dependency locking.
           com.fasterxml.jackson.core:jackson-core:2.22.3=compileClasspath,runtimeClasspath
           com.google.inject:guice:9.9.9=runtimeClasspath
+          #com.example:commented:1.0=runtimeClasspath
           empty=annotationProcessor
         LOCK
       )
@@ -96,6 +97,10 @@ RSpec.describe Dependabot::Gradle::FileParser do
       expect(jackson.version).to eq("2.22.3")
       expect(jackson.requirements).to eq([])
       expect(jackson).not_to be_top_level
+    end
+
+    it "ignores commented-out lockfile entries" do
+      expect(dependencies.map(&:name)).not_to include(a_string_including("commented"))
     end
 
     context "when a lockfile-only dependency resolves to multiple versions" do

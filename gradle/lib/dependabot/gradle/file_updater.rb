@@ -43,7 +43,6 @@ module Dependabot
         updated_files = buildfiles.dup
 
         lockfile_only, declared = dependencies.partition { |dep| lockfile_only?(dep) }
-        updated_files = update_lockfile_only_dependencies(updated_files, lockfile_only)
 
         # Loop through each of the changed requirements, applying changes to
         # all buildfiles for that change. Note that the logic is different
@@ -55,6 +54,9 @@ module Dependabot
             dependency: dependency
           )
         end
+
+        # Last, so locks are regenerated and verified against the already-updated build files
+        updated_files = update_lockfile_only_dependencies(updated_files, lockfile_only)
 
         updated_files = updated_files.reject { |f| buildfiles.include?(f) }
 
