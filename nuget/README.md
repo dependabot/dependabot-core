@@ -33,6 +33,12 @@ The reusable C# test suite can also run in the NuGet development container:
 $ bin/test nuget ./script/run-csharp-tests
 ```
 
+### Lock files and target frameworks
+
+SDK-style dependency discovery restores the complete project graph before evaluating individual target frameworks.
+This keeps `packages.lock.json` and `project.assets.json` aligned with each project's declared frameworks, including
+referenced projects. NuGet may normalize framework names without changing their meaning.
+
 ### Known limitations
 
 #### Projects suppressing `NU1701`
