@@ -34,7 +34,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
 
   describe "#handle_dependency_error" do
     let(:dependency) do
-      instance_double(Dependabot::Dependency, name: "broken-biscuits")
+      Dependabot::Dependency.new(
+        name: "broken-biscuits",
+        version: "1.2.0",
+        previous_version: "1.1.0",
+        package_manager: "bundler",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.2", groups: [], source: nil }]
+      )
     end
 
     let(:handle_dependency_error) do
@@ -137,6 +143,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::BACKTRACE => "bees.rb:5:in `buzz`",
             Dependabot::ErrorAttributes::MESSAGE => "There are bees everywhere",
             Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::CONTEXT => {
+              "dependency-name" => "broken-biscuits",
+              "dependency-version" => "1.2.0",
+              "dependency-previous-version" => "1.1.0",
+              "dependency-requirement-files" => ["Gemfile"]
+            },
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
@@ -282,6 +294,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
             Dependabot::ErrorAttributes::FINGERPRINT => ["123456789"],
+            Dependabot::ErrorAttributes::CONTEXT => {
+              "dependency-name" => "broken-biscuits",
+              "dependency-version" => "1.2.0",
+              "dependency-previous-version" => "1.1.0",
+              "dependency-requirement-files" => ["Gemfile"]
+            },
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
@@ -319,6 +337,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
               extra: {
                 bumblebees: "many", honeybees: "few", wasps: "none"
               }
+            )
+          expect(Dependabot::ErrorReportContext.build(error: args[:error]))
+            .to eq(
+              "dependency-name" => "broken-biscuits",
+              "dependency-version" => "1.2.0",
+              "dependency-previous-version" => "1.1.0",
+              "dependency-requirement-files" => ["Gemfile"]
             )
         end
 

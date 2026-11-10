@@ -1626,6 +1626,11 @@ RSpec.describe Dependabot::Updater do
                 Dependabot::ErrorAttributes::MESSAGE => "Potentially sensitive log content goes here",
                 Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
                 Dependabot::ErrorAttributes::FINGERPRINT => anything,
+                # Dependencies are updated in random order, so either one may raise
+                Dependabot::ErrorAttributes::CONTEXT => a_hash_including(
+                  "dependency-name" => a_string_matching(/\Adummy-pkg-[ab]\z/),
+                  "dependency-requirement-files" => ["Gemfile"]
+                ),
                 Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
                 Dependabot::ErrorAttributes::JOB_ID => "1",
                 Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
