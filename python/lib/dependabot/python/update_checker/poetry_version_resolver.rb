@@ -19,6 +19,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_subdependency_pin"
 
 module Dependabot
   module Python
@@ -144,6 +145,8 @@ module Dependabot
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
+              rescue PoetrySubdependencyPin::ScopeNotReproducible
+                nil
               rescue SharedHelpers::HelperSubprocessFailed => e
                 handle_poetry_errors(e)
               end
@@ -315,11 +318,33 @@ module Dependabot
 
         sig { params(pyproject_content: String, updated_requirement: T.nilable(String)).returns(String) }
         def set_target_dependency_req(pyproject_content, updated_requirement)
-          return pyproject_content unless updated_requirement
+          unless updated_requirement
+            # Poetry's lock result for a package locked at several versions can't be read back as one version.
+            if pep621_only_poetry_project?(pyproject_content)
+              PoetrySubdependencyPin.new(poetry_lock, dependency.name).ensure_single_version!
+            end
+            return pyproject_content
+          end
 
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
+          if poetry_object
+            set_poetry_target_dependency_req(poetry_object, updated_requirement)
+          elsif pep621_only_poetry_project?(pyproject_content)
+            set_pep621_target_dependency_req(pyproject_object, updated_requirement)
+          end
+
+          TomlRB.dump(pyproject_object)
+        end
+
+        sig { params(pyproject_content: String).returns(T::Boolean) }
+        def pep621_only_poetry_project?(pyproject_content)
+          !poetry_lock.nil? && FileParser::PyprojectDocument.from_content(pyproject_content).poetry_build_backend?
+        end
+
+        sig { params(poetry_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def set_poetry_target_dependency_req(poetry_object, updated_requirement)
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             dependencies = poetry_object[type]
             next unless dependencies
@@ -333,12 +358,18 @@ module Dependabot
           end
 
           # If this is a sub-dependency, add the new requirement
-          unless dependency.requirements.find { |r| r.file == T.must(pyproject).name }
-            poetry_object[subdep_type] ||= {}
-            poetry_object[subdep_type][dependency.name] = updated_requirement
-          end
+          return if dependency.requirements.find { |r| r.file == T.must(pyproject).name }
 
-          TomlRB.dump(pyproject_object)
+          poetry_object[subdep_type] ||= {}
+          poetry_object[subdep_type][dependency.name] = updated_requirement
+        end
+
+        # PEP 621 projects have no [tool.poetry] table to pin dependencies in. This file is only ever used
+        # as scratch input to run `poetry lock`, so it never reaches the real manifest.
+        sig { params(pyproject_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def set_pep621_target_dependency_req(pyproject_object, updated_requirement)
+          PoetrySubdependencyPin.new(poetry_lock, dependency.name)
+                                .set_requirement!(pyproject_object, updated_requirement)
         end
 
         sig { params(toml_node: T.nilable(T::Hash[String, T.untyped]), requirement: String).void }

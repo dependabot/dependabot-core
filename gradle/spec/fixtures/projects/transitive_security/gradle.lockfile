@@ -1,0 +1,4 @@
+# This is a Gradle generated file for dependency locking.
+org.example:child:1.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.example:parent:1.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+empty=annotationProcessor,testAnnotationProcessor
