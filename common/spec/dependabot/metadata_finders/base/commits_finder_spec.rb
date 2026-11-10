@@ -270,6 +270,45 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
     end
 
+    # Tags of CLDMV/slothlet: the main package is tagged v<version> (with floating v<major> and
+    # v<major>.<minor> tags), the other packages <package>@<version>, and their names start with
+    # the main package's name.
+    context "with a monorepo whose other packages' names start with the dependency name" do
+      let(:dependency_name) { "@cldmv/slothlet" }
+      let(:dependency_version) { "3.24.0" }
+      let(:dependency_previous_version) { "3.23.0" }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "CLDMV/slothlet") }
+      let(:tags) do
+        %w(
+          @cldmv/slothlet-i18n@3.23.0
+          @cldmv/slothlet-i18n@3.24.0
+          @cldmv/slothlet-types@3.23.0
+          @cldmv/slothlet-types@3.24.0
+          v3
+          v3.23
+          v3.23.0
+          v3.24
+          v3.24.0
+        )
+      end
+
+      before { allow(builder).to receive(:fetch_dependency_tags).and_return(tags) }
+
+      it "compares the dependency's own exact version tags" do
+        expect(commits_url).to eq("https://github.com/CLDMV/slothlet/compare/v3.23.0...v3.24.0")
+      end
+
+      it "picks the same tags whatever order the tags are listed in" do
+        urls = [tags.reverse, tags.rotate(4), tags.sort_by(&:length)].map do |order|
+          finder = described_class.new(dependency: dependency, credentials: credentials, source: source)
+          allow(finder).to receive(:fetch_dependency_tags).and_return(order)
+          finder.commits_url
+        end
+
+        expect(urls.uniq).to eq(["https://github.com/CLDMV/slothlet/compare/v3.23.0...v3.24.0"])
+      end
+    end
+
     context "with a github repo that has a DMCA takedown notice" do
       let(:url) { "https://github.com/gocardless/business.git" }
 
