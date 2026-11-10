@@ -571,6 +571,22 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         end
       end
 
+      context "when an unsatisfied python_version is joined to a non-numeric marker using 'or'" do
+        let(:requirements_txt) do
+          requirements_txt_with_marker('python_version >= "3.9" or platform_machine == "x86_64"')
+        end
+
+        before do
+          # Does not satisfy "python_version >= 3.9".
+          allow(parser).to receive(:python_raw_version).and_return("3.8")
+        end
+
+        it "resolves the dependency's version, since platform is assumed satisfied" do
+          expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/greenlet@3.5.4")
+          expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/sqlalchemy@2.0.43")
+        end
+      end
+
       context "with a satisfied python_full_version" do
         let(:requirements_txt) do
           requirements_txt_with_marker('python_full_version >= "3.9.0"')
