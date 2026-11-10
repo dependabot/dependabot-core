@@ -352,6 +352,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
 
+      context "with no whitespace before the workspace use block" do
+        let(:go_work_body) { "go 1.21\n\nuse(\n\t.\n\t./libs\n\t./services\n)\n" }
+
+        before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
+
+        it "updates all workspace members" do
+          updated_modules = updated_files.select { |file| file.name.end_with?("go.mod") }
+
+          expect(updated_modules.map(&:name)).to contain_exactly("go.mod", "libs/go.mod", "services/go.mod")
+          expect(updated_modules).to all(have_attributes(content: include("#{dependency_name} #{dependency_version}")))
+        end
+      end
+
       context "when the dependency raises the workspace's Go version" do
         let(:dependency_name) { "golang.org/x/text" }
         let(:dependency_previous_version) { "v0.0.0-20170915032832-14c0d48ead0c" }

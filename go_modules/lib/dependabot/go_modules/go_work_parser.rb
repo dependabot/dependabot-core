@@ -38,7 +38,7 @@ module Dependabot
               next
             end
           else
-            next unless line.start_with?("use ", "use\t")
+            next unless line.start_with?("use ", "use\t", "use(")
 
             line = T.must(line[3..]).lstrip
             if line.start_with?("(")

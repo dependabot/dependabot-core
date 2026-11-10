@@ -81,9 +81,23 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
       end
 
       context "with similarly prefixed non-use directives" do
-        let(:content) { "useful ./ignored\nuse./also-ignored\nuse ./libs\n" }
+        let(:content) { "useful ./ignored\nuseful(\nuse./also-ignored\nuse ./libs\n" }
 
         it { is_expected.to eq(["libs"]) }
+      end
+
+      context "with no whitespace before a use block" do
+        let(:content) { "use(\n\t./libs\n\t./services\n)\n" }
+
+        it { is_expected.to eq(%w(libs services)) }
+      end
+
+      context "with no whitespace before an empty use block" do
+        let(:content) { "use() // empty\nuse ./libs\n" }
+
+        it "does not read subsequent directives as block entries" do
+          expect(paths).to eq(["libs"])
+        end
       end
 
       context "with long runs of tabs after use" do
@@ -235,6 +249,14 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
     end
 
     context "with the enable_go_work_version_sync experiment disabled" do
+      context "with no whitespace before a use block" do
+        let(:content) { "use(\n\t./libs\n)\n" }
+
+        it "preserves legacy parsing" do
+          expect(paths).to be_empty
+        end
+      end
+
       context "with non-canonical workspace paths" do
         let(:content) { "use ./libs/./\nuse (\n\t\"./services/\"\n)\n" }
 
