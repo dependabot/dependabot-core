@@ -9,6 +9,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/npm_and_yarn/subprocess_error_context"
 require "dependabot/experiments"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/package/npm_package_json"
@@ -733,6 +734,9 @@ module Dependabot
           output_observer: ->(output) { command_observer(output) },
           env: merge_corepack_env(env)
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        SubprocessErrorContext.new(executable: "npm", env: env).attach(e, command) unless npm_version_selector
+        raise
       end
 
       sig { returns(String) }
@@ -839,6 +843,9 @@ module Dependabot
           fingerprint: "pnpm #{fingerprint || command}",
           env: env
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        SubprocessErrorContext.new(executable: "pnpm", env: env).attach(e, command) unless matching_major
+        raise
       end
 
       # The pnpm major to run for a repository whose lockfile is older than the default pnpm reads (5.4 is pnpm 7,
@@ -904,6 +911,9 @@ module Dependabot
           fingerprint: "yarn #{fingerprint || command}",
           env: env
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        SubprocessErrorContext.new(executable: "yarn", env: env).attach(e, command)
+        raise
       end
 
       # Activate the package manager for specified version by using corepack
@@ -1058,6 +1068,9 @@ module Dependabot
           output_observer: output_observer,
           env: env
         )
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        SubprocessErrorContext.new(executable: "corepack #{name}", env: env).attach(e, command)
+        raise
       end
 
       # Run a corepack shell command, retrying once with signature verification
