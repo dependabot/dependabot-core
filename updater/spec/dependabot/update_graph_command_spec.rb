@@ -223,15 +223,11 @@ RSpec.describe Dependabot::UpdateGraphCommand do
           end
         end
 
-        it "records the call-site fingerprint with the duplicate unknown error" do
+        it "records the duplicate unknown error without a fingerprint" do
           expect(service).to receive(:record_update_job_unknown_error).with(
             error_type: "unknown_update_graph_error",
-            error_details: hash_including(
-              Dependabot::ErrorAttributes::FINGERPRINT => [
-                "excon-eof",
-                "bundler",
-                "bundler/lib/dependabot/bundler/file_parser.rb:parse"
-              ]
+            error_details: hash_excluding(
+              Dependabot::ErrorAttributes::FINGERPRINT
             )
           )
 

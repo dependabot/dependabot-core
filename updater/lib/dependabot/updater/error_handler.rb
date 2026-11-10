@@ -1,8 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/error_report_context"
 require "dependabot/errors"
-require "dependabot/sentry/error_fingerprint"
 require "dependabot/updater/errors"
 require "dependabot/updater/security_update_helpers"
 require "octokit"
@@ -94,7 +94,7 @@ module Dependabot
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
            error_details.error_type == "unknown_error"
-          log_unknown_error_with_backtrace(error)
+          log_unknown_error_with_backtrace(error, dependency: dependency)
         end
 
         log_dependency_error(
@@ -234,6 +234,8 @@ module Dependabot
           msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
+          sanitized_context = ErrorReportContext.build(error: error, dependency: dependency)
+          ErrorReportContext.attach(sanitized_error, sanitized_context) if sanitized_context
           service.capture_exception(error: sanitized_error, job: job)
         else
           service.capture_exception(
@@ -247,13 +249,14 @@ module Dependabot
         Dependabot::ErrorDetails.new(error_type: "unknown_error", error_detail: nil)
       end
 
-      sig { params(error: StandardError).void }
-      def log_unknown_error_with_backtrace(error)
+      sig { params(error: StandardError, dependency: T.nilable(Dependabot::Dependency)).void }
+      def log_unknown_error_with_backtrace(error, dependency: nil)
         error_details = {
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
           ErrorAttributes::FINGERPRINT => extract_fingerprint(error),
+          ErrorAttributes::CONTEXT => ErrorReportContext.build(error: error, dependency: dependency),
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -278,7 +281,7 @@ module Dependabot
           return fingerprint.map { |value| T.cast(value, Object).to_s } if fingerprint.is_a?(Array)
         end
 
-        Dependabot::Sentry::ErrorFingerprint.for(error: error, package_manager: job.package_manager)
+        nil
       end
     end
   end
