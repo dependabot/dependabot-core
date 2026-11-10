@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "pathname"
 require "dependabot/errors"
 require "dependabot/experiments"
 
@@ -19,7 +20,7 @@ module Dependabot
       )
 
       # Parses the `use` directives from go.work content.
-      # Removes the `./` prefix and, with the experiment, decodes Go quoted strings.
+      # With the experiment, decodes Go strings and canonicalizes paths to match fetched manifest names.
       # `"."` is included when the root module is listed.
       # Result is deduped but not sorted, filtered, or re-prefixed.
       sig { params(content: String).returns(T::Array[String]) }
@@ -41,7 +42,7 @@ module Dependabot
 
             line = T.must(line[3..]).lstrip
             if line.start_with?("(")
-              in_use_block = true
+              in_use_block = !line.delete_prefix("(").lstrip.start_with?(")")
               next
             end
           end
@@ -85,7 +86,11 @@ module Dependabot
                else
                  raw_path.split(%r{\s|//}, 2).first || ""
                end
-        path.delete_prefix("./")
+        return "" if path.empty?
+
+        Pathname.new(path).cleanpath.to_s
+      rescue ArgumentError => e
+        raise Dependabot::DependencyFileNotParseable.new("go.work", e.message)
       end
       private_class_method :normalize_path
 

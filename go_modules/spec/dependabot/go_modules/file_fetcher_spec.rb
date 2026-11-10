@@ -218,6 +218,30 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       expect(regular_files.map(&:name)).to contain_exactly("go.mod", "go.sum")
     end
 
+    context "when empty use blocks precede the member directive" do
+      let(:repo_contents_path) do
+        path = build_tmp_repo(project_name)
+        File.write(File.join(path, "go.work"), "go 1.21\n\nuse ()\nuse ( ) // empty\nuse ./libs\n")
+        Dir.chdir(path) do
+          Dependabot::SharedHelpers.run_shell_command("git add go.work")
+          Dependabot::SharedHelpers.run_shell_command("git commit -m empty-use-blocks")
+        end
+        path
+      end
+
+      it "fetches the listed member's ancestor workspace" do
+        expect(fetched_files.map(&:name)).to contain_exactly("go.mod", "go.sum", "../go.work", "../go.work.sum")
+      end
+
+      context "when fetching the workspace root" do
+        let(:directory) { "/" }
+
+        it "fetches only the listed member's manifests" do
+          expect(fetched_files.map(&:name)).to contain_exactly("go.work", "go.work.sum", "libs/go.mod", "libs/go.sum")
+        end
+      end
+    end
+
     context "when the directory is nested more than one level below go.work" do
       let(:repo_contents_path) do
         path = build_tmp_repo(project_name)

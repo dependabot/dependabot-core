@@ -117,6 +117,62 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
         it { is_expected.to eq(%w(libs services sdk/go)) }
       end
 
+      ["()", "( )", "(\t)"].each do |empty_block|
+        context "with an empty #{empty_block} use block" do
+          let(:content) { "use #{empty_block} // empty\n\ngo 1.21\nuse ./libs\n" }
+
+          it "does not read subsequent directives as block entries" do
+            expect(paths).to eq(["libs"])
+          end
+        end
+      end
+
+      context "with a closing parenthesis in a use block's opening comment" do
+        let(:content) { "use ( // not closed by this )\n\t./libs\n)\nuse ./services\n" }
+
+        it { is_expected.to eq(%w(libs services)) }
+      end
+
+      %w(./libs/ ./libs/./ .//libs ./libs// ./libs/../libs).each do |path|
+        context "with the non-canonical workspace path #{path}" do
+          let(:content) { "use \"#{path}\"\nuse (\n\t\"#{path}\"\n)\n" }
+
+          it "returns the canonical member path once" do
+            expect(paths).to eq(["libs"])
+          end
+        end
+      end
+
+      context "with multiple spellings of the root module" do
+        let(:content) { "use .\nuse ./\nuse \"././\"\nuse \"./libs/..\"\n" }
+
+        it { is_expected.to eq(["."]) }
+      end
+
+      context "with absolute and parent-relative paths" do
+        let(:content) { "use \"/libs//api/\"\nuse \"../libs/./\"\n" }
+
+        it "preserves their scope for callers to validate" do
+          expect(paths).to eq(["/libs/api", "../libs"])
+        end
+      end
+
+      context "with an empty quoted path" do
+        let(:content) { 'use ""' }
+
+        it "does not turn it into the root module" do
+          expect(paths).to be_empty
+        end
+      end
+
+      context "with a null byte in a decoded path" do
+        let(:content) { 'use "./libs/\000api"' }
+
+        it "reports an invalid workspace path" do
+          expect { paths }.to raise_error(Dependabot::DependencyFileNotParseable, /null byte/)
+        end
+      end
+
       {
         "Unicode escapes" => ['"./libs\u002fapi"', "libs/api"],
         "long Unicode escapes" => ['"./libs\U0000002fapi"', "libs/api"],
@@ -128,7 +184,7 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
         "Unicode code points" => ['"./libs/\u00e9\U0001f600"', "libs/\u00e9\u{1f600}"],
         "UTF-8 byte escapes" => ['"./libs/\xc3\xa9"', "libs/\u00e9"],
         "UTF-8 octal byte escapes" => ['"./libs/\303\251"', "libs/\u00e9"],
-        "quoted parentheses and comment markers" => ['"./libs/(api)//v2"', "libs/(api)//v2"]
+        "quoted parentheses and comment markers" => ['"./libs/(api)//v2"', "libs/(api)/v2"]
       }.each do |description, (quoted_path, expected_path)|
         context "with #{description} in a quoted single-line path" do
           let(:content) { "use #{quoted_path} // member\n" }
@@ -179,6 +235,14 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
     end
 
     context "with the enable_go_work_version_sync experiment disabled" do
+      context "with non-canonical workspace paths" do
+        let(:content) { "use ./libs/./\nuse (\n\t\"./services/\"\n)\n" }
+
+        it "does not change legacy path normalization" do
+          expect(paths).to eq(['"./services/"', "libs/./"])
+        end
+      end
+
       context "with a single-line use for a directory without a ./ prefix" do
         let(:content) { "use libs" }
 
