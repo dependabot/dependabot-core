@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/python/update_checker/pip_version_resolver/marker_evaluator"
+require "dependabot/python/marker_evaluator"
 
-RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver::MarkerEvaluator do
+RSpec.describe Dependabot::Python::MarkerEvaluator do
   subject(:marker_evaluator) { described_class.new }
 
   describe "#split_requirement_and_marker" do
@@ -44,6 +44,40 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver::MarkerEval
       marker = "python_version < '3.0' or not extra == 'crt'"
 
       expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(false)
+    end
+
+    context "when non-python markers are assumed satisfied" do
+      subject(:marker_evaluator) { described_class.new(non_python_markers_satisfied: true) }
+
+      it "satisfies an or expression through a non-numeric marker" do
+        marker = "python_version < '3.0' or platform_machine == 'x86_64'"
+
+        expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(true)
+      end
+
+      it "satisfies an or expression through a non-python numeric marker" do
+        marker = "python_version < '3.0' or implementation_version >= '3.0'"
+
+        expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(true)
+      end
+
+      it "satisfies an or expression through a non-python unary-not term" do
+        marker = "python_version < '3.0' or not extra == 'crt'"
+
+        expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(true)
+      end
+
+      it "does not satisfy an unsatisfied python marker" do
+        marker = "python_version < '3.0'"
+
+        expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(false)
+      end
+
+      it "does not satisfy an and expression with an unsatisfied python marker" do
+        marker = "python_version < '3.0' and platform_machine == 'x86_64'"
+
+        expect(marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)).to be(false)
+      end
     end
   end
 end
