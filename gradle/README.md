@@ -2,6 +2,23 @@
 
 Gradle support for [`dependabot-core`][core-repo].
 
+### Dependency locking and transitive security updates
+
+Dependabot fetches committed `gradle.lockfile` files and regenerates them with
+Gradle after updating supported dependency declarations.
+
+The `gradle_transitive_security_updates` experiment additionally discovers
+dependencies declared only in those lockfiles. For security updates, Dependabot
+pins the dependency to a fixed version in the affected lockfiles and runs Gradle
+to verify every affected configuration, without temporary version overrides or
+changes to build-file declarations. Gradle and any required private repositories
+must be accessible.
+
+If a parent dependency, strict constraint, or enforced BOM prevents resolution,
+Dependabot reports that the security update is not possible. It does not add
+permanent overrides or update parent dependencies automatically. Transitive
+version updates and projects without committed lockfiles are not included.
+
 ### Running locally
 
 1. Start a development shell

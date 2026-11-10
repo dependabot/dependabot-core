@@ -54,6 +54,9 @@ module Dependabot
             end
           end
           repository_urls += own_buildfile_repository_urls
+          if File.basename(target_dependency_file.name) == "gradle.lockfile"
+            repository_urls += own_buildfile_repository_urls(lockfile_buildfile)
+          end
           repository_urls += settings_file_repository_urls(top_level_settings_file)
           repository_urls = repository_urls.uniq
 
@@ -97,11 +100,11 @@ module Dependabot
           repository_urls_from(subproject_blocks.join("\n"))
         end
 
-        sig { returns(T::Array[String]) }
-        def own_buildfile_repository_urls
-          return [] unless top_level_buildfile
+        sig { params(buildfile: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
+        def own_buildfile_repository_urls(buildfile = top_level_buildfile)
+          return [] unless buildfile
 
-          buildfile_content = comment_free_content(T.must(top_level_buildfile))
+          buildfile_content = comment_free_content(buildfile)
 
           own_buildfile_urls = T.let([], T::Array[String])
 
@@ -116,6 +119,14 @@ module Dependabot
           own_buildfile_urls += repository_urls_from(buildfile_content)
           own_buildfile_urls += repository_urls_from(subproject_buildfile_content)
           own_buildfile_urls
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def lockfile_buildfile
+          dependency_files.find do |file|
+            SUPPORTED_BUILD_FILE_NAMES.include?(File.basename(file.name)) &&
+              File.dirname(file.name) == File.dirname(target_dependency_file.name)
+          end
         end
 
         sig { params(settings_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }

@@ -15,6 +15,8 @@ module Dependabot
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/lockfile_updater"
+      require_relative "file_updater/lockfile_validator"
+      require_relative "file_updater/transitive_dependency_updater"
       require_relative "file_updater/wrapper_updater"
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
@@ -40,16 +42,27 @@ module Dependabot
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
+        transitive_dependencies =
+          if Dependabot::Experiments.enabled?(:gradle_transitive_security_updates)
+            dependencies.reject(&:top_level?)
+          else
+            []
+          end
 
         # Loop through each of the changed requirements, applying changes to
         # all buildfiles for that change. Note that the logic is different
         # here to other languages because Java has property inheritance across
         # files (although we're not supporting it for gradle yet).
-        dependencies.each do |dependency|
+        (dependencies - transitive_dependencies).each do |dependency|
           updated_files = update_buildfiles_for_dependency(
             buildfiles: updated_files,
             dependency: dependency
           )
+        end
+
+        # Regenerating locks for direct updates would undo transitive pins applied earlier.
+        transitive_dependencies.each do |dependency|
+          updated_files = update_transitive_dependency(updated_files, dependency)
         end
 
         updated_files = updated_files.reject { |f| buildfiles.include?(f) }
@@ -60,6 +73,20 @@ module Dependabot
       end
 
       private
+
+      sig do
+        params(files: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def update_transitive_dependency(files, dependency)
+        updater = TransitiveDependencyUpdater.new(
+          dependency: dependency,
+          dependency_files: files + dependency_files.select(&:support_file?),
+          repo_contents_path: repo_contents_path
+        )
+        updated = updater.updated_dependency_files(version: T.must(dependency.version))
+        replace_updated_files(files, updated)
+      end
 
       sig { override.void }
       def check_required_files
