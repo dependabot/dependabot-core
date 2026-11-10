@@ -84,6 +84,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
     end
 
     context "with a dependency declared inside a git block" do
+      sig { returns(String) }
       let(:content) do
         <<~GEMFILE
           git "https://x.com/monorepo", tag: "v1", glob: "gems/*/*.gemspec" do
@@ -98,6 +99,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
     end
 
     context "with a dependency declared inside a git block alongside other gems" do
+      sig { returns(String) }
       let(:content) do
         <<~GEMFILE
           git "https://x.com/monorepo", ref: "a1b78a9" do
@@ -121,6 +123,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
     end
 
     context "with a dependency declared inside a github block" do
+      sig { returns(String) }
       let(:content) do
         <<~GEMFILE
           github "org/monorepo", tag: 'v1' do
@@ -135,6 +138,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
     end
 
     context "with a dependency declared inside a non-git block" do
+      sig { returns(String) }
       let(:content) do
         <<~GEMFILE
           group :development, tag: "v1" do
