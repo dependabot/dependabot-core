@@ -140,7 +140,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
 
       before do
         Dependabot::Experiments.register(:enable_go_work_version_sync, experiment_enabled)
-        File.write(File.join(repo_contents_path, "go.work"), "go 1.21\n\nuse .\nuse libs\nuse \"./ser\\u0076ices\"\n")
+        File.write(File.join(repo_contents_path, "go.work"), "go 1.21\n\nuse .\nuse libs\nuse \"./s\\u0065rvices\"\n")
         Dir.chdir(repo_contents_path) do
           Dependabot::SharedHelpers.run_shell_command("git add go.work")
           Dependabot::SharedHelpers.run_shell_command("git commit -m use-forms")

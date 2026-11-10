@@ -340,7 +340,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       context "with unprefixed and escaped quoted workspace members" do
-        let(:go_work_body) { "go 1.21\n\nuse .\nuse libs\nuse \"./ser\\u0076ices\"\n" }
+        let(:go_work_body) { "go 1.21\n\nuse .\nuse libs\nuse \"./s\\u0065rvices\"\n" }
 
         before { Dependabot::Experiments.register(:enable_go_work_version_sync, true) }
 
