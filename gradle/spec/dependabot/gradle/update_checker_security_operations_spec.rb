@@ -117,7 +117,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     )
     expect(service).to receive(:create_pull_request) do |change, _sha|
       expect(change.updated_dependencies.map(&:previous_version)).to eq(["1.0"])
-      expect(change.updated_dependency_files.map(&:name)).to contain_exactly("gradle.lockfile", "app/gradle.lockfile")
+      expect(change.updated_dependency_files.map(&:name)).to eq(["gradle.lockfile"])
+      expect(
+        T.must(
+          files.find do |file|
+            file.name == "app/gradle.lockfile"
+          end
+        ).content
+      ).to include("org.example:child:0.9=")
     end
     perform_update
     expect(service).not_to have_received(:record_update_job_error)
@@ -137,7 +144,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       expect(service).to receive(:create_pull_request) do |change, _sha|
         expect(change.updated_dependencies.map(&:previous_version)).to eq(["1.0"])
         expect(change.updated_dependencies.map(&:version)).to eq(["1.1"])
-        expect(change.updated_dependency_files.map(&:name)).to contain_exactly("gradle.lockfile", "app/gradle.lockfile")
+        expect(change.updated_dependency_files.map(&:name)).to eq(["gradle.lockfile"])
       end
       Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.new(
         service: service, job: job, dependency_snapshot: snapshot, error_handler: error_handler, group: group
@@ -151,7 +158,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       )
       expect(service).to receive(:update_pull_request) do |change, _sha|
         expect(change.updated_dependencies.map(&:version)).to eq(["1.1"])
-        expect(change.updated_dependency_files.map(&:name)).to contain_exactly("gradle.lockfile", "app/gradle.lockfile")
+        expect(change.updated_dependency_files.map(&:name)).to eq(["gradle.lockfile"])
       end
       Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest.new(
         service: service, job: job, dependency_snapshot: snapshot, error_handler: error_handler

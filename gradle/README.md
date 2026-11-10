@@ -14,6 +14,12 @@ to verify every affected configuration, without temporary version overrides or
 changes to build-file declarations. Gradle and any required private repositories
 must be accessible.
 
+Dependabot tries compatible, non-ignored security fixes in ascending order,
+preserves already-safe locked versions, and rejects fixes that would change a
+vulnerable dependency's version flavor (for example, Android to JRE).
+Implicit `buildSrc` builds are validated independently, without committing
+additional settings files.
+
 Lockfile entries with version formats unsupported by Dependabot's comparison
 logic are skipped with a warning and preserved unchanged during other updates.
 

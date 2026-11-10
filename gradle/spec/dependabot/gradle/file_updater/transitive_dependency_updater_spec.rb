@@ -44,10 +44,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
       dependency: dependency,
       dependency_files: files,
       credentials: [],
+      ignored_versions: ignored_versions,
       security_advisories: advisories,
       repo_contents_path: project_path
     )
   end
+
+  sig { returns(T::Array[String]) }
+  let(:ignored_versions) { [] }
 
   before do
     Dependabot::Experiments.register(:gradle_transitive_security_updates, true)
@@ -109,6 +113,104 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
     end
 
+    it "reports a blocked update only after trying all fixes and caches the failed attempts" do
+      stub_request(:get, "https://repo.maven.apache.org/maven2/org/example/child/maven-metadata.xml")
+        .to_return(body: <<~XML)
+          <metadata><versioning><versions>
+          <version>1.0</version><version>1.1</version><version>1.2</version>
+          </versions></versioning></metadata>
+        XML
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .and_raise(Dependabot::DependencyFileNotResolvable, "Rejected release")
+      expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+      expect(checker.updated_dependencies(requirements_to_unlock: :none)).to be_empty
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+    end
+
+    context "when the first fixed release cannot resolve" do
+      sig { returns(T::Array[String]) }
+      let(:ignored_versions) { ["1.2"] }
+
+      it "tries later non-ignored fixes in order and retains the selected repository" do
+        files << Dependabot::DependencyFile.new(
+          name: "settings.gradle.kts",
+          content: <<~GRADLE
+            dependencyResolutionManagement {
+              repositories {
+                mavenCentral()
+                maven("https://fixes.example/maven")
+              }
+            }
+          GRADLE
+        )
+        files.reject! { |file| file.name == "settings.gradle" }
+        stub_request(:get, "https://repo.maven.apache.org/maven2/org/example/child/maven-metadata.xml")
+          .to_return(body: <<~XML)
+            <metadata><versioning><versions>
+            <version>1.2</version><version>1.1</version><version>1.0</version>
+            </versions></versioning></metadata>
+          XML
+        stub_request(:get, "https://fixes.example/maven/org/example/child/maven-metadata.xml")
+          .to_return(body: "<metadata><versioning><versions><version>1.3</version></versions></versioning></metadata>")
+        attempted = T.let([], T::Array[String])
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          content = File.read(File.join(cwd, "gradle.lockfile"))
+          version = T.must(content[/org.example:child:([^=]+)=/, 1])
+          attempted << version
+          raise Dependabot::DependencyFileNotResolvable, "Rejected release" if version == "1.1"
+        end
+        updated = T.must(checker.updated_dependencies(requirements_to_unlock: :none).first)
+        expect(attempted).to eq(["1.1", "1.3"])
+        expect(updated.version).to eq("1.3")
+        expect(updated.source_string("url")).to eq("https://fixes.example/maven")
+        expect(checker.lowest_resolvable_security_fix_version&.to_s).to eq("1.3")
+        expect(attempted).to eq(["1.1", "1.3"])
+      end
+    end
+
+    context "with mixed version flavors" do
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+      let(:advisories) do
+        [Dependabot::SecurityAdvisory.new(
+          dependency_name: "org.example:child",
+          package_manager: "gradle",
+          vulnerable_versions: [Dependabot::Gradle::Requirement.new("< 32.0")]
+        )]
+      end
+
+      before do
+        T.must(files.find { |file| file.name == "gradle.lockfile" }).content =
+          "org.example:child:31.1-jre=runtimeClasspath\n"
+        files << Dependabot::DependencyFile.new(
+          name: "app/gradle.lockfile", content: "org.example:child:31.0-android=runtimeClasspath\n"
+        )
+        stub_request(:get, "https://repo.maven.apache.org/maven2/org/example/child/maven-metadata.xml")
+          .to_return(body: <<~XML)
+            <metadata><versioning><versions>
+            <version>31.0-android</version><version>31.1-jre</version>
+            <version>32.0.0-android</version><version>32.0.0-jre</version>
+            </versions></versioning></metadata>
+          XML
+      end
+
+      it "rejects a candidate that would switch another vulnerable project's flavor" do
+        expect(checker.can_update?(requirements_to_unlock: :none)).to be(false)
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+      end
+
+      it "preserves a safe flavor while fixing the vulnerable flavor" do
+        T.must(files.find { |file| file.name == "app/gradle.lockfile" }).content =
+          "org.example:child:33.0-android=runtimeClasspath\n"
+        updater = Dependabot::Gradle::FileUpdater.new(
+          dependency_files: files,
+          dependencies: checker.updated_dependencies(requirements_to_unlock: :none),
+          credentials: [],
+          repo_contents_path: project_path
+        )
+        expect(updater.updated_dependency_files.map(&:name)).to eq(["gradle.lockfile"])
+      end
+    end
+
     it "checks resolvability and returns an update without unlocking direct requirements" do
       expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
       updated = T.must(checker.updated_dependencies(requirements_to_unlock: :none).first)
@@ -136,7 +238,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
       lockfile = T.must(files.find { |file| file.name == "gradle.lockfile" })
       unsupported_entry = "org.example:child:1.0.0-rc.1+build.2=compileClasspath\n"
       lockfile.content = T.must(lockfile.content) + unsupported_entry
-      updater = described_class.new(dependency: dependency, dependency_files: files)
+      updater = described_class.new(dependency: dependency, dependency_files: files, vulnerable_versions: ["1.0"])
       result = T.must(updater.updated_dependency_files(version: "1.1").first)
       expect(result.content).to include(unsupported_entry, "org.example:child:1.1=")
     end
@@ -288,6 +390,87 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
   end
 
   describe "native Gradle verification" do
+    it "validates an implicit buildSrc root independently without committing settings" do
+      files << Dependabot::DependencyFile.new(
+        name: "buildSrc/build.gradle",
+        content: <<~GRADLE
+          plugins { id 'java' }
+          configurations { verified }
+          dependencyLocking { lockAllConfigurations() }
+          repositories { maven { url = uri('../repository') } }
+          dependencies { verified 'org.example:parent:1.0' }
+        GRADLE
+      )
+      files << Dependabot::DependencyFile.new(
+        name: "buildSrc/gradle.lockfile",
+        content: <<~LOCK
+          org.example:child:1.0=verified
+          org.example:parent:1.0=verified
+          empty=annotationProcessor,compileClasspath,runtimeClasspath,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath
+        LOCK
+      )
+      updater = Dependabot::Gradle::FileUpdater.new(
+        dependency_files: files,
+        dependencies: checker.updated_dependencies(requirements_to_unlock: :none),
+        credentials: [],
+        repo_contents_path: project_path
+      )
+      expect(updater.updated_dependency_files.map(&:name)).to contain_exactly(
+        "gradle.lockfile",
+        "buildSrc/gradle.lockfile"
+      )
+      expect(files.map(&:name)).not_to include("buildSrc/settings.gradle", "buildSrc/settings.gradle.kts")
+    end
+
+    it "preserves a safe strict pin while fixing a vulnerable pin in another project" do
+      T.must(files.find { |file| file.name == "settings.gradle" }).content = "include('app')\n"
+      files << Dependabot::DependencyFile.new(
+        name: "app/build.gradle",
+        content: <<~GRADLE
+          plugins { id 'java' }
+          dependencyLocking { lockAllConfigurations() }
+          repositories { maven { url = uri('../repository') } }
+          dependencies { implementation('org.example:child') { version { strictly '0.9' } } }
+        GRADLE
+      )
+      files << Dependabot::DependencyFile.new(
+        name: "app/gradle.lockfile",
+        content: File.read(File.join(project_path, "gradle.lockfile"))
+                     .lines.reject { |line| line.include?("org.example:parent:") }.join
+                     .sub("org.example:child:1.0=", "org.example:child:0.9=")
+      )
+      updated = Dependabot::Dependency.new(
+        name: "org.example:child",
+        version: "1.1",
+        previous_version: "1.0",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "gradle",
+        metadata: { vulnerable_versions: ["1.0"] }
+      )
+      updater = Dependabot::Gradle::FileUpdater.new(
+        dependency_files: files, dependencies: [updated], credentials: [], repo_contents_path: project_path
+      )
+      expect(updater.updated_dependency_files.map(&:name)).to eq(["gradle.lockfile"])
+    end
+
+    it "tries a later fixed release when Gradle component selection rejects the lowest fix" do
+      buildfile = T.must(files.find { |file| file.name == "build.gradle" })
+      buildfile.content = T.must(buildfile.content) + <<~GRADLE
+
+        configurations.all {
+          resolutionStrategy.componentSelection.all { selection ->
+            if (selection.candidate.version == '1.1') { selection.reject('Rejected release') }
+          }
+        }
+      GRADLE
+      stub_request(:get, "https://repo.maven.apache.org/maven2/org/example/child/maven-metadata.xml")
+        .to_return(body: <<~XML)
+          <metadata><versioning><versions><version>1.0</version><version>1.1</version><version>1.2</version></versions></versioning></metadata>
+        XML
+      expect(checker.lowest_resolvable_security_fix_version&.to_s).to eq("1.2")
+    end
+
     it "resolves project dependencies when all projects request an unavailable Java toolchain" do
       T.must(files.find { |file| file.name == "settings.gradle" }).content = "include('app')\n"
       buildfile = T.must(files.find { |file| file.name == "build.gradle" })

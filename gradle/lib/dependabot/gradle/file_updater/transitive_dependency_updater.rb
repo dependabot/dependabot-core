@@ -56,12 +56,14 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
+            vulnerable_versions: T::Array[String],
             repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependency:, dependency_files:, repo_contents_path: nil)
+        def initialize(dependency:, dependency_files:, vulnerable_versions:, repo_contents_path: nil)
           @dependency = dependency
           @dependency_files = dependency_files
+          @vulnerable_versions = vulnerable_versions
           @repo_contents_path = repo_contents_path
         end
 
@@ -106,15 +108,27 @@ module Dependabot
           end
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[FileParser::LockfileParser::Entry]) }
+        def vulnerable_entries(file)
+          target_entries(file).select { |entry| @vulnerable_versions.include?(entry.version) }
+        end
+
+        sig { params(match: MatchData, version: String).returns(T::Boolean) }
+        def updatable_entry?(match, version)
+          match[:name] == @dependency.name && Gradle::Version.correct?(match[:version]) &&
+            (@vulnerable_versions.include?(match[:version]) || match[:version] == version)
+        end
+
         sig { params(file: Dependabot::DependencyFile, version: String).returns(String) }
         def updated_content(file, version)
+          return T.must(file.content) if vulnerable_entries(file).empty?
+
           configurations = updated_configurations(file, version)
           seen = T.let(Set.new, T::Set[String])
 
           T.must(file.content).lines.filter_map do |line|
             match = FileParser::LockfileParser::DEPENDENCY_REGEX.match(line.strip)
-            next line unless match && match[:name] == @dependency.name
-            next line unless Gradle::Version.correct?(match[:version])
+            next line unless match && updatable_entry?(match, version)
 
             target = target_version(T.must(match[:version]), version)
             next unless seen.add?(target)
@@ -136,6 +150,8 @@ module Dependabot
 
         sig { params(current: String, candidate: String).returns(String) }
         def target_version(current, candidate)
+          return current unless @vulnerable_versions.include?(current)
+
           [Gradle::Version.new(current), Gradle::Version.new(candidate)].max.to_s
         end
 

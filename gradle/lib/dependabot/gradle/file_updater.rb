@@ -82,7 +82,9 @@ module Dependabot
         updater = TransitiveDependencyUpdater.new(
           dependency: dependency,
           dependency_files: files + dependency_files.select(&:support_file?),
-          repo_contents_path: repo_contents_path
+          repo_contents_path: repo_contents_path,
+          vulnerable_versions: dependency.metadata_string_array(:vulnerable_versions) ||
+            [T.must(dependency.previous_version)]
         )
         updated = updater.updated_dependency_files(version: T.must(dependency.version))
         replace_updated_files(files, updated)
