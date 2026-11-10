@@ -101,7 +101,9 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Array[FileParser::LockfileParser::Entry]) }
         def target_entries(file)
-          FileParser::LockfileParser.new(lockfile: file).entries.select { |entry| entry.name == @dependency.name }
+          FileParser::LockfileParser.new(lockfile: file).entries.select do |entry|
+            entry.name == @dependency.name && Gradle::Version.correct?(entry.version)
+          end
         end
 
         sig { params(file: Dependabot::DependencyFile, version: String).returns(String) }
@@ -112,6 +114,7 @@ module Dependabot
           T.must(file.content).lines.filter_map do |line|
             match = FileParser::LockfileParser::DEPENDENCY_REGEX.match(line.strip)
             next line unless match && match[:name] == @dependency.name
+            next line unless Gradle::Version.correct?(match[:version])
 
             target = target_version(T.must(match[:version]), version)
             next unless seen.add?(target)

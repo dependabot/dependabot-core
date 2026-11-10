@@ -29,7 +29,7 @@ module Dependabot
             next if line.empty? || line.start_with?("#", "empty=")
 
             match = DEPENDENCY_REGEX.match(line)
-            unless match && Gradle::Version.correct?(match[:version])
+            unless match
               raise Dependabot::DependencyFileNotParseable.new(@lockfile.path, "Invalid Gradle lockfile entry: #{line}")
             end
 
@@ -48,7 +48,14 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def parse
-          entries.map do |entry|
+          entries.filter_map do |entry|
+            unless Gradle::Version.correct?(entry.version)
+              Dependabot.logger.warn(
+                "Skipping Gradle lockfile dependency #{entry.name}: unsupported version #{entry.version}"
+              )
+              next
+            end
+
             Dependabot::Dependency.new(
               name: entry.name,
               version: entry.version,

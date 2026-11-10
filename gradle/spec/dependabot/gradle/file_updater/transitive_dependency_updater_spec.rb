@@ -87,6 +87,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
       expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotParseable, /Missing locked configurations/)
     end
 
+    it "skips unsupported comparison formats without rejecting valid lockfiles" do
+      lockfile = T.must(files.find { |file| file.name == "gradle.lockfile" })
+      lockfile.content = T.must(lockfile.content) + "org.example:unsupported:1.0.0-rc.1+build.2=runtimeClasspath\n"
+      allow(Dependabot.logger).to receive(:warn)
+      expect(parser.parse.map(&:name)).to contain_exactly("org.example:parent", "org.example:child")
+      expect(Dependabot.logger).to have_received(:warn).with(include("1.0.0-rc.1+build.2"))
+    end
+
     it "retains the lowest locked version across subprojects" do
       files << Dependabot::DependencyFile.new(
         name: "app/gradle.lockfile", content: "org.example:child:0.9=runtimeClasspath\n"
@@ -122,6 +130,48 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
       expect(result.map(&:name)).to eq(["gradle.lockfile"])
       expect(T.must(result.first).content).to include("org.example:child:1.1=")
       expect(T.must(result.first).content).to include("org.example:parent:1.0=")
+    end
+
+    it "preserves unsupported versions while updating comparable entries" do
+      lockfile = T.must(files.find { |file| file.name == "gradle.lockfile" })
+      unsupported_entry = "org.example:child:1.0.0-rc.1+build.2=compileClasspath\n"
+      lockfile.content = T.must(lockfile.content) + unsupported_entry
+      updater = described_class.new(dependency: dependency, dependency_files: files)
+      result = T.must(updater.updated_dependency_files(version: "1.1").first)
+      expect(result.content).to include(unsupported_entry, "org.example:child:1.1=")
+    end
+
+    it "uses settings repositories from the containing included build" do
+      files.each { |file| file.name = "tools/#{file.name}" }
+      files << Dependabot::DependencyFile.new(name: "settings.gradle", content: "includeBuild('tools')\n")
+      files << Dependabot::DependencyFile.new(
+        name: "build.gradle", content: "allprojects { repositories { maven { url 'https://outer.example/maven' } } }\n"
+      )
+      T.must(files.find { |file| file.name == "tools/settings.gradle" }).content = <<~GRADLE
+        dependencyResolutionManagement {
+          repositories { maven { url 'https://included.example/maven' } }
+        }
+      GRADLE
+      stub_request(:get, "https://included.example/maven/org/example/child/maven-metadata.xml")
+        .to_return(body: "<metadata><versioning><versions><version>1.1</version></versions></versioning></metadata>")
+      expect(checker.lowest_security_fix_version&.to_s).to eq("1.1")
+      expect(WebMock).to have_requested(:get, "https://included.example/maven/org/example/child/maven-metadata.xml")
+      expect(WebMock).not_to have_requested(:get, "https://outer.example/maven/org/example/child/maven-metadata.xml")
+    end
+
+    it "inherits repositories from the included build for its subprojects" do
+      files.each { |file| file.name = "tools/app/#{file.name}" }
+      files << Dependabot::DependencyFile.new(name: "settings.gradle", content: "includeBuild('tools')\n")
+      files << Dependabot::DependencyFile.new(name: "tools/settings.gradle", content: "include('app')\n")
+      files << Dependabot::DependencyFile.new(
+        name: "tools/build.gradle",
+        content: "subprojects { repositories { maven { url 'https://included.example/maven' } } }\n"
+      )
+      files.reject! { |file| file.name == "tools/app/settings.gradle" }
+      stub_request(:get, "https://included.example/maven/org/example/child/maven-metadata.xml")
+        .to_return(body: "<metadata><versioning><versions><version>1.1</version></versions></versioning></metadata>")
+      expect(checker.lowest_security_fix_version&.to_s).to eq("1.1")
+      expect(WebMock).to have_requested(:get, "https://included.example/maven/org/example/child/maven-metadata.xml")
     end
 
     it "exposes every locked version to security jobs when the lowest version is safe" do
@@ -238,6 +288,25 @@ RSpec.describe Dependabot::Gradle::FileUpdater::TransitiveDependencyUpdater do
   end
 
   describe "native Gradle verification" do
+    it "resolves project dependencies when all projects request an unavailable Java toolchain" do
+      T.must(files.find { |file| file.name == "settings.gradle" }).content = "include('app')\n"
+      buildfile = T.must(files.find { |file| file.name == "build.gradle" })
+      buildfile.content = T.must(buildfile.content) + <<~GRADLE
+
+        java { toolchain { languageVersion = JavaLanguageVersion.of(99) } }
+        dependencies { implementation project(':app') }
+      GRADLE
+      files << Dependabot::DependencyFile.new(
+        name: "app/build.gradle",
+        content: File.read(File.join(project_path, "build.gradle")).sub("uri('repository')", "uri('../repository')") +
+          "\njava { toolchain { languageVersion = JavaLanguageVersion.of(99) } }\n"
+      )
+      files << Dependabot::DependencyFile.new(
+        name: "app/gradle.lockfile", content: File.read(File.join(project_path, "gradle.lockfile"))
+      )
+      expect(checker.can_update?(requirements_to_unlock: :none)).to be(true)
+    end
+
     it "creates a lockfile-only update that resolves without temporary overrides" do
       updated = checker.updated_dependencies(requirements_to_unlock: :none)
       expect(updated.map(&:version)).to eq(["1.1"])

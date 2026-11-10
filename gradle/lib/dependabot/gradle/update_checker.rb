@@ -92,6 +92,15 @@ module Dependabot
         !dependency.version&.include?("$")
       end
 
+      sig { override.returns(T::Boolean) }
+      def vulnerable?
+        return super unless transitive_dependency?
+
+        dependency.all_versions.compact.any? do |version|
+          security_advisories.any? { |advisory| advisory.affects_version?(version) }
+        end
+      end
+
       private
 
       sig { returns(T::Boolean) }

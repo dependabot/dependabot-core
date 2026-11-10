@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+
+$LOAD_PATH << File.expand_path("../dependabot-updater/lib", common_dir)
+
 require "dependabot/gradle"
 require "dependabot/job"
 require "dependabot/dependency_snapshot"
@@ -9,15 +12,15 @@ require "dependabot/dependency_change_builder"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/create_security_update_pull_request"
+require "dependabot/updater/operations/create_group_update_pull_request"
+require "dependabot/updater/operations/refresh_security_update_pull_request"
 
-RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest do
+RSpec.describe Dependabot::Gradle::UpdateChecker do
   extend T::Sig
 
   # rubocop:disable RSpec/ScatteredLet -- Keep Sorbet signatures attached to their declarations.
   sig { returns(String) }
-  let(:project_path) do
-    File.expand_path("../../../../../gradle/spec/fixtures/projects/transitive_security", __dir__)
-  end
+  let(:project_path) { File.expand_path("../../fixtures/projects/transitive_security", __dir__) }
 
   sig { returns(T::Array[Dependabot::DependencyFile]) }
   let(:files) do
@@ -70,6 +73,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       increment_metric: nil,
       record_update_job_error: nil,
       create_pull_request: nil,
+      update_pull_request: nil,
+      close_pull_request: nil,
       record_ecosystem_meta: nil,
       record_cooldown_meta: nil
     )
@@ -90,7 +95,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
   sig { void }
   def perform_update
-    described_class.new(
+    Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest.new(
       service: service, job: job, dependency_snapshot: snapshot, error_handler: error_handler
     ).perform
   end
@@ -116,6 +121,43 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     end
     perform_update
     expect(service).not_to have_received(:record_update_job_error)
+  end
+
+  context "when the lowest locked version is safe" do
+    before do
+      files << Dependabot::DependencyFile.new(
+        name: "app/gradle.lockfile", content: "org.example:child:0.9=runtimeClasspath\n"
+      )
+    end
+
+    it "creates a grouped security update for the higher vulnerable version" do
+      allow(Dependabot::Workspace).to receive(:setup)
+      group = Dependabot::DependencyGroup.new(name: "security", rules: { "patterns" => ["org.example:child"] })
+      group.dependencies.concat(snapshot.job_dependencies)
+      expect(service).to receive(:create_pull_request) do |change, _sha|
+        expect(change.updated_dependencies.map(&:previous_version)).to eq(["1.0"])
+        expect(change.updated_dependencies.map(&:version)).to eq(["1.1"])
+        expect(change.updated_dependency_files.map(&:name)).to contain_exactly("gradle.lockfile", "app/gradle.lockfile")
+      end
+      Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.new(
+        service: service, job: job, dependency_snapshot: snapshot, error_handler: error_handler, group: group
+      ).perform
+      expect(service).not_to have_received(:record_update_job_error)
+    end
+
+    it "refreshes an existing security update instead of closing it" do
+      job.existing_pull_requests << Dependabot::PullRequest.new(
+        [Dependabot::PullRequest::Dependency.new(name: "org.example:child", version: "1.1")]
+      )
+      expect(service).to receive(:update_pull_request) do |change, _sha|
+        expect(change.updated_dependencies.map(&:version)).to eq(["1.1"])
+        expect(change.updated_dependency_files.map(&:name)).to contain_exactly("gradle.lockfile", "app/gradle.lockfile")
+      end
+      Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest.new(
+        service: service, job: job, dependency_snapshot: snapshot, error_handler: error_handler
+      ).perform
+      expect(service).not_to have_received(:close_pull_request)
+    end
   end
 
   it "reports an unresolvable lockfile as a security update that is not possible" do

@@ -14,6 +14,9 @@ to verify every affected configuration, without temporary version overrides or
 changes to build-file declarations. Gradle and any required private repositories
 must be accessible.
 
+Lockfile entries with version formats unsupported by Dependabot's comparison
+logic are skipped with a warning and preserved unchanged during other updates.
+
 If a parent dependency, strict constraint, or enforced BOM prevents resolution,
 Dependabot reports that the security update is not possible. It does not add
 permanent overrides or update parent dependencies automatically. Transitive
@@ -31,5 +34,8 @@ version updates and projects without committed lockfiles are not included.
    ```
    [dependabot-core-dev] ~ $ cd gradle && rspec
    ```
+
+Gradle-specific updater operation tests run in this suite so they have access to
+the Gradle implementation and fixtures.
 
 [core-repo]: https://github.com/dependabot/dependabot-core

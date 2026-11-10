@@ -54,9 +54,7 @@ module Dependabot
             end
           end
           repository_urls += own_buildfile_repository_urls
-          if File.basename(target_dependency_file.name) == "gradle.lockfile"
-            repository_urls += own_buildfile_repository_urls(lockfile_buildfile)
-          end
+          repository_urls += own_buildfile_repository_urls(lockfile_buildfile) if lockfile?
           repository_urls += settings_file_repository_urls(top_level_settings_file)
           repository_urls = repository_urls.uniq
 
@@ -76,6 +74,11 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :target_dependency_file
 
+        sig { returns(T::Boolean) }
+        def lockfile?
+          File.basename(target_dependency_file.name) == "gradle.lockfile"
+        end
+
         sig { params(dependency_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
         def inherited_repository_urls(dependency_file)
           return [] unless dependency_file
@@ -89,7 +92,7 @@ module Dependabot
               T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)])
           end
 
-          if top_level_buildfile != target_dependency_file
+          if top_level_buildfile != (lockfile? ? lockfile_buildfile : target_dependency_file)
             buildfile_content.scan(/(?:^|\s)subprojects\s*\{/) do
               mtch = T.must(Regexp.last_match)
               subproject_blocks <<
@@ -229,7 +232,12 @@ module Dependabot
         def top_level_buildfile
           @top_level_buildfile = T.let(
             @top_level_buildfile || dependency_files.find do |f|
-              SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+              if lockfile?
+                directory = File.dirname(top_level_settings_file&.name || target_dependency_file.name)
+                SUPPORTED_BUILD_FILE_NAMES.include?(File.basename(f.name)) && File.dirname(f.name) == directory
+              else
+                SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+              end
             end,
             T.nilable(Dependabot::DependencyFile)
           )
@@ -238,11 +246,22 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def top_level_settings_file
           @top_level_settings_file = T.let(
-            @top_level_settings_file || dependency_files.find do |f|
-              SUPPORTED_SETTINGS_FILE_NAMES.include?(f.name)
-            end,
+            @top_level_settings_file || containing_settings_file,
             T.nilable(Dependabot::DependencyFile)
           )
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def containing_settings_file
+          return dependency_files.find { |file| SUPPORTED_SETTINGS_FILE_NAMES.include?(file.name) } unless lockfile?
+
+          settings_files = dependency_files.select do |file|
+            next false unless SUPPORTED_SETTINGS_FILE_NAMES.include?(File.basename(file.name))
+
+            directory = File.dirname(file.name)
+            directory == "." || target_dependency_file.name.start_with?("#{directory}/")
+          end
+          settings_files.max_by { |file| File.dirname(file.name).length }
         end
       end
     end

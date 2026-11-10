@@ -19,7 +19,10 @@ module Dependabot
             FileUtils.mkdir_p(cwd)
 
             init_script_path = File.join(cwd, "dependabot-locking-validation.init.gradle")
-            File.write(init_script_path, validation_script)
+            File.write(
+              init_script_path,
+              "gradle.projectsEvaluated {\n#{compiler_fallback_snippet}\n}\n#{validation_script}"
+            )
             command = Shellwords.join(
               [
                 gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
