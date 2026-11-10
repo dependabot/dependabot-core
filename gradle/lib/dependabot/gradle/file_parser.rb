@@ -6,6 +6,7 @@ require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/ecosystem"
+require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -27,6 +28,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/lockfile_parser"
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
 
@@ -61,6 +63,9 @@ module Dependabot
         end
         version_catalog_files.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
+        end
+        if Dependabot::Experiments.enabled?(:gradle_transitive_security_updates)
+          add_lockfile_dependencies(dependency_set)
         end
         dependency_set.dependencies.reject do |dependency|
           dependency.version == "latest.integration" || dependency.version == "latest.release"
@@ -732,6 +737,41 @@ module Dependabot
             f.name.end_with?("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dependency_set: DependencySet).void }
+      def add_lockfile_dependencies(dependency_set)
+        declared_names = dependency_set.dependencies.map { |dep| dep.name.downcase }
+        locked = DependencySet.new
+        dependency_files.select { |file| File.basename(file.name) == "gradle.lockfile" }.each do |lockfile|
+          LockfileParser.new(lockfile: lockfile).parse.each do |dependency|
+            locked << dependency unless declared_names.include?(dependency.name.downcase)
+          end
+        end
+        locked.dependencies.each do |dependency|
+          versions = locked.all_versions_for_name(dependency.name).map do |version|
+            lockfile_dependency(dependency, version.version)
+          end
+          dependency_set << lockfile_dependency(dependency, dependency.version, versions)
+        end
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          version: T.nilable(String),
+          all_versions: T::Array[Dependabot::Dependency]
+        ).returns(Dependabot::Dependency)
+      end
+      def lockfile_dependency(dependency, version, all_versions = [])
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version,
+          package_manager: "gradle",
+          requirements: [],
+          subdependency_metadata: dependency.subdependency_metadata,
+          metadata: all_versions.empty? ? {} : { all_versions: all_versions }
         )
       end
 

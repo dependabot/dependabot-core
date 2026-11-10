@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/gradle/file_parser"
+require "dependabot/gradle/file_updater"
 
 module Dependabot
   module Gradle
@@ -24,6 +25,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version
+        return lowest_resolvable_security_fix_version if transitive_dependency?
+
         # TODO: Resolve the build.gradle to find the latest version we could
         # update to without updating any other dependencies at the same time.
         #
@@ -43,6 +46,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
+        return transitive_security_fixes.first&.version if transitive_dependency?
+
         return if git_dependency?
         return nil if version_comes_from_multi_dependency_property?
         return nil if version_comes_from_dependency_set?
@@ -52,6 +57,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version_with_no_unlock
+        return lowest_resolvable_security_fix_version if transitive_dependency?
+
         # Irrelevant, since Gradle has a single dependency file.
         #
         # For completeness we ought to resolve the build.gradle and return the
@@ -78,12 +85,128 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
+        return false if transitive_dependency?
+
         # If the dependency version come from a property we couldn't
         # interpolate then there's nothing we can do.
         !dependency.version&.include?("$")
       end
 
+      sig { override.returns(T::Boolean) }
+      def vulnerable?
+        return super unless transitive_dependency?
+
+        dependency.all_versions.compact.any? do |version|
+          security_advisories.any? { |advisory| advisory.affects_version?(version) }
+        end
+      end
+
       private
+
+      sig { returns(T::Boolean) }
+      def transitive_dependency?
+        !dependency.top_level? && Dependabot::Experiments.enabled?(:gradle_transitive_security_updates)
+      end
+
+      sig { returns(T::Array[String]) }
+      def locked_versions
+        versions = (dependency.subdependency_metadata || []).filter_map do |metadata|
+          version = metadata[:version]
+          version if version.is_a?(String)
+        end
+        (versions + [dependency.version]).compact.uniq
+      end
+
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def highest_vulnerable_version
+        vulnerable_locked_versions.map { |version| Gradle::Version.new(version) }.max
+      end
+
+      sig { returns(T::Array[String]) }
+      def vulnerable_locked_versions
+        locked_versions.select do |version|
+          security_advisories.any? { |advisory| advisory.affects_version?(version) }
+        end
+      end
+
+      sig { params(version: T.nilable(String)).returns(Dependabot::Dependency) }
+      def dependency_for_version_lookup(version: nil)
+        return dependency unless transitive_dependency?
+
+        Dependency.new(
+          name: dependency.name,
+          version: version || highest_vulnerable_version&.to_s || dependency.version,
+          requirements: [],
+          package_manager: dependency.package_manager,
+          subdependency_metadata: dependency.subdependency_metadata
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+      def transitive_security_fixes
+        @transitive_security_fixes ||= T.let(
+          resolve_transitive_security_fixes,
+          T.nilable(T::Array[Dependabot::Package::PackageRelease])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+      def resolve_transitive_security_fixes
+        return [] unless vulnerable?
+
+        release = version_finder.security_fix_versions.find do |candidate|
+          transitive_security_fix_resolvable?(candidate)
+        end
+        release ? [release] : []
+      end
+
+      sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+      def transitive_security_fix_resolvable?(release)
+        compatible = vulnerable_locked_versions.all? do |version|
+          finder = version_finder_for(dependency_for_version_lookup(version: version))
+          finder.matches_dependency_version_type?(release.version)
+        end
+        raise Dependabot::DependencyFileNotResolvable, "Incompatible locked version flavors" unless compatible
+
+        FileUpdater::TransitiveDependencyUpdater.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
+          vulnerable_versions: vulnerable_locked_versions
+        ).updated_dependency_files(version: release.version.to_s)
+        true
+      rescue Dependabot::DependencyFileNotResolvable => e
+        Dependabot.logger.info(
+          "Cannot update transitive Gradle dependency #{dependency.name} to #{release.version}: #{e.message}"
+        )
+        false
+      end
+
+      sig { override.returns(Dependabot::Dependency) }
+      def updated_dependency_without_unlock
+        return super unless transitive_dependency?
+
+        source = { type: "maven_repo", url: transitive_security_fixes.first&.url }
+        Dependency.new(
+          name: dependency.name,
+          version: lowest_resolvable_security_fix_version&.to_s,
+          previous_version: highest_vulnerable_version&.to_s,
+          requirements: [],
+          previous_requirements: [],
+          package_manager: dependency.package_manager,
+          metadata: dependency.metadata.merge(vulnerable_versions: vulnerable_locked_versions),
+          subdependency_metadata: (dependency.subdependency_metadata || []).map do |metadata|
+            metadata.merge(source: source)
+          end
+        )
+      end
+
+      sig { override.returns(Dependabot::Dependency) }
+      def updated_dependency_with_own_req_unlock
+        return updated_dependency_without_unlock if transitive_dependency?
+
+        super
+      end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
@@ -109,6 +232,7 @@ module Dependabot
 
       sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def numeric_version_can_update?(requirements_to_unlock:)
+        return false if transitive_dependency? && !vulnerable?
         return false unless version_class.correct?(dependency.version)
 
         super
@@ -140,16 +264,21 @@ module Dependabot
       sig { returns(VersionFinder) }
       def version_finder
         @version_finder ||= T.let(
-          VersionFinder.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            cooldown_options: update_cooldown,
-            security_advisories: security_advisories
-          ),
+          version_finder_for(dependency_for_version_lookup),
           T.nilable(VersionFinder)
+        )
+      end
+
+      sig { params(lookup_dependency: Dependabot::Dependency).returns(VersionFinder) }
+      def version_finder_for(lookup_dependency)
+        VersionFinder.new(
+          dependency: lookup_dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          cooldown_options: update_cooldown,
+          security_advisories: security_advisories
         )
       end
 
