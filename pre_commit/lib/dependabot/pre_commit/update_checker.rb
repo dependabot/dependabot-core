@@ -85,7 +85,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def current_version
-        return super if dependency.numeric_version
+        return super if dependency.numeric_version && !Dependabot::PreCommit::Version.v_prefixed?(dependency.version)
 
         frozen_ver = version_from_comment
         return frozen_ver if frozen_ver

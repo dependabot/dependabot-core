@@ -89,7 +89,10 @@ module Dependabot
         def latest_version_tag
           @latest_version_tag ||= T.let(
             begin
-              if dependency.version.nil? || !Dependabot::PreCommit::Version.correct?(dependency.version)
+              version = dependency.version
+              if version.nil? ||
+                 Dependabot::PreCommit::Version.v_prefixed?(version) ||
+                 !Dependabot::PreCommit::Version.correct?(version)
                 return constrained_latest_version_tag || git_commit_checker.local_tag_for_latest_version
               end
 
