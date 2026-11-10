@@ -192,6 +192,64 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
+    context "with a uv.lock project that has both a uv.toml and a [tool.uv] table" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.32.4",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      end
+      # The [tool.uv] pin can never be satisfied, so uv only succeeds if it gives the uv.toml precedence
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_simple.toml") + "\n[tool.uv]\nrequired-version = \"<0.1.0\"\n"
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("uv_locks", "simple.lock")
+        )
+      end
+      let(:uv_toml) do
+        Dependabot::DependencyFile.new(
+          name: "uv.toml",
+          content: "required-version = \">=0.1.0\"\n",
+          support_file: true
+        )
+      end
+      let(:dependency_files) { [pyproject, lockfile, uv_toml] }
+
+      it "uses the uv.toml settings in place of [tool.uv]" do
+        expect(updated_files.map(&:name)).to eq(["uv.lock"])
+        expect(updated_files.first.content)
+          .to include("name = \"requests\"\nversion = \"2.32.4\"")
+      end
+
+      context "when the uv.toml is not present" do
+        let(:dependency_files) { [pyproject, lockfile] }
+
+        it "applies the [tool.uv] settings" do
+          expect { updated_files }.to raise_error(Dependabot::DependabotError, /<0\.1\.0/)
+        end
+      end
+    end
+
     describe "#pip_compile_index_urls" do
       let(:instance) do
         described_class.new(
