@@ -16,6 +16,793 @@ namespace NuGetUpdater.Core.Test.Update.FileWriters;
 
 public class FileWriterWorkerTests : TestBase
 {
+    [Theory]
+    [InlineData("")]
+    [InlineData("""<PackageVersion Include="Overridden.Package" Version="9.0.0" />""")]
+    public async Task UpdaterWorker_PreservesUnchangedDirectVersionOverride(string overriddenCentralVersion)
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" />
+                <PackageReference Include="Overridden.Package" VersionOverride="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        var centralVersions = $$"""
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                {{overriddenCentralVersion}}
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0",
+                    [("net8.0", [("Overridden.Package", "[1.0.0,2.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("Overridden.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Overridden.Package", "9.0.0", "net8.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package" && operation.NewVersion == NuGetVersion.Parse("2.0.0"));
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions.Replace("Include=\"Some.Package\" Version=\"1.0.0\"", "Include=\"Some.Package\" Version=\"2.0.0\""),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_PreservesUnchangedFloatingCentralVersion()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" />
+                <PackageReference Include="Floating.Package" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string centralVersions = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                <PackageVersion Include="Floating.Package" Version="1.*" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Floating.Package", "1.0.0", "net8.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package" && operation.NewVersion == NuGetVersion.Parse("2.0.0"));
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions.Replace("Include=\"Some.Package\" Version=\"1.0.0\"", "Include=\"Some.Package\" Version=\"2.0.0\""),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_PreservesPropertyConditionedCentralPinDuringValidation()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Base.Package" />
+                <PackageReference Include="Some.Package" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string buildProps = """
+            <Project>
+              <PropertyGroup>
+                <NestedPinEnabled>true</NestedPinEnabled>
+              </PropertyGroup>
+            </Project>
+            """;
+        const string centralVersions = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Base.Package" Version="1.0.0" />
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                <PackageVersion Include="Other.Package" Version="1.1.0" />
+                <PackageVersion Include="Nested.Package" Version="1.1.0" Condition="'$(NestedPinEnabled)' == 'true'" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Build.props", buildProps), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Base.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [("net9.0", [("Other.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net9.0", [("net9.0", [("Nested.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0", [("net9.0", [("Nested.Package", "[2.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Nested.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Nested.Package", "2.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var logger = new StringLogger();
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), logger);
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Other.Package", "1.1.0", "3.0.0", isTopLevel: false);
+
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+        Assert.Contains(logger.Messages, message => message.Contains("NU1109", StringComparison.Ordinal));
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(buildProps,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Build.props"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_PreservesEvaluatedCentralRangesForEachFramework()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Base.Package" />
+                <PackageReference Include="Some.Package" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string centralVersions = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Base.Package" Version="1.0.0" />
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                <PackageVersion Include="Other.Package" Version="1.1.0" />
+                <PackageVersion Include="Nested.Package" Version="[1.1.0]" Condition="'$(TargetFramework)' == 'net8.0'" />
+                <PackageVersion Include="Nested.Package" Version="[2.0.0,3.0.0)" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Base.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [("net9.0", [("Other.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net9.0", [("net9.0", [("Nested.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0", [("net9.0", [("Nested.Package", "[2.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Nested.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Nested.Package", "2.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Other.Package", "1.1.0", "3.0.0", isTopLevel: false);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Other.Package" && operation.NewVersion == NuGetVersion.Parse("3.0.0"));
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions.Replace("Include=\"Other.Package\" Version=\"1.1.0\"", "Include=\"Other.Package\" Version=\"3.0.0\""),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_PinsCentralTransitiveDependencyOnlyOnItsFramework()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Base.Package" />
+                <PackageReference Include="Some.Package" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string centralVersions = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Base.Package" Version="1.0.0" />
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                <PackageVersion Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Base.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [("net9.0", [("Other.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Other.Package", "1.1.0", "3.0.0", isTopLevel: false);
+
+        Assert.Null(result.Error);
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions.Replace("1.1.0", "3.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+        Assert.Contains(result.UpdateOperations, operation => operation is PinnedUpdate && operation.DependencyName == "Other.Package" && operation.NewVersion == NuGetVersion.Parse("3.0.0"));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_DoesNotPinCentralTransitiveDependencyOutsideAnUpperBound()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Base.Package" />
+                <PackageReference Include="Some.Package" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string centralVersions = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                <NoWarn>NU1605;NU1608;NU1701</NoWarn>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Base.Package" Version="1.0.0" />
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                <PackageVersion Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Base.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [("net9.0", [("Other.Package", "[1.1.0,3.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Other.Package", "1.1.0", "3.0.0", isTopLevel: false);
+
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_PreservesUnchangedCentralTransitivePinsDuringValidation()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Base.Package" />
+                <PackageReference Include="Some.Package" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string centralVersions = """
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Base.Package" Version="1.0.0" />
+                <PackageVersion Include="Some.Package" Version="1.0.0" />
+                <PackageVersion Include="Other.Package" Version="1.1.0" />
+                <PackageVersion Include="Nested.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", projectContent), ("Directory.Packages.props", centralVersions));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Base.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [("net9.0", [("Other.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net9.0", [("net9.0", [("Nested.Package", "[1.1.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0", [("net9.0", [("Nested.Package", "[2.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Nested.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Nested.Package", "2.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Other.Package", "1.1.0", "3.0.0", isTopLevel: false);
+
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(centralVersions,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "Directory.Packages.props"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_ValidatesMergedMobileGraphWithoutWorkloads()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "netstandard2.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package" && operation.NewVersion == NuGetVersion.Parse("2.0.0"));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_ValidatesMergedGraphUsingCustomFallbacks()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net10.0-windows;net9.0-windows</TargetFrameworks>
+                <DisableImplicitAssetTargetFallback>true</DisableImplicitAssetTargetFallback>
+                <AssetTargetFallback>net35</AssetTargetFallback>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35",
+                    [("net10.0-windows", [("Other.Package", "[2.0.0,)")]), ("net9.0-windows", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net35"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0").Replace("1.1.0", "3.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Other.Package" && operation.NewVersion == NuGetVersion.Parse("3.0.0"));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_DoesNotWriteMergedPeerOutsideADependencyUpperBound()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0",
+                    [("net8.0", [("Other.Package", "[2.0.0,3.0.0)")]), ("net9.0", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net8.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_ChecksDependencyBoundsOutsideTheRequestedPackagesFrameworks()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" Condition="'$(TargetFramework)' == 'net9.0'" />
+                <PackageReference Include="Limiter.Package" Version="1.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+                <PackageReference Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0", [("net9.0", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Limiter.Package", "1.0.0", "net8.0", [("net8.0", [("Other.Package", "[1.0.0,3.0.0)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net8.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_ReportsConditionalPeerUpdatedByMergedSolution()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.1.0" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0",
+                    [("net8.0", []), ("net9.0", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0").Replace("1.1.0", "3.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(2, result.UpdateOperations.Length);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package" && operation.NewVersion == NuGetVersion.Parse("2.0.0"));
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Other.Package" && operation.NewVersion == NuGetVersion.Parse("3.0.0"));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_ChecksUnconditionalPeersOutsideTheRequestedPackagesFrameworks()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" Condition="'$(TargetFramework)' == 'net9.0'" />
+                <PackageReference Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0", [("net9.0", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_FiltersConditionalReferencesForEachFramework()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Nine.Only" Version="9.0.0" Condition="'$(TargetFramework)' == 'net9.0'" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Nine.Only", "9.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package");
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_DoesNotWriteMergedPeerIncompatibleWithAnotherFramework()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0",
+                    [("net8.0", [("Other.Package", "[2.0.0,)")]), ("net9.0", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net9.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Equal(projectContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Null(result.Error);
+        Assert.Empty(result.UpdateOperations);
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_UpdatesMergedPeerCompatibleWithEveryFramework()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.1.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0",
+                    [("net8.0", [("Other.Package", "[2.0.0,)")]), ("net9.0", [("Other.Package", "[3.0.0,)")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.1.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net8.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0").Replace("1.1.0", "3.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken));
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Other.Package" && operation.NewVersion == NuGetVersion.Parse("3.0.0"));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_PrefersUnqualifiedDependenciesWithAssetTargetFallback()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0-windows</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "netstandard2.0",
+                    [("", [("Other.Package", "[1.0.0]")]), ("net461", [("Other.Package", "[1.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "netstandard2.0",
+                    [("", [("Other.Package", "[2.0.0]")]), ("net461", [("Other.Package", "[3.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "netstandard2.0"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "netstandard2.0"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package");
+        var updatedProject = await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken);
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0"), updatedProject);
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_UsesReferencedProjectsOwnFrameworkFallbacks()
+    {
+        const string consumerContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0-windows</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <ProjectReference Include="library\library.csproj" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string libraryContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0-windows</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("consumer.csproj", consumerContent),
+            ("library/library.csproj", libraryContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "consumer.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: false);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package");
+        Assert.Equal(libraryContent.Replace("1.0.0", "2.0.0"),
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "library", "library.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(consumerContent,
+            await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "consumer.csproj"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdaterWorker_UpdatesPackagesUsingRestoredFrameworkFallbacks()
+    {
+        const string projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0-windows</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Other.Package" Version="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", projectContent));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net35", [("net35", [("Other.Package", "[1.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35", [("net35", [("Other.Package", "[2.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "1.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+            ],
+            directory.DirectoryPath);
+        var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+
+        var result = await worker.RunWithErrorHandlingAsync(directory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "2.0.0", isTopLevel: true);
+
+        Assert.Null(result.Error);
+        Assert.Contains(result.UpdateOperations, operation => operation.DependencyName == "Some.Package");
+        var updatedProject = await File.ReadAllTextAsync(Path.Combine(directory.DirectoryPath, "project.csproj"), TestContext.Current.CancellationToken);
+        Assert.Equal(projectContent.Replace("1.0.0", "2.0.0"), updatedProject);
+    }
+
     [Fact]
     public async Task EndToEnd_ProjectReference()
     {

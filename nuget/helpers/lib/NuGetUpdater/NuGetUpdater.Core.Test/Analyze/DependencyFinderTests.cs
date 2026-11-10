@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 
+using NuGet.Frameworks;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
@@ -16,6 +17,42 @@ namespace NuGetUpdater.Core.Test.Analyze;
 public class DependencyFinderTests : TestBase
 {
     private static readonly string[] PackageNames = Enumerable.Range(0, 8).Select(i => $"Package.{i}").ToArray();
+
+    [Fact]
+    public async Task PreservesDifferentFallbackPoliciesForTheSameFramework()
+    {
+        using var directory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework></PropertyGroup>
+            </Project>
+            """));
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net35",
+                    [("net35", [("Other.Package", "[2.0.0]")]), ("net46", [("Other.Package", "[3.0.0]")])]),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "2.0.0", "net35"),
+                MockNuGetPackage.CreateSimplePackage("Other.Package", "3.0.0", "net35"),
+            ],
+            directory.DirectoryPath);
+        var framework = NuGetFramework.Parse("net10.0-windows");
+        var customFallback = new AssetTargetFallbackFramework(framework, [NuGetFramework.Parse("net35")]);
+        var sdkFallback = new AssetTargetFallbackFramework(framework, [NuGetFramework.Parse("net461")]);
+        using var context = new NuGetContext(directory.DirectoryPath);
+
+        var dependencies = await DependencyFinder.GetDependenciesAsync(
+            directory.DirectoryPath,
+            Path.Combine(directory.DirectoryPath, "project.csproj"),
+            [customFallback, sdkFallback],
+            ImmutableHashSet.Create("Some.Package"),
+            NuGetVersion.Parse("2.0.0"),
+            context,
+            new TestLogger(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, dependencies.Count);
+        Assert.Equal("2.0.0", Assert.Single(dependencies[customFallback], d => d.Name == "Other.Package").Version);
+        Assert.Equal("3.0.0", Assert.Single(dependencies[sdkFallback], d => d.Name == "Other.Package").Version);
+    }
 
     [Fact]
     public async Task EnrichesDependenciesConcurrentlyInOrderAndReusesCachedResultsAcrossFrameworks()
@@ -41,8 +78,8 @@ public class DependencyFinderTests : TestBase
             Assert.Equal(2, dependencies.Count);
             foreach (var framework in new[] { "net8.0", "net9.0" })
             {
-                Assert.Equal(PackageNames, dependencies[framework].Select(d => d.Name));
-                Assert.All(dependencies[framework], dependency =>
+                Assert.Equal(PackageNames, dependencies[NuGetFramework.Parse(framework)].Select(d => d.Name));
+                Assert.All(dependencies[NuGetFramework.Parse(framework)], dependency =>
                 {
                     Assert.Equal("1.0.0", dependency.Version);
                     Assert.True(dependency.IsTopLevel);
@@ -98,7 +135,7 @@ public class DependencyFinderTests : TestBase
         }
     }
 
-    private static Task<ImmutableDictionary<string, ImmutableArray<Dependency>>> FindDependenciesAsync(
+    private static Task<ImmutableDictionary<NuGetFramework, ImmutableArray<Dependency>>> FindDependenciesAsync(
         string directory,
         NuGetContext context,
         string[] frameworks,
@@ -106,7 +143,7 @@ public class DependencyFinderTests : TestBase
         DependencyFinder.GetDependenciesAsync(
             directory,
             Path.Combine(directory, "project.csproj"),
-            frameworks,
+            frameworks.Select(NuGetFramework.Parse),
             PackageNames.ToImmutableHashSet(StringComparer.OrdinalIgnoreCase),
             NuGetVersion.Parse("1.0.0"),
             context,

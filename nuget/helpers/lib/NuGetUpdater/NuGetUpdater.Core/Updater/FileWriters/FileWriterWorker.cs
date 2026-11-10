@@ -1,7 +1,10 @@
 using System.Collections.Immutable;
 
+using NuGet.Frameworks;
+using NuGet.Packaging.Core;
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
@@ -177,7 +180,7 @@ public class FileWriterWorker
         var updateOperations = new List<UpdateOperationBase>();
         foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
         {
-            var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
+            var resolvedDependencies = await SolveForFrameworkAsync(initialProjectDiscovery, initialTopLevelDependencies, desiredDependencies, targetFramework);
             if (resolvedDependencies is null)
             {
                 _logger.Warn($"Unable to solve dependency conflicts for target framework {targetFramework}.");
@@ -248,14 +251,37 @@ public class FileWriterWorker
                 var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                     ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
                     : rerunTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
-                var resolvedDependenciesInThisproject = await _dependencySolver.SolveAsync(rerunTopLevelDependencies, rerunDesiredDependencies, targetFramework);
-                if (resolvedDependenciesInThisproject is null)
+                var resolvedDependenciesByFramework = ImmutableDictionary.CreateBuilder<string, ImmutableArray<Dependency>>();
+                var projectTargetFrameworks = candidateDependencyToUpdate.TargetFrameworks ?? rerunProjectDiscovery.TargetFrameworks;
+                foreach (var projectTargetFramework in projectTargetFrameworks)
                 {
-                    _logger.Warn($"  Unable to solve dependency conflicts for {projectRelativePath}/{targetFramework}.");
+                    var resolvedDependenciesInThisProject = await SolveForFrameworkAsync(
+                        rerunProjectDiscovery, rerunTopLevelDependencies, rerunDesiredDependencies, projectTargetFramework);
+                    if (resolvedDependenciesInThisProject is null ||
+                        !resolvedDependenciesInThisProject.Value.Any(d =>
+                            d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) &&
+                            d.Version is not null && NuGetVersion.Parse(d.Version) == newDependencyVersion))
+                    {
+                        _logger.Warn($"  Unable to solve dependency conflicts for {projectRelativePath}/{projectTargetFramework}.");
+                        resolvedDependenciesByFramework.Clear();
+                        break;
+                    }
+
+                    resolvedDependenciesByFramework[projectTargetFramework] = resolvedDependenciesInThisProject.Value;
+                }
+
+                if (resolvedDependenciesByFramework.Count == 0)
+                {
                     continue;
                 }
 
-                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery!, resolvedDependenciesInThisproject.Value);
+                var resolvedProjectDependencies = resolvedDependenciesByFramework.ToImmutable().GetDependencies();
+                if (!await IsMergedSolutionCompatibleAsync(rerunProjectDiscovery, repoContentsPath.FullName, projectFullPath, resolvedProjectDependencies))
+                {
+                    continue;
+                }
+
+                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery!, resolvedProjectDependencies);
                 if (updatedFiles.Length == 0)
                 {
                     _logger.Info("  Files were unable to be updated.");
@@ -302,10 +328,18 @@ public class FileWriterWorker
                 continue;
             }
 
+            var finalResolvedDependencies = resolvedDependencies.Value
+                .Concat(finalProjectDiscovery.Dependencies.Where(d => d.IsTopLevel))
+                .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(d => d with
+                {
+                    Version = finalProjectDiscovery.Dependencies.FirstOrDefault(final => final.Name.Equals(d.Name, StringComparison.OrdinalIgnoreCase))?.Version ?? d.Version,
+                })
+                .ToImmutableArray();
             var computedUpdateOperations = PackageReferenceUpdater.ComputeUpdateOperations(
                 initialTopLevelDependencies,
                 desiredDependencies,
-                resolvedDependencies.Value,
+                finalResolvedDependencies,
                 finalProjectDiscovery.DependencyGraph,
                 _logger);
             var filteredUpdateOperations = computedUpdateOperations
@@ -324,6 +358,129 @@ public class FileWriterWorker
         }
 
         return [.. updateOperations];
+    }
+
+    private Task<ImmutableArray<Dependency>?> SolveForFrameworkAsync(
+        ProjectDiscoveryResult project,
+        ImmutableArray<Dependency> existingDependencies,
+        ImmutableArray<Dependency> desiredDependencies,
+        string targetFramework)
+    {
+        var framework = project.GetFramework(targetFramework);
+        return _dependencySolver.SolveAsync(
+            FilterDependenciesForFramework(project, existingDependencies, framework),
+            FilterDependenciesForFramework(project, desiredDependencies, framework),
+            framework);
+    }
+
+    private static ImmutableArray<Dependency> FilterDependenciesForFramework(
+        ProjectDiscoveryResult project,
+        ImmutableArray<Dependency> dependencies,
+        NuGetFramework framework)
+    {
+        bool IsApplicable(Dependency dependency)
+        {
+            var frameworks = dependency.TargetFrameworks ??
+                project.Dependencies.FirstOrDefault(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase))?.TargetFrameworks;
+            return frameworks is null ||
+                frameworks.Value.Any(tfm => NuGetFramework.Comparer.Equals(NuGetFramework.Parse(tfm), framework));
+        }
+
+        return dependencies.Where(IsApplicable).ToImmutableArray();
+    }
+
+    private async Task<bool> IsMergedSolutionCompatibleAsync(
+        ProjectDiscoveryResult project,
+        string repoRoot,
+        string projectPath,
+        ImmutableArray<Dependency> mergedDependencies)
+    {
+        if (project.TargetFrameworks.Length <= 1)
+        {
+            return true;
+        }
+
+        var usesTransitivePinning = project.PackageManagementKind == PackageManagementKind.CentralPackageManagementWithTransitivePinning;
+        using var context = new NuGetContext(Path.GetDirectoryName(projectPath));
+        foreach (var dependency in mergedDependencies)
+        {
+            var originalDependency = project.Dependencies.FirstOrDefault(d =>
+                (d.IsTopLevel || usesTransitivePinning) && d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase));
+            if (originalDependency?.Version == dependency.Version)
+            {
+                continue;
+            }
+
+            var affectedFrameworks = (originalDependency?.TargetFrameworks ?? project.TargetFrameworks)
+                .Select(project.GetFramework)
+                .ToImmutableArray();
+            if (!NuGetVersion.TryParse(dependency.Version, out var version) ||
+                !await CompatibilityChecker.CheckAsync(new PackageIdentity(dependency.Name, version), affectedFrameworks, context, _logger, CancellationToken.None))
+            {
+                _logger.Warn($"  Merged dependency {dependency.Name}/{dependency.Version} is incompatible with the project's target frameworks.");
+                return false;
+            }
+        }
+
+        var topLevelDependencies = project.Dependencies.Where(d => d.IsTopLevel).ToImmutableArray();
+        var topLevelNames = topLevelDependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var candidateReferences = topLevelDependencies
+            .Select(d => d with
+            {
+                Version = mergedDependencies.FirstOrDefault(merged => merged.Name.Equals(d.Name, StringComparison.OrdinalIgnoreCase))?.Version ?? d.Version,
+            })
+            .Concat(mergedDependencies.Where(d => !topLevelNames.Contains(d.Name))
+                .Select(d => d with
+                {
+                    TargetFrameworks = usesTransitivePinning
+                        ? project.Dependencies.FirstOrDefault(original => original.Name.Equals(d.Name, StringComparison.OrdinalIgnoreCase))?.TargetFrameworks ?? project.TargetFrameworks
+                        : project.TargetFrameworks,
+                }))
+            .ToImmutableArray();
+        foreach (var targetFramework in project.TargetFrameworks)
+        {
+            var framework = project.GetFramework(targetFramework);
+            var references = FilterDependenciesForFramework(project, candidateReferences, framework);
+            if (references.All(d => topLevelDependencies.Any(original =>
+                original.Name.Equals(d.Name, StringComparison.OrdinalIgnoreCase) && original.Version == d.Version)))
+            {
+                continue;
+            }
+
+            var packageReferences = usesTransitivePinning
+                ? references.Where(d => topLevelNames.Contains(d.Name)).ToImmutableArray()
+                : references;
+            ImmutableDictionary<string, string>? centralPackageVersions = null;
+            ImmutableDictionary<string, string>? versionOverrides = null;
+            if (usesTransitivePinning)
+            {
+                centralPackageVersions = project.GetCentralPackageVersions(targetFramework);
+                versionOverrides = project.GetPackageReferenceVersionOverrides(targetFramework);
+                if (centralPackageVersions is null || versionOverrides is null)
+                {
+                    _logger.Warn($"  Unable to validate central package versions for {targetFramework} without restored version information.");
+                    return false;
+                }
+
+                var changedVersions = mergedDependencies
+                    .Where(d => NuGetVersion.TryParse(d.Version, out var newVersion) &&
+                        NuGetVersion.TryParse(project.Dependencies.FirstOrDefault(original => original.Name.Equals(d.Name, StringComparison.OrdinalIgnoreCase))?.Version, out var originalVersion) &&
+                        newVersion != originalVersion)
+                    .Select(d => KeyValuePair.Create(d.Name, d.Version!))
+                    .ToArray();
+                centralPackageVersions = centralPackageVersions.SetItems(changedVersions.Where(d => !versionOverrides.ContainsKey(d.Key)));
+                versionOverrides = versionOverrides.SetItems(changedVersions.Where(d => versionOverrides.ContainsKey(d.Key)));
+            }
+
+            if (!await MSBuildHelper.IsPackageGraphCompatibleAsync(repoRoot, projectPath, framework, packageReferences, _logger,
+                centralPackageVersions: centralPackageVersions,
+                versionOverrides: versionOverrides))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)

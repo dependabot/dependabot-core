@@ -137,10 +137,13 @@ internal static class CompatibilityChecker
             return true;
         }
 
+        // The matrix uses plain frameworks; fallback wrappers have different hash codes.
         var incompatibleFrameworks = projectFrameworks.Where(projectFramework =>
-            !compatibleFrameworks.Contains(projectFramework)
+            !compatibleFrameworks.Contains(new NuGetFramework(projectFramework))
             && !packageFrameworks.Any(packageFramework =>
-                DefaultCompatibilityProvider.Instance.IsCompatible(projectFramework, packageFramework))).ToArray();
+                NuGetFrameworkUtility.IsCompatibleWithFallbackCheck(
+                    projectFramework is AssetTargetFallbackFramework assetFallback ? assetFallback.AsFallbackFramework() : projectFramework,
+                    packageFramework))).ToArray();
         if (incompatibleFrameworks.Length > 0)
         {
             logger.Info($"The package {package} is not compatible. Incompatible project frameworks: {string.Join(", ", incompatibleFrameworks.Select(f => f.GetShortFolderName()))}");
