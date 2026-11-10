@@ -245,7 +245,9 @@ RSpec.describe Dependabot::Uv::FileUpdater do
         let(:dependency_files) { [pyproject, lockfile] }
 
         it "applies the [tool.uv] settings" do
-          expect { updated_files }.to raise_error(Dependabot::DependabotError, /<0\.1\.0/)
+          expect { updated_files }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+            expect(error.detected_version).to eq("<0.1.0")
+          end
         end
       end
     end
