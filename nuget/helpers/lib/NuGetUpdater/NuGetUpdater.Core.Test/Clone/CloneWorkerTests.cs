@@ -110,7 +110,7 @@ public class CloneWorkerTests
         await TestCloneAsync(
             provider: "github",
             repoMoniker: "test/repo",
-            testGitCommandHandler: new TestGitCommandHandlerWithOutputs("Authentication failed for repo", ""),
+            testGitCommandHandler: new TestGitCommandHandlerWithOutputs(GitCommandExitCodes.Failure, "Authentication failed for repo", "", new TestLogger()),
             expectedApiMessages:
             [
                 new JobRepoNotFound("Authentication failed for repo"),
@@ -126,7 +126,7 @@ public class CloneWorkerTests
         await TestCloneAsync(
             provider: "github",
             repoMoniker: "test/repo",
-            testGitCommandHandler: new TestGitCommandHandlerWithOutputs("", "fatal: could not read Username for 'https://github.com': No such device or address"),
+            testGitCommandHandler: new TestGitCommandHandlerWithOutputs(GitCommandExitCodes.Failure, "", "fatal: could not read Username for 'https://github.com': No such device or address", new TestLogger()),
             expectedApiMessages:
             [
                 new JobRepoNotFound("fatal: could not read Username for 'https://github.com': No such device or address"),
@@ -140,20 +140,20 @@ public class CloneWorkerTests
     public async Task JobFileParseErrorIsReported_InvalidJson()
     {
         // arrange
-        var testApiHandler = new TestApiHandler();
-        var testGitCommandHandler = new TestGitCommandHandler();
-        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
-        using var testDirectory = new TemporaryDirectory();
-        var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+        TestApiHandler testApiHandler = new();
+        TestGitCommandHandler testGitCommandHandler = new();
+        CloneWorker cloneWorker = new("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
+        using TemporaryDirectory testDirectory = new();
+        string jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
         await File.WriteAllTextAsync(jobFilePath, "not json", TestContext.Current.CancellationToken);
 
         // act
-        var result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
+        int result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
 
         // assert
         Assert.Equal(1, result);
-        var expectedParseErrorObject = testApiHandler.ReceivedMessages.First(m => m.Type == typeof(UnknownError));
-        var unknownError = (UnknownError)expectedParseErrorObject.Object;
+        (Type Type, object Object) expectedParseErrorObject = testApiHandler.ReceivedMessages.First(m => m.Type == typeof(UnknownError));
+        UnknownError unknownError = (UnknownError)expectedParseErrorObject.Object;
         Assert.Equal("JsonException", unknownError.Details["error-class"]);
     }
 
@@ -161,11 +161,11 @@ public class CloneWorkerTests
     public async Task JobFileParseErrorIsReported_BadRequirement()
     {
         // arrange
-        var testApiHandler = new TestApiHandler();
-        var testGitCommandHandler = new TestGitCommandHandler();
-        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
-        using var testDirectory = new TemporaryDirectory();
-        var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+        TestApiHandler testApiHandler = new();
+        TestGitCommandHandler testGitCommandHandler = new();
+        CloneWorker cloneWorker = new("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
+        using TemporaryDirectory testDirectory = new();
+        string jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
 
         // write a job file with a valid shape, but invalid requirement
         await File.WriteAllTextAsync(jobFilePath, """
@@ -186,36 +186,56 @@ public class CloneWorkerTests
             """, TestContext.Current.CancellationToken);
 
         // act
-        var result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
+        int result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
 
         // assert
         Assert.Equal(1, result);
-        var expectedParseErrorObject = testApiHandler.ReceivedMessages.Single(m => m.Type == typeof(BadRequirement));
-        var badRequirement = (BadRequirement)expectedParseErrorObject.Object;
+        (Type Type, object Object) expectedParseErrorObject = testApiHandler.ReceivedMessages.Single(m => m.Type == typeof(BadRequirement));
+        BadRequirement badRequirement = (BadRequirement)expectedParseErrorObject.Object;
         Assert.Equal("not a valid requirement", badRequirement.Details["message"]);
+    }
+
+    [Fact]
+    public async Task FailureToCloneGeneratesTheExpectedApiMessagesFromGitCommandOutput()
+    {
+        await TestCloneAsync(
+            provider: "github",
+            repoMoniker: "test/repo",
+            testGitCommandHandler: new TestGitCommandHandlerWithOutputs(GitCommandExitCodes.Failure, "StdOut Message", "StdErr Message", new TestLogger()),
+            expectedApiMessages:
+            [
+                new UnknownError(new InvalidOperationException($"Git command failed with exit code {GitCommandExitCodes.Failure}."), "TEST-JOB-ID"),
+                new MarkAsProcessed("unknown"),
+            ],
+            expectedExitCode: 1
+        );
     }
 
     private class TestGitCommandHandlerWithOutputs : TestGitCommandHandler
     {
+        private readonly int _exitCode;
         private readonly string _stdout;
         private readonly string _stderr;
+        private readonly ILogger _logger;
 
-        public TestGitCommandHandlerWithOutputs(string stdout, string stderr)
+        public TestGitCommandHandlerWithOutputs(int exitCode, string stdout, string stderr, ILogger logger)
         {
+            _exitCode = exitCode;
             _stdout = stdout;
             _stderr = stderr;
+            _logger = logger;
         }
 
         public override async Task RunGitCommandAsync(IReadOnlyCollection<string> args, string? workingDirectory = null)
         {
             await base.RunGitCommandAsync(args, workingDirectory);
-            ShellGitCommandHandler.HandleErrorsFromOutput(_stdout, _stderr);
+            ShellGitCommandHandler.HandleErrorsFromOutput(_exitCode, _stdout, _stderr, _logger);
         }
     }
 
     private static void TestCommands(string provider, string repoMoniker, (string[] Args, string? WorkingDirectory)[] expectedCommands, string? branch = null, string? commit = null, string? hostname = null)
     {
-        var job = new Job()
+        Job job = new()
         {
             Source = new()
             {
@@ -226,19 +246,19 @@ public class CloneWorkerTests
                 Commit = commit,
             }
         };
-        var actualCommands = CloneWorker.GetAllCommandArgs(job, TestRepoPath);
+        (string[] Args, string? WorkingDirectory)[] actualCommands = CloneWorker.GetAllCommandArgs(job, TestRepoPath);
         VerifyCommands(expectedCommands, actualCommands);
     }
 
     private static async Task TestCloneAsync(string provider, string repoMoniker, object[] expectedApiMessages, string? branch = null, string? commit = null, TestGitCommandHandler? testGitCommandHandler = null, int expectedExitCode = 0)
     {
         // arrange
-        var testApiHandler = new TestApiHandler();
+        TestApiHandler testApiHandler = new();
         testGitCommandHandler ??= new TestGitCommandHandler();
-        var worker = new CloneWorker("TEST-JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
+        CloneWorker worker = new("TEST-JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
 
         // act
-        var job = new Job()
+        Job job = new()
         {
             Source = new()
             {
@@ -248,30 +268,30 @@ public class CloneWorkerTests
                 Commit = commit,
             }
         };
-        var exitCode = await worker.RunAsync(job, TestRepoPath);
+        int exitCode = await worker.RunAsync(job, TestRepoPath);
 
         // assert
         Assert.Equal(expectedExitCode, exitCode);
 
-        var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
+        (Type Type, object Object)[] actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
         if (actualApiMessages.Length > expectedApiMessages.Length)
         {
-            var extraApiMessages = actualApiMessages.Skip(expectedApiMessages.Length).Select(m => EndToEndTests.SerializeObjectAndType(m.Object)).ToArray();
+            string[] extraApiMessages = actualApiMessages.Skip(expectedApiMessages.Length).Select(m => EndToEndTests.SerializeObjectAndType(m.Object)).ToArray();
             Assert.Fail($"Expected {expectedApiMessages.Length} API messages, but got {extraApiMessages.Length} extra:\n\t{string.Join("\n\t", extraApiMessages)}");
         }
         if (expectedApiMessages.Length > actualApiMessages.Length)
         {
-            var missingApiMessages = expectedApiMessages.Skip(actualApiMessages.Length).Select(m => EndToEndTests.SerializeObjectAndType(m)).ToArray();
+            string[] missingApiMessages = expectedApiMessages.Skip(actualApiMessages.Length).Select(m => EndToEndTests.SerializeObjectAndType(m)).ToArray();
             Assert.Fail($"Expected {expectedApiMessages.Length} API messages, but only got {actualApiMessages.Length}; missing:\n\t{string.Join("\n\t", missingApiMessages)}");
         }
     }
 
     private static void VerifyCommands((string[] Args, string? WorkingDirectory)[] expected, (string[] Args, string? WorkingDirectory)[] actual)
     {
-        var expectedCommands = StringifyCommands(expected);
-        var actualCommands = StringifyCommands(actual);
+        string[] expectedCommands = StringifyCommands(expected);
+        string[] actualCommands = StringifyCommands(actual);
         Assert.True(expectedCommands.Length == actualCommands.Length, $"Expected {expectedCommands.Length} messages:\n\t{string.Join("\n\t", expectedCommands)}\ngot {actualCommands.Length}:\n\t{string.Join("\n\t", actualCommands)}");
-        foreach (var (expectedCommand, actualCommand) in expectedCommands.Zip(actualCommands))
+        foreach ((string? expectedCommand, string? actualCommand) in expectedCommands.Zip(actualCommands))
         {
             Assert.Equal(expectedCommand, actualCommand);
         }
@@ -280,4 +300,10 @@ public class CloneWorkerTests
     private static string[] StringifyCommands((string[] Args, string? WorkingDirectory)[] commandArgs) => commandArgs.Select(a => StringifyCommand(a.Args, a.WorkingDirectory)).ToArray();
     private static string StringifyCommand(string[] args, string? workingDirectory) => $"args=[{string.Join(", ", args)}], workingDirectory={ReplaceWorkingDirectory(workingDirectory)}";
     private static string ReplaceWorkingDirectory(string? arg) => arg ?? "NULL";
+
+    private static class GitCommandExitCodes
+    {
+        public const int Success = 0;
+        public const int Failure = 1;
+    }
 }
