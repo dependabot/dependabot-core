@@ -98,6 +98,16 @@ RSpec.describe Dependabot::Composer::ManifestDocument do
 
       it { expect(document.platform_extensions).to eq({}) }
     end
+
+    context "with a mixed-case extension name" do
+      let(:data) { { "config" => { "platform" => { "Ext-MongoDB" => "2.4.0" } } } }
+
+      it "matches it case-insensitively, like Composer" do
+        expect(document.platform_extensions).to eq("ext-mongodb" => "2.4.0")
+        expect(document.platform_extension_pinned?("ext-mongodb")).to be(true)
+        expect(document.platform_extension_pinned?("Ext-MongoDB")).to be(true)
+      end
+    end
   end
 
   describe "#repositories" do

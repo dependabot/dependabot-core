@@ -152,7 +152,6 @@ module Dependabot
         match&.named_captures&.fetch("version", nil)
       end
 
-      # Capture the platform PHP version from composer.json
       sig do
         params(message: String, regex: Regexp).returns(T::Array[T::Hash[Symbol, String]])
       end
@@ -163,6 +162,7 @@ module Dependabot
         end
       end
 
+      # Capture the platform PHP version from composer.json
       sig { params(parsed_composer_json: ManifestDocument).returns(T.nilable(String)) }
       def self.capture_platform_php(parsed_composer_json)
         capture_platform(parsed_composer_json, Language::NAME)

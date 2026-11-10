@@ -305,6 +305,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "mongodb/mongodb" }
       let(:dependency_version) { "2.4.2" }
       let(:string_req) { "^2.4.2" }
+      let(:platform_config) { { "ext-mongodb" => "2.4.0" } }
       let(:dependency_files) do
         [
           Dependabot::DependencyFile.new(
@@ -316,7 +317,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
                 "mongodb/mongodb" => "^2.4.2",
                 "vendor/needs-ext" => "^1.0"
               },
-              "config" => { "platform" => { "ext-mongodb" => "2.4.0" } }
+              "config" => { "platform" => platform_config }
             )
           ),
           Dependabot::DependencyFile.new(
@@ -324,7 +325,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
             content: {
               "packages" => [],
               "packages-dev" => [],
-              "platform-overrides" => { "ext-mongodb" => "2.4.0" }
+              "platform-overrides" => platform_config
             }.to_json
           )
         ]
@@ -362,6 +363,16 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
           expect(written_manifests.length).to eq(1)
           expect(written_manifests.map { |json| json.dig("config", "platform", "ext-mongodb") })
             .to all(eq("2.4.0"))
+        end
+
+        context "when the pinned extension name uses mixed case" do
+          let(:platform_config) { { "ext-MongoDB" => "2.4.0" } }
+
+          it "does not add a lowercase entry that overrides the pin" do
+            expect(resolver.latest_resolvable_version).to be_nil
+            expect(written_manifests.length).to eq(1)
+            expect(written_manifests.first.dig("config", "platform")).to eq("ext-MongoDB" => "2.4.0", "php" => "8.1")
+          end
         end
       end
 
