@@ -6,6 +6,7 @@ require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/python/package/package_details_fetcher"
+require "dependabot/python/package/registry_reachability"
 
 RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
   subject(:fetcher) do
@@ -75,6 +76,10 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       )
     ]
   end
+
+  before { Dependabot::Python::Package::RegistryReachability.clear_cache! }
+
+  after { Dependabot::Python::Package::RegistryReachability.clear_cache! }
 
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch }
@@ -188,6 +193,11 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
           expect(
             a_request(:get, registry_url).with(headers: { "Accept" => "text/html" })
           ).not_to have_been_made
+        end
+
+        it "does not ask the index again: only PyPI is told apart from a one-off failure" do
+          expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut)
+          expect(a_request(:head, /registry\.example\.com/)).not_to have_been_made
         end
       end
 
@@ -304,14 +314,36 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       before do
         stub_request(:get, json_url).to_raise(error)
         stub_request(:get, registry_url).to_raise(error)
+        stub_request(:head, "https://pypi.org/simple/").to_raise(error)
       end
 
-      it "reports PyPI as the source that timed out, after trying the HTML index too" do
+      it "reports PyPI as the source that timed out, after trying the HTML index too and asking PyPI again" do
         expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut) do |raised|
           expect(raised.source).to eq("https://pypi.org/simple/")
         end
         expect(a_request(:get, json_url)).to have_been_made.at_least_once
         expect(a_request(:get, registry_url)).to have_been_made.at_least_once
+        expect(a_request(:head, "https://pypi.org/simple/")).to have_been_made.once
+      end
+
+      it "says in the log what to check, without claiming to know where the job runs" do
+        allow(Dependabot.logger).to receive(:warn)
+
+        expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut)
+
+        expect(Dependabot.logger).to have_received(:warn).with(
+          a_string_including("pypi.org", "files.pythonhosted.org", "replaces-base", "EOFError")
+        )
+      end
+
+      # The connection can be closed for a moment's trouble too. Only a PyPI that is still unreachable when asked
+      # again is reported as unreachable; anything else is raised as before this was classified at all.
+      context "when PyPI answers when it is asked again" do
+        before { stub_request(:head, "https://pypi.org/simple/").to_return(status: 200) }
+
+        it "raises the original error instead of blaming the network" do
+          expect { fetch }.to raise_error(Excon::Error::Socket)
+        end
       end
 
       context "when only the JSON API fails" do
@@ -331,6 +363,7 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
     context "when PyPI cannot be reached because the request times out" do
       before do
         stub_request(:get, json_url).to_raise(Excon::Error::Timeout.new("read timeout reached"))
+        stub_request(:head, "https://pypi.org/simple/").to_raise(Excon::Error::Timeout.new("read timeout reached"))
       end
 
       # RegistryClient fails fast on a host that timed out, so the HTML index is not requested
@@ -340,6 +373,14 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         end
         expect(a_request(:get, json_url)).to have_been_made.at_least_once
         expect(a_request(:get, registry_url)).not_to have_been_made
+      end
+
+      context "when PyPI answers when it is asked again" do
+        before { stub_request(:head, "https://pypi.org/simple/").to_return(status: 200) }
+
+        it "raises the original error instead of blaming the network" do
+          expect { fetch }.to raise_error(Excon::Error::Timeout)
+        end
       end
     end
 

@@ -13,6 +13,7 @@ require "dependabot/python/package/package_registry_finder"
 require "dependabot/python/package/simple_api_parser"
 require "dependabot/python/package/distribution"
 require "dependabot/python/package/pypi_json_parser"
+require "dependabot/python/package/registry_reachability"
 
 # Stores metadata for a package, including all its available versions
 module Dependabot
@@ -67,8 +68,9 @@ module Dependabot
                              .select { |index_url| validate_index(index_url) } # Ensure only valid URLs
                              .flat_map do |index_url|
             fetch_from_registry(index_url) || [] # Ensure it always returns an array
-          rescue Excon::Error::Timeout, Excon::Error::Socket
-            # PyPI included: a runner whose network cannot reach it fails every update the same way
+          rescue Excon::Error::Timeout, Excon::Error::Socket => e
+            raise e if main_pypi_index?(index_url) && !pypi_unreachable?(index_url, e)
+
             raise PrivateSourceTimedOut, sanitized_url(index_url)
           rescue URI::InvalidURIError
             raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
@@ -468,6 +470,21 @@ module Dependabot
         sig { params(index_url: String).returns(String) }
         def sanitized_url(index_url)
           index_url.sub(%r{//([^/@]+)@}, "//redacted@")
+        end
+
+        # A network that cannot reach PyPI fails every update the same way, so that is reported as an unreachable
+        # source. A single failed request is not enough to say so: the proxy closes a connection it could not complete
+        # for a moment's trouble too. Only a PyPI that still cannot be reached when asked again is reported as such.
+        sig { params(index_url: String, error: StandardError).returns(T::Boolean) }
+        def pypi_unreachable?(index_url, error)
+          return false if RegistryReachability.reachable?(index_url)
+
+          Dependabot.logger.warn(
+            "#{URI.parse(index_url).host} could not be reached from the network this job runs on " \
+            "(#{error.class}: #{error.message}) and still cannot after a second attempt. Check that the network " \
+            "allows pypi.org and files.pythonhosted.org, or point the project at a mirror with `replaces-base: true`."
+          )
+          true
         end
 
         sig { params(index_url: String).returns(T::Boolean) }
