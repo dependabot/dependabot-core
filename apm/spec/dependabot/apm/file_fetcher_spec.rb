@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Apm::FileFetcher do
 
   before do
     allow(file_fetcher_instance)
-      .to receive_messages(commit: "sha", allow_beta_ecosystems?: true)
+      .to receive_messages(commit: "sha")
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -141,17 +141,6 @@ RSpec.describe Dependabot::Apm::FileFetcher do
 
     it "reports the apm version from the lockfile" do
       expect(ecosystem_versions).to eq(package_managers: { "apm" => "0.4.2" })
-    end
-  end
-
-  context "when the beta ecosystems flag is disabled" do
-    before do
-      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-    end
-
-    it "raises a DependencyFileNotFound error pointing at enable-beta-ecosystems" do
-      expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound, /enable-beta-ecosystems: true/)
     end
   end
 end
