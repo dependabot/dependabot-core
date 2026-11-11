@@ -7,6 +7,7 @@ gem "dependabot-bazel", path: "bazel"
 gem "dependabot-bun", path: "bun"
 gem "dependabot-bundler", path: "bundler"
 gem "dependabot-cargo", path: "cargo"
+gem "dependabot-clojure", path: "clojure"
 gem "dependabot-common", path: "common"
 gem "dependabot-composer", path: "composer"
 gem "dependabot-conda", path: "conda"
@@ -37,7 +38,6 @@ gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
 gem "dependabot-uv", path: "uv"
 gem "dependabot-vcpkg", path: "vcpkg"
-gem "dependabot-clojure", path: "clojure"
 
 # Sorbet
 gem "sorbet", "~> 0.6", group: :development

@@ -25,6 +25,7 @@ class RakeHelpers
     bun/dependabot-bun.gemspec
     bundler/dependabot-bundler.gemspec
     cargo/dependabot-cargo.gemspec
+    clojure/dependabot-clojure.gemspec
     composer/dependabot-composer.gemspec
     conda/dependabot-conda.gemspec
     deno/dependabot-deno.gemspec

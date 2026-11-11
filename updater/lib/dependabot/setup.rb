@@ -31,6 +31,7 @@ Sentry.init do |config|
     common|
     bundler|
     cargo|
+    clojure|
     composer|
     conda|
     deno|
@@ -60,7 +61,6 @@ Sentry.init do |config|
     opentofu|
     uv|
     vcpkg|
-    clojure|
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
@@ -77,6 +77,7 @@ require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
+require "dependabot/clojure"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
@@ -107,4 +108,3 @@ require "dependabot/terraform"
 require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"
-require "dependabot/clojure"
