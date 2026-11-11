@@ -1,15 +1,22 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 
+require "dependabot/file_fetchers"
+require "dependabot/file_fetchers/base"
 require "dependabot/clojure/constants"
-require "dependabot/clojure/package_manager"
 
 module Dependabot
   module Clojure
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
+
+      BETA_DISABLED_MESSAGE = T.let(
+        "clojure is a beta ecosystem. Set `enable-beta-ecosystems: true` in your " \
+        "dependabot.yml so Dependabot fetches and updates #{LEIN_FILE_NAME} and #{DEPS_FILE_NAME}.".freeze,
+        String
+      )
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -21,26 +28,16 @@ module Dependabot
         "Repo must contain a #{LEIN_FILE_NAME} or a #{DEPS_FILE_NAME} file."
       end
 
-      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = [lein_files, deps_files].compact
+        # Tell the user how to opt in, rather than claim the manifest is missing.
+        raise Dependabot::DependencyFileNotFound.new(nil, BETA_DISABLED_MESSAGE) unless allow_beta_ecosystems?
 
+        fetched_files = [LEIN_FILE_NAME, DEPS_FILE_NAME].filter_map { |name| fetch_file_if_present(name) }
         return fetched_files if fetched_files.any?
 
-        raise Dependabot::DependencyFileNotFound.new(
-          nil,
-          self.class.required_files_message
-        )
+        raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
       end
-
-      private
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def lein_files = fetch_file_if_present(LEIN_FILE_NAME)
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def deps_files = fetch_file_if_present(DEPS_FILE_NAME)
-
     end
   end
 end

@@ -5,8 +5,9 @@ Gem::Specification.new do |spec|
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-clojure"
-  spec.summary      = "Provides Dependabot support for Clojure (lein and deps)"
-  spec.description  = "Dependabot-clojure provides support for bumping Clojure (lein and deps) crates via Dependabot. " \
+  spec.summary      = "Provides Dependabot support for Clojure"
+  spec.description  = "Dependabot-Clojure provides support for bumping Clojure dependencies (Leiningen and deps.edn) " \
+                      "via Dependabot. " \
                       "If you want support for multiple package managers, you probably want the meta-gem " \
                       "dependabot-omnibus."
 
@@ -28,6 +29,7 @@ Gem::Specification.new do |spec|
   spec.files        = Dir["lib/**/*"]
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
+  spec.add_dependency "dependabot-maven", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list
