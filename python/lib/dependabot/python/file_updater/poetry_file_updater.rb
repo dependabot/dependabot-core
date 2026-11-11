@@ -1,8 +1,7 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/shared_helpers"
@@ -12,6 +11,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/file_parser/pyproject_document"
+require "dependabot/python/file_parser/poetry_lock"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
@@ -20,18 +20,7 @@ require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Python
-    PoetryPyprojectHashResult = T.type_alias do
-      T.nilable(
-        T.any(
-          T::Hash[String, T.untyped],
-          String,
-          T::Array[T::Hash[String, T.untyped]]
-        )
-      )
-    end
-
     class FileUpdater
-      # rubocop:disable-next Metrics/ClassLength
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
         require_relative "poetry_file_updater/pep621_updater"
@@ -200,7 +189,8 @@ module Dependabot
             begin
               new_lockfile = updated_lockfile_content_for(prepared_pyproject)
 
-              original_locked_python = TomlRB.parse(T.must(lockfile).content)["metadata"]["python-versions"]
+              original_locked_python =
+                FileParser::PoetryLock.from_content(T.must(T.must(lockfile).content)).python_versions
 
               new_lockfile.gsub!(/\[metadata\](?:\r?\n).*python-versions[^\r\n]+(?:\r?\n)/m) do |match|
                 # Detect the line ending style from the match (CRLF or LF)
@@ -208,11 +198,10 @@ module Dependabot
                 match.gsub(/(["']).*\1(?:\r?\n)\Z/, '\1' + original_locked_python + '\1' + line_ending)
               end
 
-              tmp_hash =
-                TomlRB.parse(new_lockfile)["metadata"]["content-hash"]
-              correct_hash = pyproject_hash_for(updated_pyproject_content.to_s)
+              tmp_hash = FileParser::PoetryLock.from_content(new_lockfile).content_hash
+              correct_hash = pyproject_hash_for(T.must(updated_pyproject_content))
 
-              new_lockfile.gsub(tmp_hash, T.must(correct_hash).to_s)
+              new_lockfile.gsub(tmp_hash, correct_hash)
             end
         end
 
@@ -237,42 +226,53 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_dependencies_being_updated(pyproject_content)
-          pyproject_object = TomlRB.parse(pyproject_content)
+          document = FileParser::PyprojectDocument.from_content(pyproject_content)
 
-          poetry_object = pyproject_object.dig("tool", "poetry")
-
-          if poetry_object
-            dependencies.each do |dep|
-              # Skip Git dependencies - they use tags/refs, not versions
-              next if git_dependency_being_updated?(dep)
-
-              if dep.requirements.find { |r| r.file == pyproject&.name }
-                lock_declaration_to_new_version!(poetry_object, dep)
-              else
-                create_declaration_at_new_version!(poetry_object, dep)
-              end
-            end
-          elsif FileParser::PyprojectDocument.from_content(pyproject_content).poetry_build_backend?
-            pin_pep621_subdependencies!(pyproject_object)
+          if document.poetry?
+            pin_updated_poetry_dependencies(document)
+          elsif document.poetry_build_backend?
+            pin_pep621_subdependencies!(document)
           end
 
-          # Freeze PEP 621 project.dependencies and project.optional-dependencies
-          PyprojectPreparer.freeze_pep621_deps!(pyproject_object, dependencies) do |dep|
-            !git_dependency_being_updated?(dep)
-          end
+          versions = T.let({}, T::Hash[String, String])
+          dependencies.each do |dep|
+            next if git_dependency_being_updated?(dep)
 
-          TomlRB.dump(pyproject_object)
+            version = dep.version
+            versions[NameNormaliser.normalise(dep.name)] = version if version
+          end
+          document.freeze_pep621_versions(versions)
+
+          document.to_toml
         end
 
-        # freeze_pep621_deps! skips dependency groups and a sub-dependency has no declaration, so without
+        sig { params(document: FileParser::PyprojectDocument).void }
+        def pin_updated_poetry_dependencies(document)
+          dependencies.each do |dep|
+            next if git_dependency_being_updated?(dep)
+
+            pinned_version = exact_poetry_requirement(dep.version)
+            next unless pinned_version
+
+            if dep.requirements.find { |r| r.file == pyproject&.name }
+              document.pin_poetry_requirement(name: dep.name, requirement: pinned_version)
+            else
+              document.add_poetry_dependency(
+                name: dep.name, requirement: pinned_version, production: dep.production?
+              )
+            end
+          end
+        end
+
+        # Version freezing skips dependency groups and a sub-dependency has no declaration, so without
         # this Poetry could lock either to a newer release than the one selected.
-        sig { params(pyproject_object: T::Hash[String, T.untyped]).void }
-        def pin_pep621_subdependencies!(pyproject_object)
+        sig { params(document: FileParser::PyprojectDocument).void }
+        def pin_pep621_subdependencies!(document)
           dependencies.each do |dep|
             next if git_dependency_being_updated?(dep)
             next unless dep.version
 
-            PoetrySubdependencyPin.new(lockfile, dep.name).set_requirement!(pyproject_object, "==#{dep.version}")
+            PoetrySubdependencyPin.new(lockfile, dep.name).set_requirement!(document, "==#{dep.version}")
           rescue PoetrySubdependencyPin::ScopeNotReproducible
             # The update checker declines these; skipping keeps a direct run from promoting the package.
             next
@@ -285,49 +285,12 @@ module Dependabot
                            .update_python_requirement(language_version_manager.python_version)
         end
 
-        sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
-        def lock_declaration_to_new_version!(poetry_object, dep)
-          pinned_version = exact_poetry_requirement(dep.version)
-          return unless pinned_version
-
-          poetry_dependency_tables(poetry_object).each do |deps_hash|
-            pkg_name = deps_hash.keys.find { |nm| normalise(nm) == dep.name }
-            next unless pkg_name
-
-            entry = deps_hash[pkg_name]
-            if entry.is_a?(Hash)
-              entry["version"] = pinned_version if entry.key?("version") # skip enrichment-only entries
-            else
-              deps_hash[pkg_name] = pinned_version
-            end
-          end
-        end
-
-        sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
-        def create_declaration_at_new_version!(poetry_object, dep)
-          pinned_version = exact_poetry_requirement(dep.version)
-          return unless pinned_version
-
-          subdep_type = dep.production? ? "dependencies" : "dev-dependencies"
-          poetry_object[subdep_type] ||= {}
-          poetry_object[subdep_type][dep.name] = pinned_version
-        end
-
         sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
         def exact_poetry_requirement(version)
           return nil unless version
 
           # Pin with ==version only when cooldown is set so Poetry can't pick a newer excluded release.
           @cooldown ? "==#{version}" : version
-        end
-
-        sig { params(poetry_object: T::Hash[String, T.untyped]).returns(T::Array[T::Hash[String, T.untyped]]) }
-        def poetry_dependency_tables(poetry_object)
-          types = Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES
-          groups = poetry_object["group"].is_a?(Hash) ? poetry_object["group"].values : []
-          candidates = types.map { |type| poetry_object[type] } +
-                       groups.map { |group_spec| group_spec["dependencies"] if group_spec.is_a?(Hash) }
-          candidates.grep(Hash)
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
@@ -375,7 +338,7 @@ module Dependabot
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
-        sig { params(pyproject_content: Object).returns(Integer) }
+        sig { params(pyproject_content: String).returns(Integer) }
         def write_temporary_dependency_files(pyproject_content)
           dependency_files.each do |file|
             path = file.name
@@ -397,7 +360,7 @@ module Dependabot
             .add_auth_env_vars(credentials)
         end
 
-        sig { params(pyproject_content: String).returns(PoetryPyprojectHashResult) }
+        sig { params(pyproject_content: String).returns(String) }
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -408,7 +371,9 @@ module Dependabot
                 function: "get_pyproject_hash",
                 args: [T.cast(dir, Pathname).to_s]
               )
-              T.cast(result, PoetryPyprojectHashResult)
+              raise TypeError, "Poetry content hash must be a string" unless result.is_a?(String)
+
+              result
             end
           end
         end
@@ -449,11 +414,6 @@ module Dependabot
           updated_file = file.dup
           updated_file.content = content
           updated_file
-        end
-
-        sig { params(name: String).returns(String) }
-        def normalise(name)
-          NameNormaliser.normalise(name)
         end
 
         sig { returns(FileParser::PythonRequirementParser) }

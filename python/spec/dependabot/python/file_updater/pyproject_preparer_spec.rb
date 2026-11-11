@@ -67,6 +67,29 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       )
       expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
     end
+
+    it "parses all consumed source fields before changing the environment" do
+      preparer = described_class.new(
+        pyproject_content: <<~TOML
+          [[tool.poetry.source]]
+          name = "valid"
+          url = "https://example.com/one"
+          [[tool.poetry.source]]
+          name = 123
+          url = "https://example.com/two"
+        TOML
+      )
+      credentials = %w(one two).map do |name|
+        Dependabot::Credential.new("index-url" => "https://example.com/#{name}", "token" => "user:password")
+      end
+
+      expect { preparer.add_auth_env_vars(credentials) }.to raise_error(TypeError, /source.*name/)
+      expect(ENV.fetch("POETRY_HTTP_BASIC_VALID_USERNAME", nil)).to be_nil
+      expect(ENV.fetch("POETRY_HTTP_BASIC_VALID_PASSWORD", nil)).to be_nil
+    ensure
+      ENV.delete("POETRY_HTTP_BASIC_VALID_USERNAME")
+      ENV.delete("POETRY_HTTP_BASIC_VALID_PASSWORD")
+    end
   end
 
   describe "#update_python_requirement" do
