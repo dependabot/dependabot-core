@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/clojure"
+
+if ! [[ "$install_dir" =~ ^/ ]]; then
+  echo "$install_dir must be an absolute path"
+  exit 1
+fi
+
+helpers_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Builds an AOT-compiled uberjar, so the runtime only needs a JRE.
+cd "$helpers_dir"
+clojure -T:build uber
+
+mkdir -p "$install_dir"
+cp target/clojure-helper.jar "$install_dir/clojure-helper.jar"

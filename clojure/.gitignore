@@ -1,5 +1,8 @@
-/.bundle/
+/.bundle/*
 !.bundle/config
 /.env
 /tmp
 /dependabot-*.gem
+/helpers/target
+/helpers/.cpcache
+/helpers/install-dir
