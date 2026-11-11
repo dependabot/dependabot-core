@@ -15,8 +15,9 @@ require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
   .register_label_details("clojure", name: "clojure", colour: "db5855")
 
-# Top-level dependencies are in the "dependencies" group. Leiningen profiles,
-# plugins and deps.edn aliases have their own groups and are not production.
+# Top-level dependencies are in the "dependencies" group. Test-scoped
+# dependencies, Leiningen profiles, plugins and deps.edn aliases have their own
+# groups and are not production.
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(
   "clojure",

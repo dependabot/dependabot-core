@@ -78,6 +78,24 @@ RSpec.describe Dependabot::Clojure::FileParser do
       end
     end
 
+    context "with scoped dependencies" do
+      let(:files) do
+        [Dependabot::DependencyFile.new(name: "project.clj", content: <<~CLJ)]
+          (defproject example/app "0.1.0"
+            :dependencies [[ring/ring-core "1.9.6"]
+                           [ring/ring-mock "0.4.0" :scope "test"]
+                           [javax.servlet/servlet-api "2.5" :scope "provided"]])
+        CLJ
+      end
+
+      it "treats only the test scope as development, as Maven does" do
+        expect(requirements_of("ring:ring-mock").first[:groups]).to eq(["test"])
+        expect(dependencies.select(&:production?).map(&:name)).to contain_exactly(
+          "ring:ring-core", "javax.servlet:servlet-api"
+        )
+      end
+    end
+
     context "with a profile that pins another version" do
       let(:files) do
         [Dependabot::DependencyFile.new(name: "project.clj", content: <<~CLJ)]

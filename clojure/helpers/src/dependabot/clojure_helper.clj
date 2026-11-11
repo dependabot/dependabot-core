@@ -86,11 +86,17 @@
 
 ;; -- project.clj (Leiningen) --
 
+(defn- option
+  "Reads an option such as :classifier from the key-values after the version."
+  [opts k]
+  (some (fn [[opt v]] (when (= k (value opt)) (value v))) (partition 2 opts)))
+
 (defn- lein-dependency [groups node]
   (when (= :vector (tag node))
     (let [[lib-node version-node & opts] (children node)
-          classifier (some (fn [[k v]] (when (= :classifier (value k)) (value v)))
-                           (partition 2 opts))]
+          classifier (option opts :classifier)
+          ;; As in Maven, test-scoped dependencies aren't production dependencies.
+          groups (if (and (= [main-group] groups) (= "test" (option opts :scope))) ["test"] groups)]
       (when version-node
         (dependency (value lib-node) version-node groups
                     (when (string? classifier) {:classifier classifier}))))))
