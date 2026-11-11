@@ -289,17 +289,40 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         end
       end
 
-      context "when the registry's host is not known" do
-        let(:error) { Excon::Error::Socket.new(EOFError.new("end of file reached")) }
+      # A request that does not go through RegistryClient has no recorded host. Fetching a Git repository's refs is one
+      # (GitMetadataFetcher re-raises socket errors and timeouts for known Git hosts), and an unreachable Git host is
+      # not an unreachable package registry
+      context "when the request did not go through RegistryClient, such as a Git host that times out" do
+        let(:error) { Excon::Error::Timeout.new("read timeout reached") }
 
-        it "records registry_unreachable without a source" do
+        it "records an unknown error as before, and still captures the exception" do
+          allow(Dependabot.logger).to receive(:error)
+          expect(mock_service).to receive(:capture_exception)
+          expect(mock_service).to receive(:record_update_job_unknown_error)
           expect(mock_service).to receive(:record_update_job_error).with(
-            error_type: "registry_unreachable",
+            error_type: "unknown_error",
             error_details: nil,
             dependency: dependency
           )
 
           handle_dependency_error
+        end
+
+        context "with a closed connection" do
+          let(:error) { Excon::Error::Socket.new(EOFError.new("end of file reached")) }
+
+          it "records an unknown error as before" do
+            allow(Dependabot.logger).to receive(:error)
+            expect(mock_service).to receive(:capture_exception)
+            expect(mock_service).to receive(:record_update_job_unknown_error)
+            expect(mock_service).to receive(:record_update_job_error).with(
+              error_type: "unknown_error",
+              error_details: nil,
+              dependency: dependency
+            )
+
+            handle_dependency_error
+          end
         end
       end
 
