@@ -43,6 +43,55 @@ public class MSBuildDependencySolverTests : TestBase
     }
 
     [Fact]
+    public async Task DependencyConflictsCanBeResolvedWhenUnchangedTransitivePackageIsIncompatible()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0", [(null, [("Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0", [(null, [("Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Pinned.Dependency", "1.0.0", "net6.0-windows8.0"),
+            ],
+            existingTopLevelDependencies: [
+                "Some.Dependency/1.0.0",
+                "Pinned.Dependency/1.0.0",
+            ],
+            desiredDependencies: [
+                "Some.Dependency/2.0.0",
+            ],
+            targetFramework: "net9.0",
+            expectedResolvedDependencies: [
+                "Some.Dependency/2.0.0",
+                "Pinned.Dependency/1.0.0",
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task DependencyConflictsCannotBeResolvedWhenUpdatedTransitivePackageIsIncompatible()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0", [(null, [("Pinned.Dependency", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0", [(null, [("Pinned.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Pinned.Dependency", "1.0.0", "net6.0-windows8.0"),
+                MockNuGetPackage.CreateSimplePackage("Pinned.Dependency", "2.0.0", "net6.0-windows8.0"),
+            ],
+            existingTopLevelDependencies: [
+                "Some.Dependency/1.0.0",
+                "Pinned.Dependency/1.0.0",
+            ],
+            desiredDependencies: [
+                "Some.Dependency/2.0.0",
+            ],
+            targetFramework: "net9.0",
+            expectedResolvedDependencies: [
+                "Some.Dependency/1.0.0",
+                "Pinned.Dependency/1.0.0",
+            ]
+        );
+    }
+
+    [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
     {
         // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the root package to also update, but since the dependency is not in the existing list, we do not include it

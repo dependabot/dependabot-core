@@ -234,6 +234,16 @@ internal static partial class MSBuildHelper
                 }
 
                 var nuGetVersion = nuGetVersionRange.MinVersion; // not a wildcard, so `MinVersion` is just the version itself
+                var existingPackage = packages.FirstOrDefault(p => p.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
+                if (NuGetVersion.TryParse(package.Version, out var candidateVersion) &&
+                    existingPackage?.Version is { } existingVersionString &&
+                    NuGetVersion.TryParse(existingVersionString, out var existingVersion) &&
+                    candidateVersion.Equals(existingVersion))
+                {
+                    // An unchanged package may already be part of the project even if it is not compatible with this target framework.
+                    continue;
+                }
+
                 var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(package.Name, nuGetVersion);
 
                 bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks, nugetContext, logger, CancellationToken.None);
