@@ -3,6 +3,7 @@ using System.Text.Json;
 
 using Microsoft.Build.Evaluation;
 
+using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
@@ -1180,6 +1181,72 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
 
         Assert.Equal("private_source_authentication_failure", errorType.GetString());
         Assert.Equal("(<some package feed>)", errorSource.GetString());
+    }
+
+    [Fact]
+    public async Task ResultFileHasDependencyGraphInAlphabeticalOrder()
+    {
+        using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
+        var discoveryResultPath = Path.Combine(temporaryDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+        var unorderedKeys = Enumerable.Range(0, 26).Reverse().Select(i => $"{(char)('A' + i)}.Package/1.0.0").ToArray();
+        await DiscoveryWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, discoveryResultPath, new()
+        {
+            Path = "/",
+            Projects =
+            [
+                new()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
+                    DependencyGraph = unorderedKeys.ToImmutableDictionary(
+                        k => k,
+                        _ => ImmutableArray.Create("Z.Package/1.0.0", "a.Package/1.0.0", "M.Package/1.0.0"),
+                        StringComparer.OrdinalIgnoreCase),
+                },
+            ],
+        });
+        var discoveryContents = await File.ReadAllTextAsync(discoveryResultPath, TestContext.Current.CancellationToken);
+
+        var jsonDocument = JsonDocument.Parse(discoveryContents);
+        var dependencyGraph = jsonDocument.RootElement.GetProperty("Projects")[0].GetProperty("DependencyGraph");
+        var actualKeys = dependencyGraph.EnumerateObject().Select(p => p.Name).ToArray();
+        var expectedKeys = unorderedKeys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToArray();
+        Assert.Equal(expectedKeys, actualKeys);
+        foreach (var property in dependencyGraph.EnumerateObject())
+        {
+            var actualValues = property.Value.EnumerateArray().Select(v => v.GetString()!).ToArray();
+            Assert.Equal<string>(["a.Package/1.0.0", "M.Package/1.0.0", "Z.Package/1.0.0"], actualValues);
+        }
+    }
+
+    [Fact]
+    public void DependencyGraphRoundTripsThroughAnalysisSerializer()
+    {
+        var project = new ProjectDiscoveryResult
+        {
+            FilePath = "project.csproj",
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+            DependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Z.Parent/2.0.0"] = ["a.Dependency/1.0.0", "M.Dependency/2.0.0"],
+                ["a.Dependency/1.0.0"] = [],
+                ["M.Dependency/2.0.0"] = [],
+            }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+        };
+        var json = JsonSerializer.Serialize(project, DiscoveryWorker.SerializerOptions);
+        var deserialized = JsonSerializer.Deserialize<ProjectDiscoveryResult>(json, AnalyzeWorker.SerializerOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize project discovery result.");
+
+        Assert.True(deserialized.DependencyGraph.TryGetValue("z.parent/2.0.0", out var parentDependencies));
+        Assert.Equal(["a.Dependency/1.0.0", "M.Dependency/2.0.0"], parentDependencies);
+        Assert.True(deserialized.DependencyGraph.TryGetValue("A.DEPENDENCY/1.0.0", out var leafDependencies));
+        Assert.Empty(leafDependencies);
+        Assert.True(deserialized.DependencyGraph.TryGetValue("m.dependency/2.0.0", out leafDependencies));
+        Assert.Empty(leafDependencies);
     }
 
     [Fact]
