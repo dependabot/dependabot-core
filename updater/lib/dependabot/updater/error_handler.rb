@@ -222,6 +222,8 @@ module Dependabot
         ).returns(Dependabot::ErrorDetails)
       end
       def error_details_for(error, dependency: nil, dependency_group: nil)
+        return registry_unreachable_details(error) if registry_unreachable?(error)
+
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
 
@@ -247,6 +249,32 @@ module Dependabot
         end
 
         Dependabot::ErrorDetails.new(error_type: "unknown_error", error_detail: nil)
+      end
+
+      # A self-hosted runner runs in the customer's network. When that network blocks or cannot resolve a registry,
+      # the Dependabot proxy closes the connection without a response (EOFError) or the request times out. Ecosystems
+      # raise these as Excon errors for public registries, so they would otherwise be reported as unknown errors.
+      # On GitHub-hosted runners, and when dependabot-api doesn't say where the job runs, they still are.
+      sig { params(error: StandardError).returns(T::Boolean) }
+      def registry_unreachable?(error)
+        return false unless error.is_a?(Excon::Error::Socket) || error.is_a?(Excon::Error::Timeout)
+        # A certificate that can't be verified means a server answered: the network path works
+        return false if error.is_a?(Excon::Error::Certificate)
+
+        job.self_hosted_runner?
+      end
+
+      sig { params(error: StandardError).returns(Dependabot::ErrorDetails) }
+      def registry_unreachable_details(error)
+        # RegistryClient records the host of the request that failed
+        host = ErrorReportContext.build(error: error)&.fetch("host", nil)
+        host = nil unless host.is_a?(String) && host != ErrorReportContext::REDACTED
+
+        Dependabot.logger.warn(
+          "#{host || 'A package registry'} could not be reached from the self-hosted runner this job runs on " \
+          "(#{error.class}: #{error.message}). Check that the runner's network can reach it."
+        )
+        Dependabot::ErrorDetails.new(error_type: "registry_unreachable", error_detail: host ? { source: host } : nil)
       end
 
       sig { params(error: StandardError, dependency: T.nilable(Dependabot::Dependency)).void }
