@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -53,7 +53,7 @@ module Dependabot
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         @lowest_security_fix_version ||= T.let(
-          T.must(latest_version_finder).lowest_security_fix_release&.fetch(:version),
+          T.must(latest_version_finder).lowest_security_fix_release&.version,
           T.nilable(Dependabot::Version)
         )
       end
@@ -272,7 +272,7 @@ module Dependabot
         finder = onboarded ? latest_version_finder_for(git_source) : T.must(latest_version_finder)
 
         if vulnerable? && (new_tag = finder.lowest_security_fix_release)
-          return ref_for_release(new_tag, current_ref: current_ref)
+          return ref_for_release(new_tag.details, current_ref: current_ref)
         end
 
         source_git_commit_checker = git_helper.git_commit_checker_for(git_source)
@@ -300,17 +300,15 @@ module Dependabot
 
       sig do
         params(
-          release: T::Hash[Symbol, Object],
+          release: Dependabot::GitTagDetails,
           current_ref: T.nilable(String)
         ).returns(String)
       end
       def ref_for_release(release, current_ref:)
-        return T.cast(release.fetch(:tag), String) unless pin_to_sha?
-        if current_ref && Dependabot::GithubActions::Version.path_based?(current_ref)
-          return T.cast(release.fetch(:tag), String)
-        end
+        return release.tag unless pin_to_sha?
+        return release.tag if current_ref && Dependabot::GithubActions::Version.path_based?(current_ref)
 
-        T.cast(release.fetch(:commit_sha), String)
+        T.must(release.commit_sha)
       end
 
       sig do
@@ -360,7 +358,7 @@ module Dependabot
 
         if source_checker.local_tag_for_pinned_sha
           new_tag = finder.latest_version_tag_respecting_cooldown
-          new_tag&.fetch(:commit_sha)
+          new_tag&.commit_sha
         else
           # Keep SHA rewrites aligned with the checker decision (including cooldown filtering).
           latest = finder.latest_release_version
