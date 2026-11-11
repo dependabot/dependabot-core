@@ -143,6 +143,12 @@ module Dependabot
           undiagnosed
             .reject { |dep| handled.include?(dep.name.downcase) }
             .each do |dep|
+              # Not vulnerable per the job's advisories: report it as a single-dependency update does.
+              if not_vulnerable_dependency_names.include?(dep.name.downcase)
+                record_security_update_not_needed_error(dep)
+                next
+              end
+
               error_handler.handle_dependency_error(
                 error: Dependabot::DependabotError.new(
                   "Security update failed for #{dep.name} #{dep.version}"

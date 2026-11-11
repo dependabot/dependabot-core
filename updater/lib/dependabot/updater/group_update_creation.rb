@@ -80,6 +80,13 @@ module Dependabot
         @removed_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
       end
 
+      # Names of dependencies whose installed version the job's advisories do not cover, so a
+      # security update was not needed for them.
+      sig { returns(T::Set[String]) }
+      def not_vulnerable_dependency_names
+        @not_vulnerable_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
+      end
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -826,7 +833,7 @@ module Dependabot
         ).void
       end
       def note_security_update_not_possible(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return note_security_update_not_needed(dependency) unless security_update_required?(dependency, checker)
 
         log_security_dependency_details(dependency)
         conflicting_dependencies = checker.conflicting_dependencies
@@ -849,6 +856,12 @@ module Dependabot
             dependency: nil
           )
         )
+      end
+
+      # Reported once per job, with the other security update failures noted here.
+      sig { params(dependency: Dependabot::Dependency).void }
+      def note_security_update_not_needed(dependency)
+        not_vulnerable_dependency_names << dependency.name.downcase
       end
 
       sig do
@@ -899,7 +912,7 @@ module Dependabot
         ).void
       end
       def note_security_update_not_found(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return note_security_update_not_needed(dependency) unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "Security update not found for #{dependency.name} in group #{group.name} - " \
@@ -926,7 +939,7 @@ module Dependabot
         ).void
       end
       def note_security_update_ignored(dependency, checker, group)
-        return unless security_update_required?(dependency, checker)
+        return note_security_update_not_needed(dependency) unless security_update_required?(dependency, checker)
 
         Dependabot.logger.info(
           "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"

@@ -338,6 +338,40 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
 
         perform
       end
+
+      context "when the job's advisories do not cover the installed version" do
+        before do
+          allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+        end
+
+        it "reports that no security update is needed when no update is possible" do
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:record_update_job_error)
+            .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+
+          perform
+        end
+
+        it "reports that no security update is needed when the dependency is up to date" do
+          allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+          expect(mock_error_handler).not_to receive(:handle_dependency_error)
+          expect(mock_service).to receive(:record_update_job_error)
+            .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+
+          perform
+        end
+      end
+    end
+
+    it "reports that no security update is needed when all versions are ignored and none is vulnerable" do
+      allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+      allow(stub_update_checker).to receive(:lowest_security_fix_version).and_raise(Dependabot::AllVersionsIgnored)
+      expect(mock_error_handler).not_to receive(:handle_dependency_error)
+      expect(mock_service).to receive(:record_update_job_error)
+        .with(error_type: "security_update_not_needed", error_details: { "dependency-name": dependency.name })
+      expect(mock_service).to receive(:create_pull_request)
+
+      perform
     end
 
     it "still creates a PR when resolving another dependency's error details fails" do
