@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/clojure/file_parser"
+require "dependabot/clojure"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Clojure::FileParser do
