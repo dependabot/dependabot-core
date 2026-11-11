@@ -164,7 +164,7 @@ module Dependabot
           Lockfile.new(lockfile).deployed_file_hashes.each do |path, digest|
             next unless digest.start_with?(SHA256_PREFIX) && file_in_checkout?(path, root)
 
-            File.delete(path) if Digest::SHA256.file(path).hexdigest == digest.delete_prefix(SHA256_PREFIX)
+            File.delete(path) if Digest::SHA256.hexdigest(File.binread(path)) == digest.delete_prefix(SHA256_PREFIX)
           end
         end
 
