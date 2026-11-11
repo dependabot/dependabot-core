@@ -418,20 +418,29 @@ module Dependabot
           changed_hashes_deps = []
 
           new_matches.each do |mtch|
-            nm = mtch.named_captures["name"]
-            old_match = old_matches.find { |m| m.named_captures["name"] == nm }
+            old_match = matching_old_requirement(old_matches, mtch)
 
             next new_deps << mtch unless old_match
-            next unless old_match.named_captures["hashes"]
 
-            old_count = old_match.named_captures["hashes"].split("--hash").count
-            new_count = mtch.named_captures["hashes"].split("--hash").count
-            changed_hashes_deps << mtch if new_count < old_count
+            old_hashes = old_match.named_captures["hashes"]
+            new_hashes = mtch.named_captures["hashes"]
+            # `uv export` writes an entry without hashes when the package's index publishes none
+            next unless old_hashes && new_hashes
+
+            changed_hashes_deps << mtch if new_hashes.split("--hash").count < old_hashes.split("--hash").count
           end
 
           return [] if changed_hashes_deps.none?
 
           [*new_deps, *changed_hashes_deps]
+        end
+
+        # A package can be listed more than once, for example once per platform when each platform resolves from its
+        # own index, so compare with the entry for the same version before falling back to the first one of that name.
+        sig { params(old_matches: T::Array[MatchData], mtch: MatchData).returns(T.nilable(MatchData)) }
+        def matching_old_requirement(old_matches, mtch)
+          same_name = old_matches.select { |m| m.named_captures["name"] == mtch.named_captures["name"] }
+          same_name.find { |m| m.named_captures["version"] == mtch.named_captures["version"] } || same_name.first
         end
 
         sig { params(name: String, version: String, algorithm: String).returns(T::Array[String]) }
