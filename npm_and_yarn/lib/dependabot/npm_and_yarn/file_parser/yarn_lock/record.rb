@@ -37,21 +37,36 @@ module Dependabot
 
           sig { returns(T::Hash[String, String]) }
           def dependencies
-            value = object["dependencies"]
-            return {} if value.nil?
+            dependency_requirements || {}
+          end
 
-            invalid!("#{@context}.dependencies must be an object") unless value.is_a?(Hash)
+          sig { returns(T.nilable(T::Hash[String, String])) }
+          def dependency_requirements
+            requirement_map("dependencies")
+          end
+
+          sig { returns(T.nilable(T::Hash[String, String])) }
+          def optional_dependencies
+            requirement_map("optionalDependencies")
+          end
+
+          private
+
+          sig { params(field: String).returns(T.nilable(T::Hash[String, String])) }
+          def requirement_map(field)
+            value = object[field]
+            return if value.nil?
+
+            invalid!("#{@context}.#{field} must be an object") unless value.is_a?(Hash)
             value.to_h do |raw_name, raw_requirement|
               name = T.cast(raw_name, Object)
               requirement = T.cast(raw_requirement, Object)
-              invalid!("#{@context}.dependencies keys must be strings") unless name.is_a?(String)
-              invalid!("#{@context}.dependencies.#{name} must be a string") unless requirement.is_a?(String)
+              invalid!("#{@context}.#{field} keys must be strings") unless name.is_a?(String)
+              invalid!("#{@context}.#{field}.#{name} must be a string") unless requirement.is_a?(String)
 
               [name, requirement]
             end
           end
-
-          private
 
           sig { returns(ObjectHash) }
           def object
