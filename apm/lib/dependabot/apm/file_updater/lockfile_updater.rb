@@ -7,6 +7,7 @@ require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/errors"
+require "dependabot/file_updaters/vendor_updater"
 require "dependabot/shared_helpers"
 require "dependabot/apm/file_updater"
 require "dependabot/apm/lockfile"
@@ -28,6 +29,13 @@ module Dependabot
       # the branch's new head commit for APM to verify and re-hash.
       class LockfileUpdater
         extend T::Sig
+
+        # The regenerated lockfile and the committed deployed files
+        # `apm install` changed alongside it.
+        class Result < T::Struct
+          const :lockfile_content, String
+          const :deployed_files, T::Array[Dependabot::DependencyFile]
+        end
 
         APM_MODULES_DIRECTORY = "apm_modules"
         SHA256_PREFIX = "sha256:"
@@ -76,10 +84,32 @@ module Dependabot
           @manifest_content = manifest_content
           @credentials = credentials
           @repo_contents_path = repo_contents_path
+          @result = T.let(nil, T.nilable(Result))
         end
 
         sig { returns(String) }
         def updated_lockfile_content
+          result.lockfile_content
+        end
+
+        # The deployed files `apm install` added, changed or removed that the
+        # repository commits. Git reports only tracked and untracked files,
+        # never ignored ones, so a repository that ignores its deployed files
+        # gets none.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def updated_deployed_files
+          result.deployed_files
+        end
+
+        private
+
+        sig { returns(Result) }
+        def result
+          @result ||= regenerate
+        end
+
+        sig { returns(Result) }
+        def regenerate
           SharedHelpers.in_a_temporary_repo_directory(lockfile.directory, repo_contents_path) do
             # APM downloads packages into apm_modules/ and resolves
             # transitive dependencies from what is already there. The git reset
@@ -90,21 +120,23 @@ module Dependabot
             File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
             command = apm_command
-            remove_unmodified_deployed_files if command.start_with?("install")
+            install = command.start_with?("install")
+            remove_unmodified_deployed_files if install
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               NativeHelpers.run_apm_command(command)
             end
 
-            File.read(FileUpdater::LOCKFILE_FILENAME)
+            content = File.read(FileUpdater::LOCKFILE_FILENAME)
+            # `apm lock` deploys nothing, so only an install changes deployed
+            # files, and they must be read before its output is cleaned up.
+            Result.new(lockfile_content: content, deployed_files: install ? changed_deployed_files(content) : [])
           ensure
             remove_apm_output
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_apm_error(e)
         end
-
-        private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -173,6 +205,52 @@ module Dependabot
           return false if Pathname.new(path).absolute? || !File.file?(path) || File.symlink?(path)
 
           File.realpath(path).start_with?("#{root}#{File::SEPARATOR}")
+        end
+
+        # Collects, as git status reports them, the changes under every path
+        # the old or new lockfile records as deployed: a file a new version
+        # adds is recorded only in the new lockfile, and one it drops only in
+        # the old. They're flagged as vendored, so a grouped update carries
+        # them to the pull request without handing them to the next update as
+        # dependency files. A file the #3391 workaround removed and APM wrote
+        # back unchanged shows no change.
+        sig { params(new_lockfile_content: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def changed_deployed_files(new_lockfile_content)
+          return [] unless repo_contents_path
+
+          new_lockfile = Dependabot::DependencyFile.new(
+            name: FileUpdater::LOCKFILE_FILENAME,
+            content: new_lockfile_content
+          )
+          roots = deployment_roots(Lockfile.new(lockfile).deployed_paths + Lockfile.new(new_lockfile).deployed_paths)
+          return [] if roots.empty?
+
+          Dependabot::FileUpdaters::VendorUpdater
+            .new(repo_contents_path: repo_contents_path, vendor_dir: ".")
+            .updated_vendor_cache_files(base_directory: lockfile.directory)
+            .select { |file| deployed_file?(file.name, roots) }
+        end
+
+        # The recorded paths as clean relative paths inside the project. An
+        # absolute path, one leading out of it, or the project itself is
+        # dropped, so nothing outside what APM deploys is reported.
+        sig { params(paths: T::Array[String]).returns(T::Array[String]) }
+        def deployment_roots(paths)
+          paths.filter_map do |path|
+            clean = Pathname.new(path).cleanpath
+            next if clean.absolute?
+
+            root = clean.to_s
+            root unless root == "." || root == ".." || root.start_with?("../")
+          end.uniq
+        end
+
+        sig { params(name: String, roots: T::Array[String]).returns(T::Boolean) }
+        def deployed_file?(name, roots)
+          return false if [FileUpdater::MANIFEST_FILENAME, FileUpdater::LOCKFILE_FILENAME].include?(name)
+          return false if name.start_with?("#{APM_MODULES_DIRECTORY}/")
+
+          roots.any? { |root| name == root || name.start_with?("#{root}/") }
         end
 
         # `apm install` deploys files, and the git reset between updates keeps

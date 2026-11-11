@@ -100,6 +100,17 @@ a fresh checkout lacks, and then removes them as stale. An edited file is kept,
 and APM skips it with a warning. The workaround goes once Dependabot bundles an
 APM release with that fix.
 
+When the repository commits its deployed files, the pull request carries the
+changes `apm install` made to them alongside `apm.yml` and `apm.lock.yaml`: the
+files the new version adds, changes and removes. Dependabot reads them from
+`git status`, limited to the paths the old or new lockfile records as deployed
+(`deployed_files`, `deployed_file_hashes` and the project's `deployments`), so
+other files APM writes, such as MCP configuration, are left out. Git doesn't
+report ignored files, so a repository that ignores its deployed files gets only
+`apm.yml` and `apm.lock.yaml`, as does any update that runs `apm lock`. A file
+the workaround above removed and APM wrote back unchanged doesn't appear, and
+an edited file APM skips stays as committed.
+
 The files APM writes are removed after each update. APM only re-resolves the
 entries whose manifest ref changed, so every other entry keeps its locked
 commit. A branch pin's lock entry is first

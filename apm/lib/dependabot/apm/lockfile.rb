@@ -88,6 +88,28 @@ module Dependabot
         end
       end
 
+      # Every path the lockfile records a dependency as deploying to the
+      # project: its `deployed_files` (files and the directories that hold
+      # them), its `deployed_file_hashes` and the project-scope `deployments`.
+      # MCP and LSP servers are `uri` deployments named by server, not path,
+      # so they are skipped.
+      sig { returns(T::Array[String]) }
+      def deployed_paths
+        paths = deployed_file_hashes.keys
+        entries = @document["dependencies"]
+        if entries.is_a?(Array)
+          entries.each do |entry|
+            files = entry["deployed_files"] if entry.is_a?(Hash)
+            paths.concat(files.grep(String)) if files.is_a?(Array)
+          end
+        end
+        project_deployments.each do |deployment|
+          value = deployment["value"]
+          paths << value if value.is_a?(String) && deployment["kind"] != URI_KIND
+        end
+        paths.uniq
+      end
+
       sig { returns(String) }
       def to_yaml
         @document.to_yaml
