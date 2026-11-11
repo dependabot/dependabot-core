@@ -110,6 +110,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
     end
   end
 
+  describe "nullable requirement maps" do
+    it "distinguishes unspecified maps from the graph reader's empty map" do
+      record = reader.parsed.values.first
+
+      expect(record.dependency_requirements).to be_nil
+      expect(record.optional_dependencies).to be_nil
+      expect(record.dependencies).to eq({})
+    end
+
+    [nil, {}, { "child" => "npm:other@^2", "@scope/local" => "link:../local" }].each do |value|
+      context "with both maps set to #{value.inspect}" do
+        let(:entry) { super().merge("dependencies" => value, "optionalDependencies" => value) }
+
+        it "preserves absent and explicit requirement maps" do
+          record = reader.parsed.values.first
+
+          expect(record.dependency_requirements).to eq(value)
+          expect(record.optional_dependencies).to eq(value)
+          expect(record.dependencies).to eq(value || {})
+        end
+      end
+    end
+
+    [[], { "child" => false }].each do |value|
+      context "with malformed optional requirements #{value.inspect}" do
+        let(:entry) { super().merge("optionalDependencies" => value) }
+
+        it "only reports the field when optional dependencies are read" do
+          record = reader.parsed.values.first
+          expect(record.dependencies).to eq({})
+          expect { record.optional_dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable, /optionalDependencies/) do |error|
+            expect(error.file_name).to eq("yarn.lock")
+          end
+        end
+      end
+    end
+  end
+
   [nil, [], "invalid"].each do |value|
     context "with #{value.inspect} as the helper result" do
       let(:result) { value }
