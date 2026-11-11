@@ -29,10 +29,14 @@ module Dependabot
       end
 
       sig do
-        params(_block: T.proc.params(name: String, requirement: String, type: String).void).void
+        params(
+          include_peer_dependencies: T::Boolean,
+          _block: T.proc.params(name: String, requirement: String, type: String).void
+        ).void
       end
-      def each_dependency(&_block)
-        DEPENDENCY_TYPES.each do |type|
+      def each_dependency(include_peer_dependencies: false, &_block)
+        types = include_peer_dependencies ? DEPENDENCY_TYPES + ["peerDependencies"] : DEPENDENCY_TYPES
+        types.each do |type|
           dependencies = @data[type]
           next unless dependencies
 

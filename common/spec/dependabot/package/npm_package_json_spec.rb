@@ -44,6 +44,61 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
     )
   end
 
+  context "when peer dependencies are included" do
+    let(:peer_dependencies) do
+      result = []
+      reader.each_dependency(include_peer_dependencies: true) do |name, requirement, type|
+        result << [name, requirement, type]
+      end
+      result
+    end
+
+    it "appends peers after the ordinary dependency sections" do
+      expect(peer_dependencies).to eq(dependencies + [["ignored", "^3", "peerDependencies"]])
+    end
+
+    context "with non-string peer requirements" do
+      let(:payload) do
+        {
+          "peerDependencies" => {
+            "valid" => "catalog:testing",
+            "null" => nil,
+            "false" => false,
+            "number" => 12,
+            "array" => ["1.0.0"],
+            "object" => { "version" => "1.0.0" }
+          }
+        }
+      end
+
+      it "yields only string requirements without interpreting their protocol" do
+        expect(peer_dependencies).to eq([["valid", "catalog:testing", "peerDependencies"]])
+      end
+    end
+
+    [nil, false].each do |value|
+      context "with peerDependencies set to #{value.inspect}" do
+        let(:payload) { { "peerDependencies" => value } }
+
+        it "yields no dependencies" do
+          expect(peer_dependencies).to be_empty
+        end
+      end
+    end
+
+    [[], "invalid", 123, true].each do |value|
+      context "with peerDependencies set to #{value.inspect}" do
+        let(:payload) { { "peerDependencies" => value } }
+
+        it "validates the peer map only when requested" do
+          expect(dependencies).to be_empty
+          expect { peer_dependencies }
+            .to raise_error(TypeError, "#{file.path}: peerDependencies must be an object")
+        end
+      end
+    end
+  end
+
   it "returns the package name unchanged" do
     expect(reader.name).to eq("@scope/example")
   end

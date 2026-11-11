@@ -94,8 +94,7 @@ module Dependabot
 
       sig { returns(T.nilable(DependencyFile)) }
       def config_file
-        @dependency_files.find { |file| file.name == ".yarnrc.yml" } ||
-          @dependency_files.find { |file| file.name.end_with?("/.yarnrc.yml") }
+        @dependency_files.find { |file| file.name == ".yarnrc.yml" }
       end
 
       sig { returns(T::Array[Binding]) }
@@ -105,10 +104,13 @@ module Dependabot
 
         entries = T.let({}, T::Hash[[String, String], Binding])
         manifest_files.each do |file|
-          Dependabot::Package::NpmPackageJson.from_file(file).each_dependency do |name, reference, group|
+          manifest = Dependabot::Package::NpmPackageJson.from_file(file)
+          manifest.each_dependency(include_peer_dependencies: true) do |name, reference, group|
             next unless reference.start_with?("catalog:")
 
             key = [name, reference]
+            # Fail the inventory on dangling references, as Yarn install does,
+            # including references in optional dependencies.
             binding = entries[key] ||= Binding.new(
               name: name, reference: reference, requirement: resolve(name, reference), groups: []
             )
@@ -122,11 +124,13 @@ module Dependabot
       def yarn_project?
         return @yarn_project unless @yarn_project.nil?
 
+        # Catalog inventory respects an explicit manager pin and rejects mixed
+        # projects rather than choosing a manager by lockfile precedence.
         root = @dependency_files.find { |file| file.name == "package.json" }
         pin = root && Dependabot::Package::NpmPackageJson.from_file(root).package_manager_config.package_manager
         return @yarn_project = pin.start_with?("yarn@") if pin
 
-        @yarn_project = @dependency_files.any? { |file| file.name.end_with?("yarn.lock") } &&
+        @yarn_project = @dependency_files.any? { |file| file.name == "yarn.lock" } &&
                         @dependency_files.none? do |file|
                           OTHER_LOCKFILES.include?(file.name) || file.name == "pnpm-workspace.yaml"
                         end
@@ -157,7 +161,7 @@ module Dependabot
 
       sig { params(binding: Binding).returns(T.nilable(Dependabot::Package::NpmLockfileDetails)) }
       def lockfile_details(binding)
-        lock = @dependency_files.find { |file| file.name.end_with?("yarn.lock") }
+        lock = @dependency_files.find { |file| file.name == "yarn.lock" }
         return unless lock
 
         @lockfile_reader ||= FileParser::YarnLock.new(lock)

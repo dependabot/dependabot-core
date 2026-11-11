@@ -8,10 +8,11 @@ require "dependabot/npm_and_yarn/file_updater/yarnrc_catalog_updater"
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnrcCatalogUpdater do
   let(:files) { project_dependency_files("yarn_berry/catalog_workspace") }
   let(:catalogs) { Dependabot::NpmAndYarn::YarnCatalogs.new(dependency_files: files) }
+  let(:catalog_reference) { "catalog:" }
   let(:requirement) do
     {
       requirement: "^2.8.6", file: ".yarnrc.yml", groups: %w(devDependencies dependencies), source: nil,
-      metadata: { yarn_catalog_reference: "catalog:", yarn_catalog_package: "prettier" }
+      metadata: { yarn_catalog_reference: catalog_reference, yarn_catalog_package: "prettier" }
     }
   end
   let(:dependency) do
@@ -31,15 +32,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnrcCatalogUpdater do
     expect(updater.updated_content).to eq(catalogs.config_file.content.sub('"2.8.0"', '"^2.8.6"'))
   end
 
-  it "edits an unquoted partial range in a numeric named catalog without changing unrelated scalars" do
-    catalogs.config_file.content = "flag: false\nvalue: null\ncatalogs:\n  2025:\n    prettier: 2.8 # keep comment\n"
-    files.select { |file| file.name.end_with?("package.json") }.each do |file|
-      file.content = file.content.gsub("catalog:", "catalog:2025")
+  context "with an unquoted value" do
+    before do
+      catalogs.config_file.content = "catalog:\n  prettier: 2.8.0 # keep comment\n"
     end
-    requirement[:metadata][:yarn_catalog_reference] = "catalog:2025"
-    expect(updater.updated_content).to eq(catalogs.config_file.content.sub("2.8 #", "^2.8.6 #"))
-    expect(updater.updated_content(pins: { "prettier" => "2.9" }))
-      .to eq(catalogs.config_file.content.sub("2.8 #", '"2.9" #'))
+
+    [">=2.8.6", ">=2.8.0 <3.0.0", "*", "|x", "@x"].each do |value|
+      it "quotes #{value.inspect} when it cannot be parsed as a plain YAML scalar" do
+        expect(updater.updated_content(pins: { "prettier" => value }))
+          .to eq("catalog:\n  prettier: #{value.to_json} # keep comment\n")
+      end
+    end
+  end
+
+  context "with a numeric named catalog" do
+    let(:catalog_reference) { "catalog:2025" }
+
+    before do
+      catalogs.config_file.content = "flag: false\nvalue: null\ncatalogs:\n  2025:\n    prettier: 2.8 # keep comment\n"
+      files.select { |file| file.name.end_with?("package.json") }.each do |file|
+        file.content = file.content.gsub("catalog:", catalog_reference)
+      end
+    end
+
+    it "edits an unquoted partial range without changing unrelated scalars" do
+      expect(updater.updated_content).to eq(catalogs.config_file.content.sub("2.8 #", "^2.8.6 #"))
+      expect(updater.updated_content(pins: { "prettier" => "2.9" }))
+        .to eq(catalogs.config_file.content.sub("2.8 #", '"2.9" #'))
+    end
   end
 
   context "with Unicode and CRLF before the selected scalar" do
@@ -105,19 +125,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnrcCatalogUpdater do
     expect(updater.updated_content).to eq(catalogs.config_file.content.sub('"2.8.0"', '"^2.8.6"'))
   end
 
-  it "treats an unused catalog named << as a literal key instead of a merged mapping" do
-    catalogs.config_file.content = <<~YAML
-      catalogs:
-        "<<":
-          prettier: 1.19.1
-        formatting:
-          prettier: "2.8.0"
-    YAML
-    files.select { |file| file.name.end_with?("package.json") }.each do |file|
-      file.content = file.content.gsub("catalog:", "catalog:formatting")
+  context "with an unused catalog named <<" do
+    let(:catalog_reference) { "catalog:formatting" }
+
+    before do
+      catalogs.config_file.content = <<~YAML
+        catalogs:
+          "<<":
+            prettier: 1.19.1
+          formatting:
+            prettier: "2.8.0"
+      YAML
+      files.select { |file| file.name.end_with?("package.json") }.each do |file|
+        file.content = file.content.gsub("catalog:", catalog_reference)
+      end
     end
-    requirement[:metadata][:yarn_catalog_reference] = "catalog:formatting"
-    expect(updater.updated_content).to eq(catalogs.config_file.content.sub('"2.8.0"', '"^2.8.6"'))
+
+    it "treats the catalog name as a literal key instead of a merged mapping" do
+      expect(updater.updated_content).to eq(catalogs.config_file.content.sub('"2.8.0"', '"^2.8.6"'))
+    end
   end
 
   context "when the selected value is a shared alias" do

@@ -108,6 +108,8 @@ module Dependabot
           when Psych::Nodes::Scalar::SINGLE_QUOTED then "'#{value.gsub("'", "''")}'"
           else YAML.safe_load(value) == value ? value : value.to_json
           end
+        rescue Psych::Exception
+          value.to_json
         end
 
         sig { params(binding: YarnCatalogs::Binding).returns(T.nilable(DependencyRequirement)) }
