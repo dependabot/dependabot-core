@@ -257,6 +257,69 @@ RSpec.describe Dependabot::Uv::FileFetcher do
         primary_files = file_fetcher_instance.files.reject(&:support_file?)
         expect(primary_files.map(&:name)).to eq(["pyproject.toml"])
       end
+
+      it "does not fetch a uv.toml" do
+        expect(file_fetcher_instance.files.map(&:name)).not_to include("uv.toml")
+      end
+    end
+
+    context "with a uv.toml beside the pyproject.toml" do
+      let(:repo_contents) do
+        contents = JSON.parse(fixture("github", "contents_python_only_pyproject.json"))
+        contents << { name: "uv.toml", path: "uv.toml", type: "file", size: 30 }
+        contents.to_json
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "pyproject.toml",
+              path: "pyproject.toml",
+              content: Base64.encode64(<<~TOML),
+                [project]
+                name = "my-package"
+                version = "0.1.0"
+                readme = "README.rst"
+
+                [tool.uv]
+                required-version = "==0.0.1"
+              TOML
+              encoding: "base64"
+            }.to_json,
+            headers: json_header
+          )
+        stub_request(:get, url + "uv.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "uv.toml",
+              path: "uv.toml",
+              content: Base64.encode64("required-version = \">=0.1.0\"\n"),
+              encoding: "base64"
+            }.to_json,
+            headers: json_header
+          )
+        stub_request(:get, url + "README.rst?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "fetches the uv.toml as a support file" do
+        uv_toml = file_fetcher_instance.files.find { |f| f.name == "uv.toml" }
+
+        expect(uv_toml).not_to be_nil
+        expect(uv_toml.support_file?).to be(true)
+        expect(uv_toml.content).to eq("required-version = \">=0.1.0\"\n")
+      end
+
+      it "still treats the pyproject.toml as the only primary file" do
+        primary_files = file_fetcher_instance.files.reject(&:support_file?)
+        expect(primary_files.map(&:name)).to eq(["pyproject.toml"])
+      end
     end
 
     context "with pyproject.toml that declares README in string format" do

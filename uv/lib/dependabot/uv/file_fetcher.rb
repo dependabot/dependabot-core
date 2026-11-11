@@ -53,6 +53,7 @@ module Dependabot
         files += uv_lock_files
         files += workspace_member_files
         files += version_source_files
+        files += uv_config_files
         files
       end
 
@@ -248,6 +249,14 @@ module Dependabot
       def path_within_repo?(path)
         cleaned = clean_path(path)
         !cleaned.start_with?("../", "/")
+      end
+
+      # uv reads project-level settings (e.g. required-version, index, sources) from a uv.toml beside the
+      # project, giving it precedence over [tool.uv] in pyproject.toml. In a workspace uv only reads the
+      # workspace root's configuration, so members' uv.toml files are not fetched.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def uv_config_files
+        [fetch_support_file("uv.toml")].compact
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
