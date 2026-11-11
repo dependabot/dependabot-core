@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
     before do
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
-        .with("targets --json --all").and_return(apm_targets_output)
+        .with("targets --json --all", stderr_to_stdout: false).and_return(apm_targets_output)
       allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install --target claude,copilot") do
         File.write("apm.lock.yaml", "lockfile_version: '2'\n# #{File.read('apm.yml').lines.fetch(-1).strip}\n")
         ""
@@ -154,9 +154,10 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
     context "when apm targets fails" do
       before do
-        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("targets --json --all").and_raise(
-          Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "No such command", error_context: {})
-        )
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command)
+          .with("targets --json --all", stderr_to_stdout: false).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "No such command", error_context: {})
+          )
         allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
           File.write("apm.lock.yaml", "lockfile_version: '2'\n# locked\n")
           ""

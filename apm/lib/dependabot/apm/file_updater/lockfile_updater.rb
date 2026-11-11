@@ -136,10 +136,11 @@ module Dependabot
         end
 
         # The harnesses the installed APM CLI supports, so a new APM release
-        # needs no change here.
+        # needs no change here. Only stdout is parsed, because APM logs
+        # warnings such as policy discovery to stderr.
         sig { returns(T::Array[String]) }
         def supported_targets
-          Targets.supported(NativeHelpers.run_apm_command("targets --json --all"))
+          Targets.supported(NativeHelpers.run_apm_command("targets --json --all", stderr_to_stdout: false))
         rescue SharedHelpers::HelperSubprocessFailed
           []
         end
