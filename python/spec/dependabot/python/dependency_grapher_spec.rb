@@ -1157,6 +1157,78 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         )
       end
     end
+
+    context "when poetry.lock pins a package at a different version for each Python version range" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_multiple_locked_versions.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_multiple_locked_versions.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "includes every locked version of the package" do
+        expect(grapher.resolved_dependencies.keys).to include(
+          "pkg:pypi/urllib3@1.26.20",
+          "pkg:pypi/urllib3@2.2.1"
+        )
+      end
+
+      it "marks every locked version of a direct dependency as a direct runtime dependency" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        %w(pkg:pypi/urllib3@1.26.20 pkg:pypi/urllib3@2.2.1).each do |purl|
+          expect(resolved_dependencies.fetch(purl).direct).to be(true)
+          expect(resolved_dependencies.fetch(purl).runtime).to be(true)
+        end
+      end
+
+      it "links each locked version of a parent to every locked version of its dependency" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        %w(pkg:pypi/requests@2.32.5 pkg:pypi/requests@2.34.2).each do |purl|
+          expect(resolved_dependencies.fetch(purl).dependencies).to include(
+            "pkg:pypi/urllib3@1.26.20",
+            "pkg:pypi/urllib3@2.2.1"
+          )
+        end
+      end
+
+      context "when the project declares its dependencies with PEP 621 only" do
+        let(:pyproject_toml) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "poetry_v2_pep621_only_multiple_locked_versions.toml"),
+            directory: "/"
+          )
+        end
+
+        let(:poetry_lock_file) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "poetry_v2_pep621_only_multiple_locked_versions.lock"),
+            directory: "/"
+          )
+        end
+
+        it "includes every locked version of the package" do
+          expect(grapher.resolved_dependencies.keys).to include(
+            "pkg:pypi/urllib3@1.26.20",
+            "pkg:pypi/urllib3@2.2.1"
+          )
+        end
+      end
+    end
   end
 
   # Regression: multiple independent pip-compile manifests stacked in a single directory.

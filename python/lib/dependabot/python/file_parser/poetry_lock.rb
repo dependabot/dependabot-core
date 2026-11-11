@@ -20,6 +20,7 @@ module Dependabot
           const :name, String
           const :version, String
           const :source_type, T.nilable(String), default: nil
+          const :dependency_names, T::Array[String], default: []
 
           sig { params(value: Object).returns(Package) }
           def self.from_object(value)
@@ -38,16 +39,25 @@ module Dependabot
               source_type: PyprojectValueParser.optional_string(
                 source_hash&.[]("type"),
                 "Poetry lock package source type"
-              )
+              ),
+              dependency_names: dependency_names_from(hash["dependencies"])
             )
           end
 
-          sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+          sig { params(value: T.nilable(Object)).returns(T::Array[String]) }
+          def self.dependency_names_from(value)
+            return [] unless value.is_a?(Hash)
+
+            value.keys.grep(String)
+          end
+
+          sig { returns(T::Hash[Symbol, T.nilable(T.any(String, T::Array[String]))]) }
           def to_h
             {
               name: name,
               version: version,
-              source_type: source_type
+              source_type: source_type,
+              dependency_names: dependency_names
             }
           end
         end

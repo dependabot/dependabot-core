@@ -19,6 +19,7 @@ module Dependabot
   module Python
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       require_relative "dependency_grapher/lockfile_generator"
+      require_relative "dependency_grapher/poetry_lock_resolver"
       require_relative "dependency_grapher/requirements_layers"
 
       sig { override.returns(Dependabot::DependencyFile) }
@@ -64,6 +65,20 @@ module Dependabot
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
+      end
+
+      # Poetry can lock one package at several versions, each behind its own environment marker, so we report every
+      # locked version instead of the single version per package name that the file parser selects.
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+      def resolved_dependencies
+        prepare! unless prepared
+        lockfile = poetry_lock
+        return super unless python_package_manager == PoetryPackageManager::NAME && lockfile
+
+        PoetryLockResolver.new(lockfile).resolved_dependencies(
+          @dependencies,
+          with_subdependencies: !errored_fetching_subdependencies
+        ) { |dependency| build_purl(dependency) }
       end
 
       # Layering is specific to pip / pip-compile for Python.
@@ -283,28 +298,11 @@ module Dependabot
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
         case python_package_manager
-        when PoetryPackageManager::NAME
-          poetry_lock ? fetch_poetry_lock_relationships : {}
         when PipenvPackageManager::NAME
           pipfile_lock ? fetch_pipfile_lock_relationships : {}
         else
           {}
         end
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_poetry_lock_relationships
-        TomlRB.parse(T.must(poetry_lock).content).fetch("package", []).each_with_object({}) do |pkg, rels|
-          next unless pkg.is_a?(Hash) && pkg["name"].is_a?(String)
-
-          parent = NameNormaliser.normalise(pkg["name"])
-          deps = pkg["dependencies"]
-          deps = {} unless deps.is_a?(Hash)
-          children = deps.keys.map { |name| NameNormaliser.normalise(name) }
-          rels[parent] = children
-        end
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).name
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }

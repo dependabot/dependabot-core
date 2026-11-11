@@ -19,6 +19,10 @@ RSpec.describe Dependabot::Python::FileParser::PoetryLock do
       name = "requests"
       version = "2.32.0"
 
+      [package.dependencies]
+      urllib3 = ">=1.21.1,<3"
+      PySocks = {version = ">=1.5.6,!=1.5.7", optional = true}
+
       [[package]]
       name = "local"
       version = "1.0.0"
@@ -28,11 +32,11 @@ RSpec.describe Dependabot::Python::FileParser::PoetryLock do
     TOML
   end
 
-  it "parses packages and source types" do
+  it "parses packages, source types and dependency names" do
     expect(lock.packages.map(&:to_h)).to eq(
       [
-        { name: "requests", version: "2.32.0", source_type: nil },
-        { name: "local", version: "1.0.0", source_type: "directory" }
+        { name: "requests", version: "2.32.0", source_type: nil, dependency_names: %w(urllib3 PySocks) },
+        { name: "local", version: "1.0.0", source_type: "directory", dependency_names: [] }
       ]
     )
   end
