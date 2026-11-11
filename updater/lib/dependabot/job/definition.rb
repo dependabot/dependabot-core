@@ -49,6 +49,7 @@ module Dependabot
       const :dependency_group_to_refresh, T.nilable(String)
       const :repo_private, T.nilable(T::Boolean)
       const :blocked_versions, T::Array[BlockedVersion]
+      const :runner_type, T.nilable(String)
 
       # Keep the complete wire-to-model mapping visible in one place so new job fields cannot bypass parsing.
       # rubocop:disable Metrics/AbcSize
@@ -83,7 +84,8 @@ module Dependabot
           dependency_groups: parsed_dependency_groups(hash),
           dependency_group_to_refresh: parsed_dependency_group_to_refresh(hash),
           repo_private: optional_boolean(hash.fetch(:repo_private, nil), :repo_private),
-          blocked_versions: parsed_blocked_versions(hash)
+          blocked_versions: parsed_blocked_versions(hash),
+          runner_type: optional_string(hash.fetch(:runner_type, nil), :runner_type)
         )
       end
       # rubocop:enable Metrics/AbcSize
