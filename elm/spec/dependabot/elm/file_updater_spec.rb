@@ -87,6 +87,29 @@ RSpec.describe Dependabot::Elm::FileUpdater do
     it { expect { updated_files }.not_to output.to_stdout }
     its(:length) { is_expected.to eq(1) }
 
+    context "when the elm.json file is unchanged" do
+      sig { returns(Dependabot::Dependency) }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "elm/regex",
+          version: "1.0.0",
+          requirements: [{ file: "elm.json", requirement: "1.0.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements: [{ file: "elm.json", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "elm"
+        )
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files have changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["elm/regex"],
+            "dependency-files" => ["elm.json"]
+          )
+        end
+      end
+    end
+
     describe "the elm.json file" do
       sig { returns(String) }
       subject(:updated_elm_json_file_content) do
