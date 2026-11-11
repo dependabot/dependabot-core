@@ -13,7 +13,7 @@ Because of that, a bug or improvement is often — **but not always** — genera
 | --- | --- |
 | **JavaScript / TypeScript** | `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno` |
 | **Python** | `python` (pip, pip-compile, pipenv, Poetry), `uv`, `conda` |
-| **JVM** | `maven`, `gradle`, `sbt` |
+| **JVM** | `maven`, `gradle`, `sbt`, `clojure` |
 | **Containers** | `docker`, `docker_compose` |
 
 Grouping is a **heuristic for what to check**, not a statement of code sharing. How much siblings actually share in code varies — from heavy reuse to near-independent reimplementations — so confirm the real relationship before assuming a fix carries over.
