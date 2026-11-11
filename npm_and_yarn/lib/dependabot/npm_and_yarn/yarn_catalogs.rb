@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "yaml"
 require "sorbet-runtime"
 require "dependabot/errors"
@@ -87,6 +88,7 @@ module Dependabot
       def initialize(dependency_files:)
         @dependency_files = dependency_files
         @bindings = T.let(nil, T.nilable(T::Array[Binding]))
+        @peer_catalog_names = T.let([], T::Array[String])
         @configuration = T.let(nil, T.nilable(T::Hash[String, Object]))
         @yarn_project = T.let(nil, T.nilable(T::Boolean))
         @lockfile_reader = T.let(nil, T.nilable(FileParser::YarnLock))
@@ -102,22 +104,25 @@ module Dependabot
         return @bindings if @bindings
         return @bindings = [] unless yarn_project?
 
-        entries = T.let({}, T::Hash[[String, String], Binding])
+        entries = T.let({}, T::Hash[[String, String], T::Array[String]])
         manifest_files.each do |file|
-          manifest = Dependabot::Package::NpmPackageJson.from_file(file)
-          manifest.each_dependency(include_peer_dependencies: true) do |name, reference, group|
-            next unless reference.start_with?("catalog:")
+          catalog_references(file).each do |name, reference, group|
+            # Yarn does not resolve catalog peers. Reject updates to those
+            # packages without resolving their references during inventory.
+            if group == "peerDependencies"
+              @peer_catalog_names << name unless @peer_catalog_names.include?(name)
+              next
+            end
 
-            key = [name, reference]
-            # Fail the inventory on dangling references, as Yarn install does,
-            # including references in optional dependencies.
-            binding = entries[key] ||= Binding.new(
-              name: name, reference: reference, requirement: resolve(name, reference), groups: []
-            )
-            binding.groups << group unless binding.groups.include?(group)
+            groups = entries[[name, reference]] ||= []
+            groups << group unless groups.include?(group)
           end
         end
-        @bindings = entries.values
+        # Fail on dangling installed references, including optional ones,
+        # as Yarn install does. Peer-only references never become bindings.
+        @bindings = entries.map do |(name, reference), groups|
+          Binding.new(name: name, reference: reference, requirement: resolve(name, reference), groups: groups)
+        end
       end
 
       sig { returns(T::Boolean) }
@@ -176,6 +181,7 @@ module Dependabot
       sig { params(name: String).void }
       def validate_update!(name)
         selected = bindings.select { |binding| binding.name == name }
+        unsupported!(name, "catalog requirements in peerDependencies") if @peer_catalog_names.include?(name)
         return if selected.empty?
 
         unsupported!(name, "multiple catalog bindings") unless selected.one?
@@ -206,6 +212,18 @@ module Dependabot
       end
 
       private
+
+      sig { params(file: DependencyFile).returns(T::Array[[String, String, String]]) }
+      def catalog_references(file)
+        references = T.let([], T::Array[[String, String, String]])
+        manifest = Dependabot::Package::NpmPackageJson.from_file(file)
+        manifest.each_dependency(include_peer_dependencies: true) do |name, reference, group|
+          references << [name, reference, group] if reference.start_with?("catalog:")
+        end
+        references
+      rescue JSON::ParserError, TypeError => e
+        raise DependencyFileNotParseable.new(file.path, e.message)
+      end
 
       sig { params(name: String).void }
       def validate_project!(name)
