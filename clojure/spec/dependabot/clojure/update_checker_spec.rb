@@ -72,6 +72,14 @@ RSpec.describe Dependabot::Clojure::UpdateChecker do
       end
     end
 
+    context "when Clojars is unavailable" do
+      before { stub_request(:get, "#{clojars}/maven-metadata.xml").to_return(status: 503) }
+
+      it "raises a registry error instead of reporting no versions" do
+        expect { latest_version }.to raise_error(Dependabot::RegistryError, /503/)
+      end
+    end
+
     context "with a private registry" do
       let(:credentials) do
         [Dependabot::Credential.new(

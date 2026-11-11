@@ -80,6 +80,13 @@ module Dependabot
           base_registry_url || CENTRAL_REPO_URL
         end
 
+        # Clojars is a default repository too, so when it's unavailable that is a
+        # registry error, as for Maven Central, and not a private registry failure.
+        sig { override.params(url: String).returns(T::Array[String]) }
+        def central_repo_urls(url = central_repo_url)
+          super + [CLOJARS_REPO_URL]
+        end
+
         private
 
         sig { returns(T::Array[String]) }
