@@ -69,10 +69,10 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       let(:reference) { "v4.4.0" }
 
       it "returns the latest version tag" do
-        expect(latest_version_tag).to be_a(Hash)
-        expect(latest_version_tag[:tag]).to eq("v6.0.0")
-        expect(latest_version_tag[:version]).to be_a(Dependabot::PreCommit::Version)
-        expect(latest_version_tag[:version].to_s).to eq("6.0.0")
+        expect(latest_version_tag).to be_a(Dependabot::GitTagDetails)
+        expect(latest_version_tag.tag).to eq("v6.0.0")
+        expect(latest_version_tag.version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version_tag.version.to_s).to eq("6.0.0")
       end
     end
 
@@ -93,8 +93,8 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       end
 
       it "returns the latest version tag" do
-        expect(latest_version_tag).to be_a(Hash)
-        expect(latest_version_tag[:version]).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version_tag).to be_a(Dependabot::GitTagDetails)
+        expect(latest_version_tag.version).to be_a(Dependabot::PreCommit::Version)
       end
     end
 
@@ -102,8 +102,8 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       let(:ignored_versions) { [">= 6.0.0"] }
 
       it "filters out ignored versions" do
-        expect(latest_version_tag).to be_a(Hash)
-        expect(latest_version_tag[:version].to_s.split(".").first.to_i).to be < 6
+        expect(latest_version_tag).to be_a(Dependabot::GitTagDetails)
+        expect(latest_version_tag.version.to_s.split(".").first.to_i).to be < 6
       end
     end
 
@@ -137,9 +137,9 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       end
 
       it "returns only tags matching the frozen version prefix and major version" do
-        expect(latest_version_tag).to be_a(Hash)
-        expect(latest_version_tag[:tag]).to eq("v1.29.4")
-        expect(latest_version_tag[:version].to_s).to eq("1.29.4")
+        expect(latest_version_tag).to be_a(Dependabot::GitTagDetails)
+        expect(latest_version_tag.tag).to eq("v1.29.4")
+        expect(latest_version_tag.version.to_s).to eq("1.29.4")
       end
     end
 
@@ -191,13 +191,13 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       end
 
       it "selects the correct v-prefixed tag, not the higher-versioned different-prefix tag" do
-        expect(latest_version_tag).to be_a(Hash)
-        expect(latest_version_tag[:tag]).to eq("v1.46.0")
-        expect(latest_version_tag[:version].to_s).to eq("1.46.0")
+        expect(latest_version_tag).to be_a(Dependabot::GitTagDetails)
+        expect(latest_version_tag.tag).to eq("v1.46.0")
+        expect(latest_version_tag.version.to_s).to eq("1.46.0")
       end
 
       it "does not select a tag with a different prefix even if it has a higher version" do
-        expect(latest_version_tag[:tag]).not_to include("varcon-core")
+        expect(latest_version_tag.tag).not_to include("varcon-core")
       end
     end
   end
@@ -329,12 +329,12 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
         expect(version_tag_release.to_s).to eq("6.0.0")
       end
 
-      context "when the latest version is a string" do
+      context "when the matching ref has no parsed version" do
         let(:latest_tag) do
-          { tag: "v6.0.0", version: "6.0.0", commit_sha: "latest_sha" }
+          Dependabot::GitTagDetails.new(tag: "v6.0.0", commit_sha: "latest_sha")
         end
 
-        it "converts the latest version" do
+        it "falls back to a parsed version tag" do
           expect(version_tag_release).to be_a(Dependabot::PreCommit::Version)
           expect(version_tag_release.to_s).to eq("6.0.0")
         end

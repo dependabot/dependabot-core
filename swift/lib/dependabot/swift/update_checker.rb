@@ -81,8 +81,7 @@ module Dependabot
         latest = latest_resolvable_version
         if latest && target == latest
           tag = xcode_version_resolver.latest_resolvable_version_tag
-          tag_commit_sha = tag&.fetch(:commit_sha, nil)
-          commit_sha = tag_commit_sha if tag_commit_sha.is_a?(String)
+          commit_sha = tag&.commit_sha
         end
 
         RequirementsUpdater.new(
@@ -185,7 +184,7 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
       def latest_version_tag
         git_commit_checker.local_tag_for_latest_version(update_cooldown)
       end
@@ -263,15 +262,15 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
       def lowest_security_fix_version_tag
         tags = git_commit_checker.local_tags_for_allowed_versions
         find_lowest_secure_version(tags)
       end
 
       sig do
-        params(tags: T::Array[T::Hash[Symbol, Object]])
-          .returns(T.nilable(T::Hash[Symbol, Object]))
+        params(tags: T::Array[Dependabot::GitTagDetails])
+          .returns(T.nilable(Dependabot::GitTagDetails))
       end
       def find_lowest_secure_version(tags)
         relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
@@ -285,8 +284,8 @@ module Dependabot
       end
 
       sig do
-        params(tags_array: T::Array[T::Hash[Symbol, Object]])
-          .returns(T::Array[T::Hash[Symbol, Object]])
+        params(tags_array: T::Array[Dependabot::GitTagDetails])
+          .returns(T::Array[Dependabot::GitTagDetails])
       end
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
@@ -298,10 +297,10 @@ module Dependabot
           end
       end
 
-      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
+      sig { params(tag: Dependabot::GitTagDetails).returns(T.nilable(Dependabot::Version)) }
       def tag_version(tag)
-        version = tag.is_a?(Dependabot::GitTagDetails) ? tag.version : tag[:version]
-        Dependabot::Swift::Version.new(version.to_s) if version.is_a?(Gem::Version)
+        version = tag.version
+        Dependabot::Swift::Version.new(version.to_s) if version
       end
 
       sig { returns(XcodeVersionResolver) }

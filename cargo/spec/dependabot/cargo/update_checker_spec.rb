@@ -560,7 +560,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         )
         allow(git_checker).to receive_messages(
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: { tag: "v1.5.0" }
+          local_tag_for_latest_version: Dependabot::GitTagDetails.new(tag: "v1.5.0")
         )
       end
 

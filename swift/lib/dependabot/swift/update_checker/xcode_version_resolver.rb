@@ -41,7 +41,7 @@ module Dependabot
           tag = latest_resolvable_version_tag
           return nil unless tag
 
-          version = tag_version(tag)
+          version = tag.version
           return nil unless version
 
           Version.new(version)
@@ -49,11 +49,11 @@ module Dependabot
 
         # Returns the full tag info including commit_sha for the latest resolvable version
         # Memoized to avoid redundant computation when called from UpdateChecker
-        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def latest_resolvable_version_tag
           @latest_resolvable_version_tag ||= T.let(
             compute_latest_resolvable_version_tag,
-            T.nilable(T::Hash[Symbol, Object])
+            T.nilable(Dependabot::GitTagDetails)
           )
         end
 
@@ -63,16 +63,16 @@ module Dependabot
 
           tags = git_commit_checker.local_tags_for_allowed_versions
           relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
-            tags.filter_map { |tag| tag_version(tag) },
+            tags.filter_map(&:version),
             security_advisories
           )
-          relevant_tags = tags.select { |tag| (version = tag_version(tag)) && relevant_versions.include?(version) }
+          relevant_tags = tags.select { |tag| (version = tag.version) && relevant_versions.include?(version) }
           relevant_tags = filter_lower_tags(relevant_tags)
 
-          lowest_tag = relevant_tags.min_by { |tag| T.must(tag_version(tag)) }
+          lowest_tag = relevant_tags.min_by { |tag| T.must(tag.version) }
           return nil unless lowest_tag
 
-          Version.new(T.must(tag_version(lowest_tag)))
+          Version.new(T.must(lowest_tag.version))
         end
 
         sig { returns(T::Boolean) }
@@ -96,7 +96,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :update_cooldown
 
-        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def compute_latest_resolvable_version_tag
           return nil unless version_pinned?
 
@@ -107,7 +107,7 @@ module Dependabot
           tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return nil unless tag
 
-          version = tag_version(tag)
+          version = tag.version
           return nil unless version_meets_requirements?(version)
 
           tag
@@ -116,15 +116,15 @@ module Dependabot
         # For versionRange requirements, find the highest version that satisfies
         # the explicit upper bound constraint. We don't filter out lower versions here
         # because `can_update?` will decide whether an update is actually needed.
-        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def compute_latest_version_in_range
           requirement = dependency_requirement
           return nil unless requirement
 
           tags = git_commit_checker.local_tags_for_allowed_versions
-          matching_tags = tags.select { |tag| requirement.satisfied_by?(T.must(tag_version(tag))) }
+          matching_tags = tags.select { |tag| requirement.satisfied_by?(T.must(tag.version)) }
 
-          matching_tags.max_by { |tag| T.must(tag_version(tag)) }
+          matching_tags.max_by { |tag| T.must(tag.version) }
         end
 
         sig { returns(T.nilable(Dependabot::Swift::Requirement)) }
@@ -184,25 +184,17 @@ module Dependabot
 
         sig do
           params(
-            tags: T::Array[T::Hash[Symbol, Object]]
-          ).returns(T::Array[T::Hash[Symbol, Object]])
+            tags: T::Array[Dependabot::GitTagDetails]
+          ).returns(T::Array[Dependabot::GitTagDetails])
         end
         def filter_lower_tags(tags)
           current = current_version
           return tags unless current
 
           tags.select do |tag|
-            version = tag_version(tag)
+            version = tag.version
             version && version > current
           end
-        end
-
-        sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Gem::Version)) }
-        def tag_version(tag)
-          return tag.version if tag.is_a?(Dependabot::GitTagDetails)
-
-          version = tag[:version]
-          version if version.is_a?(Gem::Version)
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
