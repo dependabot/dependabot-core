@@ -1,7 +1,9 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "digest"
 require "fileutils"
+require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -28,6 +30,7 @@ module Dependabot
         extend T::Sig
 
         APM_MODULES_DIRECTORY = "apm_modules"
+        SHA256_PREFIX = "sha256:"
 
         AUTHENTICATION_FAILED_REGEX = /Authentication failed for '(?<url>[^']+)'/
         REPOSITORY_NOT_FOUND_REGEX = /repository '(?<url>[^']+)' not found/i
@@ -86,8 +89,11 @@ module Dependabot
             File.write(FileUpdater::MANIFEST_FILENAME, manifest_content)
             File.write(FileUpdater::LOCKFILE_FILENAME, prepared_lockfile_content)
 
+            command = apm_command
+            remove_unmodified_deployed_files if command.start_with?("install")
+
             SharedHelpers.with_git_configured(credentials: credentials) do
-              NativeHelpers.run_apm_command(apm_command)
+              NativeHelpers.run_apm_command(command)
             end
 
             File.read(FileUpdater::LOCKFILE_FILENAME)
@@ -143,6 +149,30 @@ module Dependabot
           Targets.supported(NativeHelpers.run_apm_command("targets --json --all", stderr_to_stdout: false))
         rescue SharedHelpers::HelperSubprocessFailed
           []
+        end
+
+        # Workaround for microsoft/apm#3391: without the local deployment
+        # receipts APM 0.35.0 keeps outside the repository, `apm install` won't
+        # overwrite deployed files a repository commits, then removes them as
+        # stale, so the update deletes the skill. Removing each file that still
+        # matches the digest the lockfile recorded lets APM deploy the new
+        # version. An edited file is kept, and APM skips it with a warning.
+        # Remove this once the bundled APM includes the fix for #3391.
+        sig { void }
+        def remove_unmodified_deployed_files
+          root = File.realpath(Dir.pwd)
+          Lockfile.new(lockfile).deployed_file_hashes.each do |path, digest|
+            next unless digest.start_with?(SHA256_PREFIX) && file_in_checkout?(path, root)
+
+            File.delete(path) if Digest::SHA256.file(path).hexdigest == digest.delete_prefix(SHA256_PREFIX)
+          end
+        end
+
+        sig { params(path: String, root: String).returns(T::Boolean) }
+        def file_in_checkout?(path, root)
+          return false if Pathname.new(path).absolute? || !File.file?(path) || File.symlink?(path)
+
+          File.realpath(path).start_with?("#{root}#{File::SEPARATOR}")
         end
 
         # `apm install` deploys files, and the git reset between updates keeps

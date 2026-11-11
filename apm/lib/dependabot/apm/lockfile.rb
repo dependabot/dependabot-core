@@ -73,6 +73,21 @@ module Dependabot
         end.uniq.sort
       end
 
+      # The digest (e.g. `sha256:…`) the lockfile records for each file a
+      # dependency deployed, keyed by the file's path.
+      sig { returns(T::Hash[String, String]) }
+      def deployed_file_hashes
+        entries = @document["dependencies"]
+        return {} unless entries.is_a?(Array)
+
+        entries.each_with_object({}) do |entry, hashes|
+          recorded = entry["deployed_file_hashes"] if entry.is_a?(Hash)
+          next unless recorded.is_a?(Hash)
+
+          recorded.each { |path, digest| hashes[path] = digest if path.is_a?(String) && digest.is_a?(String) }
+        end
+      end
+
       sig { returns(String) }
       def to_yaml
         @document.to_yaml

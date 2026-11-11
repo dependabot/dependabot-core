@@ -281,6 +281,88 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     end
   end
 
+  context "when the checkout commits the files APM deployed" do
+    let(:repo_contents_path) { Dir.mktmpdir }
+    let(:outside_directory) { Dir.mktmpdir }
+    let(:skill) { "# Edge AI\n" }
+    let(:edited_reference) { "# Reference\nlocal note\n" }
+    let(:outside_file) { File.join(outside_directory, "SKILL.md") }
+    let(:lockfile) do
+      digest = ->(content) { "sha256:#{Digest::SHA256.hexdigest(content)}" }
+      Dependabot::DependencyFile.new(
+        name: "apm.lock.yaml",
+        content: <<~YAML
+          lockfile_version: '1'
+          dependencies:
+          - repo_url: microsoft/edge-ai
+            deployed_file_hashes:
+              .claude/skills/edge-ai/SKILL.md: #{digest.call(skill)}
+              .claude/skills/edge-ai/reference.md: #{digest.call("# Reference\n")}
+              .claude/skills/edge-ai/linked.md: #{digest.call(skill)}
+              #{outside_file}: #{digest.call(skill)}
+              ../#{File.basename(outside_directory)}/SKILL.md: #{digest.call(skill)}
+        YAML
+      )
+    end
+    let(:lockfile_updater) do
+      described_class.new(
+        dependencies: [dependency],
+        lockfile: lockfile,
+        manifest_content: manifest_content,
+        credentials: [],
+        repo_contents_path: repo_contents_path
+      )
+    end
+    let(:manifest_content) { "targets: [claude]\ndependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+    let(:present_during_apm) { [] }
+
+    before do
+      File.write(outside_file, skill)
+      Dir.chdir(repo_contents_path) do
+        FileUtils.mkdir_p(".claude/skills/edge-ai")
+        File.write(".claude/skills/edge-ai/SKILL.md", skill)
+        File.write(".claude/skills/edge-ai/reference.md", edited_reference)
+        File.symlink(outside_file, ".claude/skills/edge-ai/linked.md")
+        system(
+          "git init -q && git add . && git -c user.name=test -c user.email=test@example.com commit -qm init",
+          exception: true
+        )
+      end
+      allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with(apm_command) do
+        present_during_apm.concat(Dir.glob(".claude/skills/edge-ai/*"))
+        File.write("apm.lock.yaml", "lockfile_version: '2'\n")
+        ""
+      end
+    end
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+      FileUtils.rm_rf(outside_directory)
+    end
+
+    context "when apm install runs" do
+      let(:apm_command) { "install" }
+
+      it "removes only the unmodified deployed files inside the checkout before installing" do
+        expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
+        expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md .claude/skills/edge-ai/reference.md))
+        expect(File.read(outside_file)).to eq(skill)
+      end
+    end
+
+    context "when apm lock runs" do
+      let(:manifest_content) { "dependencies:\n  apm:\n    - microsoft/edge-ai#v1.2.0\n" }
+      let(:apm_command) { "lock" }
+
+      it "leaves the deployed files in place" do
+        expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
+        expect(present_during_apm).to eq(
+          %w(.claude/skills/edge-ai/SKILL.md .claude/skills/edge-ai/linked.md .claude/skills/edge-ai/reference.md)
+        )
+      end
+    end
+  end
+
   context "when a legacy lockfile records deployed files without deployments" do
     let(:lockfile) do
       Dependabot::DependencyFile.new(

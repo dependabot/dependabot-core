@@ -92,6 +92,14 @@ whenever it can tell which harnesses to deploy to:
    those harnesses, it runs `apm lock`, which resolves the updated manifest
    without deploying anything.
 
+Before `apm install`, Dependabot removes each committed deployed file that still
+matches the digest the lockfile recorded, so APM can deploy the new version. This
+works around [microsoft/apm#3391](https://github.com/microsoft/apm/issues/3391):
+APM 0.35.0 won't overwrite deployed files without the local deployment receipts
+a fresh checkout lacks, and then removes them as stale. An edited file is kept,
+and APM skips it with a warning. The workaround goes once Dependabot bundles an
+APM release with that fix.
+
 The files APM writes are removed after each update. APM only re-resolves the
 entries whose manifest ref changed, so every other entry keeps its locked
 commit. A branch pin's lock entry is first
