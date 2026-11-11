@@ -20,6 +20,11 @@
     "ecosystem": "cargo"
   },
   {
+    "core": "clojure",
+    "test": "clojure",
+    "ecosystem": "clojure"
+  },
+  {
     "core": "composer",
     "test": "composer",
     "ecosystem": "composer"

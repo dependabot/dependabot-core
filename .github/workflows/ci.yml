@@ -28,6 +28,7 @@ jobs:
           - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: clojure, name: clojure, ecosystem: clojure }
           - { path: common, name: common, ecosystem: common }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: conda, name: conda, ecosystem: conda }
