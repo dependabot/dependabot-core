@@ -94,6 +94,14 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def lowest_security_fix_version_details
+          release = security_fix_versions.first
+          return unless release
+
+          { version: release.version, source_url: release.url }
+        end
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def security_fix_versions
           possible_versions = package_release(versions)
 
           possible_versions = filter_prerelease_versions(possible_versions)
@@ -106,16 +114,7 @@ module Dependabot
           possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
-          return unless possible_versions.any?
-
-          version_min = possible_versions.min_by(&:version)&.version
-
-          url = possible_versions.select do |v| # rubocop:disable Performance/Detect
-            v.version.to_s == version_min.to_s
-          end.last&.url
-
-          { version: version_min,
-            source_url: url }
+          possible_versions.reverse.uniq { |release| release.version.to_s }.reverse.sort_by(&:version)
         end
 
         sig { returns(T::Array[T::Hash[Symbol, Object]]) }

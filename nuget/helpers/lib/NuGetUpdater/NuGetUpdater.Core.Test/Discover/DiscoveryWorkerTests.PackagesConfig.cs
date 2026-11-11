@@ -339,10 +339,15 @@ public partial class DiscoveryWorkerTests
                             FilePath = "myproj.csproj",
                             TargetFrameworks = ["net48"],
                             Dependencies = [
+                                new("PackageOnlyCompatibleWithNet8", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
                                 new("PackageReferencedThroughLegacyMechanism", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net48"]),
                             ],
                             ReferencedProjectPaths = [],
-                            ImportedFiles = [],
+                            ImportedFiles = [
+                                "../Directory.Build.props",
+                                "../Directory.Build.targets",
+                                "../Directory.Packages.props",
+                            ],
                             AdditionalFiles = [
                                 "packages.config"
                             ],
