@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Package::NpmPackageJson do
         it "validates the peer map only when requested" do
           expect(dependencies).to be_empty
           expect { peer_dependencies }
-            .to raise_error(TypeError, "#{file.path}: peerDependencies must be an object")
+            .to raise_error(described_class::InvalidManifestError, "#{file.path}: peerDependencies must be an object")
         end
       end
     end

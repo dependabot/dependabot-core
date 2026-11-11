@@ -199,6 +199,14 @@ RSpec.describe Dependabot::NpmAndYarn::YarnCatalogs do
       .to raise_error(Dependabot::ToolFeatureNotSupported, /peerDependencies/)
   end
 
+  it "rejects an ordinary development dependency also declared as a catalog peer" do
+    root.content = root.content.sub("catalog:", "^2.8.0")
+    child.content = child.content.sub('"dependencies"', '"peerDependencies"')
+    expect(catalogs.bindings).to be_empty
+    expect { catalogs.validate_update!("prettier") }
+      .to raise_error(Dependabot::ToolFeatureNotSupported, /peerDependencies/)
+  end
+
   [[], "invalid", 123, true].each do |value|
     it "reports malformed peerDependencies #{value.inspect} as a manifest parse error" do
       child.content = JSON.generate("peerDependencies" => value)
@@ -207,6 +215,20 @@ RSpec.describe Dependabot::NpmAndYarn::YarnCatalogs do
           expect(error.file_path).to eq(child.path)
         end
     end
+  end
+
+  it "reports invalid manifest JSON with the file path" do
+    child.content = "{"
+    expect { catalogs.bindings }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+      expect(error.file_path).to eq(child.path)
+    end
+  end
+
+  it "does not disguise unexpected reader TypeErrors as malformed manifests" do
+    reader_class = Dependabot::Package::NpmPackageJson
+    allow(reader_class).to receive(:from_file).and_call_original
+    allow(reader_class).to receive(:from_file).with(child).and_raise(TypeError, "unexpected reader failure")
+    expect { catalogs.bindings }.to raise_error(TypeError, "unexpected reader failure")
   end
 
   it "allows ordinary peer declarations alongside catalog development dependencies" do

@@ -12,6 +12,8 @@ module Dependabot
     class NpmPackageJson
       extend T::Sig
 
+      class InvalidManifestError < TypeError; end
+
       ObjectHash = T.type_alias { T::Hash[String, Object] }
       CatalogEntries = T.type_alias { T::Hash[String, String] }
       DEPENDENCY_TYPES = %w(dependencies devDependencies optionalDependencies).freeze
@@ -127,12 +129,12 @@ module Dependabot
 
       sig { params(value: Object, field: String).returns(ObjectHash) }
       def object_hash(value, field)
-        raise TypeError, "#{@path}: #{field} must be an object" unless value.is_a?(Hash)
+        raise InvalidManifestError, "#{@path}: #{field} must be an object" unless value.is_a?(Hash)
 
         result = T.let({}, ObjectHash)
         value.each do |raw_key, raw_value|
           key = T.cast(raw_key, Object)
-          raise TypeError, "#{@path}: #{field} keys must be strings" unless key.is_a?(String)
+          raise InvalidManifestError, "#{@path}: #{field} keys must be strings" unless key.is_a?(String)
 
           result[key] = T.cast(raw_value, Object)
         end

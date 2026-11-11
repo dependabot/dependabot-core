@@ -221,7 +221,7 @@ module Dependabot
           references << [name, reference, group] if reference.start_with?("catalog:")
         end
         references
-      rescue JSON::ParserError, TypeError => e
+      rescue JSON::ParserError, Dependabot::Package::NpmPackageJson::InvalidManifestError => e
         raise DependencyFileNotParseable.new(file.path, e.message)
       end
 
