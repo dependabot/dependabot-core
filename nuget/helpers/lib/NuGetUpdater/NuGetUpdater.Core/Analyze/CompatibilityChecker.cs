@@ -137,7 +137,10 @@ internal static class CompatibilityChecker
             return true;
         }
 
-        var incompatibleFrameworks = projectFrameworks.Where(f => !compatibleFrameworks.Contains(f)).ToArray();
+        var incompatibleFrameworks = projectFrameworks.Where(projectFramework =>
+            !compatibleFrameworks.Contains(projectFramework)
+            && !packageFrameworks.Any(packageFramework =>
+                DefaultCompatibilityProvider.Instance.IsCompatible(projectFramework, packageFramework))).ToArray();
         if (incompatibleFrameworks.Length > 0)
         {
             logger.Info($"The package {package} is not compatible. Incompatible project frameworks: {string.Join(", ", incompatibleFrameworks.Select(f => f.GetShortFolderName()))}");

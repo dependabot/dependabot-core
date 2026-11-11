@@ -364,7 +364,10 @@ module Dependabot
 
       sig { returns(MarkerEvaluator) }
       def marker_evaluator
-        @marker_evaluator ||= T.let(MarkerEvaluator.new, T.nilable(MarkerEvaluator))
+        @marker_evaluator ||= T.let(
+          MarkerEvaluator.new(non_python_markers_satisfied: true),
+          T.nilable(MarkerEvaluator)
+        )
       end
 
       sig { returns(DependencySet) }

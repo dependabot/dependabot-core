@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/api_client"
+require "dependabot/error_report_context"
 require "dependabot/errors"
 require "dependabot/service"
 require "dependabot/logger"
@@ -79,6 +80,7 @@ module Dependabot
         ErrorAttributes::MESSAGE => err.message,
         ErrorAttributes::BACKTRACE => err.backtrace&.join("\n"),
         ErrorAttributes::FINGERPRINT => fingerprint,
+        ErrorAttributes::CONTEXT => ErrorReportContext.build(error: err),
         ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
         ErrorAttributes::JOB_ID => job.id,
         ErrorAttributes::DEPENDENCIES => job.dependencies,
