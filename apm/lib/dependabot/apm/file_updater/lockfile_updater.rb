@@ -213,10 +213,13 @@ module Dependabot
         # the old. They're flagged as vendored, so a grouped update carries
         # them to the pull request without handing them to the next update as
         # dependency files. A file the #3391 workaround removed and APM wrote
-        # back unchanged shows no change.
+        # back unchanged shows no change. Git status doesn't give each file's
+        # mode, and the pull request writes a file without one as 100644, so
+        # each written file's mode is read from disk to keep scripts executable.
         sig { params(new_lockfile_content: String).returns(T::Array[Dependabot::DependencyFile]) }
         def changed_deployed_files(new_lockfile_content)
-          return [] unless repo_contents_path
+          project_root = repo_contents_path
+          return [] unless project_root
 
           new_lockfile = Dependabot::DependencyFile.new(
             name: FileUpdater::LOCKFILE_FILENAME,
@@ -226,9 +229,19 @@ module Dependabot
           return [] if roots.empty?
 
           Dependabot::FileUpdaters::VendorUpdater
-            .new(repo_contents_path: repo_contents_path, vendor_dir: ".")
+            .new(repo_contents_path: project_root, vendor_dir: ".")
             .updated_vendor_cache_files(base_directory: lockfile.directory)
             .select { |file| deployed_file?(file.name, roots) }
+            .each do |file|
+              next if file.deleted?
+
+              file.mode = file_mode(File.join(project_root, lockfile.directory, file.name))
+            end
+        end
+
+        sig { params(path: String).returns(String) }
+        def file_mode(path)
+          File.executable?(path) ? Dependabot::DependencyFile::Mode::EXECUTABLE : Dependabot::DependencyFile::Mode::FILE
         end
 
         # The recorded paths as clean relative paths inside the project. An

@@ -274,6 +274,41 @@ RSpec.describe Dependabot::Apm::FileUpdater do
         end
       end
 
+      context "when the repository commits an executable deployed script" do
+        let(:script) { ".claude/skills/edge-ai/scripts/run.sh" }
+        let(:added_script) { ".claude/skills/edge-ai/scripts/setup.sh" }
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            FileUtils.mkdir_p(File.dirname(script))
+            File.write(script, "#!/bin/sh\necho v1.0.0\n")
+            File.chmod(0o755, script)
+            system(
+              "git add . && git -c user.name=test -c user.email=test@example.com commit -qm script",
+              exception: true
+            )
+          end
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+            File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
+            File.write(script, "#!/bin/sh\necho v1.2.0\n")
+            File.write(added_script, "#!/bin/sh\necho setup\n")
+            File.chmod(0o755, added_script)
+            File.write("apm.lock.yaml", new_lockfile_content)
+            ""
+          end
+        end
+
+        it "keeps the executable mode of the scripts it returns" do
+          modes = updated_files.drop(2).to_h { |file| [file.name, file.mode] }
+
+          expect(modes).to include(
+            ".claude/skills/edge-ai/SKILL.md" => Dependabot::DependencyFile::Mode::FILE,
+            script => Dependabot::DependencyFile::Mode::EXECUTABLE,
+            added_script => Dependabot::DependencyFile::Mode::EXECUTABLE
+          )
+        end
+      end
+
       context "when the repository ignores its deployed files" do
         let(:gitignore) { "apm_modules/\n.claude/\n.mcp.json\n" }
         let(:deployed_files) { {} }
