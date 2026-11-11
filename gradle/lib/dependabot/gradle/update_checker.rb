@@ -334,9 +334,7 @@ module Dependabot
           all_property_based_dependencies.any? do |dep|
             next false if dep.name == dependency.name
 
-            dep.requirements.any? do |req|
-              req.metadata_string("property_name") == property_name
-            end
+            dep.requirements.any? { |req| MultiDependencyUpdater.shared_property?(req, requirement) }
           end
         end
       end
