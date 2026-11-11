@@ -354,8 +354,9 @@ module Dependabot
 
         # Change to the cloned repository directory
         Dir.chdir(dir) do
-          # Fetch tags and their creation dates
-          tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
+          # Fetch tags and their creation dates. Keep the time of day: a cooldown is compared in seconds,
+          # and a date without a time reads as midnight, which ends the cooldown up to a day early.
+          tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:iso)" refs/tags'
           tags_stdout, stderr, process = Open3.capture3(env, tags_command)
 
           return GitResponse.new(body: stderr, status: 500) unless process.success?
