@@ -187,7 +187,11 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       it "reports unhandled dependencies that failed to update" do
         expect(mock_error_handler).to receive(:handle_dependency_error)
           .with(
-            error: kind_of(Dependabot::DependabotError),
+            error: an_object_having_attributes(
+              class: Dependabot::DependabotError,
+              message: "Security update failed for #{failed_dependency.name} #{failed_dependency.version}",
+              backtrace: a_collection_including(a_kind_of(String))
+            ),
             dependency: failed_dependency,
             dependency_group: dependency_group
           )
