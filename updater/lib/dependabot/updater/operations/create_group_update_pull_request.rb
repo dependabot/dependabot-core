@@ -150,10 +150,12 @@ module Dependabot
                 next
               end
 
+              # The error is never raised, so give it a backtrace for error reports.
+              error = Dependabot::DependabotError.new("Security update failed for #{dep.name} #{dep.version}")
+              error.set_backtrace(caller)
+
               error_handler.handle_dependency_error(
-                error: Dependabot::DependabotError.new(
-                  "Security update failed for #{dep.name} #{dep.version}"
-                ),
+                error: error,
                 dependency: dep,
                 dependency_group: group
               )
