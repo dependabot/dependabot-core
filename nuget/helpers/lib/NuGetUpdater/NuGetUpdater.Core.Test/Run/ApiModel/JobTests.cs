@@ -116,6 +116,41 @@ public class JobTests
     }
 
     [Fact]
+    public void GetExistingPullRequestForDependencies_RootWildcardDoesNotReplaceExactDirectoryPullRequest()
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    PrNumber = 1,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/src/client" }
+                    ],
+                },
+                new PullRequest()
+                {
+                    PrNumber = 2,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("2.0.0"), Directory = "/" }
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "2.0.0", Requirements = [], Directory = "/src/client" },
+        };
+
+        var sameVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: true);
+        var anyVersion = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: false, treatRefreshDirectoryAsWildcard: true);
+
+        Assert.Null(sameVersion);
+        Assert.Equal("1.1.0", anyVersion!.Item2.Single().DependencyVersion!.ToString());
+    }
+
+    [Fact]
     public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral_WhenNotRefreshing()
     {
         var job = new Job()
