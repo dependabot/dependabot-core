@@ -355,7 +355,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
         it "fails before installing, naming the edited file and removing nothing" do
           expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(".claude/skills/edge-ai/reference.md")
-            expect(error.message).to include("microsoft/apm#3391")
+            expect(error.message).to include("microsoft/apm#3625")
             expect(error.message).not_to include("SKILL.md")
           end
           expect(Dependabot::Apm::NativeHelpers).not_to have_received(:run_apm_command).with("install")

@@ -188,13 +188,15 @@ module Dependabot
           []
         end
 
-        # Workaround for microsoft/apm#3391: without the local deployment
+        # Workaround for microsoft/apm#3625: without the local deployment
         # receipts APM keeps outside the repository, `apm install` won't
-        # overwrite deployed files a repository commits and fails. Removing
-        # each file that still matches the digest the lockfile recorded lets
-        # APM deploy the new version. APM would refuse an edited file too, so
-        # the update fails first, naming the edited files, and removes nothing.
-        # Remove this once the bundled APM includes the fix for #3391.
+        # replace the committed deployed files of a package whose version
+        # changes, and fails. (microsoft/apm#3564 fixed the unchanged-package
+        # case, #3391.) Removing each file that still matches the digest the
+        # lockfile recorded lets APM deploy the new version. APM would refuse
+        # an edited file too, so the update fails first, naming the edited
+        # files, and removes nothing.
+        # Remove this once the bundled APM includes the fix for #3625.
         sig { void }
         def remove_unmodified_deployed_files
           root = File.realpath(Dir.pwd)
@@ -215,7 +217,7 @@ module Dependabot
         def edited_files_message(paths)
           "These committed deployed files have been edited since APM deployed them: #{paths.sort.join(', ')}. " \
             "On a fresh checkout APM can't overwrite an edited deployed file, because it has no local deployment " \
-            "receipt for it (microsoft/apm#3391). Revert the edits, or move the edited files out of the deployed " \
+            "receipt for it (microsoft/apm#3625). Revert the edits, or move the edited files out of the deployed " \
             "directories, so Dependabot can update the package."
         end
 
@@ -231,7 +233,7 @@ module Dependabot
         # adds is recorded only in the new lockfile, and one it drops only in
         # the old. They're flagged as vendored, so a grouped update carries
         # them to the pull request without handing them to the next update as
-        # dependency files. A file the #3391 workaround removed and APM wrote
+        # dependency files. A file the #3625 workaround removed and APM wrote
         # back unchanged shows no change. Git status doesn't give each file's
         # mode, and the pull request writes a file without one as 100644, so
         # each written file's mode is read from disk to keep scripts executable.

@@ -242,7 +242,7 @@ RSpec.describe Dependabot::Apm::FileUpdater do
         end
 
         # Mimics APM deploying v1.2.0: it rewrites SKILL.md and reference.md
-        # (the workaround for microsoft/apm#3391 removed both, as they match
+        # (the workaround for microsoft/apm#3625 removed both, as they match
         # their recorded digests), deploys added.md, leaves retired.md removed,
         # downloads into apm_modules and writes an MCP config it doesn't record
         # as deployed.

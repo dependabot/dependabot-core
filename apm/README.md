@@ -94,13 +94,14 @@ whenever it can tell which harnesses to deploy to:
 
 Before `apm install`, Dependabot removes each committed deployed file that still
 matches the digest the lockfile recorded, so APM can deploy the new version. This
-works around [microsoft/apm#3391](https://github.com/microsoft/apm/issues/3391):
-without the local deployment receipts a fresh checkout lacks, APM won't
-overwrite committed deployed files and the install fails. APM would refuse a
-file edited since it deployed it too, so when any committed deployed file no
-longer matches its recorded digest, the update fails before `apm install` with a
-message naming the edited files, and nothing is removed. The workaround goes
-once Dependabot bundles an APM release with that fix.
+works around [microsoft/apm#3625](https://github.com/microsoft/apm/issues/3625):
+without the local deployment receipts a fresh checkout lacks, APM won't replace
+the committed deployed files of a package whose version changes, and the
+install fails. APM would refuse a file edited since it deployed it too, so when
+any committed deployed file no longer matches its recorded digest, the update
+fails before `apm install` with a message naming the edited files, and nothing
+is removed. The workaround goes once Dependabot bundles an APM release with
+that fix.
 
 When the repository commits its deployed files, the pull request carries the
 changes `apm install` made to them alongside `apm.yml` and `apm.lock.yaml`: the
