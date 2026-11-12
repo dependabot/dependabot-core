@@ -194,7 +194,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        expect(lowest_security_fix_release).to eq(
+        expect(lowest_security_fix_release&.details).to have_attributes(
           { tag: "v1",
             version: Dependabot::GithubActions::Version.new("1.0.0"),
             commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { ["= 1.0.0"] }
 
       it "doesn't return ignored versions" do
-        expect(lowest_security_fix_release).to eq(
+        expect(lowest_security_fix_release&.details).to have_attributes(
           { commit_sha: "bb178d2de54771e6f9332a2b1d55546cf2bc3e08", tag: "v2",
             tag_sha: "bb178d2de54771e6f9332a2b1d55546cf2bc3e08",
             version: Dependabot::GithubActions::Version.new("2.0.0") }
@@ -259,14 +259,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
       before do
         allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
           tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name = tag.tag
             tag_name if tag_name.start_with?("v3")
           end
         end
       end
 
       it "keeps the major-only precision instead of rewriting to a full version" do
-        expect(latest_version_tag_respecting_cooldown).to include(
+        expect(latest_version_tag_respecting_cooldown).to have_attributes(
           tag: "v2",
           version: Dependabot::GithubActions::Version.new("2")
         )
@@ -301,14 +301,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
       before do
         allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
           tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name = tag.tag
             tag_name unless tag_name == "v1"
           end
         end
       end
 
       it "does not downgrade to an older major tag" do
-        expect(latest_version_tag_respecting_cooldown).to include(
+        expect(latest_version_tag_respecting_cooldown).to have_attributes(
           tag: "v2",
           version: Dependabot::GithubActions::Version.new("2")
         )
@@ -413,7 +413,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
       subject(:latest_version_tag) { finder.latest_version_tag }
 
       it "returns tag information for v0.0.24" do
-        expect(latest_version_tag).to include(
+        expect(latest_version_tag).to have_attributes(
           tag: "v0.0.24",
           commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de",
           version: Dependabot::GithubActions::Version.new("0.0.24")
@@ -573,6 +573,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
 
     let(:reference) { "v1" }
     let(:dependency_version) { "1.0.0" }
+    let(:latest_tag_details) do
+      Dependabot::GitTagDetails.new(
+        tag: "v1.0.0",
+        version: Dependabot::GithubActions::Version.new("1.0.0"),
+        commit_sha: "abc123"
+      )
+    end
 
     let(:finder) do
       described_class.new(
@@ -605,8 +612,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         # No GitHub Release available — forces git fallback
@@ -634,8 +640,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         # No GitHub Release available — forces git fallback
@@ -671,8 +676,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         # Stub GitHub releases to return empty (force git fallback)
@@ -699,8 +703,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive(:latest_version_tag)
-          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                        commit_sha: "abc123" })
+          .and_return(latest_tag_details)
 
         sawyer_agent = instance_double(Sawyer::Agent)
         allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
@@ -726,8 +729,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
 
@@ -752,8 +754,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return(source_details)
         allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
+          latest_version_tag: latest_tag_details,
           commit_ref: "abc123"
         )
         mock_client = instance_double(Octokit::Client, releases: [])

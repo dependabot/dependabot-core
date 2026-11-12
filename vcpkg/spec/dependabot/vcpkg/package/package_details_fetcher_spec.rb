@@ -143,21 +143,21 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
       # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
       sig { returns(Dependabot::GitCommitChecker) }
       let(:git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
-      sig { returns(T::Array[T::Hash[Symbol, T.any(String, Dependabot::Vcpkg::Version)]]) }
+      sig { returns(T::Array[Dependabot::GitTagDetails]) }
       let(:mock_tags) do
         [
-          {
+          Dependabot::GitTagDetails.new(
             tag: "2025.06.13",
             version: Dependabot::Vcpkg::Version.new("2025.06.13"),
             commit_sha: "abc123",
             tag_sha: "def456"
-          },
-          {
+          ),
+          Dependabot::GitTagDetails.new(
             tag: "2025.04.09",
             version: Dependabot::Vcpkg::Version.new("2025.04.09"),
             commit_sha: "ghi789",
             tag_sha: "jkl012"
-          }
+          )
         ]
       end
       # rubocop:enable RSpec/ScatteredLet
