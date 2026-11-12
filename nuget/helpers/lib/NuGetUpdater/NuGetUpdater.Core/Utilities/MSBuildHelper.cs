@@ -13,6 +13,7 @@ using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
@@ -204,7 +205,13 @@ internal static partial class MSBuildHelper
             .ToList();
 
             // Return as array
-            var candidatePackagesArray = candidatePackages.ToImmutableArray();
+            var candidatePackagesArray = await CentralTransitivePinResolver.ResolveAsync(tempProjectPath, packages, candidatePackages.ToImmutableArray(), logger);
+            if (candidatePackagesArray is null)
+            {
+                return packages;
+            }
+
+            candidatePackages = candidatePackagesArray.Value.ToList();
 
             var targetFrameworks = ImmutableArray.Create<NuGetFramework>(NuGetFramework.Parse(targetFramework));
 
@@ -254,7 +261,7 @@ internal static partial class MSBuildHelper
                 }
             }
 
-            return candidatePackagesArray;
+            return candidatePackagesArray.Value;
         }
         finally
         {

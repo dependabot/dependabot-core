@@ -424,6 +424,178 @@ public class FileWriterWorkerTests : TestBase
     }
 
     [Fact]
+    public async Task EndToEnd_DirectDependencyUpdate_UpdatesCentralPinBehindUnpinnedIntermediate()
+    {
+        await TestAsync(
+            dependencyName: "MockGraph.Root",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="MockGraph.Root" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="MockGraph.Root" Version="1.0.0" />
+                        <PackageVersion Include="MockGraph.Pinned" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("MockGraph.Root", "1.0.0", "net9.0", [(null, [("MockGraph.Intermediate", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockGraph.Root", "2.0.0", "net9.0", [(null, [("MockGraph.Intermediate", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockGraph.Intermediate", "1.0.0", "net9.0", [(null, [("MockGraph.Pinned", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockGraph.Intermediate", "2.0.0", "net9.0", [(null, [("MockGraph.Pinned", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockGraph.Pinned", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("MockGraph.Pinned", "2.0.0", "net9.0"),
+            ],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="MockGraph.Root" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="MockGraph.Root" Version="2.0.0" />
+                        <PackageVersion Include="MockGraph.Pinned" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "MockGraph.Root", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/Directory.Packages.props"] },
+                new PinnedUpdate() { DependencyName = "MockGraph.Pinned", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/Directory.Packages.props"] },
+            ],
+            additionalChecks: repoContentsPath =>
+            {
+                using var assets = JsonDocument.Parse(File.ReadAllText(Path.Join(repoContentsPath.FullName, "obj", "project.assets.json")));
+                var libraries = assets.RootElement.GetProperty("libraries");
+                Assert.True(libraries.TryGetProperty("MockGraph.Root/2.0.0", out _));
+                Assert.True(libraries.TryGetProperty("MockGraph.Intermediate/2.0.0", out _));
+                Assert.True(libraries.TryGetProperty("MockGraph.Pinned/2.0.0", out _));
+                if (assets.RootElement.TryGetProperty("logs", out var logs))
+                {
+                    Assert.DoesNotContain(logs.EnumerateArray(), log => log.GetProperty("level").GetString() == "Error");
+                }
+            }
+        );
+    }
+
+    [Theory]
+    [InlineData("attribute-property")]
+    [InlineData("element-literal")]
+    [InlineData("element-property")]
+    public async Task EndToEnd_DirectDependencyUpdate_UpdatesCentralPinWithVersionElementOrProperty(string versionFormat)
+    {
+        var initialPin = versionFormat switch
+        {
+            "attribute-property" => """<PackageVersion Include="MockPin.Leaf" Version="$(LeafVersion)" />""",
+            "element-literal" => """<PackageVersion Include="MockPin.Leaf"><Version>1.0.0</Version></PackageVersion>""",
+            "element-property" => """<PackageVersion Include="MockPin.Leaf"><Version>$(LeafVersion)</Version></PackageVersion>""",
+            _ => throw new ArgumentOutOfRangeException(nameof(versionFormat)),
+        };
+        var expectedPin = versionFormat == "element-literal"
+            ? """<PackageVersion Include="MockPin.Leaf"><Version>2.0.0</Version></PackageVersion>"""
+            : initialPin;
+        var expectedPropertyVersion = versionFormat == "element-literal" ? "1.0.0" : "2.0.0";
+        await TestAsync(
+            dependencyName: "MockPin.Root",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="MockPin.Root" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [
+                ("Directory.Packages.props", $$"""
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                        <LeafVersion>1.0.0</LeafVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="MockPin.Root" Version="1.0.0" />
+                        {{initialPin}}
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("MockPin.Root", "1.0.0", "net9.0", [(null, [("MockPin.Leaf", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockPin.Root", "2.0.0", "net9.0", [(null, [("MockPin.Leaf", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("MockPin.Leaf", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("MockPin.Leaf", "2.0.0", "net9.0"),
+            ],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="MockPin.Root" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [
+                ("Directory.Packages.props", $$"""
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                        <LeafVersion>{{expectedPropertyVersion}}</LeafVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="MockPin.Root" Version="2.0.0" />
+                        {{expectedPin}}
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "MockPin.Root", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/Directory.Packages.props"] },
+                new PinnedUpdate() { DependencyName = "MockPin.Leaf", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/Directory.Packages.props"] },
+            ]
+        );
+    }
+
+    [Fact]
     public async Task EndToEnd_PackagesConfig()
     {
         // project is directly changed
