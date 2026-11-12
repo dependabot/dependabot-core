@@ -149,7 +149,9 @@ module Dependabot
         def report_undiagnosed_security_update_failure(dep)
           # Not vulnerable per the job's advisories: report it as a single-dependency update does. A missing
           # or git SHA version cannot be matched against the advisories, so it is not known to be safe.
-          if not_vulnerable_dependency_names.include?(dep.name.downcase) && dep.version_class.correct?(dep.version)
+          occurrences = group.dependencies.select { |candidate| candidate.name.downcase == dep.name.downcase }
+          versions_checkable = occurrences.all? { |candidate| candidate.version_class.correct?(candidate.version) }
+          if not_vulnerable_dependency_names.include?(dep.name.downcase) && versions_checkable
             record_security_update_not_needed_error(dep)
             return
           end
