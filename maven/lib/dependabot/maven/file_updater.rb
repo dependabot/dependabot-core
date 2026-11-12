@@ -27,7 +27,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         all_updated = collect_wrapper_updates + collect_pom_updates
-        raise "No files changed!" if all_updated.none?
+        raise no_files_changed_error("No files changed!") if all_updated.none?
 
         all_updated
       end
