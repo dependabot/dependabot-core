@@ -188,14 +188,18 @@ public sealed record Job
         var existingPullRequests = GetAllExistingPullRequests();
 
         // an existing PR for the exact directory is the refresh target, so a wildcard PR must not stand in for it
+        bool ExactDirectoryMatch(ReportedDependencyWithDirectory desired, PullRequestDependency existing)
+        {
+            return desired.Name.Equals(existing.DependencyName, StringComparison.OrdinalIgnoreCase) &&
+                existing.Directory is not null &&
+                desired.Directory.Equals(existing.Directory, StringComparison.Ordinal);
+        }
+
         if (treatRefreshDirectoryAsWildcard &&
             existingPullRequests.Any(pr =>
                 (!matchGroupName || string.Equals(pr.Item1, dependencyGroupName, StringComparison.OrdinalIgnoreCase)) &&
-                pr.Item2.Any(existing =>
-                    existing.Directory is not null &&
-                    desiredDependencies.Any(desired =>
-                        desired.Name.Equals(existing.DependencyName, StringComparison.OrdinalIgnoreCase) &&
-                        desired.Directory.Equals(existing.Directory, StringComparison.Ordinal)))))
+                desiredDependencies.All(desired => pr.Item2.Any(existing => ExactDirectoryMatch(desired, existing))) &&
+                pr.Item2.All(existing => desiredDependencies.Any(desired => ExactDirectoryMatch(desired, existing)))))
         {
             treatRefreshDirectoryAsWildcard = false;
         }

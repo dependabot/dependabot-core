@@ -151,6 +151,41 @@ public class JobTests
     }
 
     [Fact]
+    public void GetExistingPullRequestForDependencies_RootWildcardStillMatches_WhenOnlyAnOverlappingGroupPullRequestHasExactDirectory()
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    PrNumber = 1,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/src/client" },
+                        new PullRequestDependency() { DependencyName = "Other.Package", DependencyVersion = NuGetVersion.Parse("3.0.0"), Directory = "/src/client" },
+                    ],
+                },
+                new PullRequest()
+                {
+                    PrNumber = 2,
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/" }
+                    ],
+                },
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/client" },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: true);
+
+        Assert.NotNull(pullRequest);
+        Assert.Single(pullRequest!.Item2);
+    }
+
+    [Fact]
     public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral_WhenNotRefreshing()
     {
         var job = new Job()
