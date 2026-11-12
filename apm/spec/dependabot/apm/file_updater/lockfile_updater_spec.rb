@@ -285,7 +285,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     let(:repo_contents_path) { Dir.mktmpdir }
     let(:outside_directory) { Dir.mktmpdir }
     let(:skill) { "# Edge AI\n" }
-    let(:edited_reference) { "# Reference\nlocal note\n" }
+    let(:reference) { "# Reference\n" }
     let(:outside_file) { File.join(outside_directory, "SKILL.md") }
     let(:lockfile) do
       digest = ->(content) { "sha256:#{Digest::SHA256.hexdigest(content)}" }
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
       Dir.chdir(repo_contents_path) do
         FileUtils.mkdir_p(".claude/skills/edge-ai")
         File.write(".claude/skills/edge-ai/SKILL.md", skill)
-        File.write(".claude/skills/edge-ai/reference.md", edited_reference)
+        File.write(".claude/skills/edge-ai/reference.md", reference)
         File.symlink(outside_file, ".claude/skills/edge-ai/linked.md")
         system(
           "git init -q && git add . && git -c user.name=test -c user.email=test@example.com commit -qm init",
@@ -345,8 +345,22 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
 
       it "removes only the unmodified deployed files inside the checkout before installing" do
         expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
-        expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md .claude/skills/edge-ai/reference.md))
+        expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md))
         expect(File.read(outside_file)).to eq(skill)
+      end
+
+      context "when a deployed file has been edited" do
+        let(:reference) { "# Reference\nlocal note\n" }
+
+        it "fails before installing, naming the edited file and removing nothing" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include(".claude/skills/edge-ai/reference.md")
+            expect(error.message).to include("microsoft/apm#3391")
+            expect(error.message).not_to include("SKILL.md")
+          end
+          expect(Dependabot::Apm::NativeHelpers).not_to have_received(:run_apm_command).with("install")
+          expect(File.exist?(File.join(repo_contents_path, ".claude/skills/edge-ai/SKILL.md"))).to be(true)
+        end
       end
     end
 

@@ -192,17 +192,31 @@ module Dependabot
         # receipts APM keeps outside the repository, `apm install` won't
         # overwrite deployed files a repository commits and fails. Removing
         # each file that still matches the digest the lockfile recorded lets
-        # APM deploy the new version. An edited file is kept, so APM refuses it
-        # and the install still fails, naming the file.
+        # APM deploy the new version. APM would refuse an edited file too, so
+        # the update fails first, naming the edited files, and removes nothing.
         # Remove this once the bundled APM includes the fix for #3391.
         sig { void }
         def remove_unmodified_deployed_files
           root = File.realpath(Dir.pwd)
+          unmodified = T.let([], T::Array[String])
+          edited = T.let([], T::Array[String])
           Lockfile.new(lockfile).deployed_file_hashes.each do |path, digest|
             next unless digest.start_with?(SHA256_PREFIX) && file_in_checkout?(path, root)
 
-            File.delete(path) if Digest::SHA256.hexdigest(File.binread(path)) == digest.delete_prefix(SHA256_PREFIX)
+            matches = Digest::SHA256.hexdigest(File.binread(path)) == digest.delete_prefix(SHA256_PREFIX)
+            (matches ? unmodified : edited) << path
           end
+          raise Dependabot::DependencyFileNotResolvable, edited_files_message(edited) if edited.any?
+
+          unmodified.each { |path| File.delete(path) }
+        end
+
+        sig { params(paths: T::Array[String]).returns(String) }
+        def edited_files_message(paths)
+          "These committed deployed files have been edited since APM deployed them: #{paths.sort.join(', ')}. " \
+            "On a fresh checkout APM can't overwrite an edited deployed file, because it has no local deployment " \
+            "receipt for it (microsoft/apm#3391). Revert the edits, or move the edited files out of the deployed " \
+            "directories, so Dependabot can update the package."
         end
 
         sig { params(path: String, root: String).returns(T::Boolean) }
