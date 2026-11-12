@@ -79,6 +79,39 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when the requirements are unchanged" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "co.aikar:acf-paper",
+          version: "0.5.0-SNAPSHOT",
+          requirements: [{
+            file: "build.gradle",
+            requirement: "0.5.0-SNAPSHOT",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          previous_requirements: [{
+            file: "build.gradle",
+            requirement: "0.5.0-SNAPSHOT",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["co.aikar:acf-paper"],
+            "dependency-files" => ["build.gradle", "gradle/wrapper/gradle-wrapper.properties"]
+          )
+        end
+      end
+    end
+
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do
         updated_files.find do |f|
