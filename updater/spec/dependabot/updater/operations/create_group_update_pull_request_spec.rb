@@ -352,6 +352,15 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
           perform
         end
 
+        it "keeps the unknown error when the installed version cannot be checked, such as a git SHA" do
+          allow(dependency).to receive(:version_class).and_return(class_double(Gem::Version, correct?: false))
+          expect(mock_error_handler).to receive(:handle_dependency_error)
+            .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
+          expect(mock_service).not_to receive(:record_update_job_error)
+
+          perform
+        end
+
         it "reports that no security update is needed when the dependency is up to date" do
           allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
           expect(mock_error_handler).not_to receive(:handle_dependency_error)
