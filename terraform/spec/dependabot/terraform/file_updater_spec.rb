@@ -460,6 +460,11 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         it "shows no updates" do
           expect { updated_dependency_files }.to raise_error do |error|
             expect(error.message).to eq("Content didn't change!")
+            expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+              "dependency-names" => ["origin_label"],
+              "dependency-files" => ["main.tf"],
+              "unchanged-file" => "main.tf"
+            )
           end
         end
       end
@@ -888,6 +893,10 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       it "raises an error" do
         expect { updated_dependency_files }.to raise_error do |error|
           expect(error.message).to eq("No files changed!")
+          expect(Dependabot::ErrorReportContext.build(error: error)).to match(
+            "dependency-names" => ["hashicorp/aws"],
+            "dependency-files" => contain_exactly("main.tf", "versions.tf", ".terraform.lock.hcl")
+          )
         end
       end
     end

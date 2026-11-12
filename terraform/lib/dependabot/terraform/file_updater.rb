@@ -32,7 +32,9 @@ module Dependabot
 
           updated_content = updated_terraform_file_content(file)
 
-          raise "Content didn't change!" if updated_content == file.content
+          if updated_content == file.content
+            raise no_files_changed_error("Content didn't change!", { unchanged_file: file.name })
+          end
 
           updated_file = updated_file(file: file, content: updated_content)
 
@@ -46,7 +48,7 @@ module Dependabot
 
         updated_files.compact!
 
-        raise "No files changed!" if updated_files.none?
+        raise no_files_changed_error("No files changed!") if updated_files.none?
 
         updated_files
       ensure
