@@ -120,6 +120,9 @@ module Dependabot
               dependency_snapshot: dependency_snapshot
             )
             selector.filter_to_group!(@dependency_change)
+            selector.filtered_dependencies&.each do |filtered|
+              note_security_update_unresolved(filtered.name, "it was filtered out as not eligible for the group")
+            end
           end
 
           @dependency_change

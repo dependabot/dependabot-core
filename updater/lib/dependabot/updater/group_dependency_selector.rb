@@ -39,6 +39,9 @@ module Dependabot
       sig { returns(Dependabot::DependencySnapshot) }
       attr_reader :snapshot
 
+      sig { returns(T.nilable(T::Array[Dependabot::Dependency])) }
+      attr_reader :filtered_dependencies
+
       sig { params(group: Dependabot::DependencyGroup, dependency_snapshot: Dependabot::DependencySnapshot).void }
       def initialize(group:, dependency_snapshot:)
         @group = group

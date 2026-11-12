@@ -469,6 +469,51 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#note_security_update_unresolved" do
+    let(:dependency) { dependencies.first }
+
+    before do
+      allow(job).to receive_messages(security_updates_only?: true)
+      allow(Dependabot.logger).to receive(:info)
+    end
+
+    it "diagnoses a dropped group dependency as not possible instead of an unknown error" do
+      test_instance.note_security_update_unresolved(dependency.name.upcase, "it was dropped")
+
+      expect(service).to receive(:record_update_job_error).with(
+        error_type: "security_update_not_possible",
+        error_details: hash_including("dependency-name": dependency.name, "conflicting-dependencies": []),
+        dependency: nil
+      ).once
+
+      test_instance.report_security_update_failures(nil)
+    end
+
+    it "keeps a concrete diagnosis recorded earlier" do
+      test_instance.security_update_failures[dependency.name.downcase] =
+        Dependabot::Service::ErrorRecord.new(error_type: "security_update_not_found", error_details: {})
+
+      test_instance.note_security_update_unresolved(dependency.name, "it was dropped")
+
+      expect(test_instance.security_update_failures[dependency.name.downcase].error_type)
+        .to eq("security_update_not_found")
+    end
+
+    it "ignores dependencies outside the group" do
+      test_instance.note_security_update_unresolved("not-in-group", "it was dropped")
+
+      expect(test_instance.security_update_failures).to be_empty
+    end
+
+    it "does nothing for version updates" do
+      allow(job).to receive_messages(security_updates_only?: false)
+
+      test_instance.note_security_update_unresolved(dependency.name, "it was dropped")
+
+      expect(test_instance.security_update_failures).to be_empty
+    end
+  end
+
   describe "#failed_security_update_dependencies" do
     let(:dependency) { dependencies.first }
 
@@ -545,7 +590,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       it "keeps reporting it when the aggregate change is rejected" do
         allow(Dependabot::DependencyChange).to receive(:new).and_return(
-          instance_double(Dependabot::DependencyChange, all_have_previous_version?: false)
+          instance_double(Dependabot::DependencyChange, all_have_previous_version?: false, updated_dependencies: [])
         )
         allow(test_instance).to receive(:log_missing_previous_version)
 

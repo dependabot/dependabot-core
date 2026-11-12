@@ -194,6 +194,11 @@ module Dependabot
 
         unless dependency_change.all_have_previous_version?
           log_missing_previous_version(dependency_change)
+          dependency_change.updated_dependencies.each do |dependency|
+            note_security_update_unresolved(
+              dependency.name, "its change was discarded because a previous version is missing"
+            )
+          end
           return nil
         end
 
@@ -952,6 +957,34 @@ module Dependabot
         security_update_failures[dependency.name.downcase] ||= failure
       end
 
+      # Records a diagnosis for a dependency the group dropped before any update check could
+      # classify it, so it is not reported as an unknown error. The first diagnosis wins, so a
+      # concrete failure noted by `compile_updates_for` is never overridden.
+      sig { params(dependency_name: String, reason: String).void }
+      def note_security_update_unresolved(dependency_name, reason)
+        return unless job.security_updates_only?
+
+        dependency = group.dependencies.find { |dep| dep.name.casecmp?(dependency_name) }
+        return unless dependency
+
+        Dependabot.logger.info(
+          "Security update not possible for #{dependency.name} in group #{group.name}: #{reason}"
+        )
+        note_security_update_failure(
+          dependency,
+          Dependabot::Service::ErrorRecord.new(
+            error_type: "security_update_not_possible",
+            error_details: {
+              "dependency-name": dependency.name,
+              "latest-resolvable-version": dependency.version,
+              "lowest-non-vulnerable-version": nil,
+              "conflicting-dependencies": []
+            },
+            dependency: nil
+          )
+        )
+      end
+
       # The single job-scoped report of why a security update failed. `record_update_job_error`
       # marks the whole job as failed, so it must not be called while compiling an individual
       # directory: a dependency that cannot be updated in one directory may still be updated in
@@ -994,7 +1027,11 @@ module Dependabot
         return if removed_names.empty?
 
         present = dependency_file_parser(final_files).parse.to_set { |dependency| dependency.name.downcase }
-        removed_names.delete_if { |name| present.include?(name) }
+        still_present = removed_names.select { |name| present.include?(name) }
+        still_present.each do |name|
+          note_security_update_unresolved(name, "it could not be found when reparsing the dependency files")
+        end
+        removed_names.subtract(still_present)
       end
 
       sig { params(removed_names: T::Set[String], original_dependencies: T::Array[Dependabot::Dependency]).void }
