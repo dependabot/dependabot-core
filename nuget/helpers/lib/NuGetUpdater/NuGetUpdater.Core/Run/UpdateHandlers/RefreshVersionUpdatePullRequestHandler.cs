@@ -157,7 +157,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
                 var reportedDependencies = updatedDependencies.Select(d => ReportedDependencyWithDirectory.From(d, directory)).ToArray();
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: true, treatRefreshDirectoryAsWildcard: true);
                 if (existingPullRequest is not null)
                 {
                     await apiHandler.UpdatePullRequest(new UpdatePullRequest()
@@ -175,7 +175,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 }
                 else
                 {
-                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false, treatEmptyDirectoryAsWildcard: true);
+                    var existingPrButDifferent = job.GetExistingPullRequestForDependencies(reportedDependencies, considerVersions: false, treatRefreshDirectoryAsWildcard: true);
                     if (existingPrButDifferent is not null)
                     {
                         await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));

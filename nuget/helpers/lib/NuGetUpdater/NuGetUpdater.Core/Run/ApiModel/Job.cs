@@ -144,9 +144,9 @@ public sealed record Job
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
         bool considerVersions,
-        bool treatEmptyDirectoryAsWildcard = false)
+        bool treatRefreshDirectoryAsWildcard = false)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatEmptyDirectoryAsWildcard);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatRefreshDirectoryAsWildcard);
     }
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
@@ -154,7 +154,7 @@ public sealed record Job
         bool considerVersions,
         string dependencyGroupName)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatEmptyDirectoryAsWildcard: false);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatRefreshDirectoryAsWildcard: false);
     }
 
     private Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
@@ -162,7 +162,7 @@ public sealed record Job
         bool considerVersions,
         string? dependencyGroupName,
         bool matchGroupName,
-        bool treatEmptyDirectoryAsWildcard)
+        bool treatRefreshDirectoryAsWildcard)
     {
         var desiredDependencies = dependencies.ToArray();
         if (desiredDependencies.Any(d => d.Version is null))
@@ -181,7 +181,7 @@ public sealed record Job
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
                 (existingDependency.Directory is null ||
-                    (treatEmptyDirectoryAsWildcard && existingDependency.Directory.Length == 0) ||
+                    (treatRefreshDirectoryAsWildcard && (existingDependency.Directory.Length == 0 || existingDependency.Directory == "/")) ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
