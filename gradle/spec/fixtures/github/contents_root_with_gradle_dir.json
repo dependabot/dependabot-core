@@ -1,0 +1,50 @@
+[
+  {
+    "name": "build.gradle.kts",
+    "path": "build.gradle.kts",
+    "sha": "a_sha_for_build_gradle_kts",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/build.gradle.kts?ref=sha",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_build_gradle_kts",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/build.gradle.kts",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/build.gradle.kts",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/build.gradle.kts?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_build_gradle_kts",
+      "html": "https://github.com/gocardless/bump/blob/sha/build.gradle.kts"
+    }
+  },
+  {
+    "name": "settings.gradle.kts",
+    "path": "settings.gradle.kts",
+    "sha": "a_sha_for_settings_gradle_kts",
+    "size": 280,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/settings.gradle.kts?ref=sha",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_settings_gradle_kts",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/settings.gradle.kts",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/settings.gradle.kts",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/settings.gradle.kts?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_settings_gradle_kts",
+      "html": "https://github.com/gocardless/bump/blob/sha/settings.gradle.kts"
+    }
+  },
+  {
+    "name": "gradle",
+    "path": "gradle",
+    "sha": "a_sha_for_gradle_dir",
+    "size": 0,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/gradle?ref=sha",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/a_sha_for_gradle_dir",
+    "html_url": "https://github.com/gocardless/bump/tree/sha/gradle",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/gradle?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/trees/a_sha_for_gradle_dir",
+      "html": "https://github.com/gocardless/bump/tree/sha/gradle"
+    }
+  }
+]
