@@ -103,6 +103,30 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
   end
 
+  it "enforces a wall-clock deadline for diagnostic probes even if output keeps arriving" do
+    version_probe_observer = T.let(nil, T.untyped)
+
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm --version", hash_including(env: env, timeout: 10)) do |*, **kwargs|
+        version_probe_observer = kwargs[:output_observer]
+        "12.0.0\n"
+      end
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm config get registry", any_args).and_return("#{env.fetch('npm_config_registry')}\n")
+
+    expect { described_class.run_npm_command(command, env: env) }
+      .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+
+    # Output keeps arriving, which would reset `run_shell_command`'s own inactivity timeout, but the
+    # observer must still signal a stop once the wall-clock deadline has elapsed regardless.
+    expect(version_probe_observer.call("still printing output...")).to eq({})
+
+    allow(Time).to receive(:now).and_return(Time.now + 11)
+    expect(version_probe_observer.call("still printing output...")).to include(gracefully_stop: true)
+  end
+
   context "when collecting diagnostics fails" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
