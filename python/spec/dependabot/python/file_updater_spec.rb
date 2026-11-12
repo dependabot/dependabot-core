@@ -444,6 +444,27 @@ RSpec.describe Dependabot::Python::FileUpdater do
       end
     end
 
+    context "when the resolver leaves every file unchanged" do
+      let(:dependency_files) { [requirements] }
+
+      before do
+        requirement_updater = instance_double(described_class::RequirementFileUpdater)
+        allow(described_class::RequirementFileUpdater).to receive(:new).and_return(requirement_updater)
+        allow(requirement_updater).to receive(:updated_dependency_files).and_return(dependency_files)
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files have changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "resolver" => "requirements",
+            "dependency-names" => ["psycopg2"],
+            "dependency-files" => ["requirements.txt"],
+            "updated-files" => ["requirements.txt"]
+          )
+        end
+      end
+    end
+
     describe "#pip_compile_index_urls" do
       let(:instance) do
         described_class.new(
