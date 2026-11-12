@@ -111,7 +111,9 @@ report ignored files, so a repository that ignores its deployed files gets only
 `apm.yml` and `apm.lock.yaml`, as does any update that runs `apm lock`. A file
 the workaround above removed and APM wrote back unchanged doesn't appear.
 
-The files APM writes are removed after each update. APM only re-resolves the
+The files APM writes are removed after each update. A grouped update keeps the
+files it returns as added, as it commits each update's changes before the next
+one runs, so the next update doesn't report them again. APM only re-resolves the
 entries whose manifest ref changed, so every other entry keeps its locked
 commit. A branch pin's lock entry is first
 moved to the branch's new head commit (dropping its now stale `content_hash`)

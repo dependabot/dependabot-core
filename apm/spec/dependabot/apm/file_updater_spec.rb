@@ -272,6 +272,71 @@ RSpec.describe Dependabot::Apm::FileUpdater do
           )
           expect(updated_files.find { |file| file.name.end_with?("retired.md") }).to be_deleted
         end
+
+        it "removes what apm install wrote, including the file it added" do
+          updated_files
+
+          Dir.chdir(repo_contents_path) do
+            expect(Dir.exist?("apm_modules")).to be(false)
+            expect(File.exist?(".mcp.json")).to be(false)
+            expect(File.exist?(".claude/skills/edge-ai/added.md")).to be(false)
+          end
+        end
+      end
+
+      context "when a grouped update runs it in a workspace before updating another dependency" do
+        let(:extras_dependency) do
+          requirement = lambda do |ref|
+            {
+              file: "apm.yml",
+              requirement: nil,
+              groups: [],
+              source: { type: "git", url: "https://github.com/microsoft/edge-ai-extras", ref: ref, branch: nil },
+              metadata: { declaration_string: "microsoft/edge-ai-extras#v1.0.0", declaration_span: "4:6:4:37" }
+            }
+          end
+          Dependabot::Dependency.new(
+            name: "microsoft/edge-ai-extras",
+            version: "1.1.0",
+            previous_version: "1.0.0",
+            requirements: [requirement.call("v1.1.0")],
+            previous_requirements: [requirement.call("v1.0.0")],
+            package_manager: "apm"
+          )
+        end
+        let(:extras_lockfile_content) do
+          "#{new_lockfile_content}- repo_url: microsoft/edge-ai-extras\n  resolved_ref: v1.1.0\n"
+        end
+
+        before { Dependabot::Workspace.setup(repo_contents_path: repo_contents_path, directory: Pathname.new("/")) }
+
+        after { Dependabot::Workspace.cleanup! }
+
+        it "keeps the file it added for the workspace to commit, so the next update doesn't return it again" do
+          first_update = updated_files
+          expect(File.read(File.join(repo_contents_path, ".claude/skills/edge-ai/added.md"))).to eq(added)
+          expect(File.exist?(File.join(repo_contents_path, ".mcp.json"))).to be(false)
+          Dependabot::Workspace.store_change(memo: "Update microsoft/edge-ai")
+
+          # Mimics APM deploying every file the lockfile records, as the
+          # workaround removed the unmodified ones, while bumping the extras.
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+            File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
+            File.write(".claude/skills/edge-ai/reference.md", reference)
+            File.write(".claude/skills/edge-ai/added.md", added)
+            File.write("apm.lock.yaml", extras_lockfile_content)
+            ""
+          end
+          second_update = described_class.new(
+            dependency_files: first_update.first(2),
+            dependencies: [extras_dependency],
+            credentials: [],
+            repo_contents_path: repo_contents_path
+          ).updated_dependency_files
+
+          expect(second_update.map(&:name)).to eq(%w(apm.yml apm.lock.yaml))
+          expect(second_update.first.content).to include("microsoft/edge-ai-extras#v1.1.0")
+        end
       end
 
       context "when the repository commits an executable deployed script" do

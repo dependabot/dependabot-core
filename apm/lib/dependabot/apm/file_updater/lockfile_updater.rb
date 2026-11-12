@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/shared_helpers"
+require "dependabot/workspace"
 require "dependabot/apm/file_updater"
 require "dependabot/apm/lockfile"
 require "dependabot/apm/native_helpers"
@@ -111,6 +112,7 @@ module Dependabot
         sig { returns(Result) }
         def regenerate
           SharedHelpers.in_a_temporary_repo_directory(lockfile.directory, repo_contents_path) do
+            regenerated = T.let(nil, T.nilable(Result))
             # APM downloads packages into apm_modules/ and resolves
             # transitive dependencies from what is already there. The git reset
             # between updates doesn't remove that ignored directory, so clear it
@@ -130,9 +132,12 @@ module Dependabot
             content = File.read(FileUpdater::LOCKFILE_FILENAME)
             # `apm lock` deploys nothing, so only an install changes deployed
             # files, and they must be read before its output is cleaned up.
-            Result.new(lockfile_content: content, deployed_files: install ? changed_deployed_files(content) : [])
+            regenerated = Result.new(
+              lockfile_content: content,
+              deployed_files: install ? changed_deployed_files(content) : []
+            )
           ensure
-            remove_apm_output
+            remove_apm_output(regenerated)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_apm_error(e)
@@ -270,12 +275,29 @@ module Dependabot
         # ignored directories, so a later update in the same checkout would
         # find files it doesn't own. The checkout starts as a clean clone, so
         # every untracked file here was written by APM.
-        sig { void }
-        def remove_apm_output
+        # A grouped update commits each update's changes to its workspace
+        # before the next one runs, so the files this update returns as
+        # created are written back: the workspace then matches what it
+        # returned, and the next update doesn't report them as created again.
+        sig { params(regenerated: T.nilable(Result)).void }
+        def remove_apm_output(regenerated)
           FileUtils.rm_rf(APM_MODULES_DIRECTORY)
           return unless repo_contents_path
 
           SharedHelpers.run_shell_command("git clean -fdx -- .", fingerprint: "git clean -fdx -- .")
+          return unless regenerated && Dependabot::Workspace.active_workspace
+
+          regenerated.deployed_files.each { |file| restore_created_file(file) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile).void }
+        def restore_created_file(file)
+          return unless file.operation == Dependabot::DependencyFile::Operation::CREATE
+
+          path = File.join(T.must(repo_contents_path), lockfile.directory, file.name)
+          FileUtils.mkdir_p(File.dirname(path))
+          File.binwrite(path, file.decoded_content)
+          File.chmod(file.mode == Dependabot::DependencyFile::Mode::EXECUTABLE ? 0o755 : 0o644, path)
         end
 
         sig { returns(String) }
