@@ -15,17 +15,17 @@ if ! [[ "$install_dir" =~ ^/ ]]; then
 fi
 
 # See https://github.com/microsoft/apm/releases
-apm_version="0.35.0"
+apm_version="0.35.1"
 
 # Checksums come from the `<asset>.sha256` files published with each release.
 case "$(uname -m)" in
   x86_64 | amd64)
     apm_arch="x86_64"
-    apm_checksum="5aa23ce61eebae9411668f507772cdb5d87252c760078dc59b5acdc5188d785b"
+    apm_checksum="e7f06b9c80e26152ab579fe50d7dcd3d76ebbd8eacd44eed424e39880044eb3e"
     ;;
   aarch64 | arm64)
     apm_arch="arm64"
-    apm_checksum="ada8901ce1b29e5d188629eeed64e8499853a8cb5f047630ebedbde24008508e"
+    apm_checksum="96d65f6ed385d4c4c6093257e9f083bd3e4b51617c228abd787def92c18ab429"
     ;;
   *)
     echo "Unsupported architecture: $(uname -m)"

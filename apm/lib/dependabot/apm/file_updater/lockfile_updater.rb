@@ -184,11 +184,11 @@ module Dependabot
         end
 
         # Workaround for microsoft/apm#3391: without the local deployment
-        # receipts APM 0.35.0 keeps outside the repository, `apm install` won't
-        # overwrite deployed files a repository commits, then removes them as
-        # stale, so the update deletes the skill. Removing each file that still
-        # matches the digest the lockfile recorded lets APM deploy the new
-        # version. An edited file is kept, and APM skips it with a warning.
+        # receipts APM keeps outside the repository, `apm install` won't
+        # overwrite deployed files a repository commits and fails. Removing
+        # each file that still matches the digest the lockfile recorded lets
+        # APM deploy the new version. An edited file is kept, so APM refuses it
+        # and the install still fails, naming the file.
         # Remove this once the bundled APM includes the fix for #3391.
         sig { void }
         def remove_unmodified_deployed_files
