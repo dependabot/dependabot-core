@@ -80,8 +80,10 @@ module Dependabot
         @removed_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
       end
 
-      # Names of dependencies whose installed version the job's advisories do not cover, so a
-      # security update was not needed for them.
+      # Names of dependencies that have advisories in the job, none of which cover the installed version, so a
+      # security update was not needed for them. Only names that end up neither updated, diagnosed nor handled are
+      # reported, which in practice means those from the all-versions-ignored and update-types branches of
+      # #compile_updates_for: the other branches mark the dependency handled first.
       sig { returns(T::Set[String]) }
       def not_vulnerable_dependency_names
         @not_vulnerable_dependency_names ||= T.let(Set.new, T.nilable(T::Set[String]))
@@ -861,6 +863,9 @@ module Dependabot
       # Reported once per job, with the other security update failures noted here.
       sig { params(dependency: Dependabot::Dependency).void }
       def note_security_update_not_needed(dependency)
+        # With no advisory at all the job cannot tell whether the version is affected.
+        return if job.security_advisories_for(dependency).none?
+
         not_vulnerable_dependency_names << dependency.name.downcase
       end
 

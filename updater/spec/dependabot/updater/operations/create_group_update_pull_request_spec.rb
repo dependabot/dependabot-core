@@ -356,13 +356,29 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
           perform
         end
 
-        it "keeps the unknown error when the installed version cannot be checked, such as a git SHA" do
-          allow(dependency).to receive(:version_class).and_return(class_double(Gem::Version, correct?: false))
+        it "keeps the unknown error when the job has no advisory for the dependency" do
+          # Without an advisory the job cannot tell whether the version is affected, so "not needed" would hide it.
+          allow(job).to receive(:security_advisories_for).and_return([])
           expect(mock_error_handler).to receive(:handle_dependency_error)
             .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
           expect(mock_service).not_to receive(:record_update_job_error)
 
           perform
+        end
+
+        context "when the installed version is a git SHA" do
+          let(:dependency) do
+            dependency_snapshot.all_dependencies.find { |candidate| candidate.name == "dummy-git-dependency" }
+          end
+
+          it "keeps the unknown error, since the version cannot be checked against the advisories" do
+            expect(dependency.version).to eq("20151f9b67c8a04461fa0ee28385b6187b86587b")
+            expect(mock_error_handler).to receive(:handle_dependency_error)
+              .with(error: kind_of(Dependabot::DependabotError), dependency: dependency, dependency_group: anything)
+            expect(mock_service).not_to receive(:record_update_job_error)
+
+            perform
+          end
         end
 
         it "reports that no security update is needed when the dependency is up to date" do

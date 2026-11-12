@@ -142,24 +142,27 @@ module Dependabot
 
           undiagnosed
             .reject { |dep| handled.include?(dep.name.downcase) }
-            .each do |dep|
-              # Not vulnerable per the job's advisories: report it as a single-dependency update does. A missing
-              # or git SHA version cannot be matched against the advisories, so it is not known to be safe.
-              if not_vulnerable_dependency_names.include?(dep.name.downcase) && dep.version_class.correct?(dep.version)
-                record_security_update_not_needed_error(dep)
-                next
-              end
+            .each { |dep| report_undiagnosed_security_update_failure(dep) }
+        end
 
-              # The error is never raised, so give it a backtrace for error reports.
-              error = Dependabot::DependabotError.new("Security update failed for #{dep.name} #{dep.version}")
-              error.set_backtrace(caller)
+        sig { params(dep: Dependabot::Dependency).void }
+        def report_undiagnosed_security_update_failure(dep)
+          # Not vulnerable per the job's advisories: report it as a single-dependency update does. A missing
+          # or git SHA version cannot be matched against the advisories, so it is not known to be safe.
+          if not_vulnerable_dependency_names.include?(dep.name.downcase) && dep.version_class.correct?(dep.version)
+            record_security_update_not_needed_error(dep)
+            return
+          end
 
-              error_handler.handle_dependency_error(
-                error: error,
-                dependency: dep,
-                dependency_group: group
-              )
-            end
+          # The error is never raised, so give it a backtrace for error reports.
+          error = Dependabot::DependabotError.new("Security update failed for #{dep.name} #{dep.version}")
+          error.set_backtrace(caller)
+
+          error_handler.handle_dependency_error(
+            error: error,
+            dependency: dep,
+            dependency_group: group
+          )
         end
       end
     end
