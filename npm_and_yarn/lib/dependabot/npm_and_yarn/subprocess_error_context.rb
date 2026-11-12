@@ -14,6 +14,7 @@ module Dependabot
       PACKAGE_MANAGERS = %w(npm pnpm yarn).freeze
       COMMANDS = %w(add audit config dedupe dlx info install list outdated remove update up upgrade why).freeze
       VERSION = /\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\z/
+      PROBE_TIMEOUT = 10
 
       sig { params(executable: String, env: T.nilable(T::Hash[String, String])).void }
       def initialize(executable:, env:)
@@ -73,11 +74,19 @@ module Dependabot
 
       sig { params(command: String).returns(T.nilable(String)) }
       def probe(command)
+        started_at = Time.now
         SharedHelpers.run_shell_command(
           "#{@executable} #{command}",
           fingerprint: "#{@package_manager} #{command}",
           env: @env,
-          timeout: 10
+          timeout: PROBE_TIMEOUT,
+          # `timeout` above only resets after a period of silence, so a probe that keeps producing
+          # output could otherwise run indefinitely. Enforce a wall-clock deadline alongside it.
+          output_observer: lambda do |_output|
+            next {} if Time.now - started_at < PROBE_TIMEOUT
+
+            { gracefully_stop: true, reason: "Diagnostic probe exceeded its #{PROBE_TIMEOUT}s deadline" }
+          end
         ).strip
       rescue SharedHelpers::HelperSubprocessFailed, SystemCallError, Timeout::Error => e
         Dependabot.logger.warn("Could not collect #{@package_manager} error context (#{e.class})")
