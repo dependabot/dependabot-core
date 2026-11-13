@@ -167,9 +167,14 @@ module Dependabot
           updated_deps.filter_map do |dep|
             original_dep =
               original_dependencies.find { |d| d.name == dep.fetch("name") }
+            # Bundler also reports top-level gems that the file parser skips, such as
+            # path gems and gems only used on other platforms. Dependabot does not
+            # update those, so leave them out.
+            next unless original_dep
+
             spec = specs.find { |d| d.fetch("name") == dep.fetch("name") }
 
-            next if T.must(spec).fetch("version") == T.must(original_dep).version
+            next if T.must(spec).fetch("version") == original_dep.version
 
             build_dependency(original_dep, spec)
           end
