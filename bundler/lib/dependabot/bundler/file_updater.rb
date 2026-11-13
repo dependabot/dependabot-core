@@ -3,7 +3,6 @@
 
 require "sorbet-runtime"
 
-require "dependabot/error_report_context"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/bundler/native_helpers"
@@ -108,21 +107,7 @@ module Dependabot
       def check_updated_files(updated_files)
         return if updated_files.reject { |f| dependency_files.include?(f) }.any?
 
-        raise no_files_changed_error(updated_files)
-      end
-
-      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).returns(RuntimeError) }
-      def no_files_changed_error(updated_files)
-        error = RuntimeError.new("No files have changed!")
-        Dependabot::ErrorReportContext.attach(
-          error,
-          {
-            dependency_names: dependencies.map(&:name),
-            dependency_files: dependency_files.map(&:name),
-            updated_files: updated_files.map(&:name)
-          }
-        )
-        error
+        raise no_files_changed_error("No files have changed!", { updated_files: updated_files.map(&:name) })
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
