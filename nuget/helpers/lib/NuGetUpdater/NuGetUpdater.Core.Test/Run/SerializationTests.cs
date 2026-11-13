@@ -393,7 +393,9 @@ public class SerializationTests : TestBase
             }
             """;
         var jobWrapper = RunWorker.Deserialize(jobWrapperJson)!;
-        AssertEx.Equal(expectedAllowedUpdates, jobWrapper.Job.AllowedUpdates);
+        var expectedJson = JsonSerializer.Serialize(expectedAllowedUpdates, RunWorker.SerializerOptions);
+        var actualJson = JsonSerializer.Serialize(jobWrapper.Job.AllowedUpdates, RunWorker.SerializerOptions);
+        Assert.Equal(expectedJson, actualJson);
     }
 
     [Fact]
@@ -1020,16 +1022,19 @@ public class SerializationTests : TestBase
                 {
                     "dependency-type": "indirect",
                     "dependency-name": "Dependency.One",
-                    "update-type": "security"
+                    "update-type": "security",
+                    "update-types": ["version-update:semver-minor", "version-update:semver-patch"]
                 },
                 {
                     "dependency-type": "production",
                     "dependency-name": "Dependency.Two",
-                    "update-type": "all"
+                    "update-type": "all",
+                    "update-types": []
                 },
                 {
                     "dependency-type": "indirect",
-                    "update-type": "security"
+                    "update-type": "security",
+                    "update-types": null
                 }
             ]
             """,
@@ -1039,13 +1044,15 @@ public class SerializationTests : TestBase
                 {
                     DependencyType = Core.Run.ApiModel.DependencyType.Indirect,
                     DependencyName = "Dependency.One",
-                    UpdateType = UpdateType.Security
+                    UpdateType = UpdateType.Security,
+                    UpdateTypes = [ConditionUpdateType.SemVerMinor, ConditionUpdateType.SemVerPatch],
                 },
                 new AllowedUpdate()
                 {
                     DependencyType = Core.Run.ApiModel.DependencyType.Production,
                     DependencyName = "Dependency.Two",
-                    UpdateType = UpdateType.All
+                    UpdateType = UpdateType.All,
+                    UpdateTypes = [],
                 },
                 new AllowedUpdate()
                 {

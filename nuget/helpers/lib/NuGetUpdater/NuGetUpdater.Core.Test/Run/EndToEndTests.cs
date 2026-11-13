@@ -17,23 +17,38 @@ using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
-    [Fact]
-    public async Task WithPackageReference()
+    [Theory]
+    [InlineData("""{"dependency-name":"*","update-types":[]}""", "2.0.0")]
+    [InlineData("""{"dependency-name":"*","update-types":["version-update:semver-minor","version-update:semver-patch"]}""", "1.1.0")]
+    [InlineData(
+        """{"dependency-type":"production","update-types":["version-update:semver-patch"]},""" +
+        """{"dependency-type":"development"}""",
+        "1.0.1")]
+    public async Task WithPackageReference(string allowedUpdates, string expectedVersion)
     {
+        var job = RunWorker.Deserialize($$"""
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "test/repo",
+                        "directory": "/"
+                    },
+                    "allowed-updates": [
+                        {{allowedUpdates}}
+                    ]
+                }
+            }
+            """).Job;
+
         await RunAsync(
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net9.0"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
             ],
-            job: new()
-            {
-                Source = new()
-                {
-                    Provider = "github",
-                    Repo = "test/repo",
-                    Directory = "/",
-                }
-            },
+            job: job,
             files: [
                 ("Directory.Build.props", "<Project />"),
                 ("Directory.Build.targets", "<Project />"),
@@ -98,11 +113,11 @@ public class EndToEndTests
                         {
                             Name = "Some.Package",
                             Directory = "/",
-                            Version = "2.0.0",
+                            Version = expectedVersion,
                             Requirements = [
                                 new()
                                 {
-                                    Requirement = "2.0.0",
+                                    Requirement = expectedVersion,
                                     File = "/project.csproj",
                                     Groups = ["dependencies"],
                                     Source = new()
@@ -128,13 +143,13 @@ public class EndToEndTests
                         {
                             Directory = "/",
                             Name = "project.csproj",
-                            Content = """
+                            Content = $$"""
                                 <Project Sdk="Microsoft.NET.Sdk">
                                   <PropertyGroup>
                                     <TargetFramework>net9.0</TargetFramework>
                                   </PropertyGroup>
                                   <ItemGroup>
-                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                    <PackageReference Include="Some.Package" Version="{{expectedVersion}}" />
                                   </ItemGroup>
                                 </Project>
                                 """
