@@ -8,8 +8,140 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
 require_relative "../../support/corepack_registry"
+require_relative "../../support/node_runtime"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  context "with a selected Node runtime" do
+    before do
+      manager = Dependabot::NpmAndYarn::NodeVersionManager.new(["26.x"], preferred_requirement: nil)
+      allow(ENV).to receive(:key?).and_call_original
+      allow(ENV).to receive(:key?).with("NVM_DIR").and_return(true)
+      allow(manager).to receive(:bin_directory).and_return("/home/dependabot/.nvm/versions/node/v26.0.0/bin")
+      allow(Dependabot::NpmAndYarn::NodeVersionManager).to receive(:new)
+        .with(["26.x"], preferred_requirement: nil).and_return(manager)
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(
+          name: "package.json", content: '{"devEngines":{"runtime":{"name":"node","version":"26.x"}}}'
+        )
+      ]
+      allow(described_class).to receive(:setup_yarn_berry)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("26.0.0")
+    end
+
+    it "passes the selected runtime and existing environment to every package-manager command" do
+      env = { "CUSTOM_VAR" => "preserved", "PATH" => "/custom/bin" }
+      selected_env = env.merge("PATH" => "/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:/custom/bin")
+
+      described_class.run_npm_command("-v", env: env)
+      described_class.run_pnpm_command("-v", env: env)
+      described_class.run_yarn_command("-v", env: env)
+      described_class.npm_version_selector = "11"
+      described_class.run_npm_command("-v", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v", output_observer: kind_of(Proc), env: selected_env)
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v", env: selected_env)
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("yarn -v", fingerprint: "yarn -v", env: selected_env)
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("corepack npm@11 -v",
+              fingerprint: "corepack npm@11 -v",
+              output_observer: kind_of(Proc),
+              env: selected_env)
+      expect(env).to eq("CUSTOM_VAR" => "preserved", "PATH" => "/custom/bin")
+    end
+
+    it "reports the selected Node version without changing the native-helper environment" do
+      inherited_path = ENV.fetch("PATH")
+
+      expect(described_class.node_version).to eq("26.0.0")
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "/home/dependabot/.nvm/versions/node/v26.0.0/bin/node -v",
+        fingerprint: "node -v",
+        env: { "PATH" => "/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:#{inherited_path}" }
+      )
+      expect(ENV.fetch("PATH")).to eq(inherited_path)
+    end
+
+    it "does not leak the selected runtime into a subsequent repository without requirements" do
+      env = { "CUSTOM_VAR" => "preserved" }
+      described_class.node_env(env)
+      described_class.dependency_files = [Dependabot::DependencyFile.new(name: "package.json", content: "{}")]
+
+      expect(described_class.node_env(env)).to eq(env)
+    end
+
+    it "prefers .nvmrc to .node-version and engines.node" do
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(name: "package.json", content: '{"engines":{"node":"18"}}'),
+        Dependabot::DependencyFile.new(name: ".node-version", content: "22"),
+        Dependabot::DependencyFile.new(name: ".nvmrc", content: "26.x")
+      ]
+
+      expect(described_class.node_env).to include(
+        "PATH" => start_with("/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:")
+      )
+    end
+
+    it "uses .node-version when there is no .nvmrc" do
+      described_class.dependency_files = [
+        Dependabot::DependencyFile.new(name: "package.json", content: '{"engines":{"node":"18"}}'),
+        Dependabot::DependencyFile.new(name: ".node-version", content: "26.x")
+      ]
+
+      expect(described_class.node_env).to include(
+        "PATH" => start_with("/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:")
+      )
+    end
+
+    it "does not suppress runtime installation failures while reporting the Node version" do
+      manager = Dependabot::NpmAndYarn::NodeVersionManager.new(["26.x"], preferred_requirement: nil)
+      allow(manager).to receive(:bin_directory).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "Download failed", error_context: {})
+      )
+
+      expect { described_class.node_version }
+        .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Download failed/)
+    end
+  end
+
+  it "updates the selected runtime when an optional runtime preference changes" do
+    allow(ENV).to receive(:key?).and_call_original
+    allow(ENV).to receive(:key?).with("NVM_DIR").and_return(true)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+      "node -v", fingerprint: "node -v"
+    ).and_return("v24.15.0\n")
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+      ["bash", "/opt/node-version-manager", "list"], fingerprint: "nvm ls-remote"
+    ).and_return("v22.20.0\nv26.0.0\n")
+    %w(22.20.0 26.0.0).each do |version|
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        ["bash", "/opt/node-version-manager", "install", version],
+        fingerprint: "nvm install <version>",
+        stderr_to_stdout: false
+      ).and_return("/home/dependabot/.nvm/versions/node/v#{version}/bin/node\n")
+    end
+    described_class.dependency_files = [
+      Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: '{"devEngines":{"runtime":{"name":"node","version":"22.x","onFail":"warn"}}}'
+      )
+    ]
+    expect(described_class.node_env).to include(
+      "PATH" => start_with("/opt/node-tools:/home/dependabot/.nvm/versions/node/v22.20.0/bin:")
+    )
+    described_class.dependency_files = [
+      Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: '{"devEngines":{"runtime":{"name":"node","version":"26.x","onFail":"warn"}}}'
+      )
+    ]
+    expect(described_class.node_env).to include(
+      "PATH" => start_with("/opt/node-tools:/home/dependabot/.nvm/versions/node/v26.0.0/bin:")
+    )
+  end
+
   describe "::activate_npm_version_selector" do
     let(:legacy_files) do
       [Dependabot::DependencyFile.new(name: "package.json", content: "{}", directory: "/legacy")]
@@ -170,11 +302,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     context "with an unparseable package.json" do
       let(:manifest_content) { "{" }
 
-      it "treats pnpm as unpinned" do
-        described_class.run_pnpm_command("install", env: env)
+      it "reports the manifest that cannot be read for runtime selection" do
+        allow(ENV).to receive(:key?).and_call_original
+        allow(ENV).to receive(:key?).with("NVM_DIR").and_return(true)
 
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
-          .with("corepack pnpm@8 install", fingerprint: "corepack pnpm@8 install", env: env)
+        expect { described_class.run_pnpm_command("install", env: env) }
+          .to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
 
@@ -1801,6 +1934,72 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "is false when the npm version cannot be determined" do
       allow(described_class).to receive(:npm_version).and_return(nil)
       expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
+  end
+
+  describe "Node runtime integration" do
+    include NodeRuntimeSpecHelper
+
+    let(:files) { project_dependency_files("npm/node22_dev_engines") }
+
+    before { stub_node_runtime(22) }
+
+    it "installs a project requiring Node 22 even when the default runtime is incompatible" do
+      default_node = Dependabot::SharedHelpers.run_shell_command("node -v").strip
+      described_class.dependency_files = files
+      described_class.npm_version_selector = nil
+
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        File.write("package.json", files.find { |file| file.name == "package.json" }.content)
+        command = "install --package-lock-only --ignore-scripts --offline"
+
+        expect { Dependabot::SharedHelpers.run_shell_command("npm #{command}") }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /EBADDEVENGINES/)
+
+        described_class.run_npm_command(command)
+
+        expect(described_class.node_version).to start_with("22.")
+        expect(JSON.parse(File.read("package-lock.json"))["packages"][""]["name"]).to eq("node22-dev-engines")
+        expect(Dependabot::SharedHelpers.run_shell_command("node -v").strip).to eq(default_node)
+        expect(JSON.parse(File.read("package.json"))["devEngines"]["runtime"])
+          .to eq("name" => "node", "version" => "22.x", "onFail" => "error")
+      end
+    end
+
+    it "selects Node 22 for a warning-only runtime in a real npm command" do
+      manifest = Dependabot::DependencyFile.new(
+        name: "package.json",
+        content: '{"name":"warn-runtime","devEngines":{"runtime":{"name":"node","version":"22.x","onFail":"warn"}}}'
+      )
+      described_class.dependency_files = [manifest]
+      described_class.npm_version_selector = nil
+
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        File.write("package.json", manifest.content)
+        described_class.run_npm_command("install --package-lock-only --ignore-scripts --offline")
+
+        expect(described_class.node_version).to start_with("22.")
+        expect(JSON.parse(File.read("package-lock.json"))["packages"][""]["name"]).to eq("warn-runtime")
+      end
+    end
+
+    %w(.nvmrc .node-version).each do |name|
+      it "selects Node 22 from #{name} for a real npm command" do
+        default_node = Dependabot::SharedHelpers.run_shell_command("node -v").strip
+        manifest = Dependabot::DependencyFile.new(name: "package.json", content: '{"name":"version-file-test"}')
+        version_file = Dependabot::DependencyFile.new(name: name, content: "22\n", support_file: true)
+        described_class.dependency_files = [manifest, version_file]
+        described_class.npm_version_selector = nil
+
+        Dependabot::SharedHelpers.in_a_temporary_directory do
+          File.write("package.json", manifest.content)
+          described_class.run_npm_command("install --package-lock-only --ignore-scripts --offline")
+
+          expect(described_class.node_version).to start_with("22.")
+          expect(JSON.parse(File.read("package-lock.json"))["packages"][""]["name"]).to eq("version-file-test")
+          expect(Dependabot::SharedHelpers.run_shell_command("node -v").strip).to eq(default_node)
+        end
+      end
     end
   end
 

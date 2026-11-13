@@ -15,6 +15,7 @@ cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/test" \
   "$helpers_dir/run.ts" \
+  "$helpers_dir/node-version.ts" \
   "$helpers_dir/tsconfig.json" \
   "$helpers_dir/tsconfig.build.json" \
   "$helpers_dir/eslint.config.js" \

@@ -9,6 +9,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/pnpm_error_message"
 require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/npm_and_yarn/node_version_manager"
 require "dependabot/experiments"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/package/npm_package_json"
@@ -469,6 +470,50 @@ module Dependabot
         nil
       end
 
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+      def self.node_env(env = nil)
+        directory = node_version_manager&.bin_directory
+        return env unless directory
+
+        inherited_path = (env || {}).fetch("PATH", ENV.fetch("PATH"))
+        path = [NodeVersionManager::TOOLS_DIRECTORY, directory, inherited_path].join(":")
+        (env || {}).merge("PATH" => path)
+      end
+
+      sig { returns(T.nilable(NodeVersionManager)) }
+      def self.node_version_manager
+        return unless ENV.key?("NVM_DIR")
+
+        files = dependency_files
+        return unless files
+
+        manifest = files.find { |file| file.name == "package.json" && !file.support_file }
+        return unless manifest
+
+        requirements, preferred = NodeVersionManager.requirements_from_file(
+          manifest, version_file: node_version_file(files)
+        )
+        return if requirements.empty? && !preferred
+
+        manager = T.cast(Thread.current[:npm_and_yarn_node_version_manager], T.nilable(NodeVersionManager))
+        return manager if [manager&.requirements, manager&.preferred_requirement] == [requirements, preferred]
+
+        manager = NodeVersionManager.new(requirements, preferred_requirement: preferred)
+        Thread.current[:npm_and_yarn_node_version_manager] = manager
+        manager
+      end
+      private_class_method :node_version_manager
+
+      sig { params(files: T::Array[DependencyFile]).returns(T.nilable(DependencyFile)) }
+      def self.node_version_file(files)
+        %w(.nvmrc .node-version).each do |name|
+          file = files.find { |candidate| candidate.name == name }
+          return file if file
+        end
+        nil
+      end
+      private_class_method :node_version_file
+
       # True when the running npm supports `--min-release-age` (npm 11.10+).
       sig { returns(T::Boolean) }
       def self.npm_supports_min_release_age?
@@ -722,7 +767,7 @@ module Dependabot
             "#{NpmPackageManager::NAME} #{command}",
             fingerprint: "#{NpmPackageManager::NAME} #{fingerprint || command}",
             output_observer: ->(output) { command_observer(output) },
-            env: env
+            env: node_env(env)
           )
         end
 
@@ -758,6 +803,13 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def self.node_version
+        # Runtime selection failures must not be swallowed by optional version detection.
+        node_env
+        detect_node_version
+      end
+
+      sig { returns(T.nilable(String)) }
+      def self.detect_node_version
         version = run_node_command("-v", fingerprint: "-v").strip
 
         # Validate the output format (e.g., "v20.18.1" or "20.18.1")
@@ -770,16 +822,22 @@ module Dependabot
         Dependabot.logger.error("Error retrieving Node.js version: #{e.message}")
         nil
       end
+      private_class_method :detect_node_version
 
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_node_command(command, fingerprint: nil)
-        full_command = "node #{command}"
+        env = node_env
+        directory = node_version_manager&.bin_directory
+        # Ruby resolves a bare executable against the parent's PATH, not the subprocess environment.
+        executable = directory ? File.join(directory, "node") : "node"
+        full_command = "#{executable} #{command}"
 
         Dependabot.logger.info("Running node command: #{full_command}")
 
         result = Dependabot::SharedHelpers.run_shell_command(
           full_command,
-          fingerprint: "node #{fingerprint || command}"
+          fingerprint: "node #{fingerprint || command}",
+          **(env ? { env: env } : {})
         )
 
         Dependabot.logger.info("Command executed successfully: #{full_command}")
@@ -837,7 +895,7 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "pnpm #{command}",
           fingerprint: "pnpm #{fingerprint || command}",
-          env: env
+          env: node_env(env)
         )
       end
 
@@ -902,7 +960,7 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "yarn #{command}",
           fingerprint: "yarn #{fingerprint || command}",
-          env: env
+          env: node_env(env)
         )
       end
 
@@ -992,9 +1050,11 @@ module Dependabot
       # from the system without involving Corepack
       sig { params(name: String).returns(String) }
       def self.local_package_manager_version(name)
+        env = node_env
         Dependabot::SharedHelpers.run_shell_command(
           "#{name} -v",
-          fingerprint: "#{name} -v"
+          fingerprint: "#{name} -v",
+          **(env ? { env: env } : {})
         ).strip
       end
 
@@ -1146,14 +1206,14 @@ module Dependabot
             full_command,
             fingerprint: fingerprint,
             output_observer: output_observer,
-            env: env
+            env: node_env(env)
           ).strip
         end
 
         Dependabot::SharedHelpers.run_shell_command(
           full_command,
           fingerprint: fingerprint,
-          env: env
+          env: node_env(env)
         ).strip
       end
 
