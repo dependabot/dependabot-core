@@ -1,0 +1,11 @@
+{
+  "name": "catalog-workspace",
+  "private": true,
+  "packageManager": "yarn@4.10.1",
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "prettier": "catalog:"
+  }
+}
