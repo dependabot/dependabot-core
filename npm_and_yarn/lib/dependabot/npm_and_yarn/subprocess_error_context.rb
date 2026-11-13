@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/error_report_context"
+require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -20,7 +21,11 @@ module Dependabot
       def initialize(executable:, env:)
         @executable = executable
         @env = env
-        @package_manager = T.let(executable.delete_prefix("corepack ").split("@").first.to_s, String)
+        parts = executable.delete_prefix("corepack ").split("@", 2)
+        @package_manager = T.let(parts.fetch(0), String)
+        # A Corepack-pinned executable (e.g. "corepack npm@10") already carries the selected version, so
+        # it never needs probing. Only a bare "npm"/"pnpm"/"yarn" executable leaves this nil.
+        @known_version = T.let(parts[1], T.nilable(String))
       end
 
       sig { params(error: SharedHelpers::HelperSubprocessFailed, command: String).void }
@@ -30,13 +35,11 @@ module Dependabot
         ErrorReportContext.attach(error, { command_name: command_name(command) })
         return if %w(-v --version).include?(command.strip)
 
-        version = package_manager_version
-        registry = registry_url(version)
         ErrorReportContext.attach(
           error,
           {
-            package_manager_version: version,
-            host: registry && ErrorReportContext.host_for(registry)
+            package_manager_version: @known_version || probed_version,
+            host: ErrorReportContext.host_for(registry)
           }
         )
       end
@@ -49,27 +52,24 @@ module Dependabot
         action ? "#{@package_manager} #{action}" : @package_manager
       end
 
+      # Dependabot already resolves the configured registry from .npmrc/.yarnrc(.yml)/dependabot.yml
+      # before running any command (see Helpers.merge_corepack_env), and writes it into these same env
+      # keys for every package manager. Reading it back needs no subprocess.
+      sig { returns(String) }
+      def registry
+        @env&.fetch(RegistryHelper::NPM_CONFIG_REGISTRY_ENV, nil) ||
+          @env&.fetch(RegistryHelper::COREPACK_NPM_REGISTRY_ENV, nil) ||
+          RegistryHelper::DEFAULT_NPM_REGISTRY
+      end
+
       sig { returns(T.nilable(String)) }
-      def package_manager_version
+      def probed_version
         output = probe("--version")
         return unless output
 
         version = output.lines.map(&:strip).reverse.find { |line| VERSION.match?(line) }
         Dependabot.logger.warn("Could not parse #{@package_manager} version for error context") unless version
         version
-      end
-
-      sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
-      def registry_url(version)
-        return if @package_manager == "yarn" && version.nil?
-
-        key = @package_manager == "yarn" && !T.must(version).start_with?("1.") ? "npmRegistryServer" : "registry"
-        output = probe("config get #{key}")
-        return unless output
-
-        registry = output.lines.map(&:strip).find { |line| line.start_with?("https://", "http://") }
-        Dependabot.logger.warn("Could not parse #{@package_manager} registry for error context") unless registry
-        registry
       end
 
       sig { params(command: String).returns(T.nilable(String)) }
