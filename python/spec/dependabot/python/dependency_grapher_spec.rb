@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/python"
 
 RSpec.describe Dependabot::Python::DependencyGrapher do
@@ -1500,6 +1501,12 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(snapshots.length).to eq(1)
         expect(snapshots.first.manifest_file).to eql(pipfile_lock_file)
       end
+    end
+  end
+
+  describe "graph version" do
+    it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
+      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: ["pip"])).to be_empty
     end
   end
 end

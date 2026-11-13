@@ -4,6 +4,7 @@
 # Sorbet cannot resolve the go_mod fixture defined only in child contexts.
 
 require "spec_helper"
+require "dependabot/dependency_graphers/graph_versions"
 require "dependabot/go_modules"
 
 RSpec.describe Dependabot::GoModules::DependencyGrapher do
@@ -343,6 +344,12 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
     it "reports only go.mod, as go.sum does not determine the resolved dependencies" do
       expect(grapher.manifest_set_input_files.map(&:name)).to eq(["go.mod"])
+    end
+  end
+
+  describe "graph version" do
+    it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
+      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: ["go_modules"])).to be_empty
     end
   end
 end

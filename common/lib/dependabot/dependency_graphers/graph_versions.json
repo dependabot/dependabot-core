@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "owners": {
+    "go_modules": {
+      "graph_version": "1",
+      "sources": [
+        "common/lib/dependabot/dependency_graphers/base.rb",
+        "go_modules/lib/dependabot/go_modules/dependency_grapher.rb",
+        "go_modules/lib/dependabot/go_modules/file_parser.rb"
+      ],
+      "sources_sha256": "771e7c89e74e1d33d6fc73745a64f006cdb7df8b7513995e3d8b4e99d0741aa7"
+    },
+    "pip": {
+      "graph_version": "1",
+      "sources": [
+        "common/lib/dependabot/dependency_graphers/base.rb",
+        "python/lib/dependabot/python/dependency_grapher.rb",
+        "python/lib/dependabot/python/dependency_grapher/*.rb",
+        "python/lib/dependabot/python/file_parser.rb",
+        "python/lib/dependabot/python/file_parser/*.rb",
+        "python/lib/dependabot/python/name_normaliser.rb",
+        "python/lib/dependabot/python/pip_compile_file_matcher.rb",
+        "python/lib/dependabot/python/requirement_references.rb"
+      ],
+      "sources_sha256": "ecc28ef75a2e39070152b2c2cdaab6d915c28a3c40621cdf32013bb26715ff43"
+    },
+    "uv": {
+      "graph_version": "1",
+      "sources": [
+        "common/lib/dependabot/dependency_graphers/base.rb",
+        "uv/lib/dependabot/uv/dependency_grapher.rb",
+        "uv/lib/dependabot/uv/file_parser.rb",
+        "uv/lib/dependabot/uv/file_parser/*.rb",
+        "uv/lib/dependabot/uv/lockfile_document.rb",
+        "uv/lib/dependabot/uv/name_normaliser.rb"
+      ],
+      "sources_sha256": "483a4487085b189ca4ce2c66738cc45ac3cac63b476f5e0a20e4c2a589f210e1"
+    }
+  }
+}

@@ -123,6 +123,24 @@ with the validator.
 `--check` reports whether it is stale, and `common/spec/dependabot/manifest_sets/digests_spec.rb`
 fails CI until it is regenerated.
 
+## Graph versions
+
+Each owner's submissions carry an opaque, non-empty `graph_version`. A consumer may reuse a graph
+only while both the set's inputs and that version are unchanged, so the version must change
+whenever the grapher could produce different output for the same inputs. The catalog deliberately
+carries no graph version.
+
+`common/lib/dependabot/dependency_graphers/graph_versions.json` locks every catalog owner's version
+to a sha256 of the sources that shape its graph (the shared base grapher, the owner's grapher and
+the parsing it relies on). Each ecosystem's grapher spec fails once those sources change and the lock
+has not been refreshed. Refresh it with an explicit decision per changed owner:
+
+- `bin/update-manifest-set-graph-versions.rb --bump OWNER` when the output can change.
+- `bin/update-manifest-set-graph-versions.rb --keep OWNER` when it cannot, for example a pure refactor.
+
+`--check` reports owners whose lock is stale. When a grapher starts depending on another file, add it to
+that owner's `sources`.
+
 ## Changing the catalog
 
 Bumping the meaning of an existing rule invalidates every set it describes downstream, so prefer
