@@ -735,7 +735,9 @@ module Dependabot
           env: merge_corepack_env(env)
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        SubprocessErrorContext.new(executable: "npm", env: env).attach(e, command) unless npm_version_selector
+        unless npm_version_selector
+          SubprocessErrorContext.new(executable: "npm", env: merge_corepack_env(env)).attach(e, command)
+        end
         raise
       end
 
@@ -844,7 +846,9 @@ module Dependabot
           env: env
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        SubprocessErrorContext.new(executable: "pnpm", env: env).attach(e, command) unless matching_major
+        unless matching_major
+          SubprocessErrorContext.new(executable: "pnpm", env: merge_corepack_env(env)).attach(e, command)
+        end
         raise
       end
 
@@ -912,7 +916,7 @@ module Dependabot
           env: env
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        SubprocessErrorContext.new(executable: "yarn", env: env).attach(e, command)
+        SubprocessErrorContext.new(executable: "yarn", env: merge_corepack_env(env)).attach(e, command)
         raise
       end
 

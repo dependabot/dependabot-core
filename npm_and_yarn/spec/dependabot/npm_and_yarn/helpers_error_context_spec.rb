@@ -34,21 +34,21 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   after { described_class.npm_version_selector = nil }
 
-  sig { params(manager: String, executable: String, version: String).void }
-  def stub_command_failure(manager, executable, version)
-    registry_key = manager == "yarn" && !version.start_with?("1.") ? "npmRegistryServer" : "registry"
+  # The registry is always resolved from the already-merged `env` hash (see Helpers.merge_corepack_env),
+  # never probed, so only the version probe (when the version isn't already known) needs stubbing.
+  sig { params(executable: String, version: String, probes_version: T::Boolean).void }
+  def stub_command_failure(executable, version, probes_version:)
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("#{executable} #{command}", any_args).and_raise(error)
+    return unless probes_version
+
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("#{executable} --version", hash_including(env: env, timeout: 10)).and_return("#{version}\n")
-    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with("#{executable} config get #{registry_key}", hash_including(env: env, timeout: 10))
-      .and_return("#{env.fetch('npm_config_registry')}\n")
   end
 
-  sig { params(manager: String, executable: String, version: String).void }
-  def expect_safe_context(manager, executable, version)
-    stub_command_failure(manager, executable, version)
+  sig { params(manager: String, executable: String, version: String, probes_version: T::Boolean).void }
+  def expect_safe_context(manager, executable, version, probes_version: true)
+    stub_command_failure(executable, version, probes_version: probes_version)
 
     expect { described_class.public_send("run_#{manager}_command", command, env: env) }.to raise_error do |raised|
       expect(raised).to equal(error)
@@ -60,40 +60,56 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       )
       expect(error.sentry_context[:fingerprint]).to eq(["unchanged"])
     end
+
+    return if probes_version
+
+    expect(Dependabot::SharedHelpers)
+      .not_to have_received(:run_shell_command).with("#{executable} --version", any_args)
   end
 
-  it "reports safe context for local npm" do
+  it "reports safe context for local npm, probing for its version" do
     expect_safe_context("npm", "npm", "12.0.0")
   end
 
-  it "probes the selected npm rather than the local binary" do
+  it "uses the version Corepack already selected, without probing the binary" do
     described_class.npm_version_selector = "10"
 
-    expect_safe_context("npm", "corepack npm@10", "10.9.0")
+    expect_safe_context("npm", "corepack npm@10", "10", probes_version: false)
   end
 
-  it "reports safe context for default pnpm" do
+  it "reports safe context for default pnpm, probing for its version" do
     expect_safe_context("pnpm", "pnpm", "10.0.0")
   end
 
-  it "probes the pnpm selected for an older lockfile" do
+  it "uses the major Corepack already selected for an older lockfile, without probing the binary" do
     described_class.dependency_files = [
       Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '6.0'")
     ]
 
-    expect_safe_context("pnpm", "corepack pnpm@8", "8.15.9")
+    expect_safe_context("pnpm", "corepack pnpm@8", "8", probes_version: false)
   end
 
-  it "reports safe context for Yarn Berry YN0001 errors" do
+  it "reports safe context for Yarn Berry YN0001 errors, probing for its version" do
     allow(described_class).to receive(:setup_yarn_berry)
 
     expect_safe_context("yarn", "yarn", "4.0.0")
   end
 
-  it "uses the Classic registry setting for Yarn 1" do
+  it "reports safe context for Yarn 1, probing for its version" do
     allow(described_class).to receive(:setup_yarn_berry)
 
     expect_safe_context("yarn", "yarn", "1.22.22")
+  end
+
+  it "falls back to the default public registry when none is configured" do
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm #{command}", any_args).and_raise(error)
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with("npm --version", any_args).and_return("12.0.0")
+
+    expect { described_class.run_npm_command(command, env: nil) }.to raise_error do |raised|
+      expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "registry.npmjs.org")
+    end
   end
 
   it "does not probe successful commands" do
@@ -104,27 +120,25 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
   end
 
   it "enforces a wall-clock deadline for diagnostic probes even if output keeps arriving" do
-    version_probe_observer = T.let(nil, T.untyped)
+    version_probe_observer = T.let(nil, Dependabot::CommandHelpers::OutputObserver)
 
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
       .with("npm #{command}", any_args).and_raise(error)
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with("npm --version", hash_including(env: env, timeout: 10)) do |*, **kwargs|
+      .with("npm --version", hash_including(env: env, timeout: 10)) do |*_args, **kwargs|
         version_probe_observer = kwargs[:output_observer]
         "12.0.0\n"
       end
-    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with("npm config get registry", any_args).and_return("#{env.fetch('npm_config_registry')}\n")
 
     expect { described_class.run_npm_command(command, env: env) }
       .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
 
     # Output keeps arriving, which would reset `run_shell_command`'s own inactivity timeout, but the
     # observer must still signal a stop once the wall-clock deadline has elapsed regardless.
-    expect(version_probe_observer.call("still printing output...")).to eq({})
+    expect(T.must(version_probe_observer).call("still printing output...")).to eq({})
 
     allow(Time).to receive(:now).and_return(Time.now + 11)
-    expect(version_probe_observer.call("still printing output...")).to include(gracefully_stop: true)
+    expect(T.must(version_probe_observer).call("still printing output...")).to include(gracefully_stop: true)
   end
 
   context "when collecting diagnostics fails" do
@@ -133,8 +147,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         .with("npm #{command}", any_args).and_raise(error)
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("npm --version", any_args).and_return("12.0.0")
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("npm config get registry", any_args).and_return(env.fetch("npm_config_registry"))
     end
 
     it "does not replace the error when version detection fails" do
@@ -158,17 +170,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
-    it "does not replace the error when registry detection fails" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("npm config get registry", any_args).and_raise(error)
-
-      expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
-        expect(raised).to equal(error)
-        expect(Dependabot::ErrorReportContext.build(error: raised)).to include("package-manager-version" => "12.0.0")
-        expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("host")
-      end
-    end
-
     it "does not replace the error when a diagnostic process cannot be started" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with("npm --version", any_args).and_raise(Errno::ENOENT)
@@ -176,24 +177,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
         expect(raised).to equal(error)
         expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("package-manager-version")
-      end
-    end
-
-    it "redacts malformed registry URLs" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("npm config get registry", any_args).and_return("https://registry.example.com/private secret")
-
-      expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
-        expect(Dependabot::ErrorReportContext.build(error: raised)).to include("host" => "<redacted>")
-      end
-    end
-
-    it "omits unexpected registry output" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with("npm config get registry", any_args).and_return("secret")
-
-      expect { described_class.run_npm_command(command, env: env) }.to raise_error do |raised|
-        expect(Dependabot::ErrorReportContext.build(error: raised)).not_to have_key("host")
       end
     end
 
