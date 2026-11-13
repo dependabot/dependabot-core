@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture and instance calls in generated examples.
+
 require "spec_helper"
 require "dependabot/bun"
 
@@ -30,10 +32,161 @@ RSpec.describe Dependabot::Bun::FileParser do
     )
   end
 
+  describe ".each_dependency compatibility" do
+    it "keeps raw values and section order for updater callers" do
+      json = {
+        "dependencies" => { "first" => "1.0.0", "raw" => { "version" => "2.0.0" }, "missing" => nil },
+        "devDependencies" => { "first" => "3.0.0" }
+      }
+      yielded = []
+
+      described_class.each_dependency(json) { |name, requirement, type| yielded << [name, requirement, type] }
+
+      expect(yielded).to eq(
+        [
+          ["first", "1.0.0", "dependencies"],
+          ["raw", { "version" => "2.0.0" }, "dependencies"],
+          ["missing", nil, "dependencies"],
+          ["first", "3.0.0", "devDependencies"]
+        ]
+      )
+    end
+
+    it "allows callbacks to change the original dependency map" do
+      json = { "dependencies" => { "first" => "1.0.0", "second" => "2.0.0" } }
+      yielded = []
+
+      described_class.each_dependency(json) do |name, requirement, type|
+        yielded << requirement
+        json[type]["second"] = "3.0.0" if name == "first"
+      end
+
+      expect(yielded).to eq(["1.0.0", "3.0.0"])
+      expect(json["dependencies"]["second"]).to eq("3.0.0")
+    end
+  end
+
+  describe "package.json read boundaries" do
+    let(:manifest) { { "name" => "root", "dependencies" => { "chalk" => "0.3.0" } } }
+    let(:manifest_content) { JSON.dump(manifest) }
+    let(:package_file) { Dependabot::DependencyFile.new(name: "package.json", content: manifest_content) }
+    let(:files) { [package_file] }
+
+    it "parses an exact dependency without a lockfile" do
+      expect(parser.parse.map(&:name)).to eq(["chalk"])
+    end
+
+    context "with non-string and workspace/catalog requirements" do
+      let(:manifest) do
+        {
+          "dependencies" => {
+            "chalk" => "0.3.0",
+            "raw" => { "version" => "1.0.0" },
+            "missing" => nil,
+            "workspace" => "workspace:*",
+            "catalog" => "catalog:testing"
+          }
+        }
+      end
+
+      it "keeps only the registry dependency" do
+        expect(parser.parse.map(&:name)).to eq(["chalk"])
+      end
+    end
+
+    context "with an empty requirement" do
+      let(:manifest) { { "dependencies" => { "chalk" => "" } } }
+
+      it "retains wildcard normalization" do
+        dependency = parser.parse.find { |dep| dep.name == "chalk" }
+
+        expect(dependency.requirements.first.requirement_string).to eq("*")
+      end
+    end
+
+    context "with malformed dependency containers" do
+      let(:manifest) { { "dependencies" => [["chalk", "0.3.0"]] } }
+
+      it "rejects the container with file and field context" do
+        expect { parser.parse }
+          .to raise_error(TypeError, "#{package_file.path}: dependencies must be an object")
+      end
+    end
+
+    context "with a flat manifest and malformed dependencies" do
+      let(:manifest) { { "flat" => true, "dependencies" => [] } }
+
+      it "skips the manifest before inspecting dependencies" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with missing, null, and false dependency sections" do
+      let(:manifest) { { "dependencies" => nil, "devDependencies" => false } }
+
+      it "finds no dependencies" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with a workspace package" do
+      let(:manifest) { { "dependencies" => { "chalk" => "0.3.0", "member" => "1.0.0" } } }
+      let(:member_name) { "member" }
+      let(:files) do
+        [
+          package_file,
+          Dependabot::DependencyFile.new(
+            name: "packages/member/package.json",
+            content: JSON.dump("name" => member_name)
+          )
+        ]
+      end
+
+      it "excludes the workspace package from registry updates" do
+        expect(parser.parse.map(&:name)).to eq(["chalk"])
+      end
+
+      context "with a non-string workspace name" do
+        let(:member_name) { 123 }
+
+        it "does not match the dependency name" do
+          expect(parser.parse.map(&:name)).to contain_exactly("chalk", "member")
+        end
+      end
+    end
+
+    context "with invalid JSON" do
+      let(:manifest_content) { "{" }
+
+      it "preserves the parsing error for dependency extraction" do
+        expect { parser.parse }.to raise_error(JSON::ParserError)
+      end
+
+      it "preserves the file error for package-manager detection" do
+        expect { parser.ecosystem }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+  end
+
   describe "inheritance" do
     require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
     it_behaves_like "a dependency file parser"
+  end
+
+  describe "#ecosystem" do
+    let(:files) { project_dependency_files("javascript/exact_version_requirements_no_lockfile") }
+
+    before do
+      allow(Dependabot::Bun::Helpers).to receive_messages(
+        bun_version: "1.1.39",
+        node_version: "20.0.0"
+      )
+    end
+
+    it "builds package-manager metadata from the typed manifest config" do
+      expect(parser.ecosystem.package_manager.name).to eq("bun")
+    end
   end
 
   describe "parse" do
@@ -61,6 +214,137 @@ RSpec.describe Dependabot::Bun::FileParser do
 
         its(:length) { is_expected.to eq(0) }
       end
+
+      context "with array workspaces and no catalogs" do
+        let(:files) { project_dependency_files("bun/simple_workspace_v0") }
+
+        it "parses the workspace manifests" do
+          expect(top_level_dependencies.map(&:name)).to contain_exactly("etag", "lodash", "chalk")
+        end
+      end
+
+      context "with catalogs under workspaces" do
+        let(:files) { project_dependency_files("bun/catalog_workspace") }
+
+        it "parses the default catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.version).to eq("6.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "^6.0.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "default" }
+            }]
+          )
+        end
+
+        it "parses named catalogs" do
+          dependency = top_level_dependencies.find { |d| d.name == "etag" }
+
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.1",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "testing" }
+            }]
+          )
+        end
+
+        it "treats catalog dependencies as production dependencies" do
+          expect(top_level_dependencies.map(&:name)).to contain_exactly("is-number", "etag")
+          expect(top_level_dependencies).to all(be_production)
+        end
+      end
+
+      context "with a root catalog and array workspaces" do
+        let(:files) { project_dependency_files("bun/catalog_top_level") }
+
+        it "parses the root catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.version).to eq("6.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "6.0.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil,
+              metadata: { catalog: "default" }
+            }]
+          )
+        end
+      end
+
+      context "with catalogs.default and a package in two named catalogs" do
+        let(:files) { project_dependency_files("bun/catalog_named") }
+
+        it "parses catalogs.default as the default catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "is-number" }
+
+          expect(dependency.requirements.map(&:metadata)).to eq([{ catalog: "default" }])
+        end
+
+        it "keeps the requirement from each catalog" do
+          dependency = top_level_dependencies.find { |d| d.name == "etag" }
+
+          expect(dependency.requirements.map { |r| [r.requirement, r.metadata] }).to contain_exactly(
+            ["1.0.1", { catalog: "legacy" }],
+            ["1.7.0", { catalog: "current" }]
+          )
+        end
+      end
+
+      context "with catalog fields both at the root and under workspaces" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: JSON.dump(
+                "workspaces" => { "packages" => ["packages/*"], "catalog" => { "is-number" => "7.0.0" } },
+                "catalog" => { "etag" => "1.8.1" }
+              )
+            )
+          ]
+        end
+
+        it "reads only the workspaces fields, as Bun does" do
+          expect(top_level_dependencies.map { |d| [d.name, d.version] }).to eq([["is-number", "7.0.0"]])
+        end
+      end
+
+      context "with an aliased dependency" do
+        let(:files) { project_dependency_files("bun/aliased_dependency") }
+
+        it "doesn't include the aliased dependency" do
+          expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+          expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
+        end
+
+        it "includes the real package from the lockfile" do
+          expect(dependencies.map(&:name)).to include("fetch-factory")
+        end
+      end
+    end
+  end
+
+  describe "alias detection" do
+    let(:files) { project_dependency_files("bun/aliased_dependency") }
+
+    it "detects the npm alias protocol in a requirement" do
+      expect(parser.send(:alias_package?, "npm:fetch-factory@0.0.1")).to be(true)
+      expect(parser.send(:alias_package?, "npm:@scope/pkg@^1.0.0")).to be(true)
+      expect(parser.send(:alias_package?, "^0.0.1")).to be(false)
+    end
+
+    it "detects a yarn-style alias in a name" do
+      expect(parser.send(:aliased_package_name?, "my-fetch-factory@npm:fetch-factory")).to be(true)
+      expect(parser.send(:aliased_package_name?, "fetch-factory")).to be(false)
     end
   end
 

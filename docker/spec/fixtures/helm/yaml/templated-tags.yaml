@@ -1,0 +1,11 @@
+image:
+  repository: nginx
+  tag: "{{ .Values.image.tag }}"
+prefixed:
+  image:
+    repository: alpine
+    tag: "release-{{ .Values.image.tag }}"
+static:
+  image:
+    repository: busybox
+    tag: "1.36.1"

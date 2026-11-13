@@ -18,12 +18,12 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
-        updated_files = updated_pip_compile_based_files
-        updated_files += updated_uv_lock_files
+        updated_files = updated_pip_compile_based_files + updated_uv_lock_files
+        updated_files = updated_files.reverse.uniq(&:name).reverse
 
         if updated_files.none? ||
            updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
-          raise "No files have changed!"
+          raise no_files_changed_error("No files have changed!", { updated_files: updated_files.map(&:name) })
         end
 
         updated_files

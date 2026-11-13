@@ -10,11 +10,11 @@ module Dependabot
     class FileFetcher < FileFetchers::Base
       extend T::Sig
 
-      CONFIG_FILE_PATHS = T.let(%w(.github/dependabot.yml .github/dependabot.yaml).freeze, T::Array[String])
+      CONFIG_FILE_PATHS = %w(.github/dependabot.yml .github/dependabot.yaml).freeze
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        CONFIG_FILE_PATHS.any? { |file| filenames.include?(file) }
+        CONFIG_FILE_PATHS.intersect?(filenames)
       end
 
       sig { override.returns(String) }

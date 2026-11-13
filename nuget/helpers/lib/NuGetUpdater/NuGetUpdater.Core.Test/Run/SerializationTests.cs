@@ -55,8 +55,7 @@ public class SerializationTests : TestBase
                     "type": "git_source",
                     "replaces-base": false
                   }
-                ],
-                "max-updater-run-time": 0
+                                ]
               }
             }
             """);
@@ -344,6 +343,35 @@ public class SerializationTests : TestBase
     }
 
     [Theory]
+    [InlineData("Aspire.Hosting.AppHost", true)]
+    [InlineData("Microsoft.Extensions.Hosting", false)]
+    public void DeserializeNormalizedNameOnlyIgnoreCondition(string dependencyName, bool expectedIgnored)
+    {
+        var jobWrapper = RunWorker.Deserialize("""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo"
+                },
+                "ignore-conditions": [
+                  {
+                    "dependency-name": "Aspire.*",
+                    "version-requirement": ">= 0",
+                    "update-types": null
+                  }
+                ]
+              }
+            }
+            """)!;
+
+        var isIgnored = jobWrapper.Job.IsDependencyIgnoredByNameOnly(dependencyName);
+
+        Assert.Equal(expectedIgnored, isIgnored);
+    }
+
+    [Theory]
     [MemberData(nameof(DeserializeAllowedUpdatesData))]
     public void DeserializeAllowedUpdates(string? allowedUpdatesJsonBody, AllowedUpdate[] expectedAllowedUpdates)
     {
@@ -382,7 +410,8 @@ public class SerializationTests : TestBase
                         {
                             "name": "Some.Dependency",
                             "rules": {
-                                "patterns": ["1.2.3", "4.5.6"]
+                                "patterns": ["1.2.3", "4.5.6"],
+                                "group-by": "dependency-name"
                             }
                         },
                         {
@@ -398,8 +427,9 @@ public class SerializationTests : TestBase
 
         Assert.Equal("Some.Dependency", jobWrapper.Job.DependencyGroups[0].Name);
         Assert.Null(jobWrapper.Job.DependencyGroups[0].AppliesTo);
-        Assert.Single(jobWrapper.Job.DependencyGroups[0].Rules);
+        Assert.Equal(2, jobWrapper.Job.DependencyGroups[0].Rules.Count);
         Assert.Equal("[\"1.2.3\", \"4.5.6\"]", jobWrapper.Job.DependencyGroups[0].Rules["patterns"].ToString());
+        Assert.True(jobWrapper.Job.DependencyGroups[0].IsGroupedByDependencyName);
 
         Assert.Equal("Some.Other.Dependency", jobWrapper.Job.DependencyGroups[1].Name);
         Assert.Equal("something", jobWrapper.Job.DependencyGroups[1].AppliesTo);
@@ -505,11 +535,59 @@ public class SerializationTests : TestBase
         Assert.Equal("Some-Group-Name", jobWrapper.Job.ExistingGroupPullRequests[0].DependencyGroupName);
         Assert.Equal(2, jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies.Length);
         Assert.Equal("Some.Package", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyName);
-        Assert.Equal("1.2.3", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyVersion.ToString());
+        Assert.Equal("1.2.3", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyVersion!.ToString());
         Assert.Null(jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].Directory);
         Assert.Equal("Some.Other.Package", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyName);
-        Assert.Equal("4.5.6", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyVersion.ToString());
+        Assert.Equal("4.5.6", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyVersion!.ToString());
         Assert.Equal("/some-dir", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].Directory);
+    }
+
+    [Theory]
+    [InlineData("v0.4.53")]
+    [InlineData("not-a-version")]
+    [InlineData(null)]
+    public void DeserializeExistingGroupPullRequests_InvalidDependencyVersion(string? dependencyVersion)
+    {
+        var jsonWrapperJson = $$"""
+            {
+                "job": {
+                    "package-manager": "nuget",
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "existing-group-pull-requests": [
+                        {
+                            "dependency-group-name": "Some-Group-Name",
+                            "dependencies": [
+                                {
+                                    "dependency-name": "Some.Package",
+                                    "dependency-version": {{JsonSerializer.Serialize(dependencyVersion)}}
+                                },
+                                {
+                                    "dependency-name": "Some.Other.Package",
+                                    "dependency-version": "1.2.3"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+            """;
+
+        var logger = new StringLogger();
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson, logger);
+
+        Assert.Equal("some/repo", jobWrapper.Job.Source.Repo);
+        var pullRequest = Assert.Single(jobWrapper.Job.ExistingGroupPullRequests);
+        Assert.Equal("Some-Group-Name", pullRequest.DependencyGroupName);
+        Assert.Equal(2, pullRequest.Dependencies.Length);
+        Assert.Null(pullRequest.Dependencies[0].DependencyVersion);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), pullRequest.Dependencies[1].DependencyVersion);
+        if (dependencyVersion is not null)
+        {
+            Assert.Contains(logger.Messages, message => message.Contains(dependencyVersion) && message.Contains("unknown"));
+        }
     }
 
     [Theory]
@@ -666,7 +744,7 @@ public class SerializationTests : TestBase
             : null;
         var create = new CreatePullRequest()
         {
-            Dependencies = [new() { Name = "dep", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
+            Dependencies = [new() { Name = "dep", Directory = "/", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
             UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
             BaseCommitSha = "TEST-COMMIT-SHA",
             CommitMessage = "commit message",
@@ -680,7 +758,7 @@ public class SerializationTests : TestBase
             ? """{"name":"test-group"}"""
             : "null";
         var expected = $$$"""
-            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body","dependency-group":{{{expectedDependencyGroupValue}}}}}
+            {"data":{"dependencies":[{"directory":"/","name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body","dependency-group":{{{expectedDependencyGroupValue}}}}}
             """;
         Assert.Equal(expected, actual);
     }
@@ -977,5 +1055,105 @@ public class SerializationTests : TestBase
                 }
             }
         ];
+    }
+
+    [Fact]
+    public void SerializeCreateDependencySubmission()
+    {
+        var submission = new CreateDependencySubmission()
+        {
+            Version = 1,
+            Sha = "TEST-SHA",
+            Ref = "refs/heads/main",
+            Job = new CreateDependencySubmission.SubmissionJob()
+            {
+                Correlator = "dependabot-nuget-MyProject",
+                Id = "cli"
+            },
+            Detector = new CreateDependencySubmission.SubmissionDetector()
+            {
+                Name = "dependabot",
+                Version = "0.372.0",
+                Url = "https://github.com/dependabot/dependabot-core"
+            },
+            Manifests = new Dictionary<string, CreateDependencySubmission.Manifest>()
+            {
+                ["/src/MyProject.csproj"] = new CreateDependencySubmission.Manifest()
+                {
+                    Name = "/src/MyProject.csproj",
+                    File = new CreateDependencySubmission.ManifestFile()
+                    {
+                        SourceLocation = "src/MyProject.csproj"
+                    },
+                    Metadata = new CreateDependencySubmission.ManifestMetadata()
+                    {
+                        Ecosystem = "nuget"
+                    },
+                    Resolved = new Dictionary<string, CreateDependencySubmission.ResolvedDependency>()
+                    {
+                        ["pkg:nuget/Some.Package@1.0.0"] = new CreateDependencySubmission.ResolvedDependency()
+                        {
+                            PackageUrl = "pkg:nuget/Some.Package@1.0.0",
+                            Relationship = "direct",
+                            Scope = "runtime",
+                            Dependencies = ["pkg:nuget/Some.Dependency@2.0.0"]
+                        },
+                        ["pkg:nuget/Some.Dependency@2.0.0"] = new CreateDependencySubmission.ResolvedDependency()
+                        {
+                            PackageUrl = "pkg:nuget/Some.Dependency@2.0.0",
+                            Relationship = "indirect",
+                            Scope = "runtime",
+                            Dependencies = []
+                        }
+                    }
+                }
+            },
+            Metadata = new CreateDependencySubmission.SubmissionMetadata()
+            {
+                Status = "ok",
+                ScannedManifestPath = "nuget::/src"
+            }
+        };
+
+        var actual = HttpApiHandler.Serialize(submission);
+        var expected = """
+            {"data":{"version":1,"sha":"TEST-SHA","ref":"refs/heads/main","job":{"correlator":"dependabot-nuget-MyProject","id":"cli"},"detector":{"name":"dependabot","version":"0.372.0","url":"https://github.com/dependabot/dependabot-core"},"manifests":{"/src/MyProject.csproj":{"name":"/src/MyProject.csproj","file":{"source_location":"src/MyProject.csproj"},"metadata":{"ecosystem":"nuget"},"resolved":{"pkg:nuget/Some.Package@1.0.0":{"package_url":"pkg:nuget/Some.Package@1.0.0","relationship":"direct","scope":"runtime","dependencies":["pkg:nuget/Some.Dependency@2.0.0"]},"pkg:nuget/Some.Dependency@2.0.0":{"package_url":"pkg:nuget/Some.Dependency@2.0.0","relationship":"indirect","scope":"runtime","dependencies":[]}}}},"metadata":{"status":"ok","scanned_manifest_path":"nuget::/src"}}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SerializeCreateDependencySubmission_Skipped()
+    {
+        var submission = new CreateDependencySubmission()
+        {
+            Version = 1,
+            Sha = "TEST-SHA",
+            Ref = "refs/heads/main",
+            Job = new CreateDependencySubmission.SubmissionJob()
+            {
+                Correlator = "dependabot-nuget-casing",
+                Id = "cli"
+            },
+            Detector = new CreateDependencySubmission.SubmissionDetector()
+            {
+                Name = "dependabot",
+                Version = "0.372.0",
+                Url = "https://github.com/dependabot/dependabot-core"
+            },
+            Manifests = new Dictionary<string, CreateDependencySubmission.Manifest>(),
+            Metadata = new CreateDependencySubmission.SubmissionMetadata()
+            {
+                Status = "skipped",
+                ScannedManifestPath = "nuget::/casing",
+                Reason = "missing manifest files"
+            }
+        };
+
+        var actual = HttpApiHandler.Serialize(submission);
+        var expected = """
+            {"data":{"version":1,"sha":"TEST-SHA","ref":"refs/heads/main","job":{"correlator":"dependabot-nuget-casing","id":"cli"},"detector":{"name":"dependabot","version":"0.372.0","url":"https://github.com/dependabot/dependabot-core"},"manifests":{},"metadata":{"status":"skipped","scanned_manifest_path":"nuget::/casing","reason":"missing manifest files"}}}
+            """;
+        Assert.Equal(expected, actual);
     }
 }

@@ -14,7 +14,7 @@ module Dependabot
       class NpmrcBuilder
         extend T::Sig
 
-        CENTRAL_REGISTRIES = T.let(%w(registry.npmjs.org).freeze, T::Array[String])
+        CENTRAL_REGISTRIES = %w(registry.npmjs.org).freeze
 
         SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 

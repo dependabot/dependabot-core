@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve dynamic constants and generated updater examples. https://srb.help/5001
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -339,7 +340,8 @@ RSpec.describe Dependabot::Python::FileUpdater do
             file: "pyproject.toml",
             source: nil,
             groups: ["dependencies"]
-          }]
+          }],
+          metadata: { source_requirement: "==5.0.0" }
         )
       end
 
@@ -439,6 +441,27 @@ RSpec.describe Dependabot::Python::FileUpdater do
           .to receive(:new).and_call_original
         expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
+    context "when the resolver leaves every file unchanged" do
+      let(:dependency_files) { [requirements] }
+
+      before do
+        requirement_updater = instance_double(described_class::RequirementFileUpdater)
+        allow(described_class::RequirementFileUpdater).to receive(:new).and_return(requirement_updater)
+        allow(requirement_updater).to receive(:updated_dependency_files).and_return(dependency_files)
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files have changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "resolver" => "requirements",
+            "dependency-names" => ["psycopg2"],
+            "dependency-files" => ["requirements.txt"],
+            "updated-files" => ["requirements.txt"]
+          )
+        end
       end
     end
 

@@ -21,10 +21,10 @@ module Dependabot
 
       abstract!
 
-      CHILD_REQUIREMENT_REGEX = T.let(/^-r\s?(?<path>.*\.(?:txt|in))/, Regexp)
-      CONSTRAINT_REGEX = T.let(/^-c\s?(?<path>.*\.(?:txt|in))/, Regexp)
-      DEPENDENCY_TYPES = T.let(%w(packages dev-packages).freeze, T::Array[String])
-      MAX_FILE_SIZE = T.let(500_000, Integer)
+      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+      DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+      MAX_FILE_SIZE = 500_000
 
       sig { abstract.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files; end
@@ -34,7 +34,7 @@ module Dependabot
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
         return true if filenames.include?("requirements")
         return true if filenames.include?("pyproject.toml")
-        return true if filenames.any? { |name| ecosystem_specific_required_files.include?(name) }
+        return true if filenames.intersect?(ecosystem_specific_required_files)
 
         false
       end
@@ -48,7 +48,7 @@ module Dependabot
           languages: {
             python: {
               "raw" => language_version_manager.user_specified_python_version || "unknown",
-              "max" => language_version_manager.python_major_minor || "unknown"
+              "max" => language_version_manager.python_major_minor
             }
           }
         }
@@ -193,7 +193,7 @@ module Dependabot
 
         repo_contents(dir: relative_reqs_dir)
           .select { |f| f.type == "file" }
-          .select { |f| f.name.end_with?(".txt", ".in") }
+          .select { |f| File.join(relative_reqs_dir, f.name).end_with?(".txt", ".in") }
           .reject { |f| f.size > MAX_FILE_SIZE }
           .map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }
           .select { |f| requirements_file?(f) }
@@ -238,7 +238,8 @@ module Dependabot
         content = file.content
         return [] if content.nil?
 
-        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten
+        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten +
+                content.scan(CONSTRAINT_REGEX).flatten
         current_dir = File.dirname(file.name)
 
         paths.flat_map do |path|
@@ -248,8 +249,7 @@ module Dependabot
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
 
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
             raise Dependabot::DependencyFileNotEvaluatable,
                   "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
                   "Please either remove the reference from '#{file.name}' " \
@@ -268,7 +268,8 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def constraints_files
         all_requirement_files = requirements_txt_files +
-                                child_requirement_txt_files
+                                child_requirement_txt_files +
+                                requirements_in_files
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
@@ -283,7 +284,10 @@ module Dependabot
           end
         end.flatten.uniq
 
-        constraints_paths.map { |path| fetch_file_from_host(path) }
+        already_fetched_names = child_requirement_files.map(&:name)
+        constraints_paths
+          .reject { |path| already_fetched_names.include?(path) }
+          .map { |path| fetch_file_from_host(path) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -355,7 +359,7 @@ module Dependabot
 
         uneditable_reqs =
           content
-          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n]*))/)
+          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name } unless p.to_s.include?("://")
@@ -363,7 +367,7 @@ module Dependabot
 
         editable_reqs =
           content
-          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n]*))/)
+          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             unless p.to_s.include?("://") || p.to_s.include?("git@")

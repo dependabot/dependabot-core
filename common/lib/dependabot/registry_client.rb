@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/error_report_context"
 require "dependabot/shared_helpers"
 
 # This class provides a thin wrapper around our normal usage of Excon as a simple HTTP client in order to
@@ -14,13 +15,15 @@ module Dependabot
   class RegistryClient
     extend T::Sig
 
-    @cached_errors = T.let({}, T::Hash[T.nilable(String), Excon::Error::Timeout])
+    CachedErrorType = T.type_alias { T.any(Excon::Error::Timeout, Excon::Error::Socket) }
+
+    @cached_errors = T.let({}, T::Hash[T.nilable(String), CachedErrorType])
 
     sig do
       params(
         url: String,
-        headers: T::Hash[T.any(String, Symbol), T.untyped],
-        options: T::Hash[Symbol, T.untyped]
+        headers: T::Hash[T.any(String, Symbol), T.anything],
+        options: T::Hash[Symbol, T.anything]
       )
         .returns(Excon::Response)
     end
@@ -33,16 +36,15 @@ module Dependabot
         **SharedHelpers.excon_defaults({ headers: headers }.merge(options)),
         retry_interval: 5
       )
-    rescue Excon::Error::Timeout => e
-      cache_error(url, e)
-      raise e
+    rescue Excon::Error::Timeout, Excon::Error::Socket => e
+      handle_request_error(e, http_method: "GET", url: url)
     end
 
     sig do
       params(
         url: String,
-        headers: T::Hash[T.any(String, Symbol), T.untyped],
-        options: T::Hash[Symbol, T.untyped]
+        headers: T::Hash[T.any(String, Symbol), T.anything],
+        options: T::Hash[Symbol, T.anything]
       )
         .returns(Excon::Response)
     end
@@ -54,9 +56,8 @@ module Dependabot
         idempotent: true,
         **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
       )
-    rescue Excon::Error::Timeout => e
-      cache_error(url, e)
-      raise e
+    rescue Excon::Error::Timeout, Excon::Error::Socket => e
+      handle_request_error(e, http_method: "HEAD", url: url)
     end
 
     sig { void }
@@ -64,16 +65,38 @@ module Dependabot
       @cached_errors = {}
     end
 
-    sig { params(url: String, error: Excon::Error::Timeout).void }
+    sig { params(error: CachedErrorType, http_method: String, url: String).returns(T.noreturn) }
+    private_class_method def self.handle_request_error(error, http_method:, url:)
+      # Replayed cached errors keep the context of the request that originally failed
+      raise error if cached_error_for(url).equal?(error)
+
+      cache_error(url, error) if cacheable_error?(error)
+      ErrorReportContext.attach(error, { http_method: http_method, host: ErrorReportContext.host_for(url) })
+      raise error
+    end
+
+    sig { params(url: String, error: CachedErrorType).void }
     private_class_method def self.cache_error(url, error)
       host = URI(url).host
       @cached_errors[host] = error
     end
 
-    sig { params(url: String).returns(T.nilable(Excon::Error::Timeout)) }
+    sig { params(url: String).returns(T.nilable(CachedErrorType)) }
     private_class_method def self.cached_error_for(url)
       host = URI(url).host
       @cached_errors.fetch(host, nil)
+    end
+
+    sig { params(error: CachedErrorType).returns(T::Boolean) }
+    private_class_method def self.cacheable_error?(error)
+      if error.is_a?(Excon::Error::Socket)
+        case error.socket_error
+        when EOFError
+          return false
+        end
+      end
+
+      true
     end
   end
 end

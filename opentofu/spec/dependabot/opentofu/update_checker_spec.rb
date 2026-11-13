@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -90,6 +90,18 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.4.1")) }
+
+      context "when no version tag is selected" do
+        before do
+          resolver = instance_double(
+            Dependabot::Opentofu::UpdateChecker::LatestVersionResolver,
+            latest_version_tag: nil
+          )
+          allow(checker).to receive(:latest_version_resolver).and_return(resolver)
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a registry dependency" do
@@ -361,6 +373,20 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
       end
 
       it { is_expected.to be(false) }
+
+      context "with string-keyed source details" do
+        let(:source) do
+          {
+            "type" => "git",
+            "url" => "https://github.com/cloudposse/terraform-null-label.git",
+            "branch" => nil,
+            "ref" => "tags/0.3.7",
+            "proxy_url" => "https://my.example.com"
+          }
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
   end
 end

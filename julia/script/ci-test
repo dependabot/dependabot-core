@@ -3,4 +3,6 @@
 set -e
 
 bundle install
-bundle exec turbo_tests --verbose
+bundle exec turbo_tests2 --verbose
+
+julia --project=/opt/julia -e 'import Pkg; Pkg.test("DependabotHelper")'

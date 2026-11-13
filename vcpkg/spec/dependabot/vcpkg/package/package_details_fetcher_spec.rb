@@ -1,15 +1,23 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/vcpkg/package/package_details_fetcher"
 
 RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  sig { returns(Dependabot::Vcpkg::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   subject(:fetcher) do
-    described_class.new(dependency: dependency)
+    described_class.new(dependency: dependency, versions_database: versions_database)
   end
 
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Vcpkg::Package::VersionsDatabase) }
+  let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+  sig { returns(String) }
   let(:dependency_name) { "github.com/microsoft/vcpkg" }
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -26,11 +34,15 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
       package_manager: "vcpkg"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch" do
-    subject(:details) { fetcher.fetch }
+    sig { returns(Dependabot::Package::PackageDetails) }
+    subject(:details) { T.must(fetcher.fetch) }
 
     context "when dependency is not a git dependency" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "curl",
@@ -45,56 +57,63 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         )
       end
 
+      sig { returns(T::Array[Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion]) }
+      let(:port_versions) do
+        [
+          build_port_version("8.15.0#1", "version", "aaa"),
+          build_port_version("8.14.0", "version", "bbb"),
+          build_port_version("8.10.0", "version", "ccc")
+        ]
+      end
+      # rubocop:enable RSpec/ScatteredLet
+
       before do
-        # Mock the git commands that would be run in /opt/vcpkg
-        allow(Dir).to receive(:chdir).with("/opt/vcpkg").and_yield
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd|
-          case cmd
-          when %r{git log --format=%H --follow -- ports/curl/vcpkg\.json}
-            <<~GIT
-              abc123def456789012345678901234567890abcd
-              def4561237890123456789012345678901abcdef
-              abc7890123456789012345678901abcdef123456
-            GIT
-          when "git show abc123def456789012345678901234567890abcd:ports/curl/vcpkg.json"
-            '{"name": "curl", "version": "8.15.0", "port-version": 1}'
-          when "git show def4561237890123456789012345678901abcdef:ports/curl/vcpkg.json"
-            '{"name": "curl", "version": "8.14.0"}'
-          when "git show abc7890123456789012345678901abcdef123456:ports/curl/vcpkg.json"
-            '{"name": "curl", "version": "8.10.0"}'
-          when "git show -s --format=%ci abc123def456789012345678901234567890abcd"
-            "2025-01-15 10:30:00 +0000"
-          when "git show -s --format=%ci def4561237890123456789012345678901abcdef"
-            "2025-01-10 14:20:00 +0000"
-          when "git show -s --format=%ci abc7890123456789012345678901abcdef123456"
-            "2025-01-05 09:15:00 +0000"
-          else
-            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new("Command failed: #{cmd}", "Mock error")
-          end
-        end
+        allow(versions_database).to receive_messages(
+          versions_for: port_versions,
+          release_dates_for: {
+            "aaa" => Time.utc(2025, 1, 15),
+            "bbb" => Time.utc(2025, 1, 10),
+            "ccc" => Time.utc(2025, 1, 5)
+          }
+        )
       end
 
-      it "returns package details with releases from port history" do
+      it "returns package details built from the versions database" do
         expect(details).to be_a(Dependabot::Package::PackageDetails)
         expect(details.dependency).to eq(dependency)
-        expect(details.releases).not_to be_empty
         expect(details.releases.size).to eq(3)
 
-        latest_release = details.releases.first
+        latest_release = T.must(details.releases.first)
         expect(latest_release.version.to_s).to eq("8.15.0#1")
         expect(latest_release.tag).to eq("8.15.0#1")
         expect(latest_release.details["base_version"]).to eq("8.15.0")
         expect(latest_release.details["port_version"]).to eq(1)
+        expect(latest_release.details["scheme"]).to eq("version")
+        expect(latest_release.released_at).to eq(Time.utc(2025, 1, 15))
 
-        second_release = details.releases[1]
+        second_release = T.must(details.releases[1])
         expect(second_release.version.to_s).to eq("8.14.0")
-        expect(second_release.tag).to eq("8.14.0")
-        expect(second_release.details["base_version"]).to eq("8.14.0")
         expect(second_release.details["port_version"]).to eq(0)
+      end
+
+      it "deduplicates repeated versions" do
+        allow(versions_database).to receive(:versions_for)
+          .and_return(port_versions + [build_port_version("8.14.0", "version", "ddd")])
+
+        expect(details.releases.map { |release| release.version.to_s })
+          .to eq(%w(8.15.0#1 8.14.0 8.10.0))
+      end
+
+      it "carries the port's version scheme so incomparable schemes can be detected" do
+        allow(versions_database).to receive(:versions_for)
+          .and_return([build_port_version("1.2.11", "version-string", "eee")])
+
+        expect(T.must(details.releases.first).details["scheme"]).to eq("version-string")
       end
     end
 
-    context "when dependency is not a git dependency and git commands fail" do
+    context "when the port is missing from the versions database" do
+      sig { returns(Dependabot::Dependency) }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "nonexistent",
@@ -110,12 +129,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
       end
 
       before do
-        allow(Dir).to receive(:chdir).with("/opt/vcpkg").and_yield
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                       message: "Command failed: Port not found",
-                       error_context: { command: "git log" }
-                     ))
+        allow(versions_database).to receive_messages(versions_for: [], release_dates_for: {})
       end
 
       it "returns empty package details" do
@@ -126,23 +140,27 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     end
 
     context "when dependency is a baseline git dependency" do
+      # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+      sig { returns(Dependabot::GitCommitChecker) }
       let(:git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
+      sig { returns(T::Array[Dependabot::GitTagDetails]) }
       let(:mock_tags) do
         [
-          {
+          Dependabot::GitTagDetails.new(
             tag: "2025.06.13",
             version: Dependabot::Vcpkg::Version.new("2025.06.13"),
             commit_sha: "abc123",
             tag_sha: "def456"
-          },
-          {
+          ),
+          Dependabot::GitTagDetails.new(
             tag: "2025.04.09",
             version: Dependabot::Vcpkg::Version.new("2025.04.09"),
             commit_sha: "ghi789",
             tag_sha: "jkl012"
-          }
+          )
         ]
       end
+      # rubocop:enable RSpec/ScatteredLet
 
       before do
         allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_commit_checker)
@@ -155,7 +173,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         expect(details.releases).not_to be_empty
         expect(details.releases.size).to eq(2)
 
-        first_release = details.releases.first
+        first_release = T.must(details.releases.first)
         expect(first_release.version).to eq(Dependabot::Vcpkg::Version.new("2025.06.13"))
         expect(first_release.tag).to eq("2025.06.13")
         expect(first_release.released_at).to eq(Time.new(2025, 6, 13))
@@ -163,6 +181,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     end
 
     context "when git repository is not reachable" do
+      sig { returns(Dependabot::GitCommitChecker) }
       let(:git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
 
       before do
@@ -190,5 +209,17 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
       expect(fetcher.send(:extract_release_date_from_tag, "invalid")).to be_nil
       expect(fetcher.send(:extract_release_date_from_tag, "1.2.3")).to be_nil
     end
+  end
+
+  sig do
+    params(version_string: String, scheme: String, git_tree: String)
+      .returns(Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion)
+  end
+  def build_port_version(version_string, scheme, git_tree)
+    Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion.new(
+      version: Dependabot::Vcpkg::Version.new(version_string),
+      scheme: scheme,
+      git_tree: git_tree
+    )
   end
 end

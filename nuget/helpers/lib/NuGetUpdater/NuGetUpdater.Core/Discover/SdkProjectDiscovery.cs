@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Xml.Linq;
-using System.Xml.XPath;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
@@ -55,15 +54,22 @@ internal static class SdkProjectDiscovery
         "web.config",
     };
 
-    // these are the targets that are necessary to evaluate for a single restore operation
-    private static readonly ImmutableArray<string> SingleRestoreTargetNames =
+    private static readonly ImmutableArray<string> DiscoveryTargetNames =
     [
-        "Restore",
         "ResolveProjectReferences",
         "GenerateBuildDependencyFile"
     ];
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
+    private static readonly ImmutableArray<string> LegacyProjectDiscoveryTargetNames = ["ResolveProjectReferences"];
+
+    private const string TargetFrameworksPropertyName = "TargetFrameworks";
+
+    // this property evaluates to a version number in an SDK-style project and is unset or empty otherwise
+    private const string NETCoreSdkVersionPropertyName = "NETCoreSdkVersion";
+
+    private const int MaximumParallelTargetFrameworkEvaluations = 2;
+
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, string? solutionDir, ILogger logger)
     {
         var extension = Path.GetExtension(startingProjectPath)?.ToLowerInvariant();
         switch (extension)
@@ -111,72 +117,126 @@ internal static class SdkProjectDiscovery
         Dictionary<string, HashSet<string>> additionalFiles = new(PathComparer.Instance);
         //    projectPath  additionalFiles
 
+        var startingProjectProperties = await MSBuildHelper.GetProjectPropertiesAsync(
+            startingProjectPath,
+            [TargetFrameworksPropertyName, NETCoreSdkVersionPropertyName],
+            logger
+        );
+        var projectTfms = MSBuildHelper.ParseProjectTargetFrameworks(startingProjectProperties?.GetValueOrDefault(TargetFrameworksPropertyName));
+        var netCoreSdkVersionValue = startingProjectProperties?.GetValueOrDefault(NETCoreSdkVersionPropertyName);
+        var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
+        var requiredTargets = isLegacyProject
+            ? LegacyProjectDiscoveryTargetNames
+            : DiscoveryTargetNames;
+
         // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
         // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
-        var projectTfms = await MSBuildHelper.GetProjectTargetFrameworksAsync(startingProjectPath, logger);
-        var requiresIndividualRestores = projectTfms.Any(tfm => tfm.Contains('-'));
-        if (!requiresIndividualRestores)
+        // alternately, if there are too many target frameworks specified, they must be handled individually
+        var hasPlatformTfms = projectTfms.Any(tfm => tfm.Contains('-'));
+        var requiresIndividualEvaluations = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkEvaluations;
+        var useDirectEvaluation = requiresIndividualEvaluations;
+        if (!requiresIndividualEvaluations)
         {
-            projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+            logger.Info($"Performing single evaluation for project {startingProjectPath}");
+            projectTfms = [string.Empty]; // an empty TFM lets the outer build evaluate all target frameworks
+            var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
+            useDirectEvaluation = requiredTargets.All(actualTargets.Contains);
+        }
+        else
+        {
+            logger.Info($"Performing individual evaluations for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
+        }
+
+        var commonArgs = new List<string>() { startingProjectPath };
+        commonArgs.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", requiredTargets)}\"");
+        var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
+        var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
+        commonArgs.Add($"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}");
+        commonArgs.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
+        commonArgs.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
+        if (solutionDir is not null)
+        {
+            var normalizedSolutionDir = $"{solutionDir.TrimEnd('/', Path.DirectorySeparatorChar)}/";
+            commonArgs.Add($"/p:SolutionDir={normalizedSolutionDir}");
+        }
+        commonArgs.Add("/p:TreatWarningsAsErrors=false");
+        commonArgs.Add("/p:MSBuildTreatWarningsAsErrors=false");
+
+        async Task<(int ExitCode, string Output, string Error)> RunMSBuildAsync(List<string> args)
+        {
+            var result = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
+            if (result.ExitCode != 0 && result.Output.Contains("error : Object reference not set to an instance of an object."))
+            {
+                // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
+                args.Add("/RestoreProperty:__Unused__=__Unused__");
+                result = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
+            }
+
+            MSBuildHelper.ThrowOnError(result.Output);
+            MSBuildHelper.ThrowOnError(result.Error);
+            return result;
+        }
+
+        if (!isLegacyProject)
+        {
+            // Restore the graph before inner builds introduce a TargetFramework global property.
+            var (exitCode, stdOut, stdErr) = await RunMSBuildAsync([.. commonArgs, "/t:Restore"]);
+            if (exitCode != 0)
+            {
+                logger.Warn($"Error restoring dependencies.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+                if (stdErr.Contains("A compatible .NET SDK was not found."))
+                {
+                    throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                }
+            }
         }
 
         foreach (var tfm in projectTfms)
         {
-            var isSingleTfmRestore = !string.IsNullOrEmpty(tfm);
+            var isIndividualTfmEvaluation = !string.IsNullOrEmpty(tfm);
 
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // when using single restore, we can directly invoke the relevant targets
-                var args = new List<string>() { "msbuild", startingProjectPath };
-                var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-                var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
-                if (useDirectRestore || isSingleTfmRestore)
+                var args = new List<string>(commonArgs);
+
+                // Cross-targeting SDK builds dispatch discovery targets through InnerTargets.
+                // Legacy projects must invoke their targets directly to avoid compiling them.
+                if (useDirectEvaluation)
                 {
                     // directly call the required targets
-                    args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
+                    args.Add($"/t:{string.Join(",", requiredTargets)}");
                 }
                 else
                 {
                     // delegate to the inner build and call those targets
                     args.Add("/t:Build");
-                    args.Add($"/p:InnerTargets=\"{string.Join(";", SingleRestoreTargetNames)}\"");
+                    args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
                 }
 
-                // inject various props and targets to help with discovery
-                var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
-                var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
-                args.Add($"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}");
-                args.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
-                args.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
-
-                if (isSingleTfmRestore)
+                if (isIndividualTfmEvaluation)
                 {
                     args.Add($"/p:TargetFramework={tfm}");
                 }
 
-                // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
-                args.Add("/p:TreatWarningsAsErrors=false");
-                args.Add("/p:MSBuildTreatWarningsAsErrors=false");
                 args.Add($"/bl:{binLogPath}");
 
-                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
-                if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
-                {
-                    // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
-                    // Due to a bug in NuGet, there can be a null reference exception thrown and adding this command line argument will work around it,
-                    // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
-                    // unless we have to.
-                    args.Add("/RestoreProperty:__Unused__=__Unused__");
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
-                }
-
-                MSBuildHelper.ThrowOnError(stdOut);
+                var (exitCode, stdOut, stdErr) = await RunMSBuildAsync(args);
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
                     logger.Warn($"  Error determining dependencies from `{startingProjectPath}`:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+                }
+
+                if (!File.Exists(binLogPath))
+                {
+                    if (stdErr.Contains("A compatible .NET SDK was not found."))
+                    {
+                        throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                    }
+
+                    throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
                 }
 
                 var buildRoot = BinaryLog.ReadBuild(binLogPath);
@@ -267,7 +327,7 @@ internal static class SdkProjectDiscovery
                                     if (projectEvaluation is not null)
                                     {
                                         var specificPackageDeps = packageDependencies.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
-                                        var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                        var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                         if (tfm is not null)
                                         {
                                             var packagesByTfm = specificPackageDeps.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
@@ -291,7 +351,7 @@ internal static class SdkProjectDiscovery
                                     break;
                                 }
 
-                                var evaluatedTfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                var evaluatedTfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                 if (evaluatedTfm is null)
                                 {
                                     break;
@@ -375,13 +435,16 @@ internal static class SdkProjectDiscovery
         foreach (var projectPath in resolvedProperties.Keys)
         {
             var projectProperties = resolvedProperties[projectPath];
-            var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
+            var isProjectLegacy = !projectProperties.ContainsKey(NETCoreSdkVersionPropertyName); // legacy projects don't contain this property
             if (isProjectLegacy)
             {
+                logger.Info($"Project {projectPath} is legacy");
+
                 // if any TFM had any explicit packages defined, we need to do manual package resolution
                 if (explicitPackageVersionsPerProject.TryGetValue(projectPath, out var projectTfmRefs) &&
                     projectTfmRefs.Values.Any(v => v.Count > 0))
                 {
+                    logger.Info("  ...and setting manual package resolution to true");
                     requiresManualPackageResolution = true;
                     break;
                 }
@@ -398,6 +461,7 @@ internal static class SdkProjectDiscovery
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
                 experimentsManager,
+                solutionDir,
                 logger
             );
         }
@@ -469,9 +533,6 @@ internal static class SdkProjectDiscovery
             }
 
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
-            var doc = XDocument.Load(projectPath);
-            var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
-            var projectPropertyNames = localPropertyDefinitionElements.Select(e => e.Name.LocalName).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var projectRelativePath = Path.GetRelativePath(workspacePath, projectPath);
 
             var propertiesForProject = resolvedProperties.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
@@ -479,6 +540,12 @@ internal static class SdkProjectDiscovery
             {
                 if (propertiesForProject.TryGetValue("ProjectAssetsFile", out var assetsFilePath))
                 {
+                    if (!File.Exists(assetsFilePath))
+                    {
+                        // A failed restore can leave no assets; retain dependencies discovered from the build.
+                        return null;
+                    }
+
                     var assetsContent = File.ReadAllText(assetsFilePath);
                     var assets = JsonDocument.Parse(assetsContent).RootElement;
                     return assets;
@@ -587,7 +654,7 @@ internal static class SdkProjectDiscovery
                     }
 
                     var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
-                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsDirect: isTopLevel, IsTransitive: !isTopLevel);
+                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsTopLevel: isTopLevel);
                 }
             }
 
@@ -596,13 +663,62 @@ internal static class SdkProjectDiscovery
                 .ThenBy(d => d.Version)
                 .ToImmutableArray();
 
-            // others
+            // extract dependency graph from project.assets.json
+            var dependencyGraphBuilder = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase);
+            if (assetsJson.Value is { } assetsForGraph &&
+                assetsForGraph.TryGetProperty("targets", out var graphTargets))
+            {
+                foreach (var tfmObject in graphTargets.EnumerateObject())
+                {
+                    // Build a complete lookup of package name -> resolved version for this TFM.
+                    // This must be a separate pass because the dependency resolution below needs to
+                    // look up any package by name, including ones that appear later in the enumeration.
+                    var resolvedVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                    {
+                        var parts = packageObject.Name.Split('/');
+                        if (parts.Length == 2)
+                        {
+                            resolvedVersions[parts[0]] = parts[1];
+                        }
+                    }
+
+                    // Now that all resolved versions are known, build the dependency graph edges.
+                    foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                    {
+                        var parts = packageObject.Name.Split('/');
+                        if (parts.Length == 2)
+                        {
+                            var packageName = parts[0];
+                            var packageVersion = parts[1];
+                            var graphKey = $"{packageName}/{packageVersion}";
+                            var depEntries = packageObject.Value.TryGetProperty("dependencies", out var deps)
+                                ? deps.EnumerateObject()
+                                    .Where(d => resolvedVersions.ContainsKey(d.Name))
+                                    .Select(d => $"{d.Name}/{resolvedVersions[d.Name]}")
+                                : [];
+                            if (!dependencyGraphBuilder.TryGetValue(graphKey, out var existing))
+                            {
+                                dependencyGraphBuilder[graphKey] = depEntries
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToImmutableArray();
+                            }
+                            else
+                            {
+                                dependencyGraphBuilder[graphKey] = existing
+                                    .Union(depEntries, StringComparer.OrdinalIgnoreCase)
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToImmutableArray();
+                            }
+                        }
+                    }
+                }
+            }
+
+            var dependencyGraph = dependencyGraphBuilder.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
+            // other values
             var projectProperties = resolvedProperties[projectPath];
-            var properties = projectProperties
-                .Where(pkvp => projectPropertyNames.Contains(pkvp.Key))
-                .Select(pkvp => new Property(pkvp.Key, pkvp.Value, Path.GetRelativePath(repoRootPath, projectPath).NormalizePathToUnix()))
-                .OrderBy(p => p.Name)
-                .ToImmutableArray();
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
                 .OrderBy(p => p)
@@ -614,24 +730,65 @@ internal static class SdkProjectDiscovery
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var useCpmTransitivePinning =
-                projectProperties.TryGetValue("ManagePackageVersionsCentrally", out var useCpmString) &&
-                bool.TryParse(useCpmString, out var useCpm) &&
-                useCpm &&
-                projectProperties.TryGetValue("CentralPackageTransitivePinningEnabled", out var useTransitivePinningString) &&
-                bool.TryParse(useTransitivePinningString, out var useTransitivePinning) &&
-                useTransitivePinning;
+
+            // package management special values
+            var projectLevelCpm = GetBooleanPropertyFromProjectProperties(projectProperties, "ManagePackageVersionsCentrally");
+            var projectLevelCpmWithPinning =
+                projectLevelCpm &&
+                GetBooleanPropertyFromProjectProperties(projectProperties, "CentralPackageTransitivePinningEnabled");
+            var centralPackageVersions = GetBooleanPropertyFromProjectProperties(projectProperties, "UsingMicrosoftCentralPackageVersionsSdk");
+            var packageManagementKind =
+                projectLevelCpmWithPinning ? PackageManagementKind.CentralPackageManagementWithTransitivePinning :
+                projectLevelCpm ? PackageManagementKind.CentralPackageManagement :
+                centralPackageVersions ? PackageManagementKind.CentralPackageVersions :
+                PackageManagementKind.Default;
+            var packageManagementFile = packageManagementKind switch
+            {
+                PackageManagementKind.CentralPackageVersions => GetStringPropertyFromProjectProperties(projectProperties, "CentralPackagesFile"),
+                PackageManagementKind.CentralPackageManagement or
+                PackageManagementKind.CentralPackageManagementWithTransitivePinning => GetStringPropertyFromProjectProperties(projectProperties, "DirectoryPackagesPropsPath"),
+                _ => null,
+            };
+
+            // If a repo has an incomplete setup of package management, it's possible we detect it but then get an
+            // empty string for the special file path.  The fix is to explicitly check for that and not just a null
+            // value.  A check below will then autocorrect to default package management since that's what's really
+            // being used.
+            if (!string.IsNullOrWhiteSpace(packageManagementFile))
+            {
+                packageManagementFile = Path.GetRelativePath(projectFullDirectory, packageManagementFile).NormalizePathToUnix();
+            }
+
+            if (packageManagementKind != PackageManagementKind.Default && string.IsNullOrWhiteSpace(packageManagementFile))
+            {
+                logger.Warn($"Project [{projectRelativePath}] detected package management kind of {packageManagementKind} but no package management file found; forcing management kind to {PackageManagementKind.Default}.");
+                packageManagementKind = PackageManagementKind.Default;
+            }
+
+            // check for NoWarn containing NU1701
+            var noWarnValue = GetStringPropertyFromProjectProperties(projectProperties, "NoWarn");
+            var hasNoWarnNU1701 = false;
+            if (noWarnValue is not null)
+            {
+                var noWarnCodes = noWarnValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (noWarnCodes.Contains("NU1701", StringComparer.OrdinalIgnoreCase))
+                {
+                    hasNoWarnNU1701 = true;
+                }
+            }
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
                 FilePath = projectRelativePath,
                 Dependencies = dependencies,
                 TargetFrameworks = tfms,
-                Properties = properties,
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
-                CentralPackageTransitivePinningEnabled = useCpmTransitivePinning,
+                PackageManagementKind = packageManagementKind,
+                PackageManagementSpecialFileRelativePath = packageManagementFile,
+                HasNoWarnNU1701 = hasNoWarnNU1701,
+                DependencyGraph = dependencyGraph,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
@@ -669,6 +826,7 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
         ExperimentsManager experimentsManager,
+        string? solutionDir,
         ILogger logger
     )
     {
@@ -691,8 +849,14 @@ internal static class SdkProjectDiscovery
 
             var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
-            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
-            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
+            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, solutionDir, logger);
+            var tempProjectFileName = Path.GetFileName(tempProjectPath);
+            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.FirstOrDefault(r => PathComparer.Instance.Equals(r.FilePath, tempProjectFileName));
+            if (rediscoveredDependenciesForThisProject is null)
+            {
+                logger.Warn($"Unable to rediscover packages for legacy project {projectPath}; using original package set.");
+                return packagesPerProject;
+            }
 
             // re-build packagesPerProject
             var rebuiltPackagesPerProject = packagesPerProject.ToDictionary(PathComparer.Instance); // shallow copy
@@ -777,7 +941,7 @@ internal static class SdkProjectDiscovery
             if (projectEvaluation is not null)
             {
                 // without a tfm we can't do anything meaningful with the package reference
-                var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                 if (tfm is not null)
                 {
                     foreach (var child in node.Children.OfType<Item>())
@@ -815,7 +979,7 @@ internal static class SdkProjectDiscovery
                 var projectEvaluation = GetNearestProjectEvaluation(node);
                 if (projectEvaluation is not null)
                 {
-                    var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                    var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                     if (tfm is not null)
                     {
                         var packageName = child.Name;
@@ -930,5 +1094,17 @@ internal static class SdkProjectDiscovery
         }
 
         return tfm;
+    }
+
+    private static bool GetBooleanPropertyFromProjectProperties(Dictionary<string, string> projectProperties, string propertyName)
+    {
+        return projectProperties.TryGetValue(propertyName, out var propertyStringValue) &&
+            bool.TryParse(propertyStringValue, out var propertyValue) &&
+            propertyValue;
+    }
+
+    private static string? GetStringPropertyFromProjectProperties(Dictionary<string, string> projectProperties, string propertyName)
+    {
+        return projectProperties.TryGetValue(propertyName, out var propertyValue) ? propertyValue : null;
     }
 }

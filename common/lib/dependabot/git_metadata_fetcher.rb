@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "fileutils"
 require "open3"
 require "sorbet-runtime"
 require "tmpdir"
@@ -9,6 +10,7 @@ require "dependabot/errors"
 require "dependabot/git_ref"
 require "dependabot/git_tag_with_detail"
 require "dependabot/credential"
+require "dependabot/logger"
 
 module Dependabot
   class GitMetadataFetcher
@@ -31,6 +33,7 @@ module Dependabot
     end
 
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
+    MAX_COMMITS_PER_PAGE = 100
 
     sig do
       params(
@@ -146,12 +149,6 @@ module Dependabot
         raise "Unexpected response: #{response_with_git.status} - #{response_with_git.body}"
       end
 
-      if uri.match?(/github\.com/i)
-        response = response_with_git.data
-        response[:response_headers] = response[:headers] unless response.nil?
-        raise Octokit::Error.from_response(response)
-      end
-
       raise "Server error at #{uri}: #{response_with_git.body}" if response_with_git.status >= 500
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
@@ -212,7 +209,7 @@ module Dependabot
       )
     end
 
-    sig { params(uri: String).returns(T.untyped) }
+    sig { params(uri: String).returns(GitResponse) }
     def fetch_raw_upload_pack_with_git_for(uri)
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
@@ -328,7 +325,7 @@ module Dependabot
       T.must(line.split.first).chars.last(40).join
     end
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
       SharedHelpers.excon_defaults(read_timeout: 20)
@@ -343,18 +340,16 @@ module Dependabot
 
     # Added method to fetch tags with their creation dates from a git repository. In case
     # private registry is used, it will clone the repository and fetch tags with their creation dates.
-    sig { params(uri: String).returns(T.untyped) }
+    sig { params(uri: String).returns(GitResponse) }
     def fetch_tags_with_detail_from_git_for(uri)
       uri_ending_with_git = uri
       uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)
 
       Dir.mktmpdir do |dir|
-        # Clone the repository into a temporary directory
-        clone_command = "git clone --bare #{uri_ending_with_git} #{dir}"
         env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
-        clone_command = SharedHelpers.escape_command(clone_command)
 
-        _stdout, stderr, process = Open3.capture3(env, clone_command)
+        # Clone the repository into a temporary directory
+        _stdout, stderr, process = clone_for_tag_details(env, uri_ending_with_git, dir)
         return GitResponse.new(body: stderr, status: 500) unless process.success?
 
         # Change to the cloned repository directory
@@ -381,6 +376,24 @@ module Dependabot
       GitResponse.new(body: e.message, status: 500)
     end
 
+    # Tag dates need only commits and tags, so skip trees and blobs: a full clone of a large
+    # repository can fill the disk or time out. Fall back to a full clone if the partial clone
+    # fails, so this never does worse than before.
+    sig do
+      params(env: T::Hash[String, T.nilable(String)], uri: String, dir: String)
+        .returns([String, String, Process::Status])
+    end
+    def clone_for_tag_details(env, uri, dir)
+      stdout, stderr, process = Open3.capture3(
+        env, SharedHelpers.escape_command("git clone --bare --filter=tree:0 #{uri} #{dir}")
+      )
+      return [stdout, stderr, process] if process.success?
+
+      Dependabot.logger.warn("Partial clone for tag dates failed, falling back to a full clone")
+      FileUtils.rm_rf(Dir.children(dir).map { |child| File.join(dir, child) })
+      Open3.capture3(env, SharedHelpers.escape_command("git clone --bare #{uri} #{dir}"))
+    end
+
     sig do
       params(ref: String).returns(String)
     end
@@ -391,7 +404,7 @@ module Dependabot
         github: provider_url.gsub("github.com", "api.github.com/repos")
       }.freeze
 
-      "#{api_url[:github]}/commits?per_page=100&sha=#{ref}"
+      "#{api_url[:github]}/commits?per_page=#{MAX_COMMITS_PER_PAGE}&sha=#{ref}"
     end
   end
 end

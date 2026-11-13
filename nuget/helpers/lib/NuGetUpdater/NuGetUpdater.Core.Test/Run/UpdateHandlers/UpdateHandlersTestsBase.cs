@@ -1,6 +1,7 @@
+using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Run.UpdateHandlers;
-using NuGetUpdater.Core.Run;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run.UpdateHandlers;

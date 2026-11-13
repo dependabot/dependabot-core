@@ -1,0 +1,39 @@
+# typed: strong
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+require "dependabot/ecosystem"
+require "dependabot/nix/version"
+
+module Dependabot
+  module Nix
+    ECOSYSTEM = "nix"
+    PACKAGE_MANAGER = "nix"
+    SUPPORTED_NIX_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+    DEPRECATED_NIX_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+    class PackageManager < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      sig { params(raw_version: String).void }
+      def initialize(raw_version)
+        super(
+          name: PACKAGE_MANAGER,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_NIX_VERSIONS,
+          supported_versions: SUPPORTED_NIX_VERSIONS
+        )
+      end
+
+      sig { returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
+  end
+end

@@ -1,0 +1,20 @@
+[ERR_PNPM_UNSUPPORTED_ENGINE] Unsupported environment (bad pnpm and/or Node.js version)
+
+Your pnpm version is incompatible with "/tmp/w".
+
+Expected version: use npm
+Got: 11.25.0
+
+This is happening because the package's manifest has an engines.pnpm field specified.
+To fix this issue, install the required pnpm version globally.
+
+To install the latest version of pnpm, run "pnpm i -g pnpm".
+To check your pnpm version, run "pnpm -v".
+
+Your Node version is incompatible with "/tmp/w".
+
+Expected version: 20.11.1
+Got: v24.21.0
+
+This is happening because the package's manifest has an engines.node field specified.
+To fix this issue, install the required Node version.

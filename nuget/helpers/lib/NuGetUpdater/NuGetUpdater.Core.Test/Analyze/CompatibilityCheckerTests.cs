@@ -1,10 +1,13 @@
 using System.Collections.Immutable;
 
 using NuGet.Frameworks;
+using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
 
@@ -12,6 +15,47 @@ namespace NuGetUpdater.Core.Test.Analyze;
 
 public class CompatibilityCheckerTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistsAsync_ResourceLookupReceivesCancellationToken(bool packageIsCached)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+        var resourceProvider = new CapturingResourceProvider<FindPackageByIdResource>(
+            new MissingFindPackageByIdResource());
+        using var context = new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(source, [resourceProvider]));
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0");
+        var packageIdentity = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        if (packageIsCached)
+        {
+            var packagePath = CompatibilityChecker.GetPackagePath(packageIdentity, context);
+            using var packageStream = package.GetZipStream();
+            using var cacheStream = File.Create(packagePath);
+            await packageStream.CopyToAsync(cacheStream, TestContext.Current.CancellationToken);
+        }
+
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        var exists = await CompatibilityChecker.ExistsAsync(
+            packageIdentity,
+            context,
+            cancellationSource.Token);
+
+        Assert.False(exists);
+        Assert.Equal(cancellationSource.Token, resourceProvider.ReceivedToken);
+    }
+
     [Fact]
     public void PerformCheck_CompatiblePackage_IsCompatible()
     {
@@ -143,6 +187,79 @@ public class CompatibilityCheckerTests
         Assert.False(result);
     }
 
+    [Fact]
+    public async Task CheckAsync_PackageWithFrameworkDependencyGroupButNoAssemblies_ReportsAsCompatible()
+    {
+        // package has an explicit dependency group that is incompatible with the project framework, but lib and ref directories are empty
+        // a real-world example is a project targeting `net9.0` and referencing `Microsoft.VisualStudio.Azure.Containers.Tools.Targets/1.22.1`
+        // depending on the project's properties, it's entirely possible for this to be a supported scenario
+
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var package = new MockNuGetPackage("Some.Package", "1.0.0", DependencyGroups: [(".NETFramework4.7.2", [])]);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        var projectFramework = NuGetFramework.Parse("net9.0");
+        var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+        var logger = new TestLogger();
+
+        // act
+        var isCompatible = await CompatibilityChecker.CheckAsync(packageId, [projectFramework], context, logger, CancellationToken.None);
+
+        //assert
+        Assert.True(isCompatible);
+    }
+
+    [Theory]
+    [InlineData("net10.0-windows", "net10.0", true)]
+    [InlineData("net10.0-windows7.0", "net10.0", true)]
+    [InlineData("net10.0-windows10.0.19041", "net10.0", true)]
+    [InlineData("net10.0-ios18.0", "net10.0", true)]
+    [InlineData("net10.0-windows10.0.19041", "net10.0-windows10.0.17763", true)]
+    [InlineData("net10.0-windows10.0.17763", "net10.0-windows10.0.19041", false)]
+    [InlineData("net10.0", "net10.0-windows", false)]
+    [InlineData("net10.0-windows", "net11.0", false)]
+    public async Task CheckAsync_PackageWithLibAssembly_ChecksPlatformCompatibility(
+        string projectTfm,
+        string packageTfm,
+        bool expectedCompatible)
+    {
+        using var tempDir = new TemporaryDirectory();
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", packageTfm);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        using var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+
+        var isCompatible = await CompatibilityChecker.CheckAsync(
+            packageId,
+            [NuGetFramework.Parse(projectTfm)],
+            context,
+            new TestLogger(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedCompatible, isCompatible);
+    }
+
+    [Fact]
+    public async Task ExistsAndIsCompatibleAsync_ExistingPackageWithoutProjectFrameworks_ReportsAsCompatible()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var package = MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0");
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([package], tempDir.DirectoryPath, includeCommonPackages: false);
+        var packageId = new PackageIdentity(package.Id, NuGetVersion.Parse(package.Version));
+        var context = new NuGetContext(tempDir.DirectoryPath, NuGet.Common.NullLogger.Instance);
+
+        var isCompatible = await CompatibilityChecker.ExistsAndIsCompatibleAsync(
+            packageId,
+            projectFrameworks: [],
+            context,
+            new TestLogger(),
+            CancellationToken.None);
+
+        Assert.True(isCompatible);
+    }
+
     [Theory]
     [InlineData("netstandard2.0")]
     [InlineData("net472")]
@@ -164,5 +281,60 @@ public class CompatibilityCheckerTests
             new TestLogger());
 
         Assert.True(result);
+    }
+
+    private sealed class CapturingResourceProvider<TResource>(TResource resource) : INuGetResourceProvider
+        where TResource : class, INuGetResource
+    {
+        public Type ResourceType => typeof(TResource);
+        public string Name => typeof(TResource).Name;
+        public IEnumerable<string> Before => [];
+        public IEnumerable<string> After => [];
+        public CancellationToken ReceivedToken { get; private set; }
+
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(
+            SourceRepository source,
+            CancellationToken token)
+        {
+            ReceivedToken = token;
+            return Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+        }
+    }
+
+    private sealed class MissingFindPackageByIdResource : FindPackageByIdResource
+    {
+        public override Task<IEnumerable<NuGetVersion>> GetAllVersionsAsync(
+            string id,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<FindPackageByIdDependencyInfo> GetDependencyInfoAsync(
+            string id,
+            NuGetVersion version,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<bool> CopyNupkgToStreamAsync(
+            string id,
+            NuGetVersion version,
+            Stream destination,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<IPackageDownloader> GetPackageDownloaderAsync(
+            PackageIdentity packageIdentity,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<bool> DoesPackageExistAsync(
+            string id,
+            NuGetVersion version,
+            SourceCacheContext cacheContext,
+            NuGet.Common.ILogger logger,
+            CancellationToken cancellationToken) => Task.FromResult(false);
     }
 }

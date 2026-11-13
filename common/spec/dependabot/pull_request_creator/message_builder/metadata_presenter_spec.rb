@@ -36,10 +36,12 @@ RSpec.describe namespace::MetadataPresenter do
   let(:metadata_finder) do
     instance_double(
       Dependabot::MetadataFinders::Base,
+      attestation_changes: "",
       changelog_url: "http://localhost/changelog.md",
       changelog_text: "",
       commits_url: "http://localhost/commits",
       commits: [],
+      install_script_changes: "",
       maintainer_changes: "",
       releases_url: "http://localhost/releases",
       releases_text: "",
@@ -54,6 +56,61 @@ RSpec.describe namespace::MetadataPresenter do
   let(:github_redirection_service) { "redirect.github.com" }
 
   describe "#to_s" do
+    context "with metadata from multiple providers" do
+      before do
+        allow(metadata_finder)
+          .to receive_messages(
+            releases_url: "https://gitlab.com/org/business/-/releases",
+            releases_text: "Thanks @release.author!",
+            changelog_url: "https://github.com/org/business/blob/main/CHANGELOG.md",
+            changelog_text: "Thanks @changelog-author!"
+          )
+      end
+
+      it "uses each section's metadata source for mention links" do
+        expect(presenter.to_s)
+          .to include('href="https://gitlab.com/release.author"')
+          .and include('href="https://github.com/changelog-author"')
+      end
+    end
+
+    context "with generated metadata" do
+      before do
+        allow(metadata_finder)
+          .to receive_messages(
+            source_url: "https://gitlab.com/org/business",
+            maintainer_changes: "New maintainer: @release_manager"
+          )
+      end
+
+      it "uses the dependency source for mention links" do
+        expect(presenter.to_s).to include('href="https://gitlab.com/release_manager"')
+      end
+    end
+
+    context "with vulnerabilities from multiple providers" do
+      let(:vulnerabilities_fixed) do
+        [
+          {
+            "source_name" => "GitLab Advisory Database",
+            "source_url" => "https://gitlab.com/security/advisories/1",
+            "description" => "Reported by @security.researcher"
+          },
+          {
+            "source_name" => "GitHub Advisory Database",
+            "source_url" => "https://github.com/advisories/GHSA-1234",
+            "description" => "Reported by @github-researcher"
+          }
+        ]
+      end
+
+      it "uses each advisory source for mention links" do
+        expect(presenter.to_s)
+          .to include('href="https://gitlab.com/security.researcher"')
+          .and include('href="https://github.com/github-researcher"')
+      end
+    end
+
     context "with a changelog that requires truncation" do
       before do
         allow(metadata_finder)
@@ -82,6 +139,32 @@ RSpec.describe namespace::MetadataPresenter do
         it "removes all content after the 50th line" do
           expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
         end
+      end
+    end
+
+    context "with install script changes" do
+      before do
+        allow(metadata_finder)
+          .to receive(:install_script_changes)
+          .and_return("This version adds `postinstall` script that runs during installation.")
+      end
+
+      it "includes install script changes section" do
+        expect(presenter.to_s).to include("Install script changes")
+        expect(presenter.to_s).to include("postinstall")
+      end
+    end
+
+    context "with attestation changes" do
+      before do
+        allow(metadata_finder)
+          .to receive(:attestation_changes)
+          .and_return("This version has no provenance attestation, while the previous version (1.0.0) was attested.")
+      end
+
+      it "includes attestation changes section" do
+        expect(presenter.to_s).to include("Attestation changes")
+        expect(presenter.to_s).to include("provenance attestation")
       end
     end
   end

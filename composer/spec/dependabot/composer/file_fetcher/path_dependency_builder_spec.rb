@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only composer_lock fixture.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -48,6 +50,39 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
       let(:composer_lock) { nil }
 
       it { is_expected.to be_nil }
+    end
+
+    context "with an original package record" do
+      let(:record) do
+        {
+          "name" => "vendor/package",
+          "version" => 123,
+          "dist" => { "type" => "zip", "url" => path },
+          "autoload" => { "psr-4" => { "Vendor\\" => "src/" } },
+          "unknown" => { "nested" => [false, nil, { "number" => 4 }] }
+        }
+      end
+      let(:lock_data) { { "packages" => [record, false], "packages-dev" => [record.merge("version" => 456)] } }
+      let(:composer_lock) { Dependabot::DependencyFile.new(name: "composer.lock", content: lock_data.to_json) }
+
+      it "serializes the complete first matching entry without requiring a path distribution" do
+        expect(dependency_file.content).to eq(record.to_json)
+        expect(dependency_file.name).to eq("components/path_dep/composer.json")
+        expect(dependency_file.directory).to eq("/")
+        expect(dependency_file.support_file?).to be(true)
+      end
+
+      context "with false and empty package sections" do
+        let(:lock_data) { { "packages" => false, "packages-dev" => {} } }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "with invalid JSON" do
+        let(:composer_lock) { Dependabot::DependencyFile.new(name: "composer.lock", content: "{ invalid") }
+
+        it { is_expected.to be_nil }
+      end
     end
   end
 end

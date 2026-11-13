@@ -12,4 +12,4 @@ dependencies:
   pub:
     git:
       url: https://github.com/dart-lang/pub
-      ref: b21ac685bc64f6e81050ec0093aa83543d66e2fd
+      ref: bdc44e6c2e3c04e5056cc304ed43c212b66c70d2

@@ -20,12 +20,12 @@ module Dependabot
         ).void
       end
       def initialize(dependency:, releases: [], dist_tags: nil)
-        @dependency = T.let(dependency, Dependabot::Dependency)
+        @dependency = dependency
         @releases = T.let(
           releases.sort_by(&:version).reverse,
           T::Array[Dependabot::Package::PackageRelease]
         )
-        @dist_tags = T.let(dist_tags, T.nilable(T::Hash[String, String]))
+        @dist_tags = dist_tags
       end
 
       sig { returns(Dependabot::Dependency) }

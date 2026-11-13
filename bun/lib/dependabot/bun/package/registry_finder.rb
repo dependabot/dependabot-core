@@ -20,7 +20,7 @@ module Dependabot
           https://registry.yarnpkg.com
           http://registry.yarnpkg.com
         ).freeze
-        NPM_AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
+        NPM_AUTH_TOKEN_REGEX = %r{^[ \t]*//(?<registry>.*)/:_authToken=(?<token>.*)$}
         NPM_GLOBAL_REGISTRY_REGEX = /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
         YARN_GLOBAL_REGISTRY_REGEX = /^(?:--)?registry\s+((['"](?<registry>.*)['"])|(?<registry>.*))/
         NPM_SCOPED_REGISTRY_REGEX = /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
@@ -393,10 +393,10 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def registry_source_url # rubocop:disable Metrics/PerceivedComplexity
           sources = dependency&.requirements
-                              &.map { |r| r.fetch(:source) }&.uniq&.compact
-                              &.sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
+                              &.map(&:source_hash)&.uniq&.compact
+                              &.sort_by { |source| self.class.central_registry?(T.cast(source[:url], String)) ? 1 : 0 }
 
-          sources&.find { |s| s[:type] == "registry" }&.fetch(:url)
+          T.cast(sources&.find { |s| s[:type] == "registry" }&.fetch(:url), T.nilable(String))
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }

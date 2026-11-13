@@ -1,0 +1,18 @@
+{
+  "name": "library/golang",
+  "tags": [
+    "1.25.0",
+    "1.25.0-alpine3.22",
+    "1.25.0-alpine3.23",
+    "1.25.0-bookworm",
+    "1.25.0-bullseye",
+    "1.26.0",
+    "1.26.0-alpine3.23",
+    "1.26.0-bookworm",
+    "1.26.0-bullseye",
+    "1.27.0",
+    "1.27.0-alpine3.23",
+    "1.27.0-alpine3.24",
+    "1.27.0-bookworm"
+  ]
+}

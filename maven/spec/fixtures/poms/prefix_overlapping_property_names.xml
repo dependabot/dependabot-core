@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.flutter.pcc</groupId>
+  <artifactId>pcc-service</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <properties>
+    <app.name>pcc-service</app.name>
+    <scala.binary.version>2.13</scala.binary.version>
+    <product-catalogue-market-domain-contract.version>2.9.9</product-catalogue-market-domain-contract.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.flutter.product.catalogue.market.domain.contract</groupId>
+      <artifactId>product-catalogue-market-domain-contract-scalapb_${scala.binary.version}</artifactId>
+      <version>${product-catalogue-market-domain-contract.version}</version>
+    </dependency>
+  </dependencies>
+
+  <modules>
+    <module>docker</module>
+  </modules>
+</project>

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,8 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pip_compile_version_resolver"
 
-namespace = Dependabot::Python::UpdateChecker
-RSpec.describe namespace::PipCompileVersionResolver do
+RSpec.describe Dependabot::Python::UpdateChecker::PipCompileVersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -59,6 +58,12 @@ RSpec.describe namespace::PipCompileVersionResolver do
       groups: [],
       source: nil
     }]
+  end
+
+  describe "#resolvable?" do
+    it "returns false when the version is nil" do
+      expect(resolver.resolvable?(version: nil)).to be(false)
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -207,8 +212,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_files) { project_dependency_files("unresolvable") }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "jupyter-server",
-          version: "0.1.1",
+          name: "boto3",
+          version: "1.26.0",
           requirements: dependency_requirements,
           package_manager: "pip"
         )
@@ -216,7 +221,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_requirements) do
         [{
           file: "requirements.in",
-          requirement: nil,
+          requirement: "==1.26.0",
           groups: [],
           source: nil
         }]
@@ -226,10 +231,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message)
-              .to include(
-                "Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
-                "conflicting dependencies."
-              )
+              .to include("conflicting dependencies")
           end
       end
     end

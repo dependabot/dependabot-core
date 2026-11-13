@@ -1,3 +1,5 @@
+using System.Net;
+
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
@@ -21,15 +23,19 @@ public class HttpApiHandlerTests
         var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
 
         // act
-        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new()
+        var exception = await Assert.ThrowsAsync<HttpApiException>(() => handler.IncrementMetric(new()
         {
             // body is irrelevant for this test
             Metric = "TEST",
         }));
 
         // assert
-        var expectedMessage = $"400 (BadRequest): {errorContent}";
+        var expectedMessage = $"POST increment_metric failed with 400 (BadRequest): {errorContent}";
         Assert.Equal(expectedMessage, exception.Message);
+        Assert.Equal("POST", exception.Method);
+        Assert.Equal("increment_metric", exception.Endpoint);
+        Assert.Equal(errorContent, exception.ResponseContent);
+        Assert.Equal(HttpStatusCode.BadRequest, exception.StatusCode);
     }
 
     [Fact]
@@ -44,15 +50,50 @@ public class HttpApiHandlerTests
         var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
 
         // act
-        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new()
+        var exception = await Assert.ThrowsAsync<HttpApiException>(() => handler.IncrementMetric(new()
         {
             // body is irrelevant for this test
             Metric = "TEST",
         }));
 
         // assert
-        var expectedMessage = $"400 (BadRequest)";
+        var expectedMessage = $"POST increment_metric failed with 400 (BadRequest)";
         Assert.Equal(expectedMessage, exception.Message);
+        Assert.Null(exception.ResponseContent);
+    }
+
+    [Fact]
+    public async Task ForbiddenResponseFromCreatePullRequestIsReportedAsAnApiFailure()
+    {
+        // arrange
+        var requestCount = 0;
+        using var http = TestHttpServer.CreateTestStringServer((method, url) =>
+        {
+            requestCount++;
+            return (403, "forbidden");
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+
+        // act
+        var exception = await Assert.ThrowsAsync<HttpApiException>(() =>
+            handler.CreatePullRequest(new()
+            {
+                Dependencies = [],
+                UpdatedDependencyFiles = [],
+                BaseCommitSha = "base-commit-sha",
+                CommitMessage = "commit message",
+                PrTitle = "PR title",
+                PrBody = "PR body",
+                DependencyGroup = null,
+            }));
+
+        // assert
+        Assert.Equal("POST create_pull_request failed with 403 (Forbidden): forbidden", exception.Message);
+        Assert.Equal("POST", exception.Method);
+        Assert.Equal("create_pull_request", exception.Endpoint);
+        Assert.Equal("forbidden", exception.ResponseContent);
+        Assert.Equal(HttpStatusCode.Forbidden, exception.StatusCode);
+        Assert.Equal(1, requestCount);
     }
 
     [Fact]
@@ -62,21 +103,24 @@ public class HttpApiHandlerTests
         var requestCount = 0;
         using var http = TestHttpServer.CreateTestServer((method, url) =>
         {
-            if (requestCount < 2)
+            requestCount++;
+            if (requestCount <= 2)
             {
-                requestCount++;
                 return (500, Array.Empty<byte>());
             }
 
             return (200, Array.Empty<byte>());
         });
-        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID", static _ => Task.CompletedTask);
 
         // act
         await handler.IncrementMetric(new()
         {
             Metric = "test",
         });
+
+        // assert
+        Assert.Equal(3, requestCount);
     }
 
     [Fact]
@@ -92,8 +136,30 @@ public class HttpApiHandlerTests
         var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
 
         // act
-        await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new() { Metric = "test" }));
-        Assert.True(requestCount == 1, $"Expected only 1 request, but received {requestCount}.");
+        await Assert.ThrowsAsync<HttpApiException>(() => handler.IncrementMetric(new() { Metric = "test" }));
+
+        // assert
+        Assert.Equal(1, requestCount);
+    }
+
+    [Fact]
+    public async Task ApiCallsStopRetryingAfterTheMaximumNumberOfAttempts()
+    {
+        // arrange
+        var requestCount = 0;
+        using var http = TestHttpServer.CreateTestStringServer((method, url) =>
+        {
+            requestCount++;
+            return (500, $"attempt-{requestCount}");
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID", static _ => Task.CompletedTask);
+
+        // act
+        var exception = await Assert.ThrowsAsync<HttpApiException>(() => handler.IncrementMetric(new() { Metric = "test" }));
+
+        // assert
+        Assert.Equal("POST increment_metric failed with 500 (InternalServerError): attempt-4", exception.Message);
+        Assert.Equal(4, requestCount);
     }
 
     [Theory]

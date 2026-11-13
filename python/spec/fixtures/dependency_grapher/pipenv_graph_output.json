@@ -1,0 +1,75 @@
+[
+    {
+        "package": {
+            "key": "certifi",
+            "package_name": "certifi",
+            "installed_version": "2024.2.2"
+        },
+        "dependencies": []
+    },
+    {
+        "package": {
+            "key": "charset-normalizer",
+            "package_name": "charset-normalizer",
+            "installed_version": "3.3.2"
+        },
+        "dependencies": []
+    },
+    {
+        "package": {
+            "key": "idna",
+            "package_name": "idna",
+            "installed_version": "3.6"
+        },
+        "dependencies": []
+    },
+    {
+        "package": {
+            "key": "requests",
+            "package_name": "requests",
+            "installed_version": "2.32.5"
+        },
+        "dependencies": [
+            {
+                "key": "certifi",
+                "package_name": "certifi",
+                "installed_version": "2024.2.2",
+                "required_version": ">=2017.4.17"
+            },
+            {
+                "key": "charset-normalizer",
+                "package_name": "charset-normalizer",
+                "installed_version": "3.3.2",
+                "required_version": ">=2,<4"
+            },
+            {
+                "key": "idna",
+                "package_name": "idna",
+                "installed_version": "3.6",
+                "required_version": ">=2.5,<4"
+            },
+            {
+                "key": "urllib3",
+                "package_name": "urllib3",
+                "installed_version": "2.2.1",
+                "required_version": ">=1.21.1,<3"
+            }
+        ]
+    },
+    {
+        "package": {
+            "key": "ruff",
+            "package_name": "ruff",
+            "installed_version": "0.15.4"
+        },
+        "dependencies": []
+    },
+    {
+        "package": {
+            "key": "urllib3",
+            "package_name": "urllib3",
+            "installed_version": "2.2.1"
+        },
+        "dependencies": []
+    }
+]

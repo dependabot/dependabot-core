@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "quick",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Quick/Quick.git",
+      "state" : {
+        "revision" : "1f5d542036f34e22cd0f6c0a8f94fb432d318adb",
+        "version" : "7.0.0"
+      }
+    }
+  ],
+  "version" : 2
+}

@@ -1,0 +1,7 @@
+on: [push]
+
+name: Multiple flow actions
+jobs:
+  inline:
+    runs-on: ubuntu-latest
+    steps: &shared [{ name: "🚀", run: echo, env: { ACTION: &checkout actions/checkout@v2.1.0, SECOND: &checkout2 actions/checkout@v2.1.0 } }, { uses: *checkout }, { uses: *checkout2 }, { name: "Node 🚀", uses: actions/setup-node@v3.0.0 }] # v2.1.0

@@ -33,7 +33,7 @@ module Dependabot
           @dependencies.values.filter_map(&:combined)
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T.untyped) }
+        sig { params(dep: Dependabot::Dependency).returns(T.self_type) }
         def <<(dep)
           T.must(@dependencies[key_for_dependency(dep)]) << dep
           self

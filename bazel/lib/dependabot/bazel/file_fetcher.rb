@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -16,11 +16,9 @@ module Dependabot
       require_relative "file_fetcher/downloader_config_fetcher"
       require_relative "file_fetcher/include_extractor"
 
-      WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-      MODULE_FILE = T.let("MODULE.bazel", String)
-      CONFIG_FILES = T.let(
-        %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel).freeze, T::Array[String]
-      )
+      WORKSPACE_FILES = %w(WORKSPACE WORKSPACE.bazel).freeze
+      MODULE_FILE = "MODULE.bazel"
+      CONFIG_FILES = %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel).freeze
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -46,7 +44,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
       end
 
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { override.returns(T.nilable(T::Hash[Symbol, T.anything])) }
       def ecosystem_versions
         bazel_version = "unknown"
 
@@ -82,7 +80,7 @@ module Dependabot
         files
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::FileFetchers::RepositoryContent]) }
       def module_file_items
         repo_contents(raise_errors: false).select { |f| f.type == "file" && f.name.end_with?(MODULE_FILE) }
       end
@@ -140,8 +138,8 @@ module Dependabot
 
         all_module_files.each do |module_file|
           module_refs = fetch_module_referenced_files(module_file, directories_with_files)
-          files += module_refs[:files]
-          module_refs[:local_override_dirs].each { |dir| local_override_directories.add(dir) }
+          files += T.cast(module_refs[:files], T::Array[DependencyFile])
+          T.cast(module_refs[:local_override_dirs], T::Array[String]).each { |dir| local_override_directories.add(dir) }
         end
 
         tree_fetcher = DirectoryTreeFetcher.new(fetcher: self)
@@ -156,7 +154,7 @@ module Dependabot
         params(
           module_file: DependencyFile,
           directories_with_files: T::Set[String]
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, T.anything])
       end
       def fetch_module_referenced_files(module_file, directories_with_files)
         files = T.let([], T::Array[DependencyFile])

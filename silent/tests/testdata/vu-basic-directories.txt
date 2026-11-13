@@ -28,6 +28,8 @@ pr-updated expected.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/"
@@ -39,6 +41,8 @@ job:
 -- input-2.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/"

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -45,6 +45,33 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
       it "returns that URL instead" do
         expect(finder.central_repo_url).to eq("https://example.com")
       end
+    end
+  end
+
+  describe "#replaces_base_url and #urls_from_credentials" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new("type" => "maven_repository", "url" => "https://extra.example.com/maven/"),
+        Dependabot::Credential.new(
+          "type" => "maven_repository", "url" => "https://base.example.com/", "replaces-base" => true
+        ),
+        Dependabot::Credential.new("type" => "npm_registry", "registry" => "npm.example.com"),
+        Dependabot::Credential.new("type" => "maven_repository", "url" => nil)
+      ]
+    end
+
+    it "returns the replaces-base registry" do
+      expect(finder.replaces_base_url).to eq("https://base.example.com/")
+    end
+
+    it "returns every Maven registry URL without trailing slashes" do
+      expect(finder.urls_from_credentials).to eq(["https://extra.example.com/maven", "https://base.example.com"])
+    end
+
+    context "without a replaces-base registry" do
+      let(:credentials) { [] }
+
+      it { expect(finder.replaces_base_url).to be_nil }
     end
   end
 
@@ -346,6 +373,22 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
           end
         end
+      end
+    end
+
+    context "when there are repository declarations in profiles" do
+      let(:base_pom_fixture_name) { "custom_repositories_pom_with_profiles.xml" }
+
+      it "does not include repositories from profiles that are not activated by default" do
+        expect(repository_urls).to eq(
+          %w(
+            https://repo.jenkins-ci.org/public
+            https://repo.jenkins-ci.org/incrementals-activated
+            https://repo.jenkins-ci.org/incrementals-activated-2
+            https://repo.jenkins-ci.org/another-activated
+            https://repo.maven.apache.org/maven2
+          )
+        )
       end
     end
   end

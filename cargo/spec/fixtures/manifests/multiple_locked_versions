@@ -1,0 +1,11 @@
+[package]
+name = "multiple-locked-versions"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+rand = "=0.8.5"
+uuid = { version = "=1.22.0", features = ["v4"] }

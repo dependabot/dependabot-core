@@ -35,7 +35,6 @@ job:
       host: github.com
   security-advisories: []
   security-updates-only: false
-  max-updater-run-time: 2700
   vendor-dependencies: false
   repo-private: false
   proxy-log-response-body-on-auth-failure: true
@@ -75,5 +74,3 @@ job:
     python-3-8-deprecation-warning: true
     record-ecosystem-versions: true
     record-update-job-unknown-error: true
-    allow-refresh-for-existing-pr-dependencies: true
-    allow_refresh_group_with_all_dependencies: true

@@ -1,0 +1,7 @@
+on: [push]
+
+name: Repeated flow actions
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps: [{ uses: actions/checkout@v2.1.0 }, { uses: actions/checkout@v2.1.0 }]

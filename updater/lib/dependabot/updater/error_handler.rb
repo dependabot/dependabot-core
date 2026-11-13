@@ -1,8 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
+require "dependabot/error_report_context"
 require "dependabot/errors"
 require "dependabot/updater/errors"
+require "dependabot/updater/security_update_helpers"
 require "octokit"
 
 # This class is responsible for determining how to present a Dependabot::Error
@@ -23,6 +25,7 @@ module Dependabot
   class Updater
     class ErrorHandler
       extend T::Sig
+      include PullRequestHelpers
 
       # These are errors that halt the update run and are handled in the main
       # backend. They do *not* raise a sentry.
@@ -35,13 +38,35 @@ module Dependabot
           Errno::ENOSPC => "out_of_disk",
           Octokit::Unauthorized => "octokit_unauthorized"
         }.freeze,
-        T::Hash[Module, String]
+        T::Hash[T::Module[T.anything], String]
       )
 
-      sig { params(service: Service, job: Job).void }
-      def initialize(service:, job:)
-        @service = T.let(service, Service)
-        @job = T.let(job, Job)
+      # Translates the canonical operation identifier (Operation.tag_name) into
+      # the curated `operation` label shared by the blocked_versions.* metrics.
+      # The label vocabulary itself lives in
+      # PullRequestHelpers::BlockedVersionsOperation so the "soft"
+      # (`blocked_versions.ignored`) and "hard" (`blocked_versions.enforced`)
+      # statuses stay in lockstep on a single `operation` tag. Operations absent
+      # from this map fall back to their raw tag name so we never drop the
+      # dimension entirely.
+      BLOCKED_VERSIONS_OPERATIONS = T.let(
+        {
+          "update_all_versions" => PullRequestHelpers::BlockedVersionsOperation::VERSION_UPDATE,
+          "create_security_pr" => PullRequestHelpers::BlockedVersionsOperation::SECURITY_UPDATE,
+          "update_security_pr" => PullRequestHelpers::BlockedVersionsOperation::REFRESH_SECURITY_UPDATE,
+          "update_version_pr" => PullRequestHelpers::BlockedVersionsOperation::REFRESH_VERSION_UPDATE,
+          "create_version_group_pr" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE,
+          "update_version_group_pr" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE,
+          "group_update_all_versions" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE
+        }.freeze,
+        T::Hash[String, String]
+      )
+
+      sig { params(service: Service, job: Job, operation_name: String).void }
+      def initialize(service:, job:, operation_name: "unknown")
+        @service = service
+        @job = job
+        @operation_name = operation_name
       end
 
       # This method handles errors where there is a dependency in the current
@@ -58,23 +83,25 @@ module Dependabot
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
+        increment_blocked_versions_enforced_metric(error)
+
         error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
         service.record_update_job_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"],
+          error_type: error_details.error_type,
+          error_details: error_details.error_detail,
           dependency: dependency
         )
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
-           error_details.fetch(:"error-type") == "unknown_error"
-          log_unknown_error_with_backtrace(error)
+           error_details.error_type == "unknown_error"
+          log_unknown_error_with_backtrace(error, dependency: dependency)
         end
 
         log_dependency_error(
           dependency: dependency,
           error: error,
-          error_type: error_details.fetch(:"error-type"),
-          error_detail: error_details.fetch(:"error-detail", nil)
+          error_type: error_details.error_type,
+          error_detail: error_details.error_detail
         )
       end
 
@@ -84,7 +111,7 @@ module Dependabot
           dependency: T.nilable(Dependabot::Dependency),
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
+          error_detail: T.nilable(Dependabot::ErrorDetails::Detail)
         ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
@@ -113,21 +140,23 @@ module Dependabot
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
+        increment_blocked_versions_enforced_metric(error)
+
         error_details = error_details_for(error, dependency_group: dependency_group)
         service.record_update_job_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"]
+          error_type: error_details.error_type,
+          error_details: error_details.error_detail
         )
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
-           error_details.fetch(:"error-type") == "unknown_error"
+           error_details.error_type == "unknown_error"
           log_unknown_error_with_backtrace(error)
         end
 
         log_job_error(
           error: error,
-          error_type: error_details.fetch(:"error-type"),
-          error_detail: error_details.fetch(:"error-detail", nil)
+          error_type: error_details.error_type,
+          error_detail: error_details.error_detail
         )
       end
 
@@ -136,7 +165,7 @@ module Dependabot
         params(
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
+          error_detail: T.nilable(Dependabot::ErrorDetails::Detail)
         ).void
       end
       def log_job_error(error:, error_type:, error_detail: nil)
@@ -153,11 +182,31 @@ module Dependabot
 
       private
 
-      sig { returns(Service) }
+      # Implements the abstract `service` reader required by PullRequestHelpers.
+      sig { override.returns(Service) }
       attr_reader :service
 
       sig { returns(Job) }
       attr_reader :job
+
+      sig { returns(String) }
+      attr_reader :operation_name
+
+      # Records the "hard" block status when a selected update is rejected because
+      # a blocked transitive version was about to ship in the regenerated files.
+      # The metric emission lives in PullRequestHelpers#record_blocked_version_enforced
+      # so it sits alongside its "soft" sibling `blocked_versions.ignored`.
+      #
+      # Recording is guarded and fire-and-forget: it can never affect an update.
+      sig { params(error: StandardError).void }
+      def increment_blocked_versions_enforced_metric(error)
+        return unless error.is_a?(Dependabot::BlockedDependencyVersion)
+
+        record_blocked_version_enforced(
+          job: job,
+          operation: BLOCKED_VERSIONS_OPERATIONS.fetch(operation_name, operation_name)
+        )
+      end
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
@@ -170,9 +219,12 @@ module Dependabot
           error: StandardError,
           dependency: T.nilable(Dependabot::Dependency),
           dependency_group: T.nilable(Dependabot::DependencyGroup)
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(Dependabot::ErrorDetails)
       end
       def error_details_for(error, dependency: nil, dependency_group: nil)
+        registry_host = unreachable_registry_host(error)
+        return registry_unreachable_details(error, registry_host) if registry_host
+
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
 
@@ -185,6 +237,8 @@ module Dependabot
           msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
+          sanitized_context = ErrorReportContext.build(error: error, dependency: dependency)
+          ErrorReportContext.attach(sanitized_error, sanitized_context) if sanitized_context
           service.capture_exception(error: sanitized_error, job: job)
         else
           service.capture_exception(
@@ -195,20 +249,49 @@ module Dependabot
           )
         end
 
-        { "error-type": "unknown_error" }
+        Dependabot::ErrorDetails.new(error_type: "unknown_error", error_detail: nil)
       end
 
-      sig { params(error: StandardError).void }
-      def log_unknown_error_with_backtrace(error)
+      # A self-hosted runner runs in the customer's network. When that network blocks or cannot resolve a registry,
+      # the Dependabot proxy closes the connection without a response (EOFError) or the request times out. Ecosystems
+      # raise these as Excon errors for public registries, so they would otherwise be reported as unknown errors.
+      # On GitHub-hosted runners, and when dependabot-api doesn't say where the job runs, they still are.
+      #
+      # Only requests made through RegistryClient count, which records the host on the error it raises. Other requests
+      # (such as fetching a Git repository's refs, which fails the same way for a Git host) are not registry requests,
+      # and an unreachable Git host is not what this error says, so those stay unknown errors.
+      sig { params(error: StandardError).returns(T.nilable(String)) }
+      def unreachable_registry_host(error)
+        return unless error.is_a?(Excon::Error::Socket) || error.is_a?(Excon::Error::Timeout)
+        # A certificate that can't be verified means a server answered: the network path works
+        return if error.is_a?(Excon::Error::Certificate)
+        return unless job.self_hosted_runner?
+
+        host = ErrorReportContext.build(error: error)&.fetch("host", nil)
+        host if host.is_a?(String) && host != ErrorReportContext::REDACTED
+      end
+
+      sig { params(error: StandardError, host: String).returns(Dependabot::ErrorDetails) }
+      def registry_unreachable_details(error, host)
+        Dependabot.logger.warn(
+          "#{host} could not be reached from the self-hosted runner this job runs on " \
+          "(#{error.class}: #{error.message}). Check that the runner's network can reach it."
+        )
+        Dependabot::ErrorDetails.new(error_type: "registry_unreachable", error_detail: { source: host })
+      end
+
+      sig { params(error: StandardError, dependency: T.nilable(Dependabot::Dependency)).void }
+      def log_unknown_error_with_backtrace(error, dependency: nil)
         error_details = {
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
           ErrorAttributes::FINGERPRINT => extract_fingerprint(error),
+          ErrorAttributes::CONTEXT => ErrorReportContext.build(error: error, dependency: dependency),
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
-          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
         }.compact
 
         service.increment_metric(
@@ -224,8 +307,9 @@ module Dependabot
       sig { params(error: StandardError).returns(T.nilable(T::Array[String])) }
       def extract_fingerprint(error)
         if error.respond_to?(:sentry_context)
-          context = T.unsafe(error).sentry_context
-          return context[:fingerprint] if context.is_a?(Hash)
+          context = T.cast(error, Dependabot::HasSentryContext).sentry_context
+          fingerprint = T.cast(context[:fingerprint], Object)
+          return fingerprint.map { |value| T.cast(value, Object).to_s } if fingerprint.is_a?(Array)
         end
 
         nil

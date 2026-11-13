@@ -46,12 +46,12 @@ module Dependabot
         supported_versions: [],
         requirement: nil
       )
-        @name = T.let(name, String)
+        @name = name
         @detected_version = T.let(detected_version || version, T.nilable(Dependabot::Version))
-        @version = T.let(version, T.nilable(Dependabot::Version))
-        @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
-        @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
-        @requirement = T.let(requirement, T.nilable(Dependabot::Requirement))
+        @version = version
+        @deprecated_versions = deprecated_versions
+        @supported_versions = supported_versions
+        @requirement = requirement
       end
 
       # The name of the package manager (e.g., "bundler", "npm").
@@ -177,9 +177,9 @@ module Dependabot
       package_manager:,
       language: nil
     )
-      @name = T.let(name, String)
-      @package_manager = T.let(package_manager, VersionManager)
-      @language = T.let(language, T.nilable(VersionManager))
+      @name = name
+      @package_manager = package_manager
+      @language = language
     end
 
     # The name of the ecosystem (mandatory).

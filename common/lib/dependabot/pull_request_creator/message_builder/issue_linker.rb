@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 require "dependabot/pull_request_creator/message_builder"
 
 module Dependabot
@@ -53,18 +54,36 @@ module Dependabot
                      &.fetch("repo", nil)
 
               source = if repo
-                         "https://github.com/#{repo}"
+                         "#{qualified_reference_base_url}/#{repo}"
                        elsif source_url
                          source_url
                        end
 
               if source
-                "[#{repo ? (repo + tag) : tag}](#{source}/issues/#{number})"
+                "[#{repo ? (repo + tag) : tag}](#{source}#{issue_path(source)}/#{number})"
               else
                 issue_link
               end
             end
           end
+        end
+
+        private
+
+        sig { params(source: String).returns(String) }
+        def issue_path(source)
+          URI.parse(source).host&.downcase == "gitlab.com" ? "/-/work_items" : "/issues"
+        rescue URI::InvalidURIError
+          "/issues"
+        end
+
+        sig { returns(String) }
+        def qualified_reference_base_url
+          return "https://github.com" unless source_url
+
+          URI.parse(T.must(source_url)).host&.downcase == "gitlab.com" ? "https://gitlab.com" : "https://github.com"
+        rescue URI::InvalidURIError
+          "https://github.com"
         end
       end
     end

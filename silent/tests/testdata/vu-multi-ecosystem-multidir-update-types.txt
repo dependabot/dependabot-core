@@ -56,6 +56,8 @@ dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/depe
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/frontend"

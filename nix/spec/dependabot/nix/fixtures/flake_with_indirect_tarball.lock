@@ -1,0 +1,40 @@
+{
+  "nodes": {
+    "home-manager": {
+      "locked": {
+        "lastModified": 1790002393,
+        "narHash": "sha256-K52mRzjlCKWaFf+Z3SmoxACg/UzNNR4eUiRZUe1tMs4=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "fae3c7589610212a87c89a968f2321d2bc823f38",
+        "type": "github"
+      },
+      "original": {
+        "id": "home-manager",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1789921291,
+        "narHash": "sha256-uLLUj+TLUmBc6KrUzx76KZdPi5ZkI1ORR9A6lJUIZlo=",
+        "rev": "44a91898084f46797b5fac650c7e8c9ac38c43d4",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.11pre1077143.44a91898084f/nixexprs.tar.zst"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "ref": "nixos-unstable",
+        "type": "indirect"
+      }
+    },
+    "root": {
+      "inputs": {
+        "home-manager": "home-manager",
+        "nixpkgs": "nixpkgs_3"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

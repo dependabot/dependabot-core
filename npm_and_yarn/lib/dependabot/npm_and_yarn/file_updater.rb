@@ -5,8 +5,12 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
+require "dependabot/errors"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
+require "dependabot/npm_and_yarn/version"
 require "sorbet-runtime"
 
 module Dependabot
@@ -22,14 +26,15 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
+        include Dependabot::HasSentryContext
 
-        sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
+        sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
           super(message)
           @error_context = error_context
         end
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.anything]) }
         def sentry_context
           { extra: @error_context }
         end
@@ -37,6 +42,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
+        Helpers.activate_npm_version_selector(dependency_files)
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
@@ -46,14 +52,11 @@ module Dependabot
                            updated_lockfiles
                          end
 
-        if updated_files.none?
-          if original_pnpm_locks.any?
-            raise_tool_not_supported_for_pnpm_if_transitive
-            raise_miss_configured_tooling_if_pnpm_subdirectory
-          end
+        handle_pnpm_support_file_no_change!(updated_files)
 
+        if updated_files.none?
           raise NoChangeError.new(
-            message: "No files were updated!",
+            message: "No files were updated! Package manager: #{detected_package_manager}",
             error_context: error_context(updated_files: updated_files)
           )
         end
@@ -61,7 +64,7 @@ module Dependabot
         sorted_updated_files = updated_files.sort_by(&:name)
         if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
           raise NoChangeError.new(
-            message: "Updated files are unchanged!",
+            message: "Updated files are unchanged! Package manager: #{detected_package_manager}",
             error_context: error_context(updated_files: updated_files)
           )
         end
@@ -71,16 +74,18 @@ module Dependabot
 
       private
 
-      sig { void }
-      def raise_tool_not_supported_for_pnpm_if_transitive
-        # ✅ Ensure there are dependencies and check if all are transitive
-        return if dependencies.empty? || dependencies.any?(&:top_level?)
+      sig { params(updated_files: T::Array[DependencyFile]).void }
+      def handle_pnpm_support_file_no_change!(updated_files)
+        # Also handle all-support-file updates for pnpm workspaces — this can
+        # happen when pnpm-workspace.yaml and pnpm-lock.yaml are fetched from a
+        # parent directory (marked support_file=true by
+        # fetch_file_from_parent_directories). In that case the updated files
+        # would be filtered out by DependencyChangeBuilder, so we surface the
+        # underlying pnpm misconfiguration.
+        return unless original_pnpm_locks.any?
+        return unless updated_files.none? || updated_files.all?(&:support_file?)
 
-        raise ToolFeatureNotSupported.new(
-          tool_name: "pnpm",
-          tool_type: "package_manager",
-          feature: "updating transitive dependencies"
-        )
+        raise_miss_configured_tooling_if_pnpm_subdirectory
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -89,17 +94,16 @@ module Dependabot
         workspace_files = original_pnpm_workspace
         lockfiles = original_pnpm_locks
 
-        # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
         return if workspace_files.empty?
         return if workspace_files.any? { |f| f.directory == "/" }
-        return unless workspace_files.all? { |f| f.name.end_with?("../pnpm-workspace.yaml") }
+        return unless workspace_files.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-workspace\.yaml\z}) }
 
-        # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
         return if lockfiles.empty?
         return if lockfiles.any? { |f| f.directory == "/" }
-        return unless lockfiles.all? { |f| f.name.end_with?("../pnpm-lock.yaml") }
+        return unless lockfiles.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-lock\.yaml\z}) }
 
-        # ❌ Raise error → Updating inside a subdirectory is misconfigured
+        # Updating a workspace from a subdirectory is unsupported when both
+        # pnpm files are sourced from parent directories.
         raise MisconfiguredTooling.new(
           "pnpm",
           "Updating workspaces from inside a workspace subdirectory is not supported. " \
@@ -137,7 +141,7 @@ module Dependabot
         pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
           updated_files << file
         end
-        T.unsafe(vendor_updater).updated_vendor_cache_files(base_directory: base_dir).each do |file|
+        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
         install_state_updater.updated_files(base_directory: base_dir).each do |file|
@@ -151,7 +155,11 @@ module Dependabot
       sig { returns(String) }
       def vendor_cache_dir
         @vendor_cache_dir ||= T.let(
-          Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache"),
+          Helpers.fetch_yarnrc_yml_value(
+            "cacheFolder",
+            "./.yarn/cache",
+            dependency_files: dependency_files
+          ),
           T.nilable(String)
         )
       end
@@ -159,7 +167,11 @@ module Dependabot
       sig { returns(String) }
       def install_state_path
         @install_state_path ||= T.let(
-          Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz"),
+          Helpers.fetch_yarnrc_yml_value(
+            "installStatePath",
+            "./.yarn/install-state.gz",
+            dependency_files: dependency_files
+          ),
           T.nilable(String)
         )
       end
@@ -211,13 +223,23 @@ module Dependabot
         raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
-      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.anything]) }
       def error_context(updated_files:)
         {
           dependencies: dependencies.map(&:to_h),
           updated_files: updated_files.map(&:name),
-          dependency_files: dependency_files.map(&:name)
+          dependency_files: dependency_files.map(&:name),
+          package_manager: detected_package_manager
         }
+      end
+
+      sig { returns(String) }
+      def detected_package_manager
+        return "npm" if package_locks.any?
+        return "yarn" if yarn_locks.any?
+        return "pnpm" if pnpm_locks.any?
+
+        "unknown"
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -286,11 +308,32 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_files
         @package_files ||= T.let(
-          filtered_dependency_files.select do |f|
-            f.name.end_with?("package.json")
+          begin
+            files = filtered_dependency_files.select { |f| f.name.end_with?("package.json") }
+
+            if files.empty? && dependencies.none?(&:top_level?)
+              files = dependency_files
+                      .select { |f| f.name.end_with?("package.json") }
+                      .select { |f| package_json_has_override_for_deps?(f) }
+            end
+
+            files
           end,
           T.nilable(T::Array[DependencyFile])
         )
+      end
+
+      sig { params(package_json: Dependabot::DependencyFile).returns(T::Boolean) }
+      def package_json_has_override_for_deps?(package_json)
+        parsed = JSON.parse(T.must(package_json.content))
+        entries = parsed["resolutions"] || parsed["overrides"] || parsed.dig("pnpm", "overrides") || {}
+        return false unless entries.is_a?(Hash)
+
+        dependencies.any? do |dep|
+          entries.any? { |k, v| v.is_a?(String) && (k == dep.name || k.end_with?("/#{dep.name}")) }
+        end
+      rescue JSON::ParserError
+        false
       end
 
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -349,12 +392,10 @@ module Dependabot
         updated_files.concat(update_pnpm_locks)
 
         package_locks.each do |package_lock|
-          next unless package_lock_changed?(package_lock)
+          lockfile_updates = updated_lockfile_files(package_lock)
+          next if lockfile_updates.empty?
 
-          updated_files << updated_file(
-            file: package_lock,
-            content: T.must(updated_lockfile_content(package_lock))
-          )
+          updated_files.concat(lockfile_updates)
         end
 
         shrinkwraps.each do |shrinkwrap|
@@ -367,6 +408,27 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_lockfile_files(file)
+        return [] unless package_lock_changed?(file)
+
+        updated_file_set = [updated_file(
+          file: file,
+          content: T.must(updated_lockfile_content(file))
+        )]
+
+        already_updated_names = updated_manifest_files.to_set(&:name)
+
+        workspace_package_json_updates(file).each do |manifest_file, updated_content|
+          next if updated_content == manifest_file.content
+          next if already_updated_names.include?(manifest_file.name)
+
+          updated_file_set << updated_file(file: manifest_file, content: updated_content)
+        end
+
+        updated_file_set
       end
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
       def updated_yarn_lock_content(yarn_lock)
@@ -385,6 +447,80 @@ module Dependabot
           )
       end
 
+      # The number of days from the dependabot.yml `cooldown` config to apply as
+      # a release-age floor for *transitive* dependencies. npm, pnpm and yarn each
+      # enforce this natively at install time, which is the only point at which
+      # Dependabot can constrain the versions the package manager resolves for the
+      # transitive tree. Returns nil for security updates (which must never be
+      # blocked by a release-age gate) or when no positive cooldown is configured.
+      #
+      # The native gates are a single global value per invocation, so they cannot
+      # express per-semver-type days or include/exclude patterns. Passing a value
+      # stricter than the rule that selected a version makes the package manager
+      # refuse the install it was just asked to perform, which surfaces as a skipped
+      # update or a hung resolver (dependabot/dependabot-core#15937). The gate is
+      # therefore the *smallest* of the per-update cooldown days, so it never
+      # exceeds the window any of the selected versions was approved under.
+      #
+      # The smallest is deliberately the opposite of the highest-wins rule in
+      # `Helpers.higher_release_age_gate`: that reconciles two *competing* policies
+      # (ours and the user's), whereas these are all windows we applied ourselves,
+      # and taking the highest would reject the update selected under the shortest.
+      #
+      # A global flag cannot express `include`/`exclude`, and selection gives an
+      # excluded dependency a zero-day window, so any gate at all could reject a
+      # version it approved. The gate is therefore skipped unless every dependency
+      # in the invocation is cooldown-included.
+      sig { returns(T.nilable(Integer)) }
+      def cooldown_release_age_days
+        return nil if options.fetch(:security_updates_only, false)
+
+        cooldown = T.cast(
+          options[:update_cooldown],
+          T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+        )
+        return nil if cooldown.nil?
+        return nil if dependencies.empty?
+        return nil unless dependencies.all? { |dep| cooldown.included?(dep.name) }
+
+        days = dependencies.map { |dep| selection_cooldown_days(cooldown, dep) }.min
+        days&.positive? ? days : nil
+      end
+
+      # The cooldown window the update checker applied when it selected this
+      # dependency's target version, so the native gate can never reject a version
+      # Dependabot itself chose. Falls back to `default_days` for versions we cannot
+      # parse, matching how `CooldownCalculation` treats an unknown current version.
+      sig do
+        params(
+          cooldown: Dependabot::Package::ReleaseCooldownOptions,
+          dependency: Dependabot::Dependency
+        ).returns(Integer)
+      end
+      def selection_cooldown_days(cooldown, dependency)
+        new_version = parsed_version(dependency.version)
+        return cooldown.default_days if new_version.nil?
+
+        semver_days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+          cooldown,
+          parsed_version(dependency.previous_version),
+          new_version
+        )
+
+        # A dependency absent from the lockfile is selected under `default_days`,
+        # because the checker has no current version, yet `previous_version` is
+        # later inferred from the manifest requirement. Capping keeps the gate from
+        # exceeding whichever of the two windows selection actually used.
+        [semver_days, cooldown.default_days].min
+      end
+
+      sig { params(version: T.nilable(String)).returns(T.nilable(Dependabot::NpmAndYarn::Version)) }
+      def parsed_version(version)
+        return nil unless version && Dependabot::NpmAndYarn::Version.correct?(version)
+
+        Dependabot::NpmAndYarn::Version.new(version)
+      end
+
       sig { returns(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater) }
       def yarn_lockfile_updater
         @yarn_lockfile_updater ||= T.let(
@@ -392,7 +528,9 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+            release_age_days: cooldown_release_age_days
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -405,22 +543,41 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+            release_age_days: cooldown_release_age_days
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(NpmLockfileUpdater) }
+      def npm_lockfile_updater_for(file)
+        @npm_lockfile_updaters ||= T.let(
+          {},
+          T.nilable(T::Hash[String, NpmLockfileUpdater])
+        )
+        @npm_lockfile_updaters[file.name] ||= NpmLockfileUpdater.new(
+          lockfile: file,
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+          release_age_days: cooldown_release_age_days
+        )
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_lockfile_content(file)
-        @updated_lockfile_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_lockfile_content[file.name] ||=
-          NpmLockfileUpdater.new(
-            lockfile: file,
-            dependencies: dependencies,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).updated_lockfile.content
+        npm_lockfile_updater_for(file).updated_lockfile.content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T::Hash[Dependabot::DependencyFile, String])
+      end
+      def workspace_package_json_updates(file)
+        npm_lockfile_updater_for(file).updated_package_json_files
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }

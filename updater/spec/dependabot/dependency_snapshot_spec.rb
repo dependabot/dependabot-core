@@ -39,6 +39,10 @@ RSpec.describe Dependabot::DependencySnapshot do
     )
   end
 
+  let(:group_definitions) do
+    dependency_groups.map { |group| Dependabot::Job::DependencyGroupDefinition.from_hash(group) }
+  end
+
   let(:job) do
     instance_double(
       Dependabot::Job,
@@ -48,7 +52,7 @@ RSpec.describe Dependabot::DependencySnapshot do
       credentials: [],
       reject_external_code?: false,
       source: source,
-      dependency_groups: dependency_groups,
+      dependency_groups: group_definitions,
       allowed_update?: true,
       dependency_group_to_refresh: nil,
       dependencies: nil,
@@ -105,24 +109,13 @@ RSpec.describe Dependabot::DependencySnapshot do
   let(:unsupported_error_enabled) { false }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:bundler_v1_unsupported_error)
       .and_return(unsupported_error_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:add_deprecation_warn_to_pr_message)
       .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:allow_refresh_for_existing_pr_dependencies)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:group_membership_enforcement)
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:group_by_dependency_name)
-      .and_return(false)
   end
 
   after do
@@ -180,6 +173,16 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         snapshot.current_directory = "/foo"
         expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
+      end
+
+      it "exposes handled dependencies across every directory" do
+        snapshot = create_dependency_snapshot
+        snapshot.current_directory = "/foo"
+        snapshot.add_handled_dependencies(%w(a b))
+        snapshot.current_directory = "/bar"
+        snapshot.add_handled_dependencies(%w(c d))
+
+        expect(snapshot.all_handled_dependencies).to eq(Set.new(%w(a b c d)))
       end
     end
   end
@@ -257,6 +260,54 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
     end
 
+    context "when dependency_group_to_refresh refers to a dynamic subgroup" do
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
+      end
+
+      let(:dependency_groups) do
+        [
+          {
+            "name" => "monorepo-deps",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "group-by" => "dependency-name"
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          package_manager: "bundler",
+          security_updates_only?: false,
+          repo_contents_path: nil,
+          credentials: [],
+          reject_external_code?: false,
+          source: source,
+          dependency_groups: group_definitions,
+          allowed_update?: true,
+          dependency_group_to_refresh: "monorepo-deps/dummy-pkg-a",
+          dependencies: nil,
+          experiments: { large_hadron_collider: true }
+        )
+      end
+
+      it "returns the dynamic subgroup when job_group is called" do
+        snapshot = create_dependency_snapshot
+
+        # The parent group should have dynamic subgroups created
+        expect(snapshot.groups.map(&:name)).to include("monorepo-deps/dummy-pkg-a")
+        expect(snapshot.groups.map(&:name)).to include("monorepo-deps/dummy-pkg-b")
+
+        # job_group should find the subgroup by name
+        job_group = snapshot.job_group
+        expect(job_group).not_to be_nil
+        expect(job_group.name).to eq("monorepo-deps/dummy-pkg-a")
+      end
+    end
+
     context "when it's a security update and has dependencies" do
       let(:fetched_files) do
         Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
@@ -270,7 +321,7 @@ RSpec.describe Dependabot::DependencySnapshot do
           credentials: [],
           reject_external_code?: false,
           source: source,
-          dependency_groups: dependency_groups,
+          dependency_groups: group_definitions,
           dependencies: ["dummy-pkg-a"],
           allowed_update?: false,
           dependency_group_to_refresh: nil,
@@ -322,12 +373,14 @@ RSpec.describe Dependabot::DependencySnapshot do
         credentials: [],
         reject_external_code?: false,
         source: source,
-        dependency_groups: dependency_groups,
+        dependency_groups: group_definitions,
         allowed_update?: true,
         dependency_group_to_refresh: nil,
         dependencies: nil,
         experiments: { large_hadron_collider: true },
-        existing_group_pull_requests: existing_group_pull_requests
+        existing_group_pull_requests: existing_group_pull_requests.map do |pr|
+          Dependabot::Job::ExistingGroupPullRequest.from_hash(pr)
+        end
       )
     end
 
@@ -403,6 +456,75 @@ RSpec.describe Dependabot::DependencySnapshot do
       expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
     end
 
+    context "when the group restricts the update types it accepts" do
+      let(:dependency_groups) do
+        [
+          {
+            "name" => "group-a",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "exclude-patterns" => ["dummy-pkg-b"],
+              "update-types" => %w(minor patch)
+            }
+          }
+        ]
+      end
+
+      let(:existing_group_pull_requests) { [] }
+      let(:experiment_enabled) { true }
+
+      before do
+        Dependabot::Experiments.register(:individual_prs_for_semver_excluded_dependencies, experiment_enabled)
+      end
+
+      it "defers the dependencies to the group rather than marking them handled" do
+        snapshot = create_dependency_snapshot
+        group = snapshot.groups.first
+        snapshot.mark_group_handled(group, defer_update_types: true)
+
+        %w(/foo /bar).each do |directory|
+          snapshot.current_directory = directory
+
+          expect(snapshot.handled_dependencies).to be_empty
+          expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-a")).to eq([group])
+          expect(snapshot.ungrouped_dependencies.map(&:name)).to include("dummy-pkg-a")
+        end
+      end
+
+      it "marks the dependencies handled when the caller does not defer" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first)
+        snapshot.current_directory = "/foo"
+
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+        expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-a")).to be_empty
+      end
+
+      it "does not defer dependencies the group never claimed" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first, defer_update_types: true)
+        snapshot.current_directory = "/foo"
+
+        expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-b")).to be_empty
+      end
+
+      context "when the experiment is disabled" do
+        let(:experiment_enabled) { false }
+
+        it "marks the dependencies handled" do
+          snapshot = create_dependency_snapshot
+          snapshot.mark_group_handled(snapshot.groups.first, defer_update_types: true)
+
+          %w(/foo /bar).each do |directory|
+            snapshot.current_directory = directory
+
+            expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+            expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-a")).to be_empty
+          end
+        end
+      end
+    end
+
     context "when there are no existing group pull requests" do
       let(:existing_group_pull_requests) { [] }
 
@@ -431,29 +553,19 @@ RSpec.describe Dependabot::DependencySnapshot do
           }
         ]
       end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_for_existing_pr_dependencies).and_return(true)
-      end
     end
 
     context "when group_by_dependency_name? is true" do
       include_context "with cross-directory existing PR dependencies"
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name).and_return(true)
-      end
 
       let(:dependency_groups) do
         [
           {
             "name" => "group-a",
             "rules" => {
-              "patterns" => ["dummy-pkg-*"]
-            },
-            "group-by" => "dependency-name"
+              "patterns" => ["dummy-pkg-*"],
+              "group-by" => "dependency-name"
+            }
           }
         ]
       end
@@ -479,7 +591,7 @@ RSpec.describe Dependabot::DependencySnapshot do
         let(:existing_group_pull_requests) do
           [
             {
-              "dependency-group-name" => "group-a",
+              "dependency-group-name" => "group-a/dummy-pkg-a",
               "dependencies" => []
             }
           ]
@@ -487,7 +599,9 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         it "handles empty dependencies gracefully" do
           snapshot = create_dependency_snapshot
-          expect { snapshot.mark_group_handled(snapshot.groups.first) }.not_to raise_error
+          # Use the subgroup since group-by: dependency-name creates subgroups
+          subgroup = snapshot.groups.find { |g| g.name == "group-a/dummy-pkg-a" }
+          expect { snapshot.mark_group_handled(subgroup) }.not_to raise_error
 
           snapshot.current_directory = "/foo"
           expect(snapshot.handled_dependencies).to include("dummy-pkg-a")
@@ -497,11 +611,6 @@ RSpec.describe Dependabot::DependencySnapshot do
 
     context "when group_by_dependency_name? is false" do
       include_context "with cross-directory existing PR dependencies"
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name).and_return(false)
-      end
 
       it "filters existing PR dependencies by directory" do
         snapshot = create_dependency_snapshot

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the registry-response fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/bun/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
@@ -30,7 +32,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       requirements: [
         { file: "package.json", requirement: "^1.0", groups: [], source: nil }
       ],
-      package_manager: "npm_and_yarn"
+      package_manager: "bun"
     )
   end
 
@@ -72,7 +74,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               ref: "master"
             }
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -82,6 +84,13 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
         source_url
         expect(WebMock).not_to have_requested(:get, npm_url)
       end
+    end
+
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
     end
 
     context "when there is a github link in the npm response" do
@@ -298,7 +307,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
                 url: "https://npm.fury.io/dependabot"
               }
             }],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -395,7 +404,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -437,7 +446,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -482,6 +491,16 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
         expect(homepage_url).to eq("https://example.come/jshttp/etag")
       end
     end
+
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it "falls back to the source instead of failing" do
+        expect { homepage_url }.not_to raise_error
+        expect(homepage_url).to be_nil
+      end
+    end
   end
 
   describe "#maintainer_changes" do
@@ -495,6 +514,12 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
     before do
       stub_request(:get, npm_url)
         .to_return(status: 200, body: npm_all_versions_response)
+    end
+
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
     end
 
     context "when the user that pushed this version has pushed before" do
@@ -513,7 +538,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
             groups: [],
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -522,6 +547,36 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
           "This version was pushed to npm by " \
           "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser " \
           "for etag since your current version."
+        )
+      end
+    end
+
+    context "when the maintainer name contains spaces" do
+      let(:dependency_name) { "npm-package-json-lint" }
+      let(:npm_url) { "https://registry.npmjs.org/npm-package-json-lint" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "10.0.0",
+          previous_version: "9.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^10.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "bun"
+        )
+      end
+      let(:npm_all_versions_response) do
+        fixture("npm_responses", "npm-package-json-lint.json")
+      end
+
+      it "properly URL-encodes the maintainer name in the link" do
+        expect(maintainer_changes).to eq(
+          "This version was pushed to npm by " \
+          "[GitHub Actions](https://www.npmjs.com/~GitHub%20Actions), a new releaser " \
+          "for npm-package-json-lint since your current version."
         )
       end
     end
@@ -538,7 +593,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
           requirements: [
             { file: "package.json", requirement: "^1.0", groups: [], source: nil }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -646,7 +701,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               source: { type: "registry", url: "https://npm.fury.io/dependabot" }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 

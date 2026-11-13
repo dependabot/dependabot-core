@@ -11,7 +11,14 @@ RSpec.describe SentryContext do
   subject { event }
 
   let(:sentry_context) { { foo: "bar" } }
-  let(:exception) { double(::Dependabot::DependabotError, sentry_context: sentry_context) }
+  let(:exception) do
+    context = sentry_context
+    Class.new(StandardError) do
+      include Dependabot::HasSentryContext
+
+      define_method(:sentry_context) { context }
+    end.new
+  end
   let(:hint) { { exception: exception } }
   let(:event) { instance_double(::Sentry::ErrorEvent) }
 
@@ -32,8 +39,8 @@ RSpec.describe SentryContext do
     end
   end
 
-  context "without sentry_context" do
-    let(:sentry_context) { nil }
+  context "with empty sentry_context" do
+    let(:sentry_context) { {} }
 
     it "does not add context" do
       expect(event).not_to have_received(:send)

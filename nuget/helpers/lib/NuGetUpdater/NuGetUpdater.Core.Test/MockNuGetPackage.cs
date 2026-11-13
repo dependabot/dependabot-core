@@ -318,7 +318,7 @@ namespace NuGetUpdater.Core.Test
                     </Project>
                     """
                 );
-                var (exitCode, stdout, stderr) = ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["msbuild", projectPath, "/t:_ReportCurrentSdkVersion"], projectDir.FullName).Result;
+                var (exitCode, stdout, stderr) = ProcessEx.RunDotnetMSBuildSafelyAsync([projectPath, "/t:_ReportCurrentSdkVersion"], projectDir.FullName).Result;
                 if (exitCode != 0)
                 {
                     throw new Exception($"Failed to report the current SDK version:\n{stdout}\n{stderr}");
@@ -409,7 +409,7 @@ namespace NuGetUpdater.Core.Test
 
         public static MockNuGetPackage WellKnownHostPackage(string packageName, string targetFramework, (string Path, byte[] Content)[]? files = null)
         {
-            string key = $"{packageName}/{targetFramework}";
+            string key = $"{packageName}.Host/{targetFramework}";
             if (!WellKnownPackages.ContainsKey(key))
             {
                 // for the current SDK, the file `Microsoft.NETCoreSdk.BundledVersions.props` contains the version of the
@@ -438,7 +438,7 @@ namespace NuGetUpdater.Core.Test
                 }
 
                 string expectedVersion = matchingAppHostPack.Attribute("AppHostPackVersion")!.Value;
-                return new(
+                WellKnownPackages[key] = new(
                     $"{packageName}.Host.{expectedRid}",
                     expectedVersion,
                     Files: files

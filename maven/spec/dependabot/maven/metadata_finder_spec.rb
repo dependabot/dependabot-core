@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context repository fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -63,6 +64,50 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         body: "Not GHES",
         headers: {}
       )
+    end
+
+    context "when prioritize_scm_source enabled" do
+      before do
+        Dependabot::Experiments.register(:prioritize_scm_source, true)
+      end
+
+      context "when project url, scm url, and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_project_scm_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_scm") }
+      end
+
+      context "when project url and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_project_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_project") }
+      end
+
+      context "when only issue management url is present" do
+        let(:maven_response) { fixture("poms", "sourceurl_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_issuemanagement") }
+      end
+    end
+
+    context "when prioritize_scm_source disabled" do
+      context "when project url, scm url, and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_project_scm_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_project") }
+      end
+
+      context "when scm url and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_scm_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_scm") }
+      end
+
+      context "when only issue management url is present" do
+        let(:maven_response) { fixture("poms", "sourceurl_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_issuemanagement") }
+      end
     end
 
     context "when the github link is buried in the pom" do

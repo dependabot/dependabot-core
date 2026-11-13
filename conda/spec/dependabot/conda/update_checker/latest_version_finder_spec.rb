@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child-context requirement fixtures. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -129,6 +130,17 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
           expect(details.releases.map { |r| r.version.to_s }).to include("1.23.0", "1.22.0", "1.21.0", "1.20.0")
           # Latest version is still 1.23.0 in the list
           expect(details.releases.first.version.to_s).to eq("1.23.0")
+        end
+      end
+
+      context "with cooldown configured" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+        end
+
+        it "allows the release and marks the dependency when its date is unavailable" do
+          expect(finder.latest_version.to_s).to eq("1.23.0")
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
       end
 

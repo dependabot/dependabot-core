@@ -1,24 +1,35 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/elm/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Elm::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Hash[String, String]) }
   let(:json_header) { { "content-type" => "application/json" } }
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
+  sig { returns(String) }
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  sig { returns(Dependabot::Elm::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -26,6 +37,7 @@ RSpec.describe Dependabot::Elm::FileFetcher do
       directory: "/"
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")

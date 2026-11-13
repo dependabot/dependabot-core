@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -17,6 +17,11 @@ module Dependabot
         case new_source_type
         when "git" then find_source_from_git_url
         when "registry" then find_source_from_registry
+        when "default", nil
+          # For dependencies without explicit source info (e.g., Xcode-managed
+          # SPM dependencies parsed from Package.resolved), attempt to infer
+          # source from the dependency name which is typically a normalized URL
+          find_source_from_dependency_name
         else raise "Unexpected source type: #{new_source_type}"
         end
       end
@@ -28,9 +33,16 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.source_details
+        url = dependency.source_string("url")
+        Source.from_url(url)
+      end
 
-        url = info&.fetch(:url, nil) || info&.fetch("url")
+      sig { returns(T.nilable(Dependabot::Source)) }
+      def find_source_from_dependency_name
+        name = dependency.name
+        return nil unless name.include?("/")
+
+        url = "https://#{name}"
         Source.from_url(url)
       end
 

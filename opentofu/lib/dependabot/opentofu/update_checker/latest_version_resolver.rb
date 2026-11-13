@@ -26,10 +26,7 @@ module Dependabot
           @dependency = dependency
           @credentials = credentials
           @cooldown_options = cooldown_options
-          @git_commit_checker = T.let(
-            git_commit_checker,
-            Dependabot::GitCommitChecker
-          )
+          @git_commit_checker = git_commit_checker
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -38,7 +35,7 @@ module Dependabot
         # Return latest version tag for the dependency, it removes tags that are in cooldown period
         # and returns the latest version tag that is not in cooldown period. If exception occurs
         # it will return the latest version tag from the git_commit_checker. as it was before
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def latest_version_tag
           # step one fetch allowed version tags and
           allowed_version_tags = git_commit_checker.allowed_version_tags
@@ -74,14 +71,14 @@ module Dependabot
 
           # sort the allowed version tags by name in descending order
           select_tags_which_in_cooldown_from_provider&.each do |tag_name|
-            # Iterate through versions and filter out those matching the tag_name
+            normalized_tag = tag_name.sub(/^v/, "")
             versions.reject! do |version|
-              version.to_s == tag_name
+              version.to_s == normalized_tag
             end
           end
           Dependabot.logger.info(
             "Allowed version tags after filtering versions in cooldown:
-                #{versions.map(&:to_s).join(', ')}"
+                #{versions.join(', ')}"
           )
           versions
         rescue StandardError => e
@@ -100,14 +97,14 @@ module Dependabot
 
           # sort the allowed version tags by name in descending order
           select_tags_which_in_cooldown_from_module&.each do |tag_name|
-            # Iterate through versions and filter out those matching the tag_name
+            normalized_tag = tag_name.sub(/^v/, "")
             versions.reject! do |version|
-              version.to_s == tag_name
+              version.to_s == normalized_tag
             end
           end
           Dependabot.logger.info(
             "filter_versions_in_cooldown_period_from_module::
-              Allowed version tags after filtering versions in cooldown:#{versions.map(&:to_s).join(', ')}"
+              Allowed version tags after filtering versions in cooldown:#{versions.join(', ')}"
           )
           versions
         rescue StandardError => e

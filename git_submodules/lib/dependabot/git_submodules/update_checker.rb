@@ -37,7 +37,7 @@ module Dependabot
         latest_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         # Submodule requirements are the URL and branch to use for the
         # submodule. We never want to update either.
@@ -62,8 +62,12 @@ module Dependabot
         T.let(
           LatestVersionFinder.new(
             dependency: dependency,
+            dependency_files: dependency_files,
             credentials: credentials,
-            cooldown_options: update_cooldown
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown,
+            raise_on_ignored: raise_on_ignored
           ).latest_tag,
           T.nilable(String)
         )

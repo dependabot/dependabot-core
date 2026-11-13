@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,16 +7,27 @@ require "octokit"
 require "dependabot/bazel/update_checker"
 
 RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) { [] }
+  sig { returns(Dependabot::Bazel::UpdateChecker::RegistryClient) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:client) { described_class.new(credentials: credentials) }
+  # Sorbet cannot check the variadic public_send forwarding below with a typed receiver.
   let(:octokit_client) { instance_double(Octokit::Client) }
+  sig { returns(Dependabot::Clients::GithubWithRetries) }
   let(:github_client) { instance_double(Dependabot::Clients::GithubWithRetries) }
+  sig { returns(Sawyer::Agent) }
+  let(:sawyer_agent) { instance_double(Sawyer::Agent) }
+  # rubocop:enable RSpec/ScatteredLet
 
   before do
     allow(client).to receive(:github_client).and_return(github_client)
     allow(github_client).to receive(:method_missing) do |method_name, *args, &block|
       octokit_client.public_send(method_name, *args, &block)
     end
+    allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
   end
 
   describe "#all_module_versions" do
@@ -164,7 +175,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         # Simulate GitHub API returning base64 encoded content
         encoded_content = Base64.encode64(source_content)
-        github_response = Data.define(:content).new(encoded_content)
+        github_response = Sawyer::Resource.new(sawyer_agent, { content: encoded_content })
 
         allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go/0.57.0/source.json"))
@@ -194,7 +205,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
       it "returns nil and logs warning" do
         # Simulate GitHub API returning base64 encoded invalid content
         encoded_content = Base64.encode64("invalid json content")
-        github_response = Data.define(:content).new(encoded_content)
+        github_response = Sawyer::Resource.new(sawyer_agent, { content: encoded_content })
 
         allow(octokit_client).to receive(:contents)
           .and_return(github_response)
@@ -222,7 +233,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         # Simulate GitHub API returning base64 encoded content
         encoded_content = Base64.encode64(module_content)
-        github_response = Data.define(:content).new(encoded_content)
+        github_response = Sawyer::Resource.new(sawyer_agent, { content: encoded_content })
 
         allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go/0.57.0/MODULE.bazel"))
@@ -265,6 +276,25 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
       exists = client.module_version_exists?("rules_go", "nonexistent")
 
       expect(exists).to be false
+    end
+  end
+
+  describe "#get_version_release_date" do
+    it "returns the latest commit date" do
+      github_response = Sawyer::Resource.new(
+        sawyer_agent,
+        { commit: { committer: { date: "2026-08-15T12:34:56Z" } } }
+      )
+
+      allow(octokit_client).to receive(:commits)
+        .with(
+          "bazelbuild/bazel-central-registry",
+          { path: "modules/rules_go/0.57.0/MODULE.bazel", per_page: 1 }
+        )
+        .and_return([github_response])
+
+      expect(client.get_version_release_date("rules_go", "0.57.0"))
+        .to eq(Time.utc(2026, 8, 15, 12, 34, 56))
     end
   end
 end

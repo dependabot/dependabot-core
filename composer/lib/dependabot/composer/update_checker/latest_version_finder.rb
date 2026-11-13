@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -74,7 +74,7 @@ module Dependabot
           return true if current_version&.prerelease?
 
           dependency.requirements.any? do |req|
-            req[:requirement].match?(/\d-[A-Za-z]/)
+            req.requirement_string&.match?(/\d-[A-Za-z]/)
           end
         end
 

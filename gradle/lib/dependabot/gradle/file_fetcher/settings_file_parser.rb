@@ -26,11 +26,48 @@ module Dependabot
           paths.uniq
         end
 
+        sig { returns(T::Array[String]) }
+        def version_catalog_paths
+          content = settings_file.content
+          return [] unless content
+
+          masked = FileParser.mask_literals_and_comments(content, kotlin: settings_file.name.end_with?(".kts"))
+          catalog_blocks = masked.to_enum(:scan, version_catalogs_block_regex).map do
+            match = T.must(Regexp.last_match)
+            match.begin(0)..(match.end(0) + closing_bracket_index(T.must(masked[match.end(0)..])))
+          end
+
+          paths = content.to_enum(:scan, catalog_file_path_regex).filter_map do
+            match = T.must(Regexp.last_match)
+            start = match.begin(0)
+            next unless masked[start, 4] == "from" && catalog_blocks.any? { |block| block.cover?(start) }
+
+            resolve_catalog_path(T.must(match[:path]))
+          end
+          paths.uniq
+        end
+
         sig { returns(T::Array[T.nilable(String)]) }
         def subproject_paths
           subprojects = T.let([], T::Array[String])
           process_include_functions(subprojects)
           subprojects.uniq.map { |name| process_subproject_name(name) }
+        end
+
+        # Returns a map of filesystem directory path => Gradle project name for all declared subprojects.
+        # For example: { 'app' => ':app', 'subprojects/chrome-trace' => ':chrome-trace' }
+        # This correctly handles custom projectDir mappings in settings files.
+        sig { returns(T::Hash[String, String]) }
+        def subproject_path_to_name_map
+          subprojects = T.let([], T::Array[String])
+          process_include_functions(subprojects)
+          subprojects.uniq.each_with_object(T.let({}, T::Hash[String, String])) do |name, map|
+            path = process_subproject_name(name)
+            next unless path
+
+            # Normalise name to Gradle colon-separated project path (e.g. ':app', ':sub:module')
+            map[path] = ":#{name.sub(/^:/, '')}"
+          end
         end
 
         private
@@ -77,6 +114,39 @@ module Dependabot
         def project_dir_regex(proj)
           prefixed_proj = Regexp.quote(":#{proj.gsub(/^:/, '')}")
           /['"]#{prefixed_proj}['"].*dir\s*=.*['"](?<path>.*?)['"]/i
+        end
+
+        sig { params(path: String).returns(T.nilable(String)) }
+        def resolve_catalog_path(path)
+          resolved = path.sub(%r{\A\$(?:\{(?:rootDir|settingsDir)\}|rootDir|settingsDir)/}, "")
+          resolved unless resolved.include?("$")
+        end
+
+        sig { params(string: String).returns(Integer) }
+        def closing_bracket_index(string)
+          closes_required = 1
+
+          string.chars.each_with_index do |char, index|
+            closes_required += 1 if char == "{"
+            closes_required -= 1 if char == "}"
+            return index if closes_required.zero?
+          end
+
+          0
+        end
+
+        sig { returns(Regexp) }
+        def version_catalogs_block_regex
+          /\bversionCatalogs\s*(?:\.\s*(?:create|register)\s*\([^)]*\)\s*)?\{/
+        end
+
+        sig { returns(Regexp) }
+        def catalog_file_path_regex
+          /
+            \bfrom\s*\(?\s*files\s*\(?\s*
+            (?:layout\s*\.\s*(?:rootDirectory|settingsDirectory)\s*\.\s*file\s*\(\s*)?
+            (?<quote>["'])(?<path>[^"']+)\k<quote>
+          /x
         end
       end
     end

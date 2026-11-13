@@ -1,0 +1,18 @@
+{
+  "name": "actions.lock",
+  "path": ".github/workflows/actions.lock",
+  "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "size": 678,
+  "url": "https://api.github.com/repos/yarnpkg/berry/contents/.github/workflows/integration-workflow.yml?ref=master",
+  "html_url": "https://github.com/yarnpkg/berry/blob/master/.github/workflows/integration-workflow.yml",
+  "git_url": "https://api.github.com/repos/yarnpkg/berry/git/blobs/35c6147efc0f569261982571affb624d8a4ecc4e",
+  "download_url": "https://raw.githubusercontent.com/yarnpkg/berry/master/.github/workflows/integration-workflow.yml",
+  "type": "file",
+  "content": "dmVyc2lvbjogdjAuMC4xCndvcmtmbG93czoKICAiLmdpdGh1Yi93b3JrZmxvd3Mvd29ya2Zsb3cueW1sIjoKICAgIC0gImFjdGlvbnMvc2V0dXAtbm9kZUBtYXN0ZXI6c2hhMS01MjczZDBkZjljNjAzZWRjNDI4NGFjODQwMmNmNjUwYjRmMWY2Njg2IgogICIuZ2l0aHViL3dvcmtmbG93cy91bm1hbmFnZWQueW1sIjoKICAgIC0gImFjdGlvbnMvY2hlY2tvdXRAdjQ6c2hhMS0zNGUxYzBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwIgpkZXBlbmRlbmNpZXM6CiAgImFjdGlvbnMvc2V0dXAtbm9kZUBtYXN0ZXI6c2hhMS01MjczZDBkZjljNjAzZWRjNDI4NGFjODQwMmNmNjUwYjRmMWY2Njg2IjoKICAgIGJyYW5jaDogbWFzdGVyCiAgICBjb21taXQ6IDUyNzNkMGRmOWM2MDNlZGM0Mjg0YWM4NDAyY2Y2NTBiNGYxZjY2ODYKICAgIG93bmVyX2lkOiA0NDAzNjU2MgogICAgcmVwb19pZDogMTY3Mjc0NDgxCiAgICB0YWc6IG1hc3RlcgogICJhY3Rpb25zL2NoZWNrb3V0QHY0OnNoYTEtMzRlMWMwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMCI6CiAgICBicmFuY2g6IG1haW4KICAgIGNvbW1pdDogMzRlMWMwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMGUwZTBlMAogICAgb3duZXJfaWQ6IDQ0MDM2NTYyCiAgICByZXBvX2lkOiAxOTc4MTQyODAKICAgIHRhZzogdjQK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/yarnpkg/berry/contents/.github/workflows/integration-workflow.yml?ref=master",
+    "git": "https://api.github.com/repos/yarnpkg/berry/git/blobs/35c6147efc0f569261982571affb624d8a4ecc4e",
+    "html": "https://github.com/yarnpkg/berry/blob/master/.github/workflows/integration-workflow.yml"
+  }
+}

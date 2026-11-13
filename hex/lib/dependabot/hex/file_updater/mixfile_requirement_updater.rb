@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -28,11 +28,11 @@ module Dependabot
           updated_requirement:,
           insert_if_bare: false
         )
-          @dependency_name      = T.let(dependency_name, String)
-          @mixfile_content      = T.let(mixfile_content, String)
-          @previous_requirement = T.let(previous_requirement, T.nilable(String))
-          @updated_requirement  = T.let(updated_requirement, T.nilable(String))
-          @insert_if_bare       = T.let(insert_if_bare, T::Boolean)
+          @dependency_name      = dependency_name
+          @mixfile_content      = mixfile_content
+          @previous_requirement = previous_requirement
+          @updated_requirement  = updated_requirement
+          @insert_if_bare       = insert_if_bare
         end
 
         sig { returns(String) }

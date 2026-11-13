@@ -21,10 +21,20 @@ module Dependabot
               <artifactItem>.*?</artifactItem>
             }mx
 
+        # The parts of a requirement the XML match depends on. Scanned-only requirements have no XML
+        # entry and are pinned per `pom_file`, so they're kept whole.
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(Object) }
+        def self.match_key(requirement)
+          return requirement unless requirement.file
+
+          [requirement.file, requirement.requirement_string, requirement.groups] +
+            %w(packaging_type classifier property_name property_source).map { |key| requirement.metadata_string(key) }
+        end
+
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { returns(Dependabot::DependencyRequirement) }
         attr_reader :declaring_requirement
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -34,13 +44,16 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
-            declaring_requirement: T::Hash[Symbol, T.untyped]
+            declaring_requirement: Dependabot::DependencyRequirement::Input
           ).void
         end
         def initialize(dependency:, dependency_files:, declaring_requirement:)
           @dependency = dependency
           @dependency_files = dependency_files
-          @declaring_requirement = declaring_requirement
+          @declaring_requirement = T.let(
+            Dependabot::DependencyRequirement.create(declaring_requirement),
+            Dependabot::DependencyRequirement
+          )
           @declaration_strings = T.let(nil, T.nilable(T::Array[String]))
           @property_value_finder = T.let(nil, T.nilable(Maven::FileParser::PropertyValueFinder))
         end
@@ -61,7 +74,7 @@ module Dependabot
 
         sig { returns(Dependabot::DependencyFile) }
         def declaring_pom
-          filename = declaring_requirement.fetch(:file) || declaring_requirement.dig(:metadata, :pom_file)
+          filename = declaring_requirement.file || declaring_requirement.metadata_string("pom_file")
           declaring_pom = dependency_files.find { |f| f.name == filename }
           return declaring_pom if declaring_pom
 
@@ -89,7 +102,7 @@ module Dependabot
             next false unless classifier_matches?(node)
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
-            next false unless declaring_requirement.fetch(:groups) == ["plugin"] || scope_matches?(node)
+            next false unless declaring_requirement.groups == ["plugin"] || scope_matches?(node)
 
             declaring_requirement_matches?(node)
           end
@@ -114,7 +127,7 @@ module Dependabot
         def declaring_requirement_matches?(node)
           node_requirement = node.at_css("version")&.content&.strip
 
-          if declaring_requirement.dig(:metadata, :property_name)
+          if (declaring_property_name = declaring_requirement.metadata_string("property_name"))
             return false unless node_requirement
 
             property_name =
@@ -123,30 +136,30 @@ module Dependabot
               &.named_captures
               &.fetch("property")
 
-            property_name == declaring_requirement[:metadata][:property_name]
+            property_name == declaring_property_name
           else
-            node_requirement == declaring_requirement.fetch(:requirement)
+            node_requirement == declaring_requirement.requirement_string
           end
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def packaging_type_matches?(node)
-          type = declaring_requirement.dig(:metadata, :packaging_type)
+          type = declaring_requirement.metadata_string("packaging_type")
           type == packaging_type(node)
         end
 
+        # A classifier names a distinct artifact, so an entry only matches the requirement parsed from
+        # an entry with the same classifier (none for the plain artifact).
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def classifier_matches?(node)
-          return true unless node.at_xpath("./*/classifier")
-
-          classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
-          dep_classifier = dependency.requirements.first&.dig(:metadata, :classifier)
-          classifier == dep_classifier
+          classifier_node = node.at_xpath("./*/classifier")
+          classifier = classifier_node && evaluated_value(classifier_node.content.strip)
+          classifier == declaring_requirement.metadata_string("classifier")
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def scope_matches?(node)
-          dependency_type = declaring_requirement.fetch(:groups)
+          dependency_type = declaring_requirement.groups
 
           node_type = dependency_scope(node) == "test" ? ["test"] : []
 
@@ -191,7 +204,7 @@ module Dependabot
               callsite_pom: declaring_pom
             )&.fetch(:value)
 
-          return value unless property_value
+          return value unless property_value.is_a?(String)
 
           value.gsub(
             match_data.to_s,

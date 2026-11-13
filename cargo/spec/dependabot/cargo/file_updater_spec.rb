@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -73,9 +73,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       let(:files) { [manifest] }
 
       context "when no files have changed" do
-        it "raises a helpful error" do
+        it "raises a helpful error with error report context attached" do
           expect { updater.updated_dependency_files }
-            .to raise_error("No files changed!")
+            .to raise_error(RuntimeError, "No files changed!") do |error|
+              expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+                "dependency-names" => ["time"],
+                "dependency-files" => ["Cargo.toml"]
+              )
+            end
         end
       end
 
@@ -97,7 +102,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
           end
 
           it "includes the new requirement" do
-            expect(described_class::ManifestUpdater)
+            expect(Dependabot::Cargo::FileUpdater::ManifestUpdater)
               .to receive(:new)
               .with(dependencies: [dependency], manifest: manifest)
               .and_call_original
@@ -116,7 +121,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(described_class::LockfileUpdater)
+          expect(Dependabot::Cargo::FileUpdater::LockfileUpdater)
             .to receive(:new)
             .with(
               credentials: credentials,

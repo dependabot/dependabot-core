@@ -1,0 +1,22 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A1B2C3D4E5F60001 /* XCRemoteSwiftPackageReference "Quick" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Quick/Quick.git";
+			requirement = {
+				kind = branch;
+				branch = "main";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+	};
+	rootObject = A1B2C3D4E5F60000 /* Project object */;
+}

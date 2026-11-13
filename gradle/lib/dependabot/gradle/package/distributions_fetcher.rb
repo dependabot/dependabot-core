@@ -11,10 +11,10 @@ module Dependabot
       class DistributionsFetcher
         extend T::Sig
 
-        @available_versions = T.let([], T::Array[T::Hash[String, T.untyped]])
+        @available_versions = T.let([], T::Array[T::Hash[Symbol, Object]])
         @distributions_checksums = T.let({}, T::Hash[String, T::Array[String]])
 
-        sig { returns(T.any(T::Array[T::Hash[String, T.untyped]], T::Array[T::Hash[Symbol, T.untyped]])) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def self.available_versions
           return @available_versions if @available_versions.any?
 
@@ -24,7 +24,7 @@ module Dependabot
               T.let(response.body, String),
               symbolize_names: true
             ),
-            T::Array[T::Hash[Symbol, T.untyped]]
+            T::Array[T::Hash[Symbol, Object]]
           )
           @available_versions +=
             versions
@@ -38,14 +38,17 @@ module Dependabot
             end
         end
 
-        sig { params(version: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        sig { params(version: T::Hash[Symbol, Object]).returns(T::Boolean) }
         def self.release_version?(version:)
-          Gradle::Version.correct?(T.let(version[:version], String)) &&
-            T.let(version[:broken], T::Boolean) == false &&
-            T.let(version[:snapshot], T::Boolean) == false &&
-            T.let(version[:rcFor], String) == "" &&
-            T.let(version[:milestoneFor], String) == "" &&
-            /.*-(rc|milestone)-.*/.match?(T.let(version[:version], String)) == false
+          version_number = version[:version]
+          return false unless version_number.is_a?(String)
+
+          Gradle::Version.correct?(version_number) &&
+            version[:broken] == false &&
+            version[:snapshot] == false &&
+            version[:rcFor] == "" &&
+            version[:milestoneFor] == "" &&
+            /.*-(rc|milestone)-.*/.match?(version_number) == false
         end
 
         sig { params(distribution_url: String).returns(T.nilable(T::Array[String])) }

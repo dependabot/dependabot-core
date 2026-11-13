@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,12 +6,20 @@ require "dependabot/terraform/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Terraform::FileFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(String) }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
+  sig { returns(String) }
   let(:directory) { "/" }
+  sig { returns(String) }
   let(:project_name) { "provider" }
+  sig { returns(Dependabot::Terraform::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
   end
+  sig { returns(Dependabot::Source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -19,6 +27,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
       directory: directory
     )
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   after do
     FileUtils.rm_rf(repo_contents_path)
@@ -27,6 +36,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   context "with Terraform files" do
+    sig { returns(String) }
     let(:project_name) { "versions_file" }
 
     it "fetches the Terraform files" do
@@ -36,6 +46,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   end
 
   context "with a HCL based terragrunt file" do
+    sig { returns(String) }
     let(:project_name) { "terragrunt_hcl" }
 
     it "fetches the Terragrunt file" do
@@ -45,6 +56,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   end
 
   context "with a lockfile" do
+    sig { returns(String) }
     let(:project_name) { "terraform_lock_only" }
 
     it "fetches the lockfile" do
@@ -53,7 +65,33 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     end
   end
 
+  context "when exclude-paths covers the whole directory" do
+    # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+    sig { returns(String) }
+    let(:project_name) { "lockfile_in_subdirectory" }
+    sig { returns(String) }
+    let(:directory) { "/frozen_project" }
+    sig { returns(Dependabot::Terraform::FileFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path).tap do |ff|
+        ff.exclude_paths = ["frozen_project/**"]
+      end
+      # rubocop:enable RSpec/ScatteredLet
+    end
+
+    # The .tf files are dropped by the repo-contents filter, but the lockfile is fetched
+    # by path rather than from the listing, so it has to be caught by the final filter.
+    # If it survives, the directory reaches the parser holding a lockfile and no manifest,
+    # and Terraform::FileParser#check_required_files raises "No Terraform configuration
+    # file!" -- an unhandled error that aborts every other directory in the job too.
+    it "excludes the lockfile as well as the manifests" do
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
   context "with a directory that doesn't exist" do
+    sig { returns(String) }
     let(:directory) { "/nonexistent" }
 
     it "raises a helpful error" do
@@ -63,6 +101,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   end
 
   context "when fetching nested local path modules" do
+    sig { returns(String) }
     let(:project_name) { "provider_with_multiple_local_path_modules" }
 
     it "fetches nested terraform files excluding symlinks" do

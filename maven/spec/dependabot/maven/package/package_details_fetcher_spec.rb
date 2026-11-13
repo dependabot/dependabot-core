@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
   before do
     stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml")
       .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
-    stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava")
+    stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
       .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
     stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
       .to_return(status: 200)
@@ -65,6 +65,50 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
         release = details.releases.find { |r| r.version.to_s == "23.6-jre" }
         expect(release.released_at).not_to be_nil
       end
+    end
+  end
+
+  describe "#fetch when a registry that replaces Maven Central is rate limited" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://other.example.com/maven" }),
+        Dependabot::Credential.new(
+          { "type" => "maven_repository", "url" => "https://registry.example.com/maven/", "replaces-base" => true }
+        )
+      ]
+    end
+
+    before do
+      stub_request(:get, "https://registry.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 429, body: "Too Many Requests")
+      stub_request(:get, "https://other.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
+    end
+
+    it "raises a RegistryError even when another repository has versions" do
+      expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
+    end
+  end
+
+  describe "#fetch when Maven Central is rate limited and a replacement registry has versions" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://repo.maven.apache.org/maven2" }),
+        Dependabot::Credential.new(
+          { "type" => "maven_repository", "url" => "https://registry.example.com/maven", "replaces-base" => true }
+        )
+      ]
+    end
+
+    before do
+      stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 429, body: "Too Many Requests")
+      stub_request(:get, "https://registry.example.com/maven/com/google/guava/guava/maven-metadata.xml")
+        .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
+    end
+
+    it "raises a RegistryError for Maven Central" do
+      expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) { |e| expect(e.status).to eq(429) }
     end
   end
 
@@ -87,6 +131,56 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
     end
   end
 
+  describe "#fetch_release_metadata" do
+    let(:release) do
+      Dependabot::Package::PackageRelease.new(
+        version: Dependabot::Maven::Version.new("23.3-jre"),
+        released_at: released_at,
+        url: "https://repo.maven.apache.org/maven2",
+        details: { "source" => "maven" }
+      )
+    end
+    let(:released_at) { nil }
+    let(:version_pom_url) do
+      "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.3-jre/guava-23.3-jre.pom"
+    end
+
+    it "uses the versioned pom Last-Modified header when the release date is missing" do
+      stub_request(:head, version_pom_url).to_return(
+        status: 200,
+        headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+      )
+
+      hydrated_release = fetcher.fetch_release_metadata(release: release)
+
+      expect(hydrated_release.released_at).to eq(Time.utc(2026, 8, 10, 10, 8, 43))
+      expect(hydrated_release.url).to eq(release.url)
+      expect(hydrated_release.details).to eq(release.details)
+    end
+
+    context "when a release date is already present" do
+      let(:released_at) { Time.utc(2026, 8, 1) }
+
+      it "returns the original release without requesting the pom" do
+        hydrated_release = fetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release).to equal(release)
+        expect(a_request(:head, version_pom_url)).not_to have_been_made
+      end
+    end
+
+    it "caches the fallback lookup by repository and version" do
+      stub_request(:head, version_pom_url).to_return(
+        status: 200,
+        headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+      )
+
+      2.times { fetcher.fetch_release_metadata(release: release) }
+
+      expect(a_request(:head, version_pom_url)).to have_been_made.once
+    end
+  end
+
   describe "#released?" do
     subject(:released_check) { fetcher.released?(version) }
 
@@ -99,6 +193,8 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
     it "returns false for an unreleased version" do
       # Update the URL stub to simulate a 404 (not found) response for an unreleased version
       stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/guava-23.7-jre.jar")
+        .to_return(status: 404)
+      stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/guava-23.7-jre.pom")
         .to_return(status: 404)
 
       unreleased_version = Dependabot::Maven::Version.new("23.7-jre")

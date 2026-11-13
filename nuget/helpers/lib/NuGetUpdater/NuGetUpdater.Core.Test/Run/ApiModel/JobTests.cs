@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
 
@@ -22,6 +24,122 @@ public class JobTests
         Assert.Equal(expectedResult, actualResult);
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("1.0.0", true)]
+    [InlineData("1.1.0", false)]
+    [InlineData("1.2.0", false)]
+    public void IsUpdatePermitted_ExistingGroupPullRequestVersion(string? existingVersion, bool expectedResult)
+    {
+        var job = CreateJob(
+            allowedUpdates: [new AllowedUpdate() { UpdateType = UpdateType.Security }],
+            dependencies: [],
+            existingPrs: [],
+            securityAdvisories: [
+                new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("1.1.0")] }
+            ],
+            securityUpdatesOnly: true,
+            updatingAPullRequest: false) with
+        {
+            ExistingGroupPullRequests = [
+                new GroupPullRequest()
+                {
+                    DependencyGroupName = "Some-Group-Name",
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = existingVersion is null ? null : NuGetVersion.Parse(existingVersion) }
+                    ],
+                }
+            ],
+        };
+
+        var dependency = new Dependency("Some.Package", "1.1.0", DependencyType.PackageReference);
+
+        Assert.Equal(expectedResult, job.IsUpdatePermitted(dependency));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void GetExistingGroupPullRequestForDependencies_UnknownVersion(bool considerVersions, bool expectedMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingGroupPullRequests = [
+                new GroupPullRequest()
+                {
+                    DependencyGroupName = "Some-Group-Name",
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = null }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/" },
+        };
+
+        var pullRequest = job.GetExistingGroupPullRequestForDependencies(dependencies, considerVersions, "Some-Group-Name");
+
+        Assert.Equal(expectedMatch, pullRequest is not null);
+    }
+
+    [Theory]
+    [InlineData(null, "/src/Project", true)]
+    [InlineData("", "/src/Project", true)]
+    [InlineData("/", "/src/Project", false)]
+    [InlineData("/src/Project", "/src/Project", true)]
+    [InlineData("/src/Other", "/src/Project", false)]
+    public void GetExistingPullRequestForDependencies_DirectoryMatching_Refresh(string? existingDirectory, string desiredDirectory, bool expectedMatch)
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = existingDirectory }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = desiredDirectory },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+
+        Assert.Equal(expectedMatch, pullRequest is not null);
+    }
+
+    [Fact]
+    public void GetExistingPullRequestForDependencies_RootDirectoryIsLiteral()
+    {
+        var job = new Job()
+        {
+            Source = new JobSource() { Provider = "github", Repo = "some/repo" },
+            ExistingPullRequests = [
+                new PullRequest()
+                {
+                    Dependencies = [
+                        new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0"), Directory = "/" }
+                    ],
+                }
+            ],
+        };
+        var dependencies = new[]
+        {
+            new ReportedDependencyWithDirectory() { Name = "Some.Package", Version = "1.1.0", Requirements = [], Directory = "/src/Project" },
+        };
+
+        var pullRequest = job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true, treatEmptyDirectoryAsWildcard: true);
+
+        Assert.Null(pullRequest);
+    }
+
     public static IEnumerable<object?[]> IsUpdatePermittedTestData()
     {
         // with default allowed updates on a transitive dependency
@@ -38,7 +156,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             false,
         ];
@@ -57,7 +175,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             true,
         ];
@@ -75,7 +193,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -93,7 +211,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             false,
         ];
@@ -113,7 +231,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             true,
         ];
@@ -131,7 +249,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -151,7 +269,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -171,7 +289,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -191,7 +309,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -208,7 +326,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -225,7 +343,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -242,7 +360,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -259,7 +377,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -276,7 +394,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -294,7 +412,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -313,7 +431,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -416,6 +534,152 @@ public class JobTests
             "/src/client/ios/ui"
         }.ToImmutableArray();
         AssertEx.Equal(expectedDirectories, actualDirectories);
+    }
+
+    [Fact]
+    public void ExpandJobDirectoriesIgnoresNullEntries()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directories": [
+                    null
+                  ]
+                }
+              }
+            }
+            """;
+        var job = RunWorker.Deserialize(json).Job;
+
+        // act - the null entry should be ignored, not cause a NullReferenceException
+        var actualDirectories = job.GetAllDirectories(tempDir.DirectoryPath);
+
+        // assert - null entry was filtered out, falling back to the repo root
+        var expectedDirectories = new[]
+        {
+            "/",
+        }.ToImmutableArray();
+        AssertEx.Equal(expectedDirectories, actualDirectories);
+    }
+
+    [Theory]
+    [InlineData("version", JobCommand.Version)]
+    [InlineData("update", JobCommand.Update)]
+    [InlineData("recreate", JobCommand.Recreate)]
+    [InlineData("security", JobCommand.Security)]
+    [InlineData("graph", JobCommand.Graph)]
+    [InlineData("", JobCommand.None)]
+    public void CommandDeserialization_KnownValues(string commandValue, JobCommand expectedCommand)
+    {
+        var json = $$"""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "command": "{{commandValue}}",
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+        var jobFile = RunWorker.Deserialize(json);
+        Assert.Equal(expectedCommand, jobFile.Job.Command);
+    }
+
+    [Fact]
+    public void CommandDeserialization_MissingField_DefaultsToNone()
+    {
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+        var jobFile = RunWorker.Deserialize(json);
+        Assert.Equal(JobCommand.None, jobFile.Job.Command);
+    }
+
+    [Fact]
+    public void CommandDeserialization_NullValue_DefaultsToNone()
+    {
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "command": null,
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+        var jobFile = RunWorker.Deserialize(json);
+        Assert.Equal(JobCommand.None, jobFile.Job.Command);
+    }
+
+    [Fact]
+    public void CommandDeserialization_NonStringToken_DefaultsToNoneAndLogsWarning()
+    {
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "command": 42,
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+
+        var logger = new StringLogger();
+        var jobFile = RunWorker.Deserialize(json, logger);
+        Assert.Equal(JobCommand.None, jobFile.Job.Command);
+        Assert.Contains(logger.Messages, m => m.Contains("Unexpected JSON token type"));
+    }
+
+    [Fact]
+    public void CommandDeserialization_UnknownValue_DefaultsToNoneAndLogsWarning()
+    {
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "command": "unknown_value",
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+
+        var logger = new StringLogger();
+        var options = new JsonSerializerOptions(RunWorker.SerializerOptions);
+        // replace the default converter with one using our test logger
+        options.Converters.Insert(0, new JobCommandConverter(logger));
+        var jobFile = JsonSerializer.Deserialize<JobFile>(json, options)!;
+        Assert.Equal(JobCommand.None, jobFile.Job.Command);
+        Assert.Contains(logger.Messages, m => m.Contains("Unknown job command value") && m.Contains("unknown_value"));
     }
 
     private static Job CreateJob(

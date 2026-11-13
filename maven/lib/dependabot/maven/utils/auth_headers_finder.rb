@@ -37,7 +37,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { params(maven_repo_url: T.any(URI::Generic, String)).returns(T::Hash[T.untyped, T.untyped]) }
+        sig { params(maven_repo_url: T.any(URI::Generic, String)).returns(T::Hash[String, String]) }
         def gitlab_auth_headers(maven_repo_url)
           return {} unless gitlab_maven_repo?(T.must(URI(maven_repo_url).path))
 

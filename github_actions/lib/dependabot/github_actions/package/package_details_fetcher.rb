@@ -1,14 +1,17 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "cgi"
 require "json"
 require "nokogiri"
 require "sorbet-runtime"
 require "time"
 
 require "dependabot/errors"
+require "dependabot/git_tag_with_detail"
+require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/helpers"
+require "dependabot/github_actions/package/release_candidate"
+require "dependabot/github_actions/repository_cloner"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/version"
@@ -16,6 +19,7 @@ require "dependabot/package/package_details"
 require "dependabot/package/package_release"
 require "dependabot/registry_client"
 require "dependabot/shared_helpers"
+require "dependabot/source"
 
 module Dependabot
   module GithubActions
@@ -29,7 +33,8 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean,
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
           ).void
         end
         def initialize(
@@ -37,13 +42,15 @@ module Dependabot
           credentials:,
           ignored_versions: [],
           raise_on_ignored: false,
-          security_advisories: []
+          security_advisories: [],
+          git_metadata_fetcher: nil
         )
           @dependency = dependency
           @credentials = credentials
           @raise_on_ignored = raise_on_ignored
           @ignored_versions = ignored_versions
           @security_advisories = security_advisories
+          @git_metadata_fetcher = git_metadata_fetcher
 
           @git_helper = T.let(git_helper, Dependabot::GithubActions::Helpers::Githelper)
         end
@@ -73,14 +80,16 @@ module Dependabot
           # If the dependency is pinned to a tag that looks like a version then
           # we want to update that tag.
           if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
+            latest_version = T.must(latest_version_tag).version
+            return unless latest_version.is_a?(Dependabot::Version)
             return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
             return latest_version
           end
 
           if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
+            latest_version = T.must(latest_version_tag).version
+            return unless latest_version.is_a?(Dependabot::Version)
             return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
 
             return latest_version
@@ -92,7 +101,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(ReleaseCandidate)) }
         def lowest_security_fix_version_tag
           # TODO: Support Docker sources
           return unless git_dependency?
@@ -108,23 +117,71 @@ module Dependabot
                 find_lowest_secure_version(tags)
               end
             end,
-            T.nilable(T::Hash[Symbol, String])
+            T.nilable(ReleaseCandidate)
           )
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::GitTagDetails)) }
         def latest_version_tag
           @latest_version_tag ||= T.let(
             begin
               return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
 
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
-              return ref if ref && ref.fetch(:version) > current_version
+              return ref if ref&.version && T.must(ref.version) > current_version
 
-              git_commit_checker.local_ref_for_latest_version_lower_precision
+              lower_precision_ref = git_commit_checker.local_ref_for_latest_version_lower_precision
+              # Keep the matching-precision ref when no newer lower-precision tag exists
+              return ref if ref&.version == current_version &&
+                            (lower_precision_ref.nil? || T.must(lower_precision_ref.version) <= current_version)
+
+              lower_precision_ref
             end,
-            T.nilable(T::Hash[Symbol, T.untyped])
+            T.nilable(Dependabot::GitTagDetails)
           )
+        end
+
+        sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
+        def fetch_tag_and_release_date
+          allowed_version_tags = git_commit_checker.allowed_version_tags
+          allowed_tag_names = Set.new(allowed_version_tags.map(&:name))
+
+          # Use the shared GitCommitChecker#refs_for_tag_with_detail to fetch all tags
+          # with release dates in a single clone (instead of one clone per tag)
+          all_refs_with_detail = git_commit_checker.refs_for_tag_with_detail
+
+          result = all_refs_with_detail.select do |ref|
+            allowed_tag_names.include?(ref.tag)
+          end
+
+          # Log an error if we couldn't fetch any release dates
+          if result.empty? && allowed_version_tags.any?
+            Dependabot.logger.error("Error fetching tag and release date: unable to fetch for allowed tags")
+          end
+
+          result
+        rescue StandardError => e
+          Dependabot.logger.error("Error fetching tag and release date: #{e.message}")
+          []
+        end
+
+        sig { returns(T::Array[ReleaseCandidate]) }
+        def allowed_version_tags_with_release_dates
+          allowed_version_tags = git_commit_checker.local_tags_for_allowed_versions
+          tag_to_release_date = T.let({}, T::Hash[String, T.nilable(String)])
+
+          # Build a map of tag names to release dates for quick lookup
+          fetch_tag_and_release_date.each do |git_tag_with_detail|
+            tag_to_release_date[git_tag_with_detail.tag] = git_tag_with_detail.release_date
+          end
+
+          # Combine version info with release dates and sort by version descending
+          result = allowed_version_tags.map do |tag|
+            ReleaseCandidate.from_details(tag, release_date: tag_to_release_date[tag.tag])
+          end
+
+          # Sort by version descending (newest first)
+          result.sort_by(&:version).reverse
         end
 
         private
@@ -166,16 +223,18 @@ module Dependabot
               if head_commit_for_ref_sha
                 head_commit_for_ref_sha
               else
-                url = git_commit_checker.dependency_source_details&.fetch(:url)
+                url = git_commit_checker.dependency_source_details&.url
                 source = T.must(Source.from_url(url))
 
                 SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
                   repo_contents_path = File.join(temp_dir, File.basename(source.repo))
 
-                  SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
+                  RepositoryCloner.clone(url: T.must(url), path: repo_contents_path)
 
                   Dir.chdir(repo_contents_path) do
-                    ref_branch = find_container_branch(git_commit_checker.dependency_source_details&.fetch(:ref))
+                    ref_branch = ContainingBranchFinder.find(
+                      T.must(git_commit_checker.dependency_source_details&.ref)
+                    )
                     git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                   end
                 end
@@ -185,45 +244,26 @@ module Dependabot
           )
         end
 
-        sig { params(sha: String).returns(T.nilable(String)) }
-        def find_container_branch(sha)
-          branches_including_ref = SharedHelpers.run_shell_command(
-            "git branch --remotes --contains #{sha}",
-            fingerprint: "git branch --remotes --contains <sha>"
-          ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-          return if branches_including_ref.empty?
-
-          current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-          if current_branch
-            current_branch.delete_prefix("HEAD -> ")
-          elsif branches_including_ref.size > 1
-            # If there are multiple non default branches including the pinned SHA,
-            # then it's unclear how we should proceed
-            raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-          else
-            branches_including_ref.first
-          end
-        end
-
         sig do
-          params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          params(tags: T::Array[Dependabot::GitTagDetails]).returns(T.nilable(ReleaseCandidate))
         end
         def find_lowest_secure_version(tags)
-          relevant_tags = Dependabot::UpdateCheckers::VersionFilters
-                          .filter_vulnerable_versions(tags, security_advisories)
+          candidates = tags.map { |tag| ReleaseCandidate.from_details(tag) }
+          relevant_tags = candidates.reject do |candidate|
+            security_advisories.any? { |advisory| advisory.vulnerable?(candidate.version) }
+          end
 
           relevant_tags = filter_lower_tags(relevant_tags)
-          relevant_tags.min_by { |tag| tag.fetch(:version) }
+          relevant_tags.min_by(&:version)
         end
 
         sig do
-          params(tags_array: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(tags_array: T::Array[ReleaseCandidate]).returns(T::Array[ReleaseCandidate])
         end
         def filter_lower_tags(tags_array)
           return tags_array unless current_version
 
-          tags_array.select { |tag| tag.fetch(:version) > current_version }
+          tags_array.select { |tag| tag.version > current_version }
         end
 
         sig { returns(T::Boolean) }
@@ -239,7 +279,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
-            dependency_source_details: nil
+            dependency_source_details: nil,
+            git_metadata_fetcher: @git_metadata_fetcher
           )
         end
       end

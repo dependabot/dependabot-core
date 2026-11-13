@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve child-context-only fixtures and dynamically nested exception constants.
+
 require "spec_helper"
 
 require "dependabot/dependency_file"
@@ -41,6 +43,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
   let(:requirements_update_strategy) { nil }
   let(:security_advisories) { [] }
   let(:ignored_versions) { [] }
+  let(:update_cooldown) { nil }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -49,6 +52,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       requirements_update_strategy: requirements_update_strategy,
+      update_cooldown: update_cooldown,
       options: options
     )
   end
@@ -63,8 +67,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
   end
 
   after do
@@ -456,6 +458,40 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
           it { is_expected.to be_nil }
         end
+
+        context "with a cooldown period configured" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+          end
+
+          before do
+            allow(checker.send(:git_commit_checker))
+              .to receive(:refs_for_tag_with_detail)
+              .and_return(
+                [
+                  Dependabot::GitTagWithDetail.new(tag: "3.0.0", release_date: "2018-01-02"),
+                  Dependabot::GitTagWithDetail.new(
+                    tag: "4.0.0",
+                    release_date: Time.now.strftime("%Y-%m-%d")
+                  )
+                ]
+              )
+          end
+
+          it "skips the version tag still within its cooldown window" do
+            expect(checker.latest_version)
+              .to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
+          end
+
+          context "when there is no cooldown (e.g. a security update)" do
+            let(:update_cooldown) { nil }
+
+            it "uses the latest version tag" do
+              expect(checker.latest_version)
+                .to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+          end
+        end
       end
 
       context "with a requirement" do
@@ -512,10 +548,14 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       before do
         allow(described_class::VulnerabilityAuditor).to receive(:new).and_return(vulnerability_auditor)
         allow(vulnerability_auditor).to receive(:audit).and_return(
-          {
-            "fix_available" => true,
-            "top_level_ancestors" => %w(applause lodash)
-          }
+          Dependabot::UpdateCheckers::VulnerabilityAudit.from_object(
+            {
+              "dependency_name" => dependency.name,
+              "fix_available" => true,
+              "fix_updates" => [],
+              "top_level_ancestors" => %w(applause lodash)
+            }
+          )
         )
       end
 
@@ -1303,6 +1343,35 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
             }]
           )
         )
+    end
+  end
+
+  context "with a catalog dependency" do
+    let(:dependency_files) { project_dependency_files("bun/catalog_workspace") }
+    let(:dependency) do
+      Dependabot::Bun::FileParser.new(
+        dependency_files: dependency_files,
+        source: nil,
+        credentials: credentials
+      ).parse.find { |dep| dep.name == "etag" }
+    end
+
+    it "updates the catalog requirement and keeps its catalog" do
+      expect(checker.latest_version).to eq(Dependabot::Bun::Version.new("1.7.0"))
+      expect(checker.updated_dependencies(requirements_to_unlock: :own)).to contain_exactly(
+        have_attributes(
+          name: "etag",
+          version: "1.7.0",
+          previous_version: "1.0.1",
+          requirements: [{
+            file: "package.json",
+            requirement: "1.7.0",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { catalog: "testing" }
+          }]
+        )
+      )
     end
   end
 end

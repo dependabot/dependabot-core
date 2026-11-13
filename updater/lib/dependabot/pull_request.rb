@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -37,14 +37,25 @@ module Dependabot
         @directory = T.let(normalize_directory(directory), T.nilable(String))
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(hash: T::Hash[String, Object]).returns(Dependency) }
+      def self.from_hash(hash)
+        new(
+          name: required_string(hash, "dependency-name"),
+          version: optional_string(hash["dependency-version"], "dependency-version"),
+          removed: boolean_with_default(hash, "dependency-removed", false),
+          directory: optional_string(hash["directory"], "directory")
+        )
+      end
+
+      sig { returns(T::Hash[Symbol, T.any(String, T::Boolean)]) }
       def to_h
-        {
-          name: name,
-          version: version,
-          removed: removed? || nil,
-          directory: directory
-        }.compact
+        details = T.let({ name: name }, T::Hash[Symbol, T.any(String, T::Boolean)])
+        parsed_version = version
+        details[:version] = parsed_version if parsed_version
+        details[:removed] = true if removed?
+        parsed_directory = directory
+        details[:directory] = parsed_directory if parsed_directory
+        details
       end
 
       sig { returns(T::Boolean) }
@@ -52,7 +63,7 @@ module Dependabot
         removed
       end
 
-      sig { params(other: T.untyped).returns(T::Boolean) }
+      sig { params(other: Object).returns(T::Boolean) }
       def ==(other)
         return false unless other.is_a?(Dependency)
 
@@ -60,6 +71,39 @@ module Dependabot
       end
 
       private
+
+      sig { params(hash: T::Hash[String, Object], key: String).returns(String) }
+      def self.required_string(hash, key)
+        value = hash.fetch(key)
+        raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+        value
+      end
+      private_class_method :required_string
+
+      sig { params(value: T.nilable(Object), key: String).returns(T.nilable(String)) }
+      def self.optional_string(value, key)
+        return if value.nil?
+        raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+        value
+      end
+      private_class_method :optional_string
+
+      sig do
+        params(
+          hash: T::Hash[String, Object],
+          key: String,
+          default: T::Boolean
+        ).returns(T::Boolean)
+      end
+      def self.boolean_with_default(hash, key, default)
+        value = hash.fetch(key, default)
+        return value if value == true || value == false
+
+        raise TypeError, "#{key} must be a boolean"
+      end
+      private_class_method :boolean_with_default
 
       sig { params(directory: T.nilable(String)).returns(T.nilable(String)) }
       def normalize_directory(directory)
@@ -78,29 +122,12 @@ module Dependabot
     sig { returns(T.nilable(Integer)) }
     attr_reader :pr_number
 
-    sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Dependabot::PullRequest]) }
+    sig { params(attributes: T::Hash[Symbol, Object]).returns(T::Array[Dependabot::PullRequest]) }
     def self.create_from_job_definition(attributes)
-      attributes.fetch(:existing_pull_requests).map do |pr|
-        case pr
-        when Array
-          pr_number = pr.first["pr-number"]
-        when Hash
-          pr_number = pr["pr-number"]
-          pr = pr["dependencies"] # now pr becomes the dependencies array from the pr
-        end
+      pull_requests = attributes.fetch(:existing_pull_requests)
+      raise TypeError, "existing pull requests must be an array" unless pull_requests.is_a?(Array)
 
-        dependencies =
-          pr.map do |dep|
-            PullRequest::Dependency.new(
-              name: dep.fetch("dependency-name"),
-              version: dep.fetch("dependency-version", nil),
-              removed: dep.fetch("dependency-removed", false),
-              directory: dep.fetch("directory", nil)
-            )
-          end
-
-        new(dependencies, pr_number: pr_number)
-      end
+      pull_requests.map { |pull_request| from_job_value(T.cast(pull_request, Object)) }
     end
 
     sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::PullRequest) }
@@ -123,8 +150,10 @@ module Dependabot
       @pr_number = pr_number
     end
 
-    sig { params(other: PullRequest).returns(T::Boolean) }
+    sig { params(other: Object).returns(T::Boolean) }
     def ==(other)
+      return false unless other.is_a?(PullRequest)
+
       if using_directory? && other.using_directory?
         dependencies.to_set(&:to_h) == other.dependencies.to_set(&:to_h)
       else
@@ -143,5 +172,63 @@ module Dependabot
     def using_directory?
       dependencies.all? { |dep| !!dep.directory }
     end
+
+    sig { params(value: Object).returns(PullRequest) }
+    def self.from_job_value(value)
+      case value
+      when Array
+        first_dependency = T.cast(value.first, Object)
+        raise TypeError, "pull request dependencies must not be empty" if first_dependency.nil?
+
+        first_hash = string_hash(first_dependency, "pull request dependency")
+        new(
+          dependency_array(value),
+          pr_number: optional_integer(first_hash["pr-number"], "pr-number")
+        )
+      when Hash
+        pull_request = string_hash(value, "pull request")
+        new(
+          dependency_array(pull_request.fetch("dependencies")),
+          pr_number: optional_integer(pull_request["pr-number"], "pr-number")
+        )
+      else
+        raise TypeError, "pull request must be an array or hash"
+      end
+    end
+    private_class_method :from_job_value
+
+    sig { params(value: Object).returns(T::Array[Dependency]) }
+    def self.dependency_array(value)
+      raise TypeError, "pull request dependencies must be an array" unless value.is_a?(Array)
+
+      value.map do |dependency|
+        Dependency.from_hash(string_hash(T.cast(dependency, Object), "pull request dependency"))
+      end
+    end
+    private_class_method :dependency_array
+
+    sig { params(value: Object, name: String).returns(T::Hash[String, Object]) }
+    def self.string_hash(value, name)
+      raise TypeError, "#{name} must be a hash" unless value.is_a?(Hash)
+
+      result = T.let({}, T::Hash[String, Object])
+      value.each do |raw_key, raw_value|
+        key = T.cast(raw_key, Object)
+        raise TypeError, "#{name} keys must be strings" unless key.is_a?(String)
+
+        result[key] = T.cast(raw_value, Object)
+      end
+      result
+    end
+    private_class_method :string_hash
+
+    sig { params(value: T.nilable(Object), name: String).returns(T.nilable(Integer)) }
+    def self.optional_integer(value, name)
+      return if value.nil?
+      raise TypeError, "#{name} must be an integer" unless value.is_a?(Integer)
+
+      value
+    end
+    private_class_method :optional_integer
   end
 end

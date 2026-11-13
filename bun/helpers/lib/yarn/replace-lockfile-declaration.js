@@ -1,13 +1,12 @@
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
   .default;
+const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
 
 // Get an array of a dependency's requested version ranges from a lockfile
 function getRequestedVersions(depName, lockfileJson) {
   const requestedVersions = [];
-  // Matching dependency name and version requirements which could be a full url:
-  // dep@version, @private-dep@version, private-dep@https:://token@gh.com...#ref
-  const re = /^(.[^@]*)@(.*?)$/;
+  const re = LOCKFILE_ENTRY_REGEX;
 
   Object.entries(lockfileJson).forEach(([name, _]) => {
     if (name.match(re)) {

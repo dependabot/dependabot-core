@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -17,9 +17,13 @@ module Dependabot
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
+      ImageSource = T.type_alias do
+        T::Hash[Symbol, T.nilable(String)]
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
         dependency_files.each do |file|
           next unless requirement_changed?(file, T.must(dependency))
 
@@ -55,10 +59,10 @@ module Dependabot
         old_sources = previous_sources(file)
         new_sources = sources(file)
 
-        updated_content = T.let(file.content, T.untyped)
+        updated_content = T.let(file.content, T.nilable(String))
 
         T.must(old_sources).zip(new_sources).each do |old_source, new_source|
-          updated_content = update_digest_and_tag(updated_content, old_source, T.must(new_source))
+          updated_content = update_digest_and_tag(T.must(updated_content), old_source, T.must(new_source))
         end
 
         raise "Expected content to change!" if updated_content == file.content
@@ -66,14 +70,17 @@ module Dependabot
         updated_content
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig do
         params(
           previous_content: String,
-          old_source: T::Hash[Symbol, T.nilable(String)],
-          new_source: T::Hash[Symbol, T.nilable(String)]
+          old_source: ImageSource,
+          new_source: ImageSource
         ).returns(String)
       end
-      def update_digest_and_tag(previous_content, old_source, new_source) # rubocop:disable Metrics/PerceivedComplexity
+      def update_digest_and_tag(previous_content, old_source, new_source)
         old_digest = old_source[:digest]
         new_digest = new_source[:digest]
 
@@ -115,9 +122,16 @@ module Dependabot
 
           old_dec = old_dec.gsub(":#{old_tag}", ":#{new_tag}") unless old_tag.to_s.empty?
 
+          # Adding a digest to a tag-only image (digest pinning)
+          old_dec = "#{old_dec}@sha256:#{new_digest}" if old_digest.to_s.empty? && !new_digest.to_s.empty?
+
           old_dec
         end
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize
+
       sig { params(escaped_declaration: String).returns(Regexp) }
       def build_old_declaration_regex(escaped_declaration)
         %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
@@ -140,11 +154,12 @@ module Dependabot
         return if old_tags.empty?
 
         modified_content = content
+        replacement = new_helm_tag(file)
 
         old_tags.each do |old_tag|
-          old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
+          old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{Regexp.escape(old_tag)}["']?(?=\s|$)/
           modified_content = modified_content&.gsub(old_tag_regex) do |old_img_tag|
-            old_img_tag.gsub(old_tag.to_s, new_helm_tag(file).to_s)
+            old_img_tag.gsub(old_tag.to_s, replacement.to_s)
           end
         end
         modified_content
@@ -156,11 +171,12 @@ module Dependabot
         return if old_images.empty?
 
         modified_content = content
+        replacement = new_yaml_image(file)
 
         old_images.each do |old_image|
-          old_image_regex = /^\s*(?:-\s)?image:\s+#{old_image}(?=\s|$)/
+          old_image_regex = %r{^\s*(?:-\s)?image:\s+(?:docker\.io/)?#{Regexp.escape(old_image)}(?=\s|$)}
           modified_content = modified_content&.gsub(old_image_regex) do |old_img|
-            old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
+            old_img.gsub(old_image.to_s, replacement.to_s)
           end
         end
         modified_content
@@ -168,38 +184,47 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def new_yaml_image(file)
-        element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
-        prefix = element&.dig(:source, :registry) ? "#{element.fetch(:source)[:registry]}/" : ""
-        digest = element&.dig(:source, :digest) ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
-        tag = element&.dig(:source, :tag) ? ":#{element.fetch(:source)[:tag]}" : ""
+        element = requirement_for_file(file)
+        source = image_source(element)
+        prefix = source[:registry] ? "#{source[:registry]}/" : ""
+        digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
+        tag = source[:tag] ? ":#{source[:tag]}" : ""
         "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def old_yaml_images(file)
         T.must(previous_requirements(file)).map do |r|
-          prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
-          tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
+          source = image_source(r)
+          prefix = source[:registry] ? "#{source[:registry]}/" : ""
+          digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
+          tag = source[:tag] ? ":#{source[:tag]}" : ""
           "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
-        end
+        end.uniq
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def old_helm_tags(file)
         T.must(previous_requirements(file)).map do |r|
-          tag = r.fetch(:source)[:tag] || ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          source = image_source(r)
+          tag = source[:tag] || ""
+          digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
           "#{tag}#{digest}"
-        end
+        end.uniq
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def new_helm_tag(file)
-        element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
-        tag = T.must(element).dig(:source, :tag) || ""
-        digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
+        element = requirement_for_file(file)
+        source = image_source(element)
+        tag = source[:tag] || ""
+        digest = source[:digest] ? "@sha256:#{source[:digest]}" : ""
         "#{tag}#{digest}"
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyRequirement)) }
+      def requirement_for_file(file)
+        requirements(file).first
       end
 
       protected
@@ -209,44 +234,57 @@ module Dependabot
         changed_requirements =
           dependency.requirements - T.must(dependency.previous_requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |f| f.file == file.name }
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+      sig { params(source: ImageSource).returns(T::Boolean) }
       def specified_with_tag?(source)
         !source[:tag].nil?
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+      sig { params(source: ImageSource).returns(T::Boolean) }
       def specified_with_digest?(source)
         !source[:digest].nil?
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements(file)
         T.must(dependency).requirements
-         .select { |r| r[:file] == file.name }
+         .select { |r| r.file == file.name }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
       def previous_requirements(file)
         T.must(dependency).previous_requirements
-         &.select { |r| r[:file] == file.name }
+         &.select { |r| r.file == file.name }
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
+      sig { params(source: ImageSource).returns(T.nilable(String)) }
       def private_registry_url(source)
         source[:registry]
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[ImageSource]) }
       def sources(file)
-        requirements(file).map { |r| r.fetch(:source) }
+        requirements(file).map { |r| image_source(r) }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]])) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[ImageSource])) }
       def previous_sources(file)
-        previous_requirements(file)&.map { |r| r.fetch(:source) }
+        previous_requirements(file)&.map { |r| image_source(r) }
+      end
+
+      sig { params(requirement: T.nilable(Dependabot::DependencyRequirement)).returns(ImageSource) }
+      def image_source(requirement)
+        return { registry: nil, tag: nil, digest: nil } if requirement.nil?
+
+        raise TypeError, "container source must be a hash" if requirement.source_hash.nil?
+
+        {
+          registry: requirement.source_string("registry"),
+          tag: requirement.source_string("tag"),
+          digest: requirement.source_string("digest")
+        }
       end
 
       sig { returns(T.nilable(Dependabot::Dependency)) }

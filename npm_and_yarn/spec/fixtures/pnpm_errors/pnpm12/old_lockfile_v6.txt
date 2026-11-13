@@ -1,0 +1,6 @@
+Error: ERR_PNPM_BROKEN_LOCKFILE
+
+  × load the lockfile
+  ╰─▶ The lockfile at "/tmp/w/pnpm-lock.yaml" is broken: The lockfileVersion
+      of 6.0 is incompatible with this version of pnpm, which supports
+      lockfileVersion 9.x (1:18)

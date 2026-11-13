@@ -5,3 +5,4 @@
 /dependabot-*.gem
 /helpers/node_modules
 /helpers/install-dir
+/helpers/dist

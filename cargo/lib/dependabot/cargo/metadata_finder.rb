@@ -19,7 +19,7 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(dependency:, credentials:)
         super
-        @crates_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        @crates_listing = T.let(nil, T.nilable(T::Hash[String, T.anything]))
       end
 
       private
@@ -43,7 +43,10 @@ module Dependabot
       def find_source_from_crates_listing
         potential_source_urls =
           SOURCE_KEYS
-          .filter_map { |key| T.must(crates_listing).dig("crate", key) }
+          .filter_map do |key|
+            crate = T.cast(T.must(crates_listing)["crate"], T.nilable(T::Hash[String, T.anything]))
+            T.cast(crate&.fetch(key, nil), T.nilable(String))
+          end
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         Source.from_url(source_url)
@@ -51,19 +54,15 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-
-        url = info[:url] || info.fetch("url")
-        Source.from_url(url)
+        Source.from_url(dependency.source_string("url", allowed_types: ["git"]))
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[String, T.anything])) }
       def crates_listing
         return @crates_listing unless @crates_listing.nil?
 
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-        index = (info && info[:index]) || CRATES_IO_API
-        hdrs = build_headers(index, info)
+        index = dependency.source_string("index") || CRATES_IO_API
+        hdrs = build_headers(index, dependency.source_string("name"))
 
         url = metadata_fetch_url(dependency, index)
         response = fetch_metadata(url, hdrs)
@@ -71,14 +70,16 @@ module Dependabot
         @crates_listing = parse_response(response, index)
       end
 
-      sig { params(index: String, info: T.nilable(T::Hash[String, T.untyped])).returns(T::Hash[String, String]) }
-      def build_headers(index, info)
+      sig do
+        params(index: String, registry_name: T.nilable(String))
+          .returns(T::Hash[String, String])
+      end
+      def build_headers(index, registry_name)
         hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
         return hdrs if index == CRATES_IO_API
+        return hdrs if registry_name.nil?
 
-        return hdrs if info.nil?
-
-        credentials.find { |cred| cred["type"] == "cargo_registry" && cred["registry"] == info["name"] }&.tap do |cred|
+        credentials.find { |cred| cred["type"] == "cargo_registry" && cred["registry"] == registry_name }&.tap do |cred|
           hdrs["Authorization"] = "Token #{cred['token']}"
         end
 
@@ -94,7 +95,7 @@ module Dependabot
         )
       end
 
-      sig { params(response: Excon::Response, index: String).returns(T::Hash[String, T.untyped]) }
+      sig { params(response: Excon::Response, index: String).returns(T::Hash[String, T.anything]) }
       def parse_response(response, index)
         if index.start_with?("sparse+")
           parsed_response = response.body.lines.map { |line| JSON.parse(line) }

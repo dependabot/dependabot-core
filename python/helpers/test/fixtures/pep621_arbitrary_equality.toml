@@ -1,0 +1,7 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+
+dependencies = [
+    "numpy===1.24.0rc1",
+]

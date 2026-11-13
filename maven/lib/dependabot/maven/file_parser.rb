@@ -17,13 +17,15 @@ require "dependabot/errors"
 # - http://maven.apache.org/pom.html
 module Dependabot
   module Maven
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/transitive_override_finder"
+      require_relative "file_parser/wrapper_mojo"
 
       # The following "dependencies" are candidates for updating:
       # - The project's parent
@@ -35,17 +37,25 @@ module Dependabot
                             "extensions > extension, " \
                             "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
-      EXTENSION_SELECTOR  = "extensions > extension"
+      # `<dependencies>` under these elements don't declare a project dependency.
+      NON_DECLARING_SECTIONS = %w(dependencyManagement plugin).freeze
+      EXTENSION_SELECTOR = "extensions > extension"
       TARGET_SELECTOR = "target > locations > location[type='Maven'] > dependencies > dependency"
       PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
                                        "configuration > artifactItems > artifactItem"
+      # Annotation processor paths and plugin artifact items can take their version
+      # from `<dependencyManagement>`, so they count as declarations too.
+      DECLARATION_SELECTOR = T.let(
+        "dependencies > dependency, annotationProcessorPaths > path, #{PLUGIN_ARTIFACT_ITEMS_SELECTOR}".freeze,
+        String
+      )
 
       # Regex to get the property name from a declaration that uses a property
       PROPERTY_REGEX = /\$\{(?<property>.*?)\}/
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        if Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+        if scan_dependency_tree?
           parse_with_transitive_dependencies
         else
           parse_standard_dependencies
@@ -66,25 +76,39 @@ module Dependabot
 
       private
 
+      # Maven's own reparses (update checker, property updater) pass `skip_dependency_tree: true`:
+      # they only need declared dependencies, so they skip the expensive scan.
+      sig { returns(T::Boolean) }
+      def scan_dependency_tree?
+        return false if T.cast(options[:skip_dependency_tree], Object) == true
+
+        Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+      end
+
+      # Starts from the XML-only result and adds what `mvn dependency:tree` resolves.
+      # If the scan fails, the result is the same as with the experiment off.
       sig { returns(T::Array[Dependabot::Dependency]) }
       def parse_with_transitive_dependencies
-        dependency_set = DependencySet.new
-        dependency_set += MavenDependencyParser.build_dependency_set(pomfiles)
+        declared = parse_standard_dependencies
+        tree = MavenDependencyParser.build_dependency_set(pomfiles, credentials: credentials)
+        return declared unless tree
 
-        pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
-        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+        dependency_set = DependencySet.new(declared)
+        tree.dependencies.each do |dep|
+          next if internal_dependency_names.include?(dep.name)
 
-        dependencies = []
-        dependency_set.dependencies.each do |dep|
-          requirements = merge_requirements(dep.requirements)
-          dependencies << Dependabot::Dependency.new(
+          tree.all_versions_for_name(dep.name).each { |version| dependency_set << version }
+        end
+
+        dependency_set.dependencies.map do |dep|
+          Dependabot::Dependency.new(
             name: dep.name,
             version: dep.version,
             package_manager: "maven",
-            requirements: requirements
+            requirements: MavenDependencyParser.merge_requirements(dep.requirements),
+            metadata: dep.metadata
           )
         end
-        dependencies
       end
 
       sig { returns(T::Array[Dependabot::Dependency]) }
@@ -93,7 +117,24 @@ module Dependabot
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
+
+        add_wrapper_dependencies(dependency_set)
+
         dependency_set.dependencies
+      end
+
+      sig { params(dependency_set: DependencySet).void }
+      def add_wrapper_dependencies(dependency_set)
+        return unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+
+        wrapper_properties_files.each do |properties_file|
+          dir = File.dirname(properties_file.name).sub(%r{/?\.mvn/wrapper$}, "")
+          dir = "." if dir.empty?
+          scripts = wrapper_script_files_for(dir)
+          FileParser::WrapperMojo.resolve_dependencies(properties_file, script_files: scripts).each do |dep|
+            dependency_set << dep
+          end
+        end
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -253,10 +294,83 @@ module Dependabot
             source: nil,
             metadata: {
               packaging_type: packaging_type(pom, dependency_node),
-              classifier: dependency_classifier(dependency_node, pom)
+              classifier: dependency_classifier(dependency_node, pom),
+              transitive_override: transitive_override?(pom, dependency_node, is_plugin: is_plugin) || nil
             }.merge(property_details).compact
           }]
         )
+      end
+
+      # A `<dependencyManagement>` entry (not a BOM import) for an artifact that nothing in its
+      # POM lineage declares only sets a transitive version. Tagged with the experiment on, so
+      # the update checker can leave it alone outside security updates.
+      sig do
+        params(
+          pom: Dependabot::DependencyFile,
+          dependency_node: Nokogiri::XML::Element,
+          is_plugin: T::Boolean
+        ).returns(T::Boolean)
+      end
+      def transitive_override?(pom, dependency_node, is_plugin:)
+        return false if is_plugin
+        return false unless Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+        return false unless dependency_management_node?(dependency_node)
+        return false if dependency_scope(pom, dependency_node) == "import"
+
+        key = management_key(dependency_node, pom)
+        !key.nil? && transitive_override_finder.override?(pom: pom, key: key)
+      end
+
+      sig { params(node: Nokogiri::XML::Node).returns(T::Boolean) }
+      def dependency_management_node?(node)
+        node.name == "dependency" && node.ancestors.any? { |a| a.name == "dependencyManagement" }
+      end
+
+      sig { returns(TransitiveOverrideFinder) }
+      def transitive_override_finder
+        @transitive_override_finder ||= T.let(
+          TransitiveOverrideFinder.new(
+            pomfiles: pomfiles,
+            declared_keys_by_pom: declared_keys_by_pom,
+            property_value_finder: property_value_finder
+          ),
+          T.nilable(TransitiveOverrideFinder)
+        )
+      end
+
+      # Management keys of the artifacts each POM declares in a `<dependencies>`
+      # section, as an annotation processor path or as a plugin artifact item,
+      # excluding `<dependencyManagement>` entries and plugin dependencies.
+      sig { returns(T::Hash[String, T::Set[String]]) }
+      def declared_keys_by_pom
+        pomfiles.to_h do |pom|
+          doc = Nokogiri::XML(pom.content)
+          doc.remove_namespaces!
+          keys = doc.css(DECLARATION_SELECTOR).each_with_object(Set.new) do |node, set|
+            next if node.name == "dependency" && node.ancestors.any? { |a| NON_DECLARING_SECTIONS.include?(a.name) }
+
+            key = declared_key(node, pom)
+            set << key if key
+          end
+          [pom.name, keys]
+        end
+      end
+
+      sig { params(node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def declared_key(node, pom)
+        management_key(node, pom)
+      rescue DependencyFileNotEvaluatable
+        nil
+      end
+
+      # Maven matches a declaration to a `<dependencyManagement>` entry by groupId, artifactId,
+      # type and classifier, so a `test-jar` or classified declaration doesn't use the plain jar entry.
+      sig { params(node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def management_key(node, pom)
+        name = dependency_name(node, pom)
+        return unless name
+
+        [name, packaging_type(pom, node), dependency_classifier(node, pom).to_s].join(":")
       end
 
       sig do
@@ -415,7 +529,7 @@ module Dependabot
           .property_details(property_name: property_name, callsite_pom: pom)
           &.fetch(:file)
 
-        return declaring_pom if declaring_pom
+        return declaring_pom if declaring_pom.is_a?(String)
 
         msg = "Property not found: #{property_name}"
         raise DependencyFileNotEvaluatable, msg
@@ -428,7 +542,7 @@ module Dependabot
           .property_details(property_name: property_name, callsite_pom: pom)
           &.fetch(:value)
 
-        return value if value
+        return value if value.is_a?(String)
 
         msg = "Property not found: #{property_name}"
         raise DependencyFileNotEvaluatable, msg
@@ -470,6 +584,22 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_properties_files
+        @wrapper_properties_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("maven-wrapper.properties") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_script_files_for(dir)
+        script_names = %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).map do |s|
+          dir == "." ? s : "#{dir}/#{s}"
+        end
+        dependency_files.select { |f| script_names.include?(f.name) }
+      end
+
       sig { returns(T::Array[String]) }
       def internal_dependency_names
         @internal_dependency_names ||= T.let(
@@ -492,81 +622,11 @@ module Dependabot
         raise "No pom.xml!" unless get_original_file("pom.xml")
       end
 
-      # Merge dependency scan requirements with file parsing requirements.
-      # Since dependency scan evaluates properties, we need to combine results with XML parsing,
-      # so we know when certain requirement not a literal value and can differentiate transitive dependencies
-      # from direct dependencies.
-      sig do
-        params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]])
-      end
-      def merge_requirements(requirements)
-        return requirements if requirements.length <= 1
-
-        merged = []
-        used_indices = Set.new
-        requirements.each_with_index do |dep_scan_req, i|
-          next if used_indices.include?(i) || dep_scan_req.dig(:metadata, :pom_file).nil?
-
-          # Look for another requirement where pom_file matches property_source
-          match_index = requirements.find_index.with_index do |parsing_req, j|
-            j > i &&
-              !used_indices.include?(j) &&
-              dep_scan_req.dig(:metadata, :pom_file) == parsing_req.fetch(:file)
-          end
-
-          if match_index
-            parsing_req = T.must(requirements[match_index])
-
-            # Merge the two requirements
-            # We prefer file and requirement properties from parsed requirements,
-            # because they include correct file and not evaluated property value.
-            merged_req = {
-              requirement: parsing_req[:requirement],
-              file: parsing_req[:file],
-              groups: [*dep_scan_req[:groups], *parsing_req[:groups]].uniq.compact,
-              source: dep_scan_req[:source],
-              metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
-            }
-
-            merged << merged_req
-            used_indices.add(i)
-            used_indices.add(match_index)
-          else
-            # No match found, keep the requirement as is
-            merged << dep_scan_req
-            used_indices.add(i)
-          end
-        end
-
-        merged
-      end
-
-      # Merge metadata from two requirements, combining all keys
-      sig do
-        params(
-          metadata1: T::Hash[Symbol, T.untyped],
-          metadata2: T::Hash[Symbol, T.untyped]
-        ).returns(T::Hash[Symbol, T.untyped])
-      end
-      def merge_metadata(metadata1, metadata2)
-        metadata1.merge(metadata2) do |_key, old_value, new_value|
-          case [old_value, new_value]
-          in [nil, new_value] then new_value
-          in [old_value, nil] then old_value
-          in [old_value, new_value] if old_value == new_value then old_value
-          else
-            # If values differ, combine them
-            [*old_value, *new_value].uniq
-          end
-        end
-      end
-
       sig { params(doc: Nokogiri::XML::Document).returns(Nokogiri::XML::NodeSet) }
       def plugin_nodes(doc)
         doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR)
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 

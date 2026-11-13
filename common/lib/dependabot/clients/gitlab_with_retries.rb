@@ -3,13 +3,16 @@
 
 require "gitlab"
 require "sorbet-runtime"
+require "delegate"
 
 require "dependabot/credential"
 
 module Dependabot
   module Clients
-    class GitlabWithRetries
+    class GitlabWithRetries < SimpleDelegator
       extend T::Sig
+
+      ClientOptions = T.type_alias { T::Hash[Symbol, Object] }
 
       RETRYABLE_ERRORS = T.let(
         [Gitlab::Error::BadGateway].freeze,
@@ -67,22 +70,24 @@ module Dependabot
 
       sig { params(repo: String, branch: String).returns(String) }
       def fetch_commit(repo, branch)
-        T.unsafe(self).branch(repo, branch).commit.id
+        commit = T.cast(branch(repo, branch)["commit"], Gitlab::ObjectifiedHash)
+        T.cast(commit["id"], String)
       end
 
       sig { params(repo: String).returns(String) }
       def fetch_default_branch(repo)
-        T.unsafe(self).project(repo).default_branch
+        T.cast(project(repo)["default_branch"], String)
       end
 
       ############
       # Proxying #
       ############
 
-      sig { params(max_retries: T.nilable(Integer), args: T.untyped).void }
+      sig { params(max_retries: T.nilable(Integer), args: Object).void }
       def initialize(max_retries: 3, **args)
         @max_retries = T.let(max_retries || 3, Integer)
         @client = T.let(::Gitlab::Client.new(args), ::Gitlab::Client)
+        super(@client)
       end
 
       # Create commit in gitlab repo with correctly mapped file actions
@@ -99,7 +104,7 @@ module Dependabot
           branch_name: String,
           commit_message: String,
           files: T::Array[Dependabot::DependencyFile],
-          options: T.untyped
+          options: Object
         )
           .returns(Gitlab::ObjectifiedHash)
       end
@@ -117,19 +122,16 @@ module Dependabot
       sig do
         params(
           method_name: T.any(Symbol, String),
-          args: T.untyped,
-          block: T.nilable(T.proc.returns(T.untyped))
+          args: Object,
+          block: T.nilable(Proc)
         )
-          .returns(T.untyped)
+          .returns(T.anything)
       end
       def method_missing(method_name, *args, &block)
+        original_args = args
         retry_connection_failures do
-          if @client.respond_to?(method_name)
-            mutatable_args = args.map(&:dup)
-            T.unsafe(@client).public_send(method_name, *mutatable_args, &block)
-          else
-            super
-          end
+          args = original_args.map(&:dup)
+          super
         end
       end
 
@@ -141,7 +143,7 @@ module Dependabot
           .returns(T::Boolean)
       end
       def respond_to_missing?(method_name, include_private = false)
-        @client.respond_to?(method_name) || super
+        @client.respond_to?(method_name, include_private)
       end
 
       sig do
@@ -156,7 +158,7 @@ module Dependabot
           yield
         rescue *RETRYABLE_ERRORS
           retry_attempt += 1
-          retry_attempt <= @max_retries ? retry : raise
+          retry_attempt <= @max_retries ? retry : Kernel.raise
         end
       end
 
@@ -166,7 +168,7 @@ module Dependabot
       #
       # @param [Array<Dependabot::DependencyFile>] files
       # @return [Array<Hash>]
-      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[T::Hash[Symbol, Object]]) }
       def file_actions(files)
         files.map do |file|
           {

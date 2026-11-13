@@ -6,16 +6,7 @@
 #    pip-compile requirements.in
 #
 
-pip
-jupyter
-jupyter_contrib_nbextensions
-jupyter_nbextensions_configurator
-
-librosa
-numba==0.48
-numpy==1.26.4
-
-jax
-matplotlib
-tqdm
-voila==0.1.21
+# boto3==1.26.0 requires botocore>=1.29.0,<1.30.0
+# which conflicts with botocore==1.27.0
+boto3==1.26.0
+botocore==1.27.0

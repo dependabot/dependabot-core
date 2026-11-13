@@ -33,9 +33,13 @@ module Dependabot
 
         @digest = T.let(T.must(parsed_version)[:digest], T.nilable(String))
         @release_part = T.let(Dependabot::Version.new(T.must(release_part).tr("-", ".")), Dependabot::Version)
-        @update_part = T.let(
-          Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0),
-          Dependabot::Version
+        # Everything after the first underscore is the "update" part. It can itself contain further
+        # underscore-separated groups (for example 17.0.4_1.7.1_3.2.0), and each group is compared in order.
+        update_groups = update_part.to_s.split("_")
+        @update_part = T.let(update_group_version(update_groups.first), Dependabot::Version)
+        @extra_update_parts = T.let(
+          update_groups.drop(1).map { |group| update_group_version(group) },
+          T::Array[Dependabot::Version]
         )
 
         super(@release_part)
@@ -91,7 +95,33 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Version]) }
       def sort_criteria
-        [@release_part, @update_part]
+        [@release_part, @update_part, *@extra_update_parts]
+      end
+
+      private
+
+      # Groups that are not valid versions (for example a commit hash) count as 0.
+      sig { params(group: T.nilable(String)).returns(Dependabot::Version) }
+      def update_group_version(group)
+        valid = group&.start_with?(/[0-9]/) && Dependabot::Version.correct?(group)
+        Dependabot::Version.new(valid ? group : 0)
+      end
+    end
+
+    # A Docker image tag. It compares like a Helm::Version, but is written back exactly as the
+    # registry publishes it, so "v1.5.0" and "1.2.3-alpine" keep their prefix and suffix.
+    class ImageTag < Version
+      extend T::Sig
+
+      sig { override.params(version: VersionParameter).void }
+      def initialize(version)
+        @tag = T.let(version.to_s, String)
+        super
+      end
+
+      sig { override.returns(T.nilable(String)) }
+      def to_s
+        @tag
       end
     end
   end

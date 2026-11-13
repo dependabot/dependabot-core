@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/version_filters"
@@ -80,6 +80,31 @@ RSpec.describe Dependabot::UpdateCheckers::VersionFilters do
         result = described_class.filter_vulnerable_versions(versions_array, [security_advisory])
 
         expect(result).to contain_exactly(vulnerable_version_hash, safe_version_hash)
+      end
+    end
+
+    context "when version is a GitTagDetails" do
+      let(:tag_details) do
+        Dependabot::GitTagDetails.new(
+          tag: "v1.0.0",
+          version: vulnerable_version
+        )
+      end
+
+      it "filters out vulnerable parsed versions" do
+        allow(security_advisory).to receive(:vulnerable?).with(vulnerable_version).and_return(true)
+
+        result = described_class.filter_vulnerable_versions([tag_details], [security_advisory])
+
+        expect(result).to be_empty
+      end
+
+      it "keeps tags without a parsed version" do
+        unparsed_tag = Dependabot::GitTagDetails.new(tag: "not-a-version")
+
+        result = described_class.filter_vulnerable_versions([unparsed_tag], [security_advisory])
+
+        expect(result).to contain_exactly(unparsed_tag)
       end
     end
 

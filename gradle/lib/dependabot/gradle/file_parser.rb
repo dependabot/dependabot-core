@@ -6,6 +6,7 @@ require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/ecosystem"
+require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -27,29 +28,26 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/lockfile_parser"
 
-      SUPPORTED_BUILD_FILE_NAMES = T.let(
-        %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
-        T::Array[String]
-      )
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
 
-      PROPERTY_REGEX = T.let(
-        /
+      PROPERTY_REGEX = /
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
           (?:\$\{(?<property_name>[^:\s]*?)\})|
           (?:\$(?<property_name>[^:\s"']*))
-        /x,
-        Regexp
-      )
+        /x
 
-      PART = T.let(%r{[^\s,@'":/\\]+}, Regexp)
-      VSN_PART = T.let(%r{[^\s,'":/\\]+}, Regexp)
-      DEPENDENCY_DECLARATION_REGEX = T.let(/(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o, Regexp)
+      PART = %r{[^\s,@'":/\\]+}
+      VSN_PART = %r{[^\s,'":/\\]+}
+      DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
 
-      DEPENDENCY_SET_DECLARATION_REGEX = T.let(/(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/, Regexp)
-      DEPENDENCY_SET_ENTRY_REGEX = T.let(/entry\s+['"](?<name>#{PART})['"]/o, Regexp)
-      PLUGIN_BLOCK_DECLARATION_REGEX = T.let(/(?:^|\s)plugins\s*\{/, Regexp)
-      PLUGIN_ID_REGEX = T.let(/['"](?<id>#{PART})['"]/o, Regexp)
+      DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
+      DEPENDENCY_SET_COORDINATES_REGEX = /\A\s*['"](?<group>#{PART}):(?<version>#{VSN_PART})['"]\s*\z/o
+      DEPENDENCY_SET_ENTRY_REGEX = /\bentry(?:\s+|\s*\(\s*)['"](?<name>#{PART})['"]/o
+      PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
+      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/o
+      DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX = /\bdependencySubstitution\s*\{/
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -60,13 +58,14 @@ module Dependabot
         script_plugin_files.each do |plugin_file|
           dependency_set += buildfile_dependencies(plugin_file)
         end
-        if Experiments.enabled?(:gradle_wrapper_updater)
-          wrapper_properties_file.each do |properties_file|
-            dependency_set += wrapper_properties_dependencies(properties_file)
-          end
+        wrapper_properties_file.each do |properties_file|
+          dependency_set += wrapper_properties_dependencies(properties_file)
         end
-        version_catalog_file.each do |toml_file|
+        version_catalog_files.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
+        end
+        if Dependabot::Experiments.enabled?(:gradle_transitive_security_updates)
+          add_lockfile_dependencies(dependency_set)
         end
         dependency_set.dependencies.reject do |dependency|
           dependency.version == "latest.integration" || dependency.version == "latest.release"
@@ -91,6 +90,153 @@ module Dependabot
       def self.find_includes(buildfile, dependency_files)
         FileParser.find_include_names(buildfile)
                   .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
+      end
+
+      # Replaces the contents of string literals and comments with spaces,
+      # preserving the overall length and newline positions. This lets callers
+      # locate structural `{`/`}` braces without being confused by braces that
+      # appear inside quoted strings (e.g. `because("see issue {")`), Groovy
+      # slashy/dollar-slashy strings (`/.../`, `$/.../$`) or comments.
+      #
+      # `kotlin` selects the build-file dialect: Kotlin (`.gradle.kts`) allows
+      # nested block comments but has no slashy strings, whereas Groovy
+      # (`.gradle`) has slashy strings but non-nested block comments.
+      sig { params(content: String, kotlin: T::Boolean).returns(String) }
+      def self.mask_literals_and_comments(content, kotlin: false)
+        masked = content.dup
+        index = 0
+        length = content.length
+
+        while index < length
+          stop = literal_or_comment_end(content, index, length, kotlin: kotlin)
+          if stop
+            mask_region!(masked, content, index, stop)
+            index = stop
+          else
+            index += 1
+          end
+        end
+
+        masked
+      end
+
+      # Returns the index just past a string literal or comment that starts at
+      # `index`, or `nil` when `index` is not the start of one.
+      sig { params(content: String, index: Integer, length: Integer, kotlin: T::Boolean).returns(T.nilable(Integer)) }
+      def self.literal_or_comment_end(content, index, length, kotlin: false) # rubocop:disable Metrics/PerceivedComplexity
+        three = content[index, 3]
+        two = content[index, 2]
+        char = T.must(content[index])
+
+        if three == '"""' || three == "'''"
+          close = content.index(three, index + 3)
+          close ? close + 3 : length
+        elsif !kotlin && two == "$/"
+          dollar_slashy_string_end(content, index, length)
+        elsif char == '"' || char == "'"
+          single_quote_string_end(content, index, char, length)
+        elsif two == "//"
+          content.index("\n", index) || length
+        elsif two == "/*"
+          block_comment_end(content, index, length, nested: kotlin)
+        elsif !kotlin && char == "/" && slashy_string_start?(content, index)
+          slashy_string_end(content, index, length)
+        end
+      end
+
+      # Finds the index just past the closing `*/` of a block comment starting at
+      # `start_index`. Kotlin (`.gradle.kts`) permits nested `/*`/`*/` pairs;
+      # Groovy closes at the first `*/`.
+      sig { params(content: String, start_index: Integer, length: Integer, nested: T::Boolean).returns(Integer) }
+      def self.block_comment_end(content, start_index, length, nested: false)
+        depth = 1
+        stop = start_index + 2
+        while stop < length
+          pair = content[stop, 2]
+          if nested && pair == "/*"
+            depth += 1
+            stop += 2
+          elsif pair == "*/"
+            depth -= 1
+            stop += 2
+            return stop if depth.zero?
+          else
+            stop += 1
+          end
+        end
+        length
+      end
+
+      # Finds the index just past the closing quote of a single-quoted (`'` or
+      # `"`) string literal starting at `start_index`, honouring backslash escapes.
+      sig { params(content: String, start_index: Integer, quote: String, length: Integer).returns(Integer) }
+      def self.single_quote_string_end(content, start_index, quote, length)
+        stop = start_index + 1
+        while stop < length
+          char = content[stop]
+          if char == "\\"
+            stop += 2
+          elsif char == quote
+            return stop + 1
+          else
+            stop += 1
+          end
+        end
+        stop
+      end
+
+      # Finds the index just past the closing `/` of a Groovy slashy string
+      # (`/.../`) starting at `start_index`. Only `\/` escapes the delimiter.
+      sig { params(content: String, start_index: Integer, length: Integer).returns(Integer) }
+      def self.slashy_string_end(content, start_index, length)
+        stop = start_index + 1
+        while stop < length
+          if content[stop] == "\\" && content[stop + 1] == "/"
+            stop += 2
+          elsif content[stop] == "/"
+            return stop + 1
+          else
+            stop += 1
+          end
+        end
+        stop
+      end
+
+      # Finds the index just past the closing `/$` of a Groovy dollar-slashy
+      # string (`$/.../$`) starting at `start_index`. `$$` and `$/` are escapes.
+      sig { params(content: String, start_index: Integer, length: Integer).returns(Integer) }
+      def self.dollar_slashy_string_end(content, start_index, length)
+        stop = start_index + 2
+        while stop < length
+          pair = content[stop, 2]
+          if pair == "$$" || pair == "$/"
+            stop += 2
+          elsif pair == "/$"
+            return stop + 2
+          else
+            stop += 1
+          end
+        end
+        stop
+      end
+
+      # A `/` begins a slashy string (rather than a division operator) only when
+      # a value is expected, i.e. the previous non-space character is not the end
+      # of an identifier, number, or closing bracket.
+      sig { params(content: String, index: Integer).returns(T::Boolean) }
+      def self.slashy_string_start?(content, index)
+        position = index - 1
+        position -= 1 while position >= 0 && (content[position] == " " || content[position] == "\t")
+        return true if position.negative?
+
+        !T.must(content[position]).match?(/[\w)\]}]/)
+      end
+
+      sig { params(masked: String, original: String, start_index: Integer, stop_index: Integer).void }
+      def self.mask_region!(masked, original, start_index, stop_index)
+        (start_index...stop_index).each do |position|
+          masked[position] = original[position] == "\n" ? "\n" : " "
+        end
       end
 
       sig { returns(Ecosystem) }
@@ -144,7 +290,7 @@ module Dependabot
 
       sig do
         params(
-          parsed_toml_file: T::Hash[String, T.untyped],
+          parsed_toml_file: T::Hash[String, Object],
           toml_file: Dependabot::DependencyFile
         ).returns(DependencySet)
       end
@@ -158,7 +304,7 @@ module Dependabot
 
       sig do
         params(
-          parsed_toml_file: T::Hash[String, T.untyped],
+          parsed_toml_file: T::Hash[String, Object],
           toml_file: Dependabot::DependencyFile
         ).returns(DependencySet)
       end
@@ -249,9 +395,9 @@ module Dependabot
         end
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }
       def parsed_toml_file(file)
-        T.cast(TomlRB.parse(file.content), T::Hash[String, T.untyped])
+        T.cast(TomlRB.parse(file.content), T::Hash[String, Object])
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
@@ -326,9 +472,7 @@ module Dependabot
         end
 
         dependency_set_blocks.each do |blk|
-          arguments = T.must(blk[:arguments])
-          group   = argument_from_string(arguments, "group")
-          version = argument_from_string(arguments, "version")
+          group, version = dependency_set_group_and_version(T.must(blk[:arguments]))
 
           next unless group && version
 
@@ -343,6 +487,18 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      # Groovy builds usually declare `dependencySet(group: 'g', version: 'v')`, while the Kotlin DSL only
+      # supports the `dependencySet("g:v")` coordinates form (which Groovy accepts as well).
+      sig { params(arguments: String).returns([T.nilable(String), T.nilable(String)]) }
+      def dependency_set_group_and_version(arguments)
+        group   = argument_from_string(arguments, "group")
+        version = argument_from_string(arguments, "version")
+        return [group, version] if group && version
+
+        coordinates = arguments.match(DEPENDENCY_SET_COORDINATES_REGEX)
+        [coordinates&.[](:group), coordinates&.[](:version)]
       end
 
       sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
@@ -518,11 +674,22 @@ module Dependabot
 
       sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
       def prepared_content(buildfile)
+        # Remove any dependencySubstitution blocks first, before the comment
+        # regexes below run. The coordinates inside `substitute module(...) using
+        # module(...)` rules are substitution targets, not real dependency
+        # declarations, and must not be updated. Braces inside strings/comments
+        # are masked so the matching closing brace is located correctly, and each
+        # block is deleted by its exact offsets. Doing this before the comment
+        # stripping keeps string literals intact so the masker can see them.
+        prepared_content = remove_dependency_substitution_blocks(
+          T.must(buildfile.content),
+          kotlin: buildfile.name.end_with?(".kts")
+        )
+
         # Remove any comments
-        prepared_content =
-          T.must(buildfile.content)
-           .gsub(%r{(?<=^|\s)//.*$}, "\n")
-           .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+        prepared_content = prepared_content
+                           .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                           .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
 
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
@@ -533,6 +700,21 @@ module Dependabot
         end
 
         prepared_content
+      end
+
+      sig { params(content: String, kotlin: T::Boolean).returns(String) }
+      def remove_dependency_substitution_blocks(content, kotlin: false)
+        result = content.dup
+        masked = FileParser.mask_literals_and_comments(content, kotlin: kotlin)
+        block_ranges = T.let([], T::Array[T::Range[Integer]])
+        masked.to_enum(:scan, DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX).each do
+          mtch = T.must(Regexp.last_match)
+          start_index = mtch.begin(0)
+          end_index = mtch.end(0) + closing_bracket_index(T.must(masked[mtch.end(0)..]))
+          block_ranges << (start_index..end_index)
+        end
+        block_ranges.reverse_each { |range| result[range] = "" }
+        result
       end
 
       sig { params(string: String).returns(Integer) }
@@ -558,6 +740,41 @@ module Dependabot
         )
       end
 
+      sig { params(dependency_set: DependencySet).void }
+      def add_lockfile_dependencies(dependency_set)
+        declared_names = dependency_set.dependencies.map { |dep| dep.name.downcase }
+        locked = DependencySet.new
+        dependency_files.select { |file| File.basename(file.name) == "gradle.lockfile" }.each do |lockfile|
+          LockfileParser.new(lockfile: lockfile).parse.each do |dependency|
+            locked << dependency unless declared_names.include?(dependency.name.downcase)
+          end
+        end
+        locked.dependencies.each do |dependency|
+          versions = locked.all_versions_for_name(dependency.name).map do |version|
+            lockfile_dependency(dependency, version.version)
+          end
+          dependency_set << lockfile_dependency(dependency, dependency.version, versions)
+        end
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          version: T.nilable(String),
+          all_versions: T::Array[Dependabot::Dependency]
+        ).returns(Dependabot::Dependency)
+      end
+      def lockfile_dependency(dependency, version, all_versions = [])
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version,
+          package_manager: "gradle",
+          requirements: [],
+          subdependency_metadata: dependency.subdependency_metadata,
+          metadata: all_versions.empty? ? {} : { all_versions: all_versions }
+        )
+      end
+
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def wrapper_properties_file
         @wrapper_properties_file ||= T.let(
@@ -567,11 +784,9 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def version_catalog_file
-        @version_catalog_file ||= T.let(
-          dependency_files.select do |f|
-            f.name.end_with?("libs.versions.toml")
-          end,
+      def version_catalog_files
+        @version_catalog_files ||= T.let(
+          dependency_files.reject(&:support_file?).select { |f| f.name.end_with?(".toml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

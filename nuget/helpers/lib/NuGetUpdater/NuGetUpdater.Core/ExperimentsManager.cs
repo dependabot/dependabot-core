@@ -8,12 +8,14 @@ namespace NuGetUpdater.Core;
 public record ExperimentsManager
 {
     public bool GenerateSimplePrBody { get; init; } = false;
+    public bool FindRootDirectory { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
         return new()
         {
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
+            ["nuget_find_root_directory"] = FindRootDirectory,
         };
     }
 
@@ -22,6 +24,7 @@ public record ExperimentsManager
         return new ExperimentsManager()
         {
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
+            FindRootDirectory = IsEnabled(experiments, "nuget_find_root_directory"),
         };
     }
 

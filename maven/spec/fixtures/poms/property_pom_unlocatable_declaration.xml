@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.dependabot</groupId>
+  <artifactId>basic-pom</artifactId>
+  <version>0.0.1-RELEASE</version>
+  <name>Dependabot Basic POM</name>
+
+  <packaging>pom</packaging>
+
+  <properties>
+    <grpc.version>1.81.0</grpc.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.github.ascopes</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>3.9.0</version>
+        <configuration>
+          <plugins>
+            <plugin kind="binary-maven">
+              <groupId>io.grpc</groupId>
+              <artifactId>protoc-gen-grpc-java</artifactId>
+              <version>${grpc.version}</version>
+            </plugin>
+          </plugins>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

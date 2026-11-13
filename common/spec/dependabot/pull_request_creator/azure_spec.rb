@@ -1,6 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
+require "cgi/escape"
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"

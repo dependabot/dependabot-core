@@ -1,11 +1,14 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve dependency and requirement fixtures defined only in child contexts.
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/file_updater/go_mod_updater"
 require "dependabot/go_modules/file_parser"
+require "dependabot/go_modules/go_mod_manifest"
 
 RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
@@ -49,6 +52,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
+
+    shared_context "with go get command failure stubbed" do
+      before do
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(go_get_command).and_return(["", stderr, exit_status])
+      end
+    end
 
     context "when dealing with a grouped update" do
       let(:dependency_name) { "rsc.io/quote" }
@@ -104,6 +114,23 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       context "when no files have changed" do
         it { is_expected.to eq(go_mod_content) }
+      end
+
+      context "when the manifest command returns malformed output" do
+        before do
+          status = instance_double(Process::Status, success?: true)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3)
+            .with("go mod edit -json").and_return(['{"Require":[null]}', "", status])
+        end
+
+        it "rejects the output before running go get" do
+          expect { updated_go_mod_content }.to raise_error(
+            Dependabot::GoModules::GoModManifest::InvalidOutput,
+            "go mod edit -json for /go.mod: Require[0] must be an object"
+          )
+          expect(Open3).not_to have_received(:capture3).with(a_string_starting_with("go get"))
+        end
       end
 
       context "when the requirement has changed" do
@@ -269,6 +296,111 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
 
+          context "when `go mod tidy` fails" do
+            before do
+              allow(Open3).to receive(:capture3).and_wrap_original do |original, *args|
+                if args == ["go mod tidy"]
+                  ["", "missing go.sum entry for go.mod file", instance_double(Process::Status, success?: false)]
+                else
+                  original.call(*args)
+                end
+              end
+            end
+
+            it "surfaces the real error instead of silently continuing" do
+              expect { updated_go_mod_content }
+                .to raise_error(Dependabot::DependencyFileNotResolvable)
+            end
+
+            it "does not fall back to `go mod tidy -e`" do
+              expect { updated_go_mod_content }.to raise_error(Dependabot::DependabotError)
+              expect(Open3).not_to have_received(:capture3).with("go mod tidy -e")
+            end
+          end
+
+          # `go mod tidy` reports an import that no module provides like this. The path is often inside the
+          # repository's own module: generated code (protobuf, mocks) that is not committed, so only the repository's
+          # owner can fix it.
+          context "when `go mod tidy` cannot find a package that the code imports" do
+            let(:tidy_stderr) do
+              <<~ERROR
+                go: downloading github.com/ebitengine/purego v0.11.0
+                go: downloading github.com/go-ole/go-ole v1.3.0
+                go: finding module for package github.com/example/app/gen/app/v1
+                go: finding module for package github.com/example/app/gen/plugin/v1
+                go: github.com/example/app/cmd/app imports
+                \tgithub.com/example/app/gen/app/v1: no matching versions for query "latest"
+                go: github.com/example/app/internal/pluginrunner imports
+                \tgithub.com/example/app/gen/plugin/v1: no matching versions for query "latest"
+              ERROR
+            end
+
+            before do
+              allow(Open3).to receive(:capture3).and_wrap_original do |original, *args|
+                if args == ["go mod tidy"]
+                  ["", tidy_stderr, instance_double(Process::Status, success?: false)]
+                else
+                  original.call(*args)
+                end
+              end
+            end
+
+            it "raises DependencyFileNotResolvable naming every package and the import chain" do
+              expect { updated_go_mod_content }
+                .to raise_error(Dependabot::DependencyFileNotResolvable) { |error|
+                  expect(error.message).to include(
+                    "github.com/example/app/gen/app/v1",
+                    "github.com/example/app/gen/plugin/v1",
+                    "generated",
+                    "go: github.com/example/app/cmd/app imports"
+                  )
+                }
+            end
+
+            it "leaves out the progress lines" do
+              expect { updated_go_mod_content }
+                .to raise_error(Dependabot::DependencyFileNotResolvable) { |error|
+                  expect(error.message).not_to include("go: downloading")
+                }
+            end
+
+            context "when the package is imported by a test" do
+              let(:tidy_stderr) do
+                <<~ERROR
+                  go: finding module for package github.com/example/app/util/mocks
+                  go: github.com/example/app/grpc tested by
+                  \tgithub.com/example/app/grpc.test imports
+                  \tgithub.com/example/app/util/mocks: no matching versions for query "latest"
+                ERROR
+              end
+
+              it "raises DependencyFileNotResolvable" do
+                expect { updated_go_mod_content }
+                  .to raise_error(Dependabot::DependencyFileNotResolvable, %r{github.com/example/app/util/mocks})
+              end
+            end
+
+            context "when another error is reported with it" do
+              let(:tidy_stderr) do
+                <<~ERROR
+                  go: github.com/example/app/cmd/app imports
+                  \tgithub.com/example/app/gen/app/v1: no matching versions for query "latest"
+                  go: github.com/private/dep@v1.0.0: reading github.com/private/dep/go.mod at revision v1.0.0: unknown revision v1.0.0
+                ERROR
+              end
+
+              # The handler for the other error passes Go's output on as it is, so the message is exactly that output
+              # and not the summary of the missing-package error, which would be first if its check ran earlier.
+              it "keeps the classification of the other error" do
+                expect { updated_go_mod_content }
+                  .to raise_error(Dependabot::DependencyFileNotResolvable) { |error|
+                    expect(error.message).to eq(tidy_stderr.strip)
+                    expect(error.message).not_to include("Go cannot find a module")
+                  }
+              end
+            end
+          end
+
           describe "a non-existent dependency with a pseudo-version" do
             let(:project_name) { "non_existent_dependency" }
 
@@ -406,6 +538,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       let(:requirements) { [] }
       let(:previous_requirements) { [] }
       let(:exit_status) { double(status: 128, success?: false) }
+      let(:go_get_command) { "go get github.com/spf13/viper@v1.7.1" }
       let(:stderr) do
         <<~ERROR
           go: github.com/spf13/viper@v1.7.1 requires
@@ -415,19 +548,81 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         ERROR
       end
 
-      before do
-        allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with("go get github.com/spf13/viper@v1.7.1").and_return(
-          ["", stderr,
-           exit_status]
-        )
-      end
+      include_context "with go get command failure stubbed"
 
       it {
         expect do
           updated_go_mod_content
         end.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/)
       }
+    end
+
+    shared_examples "path dependency replacement go.mod missing" do |version:, dependency_path:|
+      let(:dependency_name) { "github.com/example/repo" }
+      let(:dependency_version) { version }
+      let(:dependency_previous_version) { version }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:exit_status) { double(status: 1, success?: false) }
+      let(:go_get_command) { "go get github.com/example/repo@#{version}" }
+      let(:stderr) do
+        <<~ERROR
+          go: github.com/example/repo@#{version} (replaced by #{dependency_path}): reading #{dependency_path}/go.mod: open /local-repo/go.mod: no such file or directory
+        ERROR
+      end
+
+      include_context "with go get command failure stubbed"
+
+      it "raises a PathDependenciesNotReachable error" do
+        matcher = raise_error(Dependabot::PathDependenciesNotReachable) do |error|
+          expect(error.dependencies).to eq([dependency_path])
+        end
+
+        expect do
+          updated_go_mod_content
+        end.to matcher
+      end
+    end
+
+    context "when go get fails due to a missing local replacement go.mod" do
+      it_behaves_like "path dependency replacement go.mod missing",
+                      version: "v1.2.3",
+                      dependency_path: "./local-repo"
+    end
+
+    context "when go get fails due to a missing parent-directory replacement go.mod" do
+      it_behaves_like "path dependency replacement go.mod missing",
+                      version: "v1.2.4",
+                      dependency_path: "../local-repo"
+    end
+
+    context "when go get fails with an insecure protocol repository error" do
+      let(:dependency_name) { "gerrit.mmt.com/Platform-Comm-Identifier-Go.git" }
+      let(:dependency_version) { "v0.0.0-20220124100240-6f5253e97566" }
+      let(:dependency_previous_version) { "v0.0.0-20220124100240-6f5253e97566" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:exit_status) { double(status: 1, success?: false) }
+      let(:go_get_command) do
+        "go get gerrit.mmt.com/Platform-Comm-Identifier-Go.git@v0.0.0-20220124100240-6f5253e97566"
+      end
+      let(:stderr) do
+        <<~ERROR
+          go: gerrit.mmt.com/Platform-Comm-Identifier-Go.git@v0.0.0-20220124100240-6f5253e97566: no secure protocol found for repository
+        ERROR
+      end
+
+      include_context "with go get command failure stubbed"
+
+      it "raises a GitDependenciesNotReachable error" do
+        matcher = raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls).to eq(["gerrit.mmt.com/Platform-Comm-Identifier-Go.git"])
+        end
+
+        expect do
+          updated_go_mod_content
+        end.to matcher
+      end
     end
 
     context "when dealing with an explicit indirect dependency" do

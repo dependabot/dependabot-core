@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -82,6 +82,28 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
     end
   end
 
+  describe "#subproject_path_to_name_map" do
+    subject(:subproject_path_to_name_map) { finder.subproject_path_to_name_map }
+
+    context "with simple subproject declarations" do
+      let(:fixture_name) { "simple_settings.gradle" }
+
+      it "maps filesystem paths to Gradle project names" do
+        expect(subproject_path_to_name_map).to eq("app" => ":app")
+      end
+    end
+
+    context "with custom projectDir mappings" do
+      let(:fixture_name) { "custom_dir_settings.gradle" }
+
+      it "maps the custom filesystem paths to the declared Gradle project names" do
+        expect(subproject_path_to_name_map).to include(
+          "subprojects/chrome-trace" => ":chrome-trace"
+        )
+      end
+    end
+  end
+
   describe "#included_build_paths" do
     subject(:included_build_paths) { finder.included_build_paths }
 
@@ -137,6 +159,76 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
 
       it "includes the additional declarations" do
         expect(included_build_paths).to match_array(%w(./settings-plugins ./project-plugins))
+      end
+    end
+  end
+
+  describe "#version_catalog_paths" do
+    subject(:version_catalog_paths) { finder.version_catalog_paths }
+
+    context "when multiple version catalogs are defined in kotlin" do
+      let(:settings_file_name) { "settings.gradle.kts" }
+      let(:fixture_name) { "multi_catalog_settings.gradle.kts" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when multiple version catalogs are defined in groovy" do
+      let(:settings_file_name) { "settings.gradle" }
+      let(:fixture_name) { "multi_catalog_settings.gradle" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when multiple version catalogs are defined in idiomatic groovy" do
+      let(:settings_file_name) { "settings.gradle" }
+      let(:fixture_name) { "idiomatic_groovy_settings.gradle" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when files are also used outside of the version catalogs" do
+      let(:settings_file_name) { "settings.gradle.kts" }
+      let(:fixture_name) { "multi_catalog_with_copy_settings.gradle.kts" }
+
+      it "includes only the version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when multiple version catalogs are defined with dotted notation" do
+      let(:settings_file_name) { "settings.gradle.kts" }
+      let(:fixture_name) { "dotted_catalog_settings.gradle.kts" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when multiple version catalogs are defined relative to the root directory" do
+      let(:settings_file_name) { "settings.gradle" }
+      let(:fixture_name) { "root_dir_catalog_settings.gradle" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
       end
     end
   end

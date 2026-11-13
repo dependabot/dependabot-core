@@ -1,10 +1,19 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "rspec/its"
+require "rspec/sorbet"
 require "webmock/rspec"
 require "webmock/http_lib_adapters/excon_adapter"
 require "debug"
+
+# Bundler 4's stricter $LOAD_PATH handling breaks RSpec's lazy autoload of
+# built-in matchers (e.g. `satisfy`, `raise_error`, `contain_exactly`, `has`).
+# Eagerly load all of them so tests don't hit LoadError mid-run.
+Gem.loaded_specs["rspec-expectations"]&.then do |spec|
+  Dir[File.join(spec.full_gem_path, "lib/rspec/matchers/built_in/*.rb")].each { |f| require f }
+end
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))
@@ -14,10 +23,13 @@ $LOAD_PATH.unshift(File.expand_path("../../spec_helpers", __dir__))
 require "definition_ruby_version_patch"
 require "definition_bundler_version_patch"
 require "git_source_patch"
+require "endpoint_specification_metadata_patch"
 
 require "functions"
 
 require "gem_net_http_adapter"
+
+extend T::Sig # rubocop:disable Style/MixinUsage
 
 RSpec.configure do |config|
   config.color = true
@@ -26,6 +38,9 @@ RSpec.configure do |config|
   config.raise_errors_for_deprecations!
 end
 
+RSpec::Sorbet.allow_doubles!
+
+sig { params(project: String).returns(T::Array[T::Hash[Symbol, String]]) }
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler2", project))
 
@@ -45,6 +60,7 @@ def project_dependency_files(project)
   end
 end
 
+sig { params(name: String).returns(String) }
 def fixture(*name)
-  File.read(File.join("../../spec/fixtures", File.join(*name)))
+  File.read(File.join("../../spec/fixtures", File.join(name)))
 end

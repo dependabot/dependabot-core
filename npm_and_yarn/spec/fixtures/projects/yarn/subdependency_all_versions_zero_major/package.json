@@ -1,0 +1,9 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": {
+    "mid": "1.0.0",
+    "old": "1.0.0",
+    "other": "1.0.0"
+  }
+}

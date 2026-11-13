@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Maven::FileParser do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: { packaging_type: "jar" }
+              metadata: { packaging_type: "jar", transitive_override: true }
             }]
           )
         end
@@ -1197,15 +1197,15 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
           .and_return(dependency_set)
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:maven_transitive_dependencies).and_return(true)
       end
 
-      it "merges direct and transitive dependencies" do
+      it "merges direct and transitive dependencies without the project itself" do
         expect(dependencies.map(&:name))
           .to match_array(
             %w(
-              com.dependabot:basic-pom
               com.google.guava:guava
               org.apache.httpcomponents:httpclient
               io.mockk:mockk
@@ -1215,49 +1215,343 @@ RSpec.describe Dependabot::Maven::FileParser do
           )
       end
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies[0] }
+      it "keeps the declared requirement and adds the scanned metadata" do
+        dependency = dependencies.find { |dep| dep.name == "com.google.guava:guava" }
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.dependabot:basic-pom")
-          expect(dependency.version).to eq("0.0.1-RELEASE")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "0.0.1-RELEASE",
-              file: nil,
-              groups: [],
-              source: nil,
-              metadata: {
-                packaging_type: "jar",
-                classifier: "",
-                pom_file: "pom.xml"
-              }
-            }]
-          )
+        expect(dependency.version).to eq("23.3-jre")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "23.3-jre",
+            file: "pom.xml",
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+      end
+
+      it "keeps today's requirement shape for transitive dependencies" do
+        dependency = dependencies.find { |dep| dep.name == "org.apache.httpcomponents:httpcore" }
+
+        expect(dependency.version).to eq("4.4.6")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "4.4.6",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+      end
+
+      context "when the transitive experiment is off" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(false)
+        end
+
+        it "does not scan and returns only the declared dependencies" do
+          expect(dependencies.map(&:name)).not_to include("org.apache.httpcomponents:httpcore")
+          expect(dependencies.flat_map(&:requirements).map { |req| req[:file] }).to all(be_a(String))
+          expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
         end
       end
 
-      describe "the second dependency" do
-        subject(:dependency) { dependencies[1] }
+      context "when the parser is asked to skip the dependency tree" do
+        let(:parser) do
+          described_class.new(dependency_files: files, source: source, options: { skip_dependency_tree: true })
+        end
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.google.guava:guava")
-          expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "23.3-jre",
-              file: "pom.xml",
-              groups: [],
-              source: nil,
-              metadata: {
-                packaging_type: "jar",
-                classifier: "",
-                pom_file: "pom.xml"
-              }
-            }]
+        it "does not scan and matches the flag-off result" do
+          flag_off = described_class.new(dependency_files: files, source: source)
+                                    .send(:parse_standard_dependencies)
+
+          expect(dependencies).to eq(flag_off)
+          expect(Dependabot::Maven::FileParser::MavenDependencyParser).not_to have_received(:build_dependency_set)
+        end
+      end
+    end
+
+    context "with the transitive experiment on" do
+      let(:flag_off_dependencies) do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(false)
+        described_class.new(dependency_files: files, source: source).parse
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(true)
+      end
+
+      context "when the scan fails" do
+        let(:files) { [pom, targetfile] }
+        let(:targetfile) do
+          Dependabot::DependencyFile.new(
+            name: "releng/myproject.target", content: fixture("target-files", "example.target")
           )
+        end
+
+        before do
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
+          )
+        end
+
+        it "returns the flag-off result" do
+          expect(dependencies).to eq(flag_off_dependencies)
+          expect(dependencies.map(&:name)).to include("commons-io:commons-io")
+        end
+      end
+
+      context "with a .target file" do
+        let(:files) { [pom, targetfile] }
+        let(:targetfile) do
+          Dependabot::DependencyFile.new(
+            name: "releng/myproject.target", content: fixture("target-files", "example.target")
+          )
+        end
+
+        before do
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+            .and_return(Dependabot::FileParsers::Base::DependencySet.new)
+        end
+
+        it "keeps the .target dependencies" do
+          dependency = dependencies.find { |dep| dep.name == "commons-io:commons-io" }
+
+          expect(dependency.requirements.map(&:file)).to eq(["releng/myproject.target"])
+        end
+      end
+
+      context "with a declared dependency whose version comes from a remote parent" do
+        let(:pom_body) do
+          <<~XML
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>3.1.0</version>
+                <relativePath/>
+              </parent>
+              <groupId>com.example</groupId>
+              <artifactId>boot-app</artifactId>
+              <version>1.0.0</version>
+              <dependencies>
+                <dependency>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-web</artifactId>
+                </dependency>
+              </dependencies>
+            </project>
+          XML
+        end
+
+        before do
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin) do |output_file, **|
+            File.write(
+              output_file,
+              {
+                groupId: "com.example", artifactId: "boot-app", version: "1.0.0", type: "jar", scope: "",
+                children: [{
+                  groupId: "org.springframework.boot", artifactId: "spring-boot-starter-web", version: "3.1.0",
+                  type: "jar", scope: "compile",
+                  children: [{
+                    groupId: "org.springframework", artifactId: "spring-web", version: "6.0.9",
+                    type: "jar", scope: "compile"
+                  }]
+                }]
+              }.to_json
+            )
+          end
+        end
+
+        it "uses the resolved version and keeps the nil requirement" do
+          dependency = dependencies.find { |dep| dep.name == "org.springframework.boot:spring-boot-starter-web" }
+
+          expect(dependency.version).to eq("3.1.0")
+          expect(dependency.requirements.map { |req| [req[:requirement], req[:file]] }).to eq([[nil, "pom.xml"]])
+          expect(dependency.requirements.first[:metadata]).to include(scope: "compile", pom_file: "pom.xml")
+        end
+
+        it "records what pulled a transitive dependency in" do
+          dependency = dependencies.find { |dep| dep.name == "org.springframework:spring-web" }
+
+          expect(dependency.requirements.first[:metadata][:pulled_in_by])
+            .to eq("org.springframework.boot:spring-boot-starter-web")
+        end
+      end
+
+      context "with a multi-module project" do
+        let(:files) { [root_pom, api_pom, model_pom] }
+        let(:root_pom) do
+          Dependabot::DependencyFile.new(name: "pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>root</artifactId>
+              <version>1.0</version>
+              <packaging>pom</packaging>
+              <modules><module>api</module><module>model</module></modules>
+            </project>
+          XML
+        end
+        let(:api_pom) do
+          Dependabot::DependencyFile.new(name: "api/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent><groupId>com.example</groupId><artifactId>root</artifactId><version>1.0</version></parent>
+              <artifactId>api</artifactId>
+              <dependencies>
+                <dependency><groupId>com.example</groupId><artifactId>model</artifactId><version>1.0</version></dependency>
+                <dependency>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-tomcat</artifactId>
+                  <version>1.2.6.RELEASE</version>
+                </dependency>
+              </dependencies>
+            </project>
+          XML
+        end
+        let(:model_pom) do
+          Dependabot::DependencyFile.new(name: "model/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent><groupId>com.example</groupId><artifactId>root</artifactId><version>1.0</version></parent>
+              <artifactId>model</artifactId>
+              <dependencies>
+                <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>23.0</version></dependency>
+              </dependencies>
+            </project>
+          XML
+        end
+
+        def node(name, version, children = [])
+          group_id, artifact_id = name.split(":")
+          { groupId: group_id, artifactId: artifact_id, version: version, type: "jar", scope: "compile",
+            children: children }
+        end
+
+        before do
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin) do |output_file, **|
+            guava = node("com.google.guava:guava", "23.0")
+            tomcat_core = node("org.apache.tomcat.embed:tomcat-embed-core", "8.0.26")
+            tomcat = node("org.springframework.boot:spring-boot-starter-tomcat", "1.2.6.RELEASE", [tomcat_core])
+            model = node("com.example:model", "1.0", [guava])
+
+            File.write(output_file, node("com.example:root", "1.0").to_json)
+            File.write(File.join("model", output_file), model.to_json)
+            File.write(File.join("api", output_file), node("com.example:api", "1.0", [model, tomcat]).to_json)
+          end
+        end
+
+        it "finds transitive dependencies for each module without the modules themselves" do
+          expect(dependencies.map(&:name)).to contain_exactly(
+            "com.google.guava:guava",
+            "org.springframework.boot:spring-boot-starter-tomcat",
+            "org.apache.tomcat.embed:tomcat-embed-core"
+          )
+
+          tomcat = dependencies.find { |dep| dep.name == "org.apache.tomcat.embed:tomcat-embed-core" }
+          expect(tomcat.requirements.map { |req| req[:metadata].slice(:pom_file, :pulled_in_by) }).to eq(
+            [{ pom_file: "api/pom.xml", pulled_in_by: "org.springframework.boot:spring-boot-starter-tomcat" }]
+          )
+
+          guava = dependencies.find { |dep| dep.name == "com.google.guava:guava" }
+          expect(guava.requirements.map { |req| [req[:file], req[:metadata][:pom_file]] }).to eq(
+            [["model/pom.xml", "model/pom.xml"], [nil, "api/pom.xml"]]
+          )
+          expect(guava.requirements.last[:metadata][:pulled_in_by]).to eq("com.example:model")
+        end
+      end
+    end
+
+    context "with maven wrapper files" do
+      let(:wrapper_content) { fixture("wrapper_files", "maven-wrapper-3.9.9-only-script.properties") }
+      let(:wrapper_file) do
+        Dependabot::DependencyFile.new(
+          name: ".mvn/wrapper/maven-wrapper.properties",
+          content: wrapper_content
+        )
+      end
+      let(:files) { [pom, wrapper_file] }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_wrapper_updater).and_return(true)
+      end
+
+      it "includes apache-maven as a dependency" do
+        expect(dependencies.map(&:name)).to include("org.apache.maven:apache-maven")
+      end
+
+      it "includes maven-wrapper as a dependency" do
+        expect(dependencies.map(&:name)).to include("org.apache.maven.wrapper:maven-wrapper")
+      end
+
+      it "sets the correct version for apache-maven" do
+        dep = dependencies.find { |d| d.name == "org.apache.maven:apache-maven" }
+        expect(dep.version).to eq("3.9.9")
+      end
+
+      it "sets the correct version for maven-wrapper" do
+        dep = dependencies.find { |d| d.name == "org.apache.maven.wrapper:maven-wrapper" }
+        expect(dep.version).to eq("3.3.4")
+      end
+
+      it "uses maven-distribution as the source type" do
+        dep = dependencies.find { |d| d.name == "org.apache.maven:apache-maven" }
+        expect(dep.requirements.first[:source][:type]).to eq("maven-distribution")
+      end
+
+      context "when transitive dependency parsing is enabled" do
+        let(:wrapper_content) { fixture("wrapper_files", "maven-wrapper-3.9.6-bin.properties") }
+
+        before do
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+            .and_return(Dependabot::FileParsers::Base::DependencySet.new)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(true)
+        end
+
+        it "includes the wrapper dependencies" do
+          expect(dependencies.map(&:name)).to include(
+            "org.apache.maven:apache-maven",
+            "org.apache.maven.wrapper:maven-wrapper"
+          )
+        end
+
+        it "preserves every wrapper requirement" do
+          dependency = dependencies.find { |dep| dep.name == "org.apache.maven:apache-maven" }
+          properties = dependency.requirements.map { |requirement| requirement.dig(:source, :property) }
+
+          expect(properties).to contain_exactly("distributionUrl", "wrapperUrl")
+        end
+      end
+
+      context "when the maven_wrapper_updater experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_wrapper_updater).and_return(false)
+        end
+
+        it "does not include apache-maven as a dependency" do
+          expect(dependencies.map(&:name)).not_to include("org.apache.maven:apache-maven")
+        end
+
+        it "does not include maven-wrapper as a dependency" do
+          expect(dependencies.map(&:name)).not_to include("org.apache.maven.wrapper:maven-wrapper")
         end
       end
     end
@@ -1287,6 +1581,442 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(language.requirement).to be_nil
           expect(language.version.to_s).to eq "NOT-AVAILABLE"
         end
+      end
+    end
+  end
+
+  describe "transitive overrides" do
+    subject(:dependencies) { parser.parse }
+
+    def override_flags(dependency)
+      dependency.requirements.to_h { |req| [req.file, req.metadata_boolean("transitive_override")] }
+    end
+
+    def dependency_named(name)
+      dependencies.find { |dep| dep.name == name }
+    end
+
+    context "with a multi-module project" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture(
+              "poms",
+              "transitive_override_parent_pom.xml"
+            )
+          ),
+          Dependabot::DependencyFile.new(
+            name: "module-a/pom.xml", content: fixture("poms", "transitive_override_module_a_pom.xml")
+          ),
+          Dependabot::DependencyFile.new(
+            name: "module-b/pom.xml", content: fixture("poms", "transitive_override_module_b_pom.xml")
+          )
+        ]
+      end
+
+      it "tags a managed entry that no module declares" do
+        expect(override_flags(dependency_named("com.fasterxml.jackson.core:jackson-databind")))
+          .to eq("pom.xml" => true)
+      end
+
+      it "doesn't tag a managed entry a child module declares" do
+        expect(override_flags(dependency_named("com.google.guava:guava")))
+          .to eq("pom.xml" => nil, "module-a/pom.xml" => nil)
+      end
+
+      it "tags only the override when a sibling module declares the artifact" do
+        expect(override_flags(dependency_named("commons-io:commons-io")))
+          .to eq("module-a/pom.xml" => nil, "module-b/pom.xml" => true)
+      end
+    end
+
+    context "with a single POM" do
+      let(:pom_body) { fixture("poms", "transitive_override_single_pom.xml") }
+
+      it "never tags a BOM import" do
+        expect(override_flags(dependency_named("org.springframework.boot:spring-boot-dependencies")))
+          .to eq("pom.xml" => nil)
+      end
+
+      it "tags undeclared entries, including ones in a profile" do
+        expect(override_flags(dependency_named("org.yaml:snakeyaml"))).to eq("pom.xml" => true)
+        expect(override_flags(dependency_named("ch.qos.logback:logback-core"))).to eq("pom.xml" => true)
+      end
+
+      it "doesn't tag a managed entry the POM declares" do
+        expect(override_flags(dependency_named("com.google.guava:guava"))).to eq("pom.xml" => nil)
+      end
+
+      it "ignores plugin dependencies when deciding" do
+        flags = dependency_named("org.ow2.asm:asm").requirements.map do |req|
+          req.metadata_boolean("transitive_override")
+        end
+        expect(flags).to contain_exactly(true, nil)
+      end
+    end
+
+    context "when a parent declares the artifact a child manages" do
+      let(:files) do
+        parent = fixture("poms", "transitive_override_parent_pom.xml")
+                 .sub("<dependencyManagement>", <<~XML.chomp)
+                   <dependencies>
+                       <dependency>
+                         <groupId>commons-io</groupId>
+                         <artifactId>commons-io</artifactId>
+                         <version>2.11.0</version>
+                       </dependency>
+                     </dependencies>
+
+                     <dependencyManagement>
+                 XML
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: parent),
+          Dependabot::DependencyFile.new(
+            name: "module-b/pom.xml", content: fixture("poms", "transitive_override_module_b_pom.xml")
+          )
+        ]
+      end
+
+      it "doesn't tag the child's entry, since the declaration is inherited" do
+        expect(override_flags(dependency_named("commons-io:commons-io")))
+          .to eq("pom.xml" => nil, "module-b/pom.xml" => nil)
+      end
+    end
+
+    context "with a local BOM module" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: <<~XML),
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>root</artifactId>
+              <version>1.0.0</version>
+              <packaging>pom</packaging>
+              <modules>
+                <module>bom</module>
+                <module>unused-bom</module>
+                <module>app</module>
+              </modules>
+            </project>
+          XML
+          Dependabot::DependencyFile.new(name: "bom/pom.xml", content: local_bom("bom")),
+          Dependabot::DependencyFile.new(name: "unused-bom/pom.xml", content: local_bom("unused-bom")),
+          Dependabot::DependencyFile.new(name: "app/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>app</artifactId>
+              <version>1.0.0</version>
+              <properties>
+                <bom.org>com</bom.org>
+                <bom.name>example</bom.name>
+              </properties>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <groupId>${bom.org}.${bom.name}</groupId>
+                    <artifactId>bom</artifactId>
+                    <version>1.0.0</version>
+                    <type>pom</type>
+                    <scope>import</scope>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>com.google.guava</groupId>
+                  <artifactId>guava</artifactId>
+                </dependency>
+              </dependencies>
+            </project>
+          XML
+        ]
+      end
+
+      def local_bom(artifact_id)
+        <<~XML
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <properties>
+              <bom.group>com.example</bom.group>
+            </properties>
+            <groupId>${bom.group}</groupId>
+            <artifactId>#{artifact_id}</artifactId>
+            <version>1.0.0</version>
+            <packaging>pom</packaging>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>com.google.guava</groupId>
+                  <artifactId>guava</artifactId>
+                  <version>23.0</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+          </project>
+        XML
+      end
+
+      it "doesn't tag the BOM entry an importing module declares" do
+        expect(override_flags(dependency_named("com.google.guava:guava")))
+          .to include("bom/pom.xml" => nil, "app/pom.xml" => nil)
+      end
+
+      it "tags the same entry in a BOM nobody imports" do
+        expect(override_flags(dependency_named("com.google.guava:guava")))
+          .to include("unused-bom/pom.xml" => true)
+      end
+    end
+
+    context "when a module imports a local BOM that inherits the managed entry" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: <<~XML),
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>platform</artifactId>
+              <version>1.0.0</version>
+              <packaging>pom</packaging>
+              <modules>
+                <module>bom</module>
+                <module>app</module>
+              </modules>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                    <version>23.0</version>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+            </project>
+          XML
+          Dependabot::DependencyFile.new(name: "bom/pom.xml", content: <<~XML),
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent>
+                <groupId>com.example</groupId>
+                <artifactId>platform</artifactId>
+                <version>1.0.0</version>
+              </parent>
+              <artifactId>bom</artifactId>
+              <packaging>pom</packaging>
+            </project>
+          XML
+          Dependabot::DependencyFile.new(name: "app/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>app</artifactId>
+              <version>1.0.0</version>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <groupId>com.example</groupId>
+                    <artifactId>bom</artifactId>
+                    <version>1.0.0</version>
+                    <type>pom</type>
+                    <scope>import</scope>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>com.google.guava</groupId>
+                  <artifactId>guava</artifactId>
+                </dependency>
+              </dependencies>
+            </project>
+          XML
+        ]
+      end
+
+      it "doesn't tag the inherited entry" do
+        expect(override_flags(dependency_named("com.google.guava:guava")))
+          .to eq("pom.xml" => nil, "app/pom.xml" => nil)
+      end
+    end
+
+    context "when an annotation processor path takes its version from dependencyManagement" do
+      let(:pom_body) do
+        <<~XML
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.example</groupId>
+            <artifactId>app</artifactId>
+            <version>1.0.0</version>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.mapstruct</groupId>
+                  <artifactId>mapstruct-processor</artifactId>
+                  <version>1.5.5.Final</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-compiler-plugin</artifactId>
+                  <version>3.13.0</version>
+                  <configuration>
+                    <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
+                    <annotationProcessorPaths>
+                      <path>
+                        <groupId>org.mapstruct</groupId>
+                        <artifactId>mapstruct-processor</artifactId>
+                      </path>
+                    </annotationProcessorPaths>
+                  </configuration>
+                </plugin>
+              </plugins>
+            </build>
+          </project>
+        XML
+      end
+
+      it "doesn't tag the managed entry" do
+        flags = dependency_named("org.mapstruct:mapstruct-processor").requirements.map do |req|
+          req.metadata_boolean("transitive_override")
+        end
+        expect(flags).not_to include(true)
+      end
+    end
+
+    context "when a child module's plugin artifact item takes its version from the parent's dependencyManagement" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: <<~XML),
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>parent</artifactId>
+              <version>1.0.0</version>
+              <packaging>pom</packaging>
+              <modules>
+                <module>app</module>
+              </modules>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>org.jacoco.agent</artifactId>
+                    <version>0.8.11</version>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+            </project>
+          XML
+          Dependabot::DependencyFile.new(name: "app/pom.xml", content: <<~XML)
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <parent>
+                <groupId>com.example</groupId>
+                <artifactId>parent</artifactId>
+                <version>1.0.0</version>
+              </parent>
+              <artifactId>app</artifactId>
+              <build>
+                <plugins>
+                  <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.6.1</version>
+                    <executions>
+                      <execution>
+                        <goals><goal>copy</goal></goals>
+                        <configuration>
+                          <artifactItems>
+                            <artifactItem>
+                              <groupId>org.jacoco</groupId>
+                              <artifactId>org.jacoco.agent</artifactId>
+                            </artifactItem>
+                          </artifactItems>
+                        </configuration>
+                      </execution>
+                    </executions>
+                  </plugin>
+                </plugins>
+              </build>
+            </project>
+          XML
+        ]
+      end
+
+      it "doesn't tag the parent's managed entry" do
+        expect(override_flags(dependency_named("org.jacoco:org.jacoco.agent"))).to include("pom.xml" => nil)
+      end
+    end
+
+    context "when a declaration's type or classifier differs from a managed entry" do
+      let(:pom_body) do
+        <<~XML
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.example</groupId>
+            <artifactId>app</artifactId>
+            <version>1.0.0</version>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>com.example</groupId>
+                  <artifactId>lib</artifactId>
+                  <version>1.0.0</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.example</groupId>
+                  <artifactId>lib</artifactId>
+                  <version>1.0.0</version>
+                  <type>test-jar</type>
+                </dependency>
+                <dependency>
+                  <groupId>com.example</groupId>
+                  <artifactId>lib</artifactId>
+                  <version>1.0.0</version>
+                  <classifier>linux</classifier>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+            <dependencies>
+              <dependency>
+                <groupId>com.example</groupId>
+                <artifactId>lib</artifactId>
+                <type>test-jar</type>
+                <scope>test</scope>
+              </dependency>
+            </dependencies>
+          </project>
+        XML
+      end
+
+      it "tags only the entries the declaration doesn't use" do
+        flags = dependency_named("com.example:lib").requirements.filter_map do |req|
+          next unless req.requirement
+
+          [req.metadata_string("packaging_type"), req.metadata_string("classifier"),
+           req.metadata_boolean("transitive_override")]
+        end
+        expect(flags).to contain_exactly(["jar", nil, true], ["test-jar", nil, nil], ["jar", "linux", true])
+      end
+    end
+
+    context "with the experiment off" do
+      let(:pom_body) { fixture("poms", "transitive_override_single_pom.xml") }
+
+      before { Dependabot::Experiments.register(:maven_transitive_dependencies, false) }
+
+      it "tags nothing" do
+        flags = dependencies.flat_map do |dep|
+          dep.requirements.map do |req|
+            req.metadata_boolean("transitive_override")
+          end
+        end
+        expect(flags.compact).to be_empty
       end
     end
   end

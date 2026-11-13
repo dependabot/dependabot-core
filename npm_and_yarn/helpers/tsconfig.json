@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "declaration": true,
+    "sourceMap": true,
+    "skipLibCheck": true
+  },
+  "include": ["lib/**/*.ts", "run.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

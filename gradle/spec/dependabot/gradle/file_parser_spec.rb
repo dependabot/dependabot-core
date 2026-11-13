@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve generated examples and dynamically referenced constants. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -26,6 +27,53 @@ RSpec.describe Dependabot::Gradle::FileParser do
   let(:files) { [buildfile] }
 
   it_behaves_like "a dependency file parser"
+
+  describe ".mask_literals_and_comments" do
+    it "blanks string contents while preserving length and newlines" do
+      content = %(a("keep { brace")\nb)
+      masked = described_class.mask_literals_and_comments(content, kotlin: false)
+      expect(masked.length).to eq(content.length)
+      expect(masked).to start_with("a(")
+      expect(masked).to end_with(")\nb")
+      expect(masked).not_to include("{")
+    end
+
+    context "with a Groovy build file (kotlin: false)" do
+      it "closes a block comment at the first terminator (comments do not nest)" do
+        content = "/* open /* inner */ real {"
+        masked = described_class.mask_literals_and_comments(content, kotlin: false)
+        # Groovy closes the comment at the first `*/`, so the brace after it is
+        # real code and stays unmasked.
+        expect(masked).to include("real {")
+      end
+
+      it "masks the contents of a slashy string" do
+        content = "a = /see { ticket/\nb"
+        masked = described_class.mask_literals_and_comments(content, kotlin: false)
+        expect(masked.length).to eq(content.length)
+        expect(masked).to start_with("a = ")
+        expect(masked).to end_with("\nb")
+        expect(masked).not_to include("{")
+      end
+    end
+
+    context "with a Kotlin build file (kotlin: true)" do
+      it "allows block comments to nest" do
+        content = "/* open /* inner */ still */ real {"
+        masked = described_class.mask_literals_and_comments(content, kotlin: true)
+        # Kotlin nests, so the comment only ends at the second `*/`; the brace
+        # after it is real code and stays unmasked.
+        expect(masked).to include("real {")
+      end
+
+      it "does not treat a slash after a newline as a slashy string" do
+        content = "val x = a\n/ b\nfoo { }"
+        masked = described_class.mask_literals_and_comments(content, kotlin: true)
+        # `/` is division, not a string, so the later brace is untouched.
+        expect(masked).to include("foo { }")
+      end
+    end
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -206,10 +254,76 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(34) }
     end
 
+    context "with a dependencySubstitution block" do
+      let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
+
+      # Only the real dependencies are parsed; the substitution rules are ignored
+      its(:length) { is_expected.to eq(4) }
+
+      it "parses the real dependencies and ignores the substitution targets" do
+        expect(dependencies.map(&:name))
+          .to contain_exactly(
+            "io.airlift:aircompressor",
+            "org.apache.commons:commons-lang3",
+            "com.google.guava:guava",
+            "org.example:custom-lib"
+          )
+      end
+
+      it "does not treat a closure whose name ends with dependencySubstitution as a substitution block" do
+        dependency = dependencies.find { |d| d.name == "org.example:custom-lib" }
+        expect(dependency.version).to eq("1.0.0")
+      end
+
+      it "does not pick up the substituted version for aircompressor" do
+        dependency = dependencies.find { |d| d.name == "io.airlift:aircompressor" }
+        expect(dependency.version).to eq("2.0.2")
+      end
+
+      it "does not pick up the multiline substituted version for guava" do
+        dependency = dependencies.find { |d| d.name == "com.google.guava:guava" }
+        expect(dependency.version).to eq("30.0-jre")
+      end
+    end
+
     context "when the build file is specified in a dependencySet" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
 
-      its(:length) { is_expected.to eq(21) }
+      its(:length) { is_expected.to eq(25) }
+
+      it "includes entries written with and without parentheses" do
+        expect(dependencies.map(&:name)).to include(
+          "com.google.protobuf:protoc",
+          "org.slf4j:slf4j-api",
+          "org.slf4j:slf4j-simple",
+          "org.slf4j:jul-to-slf4j",
+          "org.slf4j:log4j-over-slf4j"
+        )
+      end
+
+      describe "a dependencySet dependency declared with coordinates" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "org.slf4j:slf4j-simple" }
+        end
+
+        it "has the right details" do
+          expect(dependency.version).to eq("1.7.25")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.7.25",
+              file: "build.gradle",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: {
+                  group: "org.slf4j",
+                  version: "1.7.25"
+                }
+              }
+            }]
+          )
+        end
+      end
 
       describe "a dependencySet dependency" do
         subject(:dependency) do
@@ -676,6 +790,101 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
+      context "when the build file uses the Kotlin DSL dependencySet syntax" do
+        let(:buildfile_fixture_name) { "dependency_set.gradle.kts" }
+
+        its(:length) { is_expected.to eq(26) }
+
+        it "includes every dependencySet entry" do
+          expect(dependencies.map(&:name)).to include(
+            "com.google.protobuf:protoc",
+            "com.google.protobuf:protobuf-java",
+            "com.google.protobuf:protobuf-java-util",
+            "io.grpc:grpc-netty",
+            "io.grpc:grpc-core",
+            "io.grpc:grpc-services",
+            "io.grpc:grpc-protobuf",
+            "io.grpc:grpc-stub",
+            "io.grpc:protoc-gen-grpc-java"
+          )
+        end
+
+        describe "a dependencySet dependency" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "com.google.protobuf:protoc" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.version).to eq("3.6.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "3.6.1",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
+                metadata: {
+                  dependency_set: {
+                    group: "com.google.protobuf",
+                    version: "3.6.1"
+                  }
+                }
+              }]
+            )
+          end
+        end
+
+        describe "a dependency whose version is a val" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "org.slf4j:slf4j-api" }
+          end
+
+          it "has the right details" do
+            expect(dependency.version).to eq("1.7.25")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.7.25",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "slf4jVersion",
+                  dependency_set: {
+                    group: "org.slf4j",
+                    version: "$slf4jVersion"
+                  }
+                }
+              }]
+            )
+          end
+        end
+
+        describe "a dependency whose version is an extra property" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "io.netty:netty-handler" }
+          end
+
+          it "has the right details" do
+            expect(dependency.version).to eq("4.1.30.Final")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "4.1.30.Final",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "nettyVersion",
+                  dependency_set: {
+                    group: "io.netty",
+                    version: "${nettyVersion}"
+                  }
+                }
+              }]
+            )
+          end
+        end
+      end
+
       context "when there are various different specifications in a build file" do
         let(:buildfile_fixture_name) { "duck_duck_go_build.gradle.kts" }
 
@@ -830,14 +1039,6 @@ RSpec.describe Dependabot::Gradle::FileParser do
                 )
               )
             ]
-          end
-
-          before do
-            Dependabot::Experiments.register(:gradle_wrapper_updater, true)
-          end
-
-          after do
-            Dependabot::Experiments.reset!
           end
 
           its(:length) { is_expected.to eq(1) }
@@ -1149,6 +1350,42 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
 
       its(:length) { is_expected.to eq(2) }
+    end
+
+    describe "with multiple version catalog files" do
+      let(:files) { [tools_catalog, plugins_catalog] }
+      let(:tools_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/tools.versions.toml",
+          content: fixture("version_catalog_file", "tools.versions.toml")
+        )
+      end
+      let(:plugins_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/plugins.versions.toml",
+          content: fixture("version_catalog_file", "plugins.versions.toml")
+        )
+      end
+
+      it "parses dependencies from all catalogs" do
+        expect(dependencies.map(&:name)).to include("junit:junit")
+        expect(dependencies.map(&:name)).to include("org.jmailen.kotlinter")
+        expect(dependencies.length).to eq(2)
+      end
+
+      context "when one of them is a support file" do
+        let(:plugins_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "build-logic/src/main/resources/plugins.versions.toml",
+            content: fixture("version_catalog_file", "plugins.versions.toml"),
+            support_file: true
+          )
+        end
+
+        it "only parses dependencies from the version catalogs" do
+          expect(dependencies.map(&:name)).to eq(["junit:junit"])
+        end
+      end
     end
   end
 

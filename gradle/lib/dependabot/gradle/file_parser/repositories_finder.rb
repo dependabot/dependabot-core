@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -11,8 +11,8 @@ module Dependabot
       class RepositoriesFinder
         extend T::Sig
 
-        SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
-        SUPPORTED_SETTINGS_FILE_NAMES = T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
+        SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+        SUPPORTED_SETTINGS_FILE_NAMES = %w(settings.gradle settings.gradle.kts).freeze
 
         # The Central Repo doesn't have special status for Gradle, but until
         # we're confident we're selecting repos correctly it's wise to include
@@ -32,11 +32,13 @@ module Dependabot
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
-            target_dependency_file: T.nilable(Dependabot::DependencyFile)
+            target_dependency_file: T.nilable(Dependabot::DependencyFile),
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency_files:, target_dependency_file:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+        def initialize(dependency_files:, target_dependency_file:, credentials: [])
+          @dependency_files = dependency_files
+          @credentials = credentials
           raise "No target file!" unless target_dependency_file
 
           @target_dependency_file = T.let(target_dependency_file, Dependabot::DependencyFile)
@@ -52,12 +54,13 @@ module Dependabot
             end
           end
           repository_urls += own_buildfile_repository_urls
+          repository_urls += own_buildfile_repository_urls(lockfile_buildfile) if lockfile?
           repository_urls += settings_file_repository_urls(top_level_settings_file)
           repository_urls = repository_urls.uniq
 
           return repository_urls unless repository_urls.empty?
 
-          [CENTRAL_REPO_URL]
+          [central_repo_url]
         end
 
         private
@@ -65,8 +68,16 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :target_dependency_file
+
+        sig { returns(T::Boolean) }
+        def lockfile?
+          File.basename(target_dependency_file.name) == "gradle.lockfile"
+        end
 
         sig { params(dependency_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
         def inherited_repository_urls(dependency_file)
@@ -81,7 +92,7 @@ module Dependabot
               T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)])
           end
 
-          if top_level_buildfile != target_dependency_file
+          if top_level_buildfile != (lockfile? ? lockfile_buildfile : target_dependency_file)
             buildfile_content.scan(/(?:^|\s)subprojects\s*\{/) do
               mtch = T.must(Regexp.last_match)
               subproject_blocks <<
@@ -92,11 +103,11 @@ module Dependabot
           repository_urls_from(subproject_blocks.join("\n"))
         end
 
-        sig { returns(T::Array[String]) }
-        def own_buildfile_repository_urls
-          return [] unless top_level_buildfile
+        sig { params(buildfile: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
+        def own_buildfile_repository_urls(buildfile = top_level_buildfile)
+          return [] unless buildfile
 
-          buildfile_content = comment_free_content(T.must(top_level_buildfile))
+          buildfile_content = comment_free_content(buildfile)
 
           own_buildfile_urls = T.let([], T::Array[String])
 
@@ -111,6 +122,14 @@ module Dependabot
           own_buildfile_urls += repository_urls_from(buildfile_content)
           own_buildfile_urls += repository_urls_from(subproject_buildfile_content)
           own_buildfile_urls
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def lockfile_buildfile
+          dependency_files.find do |file|
+            SUPPORTED_BUILD_FILE_NAMES.include?(File.basename(file.name)) &&
+              File.dirname(file.name) == File.dirname(target_dependency_file.name)
+          end
         end
 
         sig { params(settings_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
@@ -141,13 +160,13 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle\(/)
+            repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle(?:\(|\s*\{)/)
 
-            repository_urls << CENTRAL_REPO_URL if block.match?(/\smavenCentral\(/)
+            repository_urls << central_repo_url if block.match?(/\smavenCentral(?:\(|\s*\{)/)
 
-            repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
+            repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter(?:\(|\s*\{)/)
 
-            repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal\(/)
+            repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal(?:\(|\s*\{)/)
 
             block.scan(MAVEN_REPO_REGEX) do
               repository_urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))
@@ -158,6 +177,24 @@ module Dependabot
             .map { |url| url.strip.gsub(%r{/$}, "") }
             .select { |url| valid_url?(url) }
             .uniq
+        end
+
+        sig { returns(String) }
+        def central_repo_url
+          base_credential = credentials.find do |cred|
+            cred["type"] == "maven_repository" && replaces_base?(cred) && cred["url"]
+          end
+
+          base_credential ? T.must(base_credential["url"]).gsub(%r{/+$}, "") : CENTRAL_REPO_URL
+        end
+
+        sig { params(credential: T.any(Dependabot::Credential, T::Hash[String, Object])).returns(T::Boolean) }
+        def replaces_base?(credential)
+          if credential.is_a?(Dependabot::Credential)
+            credential.replaces_base?
+          else
+            credential["replaces-base"] == true
+          end
         end
 
         sig { params(string: String).returns(Integer) }
@@ -195,7 +232,12 @@ module Dependabot
         def top_level_buildfile
           @top_level_buildfile = T.let(
             @top_level_buildfile || dependency_files.find do |f|
-              SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+              if lockfile?
+                directory = File.dirname(top_level_settings_file&.name || target_dependency_file.name)
+                SUPPORTED_BUILD_FILE_NAMES.include?(File.basename(f.name)) && File.dirname(f.name) == directory
+              else
+                SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+              end
             end,
             T.nilable(Dependabot::DependencyFile)
           )
@@ -204,11 +246,22 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def top_level_settings_file
           @top_level_settings_file = T.let(
-            @top_level_settings_file || dependency_files.find do |f|
-              SUPPORTED_SETTINGS_FILE_NAMES.include?(f.name)
-            end,
+            @top_level_settings_file || containing_settings_file,
             T.nilable(Dependabot::DependencyFile)
           )
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def containing_settings_file
+          return dependency_files.find { |file| SUPPORTED_SETTINGS_FILE_NAMES.include?(file.name) } unless lockfile?
+
+          settings_files = dependency_files.select do |file|
+            next false unless SUPPORTED_SETTINGS_FILE_NAMES.include?(File.basename(file.name))
+
+            directory = File.dirname(file.name)
+            directory == "." || target_dependency_file.name.start_with?("#{directory}/")
+          end
+          settings_files.max_by { |file| File.dirname(file.name).length }
         end
       end
     end

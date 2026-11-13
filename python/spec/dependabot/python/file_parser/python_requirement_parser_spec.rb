@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child-context file fixtures. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -91,6 +92,40 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
 
       context "when having a requirement that can't be parsed" do
         let(:fixture_name) { "unparseable_python_requires.py" }
+
+        it { is_expected.to eq([]) }
+      end
+    end
+
+    context "with a pyproject.toml file" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: pyproject_body
+        )
+      end
+
+      context "with a string requires-python" do
+        let(:pyproject_body) { "[project]\nrequires-python = \">=3.8\"\n" }
+
+        it { is_expected.to eq([">=3.8"]) }
+      end
+
+      context "with an unquoted float requires-python" do
+        let(:pyproject_body) { "[project]\nrequires-python = 3.12\n" }
+
+        it { is_expected.to eq(["3.12"]) }
+      end
+
+      context "with an array python constraint (poetry)" do
+        let(:pyproject_body) { "[tool.poetry.dependencies]\npython = [\"3.10.*\", \"3.11.*\"]\n" }
+
+        it { is_expected.to eq([]) }
+      end
+
+      context "with an inline-table python constraint (poetry)" do
+        let(:pyproject_body) { "[tool.poetry.dependencies]\npython = { uuid = \"11.1.1\" }\n" }
 
         it { is_expected.to eq([]) }
       end

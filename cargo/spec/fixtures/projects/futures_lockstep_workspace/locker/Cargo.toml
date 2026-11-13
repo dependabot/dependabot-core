@@ -1,0 +1,7 @@
+[package]
+name = "locker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tower = { version = "0.5", features = ["util"] }

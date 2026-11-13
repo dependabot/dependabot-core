@@ -56,6 +56,8 @@ pr-created backend/expected-3.json
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directories:
       - "/frontend"

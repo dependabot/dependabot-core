@@ -1,0 +1,10 @@
+on: [push]
+
+name: Multiline flow without collision
+jobs:
+  inline:
+    runs-on: ubuntu-latest
+    steps: [
+      { uses: actions/checkout@v2.1.0 },
+      { uses: actions/setup-node@v3.0.0 }
+    ]

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot rewrite the its blocks or resolve fixtures in class-scope generated examples.
+
 require "spec_helper"
 
 require "dependabot/cargo/update_checker/requirements_updater"
@@ -36,6 +38,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
     let(:req_string) { "^1.0.0" }
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
+
+    context "with a malformed requirement" do
+      let(:requirements) do
+        [{ file: "Cargo.toml", requirement: 123, groups: [], source: nil }]
+      end
+
+      it "raises a type error" do
+        expect { updater.updated_requirements }
+          .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      end
+    end
 
     context "when there is no latest version" do
       let(:target_version) { nil }

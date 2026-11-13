@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child fixtures or parameterized its examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -116,9 +117,8 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             its([:value]) { is_expected.to eq("27.1.1") }
 
             its([:declaration_string]) do
-              # rubocop:disable Layout/LineLength
+              # rubocop:disable-next Layout/LineLength
               is_expected.to eq("hasPropertyVersion = project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'27.1.1'")
-              # rubocop:enable Layout/LineLength
             end
           end
 
@@ -154,9 +154,8 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
               its([:value]) { is_expected.to eq("1.0.0") }
 
               its([:declaration_string]) do
-                # rubocop:disable Layout/LineLength
+                # rubocop:disable-next Layout/LineLength
                 is_expected.to eq("hasPropertyVersion     : project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'1.0.0'")
-                # rubocop:enable Layout/LineLength
               end
             end
           end
@@ -339,9 +338,8 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
               its([:value]) { is_expected.to eq("27.1.1") }
 
               its([:declaration_string]) do
-                # rubocop:disable Layout/LineLength
+                # rubocop:disable-next Layout/LineLength
                 is_expected.to eq('set("hasPropertyVersion", if(project.hasProperty("hasPropertyVersion")) project.getProperty("hasPropertyVersion") else "27.1.1")')
-                # rubocop:enable Layout/LineLength
               end
             end
 
@@ -367,9 +365,8 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
                 its([:value]) { is_expected.to eq("1.0.0") }
 
                 its([:declaration_string]) do
-                  # rubocop:disable Layout/LineLength
+                  # rubocop:disable-next Layout/LineLength
                   is_expected.to eq('"findPropertyVersion"     to project.findProperty("findPropertyVersion") ?: "1.0.0"')
-                  # rubocop:enable Layout/LineLength
                 end
               end
 
@@ -379,9 +376,8 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
                 its([:value]) { is_expected.to eq("1.0.0") }
 
                 its([:declaration_string]) do
-                  # rubocop:disable Layout/LineLength
+                  # rubocop:disable-next Layout/LineLength
                   is_expected.to eq('"hasPropertyVersion"      to if(project.hasProperty("hasPropertyVersion")) project.getProperty("hasPropertyVersion") else "1.0.0"')
-                  # rubocop:enable Layout/LineLength
                 end
               end
             end
