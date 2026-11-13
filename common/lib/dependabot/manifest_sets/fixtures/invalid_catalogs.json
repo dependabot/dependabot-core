@@ -212,7 +212,12 @@
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\A(?m:req)\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
     },
     {
-      "name": "non-ASCII with case folding",
+      "name": "scoped case-insensitive flag",
+      "error": "non_portable_regex",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\A(?i:keep)\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
+      "name": "non-ASCII scoped case-insensitive flag",
       "error": "non_portable_regex",
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\A(?i:r\\u00e9q)\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
     },

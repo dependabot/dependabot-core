@@ -7,22 +7,22 @@
       "path_rules": [
         {
           "id": "python-requirements-txt",
-          "filename_regex": "\\A(?:[^/]*[-._])?(?i:requirements)[^\\t\\n\\v\\f\\r /]*\\.txt\\z",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Rr][Ee][Qq][Uu][Ii][Rr][Ee][Mm][Ee][Nn][Tt][Ss][^\\t\\n\\v\\f\\r /]*\\.txt\\z",
           "directory": "parent"
         },
         {
           "id": "python-require-txt",
-          "filename_regex": "\\A(?:[^/]*[-._])?(?i:require)(?:[-_][^\\t\\n\\v\\f\\r ./]*)?\\.txt\\z",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Rr][Ee][Qq][Uu][Ii][Rr][Ee](?:[-_][^\\t\\n\\v\\f\\r ./]*)?\\.txt\\z",
           "directory": "parent"
         },
         {
           "id": "python-dependencies-txt",
-          "filename_regex": "\\A(?:[^/]*[-._])?(?i:dependenc(?:y|ies))[^\\t\\n\\v\\f\\r /]*\\.txt\\z",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc](?:[Yy]|[Ii][Ee][Ss])[^\\t\\n\\v\\f\\r /]*\\.txt\\z",
           "directory": "parent"
         },
         {
           "id": "python-depend-txt",
-          "filename_regex": "\\A(?:[^/]*[-._])?(?i:depends?)(?:[-_][^\\t\\n\\v\\f\\r ./]*)?\\.txt\\z",
+          "filename_regex": "\\A(?:[^/]*[-._])?[Dd][Ee][Pp][Ee][Nn][Dd][Ss]?(?:[-_][^\\t\\n\\v\\f\\r ./]*)?\\.txt\\z",
           "directory": "parent"
         },
         {

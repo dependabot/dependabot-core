@@ -32,6 +32,7 @@
           "items": { "$ref": "#/$defs/path_rule" }
         },
         "owners": {
+          "description": "Presence owners (when_any_basename) are evaluated before the single trailing otherwise owner. When more than one presence owner matches a directory, ownership is ambiguous and the set is unresolvable.",
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/owner" }

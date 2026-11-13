@@ -46,6 +46,13 @@ module Dependabot
         end
       end
 
+      # The outcome of owner selection: an owner, no owner, or ambiguous (more than one presence owner
+      # matched). Ambiguous ownership makes the set unresolvable.
+      class OwnerSelection < T::ImmutableStruct
+        const :owner, T.nilable(Owner)
+        const :ambiguous, T::Boolean
+      end
+
       class Ecosystem < T::ImmutableStruct
         extend T::Sig
 
@@ -65,12 +72,16 @@ module Dependabot
           path_rules.any? { |rule| rule.match?(basename) }
         end
 
-        # The first owner whose predicate holds for the basenames present in a set directory, or nil when
-        # no owner applies (for example when the ecosystem has no `otherwise` owner).
-        sig { params(basenames: T::Enumerable[String]).returns(T.nilable(Owner)) }
+        # Presence owners are evaluated before the `otherwise` owner. Exactly one matching presence owner
+        # wins; more than one is ambiguous and selects nothing. With none, the `otherwise` owner (if any)
+        # applies.
+        sig { params(basenames: T::Enumerable[String]).returns(OwnerSelection) }
         def select_owner(basenames)
           present = basenames.to_set
-          owners.find { |owner| owner.selected_by?(present) }
+          matches = owners.reject(&:otherwise).select { |owner| owner.selected_by?(present) }
+          return OwnerSelection.new(owner: nil, ambiguous: true) if matches.length > 1
+
+          OwnerSelection.new(owner: matches.first || owners.find(&:otherwise), ambiguous: false)
         end
 
         sig { params(owner_id: String).returns(T.nilable(Owner)) }

@@ -28,12 +28,11 @@ func CompilePortable(ruleID, source string) (*regexp.Regexp, error) {
 }
 
 type portableScanner struct {
-	ruleID          string
-	chars           []rune
-	pos             int
-	groupDepth      int
-	caseInsensitive bool
-	repeatable      bool
+	ruleID     string
+	chars      []rune
+	pos        int
+	groupDepth int
+	repeatable bool
 }
 
 func validatePortable(ruleID, source string) error {
@@ -61,9 +60,6 @@ func validatePortable(ruleID, source string) error {
 	}
 	if s.groupDepth != 0 {
 		return reject("non_portable_regex", "unbalanced group")
-	}
-	if s.caseInsensitive && !isASCII(source) {
-		return reject("non_portable_regex", "patterns using (?i: must be ASCII-only")
 	}
 	return nil
 }
@@ -182,18 +178,11 @@ func (s *portableScanner) class() error {
 
 func (s *portableScanner) groupOpen() error {
 	if s.at(s.pos+1) == '?' {
-		switch s.at(s.pos + 2) {
-		case ':':
-			s.pos += 3
-		case 'i':
-			if s.at(s.pos+3) != ':' {
-				return s.reject("only the scoped (?i: flag group is allowed")
-			}
-			s.caseInsensitive = true
-			s.pos += 4
-		default:
-			return s.reject("only (...), (?:...) and (?i:...) groups are allowed")
+		// Flags such as (?i: are excluded: they fold non-ASCII characters (U+212A matches k), so rules spell out ASCII classes.
+		if s.at(s.pos+2) != ':' {
+			return s.reject("only (...) and (?:...) groups are allowed")
 		}
+		s.pos += 3
 	} else {
 		s.pos++
 	}
@@ -231,13 +220,4 @@ func (s *portableScanner) followQuantifier() error {
 	}
 	s.repeatable = false
 	return nil
-}
-
-func isASCII(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if s[i] >= utf8.RuneSelf {
-			return false
-		}
-	}
-	return true
 }
