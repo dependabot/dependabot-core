@@ -48,8 +48,9 @@ without re-implementing ecosystem logic. `Dependabot::ManifestSets.catalog` load
   of the ecosystem's rules. It is `false` for pypi because lockfiles such as `Pipfile.lock`, and
   files referenced with `-r`/`-c`, are inputs without defining a set.
 
-Unknown fields, duplicate object keys, comments, invalid UTF-8 or anything that is not strict
-RFC 8259 JSON reject the **whole** catalog; nothing is partially loaded.
+Unknown fields, duplicate object keys, comments, invalid UTF-8, unpaired UTF-16 surrogate escapes
+(such as `"\ud800"`) or anything that is not strict RFC 8259 JSON reject the **whole** catalog;
+nothing is partially loaded.
 
 ## Portable regex subset
 
@@ -64,7 +65,9 @@ accepted:
   `[Rr][Ee]`, so it never matches non-ASCII characters;
 - escapes: `\t \n \v \f \r` and the punctuation `` . ^ $ | ? * + ( ) [ ] { } \ / - ``;
 - character classes without nesting, POSIX classes, `&&`, or a leading `]`;
-- quantifiers `* + ?` and `{n}`, `{n,}`, `{n,m}` (n ≤ m ≤ 1000); no lazy or possessive forms;
+- quantifiers `* + ?` and `{n}`, `{n,}`, `{n,m}` (n ≤ m ≤ 1000, no leading zeros, since Go reads
+  `{01}` as literal text); no lazy or possessive forms. Counts of nested `{n,m}` repetitions may
+  not multiply past 1000 (Go's limit), counting `{n,}` as n and ignoring anything under `{0}`;
 - no `^`/`$` anchors (Ruby treats them as line anchors).
 
 ## Limits and error codes
@@ -134,14 +137,15 @@ carries no graph version.
 
 `common/lib/dependabot/dependency_graphers/graph_versions.json` locks every catalog owner's version
 to a sha256 of the sources that shape its graph (the shared base grapher, the owner's grapher and
-the parsing it relies on). Each ecosystem's grapher spec fails once those sources change and the lock
+the parsing it relies on, including native parser helpers). Each ecosystem's grapher spec fails once those sources change and the lock
 has not been refreshed. Refresh it with an explicit decision per changed owner:
 
 - `bin/update-manifest-set-graph-versions.rb --bump OWNER` when the output can change.
 - `bin/update-manifest-set-graph-versions.rb --keep OWNER` when it cannot, for example a pure refactor.
 
 `--check` reports owners whose lock is stale. When a grapher starts depending on another file, add it to
-that owner's `sources`.
+that owner's `sources`; if the file lives in another ecosystem's directory, also check that owner in that
+ecosystem's grapher spec so the guard runs when only that file changes (the Python spec checks uv).
 
 ## Snapshot metadata
 

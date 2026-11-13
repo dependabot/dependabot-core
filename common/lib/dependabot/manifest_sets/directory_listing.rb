@@ -12,11 +12,14 @@ module Dependabot
       extend T::Sig
 
       OBJECT_ID = /\A(?:\h{40}|\h{64})\z/
+      SYMLINK_MODE = "120000"
 
       # Canonical set directory: repository-relative, no leading or trailing slash, "." for the root.
       const :directory, String
-      # Basename => lowercase blob OID. Empty when the directory does not exist at the commit.
+      # Basename => lowercase blob OID of each regular file. Empty when the directory does not exist at the commit.
       const :blobs, T::Hash[String, String]
+      # Basenames of symlinks, whose blob is the link text rather than the content a reader sees.
+      const :symlinks, T::Array[String], default: []
 
       # Converts a job directory such as "/", "/api" or "/api/" into its canonical form ("." or "api"); the
       # canonical form maps to itself.
@@ -54,23 +57,34 @@ module Dependabot
           end
         return nil unless status.success?
 
-        blobs = parse(stdout, prefix)
-        blobs && new(directory: directory, blobs: blobs)
+        entries = parse(stdout, prefix)
+        entries && build(directory, entries)
       end
 
-      # Each `ls-tree -z` entry is "<mode> <type> <oid>\t<path>\0".
-      sig { params(output: String, prefix: String).returns(T.nilable(T::Hash[String, String])) }
+      sig { params(directory: String, entries: T::Hash[String, [String, String]]).returns(DirectoryListing) }
+      def self.build(directory, entries)
+        symlinks, files = entries.partition { |_name, (mode, _oid)| mode == SYMLINK_MODE }
+        new(
+          directory: directory,
+          blobs: files.to_h { |name, (_mode, oid)| [name, oid] },
+          symlinks: symlinks.map(&:first)
+        )
+      end
+      private_class_method :build
+
+      # Each `ls-tree -z` entry is "<mode> <type> <oid>\t<path>\0"; returns basename => [mode, oid] per blob.
+      sig { params(output: String, prefix: String).returns(T.nilable(T::Hash[String, [String, String]])) }
       def self.parse(output, prefix)
         output.split("\0").each_with_object({}) do |entry, blobs|
           meta, path = entry.split("\t", 2)
-          _mode, type, oid = meta.to_s.split
+          mode, type, oid = meta.to_s.split
           next unless type == "blob"
           return nil unless path&.start_with?(prefix.b) && oid&.match?(OBJECT_ID)
 
           name = path.delete_prefix(prefix.b).force_encoding(Encoding::UTF_8)
           return nil if name.empty? || name.include?("/") || !name.valid_encoding?
 
-          blobs[name] = oid.downcase
+          blobs[name] = [mode.to_s, oid.downcase]
         end
       end
       private_class_method :parse

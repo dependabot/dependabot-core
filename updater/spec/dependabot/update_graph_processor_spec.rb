@@ -766,7 +766,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     context "when the catalog lists the package manager as an owner" do
       include_context "with the job's package manager as a manifest-set owner"
 
-      it "does not describe the directory that failed to fetch" do
+      it "never reports the directory that failed to fetch as absent" do
         allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
         submissions = {}
         allow(service).to receive(:create_dependency_submission) do |args|
@@ -822,6 +822,25 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
 
       update_graph_processor.run
+    end
+
+    context "when the catalog lists the package manager as an owner" do
+      include_context "with the job's package manager as a manifest-set owner"
+
+      it "never reports the directory that failed to fetch as absent" do
+        allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
+        submissions = {}
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submission = args[:dependency_submission]
+          submissions[submission.payload[:metadata][:scanned_manifest_path]] = submission
+        end
+
+        update_graph_processor.run
+
+        expect(descriptor.to_h["state"]).to eq("absent")
+        expect(submissions.fetch("rubygems::/broken").manifest_set).to be_nil
+        expect(submissions.fetch("rubygems::/broken").payload[:metadata]).not_to have_key(:manifest_set)
+      end
     end
   end
 
