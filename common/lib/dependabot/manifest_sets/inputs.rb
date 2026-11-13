@@ -53,7 +53,7 @@ module Dependabot
         return unresolvable(UNKNOWN_PROVENANCE) if dependency_files.any?(&:symlink_target)
 
         paths = dependency_files.map(&:realpath).uniq
-        return unresolvable(UNKNOWN_PROVENANCE) unless paths.all? { |path| lookup_safe?(path) }
+        return unresolvable(UNKNOWN_PROVENANCE) unless paths.all? { |path| batch_safe?(path) }
 
         oids = blob_oids(repo_contents_path, commit, paths)
         return unresolvable(UNKNOWN_PROVENANCE) if oids.nil?
@@ -62,13 +62,14 @@ module Dependabot
         new(files: files.sort_by { |file| file.path.b })
       end
 
-      # Paths are passed to git as literal arguments; anything escaping the repository root has no blob.
+      # `git cat-file --batch-check` reads one `<rev>:<path>` per line, so a path must not contain a newline;
+      # anything escaping the repository root has no blob either.
       sig { params(path: String).returns(T::Boolean) }
-      def self.lookup_safe?(path)
+      def self.batch_safe?(path)
         !path.empty? && !path.include?("\n") && !path.include?("\0") &&
           path != ".." && !path.start_with?("../", "/")
       end
-      private_class_method :lookup_safe?
+      private_class_method :batch_safe?
 
       # Mode of a regular (possibly executable) file in a Git tree; symlinks (120000) and submodules differ.
       REGULAR_FILE_MODES = %w(100644 100755).freeze
@@ -82,27 +83,24 @@ module Dependabot
       def self.blob_oids(repo_contents_path, commit, paths)
         return [] if paths.empty?
 
+        stdin = paths.map { |path| "#{commit}:#{path}\n" }.join
+        # Git versions without %(objectmode) fail here, which reports unknown provenance rather than guessing.
         stdout, status = Open3.capture2(
           "git",
-          "--literal-pathspecs",
           "-C",
           repo_contents_path,
-          "ls-tree",
-          "-z",
-          "--full-tree",
-          commit,
-          "--",
-          *paths,
+          "cat-file",
+          "--batch-check=%(objectmode) %(objecttype) %(objectname)",
+          stdin_data: stdin,
           binmode: true
         )
         return nil unless status.success?
 
-        entries = stdout.split("\0").to_h do |entry|
-          meta, path = entry.split("\t", 2)
-          [path.to_s.dup.force_encoding(Encoding::UTF_8), meta.to_s.split]
-        end
-        paths.map do |path|
-          mode, type, oid = entries[path]
+        lines = stdout.split("\n")
+        return nil unless lines.length == paths.length
+
+        lines.map do |line|
+          mode, type, oid = line.split(" ", 3)
           return nil unless REGULAR_FILE_MODES.include?(mode) && type == "blob"
           return nil unless oid&.match?(/\A(?:\h{40}|\h{64})\z/)
 

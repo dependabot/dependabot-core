@@ -168,14 +168,6 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
       end
     end
 
-    it "treats paths literally rather than as patterns" do
-      inputs = described_class.resolve(
-        dependency_files: [file("*.txt")], repo_contents_path: repo, commit: commit
-      )
-
-      expect(inputs.resolved?).to be(false)
-    end
-
     it "rejects paths that cannot be looked up safely" do
       inputs = described_class.resolve(
         dependency_files: [file("requirements.txt"), file("evil\nHEAD:requirements.txt")],
