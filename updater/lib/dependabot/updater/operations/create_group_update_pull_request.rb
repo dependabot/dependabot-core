@@ -142,17 +142,29 @@ module Dependabot
 
           undiagnosed
             .reject { |dep| handled.include?(dep.name.downcase) }
-            .each do |dep|
-              # The error is never raised, so give it a backtrace for error reports.
-              error = Dependabot::DependabotError.new("Security update failed for #{dep.name} #{dep.version}")
-              error.set_backtrace(caller)
+            .each { |dep| report_undiagnosed_security_update_failure(dep) }
+        end
 
-              error_handler.handle_dependency_error(
-                error: error,
-                dependency: dep,
-                dependency_group: group
-              )
-            end
+        sig { params(dep: Dependabot::Dependency).void }
+        def report_undiagnosed_security_update_failure(dep)
+          # Not vulnerable per the job's advisories: report it as a single-dependency update does. A missing
+          # or git SHA version cannot be matched against the advisories, so it is not known to be safe.
+          occurrences = group.dependencies.select { |candidate| candidate.name.casecmp?(dep.name) }
+          versions_checkable = occurrences.all? { |candidate| candidate.version_class.correct?(candidate.version) }
+          if not_vulnerable_dependency_names.include?(dep.name.downcase) && versions_checkable
+            record_security_update_not_needed_error(dep)
+            return
+          end
+
+          # The error is never raised, so give it a backtrace for error reports.
+          error = Dependabot::DependabotError.new("Security update failed for #{dep.name} #{dep.version}")
+          error.set_backtrace(caller)
+
+          error_handler.handle_dependency_error(
+            error: error,
+            dependency: dep,
+            dependency_group: group
+          )
         end
       end
     end
