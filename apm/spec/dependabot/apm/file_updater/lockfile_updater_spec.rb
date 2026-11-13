@@ -286,6 +286,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
     let(:outside_directory) { Dir.mktmpdir }
     let(:skill) { "# Edge AI\n" }
     let(:reference) { "# Reference\n" }
+    let(:recorded_reference) { "# Reference\n" }
     let(:outside_file) { File.join(outside_directory, "SKILL.md") }
     let(:lockfile) do
       digest = ->(content) { "sha256:#{Digest::SHA256.hexdigest(content)}" }
@@ -297,7 +298,7 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
           - repo_url: microsoft/edge-ai
             deployed_file_hashes:
               .claude/skills/edge-ai/SKILL.md: #{digest.call(skill)}
-              .claude/skills/edge-ai/reference.md: #{digest.call("# Reference\n")}
+              .claude/skills/edge-ai/reference.md: #{digest.call(recorded_reference)}
               .claude/skills/edge-ai/linked.md: #{digest.call(skill)}
               #{outside_file}: #{digest.call(skill)}
               ../#{File.basename(outside_directory)}/SKILL.md: #{digest.call(skill)}
@@ -347,6 +348,32 @@ RSpec.describe Dependabot::Apm::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
         expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md))
         expect(File.read(outside_file)).to eq(skill)
+      end
+
+      context "when a deployed file is checked out with CRLF line endings" do
+        let(:reference) { "# Reference\r\n" }
+
+        it "matches it against the LF digest APM records and removes it" do
+          expect(updated_lockfile_content).to eq("lockfile_version: '2'\n")
+          expect(present_during_apm).to eq(%w(.claude/skills/edge-ai/linked.md))
+        end
+      end
+
+      context "when a deployed file differs from its digest only by a bare carriage return" do
+        let(:reference) { "# Reference\r" }
+
+        it "treats it as edited" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable, /reference\.md/)
+        end
+      end
+
+      context "when a deployed binary file differs from its digest only by line endings" do
+        let(:reference) { "\0\r\n" }
+        let(:recorded_reference) { "\0\n" }
+
+        it "hashes it raw and treats it as edited" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable, /reference\.md/)
+        end
       end
 
       context "when a deployed file has been edited" do

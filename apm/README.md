@@ -100,8 +100,11 @@ the committed deployed files of a package whose version changes, and the
 install fails. APM would refuse a file edited since it deployed it too, so when
 any committed deployed file no longer matches its recorded digest, the update
 fails before `apm install` with a message naming the edited files, and nothing
-is removed. The workaround goes once Dependabot bundles an APM release with
-that fix.
+is removed. The digests are compared the way APM computes them, with CRLF line
+endings in text files read as LF, so a checkout with CRLF line endings isn't
+mistaken for edited. APM fixed #3625 only for `apm update`, so the workaround
+stays until `apm install` also deploys a changed package over its committed
+files.
 
 When the repository commits its deployed files, the pull request carries the
 changes `apm install` made to them alongside `apm.yml` and `apm.lock.yaml`: the

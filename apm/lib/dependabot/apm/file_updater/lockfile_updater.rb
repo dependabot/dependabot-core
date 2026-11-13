@@ -196,7 +196,8 @@ module Dependabot
         # lockfile recorded lets APM deploy the new version. APM would refuse
         # an edited file too, so the update fails first, naming the edited
         # files, and removes nothing.
-        # Remove this once the bundled APM includes the fix for #3625.
+        # APM fixed #3625 only for `apm update`. Remove this once `apm install`
+        # also deploys a changed package over its committed files.
         sig { void }
         def remove_unmodified_deployed_files
           root = File.realpath(Dir.pwd)
@@ -205,12 +206,24 @@ module Dependabot
           Lockfile.new(lockfile).deployed_file_hashes.each do |path, digest|
             next unless digest.start_with?(SHA256_PREFIX) && file_in_checkout?(path, root)
 
-            matches = Digest::SHA256.hexdigest(File.binread(path)) == digest.delete_prefix(SHA256_PREFIX)
+            matches = apm_file_digest(path) == digest.delete_prefix(SHA256_PREFIX)
             (matches ? unmodified : edited) << path
           end
           raise Dependabot::DependencyFileNotResolvable, edited_files_message(edited) if edited.any?
 
           unmodified.each { |path| File.delete(path) }
+        end
+
+        # Hashes a deployed file the way APM's compute_file_hash
+        # (apm_cli/utils/content_hash.py) does: text, meaning valid UTF-8
+        # with no NUL byte, has CRLF collapsed to LF, so a CRLF checkout or
+        # a CRLF upstream file matches the digest APM recorded. A bare CR
+        # still counts, and anything else is hashed raw.
+        sig { params(path: String).returns(String) }
+        def apm_file_digest(path)
+          content = File.binread(path)
+          text = !content.include?("\0") && content.dup.force_encoding(Encoding::UTF_8).valid_encoding?
+          Digest::SHA256.hexdigest(text ? content.gsub("\r\n", "\n") : content)
         end
 
         sig { params(paths: T::Array[String]).returns(String) }
