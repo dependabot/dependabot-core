@@ -149,6 +149,265 @@ RSpec.describe Dependabot::Apm::FileUpdater do
       end
     end
 
+    context "when apm install redeploys the skills in a cloned repository" do
+      let(:repo_contents_path) { Dir.mktmpdir }
+      let(:digest) { ->(content) { "sha256:#{Digest::SHA256.hexdigest(content)}" } }
+      let(:skill_v1) { "# Edge AI v1.0.0\n" }
+      let(:skill_v2) { "# Edge AI v1.2.0\n" }
+      let(:reference) { "# Reference\n" }
+      let(:retired) { "# Retired in v1.2.0\n" }
+      let(:added) { "# Added in v1.2.0\n" }
+      let(:manifest_body) do
+        <<~YAML
+          targets: [claude]
+          dependencies:
+            apm:
+              - microsoft/edge-ai#v1.0.0
+              - microsoft/edge-ai-extras#v1.0.0
+        YAML
+      end
+      let(:declaration_span) { "3:6:3:30" }
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "apm.lock.yaml",
+          content: <<~YAML
+            lockfile_version: '2'
+            dependencies:
+            - repo_url: microsoft/edge-ai
+              resolved_ref: v1.0.0
+              deployed_files:
+              - .claude/skills/edge-ai
+              - .claude/skills/edge-ai/SKILL.md
+              - .claude/skills/edge-ai/reference.md
+              - .claude/skills/edge-ai/retired.md
+              deployed_file_hashes:
+                .claude/skills/edge-ai/SKILL.md: #{digest.call(skill_v1)}
+                .claude/skills/edge-ai/reference.md: #{digest.call(reference)}
+                .claude/skills/edge-ai/retired.md: #{digest.call(retired)}
+          YAML
+        )
+      end
+      let(:new_lockfile_content) do
+        <<~YAML
+          lockfile_version: '2'
+          dependencies:
+          - repo_url: microsoft/edge-ai
+            resolved_ref: v1.2.0
+            deployed_files:
+            - .claude/skills/edge-ai
+            - .claude/skills/edge-ai/SKILL.md
+            - .claude/skills/edge-ai/reference.md
+            - .claude/skills/edge-ai/added.md
+            deployed_file_hashes:
+              .claude/skills/edge-ai/SKILL.md: #{digest.call(skill_v2)}
+              .claude/skills/edge-ai/reference.md: #{digest.call(reference)}
+              .claude/skills/edge-ai/added.md: #{digest.call(added)}
+        YAML
+      end
+      let(:gitignore) { "apm_modules/\n" }
+      let(:deployed_files) do
+        {
+          ".claude/skills/edge-ai/SKILL.md" => skill_v1,
+          ".claude/skills/edge-ai/reference.md" => reference,
+          ".claude/skills/edge-ai/retired.md" => retired
+        }
+      end
+      let(:updater) do
+        described_class.new(
+          dependency_files: [manifest, lockfile],
+          dependencies: [dependency],
+          credentials: [],
+          repo_contents_path: repo_contents_path
+        )
+      end
+      let(:deployed_changes) do
+        updated_files.drop(2).to_h do |file|
+          [file.name, [file.operation, file.content, file.vendored_file?, file.directory]]
+        end
+      end
+
+      before do
+        Dir.chdir(repo_contents_path) do
+          File.write(".gitignore", gitignore)
+          File.write("apm.yml", manifest_body)
+          File.write("apm.lock.yaml", lockfile.content)
+          deployed_files.each do |path, content|
+            FileUtils.mkdir_p(File.dirname(path))
+            File.write(path, content)
+          end
+          system(
+            "git init -q && git add . && git -c user.name=test -c user.email=test@example.com commit -qm init",
+            exception: true
+          )
+        end
+
+        # Mimics APM deploying v1.2.0: it rewrites SKILL.md and reference.md
+        # (the workaround for microsoft/apm#3625 removed both, as they match
+        # their recorded digests), deploys added.md, leaves retired.md removed,
+        # downloads into apm_modules and writes an MCP config it doesn't record
+        # as deployed.
+        allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+          FileUtils.mkdir_p(".claude/skills/edge-ai")
+          File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
+          File.write(".claude/skills/edge-ai/reference.md", reference)
+          File.write(".claude/skills/edge-ai/added.md", added)
+          FileUtils.mkdir_p("apm_modules/microsoft/edge-ai")
+          File.write("apm_modules/microsoft/edge-ai/apm.yml", "name: edge-ai\n")
+          File.write(".mcp.json", "{}\n")
+          File.write("apm.lock.yaml", new_lockfile_content)
+          ""
+        end
+      end
+
+      after { FileUtils.rm_rf(repo_contents_path) }
+
+      context "when the repository commits its deployed files" do
+        it "returns the deployed files APM added, changed and removed with the manifest and lockfile" do
+          expect(updated_files.first(2).map(&:name)).to eq(%w(apm.yml apm.lock.yaml))
+          expect(updated_files[1].content).to eq(new_lockfile_content)
+          expect(deployed_changes).to eq(
+            ".claude/skills/edge-ai/SKILL.md" => [Dependabot::DependencyFile::Operation::UPDATE, skill_v2, true, "/"],
+            ".claude/skills/edge-ai/added.md" => [Dependabot::DependencyFile::Operation::CREATE, added, true, "/"],
+            ".claude/skills/edge-ai/retired.md" => [Dependabot::DependencyFile::Operation::DELETE, nil, true, "/"]
+          )
+          expect(updated_files.find { |file| file.name.end_with?("retired.md") }).to be_deleted
+        end
+
+        it "removes what apm install wrote, including the file it added" do
+          updated_files
+
+          Dir.chdir(repo_contents_path) do
+            expect(Dir.exist?("apm_modules")).to be(false)
+            expect(File.exist?(".mcp.json")).to be(false)
+            expect(File.exist?(".claude/skills/edge-ai/added.md")).to be(false)
+          end
+        end
+      end
+
+      context "when a grouped update runs it in a workspace before updating another dependency" do
+        let(:extras_dependency) do
+          requirement = lambda do |ref|
+            {
+              file: "apm.yml",
+              requirement: nil,
+              groups: [],
+              source: { type: "git", url: "https://github.com/microsoft/edge-ai-extras", ref: ref, branch: nil },
+              metadata: { declaration_string: "microsoft/edge-ai-extras#v1.0.0", declaration_span: "4:6:4:37" }
+            }
+          end
+          Dependabot::Dependency.new(
+            name: "microsoft/edge-ai-extras",
+            version: "1.1.0",
+            previous_version: "1.0.0",
+            requirements: [requirement.call("v1.1.0")],
+            previous_requirements: [requirement.call("v1.0.0")],
+            package_manager: "apm"
+          )
+        end
+        let(:extras_lockfile_content) do
+          "#{new_lockfile_content}- repo_url: microsoft/edge-ai-extras\n  resolved_ref: v1.1.0\n"
+        end
+
+        before { Dependabot::Workspace.setup(repo_contents_path: repo_contents_path, directory: Pathname.new("/")) }
+
+        after { Dependabot::Workspace.cleanup! }
+
+        it "keeps the file it added for the workspace to commit, so the next update doesn't return it again" do
+          first_update = updated_files
+          expect(File.read(File.join(repo_contents_path, ".claude/skills/edge-ai/added.md"))).to eq(added)
+          expect(File.exist?(File.join(repo_contents_path, ".mcp.json"))).to be(false)
+          Dependabot::Workspace.store_change(memo: "Update microsoft/edge-ai")
+
+          # Mimics APM deploying every file the lockfile records, as the
+          # workaround removed the unmodified ones, while bumping the extras.
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+            File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
+            File.write(".claude/skills/edge-ai/reference.md", reference)
+            File.write(".claude/skills/edge-ai/added.md", added)
+            File.write("apm.lock.yaml", extras_lockfile_content)
+            ""
+          end
+          second_update = described_class.new(
+            dependency_files: first_update.first(2),
+            dependencies: [extras_dependency],
+            credentials: [],
+            repo_contents_path: repo_contents_path
+          ).updated_dependency_files
+
+          expect(second_update.map(&:name)).to eq(%w(apm.yml apm.lock.yaml))
+          expect(second_update.first.content).to include("microsoft/edge-ai-extras#v1.1.0")
+        end
+      end
+
+      context "when the repository commits an executable deployed script" do
+        let(:script) { ".claude/skills/edge-ai/scripts/run.sh" }
+        let(:added_script) { ".claude/skills/edge-ai/scripts/setup.sh" }
+
+        before do
+          Dir.chdir(repo_contents_path) do
+            FileUtils.mkdir_p(File.dirname(script))
+            File.write(script, "#!/bin/sh\necho v1.0.0\n")
+            File.chmod(0o755, script)
+            system(
+              "git add . && git -c user.name=test -c user.email=test@example.com commit -qm script",
+              exception: true
+            )
+          end
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("install") do
+            File.write(".claude/skills/edge-ai/SKILL.md", skill_v2)
+            File.write(script, "#!/bin/sh\necho v1.2.0\n")
+            File.write(added_script, "#!/bin/sh\necho setup\n")
+            File.chmod(0o755, added_script)
+            File.write("apm.lock.yaml", new_lockfile_content)
+            ""
+          end
+        end
+
+        it "keeps the executable mode of the scripts it returns" do
+          modes = updated_files.drop(2).to_h { |file| [file.name, file.mode] }
+
+          expect(modes).to include(
+            ".claude/skills/edge-ai/SKILL.md" => Dependabot::DependencyFile::Mode::FILE,
+            script => Dependabot::DependencyFile::Mode::EXECUTABLE,
+            added_script => Dependabot::DependencyFile::Mode::EXECUTABLE
+          )
+        end
+      end
+
+      context "when the repository ignores its deployed files" do
+        let(:gitignore) { "apm_modules/\n.claude/\n.mcp.json\n" }
+        let(:deployed_files) { {} }
+
+        it "returns only the manifest and lockfile" do
+          expect(updated_files.map(&:name)).to eq(%w(apm.yml apm.lock.yaml))
+        end
+      end
+
+      context "when the lockfile records no harness, so apm lock runs" do
+        let(:manifest_body) do
+          <<~YAML
+            dependencies:
+              apm:
+                - microsoft/edge-ai#v1.0.0
+                - microsoft/edge-ai-extras#v1.0.0
+          YAML
+        end
+        let(:declaration_span) { "2:6:2:30" }
+
+        before do
+          allow(Dependabot::Apm::NativeHelpers).to receive(:run_apm_command).with("lock") do
+            File.write("apm.lock.yaml", new_lockfile_content)
+            ""
+          end
+        end
+
+        it "returns only the manifest and lockfile, as apm lock deploys nothing" do
+          expect(updated_files.map(&:name)).to eq(%w(apm.yml apm.lock.yaml))
+          expect(File.read(File.join(repo_contents_path, ".claude/skills/edge-ai/SKILL.md"))).to eq(skill_v1)
+        end
+      end
+    end
+
     context "when a full SHA pin moves to a new release" do
       let(:old_sha) { "a" * 40 }
       let(:new_sha) { "b" * 40 }
