@@ -23,7 +23,9 @@ module Dependabot
         def initialize(lockfile)
           packages = FileParser::PoetryLock.from_file(lockfile).packages
 
-          @versions_by_name = T.let(versions_by_name(packages), T::Hash[String, T::Array[String]])
+          index_packages, non_index_packages = packages.partition(&:from_index?)
+          @versions_by_name = T.let(versions_by_name(index_packages), T::Hash[String, T::Array[String]])
+          @non_index_versions_by_name = T.let(versions_by_name(non_index_packages), T::Hash[String, T::Array[String]])
           @child_names_by_package = T.let(
             child_names_by_package(packages),
             T::Hash[String, T::Hash[String, T::Array[String]]]
@@ -58,13 +60,14 @@ module Dependabot
         private
 
         # Returns one copy of the dependency for each version that the lockfile pins from a package index, spelled as
-        # in the lockfile. Returns the dependency itself when the lockfile does not pin the version that the parser
-        # selected.
+        # in the lockfile. The parser can select the version of a local or VCS entry with the same name, so that
+        # version is replaced with the index versions too. Returns the dependency itself when the lockfile does not
+        # pin the version that the parser selected, or pins the package only outside a package index.
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
         def locked_versions_of(dependency)
           versions = @versions_by_name.fetch(dependency.name, [])
-          return [dependency] unless locked_spelling_of(dependency.version, versions)
-          return [dependency] if versions == [dependency.version]
+          return [dependency] if versions.empty? || versions == [dependency.version]
+          return [dependency] unless selected_version_locked?(dependency, versions)
 
           versions.map do |version|
             Dependabot::Dependency.new(
@@ -91,6 +94,12 @@ module Dependabot
             child = dependencies_by_name[child_name]
             child ? locked_versions_of(child) : []
           end
+        end
+
+        sig { params(dependency: Dependabot::Dependency, index_versions: T::Array[String]).returns(T::Boolean) }
+        def selected_version_locked?(dependency, index_versions)
+          !locked_spelling_of(dependency.version, index_versions).nil? ||
+            !locked_spelling_of(dependency.version, @non_index_versions_by_name.fetch(dependency.name, [])).nil?
         end
 
         # Uses the children of every locked version when the lockfile does not pin the dependency's version.
@@ -120,7 +129,7 @@ module Dependabot
         end
         def versions_by_name(packages)
           versions = T.let({}, T::Hash[String, T::Array[String]])
-          packages.select(&:from_index?).each do |package|
+          packages.each do |package|
             name = NameNormaliser.normalise(package.name)
             versions[name] = versions.fetch(name, []) | [package.version]
           end

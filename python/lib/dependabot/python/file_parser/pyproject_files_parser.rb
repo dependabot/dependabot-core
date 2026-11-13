@@ -284,8 +284,9 @@ module Dependabot
         def lockfile_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
+          source_types = %w(directory git url)
           poetry_lock_document.packages.each do |package|
-            next unless package.from_index?
+            next if source_types.include?(package.source_type)
 
             name = normalise(package.name)
 
