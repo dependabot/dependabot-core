@@ -19,12 +19,14 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "business",
+      name: dependency_name,
       version: version,
       requirements: requirements,
-      package_manager: "dummy"
+      package_manager: package_manager
     )
   end
+  let(:dependency_name) { "business" }
+  let(:package_manager) { "dummy" }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
 
@@ -1959,6 +1961,57 @@ RSpec.describe Dependabot::GitCommitChecker do
         expect(checker_with_metadata_fetcher.local_tag_for_pinned_sha).to be_nil
         expect(checker_with_metadata_fetcher.local_tag_for_pinned_sha).to be_nil
         expect(git_metadata_fetcher).to have_received(:tags_for_upload_pack).once
+      end
+    end
+  end
+
+  describe "#most_specific_version_tag_for_sha" do
+    let(:commit_sha) { "a" * 40 }
+    let(:tags) do
+      [
+        Dependabot::GitRef.new(name: "test-setup-action-v1.1.0", commit_sha: commit_sha),
+        Dependabot::GitRef.new(name: "other-action-v3.0.0", commit_sha: commit_sha)
+      ]
+    end
+
+    before do
+      allow(checker).to receive(:local_tags).and_return(tags)
+    end
+
+    context "with a GitHub Actions dependency in a Release Please monorepo" do
+      let(:dependency_name) { "org/actions/test-setup-action" }
+      let(:package_manager) { "github_actions" }
+
+      before do
+        allow(Dependabot::Utils)
+          .to receive(:version_class_for_package_manager)
+          .with("github_actions")
+          .and_return(Dependabot::Version)
+      end
+
+      it "selects the tag for the dependency component" do
+        expect(checker.most_specific_version_tag_for_sha(commit_sha))
+          .to eq("test-setup-action-v1.1.0")
+      end
+    end
+
+    context "with another package manager" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/org/actions",
+          branch: "main",
+          ref: commit_sha
+        }
+      end
+
+      before do
+        allow(checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+      end
+
+      it "does not treat component-prefixed tags as version tags" do
+        expect(checker.most_specific_version_tag_for_sha(commit_sha)).to be_nil
+        expect(checker.local_tag_for_pinned_sha).to be_nil
       end
     end
   end
