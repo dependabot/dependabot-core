@@ -10,9 +10,15 @@ dependency =
   |> List.first()
   |> String.to_atom()
 
+# Mix only knows about transitive dependencies once their parents are fetched,
+# so only name declared ones. Removing a dependency from the lock is enough
+# for Hex to unlock it.
+declared? = Enum.any?(Mix.Dep.Converger.converge(), &(&1.app == dependency))
+names = if declared?, do: [dependency], else: []
+
 # Fetch dependencies that needs updating
 {dependency_lock, rest_lock} = Map.split(Mix.Dep.Lock.read(), [dependency])
-Mix.Dep.Fetcher.by_name([dependency], dependency_lock, rest_lock, [])
+Mix.Dep.Fetcher.by_name(names, dependency_lock, rest_lock, [])
 
 args = [
   "deps.get",
