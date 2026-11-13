@@ -4,23 +4,23 @@
   "files": [
     {
       "path": "catalog.json",
-      "sha256": "8c2349e31da02165797392a532fd4f84261c7b76d65ab523aeaac7ff552f2a07"
+      "sha256": "741936599de1a6c7e648c7a366f0ee386d5bc30e9a3d7d1de266dc0e48488391"
     },
     {
       "path": "catalog.schema.json",
-      "sha256": "c4630001f3bd23a84942c4d15f1c9a086e4cbdc287aa57806104b7a26952a9fc"
+      "sha256": "f14901df4b08dabc5573b6f830b926add92824ab1ee91e60b52ad80a3d46caa5"
     },
     {
       "path": "fixtures/filenames.json",
-      "sha256": "67082bab09ad116bb1bcc25a85432f060f695e3af60062fc551326370ec2d036"
+      "sha256": "d3549d3a7c54f3e35c2037702a3f1d8d806614d2398e178408c6cca2bc97ff42"
     },
     {
       "path": "fixtures/invalid_catalogs.json",
-      "sha256": "6f875f707b6734ecd897007c9aaa195c9babc93c6589e4f988ab3a2fc816250c"
+      "sha256": "8b362243a896938d829bd9d423b3941c1cf12d58604e4310d9793302c7e80948"
     },
     {
       "path": "fixtures/owners.json",
-      "sha256": "631969fd5fe683c34d178bb1e88249ee459353754f9ca35795240b6d947b8377"
+      "sha256": "0fadbbe86029774d9e33aec815563ae9515a60991a922010947bee2fd2c3da62"
     }
   ]
 }
