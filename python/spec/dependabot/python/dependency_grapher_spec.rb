@@ -1531,9 +1531,20 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
   end
 
   describe "graph version" do
-    # uv's lock also covers parsing code in this gem, and uv's CI does not run when only this gem changes.
+    let(:graph_versions) { Dependabot::DependencyGraphers::GraphVersions }
+
     it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
-      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: %w(pip uv))).to be_empty
+      expect(graph_versions.stale_owners(owners: ["pip"])).to be_empty
+    end
+
+    # uv's lock also covers parsing code in this gem, but this image has no uv sources and uv's CI does not run
+    # when only this gem changes. A change to that shared code still makes pip stale here, and the refresh
+    # script then requires a decision for every stale owner, uv included.
+    it "covers every source uv shares with this gem" do
+      shared = graph_versions.entries.fetch("uv").sources.reject { |source| source.start_with?("uv/") }
+      pip = graph_versions.entries.fetch("pip").sources
+
+      expect(graph_versions.source_files(shared) - graph_versions.source_files(pip)).to be_empty
     end
   end
 end
