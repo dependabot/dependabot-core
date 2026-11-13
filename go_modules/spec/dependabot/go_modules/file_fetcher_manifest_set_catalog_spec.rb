@@ -23,7 +23,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     end
 
     it "assigns every go.mod directory to the go_modules owner" do
-      expect(ecosystem.select_owner(%w(go.mod go.sum))&.id).to eq("go_modules")
+      expect(ecosystem.select_owner(%w(go.mod go.sum)).owner&.id).to eq("go_modules")
     end
   end
 end

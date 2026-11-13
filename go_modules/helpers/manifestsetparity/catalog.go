@@ -81,19 +81,33 @@ func (e *Ecosystem) MatchingRuleIDs(basename string) []string {
 	return ids
 }
 
-// SelectOwner returns the first owner whose predicate holds, or "" when none applies.
-func (e *Ecosystem) SelectOwner(basenames []string) string {
+// SelectOwner evaluates presence owners before the otherwise owner. Exactly one matching presence
+// owner wins; more than one is ambiguous and returns ("", true). With none, the otherwise owner (or "")
+// applies.
+func (e *Ecosystem) SelectOwner(basenames []string) (id string, ambiguous bool) {
+	fallback := ""
+	matched := 0
 	for _, owner := range e.Owners {
 		if owner.Otherwise {
-			return owner.ID
+			fallback = owner.ID
+			continue
 		}
 		for _, name := range owner.WhenAnyBasename {
 			if slices.Contains(basenames, name) {
-				return owner.ID
+				id = owner.ID
+				matched++
+				break
 			}
 		}
 	}
-	return ""
+	switch matched {
+	case 0:
+		return fallback, false
+	case 1:
+		return id, false
+	default:
+		return "", true
+	}
 }
 
 // Parse validates and loads a catalog. Any violation rejects the whole document.

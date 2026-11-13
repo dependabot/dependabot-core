@@ -16,7 +16,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
     let(:basenames) do
       fixtures = JSON.parse(File.read(File.join(Dependabot::ManifestSets::FIXTURES_DIR, "filenames.json")))
-      fixture_names = fixtures["cases"].select { |c| c["ecosystem"] == "pypi" }.map { |c| c["basename"] }
+      fixture_names = fixtures["cases"].select { |c| c["ecosystem"] == "pypi" && !c.key?("catalog") }
+                                       .map { |c| c["basename"] }
       extra_names = %w(
         requirements.txt Requirements.txt REQUIREMENTS.txt requirements.TXT requirements.txt.bak
         prequire.txt acquire.txt codependent.txt require.dev.txt require-dev.txt py3-depends.txt
@@ -25,6 +26,10 @@ RSpec.describe Dependabot::Python::FileFetcher do
       ) + ["dev requirements.txt", "requirements dev.txt"]
       (fixture_names + extra_names).uniq - uv_selectors
     end
+
+    # The grapher's case-insensitive name filters also fold U+017F LONG S to "s"; catalog rules are
+    # ASCII-only by design, so these names are deliberately outside the catalog.
+    let(:unicode_folding_divergences) { ["requirementſ.txt", "REQUIREMENTſ.txt", "dependencieſ.txt", "dependſ.txt"] }
 
     # The fetcher keeps any .txt/.in file whose content parses; the grapher then keeps only .txt files
     # whose names look like manifests. The fetcher's extension and exact-name checks are case-sensitive.
@@ -38,7 +43,12 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
     it "matches exactly the basenames core treats as pip manifests" do
       mismatches = basenames.reject { |name| ecosystem.rule_matches?(name) == core_manifest?(name) }
-      expect(mismatches).to eq([])
+      expect(mismatches).to match_array(unicode_folding_divergences)
+    end
+
+    it "only diverges from core on non-ASCII names that core's case folding accepts" do
+      expect(unicode_folding_divergences.map { |name| [ecosystem.rule_matches?(name), core_manifest?(name)] })
+        .to all(eq([false, true]))
     end
 
     it "only matches basenames that satisfy the fetcher's required files check" do
@@ -47,7 +57,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
     end
 
     it "selects pip as the owner whenever no uv selector is present" do
-      expect(ecosystem.select_owner(%w(requirements.txt pyproject.toml))&.id).to eq("pip")
+      expect(ecosystem.select_owner(%w(requirements.txt pyproject.toml)).owner&.id).to eq("pip")
     end
   end
 end

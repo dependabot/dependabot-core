@@ -9,8 +9,8 @@ without re-implementing ecosystem logic. `Dependabot::ManifestSets.catalog` load
 | --- | --- |
 | `catalog.json` | The catalog (schema version 1). |
 | `catalog.schema.json` | JSON Schema (2020-12) for the document shape. |
-| `fixtures/filenames.json` | Basename → expected matching rule IDs. |
-| `fixtures/owners.json` | Directory basenames → expected owner. |
+| `fixtures/filenames.json` | Basename → expected matching rule IDs. A case may carry its own `catalog` (a JSON string). |
+| `fixtures/owners.json` | Directory basenames → expected owner, or `"ambiguous": true`. A case may carry its own `catalog` (a JSON string) instead of using `catalog.json`. |
 | `fixtures/invalid_catalogs.json` | Catalogs that must be rejected, with the expected error code. |
 | `digests.json` | sha256 of every published file, for vendoring (see below). |
 
@@ -37,9 +37,11 @@ without re-implementing ecosystem logic. `Dependabot::ManifestSets.catalog` load
   directory describe the same set.
 - A directory holds a set when any file directly in it matches any path rule of the ecosystem. When
   none does (including when the directory no longer exists), the set is absent.
-- Owners are evaluated in order: the first owner with a `when_any_basename` entry present in the
-  directory wins, otherwise the `"otherwise": true` owner does. At most one owner may be
-  `otherwise`, and it must be last; without one, a directory matching no selector has no owner.
+- Presence owners (`when_any_basename`) are evaluated before the `"otherwise": true` owner. If
+  exactly one presence owner has a basename present in the directory it owns the set; if more than
+  one does, ownership is **ambiguous** and the set is unresolvable (it is never first-match-wins).
+  If none does, the `otherwise` owner applies. At most one owner may be `otherwise`, and it must be
+  last; without one, a directory matching no selector has no owner.
 - `inputs_matched_by_rules: true` promises that every file a set can report as an input matches one
   of the ecosystem's rules. It is `false` for pypi because lockfiles such as `Pipfile.lock`, and
   files referenced with `-r`/`-c`, are inputs without defining a set.
@@ -53,8 +55,11 @@ RFC 8259 JSON reject the **whole** catalog; nothing is partially loaded.
 accepted:
 
 - starts with `\A` and ends with `\z`, with no top-level `|`;
-- groups `(...)`, `(?:...)` and `(?i:...)` only (no other flags, lookaround or backreferences);
-  `(?i:` is allowed only in ASCII-only patterns;
+- groups `(...)` and `(?:...)` only (no flags, lookaround or backreferences). Inline flags such
+  as `(?i:` are excluded because both engines apply Unicode case folding under them (U+212A
+  KELVIN SIGN matches `k`, U+017F LATIN SMALL LETTER LONG S matches `s`) and their folding tables
+  are not guaranteed to agree. Case-insensitivity is written out as ASCII classes such as
+  `[Rr][Ee]`, so it never matches non-ASCII characters;
 - escapes: `\t \n \v \f \r` and the punctuation `` . ^ $ | ? * + ( ) [ ] { } \ / - ``;
 - character classes without nesting, POSIX classes, `&&`, or a leading `]`;
 - quantifiers `* + ?` and `{n}`, `{n,}`, `{n,m}` (n ≤ m ≤ 1000); no lazy or possessive forms;
@@ -85,7 +90,8 @@ each regex must be at most 1024 bytes. Validation failures raise
 ## Ecosystem notes
 
 **pypi.** The `.txt` rules mirror the requirements grapher's name filters, applied to basenames;
-only the keyword is case-insensitive, because the fetcher's `.txt` extension check is
+only the keyword is case-insensitive, and only for ASCII letters (the grapher's filters also fold
+U+017F LONG S to `s`; the catalog deliberately does not), because the fetcher's `.txt` extension check is
 case-sensitive. `.in` files match by name only (Core additionally checks their content). A
 directory holding only `uv.lock` still holds a set, although the uv fetcher needs `pyproject.toml`
 next to it.

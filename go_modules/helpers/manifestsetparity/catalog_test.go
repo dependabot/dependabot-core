@@ -61,9 +61,10 @@ func TestBundledCatalogIsValid(t *testing.T) {
 }
 
 func TestFilenameFixtures(t *testing.T) {
-	catalog := bundledCatalog(t)
+	bundled := bundledCatalog(t)
 	var fixtures struct {
 		Cases []struct {
+			Catalog       *string  `json:"catalog"`
 			Ecosystem     string   `json:"ecosystem"`
 			Basename      string   `json:"basename"`
 			MatchingRules []string `json:"matching_rules"`
@@ -74,6 +75,15 @@ func TestFilenameFixtures(t *testing.T) {
 		t.Fatal("no filename fixtures")
 	}
 	for _, c := range fixtures.Cases {
+		catalog := bundled
+		if c.Catalog != nil {
+			parsed, err := Parse([]byte(*c.Catalog))
+			if err != nil {
+				t.Errorf("%q: inline catalog is invalid: %v", c.Basename, err)
+				continue
+			}
+			catalog = parsed
+		}
 		eco := catalog.Ecosystem(c.Ecosystem)
 		if eco == nil {
 			t.Errorf("unknown ecosystem %q", c.Ecosystem)
@@ -86,23 +96,37 @@ func TestFilenameFixtures(t *testing.T) {
 }
 
 func TestOwnerFixtures(t *testing.T) {
-	catalog := bundledCatalog(t)
+	bundled := bundledCatalog(t)
 	var fixtures struct {
 		Cases []struct {
+			Name      string   `json:"name"`
+			Catalog   *string  `json:"catalog"`
 			Ecosystem string   `json:"ecosystem"`
 			Basenames []string `json:"basenames"`
 			Owner     string   `json:"owner"`
+			Ambiguous bool     `json:"ambiguous"`
 		} `json:"cases"`
 	}
 	readJSON(t, filepath.Join(dataDir(t), "fixtures", "owners.json"), &fixtures)
 	for _, c := range fixtures.Cases {
+		catalog := bundled
+		if c.Catalog != nil {
+			parsed, err := Parse([]byte(*c.Catalog))
+			if err != nil {
+				t.Errorf("%s: inline catalog is invalid: %v", c.Name, err)
+				continue
+			}
+			catalog = parsed
+		}
 		eco := catalog.Ecosystem(c.Ecosystem)
 		if eco == nil {
 			t.Errorf("unknown ecosystem %q", c.Ecosystem)
 			continue
 		}
-		if got := eco.SelectOwner(c.Basenames); got != c.Owner {
-			t.Errorf("%s %v: selected %q, fixture expects %q", c.Ecosystem, c.Basenames, got, c.Owner)
+		got, ambiguous := eco.SelectOwner(c.Basenames)
+		if got != c.Owner || ambiguous != c.Ambiguous {
+			t.Errorf("%s %v: selected (%q, ambiguous=%v), fixture expects (%q, ambiguous=%v)",
+				c.Ecosystem, c.Basenames, got, ambiguous, c.Owner, c.Ambiguous)
 		}
 	}
 }

@@ -44,13 +44,18 @@ RSpec.describe Dependabot::ManifestSets::Catalog do
 
     fixture_cases.call("filenames.json").each do |c|
       it "matches #{c['basename'].inspect} in #{c['ecosystem']} with #{c['matching_rules'].inspect}" do
-        expect(catalog.ecosystem(c["ecosystem"]).matching_rule_ids(c["basename"])).to eq(c["matching_rules"])
+        fixture_catalog = c["catalog"] ? described_class.parse(c["catalog"]) : catalog
+        expect(T.must(fixture_catalog.ecosystem(c["ecosystem"])).matching_rule_ids(c["basename"]))
+          .to eq(c["matching_rules"])
       end
     end
 
     fixture_cases.call("owners.json").each do |c|
-      it "selects #{c['owner']} for #{c['ecosystem']} #{c['basenames'].inspect}" do
-        expect(catalog.ecosystem(c["ecosystem"]).select_owner(c["basenames"])&.id).to eq(c["owner"])
+      expected = c["ambiguous"] ? "ambiguous ownership" : c["owner"]
+      it "selects #{expected} for #{c['ecosystem']} #{c['basenames'].inspect}#{" (#{c['name']})" if c['name']}" do
+        fixture_catalog = c["catalog"] ? described_class.parse(c["catalog"]) : catalog
+        selection = T.must(fixture_catalog.ecosystem(c["ecosystem"])).select_owner(c["basenames"])
+        expect([selection.owner&.id, selection.ambiguous]).to eq([c["owner"], c.fetch("ambiguous", false)])
       end
     end
 

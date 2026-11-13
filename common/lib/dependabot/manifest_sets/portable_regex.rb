@@ -34,7 +34,6 @@ module Dependabot
         @source = source
         @pos = T.let(0, Integer)
         @group_depth = T.let(0, Integer)
-        @case_insensitive = T.let(false, T::Boolean)
         # True when the previous token can be repeated (an atom or a closed group).
         @repeatable = T.let(false, T::Boolean)
       end
@@ -64,9 +63,6 @@ module Dependabot
 
         scan(body)
         reject("non_portable_regex", "unbalanced group") unless @group_depth.zero?
-        return unless @case_insensitive && !@source.ascii_only?
-
-        reject("non_portable_regex", "patterns using (?i: must be ASCII-only")
       end
 
       sig { params(body: String).void }
@@ -134,15 +130,10 @@ module Dependabot
       sig { params(chars: T::Array[String]).void }
       def scan_group_open(chars)
         if chars[@pos + 1] == "?"
-          case chars[@pos + 2]
-          when ":" then @pos += 3
-          when "i"
-            reject("non_portable_regex", "only the scoped (?i: flag group is allowed") unless chars[@pos + 3] == ":"
-            @case_insensitive = true
-            @pos += 4
-          else
-            reject("non_portable_regex", "only (...), (?:...) and (?i:...) groups are allowed")
-          end
+          # Flags such as (?i: are excluded: they fold non-ASCII characters (U+212A matches k), so rules
+          # spell out ASCII classes instead.
+          reject("non_portable_regex", "only (...) and (?:...) groups are allowed") unless chars[@pos + 2] == ":"
+          @pos += 3
         else
           @pos += 1
         end

@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Uv::FileFetcher do
     end
 
     it "selects uv as the owner whenever a uv selector is present" do
-      expect(ecosystem.select_owner(%w(requirements.txt pyproject.toml uv.lock))&.id).to eq("uv")
+      expect(ecosystem.select_owner(%w(requirements.txt pyproject.toml uv.lock)).owner&.id).to eq("uv")
     end
   end
 end
