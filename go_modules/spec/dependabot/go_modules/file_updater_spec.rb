@@ -80,6 +80,20 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
     end
 
+    context "when nothing has changed" do
+      let(:dependency_version) { dependency_previous_version }
+      let(:requirements) { previous_requirements }
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["rsc.io/quote"],
+            "dependency-files" => ["go.mod", "go.sum"]
+          )
+        end
+      end
+    end
+
     context "with an indirect dependency update" do
       let(:requirements) { [] }
       let(:previous_requirements) { [] }

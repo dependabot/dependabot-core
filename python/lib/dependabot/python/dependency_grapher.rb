@@ -12,6 +12,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/pipenv_runner"
+require "dependabot/python/requirement_references"
 require "dependabot/python/shared_file_fetcher"
 require "toml-rb"
 
@@ -63,6 +64,10 @@ module Dependabot
           generate_ephemeral_lockfile!
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
+
+        # Graphs report what each manifest installs, and pip installs only what a `-c` target pins, not the rest of it.
+        # Checked last, as the package manager is memoised and must see any generated lockfile.
+        file_parser.options[:requirement_roots] = true if supports_layering?
         super
       end
 
@@ -174,11 +179,10 @@ module Dependabot
       end
 
       # Resolves the `.txt` files referenced from a requirements file via `-r`/`-c`, returning their names
-      # relative to the repo (matching the fetched DependencyFile names) so we can retain them. Delegates to
-      # RequirementsLayers.referenced_paths so grouping and the bystander filter resolve references identically.
+      # relative to the repo (matching the fetched DependencyFile names) so we can retain them.
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def referenced_txt_names(file)
-        RequirementsLayers.referenced_paths(file).select { |path| path.end_with?(".txt") }
+        RequirementReferences.paths(file).select { |path| path.end_with?(".txt") }
       end
 
       sig { returns(T::Boolean) }

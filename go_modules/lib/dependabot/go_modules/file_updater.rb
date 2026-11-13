@@ -44,7 +44,7 @@ module Dependabot
                           updated_single_module_files
                         end
 
-        raise "No files changed!" if updated_files.none?
+        raise no_files_changed_error("No files changed!") if updated_files.none?
 
         updated_files
       end

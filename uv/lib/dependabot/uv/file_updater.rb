@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-require "dependabot/error_report_context"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
@@ -24,27 +23,13 @@ module Dependabot
 
         if updated_files.none? ||
            updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
-          raise no_files_changed_error(updated_files)
+          raise no_files_changed_error("No files have changed!", { updated_files: updated_files.map(&:name) })
         end
 
         updated_files
       end
 
       private
-
-      sig { params(updated_files: T::Array[DependencyFile]).returns(RuntimeError) }
-      def no_files_changed_error(updated_files)
-        error = RuntimeError.new("No files have changed!")
-        Dependabot::ErrorReportContext.attach(
-          error,
-          {
-            dependency_names: dependencies.map(&:name),
-            dependency_files: dependency_files.map(&:name),
-            updated_files: updated_files.map(&:name)
-          }
-        )
-        error
-      end
 
       sig { returns(T.nilable(Symbol)) }
       def subdependency_resolver

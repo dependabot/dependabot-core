@@ -20,6 +20,8 @@ module Dependabot
         const :source_requirement, T.nilable(String), default: nil
         const :extras, T::Array[String]
         const :requirement_type, T.nilable(String), default: nil
+        # Reached through a `-c` line, so it pins a version without adding a requirement.
+        const :constraint, T::Boolean, default: false
 
         sig { params(result: Object).returns(T::Array[PepDependency]) }
         def self.from_helper_result(result)
@@ -56,7 +58,8 @@ module Dependabot
             requirement_type: PyprojectValueParser.optional_string(
               hash["requirement_type"],
               "PEP dependency requirement_type"
-            )
+            ),
+            constraint: hash["constraint"] == true
           )
         end
       end
