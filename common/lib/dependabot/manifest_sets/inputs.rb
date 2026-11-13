@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "open3"
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
@@ -62,14 +61,17 @@ module Dependabot
         new(files: files.sort_by { |file| file.path.b })
       end
 
-      # `git cat-file --batch-check` reads one `<rev>:<path>` per line, so a path must not contain a newline;
-      # anything escaping the repository root has no blob either.
+      # `git ls-tree -z` separates entries with NUL, so a path must not contain one; a newline would also be
+      # ambiguous in a path list, and anything escaping the repository root has no blob either.
       sig { params(path: String).returns(T::Boolean) }
       def self.batch_safe?(path)
         !path.empty? && !path.include?("\n") && !path.include?("\0") &&
           path != ".." && !path.start_with?("../", "/")
       end
       private_class_method :batch_safe?
+
+      # A full SHA-1 or SHA-256 object ID.
+      OBJECT_ID = /\A(?:\h{40}|\h{64})\z/
 
       # Mode of a regular (possibly executable) file in a Git tree; symlinks (120000) and submodules differ.
       REGULAR_FILE_MODES = %w(100644 100755).freeze
@@ -83,31 +85,39 @@ module Dependabot
       def self.blob_oids(repo_contents_path, commit, paths)
         return [] if paths.empty?
 
-        stdin = paths.map { |path| "#{commit}:#{path}\n" }.join
-        # Git versions without %(objectmode) fail here, which reports unknown provenance rather than guessing.
-        stdout, status = Open3.capture2(
-          "git",
-          "-C",
-          repo_contents_path,
-          "cat-file",
-          "--batch-check=%(objectmode) %(objecttype) %(objectname)",
-          stdin_data: stdin,
-          binmode: true
-        )
-        return nil unless status.success?
+        entries = tree_entries(repo_contents_path, commit, paths)
+        return nil if entries.nil?
 
-        lines = stdout.split("\n")
-        return nil unless lines.length == paths.length
-
-        lines.map do |line|
-          mode, type, oid = line.split(" ", 3)
+        paths.map do |path|
+          mode, type, oid = entries[path]
           return nil unless REGULAR_FILE_MODES.include?(mode) && type == "blob"
-          return nil unless oid&.match?(/\A(?:\h{40}|\h{64})\z/)
+          return nil unless oid&.match?(OBJECT_ID)
 
           oid.downcase
         end
       end
       private_class_method :blob_oids
+
+      # Maps each listed path to its `[mode, type, oid]` at `commit`, or returns nil if Git cannot list them.
+      # `ls-tree` matches each path literally (no globbing) from the tree root and does not follow symlinks.
+      sig do
+        params(repo_contents_path: String, commit: String, paths: T::Array[String])
+          .returns(T.nilable(T::Hash[String, T::Array[String]]))
+      end
+      def self.tree_entries(repo_contents_path, commit, paths)
+        # The commit precedes `--` on the command line, so it must not be readable as an option.
+        return nil unless commit.match?(OBJECT_ID)
+
+        command = ["git", "-C", repo_contents_path, "ls-tree", "-z", "--full-tree", commit, "--", *paths]
+        stdout = IO.popen(command, "rb", err: File::NULL, &:read)
+        return nil unless Process.last_status&.success?
+
+        stdout.split("\0").to_h do |entry|
+          meta, path = entry.split("\t", 2)
+          [path.to_s.force_encoding(Encoding::UTF_8), meta.to_s.split(" ", 3)]
+        end
+      end
+      private_class_method :tree_entries
     end
   end
 end
