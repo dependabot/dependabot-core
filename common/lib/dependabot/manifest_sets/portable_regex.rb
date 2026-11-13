@@ -21,7 +21,8 @@ module Dependabot
       # Control-character escapes; both engines map these to the same code points.
       CONTROL_ESCAPES = %w(t n v f r).freeze
       QUANTIFIERS = %w(* + ?).freeze
-      BOUNDED_REPEAT = /\A\{(\d{1,4})(,(\d{1,4})?)?\}/
+      # Bounds may not have leading zeros: Go treats {01} as literal text while Ruby treats it as a count.
+      BOUNDED_REPEAT = /\A\{(0|[1-9]\d{0,3})(,(0|[1-9]\d{0,3})?)?\}/
 
       sig { params(rule_id: String, source: String).returns(Regexp) }
       def self.compile(rule_id, source)
@@ -36,6 +37,12 @@ module Dependabot
         @group_depth = T.let(0, Integer)
         # True when the previous token can be repeated (an atom or a closed group).
         @repeatable = T.let(false, T::Boolean)
+        # Go rejects nested {n,m} repetitions whose counts multiply past MAX_REPEAT. These track the largest
+        # such product in the item being quantified, in finished items at the current group level, and in
+        # the enclosing levels.
+        @item_weight = T.let(nil, T.nilable(Integer))
+        @level_weight = T.let(1, Integer)
+        @outer_weights = T.let([], T::Array[Integer])
       end
 
       sig { returns(Regexp) }
@@ -95,7 +102,7 @@ module Dependabot
           reject("non_portable_regex", "unsupported escape \\#{escaped}")
         end
         @pos += 2
-        @repeatable = true
+        start_item(1)
       end
 
       sig { params(chars: T::Array[String]).void }
@@ -124,7 +131,7 @@ module Dependabot
         end
         reject("non_portable_regex", "empty character class") if members.zero?
         @pos += 1
-        @repeatable = true
+        start_item(1)
       end
 
       sig { params(chars: T::Array[String]).void }
@@ -138,6 +145,9 @@ module Dependabot
           @pos += 1
         end
         @group_depth += 1
+        finish_item
+        @outer_weights.push(@level_weight)
+        @level_weight = 1
         @repeatable = false
       end
 
@@ -146,13 +156,17 @@ module Dependabot
         reject("non_portable_regex", "unbalanced group") if @group_depth.zero?
         @group_depth -= 1
         @pos += 1
-        @repeatable = true
+        finish_item
+        group_weight = @level_weight
+        @level_weight = T.must(@outer_weights.pop)
+        start_item(group_weight)
       end
 
       sig { void }
       def scan_alternation
         reject("non_portable_regex", "top-level alternation escapes the anchors") if @group_depth.zero?
         @pos += 1
+        finish_item
         @repeatable = false
       end
 
@@ -169,15 +183,24 @@ module Dependabot
         reject("non_portable_regex", "malformed {n,m} repetition") if match.nil?
         reject("non_portable_regex", "quantifier has nothing to repeat") unless @repeatable
 
-        min = Integer(T.must(match[1]), 10)
-        max = match[3] ? Integer(T.must(match[3]), 10) : nil
+        min, max = repeat_bounds(match)
         if min > MAX_REPEAT || (max && max > MAX_REPEAT)
           reject("non_portable_regex", "repetition count exceeds #{MAX_REPEAT}")
         end
         reject("non_portable_regex", "repetition {n,m} requires n <= m") if max && max < min
 
+        @item_weight = repeated_weight(min, max)
         @pos += T.must(match[0]).length
         follow_quantifier(chars)
+      end
+
+      # {n} repeats exactly n times; only {n,} is open-ended (a nil maximum).
+      sig { params(match: MatchData).returns([Integer, T.nilable(Integer)]) }
+      def repeat_bounds(match)
+        min = Integer(T.must(match[1]), 10)
+        return [min, min] if match[2].nil?
+
+        [min, match[3] ? Integer(T.must(match[3]), 10) : nil]
       end
 
       sig { params(chars: T::Array[String]).void }
@@ -192,7 +215,31 @@ module Dependabot
       sig { void }
       def atom
         @pos += 1
+        start_item(1)
+      end
+
+      sig { params(weight: Integer).void }
+      def start_item(weight)
+        finish_item
+        @item_weight = weight
         @repeatable = true
+      end
+
+      sig { void }
+      def finish_item
+        @level_weight = [@level_weight, @item_weight].max if @item_weight
+        @item_weight = nil
+      end
+
+      # Mirrors Go's regexp/syntax repeatIsValid: {0} hides what it repeats, an open {n,} counts as n, and
+      # counts along any nesting path may not multiply past MAX_REPEAT.
+      sig { params(min: Integer, max: T.nilable(Integer)).returns(Integer) }
+      def repeated_weight(min, max)
+        return 1 if max&.zero?
+
+        weight = [max || min, 1].max * T.must(@item_weight)
+        reject("non_portable_regex", "nested repetition counts exceed #{MAX_REPEAT}") if weight > MAX_REPEAT
+        weight
       end
 
       sig { params(code: String, message: String).returns(T.noreturn) }

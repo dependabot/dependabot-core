@@ -60,6 +60,19 @@ RSpec.describe Dependabot::ManifestSets::DirectoryListing do
   end
 
   describe ".read" do
+    it "lists symlinks apart from regular files" do
+      commit
+      File.symlink("requirements.txt", File.join(repo, "api", "requirements-dev.txt"))
+      git("add", "--all")
+      git("commit", "--quiet", "-m", "link")
+      head = git("rev-parse", "HEAD")
+
+      listing = described_class.read(repo_contents_path: repo, commit: head, directory: "api")
+
+      expect(listing.blobs.keys).to contain_exactly("requirements.txt", "uv.lock")
+      expect(listing.symlinks).to eq(["requirements-dev.txt"])
+    end
+
     it "lists only blobs directly in the directory, with their blob OIDs" do
       listing = described_class.read(repo_contents_path: repo, commit: commit, directory: "api")
 

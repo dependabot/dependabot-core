@@ -6,35 +6,49 @@
       "sources": [
         "common/lib/dependabot/dependency_graphers/base.rb",
         "go_modules/lib/dependabot/go_modules/dependency_grapher.rb",
-        "go_modules/lib/dependabot/go_modules/file_parser.rb"
+        "go_modules/lib/dependabot/go_modules/file_parser.rb",
+        "go_modules/lib/dependabot/go_modules/go_mod_manifest.rb",
+        "go_modules/lib/dependabot/go_modules/replace_stubber.rb"
       ],
-      "sources_sha256": "d331cc40c572e207e6b71e8fdd9db8c6cf7dcf7784d5a99ee28d99cb11803aea"
+      "sources_sha256": "5ea4bbf0a01a1a94792ccd925d54018236493bb5a3bbdcb2da8d3c19778ed9fc"
     },
     "pip": {
       "graph_version": "1",
       "sources": [
         "common/lib/dependabot/dependency_graphers/base.rb",
+        "python/helpers/lib/parser.py",
+        "python/helpers/run.py",
         "python/lib/dependabot/python/dependency_grapher.rb",
         "python/lib/dependabot/python/dependency_grapher/*.rb",
         "python/lib/dependabot/python/file_parser.rb",
         "python/lib/dependabot/python/file_parser/*.rb",
+        "python/lib/dependabot/python/marker_evaluator.rb",
         "python/lib/dependabot/python/name_normaliser.rb",
         "python/lib/dependabot/python/pip_compile_file_matcher.rb",
         "python/lib/dependabot/python/requirement_references.rb"
       ],
-      "sources_sha256": "e2137528ccf184129f566797a31cd81b9adeba5603cb5e276fdc6072bee1c199"
+      "sources_sha256": "2de6e99e52b64b0e2daa94cdfa216da5ea95d0de713bfa75408cf0621d9a0248"
     },
     "uv": {
       "graph_version": "1",
       "sources": [
         "common/lib/dependabot/dependency_graphers/base.rb",
+        "python/lib/dependabot/python/file_parser/pep_dependency.rb",
+        "python/lib/dependabot/python/file_parser/poetry_lock.rb",
+        "python/lib/dependabot/python/file_parser/pyproject_document.rb",
+        "python/lib/dependabot/python/marker_evaluator.rb",
+        "uv/helpers/lib/parser.py",
+        "uv/helpers/run.py",
         "uv/lib/dependabot/uv/dependency_grapher.rb",
         "uv/lib/dependabot/uv/file_parser.rb",
         "uv/lib/dependabot/uv/file_parser/*.rb",
         "uv/lib/dependabot/uv/lockfile_document.rb",
-        "uv/lib/dependabot/uv/name_normaliser.rb"
+        "uv/lib/dependabot/uv/name_normaliser.rb",
+        "uv/lib/dependabot/uv/requirement_parser.rb",
+        "uv/lib/dependabot/uv/requirements_file_matcher.rb",
+        "uv/lib/dependabot/uv/sources_table.rb"
       ],
-      "sources_sha256": "a1b6b8f1437386a6b85057014821dba8ec32c2a86ea40b2dcd542648e3c4b5ce"
+      "sources_sha256": "563a572d99ccd1b44574d0549faa2ca28277f9a78009e427b8739e0a069e53e2"
     }
   }
 }

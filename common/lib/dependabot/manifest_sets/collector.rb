@@ -47,7 +47,10 @@ module Dependabot
           commit: commit,
           directory: set_directory
         )
-        return Inputs.unresolvable(Inputs::UNKNOWN_PROVENANCE) if listing.nil?
+        return Inputs.unresolvable(Inputs::UNKNOWN_PROVENANCE) if listing.nil? || symlinked_selector?(
+          ecosystem,
+          listing
+        )
 
         inputs.with_files(selector_files(ecosystem, listing))
       end
@@ -94,10 +97,12 @@ module Dependabot
           commit:,
           directory: set_directory
         )
-        return Descriptor.unresolvable(**identity, reason: Descriptor::UNKNOWN_PROVENANCE) if listing.nil?
+        if listing.nil? || symlinked_selector?(ecosystem, listing)
+          return Descriptor.unresolvable(**identity, reason: Descriptor::UNKNOWN_PROVENANCE)
+        end
 
         if inputs.files.empty?
-          return nil if listing.blobs.keys.any? { |basename| ecosystem.rule_matches?(basename) }
+          return nil if (listing.blobs.keys + listing.symlinks).any? { |basename| ecosystem.rule_matches?(basename) }
 
           return Descriptor.absent(**identity)
         end
@@ -105,16 +110,26 @@ module Dependabot
         inputs = inputs.with_files(selector_files(ecosystem, listing))
         return Descriptor.unresolvable(**identity, reason: T.must(inputs.unresolvable_reason)) unless inputs.resolved?
 
-        prefix = set_directory == "." ? "" : "#{set_directory}/"
-        basenames = inputs.files.filter_map do |file|
-          basename = file.path.delete_prefix(prefix)
-          basename if file.path.start_with?(prefix) && !basename.include?("/")
-        end
-        if ecosystem.select_owner(basenames).ambiguous
+        if ecosystem.select_owner(basenames_in(set_directory, inputs.files)).ambiguous
           return Descriptor.unresolvable(**identity, reason: Descriptor::AMBIGUOUS_OWNER)
         end
 
         Descriptor.present(**identity, files: inputs.files)
+      end
+
+      sig { params(directory: String, files: T::Array[InputFile]).returns(T::Array[String]) }
+      def self.basenames_in(directory, files)
+        prefix = directory == "." ? "" : "#{directory}/"
+        files.filter_map do |file|
+          basename = file.path.delete_prefix(prefix)
+          basename if file.path.start_with?(prefix) && !basename.include?("/")
+        end
+      end
+
+      # Like a symlinked input, a symlinked selector's link text says nothing about what it points to.
+      sig { params(ecosystem: Catalog::Ecosystem, listing: DirectoryListing).returns(T::Boolean) }
+      def self.symlinked_selector?(ecosystem, listing)
+        listing.symlinks.intersect?(ecosystem.selector_basenames)
       end
 
       sig { params(ecosystem: Catalog::Ecosystem, listing: DirectoryListing).returns(T::Array[InputFile]) }
@@ -125,7 +140,7 @@ module Dependabot
           InputFile.new(path: "#{prefix}#{basename}", blob_oid: oid) if oid
         end
       end
-      private_class_method :selector_files
+      private_class_method :selector_files, :symlinked_selector?, :basenames_in
     end
   end
 end

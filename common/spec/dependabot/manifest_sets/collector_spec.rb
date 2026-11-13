@@ -303,5 +303,43 @@ RSpec.describe Dependabot::ManifestSets::Collector do
 
       expect(descriptor.reason).to eq(Dependabot::ManifestSets::Descriptor::AMBIGUOUS_OWNER)
     end
+
+    it "is unresolvable when an owner-selection file is a symlink" do
+      commit_files(%w(api/requirements.txt shared/uv.lock))
+      File.symlink("../shared/uv.lock", File.join(repo, "api", "uv.lock"))
+      git("add", "--all")
+      git("commit", "--quiet", "-m", "link")
+
+      descriptor = describe_set(
+        [file("api/requirements.txt")], directory: "/api", owner_id: "pip", commit: git("rev-parse", "HEAD")
+      )
+
+      expect(descriptor.to_h).to include("state" => "unresolvable", "reason" => "unknown_provenance")
+    end
+
+    it "is not absent while a symlinked rule-matching file remains" do
+      commit_files(%w(api/requirements.txt shared/requirements.txt))
+      git("rm", "--quiet", "api/requirements.txt")
+      FileUtils.mkdir_p(File.join(repo, "api"))
+      File.symlink("../shared/requirements.txt", File.join(repo, "api", "requirements.txt"))
+      git("add", "--all")
+      git("commit", "--quiet", "-m", "link")
+
+      expect(describe_set([], directory: "/api", owner_id: "pip", commit: git("rev-parse", "HEAD"))).to be_nil
+    end
+  end
+
+  it "reports unknown provenance when an owner-selection file is a symlink" do
+    commit_files(["api/requirements.txt", "shared/uv.lock"])
+    File.symlink("../shared/uv.lock", File.join(repo, "api", "uv.lock"))
+    git("add", "--all")
+    git("commit", "--quiet", "-m", "link")
+
+    inputs = collect(
+      [file("api/requirements.txt")], directory: "/api", owner_id: "pip", commit: git("rev-parse", "HEAD")
+    )
+
+    expect(inputs.resolved?).to be(false)
+    expect(inputs.unresolvable_reason).to eq(Dependabot::ManifestSets::Inputs::UNKNOWN_PROVENANCE)
   end
 end
