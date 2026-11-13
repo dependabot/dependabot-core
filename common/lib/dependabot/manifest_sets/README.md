@@ -46,8 +46,9 @@ without re-implementing ecosystem logic. `Dependabot::ManifestSets.catalog` load
   of the ecosystem's rules. It is `false` for pypi because lockfiles such as `Pipfile.lock`, and
   files referenced with `-r`/`-c`, are inputs without defining a set.
 
-Unknown fields, duplicate object keys, comments, invalid UTF-8 or anything that is not strict
-RFC 8259 JSON reject the **whole** catalog; nothing is partially loaded.
+Unknown fields, duplicate object keys, comments, invalid UTF-8, unpaired UTF-16 surrogate escapes
+(such as `"\ud800"`) or anything that is not strict RFC 8259 JSON reject the **whole** catalog;
+nothing is partially loaded.
 
 ## Portable regex subset
 
@@ -62,7 +63,9 @@ accepted:
   `[Rr][Ee]`, so it never matches non-ASCII characters;
 - escapes: `\t \n \v \f \r` and the punctuation `` . ^ $ | ? * + ( ) [ ] { } \ / - ``;
 - character classes without nesting, POSIX classes, `&&`, or a leading `]`;
-- quantifiers `* + ?` and `{n}`, `{n,}`, `{n,m}` (n ≤ m ≤ 1000); no lazy or possessive forms;
+- quantifiers `* + ?` and `{n}`, `{n,}`, `{n,m}` (n ≤ m ≤ 1000, no leading zeros, since Go reads
+  `{01}` as literal text); no lazy or possessive forms. Counts of nested `{n,m}` repetitions may
+  not multiply past 1000 (Go's limit), counting `{n,}` as n and ignoring anything under `{0}`;
 - no `^`/`$` anchors (Ruby treats them as line anchors).
 
 ## Limits and error codes
