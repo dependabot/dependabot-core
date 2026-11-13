@@ -65,7 +65,7 @@ module Dependabot
 
         body = @source[PREFIX.length...(@source.length - SUFFIX.length)].to_s
         # An odd run of backslashes before the final \z means the anchor is itself escaped.
-        trailing = body[/\\*\z/].to_s.length
+        trailing = body.chars.reverse.take_while { |char| char == "\\" }.length
         reject("missing_anchor", "the final \\z is escaped") if trailing.odd?
 
         scan(body)
