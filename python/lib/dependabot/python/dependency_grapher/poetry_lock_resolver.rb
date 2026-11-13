@@ -8,6 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/dependency_graphers/base"
 require "dependabot/python/file_parser/poetry_lock"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/version"
 
 module Dependabot
   module Python
@@ -56,12 +57,14 @@ module Dependabot
 
         private
 
-        # Returns one copy of the dependency for each version that the lockfile pins. Returns the dependency itself
-        # when the lockfile pins only one version of it, or does not pin the version that the parser selected.
+        # Returns one copy of the dependency for each version that the lockfile pins from a package index, spelled as
+        # in the lockfile. Returns the dependency itself when the lockfile does not pin the version that the parser
+        # selected.
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
         def locked_versions_of(dependency)
           versions = @versions_by_name.fetch(dependency.name, [])
-          return [dependency] unless versions.length > 1 && versions.include?(dependency.version)
+          return [dependency] unless locked_spelling_of(dependency.version, versions)
+          return [dependency] if versions == [dependency.version]
 
           versions.map do |version|
             Dependabot::Dependency.new(
@@ -84,12 +87,31 @@ module Dependabot
           ).returns(T::Array[Dependabot::Dependency])
         end
         def locked_children_of(dependency, dependencies_by_name)
-          version = dependency.version
-          return [] if version.nil?
-
-          @child_names_by_package.fetch(dependency.name, {}).fetch(version, []).flat_map do |child_name|
+          child_names_of(dependency).flat_map do |child_name|
             child = dependencies_by_name[child_name]
             child ? locked_versions_of(child) : []
+          end
+        end
+
+        # Uses the children of every locked version when the lockfile does not pin the dependency's version.
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+        def child_names_of(dependency)
+          child_names_by_version = @child_names_by_package.fetch(dependency.name, {})
+          version = locked_spelling_of(dependency.version, child_names_by_version.keys)
+          return child_names_by_version.fetch(version) if version
+
+          child_names_by_version.values.flatten.uniq
+        end
+
+        # The manifest can spell a pinned version differently from the lockfile (for example `v2.32.5` and `2.32.5`).
+        sig { params(version: T.nilable(String), locked_versions: T::Array[String]).returns(T.nilable(String)) }
+        def locked_spelling_of(version, locked_versions)
+          return if version.nil?
+          return version if locked_versions.include?(version)
+          return unless Python::Version.correct?(version)
+
+          locked_versions.find do |locked_version|
+            Python::Version.correct?(locked_version) && Python::Version.new(locked_version) == Python::Version.new(version)
           end
         end
 
@@ -98,7 +120,7 @@ module Dependabot
         end
         def versions_by_name(packages)
           versions = T.let({}, T::Hash[String, T::Array[String]])
-          packages.each do |package|
+          packages.select(&:from_index?).each do |package|
             name = NameNormaliser.normalise(package.name)
             versions[name] = versions.fetch(name, []) | [package.version]
           end
@@ -114,8 +136,8 @@ module Dependabot
           packages.each do |package|
             name = NameNormaliser.normalise(package.name)
             child_names_by_version = child_names.fetch(name, {})
-            child_names_by_version[package.version] =
-              package.dependency_names.map { |child_name| NameNormaliser.normalise(child_name) }
+            child_names_by_version[package.version] = child_names_by_version.fetch(package.version, []) |
+                                                      package.dependency_names.map { |n| NameNormaliser.normalise(n) }
             child_names[name] = child_names_by_version
           end
           child_names

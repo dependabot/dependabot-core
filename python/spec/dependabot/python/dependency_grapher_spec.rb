@@ -1229,6 +1229,70 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         end
       end
     end
+
+    context "when pyproject.toml spells a pinned version differently from poetry.lock" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_v2_pep621_only_non_canonical_pins.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_v2_pep621_only_non_canonical_pins.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "uses the locked spelling and includes every locked version" do
+        expect(grapher.resolved_dependencies.keys).to include(
+          "pkg:pypi/requests@2.32.5",
+          "pkg:pypi/urllib3@1.26.20",
+          "pkg:pypi/urllib3@2.2.1"
+        )
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/requests@v2.32.5",
+          "pkg:pypi/urllib3@v1.26.20"
+        )
+      end
+
+      it "keeps the relationships of the package" do
+        expect(grapher.resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies).to include(
+          "pkg:pypi/urllib3@1.26.20",
+          "pkg:pypi/urllib3@2.2.1"
+        )
+      end
+    end
+
+    context "when poetry.lock pins a package from a local path and from PyPI" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_path_and_index_locked_versions.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry_path_and_index_locked_versions.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "includes only the version from PyPI" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/six@1.17.0")
+        expect(grapher.resolved_dependencies.keys).not_to include("pkg:pypi/six@2.0.0")
+      end
+    end
   end
 
   # Regression: multiple independent pip-compile manifests stacked in a single directory.
