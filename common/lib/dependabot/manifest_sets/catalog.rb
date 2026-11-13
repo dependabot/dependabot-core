@@ -103,6 +103,12 @@ module Dependabot
         ecosystems.find { |ecosystem| ecosystem.id == id }
       end
 
+      # The ecosystem whose owners include `owner_id` (a package manager), if any.
+      sig { params(owner_id: String).returns(T.nilable(Ecosystem)) }
+      def ecosystem_for_owner(owner_id)
+        ecosystems.find { |ecosystem| ecosystem.owner(owner_id) }
+      end
+
       sig { params(text: String).returns(Catalog) }
       def self.parse(text)
         raise InvalidCatalog.new("catalog_too_large", "catalog exceeds #{MAX_BYTES} bytes") if text.bytesize > MAX_BYTES
@@ -145,6 +151,8 @@ module Dependabot
             build_ecosystem(item, "ecosystems[#{index}]")
           end
           ensure_unique(ecosystems.map(&:id), "duplicate_ecosystem_id")
+          # A job serves one package manager, so an owner ID names exactly one ecosystem.
+          ensure_unique(ecosystems.flat_map { |ecosystem| ecosystem.owners.map(&:id) }, "duplicate_owner_id")
 
           Catalog.new(ecosystems: ecosystems)
         end

@@ -32,6 +32,23 @@ module Dependabot
         unresolvable_reason.nil?
       end
 
+      # Adds `extra` files, deduplicating by path. A path seen with two different blobs cannot describe one
+      # commit, so the result becomes unresolvable rather than picking one.
+      sig { params(extra: T::Array[InputFile]).returns(Inputs) }
+      def with_files(extra)
+        return self unless resolved?
+
+        by_path = T.let({}, T::Hash[String, String])
+        (files + extra).each do |file|
+          known = by_path[file.path]
+          return Inputs.unresolvable(UNKNOWN_PROVENANCE) if known && known != file.blob_oid
+
+          by_path[file.path] = file.blob_oid
+        end
+        merged = by_path.map { |path, oid| InputFile.new(path: path, blob_oid: oid) }
+        Inputs.new(files: merged.sort_by { |file| file.path.b })
+      end
+
       sig { params(reason: String).returns(Inputs) }
       def self.unresolvable(reason)
         new(unresolvable_reason: reason)

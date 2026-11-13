@@ -31,6 +31,12 @@ RSpec.describe Dependabot::ManifestSets::Catalog do
       expect(catalog.ecosystem("golang").owners.map(&:id)).to eq(["go_modules"])
     end
 
+    it "finds a package manager's ecosystem" do
+      expect(catalog.ecosystem_for_owner("uv")&.id).to eq("pypi")
+      expect(catalog.ecosystem_for_owner("go_modules")&.id).to eq("golang")
+      expect(catalog.ecosystem_for_owner("bundler")).to be_nil
+    end
+
     it "only marks ecosystems whose inputs are all rule-matched" do
       expect(catalog.ecosystem("pypi").inputs_matched_by_rules).to be(false)
       expect(catalog.ecosystem("golang").inputs_matched_by_rules).to be(true)

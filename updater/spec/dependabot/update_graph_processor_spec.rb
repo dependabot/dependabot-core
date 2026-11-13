@@ -167,6 +167,15 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         update_graph_processor.run
       end
+
+      it "collects inputs for the job's directory and package manager" do
+        expect(Dependabot::ManifestSets::Collector).to receive(:collect)
+          .with(hash_including(directory: directory, owner_id: "bundler", commit: base_commit_sha))
+          .and_call_original
+        allow(service).to receive(:create_dependency_submission)
+
+        update_graph_processor.run
+      end
     end
   end
 

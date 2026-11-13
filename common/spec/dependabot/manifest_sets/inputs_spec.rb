@@ -135,4 +135,28 @@ RSpec.describe Dependabot::ManifestSets::Inputs do
       expect(inputs.resolved?).to be(false)
     end
   end
+
+  describe "#with_files" do
+    def input(path, oid)
+      Dependabot::ManifestSets::InputFile.new(path: path, blob_oid: oid)
+    end
+
+    let(:base) { described_class.new(files: [input("b.txt", "2" * 40)]) }
+
+    it "adds files, deduplicates by path and sorts by bytes" do
+      merged = base.with_files([input("B.txt", "1" * 40), input("b.txt", "2" * 40)])
+
+      expect(merged.files.map(&:path)).to eq(%w(B.txt b.txt))
+    end
+
+    it "becomes unresolvable when one path has two blobs" do
+      expect(base.with_files([input("b.txt", "3" * 40)]).resolved?).to be(false)
+    end
+
+    it "leaves an unresolvable result unchanged" do
+      unresolvable = described_class.unresolvable("input_limit")
+
+      expect(unresolvable.with_files([input("b.txt", "2" * 40)])).to be(unresolvable)
+    end
+  end
 end

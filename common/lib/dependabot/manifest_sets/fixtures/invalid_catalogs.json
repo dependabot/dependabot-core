@@ -122,6 +122,11 @@
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}, {\"id\": \"uv\", \"when_any_basename\": [\"x\"]}, {\"id\": \"pip\", \"otherwise\": true}]}]}"
     },
     {
+      "name": "owner reused in another ecosystem",
+      "error": "duplicate_owner_id",
+      "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}, {\"id\": \"conda\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"e\", \"filename_regex\": \"\\\\Aenvironment\\\\.yml\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}]}]}"
+    },
+    {
       "name": "otherwise not last",
       "error": "invalid_owner_order",
       "catalog": "{\"schema_version\": 1, \"ecosystems\": [{\"id\": \"pypi\", \"inputs_matched_by_rules\": false, \"path_rules\": [{\"id\": \"r\", \"filename_regex\": \"\\\\Arequirements\\\\.txt\\\\z\", \"directory\": \"parent\"}], \"owners\": [{\"id\": \"pip\", \"otherwise\": true}, {\"id\": \"uv\", \"when_any_basename\": [\"uv.lock\"]}]}]}"

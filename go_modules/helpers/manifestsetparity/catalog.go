@@ -220,6 +220,7 @@ func (b *builder) build(doc any) (*Catalog, error) {
 	}
 	catalog := &Catalog{}
 	ids := []string{}
+	ownerIDs := []string{}
 	for i, item := range items {
 		eco, err := b.ecosystem(item, fmt.Sprintf("ecosystems[%d]", i))
 		if err != nil {
@@ -227,8 +228,15 @@ func (b *builder) build(doc any) (*Catalog, error) {
 		}
 		catalog.Ecosystems = append(catalog.Ecosystems, *eco)
 		ids = append(ids, eco.ID)
+		for _, owner := range eco.Owners {
+			ownerIDs = append(ownerIDs, owner.ID)
+		}
 	}
 	if err := unique(ids, "duplicate_ecosystem_id"); err != nil {
+		return nil, err
+	}
+	// A job serves one package manager, so an owner ID names exactly one ecosystem.
+	if err := unique(ownerIDs, "duplicate_owner_id"); err != nil {
 		return nil, err
 	}
 	return catalog, nil

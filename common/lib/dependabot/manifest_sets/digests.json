@@ -16,7 +16,7 @@
     },
     {
       "path": "fixtures/invalid_catalogs.json",
-      "sha256": "8b362243a896938d829bd9d423b3941c1cf12d58604e4310d9793302c7e80948"
+      "sha256": "a4cd73824a29456927e9cd6b88ffe3a754e4d7075179c64cb0b75aa8c75959e5"
     },
     {
       "path": "fixtures/owners.json",

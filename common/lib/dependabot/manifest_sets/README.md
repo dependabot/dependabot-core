@@ -42,6 +42,8 @@ without re-implementing ecosystem logic. `Dependabot::ManifestSets.catalog` load
   one does, ownership is **ambiguous** and the set is unresolvable (it is never first-match-wins).
   If none does, the `otherwise` owner applies. At most one owner may be `otherwise`, and it must be
   last; without one, a directory matching no selector has no owner.
+- Owner IDs are package-manager names and are unique across the whole catalog, so a job's package
+  manager identifies its ecosystem.
 - `inputs_matched_by_rules: true` promises that every file a set can report as an input matches one
   of the ecosystem's rules. It is `false` for pypi because lockfiles such as `Pipfile.lock`, and
   files referenced with `-r`/`-c`, are inputs without defining a set.
