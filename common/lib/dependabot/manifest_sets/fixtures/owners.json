@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "uv.lock",
+        "pyproject.toml"
+      ],
+      "owner": "uv"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "requirements.txt",
+        "uv.lock"
+      ],
+      "owner": "uv"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "pyproject.toml"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "requirements.txt",
+        "requirements.in"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "UV.lock",
+        "pyproject.toml"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "pypi",
+      "basenames": [
+        "uv.lock.bak"
+      ],
+      "owner": "pip"
+    },
+    {
+      "ecosystem": "golang",
+      "basenames": [
+        "go.mod"
+      ],
+      "owner": "go_modules"
+    },
+    {
+      "ecosystem": "golang",
+      "basenames": [
+        "go.mod",
+        "go.sum"
+      ],
+      "owner": "go_modules"
+    }
+  ]
+}

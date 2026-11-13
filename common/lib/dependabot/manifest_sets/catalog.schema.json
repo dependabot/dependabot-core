@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dependabot:manifest-set-catalog:v1",
+  "title": "Dependabot manifest-set catalog",
+  "description": "Static rules describing which repository files belong to a manifest set and which owner (package manager) a set belongs to. JSON Schema cannot express every constraint: validators must also reject duplicate object keys, duplicate rule/owner/ecosystem ids, regexes outside the portable subset, misordered owners and catalogs over the size limits. See README.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ecosystems"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "ecosystems": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ecosystem" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"
+    },
+    "ecosystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path_rules", "owners"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "inputs_matched_by_rules": { "type": "boolean", "default": false },
+        "path_rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/path_rule" }
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/owner" }
+        }
+      }
+    },
+    "path_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "filename_regex", "directory"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "filename_regex": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 1024,
+          "pattern": "^\\\\A[\\s\\S]*\\\\z$"
+        },
+        "directory": { "const": "parent" }
+      }
+    },
+    "owner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "when_any_basename"],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "when_any_basename": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1, "pattern": "^[^/\\u0000]+$" }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "otherwise"],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "otherwise": { "const": true }
+          }
+        }
+      ]
+    }
+  }
+}
