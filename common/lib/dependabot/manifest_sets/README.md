@@ -103,7 +103,8 @@ next to it.
 
 Known v1 limitation: Core treats `requirements/*.txt` in a subdirectory as part of the parent
 directory's job, whereas catalog rules only look at files directly in a directory. Jobs whose inputs
-are not described by the catalog report the set as unresolvable rather than guessing.
+are not described by the catalog report the set as unresolvable (`unknown_provenance`) rather than
+guessing.
 
 **golang.** Only `go.mod` defines a set. `go.sum`, `go.env` and `go.work.sum` are not inputs, and
 `go.work` workspaces are reported as unresolvable.

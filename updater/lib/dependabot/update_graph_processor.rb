@@ -326,7 +326,7 @@ module Dependabot
         handle_subdependency_error(grapher.subdependency_error, source)
         status = GithubApi::DependencySubmission::SnapshotStatus::DEGRADED
         reason = GithubApi::DependencySubmission::DEGRADED_REASON_SUBDEPENDENCY_ERR
-      else
+      elsif manifest_set_enabled?
         manifest_set = describe_manifest_set(
           source,
           grapher.manifest_set_input_files,
@@ -358,8 +358,7 @@ module Dependabot
       ).returns(T.nilable(Dependabot::ManifestSets::Descriptor))
     end
     def describe_manifest_set(source, input_files, unresolvable_reason: nil)
-      return nil unless Dependabot::Experiments.enabled?(:emit_manifest_set_envelope)
-      return nil unless Dependabot::ManifestSets.catalog.ecosystem_for_owner(job.package_manager)
+      return nil unless manifest_set_enabled?
 
       Dependabot::ManifestSets::Collector.describe(
         dependency_files: input_files,
@@ -370,6 +369,14 @@ module Dependabot
         graph_version: Dependabot::DependencyGraphers::GraphVersions.for(job.package_manager),
         unresolvable_reason: unresolvable_reason
       )
+    end
+
+    # Checked before asking the grapher for manifest-set inputs, so that work is skipped entirely when no
+    # envelope will be emitted.
+    sig { returns(T::Boolean) }
+    def manifest_set_enabled?
+      Dependabot::Experiments.enabled?(:emit_manifest_set_envelope) &&
+        !Dependabot::ManifestSets.catalog.ecosystem_for_owner(job.package_manager).nil?
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
