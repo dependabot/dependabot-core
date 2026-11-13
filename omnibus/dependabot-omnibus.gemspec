@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-bun", Dependabot::VERSION
   spec.add_dependency "dependabot-bundler", Dependabot::VERSION
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
+  spec.add_dependency "dependabot-clojure", Dependabot::VERSION
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-composer", Dependabot::VERSION
   spec.add_dependency "dependabot-conda", Dependabot::VERSION

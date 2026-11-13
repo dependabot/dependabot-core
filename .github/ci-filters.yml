@@ -28,6 +28,10 @@ bundler:
 cargo:
   - *shared
   - 'cargo/**'
+clojure:
+  - *shared
+  - 'maven/**'
+  - 'clojure/**'
 common:
   - *shared
   - '**/**'

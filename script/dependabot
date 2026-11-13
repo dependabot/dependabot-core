@@ -15,6 +15,7 @@ dependabot \
   -v "$(pwd)"/bun:/home/dependabot/bun \
   -v "$(pwd)"/bundler:/home/dependabot/bundler \
   -v "$(pwd)"/cargo:/home/dependabot/cargo \
+  -v "$(pwd)"/clojure:/home/dependabot/clojure \
   -v "$(pwd)"/common:/home/dependabot/common \
   -v "$(pwd)"/composer:/home/dependabot/composer \
   -v "$(pwd)"/conda:/home/dependabot/conda \

@@ -33,7 +33,7 @@ Families:
 
 - **JavaScript / TypeScript** — `npm_and_yarn` (npm, Yarn, pnpm), `bun`, `deno`
 - **Python** — `python` (pip, pip-compile, pipenv, Poetry), `uv`, `conda`
-- **JVM** — `maven`, `gradle`, `sbt`
+- **JVM** — `maven`, `gradle`, `sbt`, `clojure`
 - **Containers** — `docker`, `docker_compose`
 
 When fixing a bug, first classify the root cause as **ecosystem-specific** or **potentially general to a family** (dependency resolution, registry handling, version comparison, requirement parsing, error handling, etc.). If it could be general, check the siblings and — with tests — fix the ones that are actually affected. Confirm the real relationship in the code before assuming a fix carries over:

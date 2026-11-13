@@ -10,6 +10,10 @@
 - changed-files:
   - any-glob-to-any-file: cargo/**
 
+"L: clojure":
+- changed-files:
+  - any-glob-to-any-file: clojure/**
+
 "L: php:composer":
 - changed-files:
   - any-glob-to-any-file: composer/**

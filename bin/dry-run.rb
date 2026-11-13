@@ -23,6 +23,7 @@
 # - bun
 # - bundler
 # - cargo
+# - clojure
 # - composer
 # - conda
 # - devcontainers
@@ -64,6 +65,7 @@ $LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
+$LOAD_PATH << "./clojure/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
@@ -125,6 +127,7 @@ require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
+require "dependabot/clojure"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
@@ -377,6 +380,7 @@ valid_package_managers = %w(
   bun
   bundler
   cargo
+  clojure
   composer
   conda
   deno

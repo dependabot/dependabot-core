@@ -30,6 +30,13 @@ PATH
       dependabot-common (= 0.404.0)
 
 PATH
+  remote: ../clojure
+  specs:
+    dependabot-clojure (0.404.0)
+      dependabot-common (= 0.404.0)
+      dependabot-maven (= 0.404.0)
+
+PATH
   remote: ../common
   specs:
     dependabot-common (0.404.0)
@@ -602,6 +609,7 @@ DEPENDENCIES
   dependabot-bun!
   dependabot-bundler!
   dependabot-cargo!
+  dependabot-clojure!
   dependabot-common!
   dependabot-composer!
   dependabot-conda!
@@ -694,6 +702,7 @@ CHECKSUMS
   dependabot-bun (0.404.0)
   dependabot-bundler (0.404.0)
   dependabot-cargo (0.404.0)
+  dependabot-clojure (0.404.0)
   dependabot-common (0.404.0)
   dependabot-composer (0.404.0)
   dependabot-conda (0.404.0)
