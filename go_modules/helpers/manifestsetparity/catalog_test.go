@@ -1,6 +1,7 @@
 package manifestsetparity
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -147,5 +148,54 @@ func assertCode(t *testing.T, doc, code string) {
 	var invalidErr *InvalidCatalogError
 	if !errors.As(err, &invalidErr) || invalidErr.Code != code {
 		t.Errorf("expected %s, got %v", code, err)
+	}
+}
+
+// TestDigestManifest verifies digests.json the way a vendoring consumer would: every listed file hashes to
+// its recorded sha256, and every published file is listed.
+func TestDigestManifest(t *testing.T) {
+	dir := dataDir(t)
+	var manifest struct {
+		SchemaVersion int    `json:"schema_version"`
+		Algorithm     string `json:"algorithm"`
+		Files         []struct {
+			Path   string `json:"path"`
+			SHA256 string `json:"sha256"`
+		} `json:"files"`
+	}
+	readJSON(t, filepath.Join(dir, "digests.json"), &manifest)
+	if manifest.SchemaVersion != 1 || manifest.Algorithm != "sha256" {
+		t.Fatalf("unexpected digest manifest header: %d %q", manifest.SchemaVersion, manifest.Algorithm)
+	}
+
+	listed := map[string]bool{}
+	for _, file := range manifest.Files {
+		data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(file.Path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := fmt.Sprintf("%x", sha256.Sum256(data)); got != file.SHA256 {
+			t.Errorf("%s: sha256 %s, manifest says %s", file.Path, got, file.SHA256)
+		}
+		listed[file.Path] = true
+	}
+
+	published, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixtures, err := filepath.Glob(filepath.Join(dir, "fixtures", "*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range append(published, fixtures...) {
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel = filepath.ToSlash(rel)
+		if rel != "digests.json" && !listed[rel] {
+			t.Errorf("%s is published but missing from digests.json", rel)
+		}
 	}
 }

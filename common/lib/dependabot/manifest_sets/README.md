@@ -12,6 +12,7 @@ without re-implementing ecosystem logic. `Dependabot::ManifestSets.catalog` load
 | `fixtures/filenames.json` | Basename → expected matching rule IDs. |
 | `fixtures/owners.json` | Directory basenames → expected owner. |
 | `fixtures/invalid_catalogs.json` | Catalogs that must be rejected, with the expected error code. |
+| `digests.json` | sha256 of every published file, for vendoring (see below). |
 
 ## Format
 
@@ -96,8 +97,28 @@ are not described by the catalog report the set as unresolvable rather than gues
 **golang.** Only `go.mod` defines a set. `go.sum`, `go.env` and `go.work.sum` are not inputs, and
 `go.work` workspaces are reported as unresolvable.
 
+## Vendoring
+
+Consumers should vendor the published files from a pinned Dependabot Core commit rather than
+tracking a branch. `digests.json` lists every published file (the catalog, its schema and the
+fixtures, by path relative to this directory and sorted by bytes) with its sha256:
+
+```json
+{ "schema_version": 1, "algorithm": "sha256", "files": [{ "path": "catalog.json", "sha256": "…" }] }
+```
+
+After copying, hash each listed file and compare. A consumer should refuse a copy where any hash
+differs or a listed file is missing. `TestDigestManifest` in
+`go_modules/helpers/manifestsetparity` is a reference implementation of that check. Run the
+fixtures through the consumer's own reader as well; that is what keeps independent readers in step
+with the validator.
+
+`bin/update-manifest-set-digests.rb` regenerates the manifest after any published file changes.
+`--check` reports whether it is stale, and `common/spec/dependabot/manifest_sets/digests_spec.rb`
+fails CI until it is regenerated.
+
 ## Changing the catalog
 
 Bumping the meaning of an existing rule invalidates every set it describes downstream, so prefer
 adding rules. Update the fixtures alongside any rule change; each rule needs at least one positive
-and one negative fixture.
+and one negative fixture. Then run `bin/update-manifest-set-digests.rb`.
