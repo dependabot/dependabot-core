@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve the child-context-only files fixture in parent subjects and hooks.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater"
 

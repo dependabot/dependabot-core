@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child fixtures or generated examples in this group. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -271,6 +272,36 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it { is_expected.to be false }
+    end
+  end
+
+  describe "#latest_version pre-release detection against the `latest` tag" do
+    before do
+      allow(checker).to receive(:latest_digest).and_return("latest-digest")
+      allow(checker).to receive(:find_latest_tag).and_call_original
+      allow(Dependabot.logger).to receive(:info)
+    end
+
+    context "when a canonical tag matches the latest digest" do
+      before do
+        allow(checker).to receive(:digest_of) { |tag| tag == "17.10" ? "latest-digest" : "other" }
+      end
+
+      it "selects the matching version, scanning once without the no-match log" do
+        expect(checker.latest_version).to eq("17.10")
+        expect(checker).to have_received(:find_latest_tag).once
+        expect(Dependabot.logger).not_to have_received(:info).with(/No canonical tag matches/)
+      end
+    end
+
+    context "when no canonical tag matches the latest digest" do
+      before { allow(checker).to receive(:digest_of).and_return("other") }
+
+      it "selects the newest version, scanning once and logging once" do
+        expect(checker.latest_version).to eq("17.10")
+        expect(checker).to have_received(:find_latest_tag).once
+        expect(Dependabot.logger).to have_received(:info).with(/No canonical tag matches/).once
+      end
     end
   end
 
@@ -2156,6 +2187,49 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it "updates to the newer alpine variant, not a different variant" do
           expect(checker.latest_version).to eq("4.0.3-alpine3.23")
+        end
+      end
+    end
+
+    context "when the registry publishes a numeric -386 architecture tag" do
+      let(:dependency_name) { "otel/opentelemetry-collector-contrib" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/otel/opentelemetry-collector-contrib/" }
+      let(:registry_tags) do
+        {
+          "name" => dependency_name,
+          "tags" => %w(0.155.0-386 0.156.0 0.156.0-386 0.157.0 0.157.0-386)
+        }.to_json
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+        %w(0.156.0 0.156.0-386 0.157.0 0.157.0-386).each_with_index do |tag, i|
+          stub_request(:head, repo_url + "manifests/#{tag}")
+            .and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub(/"sha256:(.*)"/, "\"sha256:#{i.to_s * 64}\""))
+            )
+        end
+      end
+
+      context "when on the multi-arch tag" do
+        let(:version) { "0.156.0" }
+
+        it "does not offer the -386 tag" do
+          expect(checker.latest_version).to eq("0.157.0")
+        end
+      end
+
+      context "when pinned to the -386 tag" do
+        let(:version) { "0.155.0-386" }
+
+        it "updates within the -386 tags" do
+          expect(checker.latest_version).to eq("0.157.0-386")
         end
       end
     end

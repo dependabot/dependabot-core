@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,6 +9,10 @@ require "dependabot/git_commit_checker"
 require "dependabot/git_tag_with_detail"
 require "excon"
 RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
+  extend T::Sig
+
+  # rubocop:disable RSpec/ScatteredLet -- Grouping lets would detach their required Sorbet signatures.
+  sig { returns(Dependabot::Dependency) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "github.com/terraform-aws-modules/iam/aws",
@@ -19,6 +23,7 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
     )
   end
 
+  sig { returns(T::Array[Dependabot::Credential]) }
   let(:credentials) do
     [
       Dependabot::Credential.new(
@@ -29,6 +34,7 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
       )
     ]
   end
+  sig { returns(Dependabot::GitCommitChecker) }
   let(:git_commit_checker) do
     Dependabot::GitCommitChecker.new(
       dependency: dependency,
@@ -38,11 +44,14 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
       consider_version_branches_pinned: true
     )
   end
+  sig { returns(Dependabot::Terraform::Package::PackageDetailsFetcher) } # rubocop:disable RSpec/DescribedClass -- Concrete type.
   let(:fetcher) do
     described_class.new(dependency: dependency, credentials: credentials, git_commit_checker: git_commit_checker)
   end
+  # rubocop:enable RSpec/ScatteredLet
 
   describe "#fetch_tag_and_release_date_from_provider" do
+    sig { returns(String) }
     let(:response_body) do
       {
         "provider_versions" => [
@@ -63,6 +72,7 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
   end
 
   describe "#fetch_tag_and_release_date_from_module" do
+    sig { returns(String) }
     let(:response_body) do
       {
         "module-versions" => [

@@ -1,0 +1,5 @@
+bun add v1.4.2 (744846f84)
+Resolving dependencies
+error: GET https://registry.example.com/merge@ws-kit%2fbun@ws-kit - 405
+
+error: GET https://npm.pkg.example.com/download/@example/ui/1.18.0/304abd4edc9546bd6624ee470537844920d9d79a - 401

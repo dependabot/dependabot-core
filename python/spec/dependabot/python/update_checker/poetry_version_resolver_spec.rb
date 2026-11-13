@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the dynamic class and child-context response fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -60,6 +61,173 @@ RSpec.describe namespace::PoetryVersionResolver do
       groups: ["dependencies"],
       source: nil
     }]
+  end
+
+  describe "target requirement handling for a project without [tool.poetry]" do
+    let(:dependency_name) { "certifi" }
+    let(:dependency_version) { "2024.2.2" }
+    let(:dependency_requirements) { [] }
+    let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+    let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+
+    def target_dependencies(content)
+      TomlRB.parse(resolver.send(:set_target_dependency_req, content, "==2025.1.31")).dig("project", "dependencies")
+    end
+
+    it "pins a sub-dependency when the Poetry build backend and a lockfile are present" do
+      expect(target_dependencies(pyproject_content)).to include("certifi==2025.1.31")
+    end
+
+    it "pins a sub-dependency that the lockfile places only in a non-main group into that group" do
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: lockfile.content.gsub(/^groups = \["main"\]$/, 'groups = ["dev"]')
+        )
+      )
+      parsed = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31"))
+
+      expect(parsed.dig("project", "dependencies")).not_to include(a_string_starting_with("certifi"))
+      expect(parsed.dig("dependency-groups", "dev")).to include("certifi==2025.1.31")
+    end
+
+    it "pins into both main and a group when the lockfile places it in both" do
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: lockfile.content.gsub(/^groups = \["main"\]$/, 'groups = ["main", "dev"]')
+        )
+      )
+      parsed = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31"))
+
+      expect(parsed.dig("project", "dependencies")).to include("certifi==2025.1.31")
+      expect(parsed.dig("dependency-groups", "dev")).to include("certifi==2025.1.31")
+    end
+
+    it "declines a sub-dependency that is locked at several versions" do
+      second_entry = lockfile.content[/\[\[package\]\]\nname = "certifi".*?(?=\n\[\[package\]\])/m]
+                             .sub('version = "2024.2.2"', 'version = "2023.7.22"')
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+      )
+
+      expect(resolver.latest_resolvable_version(requirement: "==2025.1.31")).to be_nil
+      expect(resolver.resolvable?(version: Gem::Version.new("2025.1.31"))).to be(false)
+    end
+
+    it "declines when no target requirement is given and the dependency is locked at several versions" do
+      second_entry = lockfile.content[/\[\[package\]\]\nname = "certifi".*?(?=\n\[\[package\]\])/m]
+                             .sub('version = "2024.2.2"', 'version = "2023.7.22"')
+      allow(resolver).to receive(:poetry_lock).and_return(
+        Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+      )
+
+      expect(resolver.latest_resolvable_version(requirement: nil)).to be_nil
+    end
+
+    context "with a direct dependency" do
+      let(:dependency_name) { "urllib3" }
+      let(:dependency_version) { "2.1.0" }
+      let(:pyproject_content) do
+        super().sub("\"urllib3>=1.26.0\"", "\"urllib3>=1.26.0; python_version < '3.12'\"")
+      end
+
+      it "declines a direct dependency that is locked at several versions" do
+        second_entry = lockfile.content[/\[\[package\]\]\nname = "urllib3".*?(?=\n\[\[package\]\]|\n\[metadata\])/m]
+                               .sub(/version = "[^"]+"/, 'version = "1.26.18"')
+        allow(resolver).to receive(:poetry_lock).and_return(
+          Dependabot::DependencyFile.new(name: "poetry.lock", content: "#{lockfile.content}\n#{second_entry}\n")
+        )
+
+        expect(resolver.latest_resolvable_version(requirement: "==2.2.0")).to be_nil
+        expect(resolver.resolvable?(version: Gem::Version.new("2.2.0"))).to be(false)
+      end
+    end
+
+    it "keeps each declaration's own constraint when no target requirement is given" do
+      content = pyproject_content.sub(
+        "\"urllib3>=1.26.0\",\n]",
+        "\"urllib3>=1.26,<3\",\n]\n\n[project.optional-dependencies]\nsec = [\"urllib3<2\"]"
+      )
+      project = TomlRB.parse(resolver.send(:set_target_dependency_req, content, nil))["project"]
+
+      expect(project["dependencies"]).to include("urllib3>=1.26,<3")
+      expect(project.dig("optional-dependencies", "sec")).to eq(["urllib3<2"])
+    end
+
+    it "leaves the manifest untouched when another build backend owns the project" do
+      content = pyproject_content.sub("poetry.core.masonry.api", "pdm.backend")
+
+      expect(target_dependencies(content)).not_to include("certifi==2025.1.31")
+    end
+
+    context "with a sub-dependency that has an install marker" do
+      let(:dependency_name) { "colorama" }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }
+
+      it "keeps the marker on the pin" do
+        expect(target_dependencies(pyproject_content))
+          .to include("colorama==2025.1.31; (platform_system == \"Windows\")")
+      end
+    end
+
+    context "with a sub-dependency that is only installed through an extra" do
+      let(:dependency_name) { "certifi" }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_extra.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_extra.lock" }
+
+      it "pins it in that extra rather than in the main dependencies" do
+        project = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2025.1.31"))["project"]
+
+        expect(project["dependencies"]).not_to include(a_string_starting_with("certifi"))
+        expect(project.dig("optional-dependencies", "security"))
+          .to include("certifi==2025.1.31; (extra == \"security\")")
+      end
+
+      it "pins it in the declared extra when the project spells the name differently" do
+        content = pyproject_content.sub("security = [", "Security = [")
+        extras = TomlRB.parse(resolver.send(:set_target_dependency_req, content, "==2025.1.31"))
+                       .dig("project", "optional-dependencies")
+
+        expect(extras.keys).to eq(["Security"])
+        expect(extras["Security"]).to include(a_string_starting_with("certifi==2025.1.31"))
+      end
+
+      it "declines when the lockfile records no extras for it" do
+        allow(resolver).to receive(:poetry_lock).and_return(
+          Dependabot::DependencyFile.new(name: "poetry.lock", content: lockfile.content.gsub(/^markers = .*\n/, ""))
+        )
+
+        expect(resolver.latest_resolvable_version(requirement: "==2025.1.31")).to be_nil
+        expect(resolver.resolvable?(version: Gem::Version.new("2025.1.31"))).to be(false)
+      end
+    end
+
+    context "with a dependency declared in several places" do
+      let(:dependency_name) { "urllib3" }
+      let(:dependency_version) { "2.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "pyproject.toml", requirement: ">=1.26.0", groups: ["dependencies"], source: nil }]
+      end
+      let(:pyproject_content) do
+        fixture("pyproject_files", pyproject_fixture_name) + <<~TOML
+          [project.optional-dependencies]
+          extra = ["urllib3>=1.26.0"]
+
+          [dependency-groups]
+          dev = ["urllib3>=1.26.0"]
+        TOML
+      end
+
+      it "updates every declaration, including dependency groups" do
+        project = TomlRB.parse(resolver.send(:set_target_dependency_req, pyproject_content, "==2.2.0"))
+
+        expect(project.dig("project", "dependencies")).to include("urllib3==2.2.0")
+        expect(project.dig("project", "optional-dependencies", "extra")).to eq(["urllib3==2.2.0"])
+        expect(project.dig("dependency-groups", "dev").first).to eq("urllib3==2.2.0")
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -367,6 +535,17 @@ RSpec.describe namespace::PoetryVersionResolver do
 
         it { is_expected.to be(true) }
       end
+
+      context "with a subdependency of a PEP 621 only project (no [tool.poetry])" do
+        let(:dependency_name) { "certifi" }
+        let(:dependency_version) { "2024.2.2" }
+        let(:dependency_requirements) { [] }
+        let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+        let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+        let(:version) { Gem::Version.new("2025.1.31") }
+
+        it { is_expected.to be(true) }
+      end
     end
 
     context "when version is not resolvable" do
@@ -449,6 +628,55 @@ RSpec.describe namespace::PoetryVersionResolver do
           expect(error.message)
             .to include("Incompatible constraints in requirements of histolab (0.7.0):")
         end
+      end
+    end
+
+    context "when the poetry.lock was written by a Poetry version this Poetry cannot read" do
+      let(:response) do
+        "The \"poetry.dev-dependencies\" section is deprecated and will be removed in a future version. " \
+          "Use \"poetry.group.dev.dependencies\" instead.\n" \
+          "Creating virtualenv interpolate-G5E7wKHY-py3.10 in /home/dependabot/.cache/pypoetry/virtualenvs\n\n" \
+          "The lock file is not compatible with the current version of Poetry.\n" \
+          "Regenerate the lock file with the `poetry lock` command."
+      end
+
+      it "raises a DependencyFileNotResolvable that says how to fix the lock file" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to eq(
+            "The lock file is not compatible with the current version of Poetry. " \
+            "Regenerate the lock file with the `poetry lock` command."
+          )
+        end
+      end
+    end
+
+    context "when the poetry.lock was written by a newer Poetry than this one can read" do
+      let(:response) do
+        "The lock file is not compatible with the current version of Poetry.\n" \
+          "Upgrade Poetry to be able to read the lock file or, alternatively, " \
+          "regenerate the lock file with the `poetry lock` command."
+      end
+
+      it "raises a DependencyFileNotResolvable that says how to fix the lock file" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to eq(
+            "The lock file is not compatible with the current version of Poetry. " \
+            "Upgrade Poetry to be able to read the lock file or, alternatively, " \
+            "regenerate the lock file with the `poetry lock` command."
+          )
+        end
+      end
+    end
+
+    context "when Poetry only warns that the lock file might not be compatible" do
+      let(:response) do
+        "The lock file might not be compatible with the current version of Poetry.\n" \
+          "Upgrade Poetry to ensure the lock file is read properly or, alternatively, " \
+          "regenerate the lock file with the `poetry lock` command.\nSome other failure"
+      end
+
+      it "is not classified as an unreadable lock file" do
+        expect { poetry_error_handler }.not_to raise_error
       end
     end
 

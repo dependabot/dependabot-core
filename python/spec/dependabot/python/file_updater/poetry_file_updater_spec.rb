@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve child requirements and generated Poetry examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -129,7 +130,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
 
     context "with the oldest python version currently supported by Dependabot" do
-      let(:python_version) { "3.10.20" }
+      let(:python_version) { "3.10.22" }
       let(:pyproject_fixture_name) { "python_310_django.toml" }
       let(:lockfile_fixture_name) { "python_310_django.lock" }
       let(:dependency) do
@@ -866,6 +867,212 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
         expect(lockfile_obj["metadata"]["content-hash"])
           .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
+      end
+    end
+
+    context "with a sub-dependency of a PEP 621 only project (no [tool.poetry])" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "certifi",
+          version: "2025.1.31",
+          previous_version: "2024.2.2",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "locks the selected version rather than letting Poetry pick a newer one" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        certifi = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "certifi" }
+
+        expect(certifi["version"]).to eq("2025.1.31")
+      end
+    end
+
+    context "with an extra-only sub-dependency of a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_extra.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_extra.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "certifi",
+          version: "2025.1.31",
+          previous_version: "2026.10.23",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: [],
+          subdependency_metadata: [{ production: true }]
+        )
+      end
+
+      it "keeps the package scoped to the extra" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        certifi = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "certifi" }
+
+        expect(certifi["version"]).to eq("2025.1.31")
+        expect(certifi["optional"]).to be(true)
+        expect(certifi["markers"]).to eq("extra == \"security\"")
+      end
+    end
+
+    context "with a dependency-group-only sub-dependency of a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_dev_group.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_dev_group.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "iniconfig",
+          version: "2.1.0",
+          previous_version: "2.3.1",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "keeps the package in its dependency group rather than promoting it to main" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        iniconfig = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "iniconfig" }
+
+        expect(iniconfig["version"]).to eq("2.1.0")
+        expect(iniconfig["groups"]).to eq(["dev"])
+      end
+    end
+
+    context "with a direct dependency declared in a dependency group of a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_dev_group.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_dev_group.lock" }
+      let(:requirements) do
+        [{ file: "pyproject.toml", requirement: ">=8", groups: ["dev"], source: nil }]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "8.3.5",
+          previous_version: "9.2.0",
+          package_manager: "pip",
+          requirements: requirements,
+          previous_requirements: requirements
+        )
+      end
+
+      it "locks it to the selected version rather than the newest the range allows" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        pytest = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "pytest" }
+
+        expect(pytest["version"]).to eq("8.3.5")
+      end
+    end
+
+    context "with a main sub-dependency that has an environment marker" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_main_env_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_main_env_marker.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "colorama",
+          version: "0.4.4",
+          previous_version: "0.4.6",
+          package_manager: "pip",
+          requirements: [],
+          previous_requirements: [],
+          subdependency_metadata: [{ production: true }]
+        )
+      end
+
+      it "keeps the marker rather than making the pin unconditional" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        colorama = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "colorama" }
+
+        expect(colorama["version"]).to eq("0.4.4")
+        expect(colorama["optional"]).to be(false)
+        expect(colorama["markers"]).to eq("platform_system == \"Windows\"")
+      end
+    end
+
+    context "with a direct dependency whose marker contains `<`" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.lock" }
+      let(:parsed_dependency) do
+        Dependabot::Python::FileParser.new(
+          dependency_files: dependency_files,
+          source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/"),
+          credentials: credentials
+        ).parse.find { |d| d.name == "urllib3" }
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "2.0.7",
+          previous_version: parsed_dependency.version,
+          package_manager: "pip",
+          requirements: parsed_dependency.requirements,
+          previous_requirements: parsed_dependency.requirements
+        )
+      end
+
+      it "is parsed as a direct dependency with its requirement" do
+        expect(parsed_dependency.requirements.first[:requirement]).to eq(">=1.26.0")
+      end
+
+      it "keeps a single declaration and updates the lockfile" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+        pyproject_content = updated_pyproject&.content || pyproject.content
+
+        expect(pyproject_content.scan("urllib3").length).to eq(1)
+        expect(pyproject_content).not_to include("urllib3==")
+
+        urllib3 = TomlRB.parse(updated_lockfile.content)["package"].find { |d| d["name"] == "urllib3" }
+        expect(urllib3["version"]).to eq("2.0.7")
+        expect(urllib3["markers"]).to eq("python_version < \"3.12\"")
+      end
+    end
+
+    context "when a direct dependency with a `<` marker needs its requirement changed" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.toml" }
+      let(:lockfile_fixture_name) { "poetry_v2_pep621_only_direct_lt_marker.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "2.0.7",
+          previous_version: "2.2.3",
+          package_manager: "pip",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.0.7",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=1.26.0",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it "rewrites the requirement and keeps the marker" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(updated_pyproject&.content).to include("\"urllib3>=2.0.7; python_version < '3.12'\"")
+      end
+
+      context "when extra whitespace precedes the marker separator" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", pyproject_fixture_name).sub(">=1.26.0;", ">=1.26.0   ;")
+          )
+        end
+
+        it "rewrites the requirement and keeps the marker" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+          expect(updated_pyproject&.content).to include("\"urllib3>=2.0.7   ; python_version < '3.12'\"")
+        end
       end
     end
   end

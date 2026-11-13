@@ -47,6 +47,13 @@ module Dependabot
           end
         end
 
+        # Rewrites the yarn lockfiles with every original entry, including the
+        # target dependency's, which `write_temporary_dependency_files` removes.
+        sig { void }
+        def write_original_yarn_lockfiles
+          write_dependency_files(yarn_locks) { |file| T.must(file.content) }
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def package_locks
           @package_locks ||= T.let(

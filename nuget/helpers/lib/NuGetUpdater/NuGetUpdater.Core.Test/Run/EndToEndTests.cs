@@ -1398,6 +1398,127 @@ public class EndToEndTests
         Assert.Equal("2.1.0", resolvedInLibrary);
     }
 
+    [Theory]
+    [InlineData("net8.0;net472", ".NETFramework,Version=v4.7.2", "net8.0")]
+    [InlineData("net8.0;net9.0;net472", ".NETFramework,Version=v4.7.2", "net8.0", "net9.0")]
+    public async Task LockFilesPreserveTargetFrameworksThroughProjectReferences(string clientTargetFrameworks, params string[] clientLockFileFrameworks)
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("projects.slnx", """
+                <Solution>
+                  <Project Path="src/client/client.csproj" />
+                  <Project Path="src/common/common.csproj" />
+                </Solution>
+                """),
+            ("src/client/client.csproj", $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>{clientTargetFrameworks}</TargetFrameworks>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                    <ProjectReference Include="..\common\common.csproj" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/client/packages.lock.json", ""),
+            ("src/common/common.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Common.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/common/packages.lock.json", "")
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "netstandard2.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "netstandard2.0"),
+            MockNuGetPackage.CreateSimplePackage("Common.Package", "1.0.0", "netstandard2.0"),
+        ], repoContentsPath);
+        var lockFiles = new[]
+        {
+            (Path: "src/common/packages.lock.json", Frameworks: new[] { ".NETStandard,Version=v2.0" }, Package: "Common.Package", UpdatedVersion: "1.0.0"),
+            (Path: "src/client/packages.lock.json", Frameworks: clientLockFileFrameworks, Package: "Some.Package", UpdatedVersion: "2.0.0"),
+        };
+        var (exitCode, output, error) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            ["restore", Path.Join(repoContentsPath, "src", "client", "client.csproj")],
+            repoContentsPath);
+        Assert.True(exitCode == 0, $"Initial restore failed.\n{output}\n{error}");
+        foreach (var (path, frameworks, package, _) in lockFiles)
+        {
+            using var lockFile = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Join(repoContentsPath, path), TestContext.Current.CancellationToken));
+            var dependencies = lockFile.RootElement.GetProperty("dependencies");
+            Assert.Equal(frameworks, dependencies.EnumerateObject().Select(p => p.Name).Order().ToArray());
+            foreach (var framework in frameworks)
+            {
+                Assert.Equal("1.0.0", dependencies.GetProperty(framework).GetProperty(package).GetProperty("resolved").GetString());
+            }
+        }
+        await GitTestHelper.InitializeRepositoryAsync(repoContentsPath, [
+            "projects.slnx",
+            "src/client/client.csproj",
+            "src/client/packages.lock.json",
+            "src/common/common.csproj",
+            "src/common/packages.lock.json",
+        ]);
+
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new TestLogger();
+        var apiHandler = new TestApiHandler();
+        var worker = new RunWorker(
+            jobId,
+            apiHandler,
+            new DiscoveryWorker(jobId, experimentsManager, logger),
+            new AnalyzeWorker(jobId, experimentsManager, logger),
+            new UpdaterWorker(jobId, experimentsManager, logger),
+            logger);
+        var job = new Job()
+        {
+            Dependencies = ["Some.Package"],
+            SecurityAdvisories = [
+                new()
+                {
+                    DependencyName = "Some.Package",
+                    AffectedVersions = [Requirement.Parse("= 1.0.0")],
+                    PatchedVersions = [Requirement.Parse(">= 2.0.0")],
+                }
+            ],
+            SecurityUpdatesOnly = true,
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "/",
+            }
+        };
+
+        await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        Assert.Contains(apiHandler.ReceivedMessages, m => m.Type == typeof(CreatePullRequest));
+        var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
+        var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content);
+        Assert.Contains("/src/client/packages.lock.json", updatedFiles.Keys);
+        foreach (var (path, frameworks, package, updatedVersion) in lockFiles)
+        {
+            var lockFileContent = updatedFiles.TryGetValue($"/{path}", out var updatedContent)
+                ? updatedContent
+                : await File.ReadAllTextAsync(Path.Join(repoContentsPath, path), TestContext.Current.CancellationToken);
+            using var lockFile = JsonDocument.Parse(lockFileContent);
+            var dependencies = lockFile.RootElement.GetProperty("dependencies");
+            Assert.Equal(frameworks, dependencies.EnumerateObject().Select(p => p.Name).Order().ToArray());
+            foreach (var framework in frameworks)
+            {
+                Assert.Equal(updatedVersion, dependencies.GetProperty(framework).GetProperty(package).GetProperty("resolved").GetString());
+            }
+        }
+    }
+
     [Fact]
     public async Task FindRootDirectory_ExpandsDirectoryThroughProjChain()
     {

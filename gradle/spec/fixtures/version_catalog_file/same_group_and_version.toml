@@ -1,0 +1,10 @@
+[libraries]
+lib-instrumentation = "com.example:lib-instrumentation:4.0.0-RC1"
+error-handler = { module = "com.example:error-handler", version = "4.0.0-RC1" }
+error-handler-extra = { module = "com.example:error-handler-extra", version = "4.0.0-RC1" }
+lib-metrics = { group = "com.example", name = "lib-metrics", version = "4.0.0-RC1" }
+test-support = { group = "com.example", name = "test-support", version = "5.1.0" }
+error-reporter = { "group" = "com.example", "name" = "error-reporter", version = "6.0.0" }
+error-reporter-extra = { "group" = "com.example", "name" = "error-reporter-extra", version = "6.0.0" }
+lib-tracing = { module = "com.example:lib-tracing", version = "7.0.0" } # keep in sync with "com.example:lib-tracing-extra"
+lib-tracing-extra = { module = "com.example:lib-tracing-extra", version = "7.0.0" }

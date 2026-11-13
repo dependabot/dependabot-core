@@ -143,9 +143,10 @@ public sealed record Job
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
-        bool considerVersions)
+        bool considerVersions,
+        bool treatEmptyDirectoryAsWildcard = false)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName: null, matchGroupName: false, treatEmptyDirectoryAsWildcard);
     }
 
     public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingGroupPullRequestForDependencies(
@@ -153,14 +154,15 @@ public sealed record Job
         bool considerVersions,
         string dependencyGroupName)
     {
-        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true);
+        return GetExistingPullRequestForDependencies(dependencies, considerVersions, dependencyGroupName, matchGroupName: true, treatEmptyDirectoryAsWildcard: false);
     }
 
     private Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(
         IEnumerable<ReportedDependencyWithDirectory> dependencies,
         bool considerVersions,
         string? dependencyGroupName,
-        bool matchGroupName)
+        bool matchGroupName,
+        bool treatEmptyDirectoryAsWildcard)
     {
         var desiredDependencies = dependencies.ToArray();
         if (desiredDependencies.Any(d => d.Version is null))
@@ -172,13 +174,14 @@ public sealed record Job
         {
             return desiredDependency.Name.Equals(existingDependency.DependencyName, StringComparison.OrdinalIgnoreCase) &&
                 (!considerVersions ||
-                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion.ToString(), StringComparison.OrdinalIgnoreCase));
+                    desiredDependency.Version!.Equals(existingDependency.DependencyVersion?.ToString(), StringComparison.OrdinalIgnoreCase));
         }
 
         bool DependenciesMatch(ReportedDependencyWithDirectory desiredDependency, PullRequestDependency existingDependency)
         {
             return NamesAndVersionsMatch(desiredDependency, existingDependency) &&
                 (existingDependency.Directory is null ||
+                    (treatEmptyDirectoryAsWildcard && existingDependency.Directory.Length == 0) ||
                     desiredDependency.Directory.Equals(existingDependency.Directory, StringComparison.Ordinal));
         }
 
@@ -243,7 +246,9 @@ public sealed record Job
                     // try to match to existing PR
                     var dependencyVersion = NuGetVersion.Parse(dependency.Version);
                     var existingPullRequests = GetAllExistingPullRequests()
-                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) && d.DependencyVersion >= dependencyVersion))
+                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) &&
+                            d.DependencyVersion is not null &&
+                            d.DependencyVersion >= dependencyVersion))
                         .ToArray();
                     if (existingPullRequests.Length > 0)
                     {

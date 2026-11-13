@@ -22,7 +22,8 @@ module Dependabot
       extend T::Sig
 
       HEADER = /^Error:[ \t]*+(?:(?<code>ERR_PNPM_[A-Z0-9_]+)[ \t]*+)?(?<rest>.*)$/
-      HEADLINE = /\A\s*×/
+      HEADLINE = /\A\s*×[ \t]?(?<text>.*)\z/
+      CAUSE = /\A\s*(?:├─▶|╰─▶)/
       MARKER = /\A\s*(?:├─▶|╰─▶|help:)[ \t]?(?<text>.*)\z/
       GUTTER = /\A\s*│[ \t]?(?<text>.*)\z/
       # pnpm wraps after a hyphen or slash without adding a space, and at a space by dropping it
@@ -48,32 +49,40 @@ module Dependabot
         logical = T.let([], T::Array[String])
         continuing = T.let(false, T::Boolean)
         previous_chunk = T.let("", String)
+        # With no cause lines, the headline is the message itself; otherwise it only summarizes what pnpm was doing
+        headline_is_message = lines.none? { |line| CAUSE.match?(line) }
 
         lines.each do |line|
-          if HEADLINE.match?(line)
+          kind, text = classify(line, headline_is_message)
+
+          if kind == :break
             continuing = false
-          elsif (marker = MARKER.match(line))
-            previous_chunk = marker[:text].to_s.strip
-            logical << previous_chunk
+          elsif kind == :start || !continuing
+            logical << text
             continuing = true
           else
-            chunk = ((gutter = GUTTER.match(line)) ? gutter[:text] : line).to_s.strip
-            if chunk.empty?
-              continuing = false
-            elsif continuing
-              logical[-1] = join_wrapped(T.must(logical.last), previous_chunk, chunk)
-              previous_chunk = chunk
-            else
-              logical << chunk
-              previous_chunk = chunk
-              continuing = true
-            end
+            logical[-1] = join_wrapped(T.must(logical.last), previous_chunk, text)
           end
+          previous_chunk = text unless kind == :break
         end
 
         logical
       end
       private_class_method :unwrap
+
+      # Whether a line starts a new message (:start), continues the previous one (:text) or ends it (:break)
+      sig { params(line: String, headline_is_message: T::Boolean).returns([Symbol, String]) }
+      def self.classify(line, headline_is_message)
+        if (headline = HEADLINE.match(line))
+          headline_is_message ? [:start, headline[:text].to_s.strip] : [:break, ""]
+        elsif (marker = MARKER.match(line))
+          [:start, marker[:text].to_s.strip]
+        else
+          chunk = ((gutter = GUTTER.match(line)) ? gutter[:text] : line).to_s.strip
+          chunk.empty? ? [:break, ""] : [:text, chunk]
+        end
+      end
+      private_class_method :classify
 
       sig { params(previous: String, previous_chunk: String, chunk: String).returns(String) }
       def self.join_wrapped(previous, previous_chunk, chunk)

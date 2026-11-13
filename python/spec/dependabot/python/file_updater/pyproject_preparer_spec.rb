@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve the child-context dependencies fixture. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -65,6 +66,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         lockfile: nil
       )
       expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
+    end
+  end
+
+  describe "#update_python_requirement" do
+    context "with a Poetry Python constraint containing alternatives" do
+      let(:pyproject_content) do
+        <<~TOML
+          [tool.poetry.dependencies]
+          python = "3.12.16 || 3.13.18"
+        TOML
+      end
+
+      it "preserves the constraint when the Python version satisfies the first alternative" do
+        expect(preparer.update_python_requirement("3.12.16")).to include('python = "3.12.16 || 3.13.18"')
+      end
+
+      it "preserves the constraint when the Python version satisfies the second alternative" do
+        expect(preparer.update_python_requirement("3.13.18")).to include('python = "3.12.16 || 3.13.18"')
+      end
+
+      it "uses a temporary constraint when the Python version satisfies neither alternative" do
+        expect(preparer.update_python_requirement("3.13.17")).to include('python = "~3.13.17"')
+      end
+    end
+
+    context "with an empty Poetry Python constraint" do
+      let(:pyproject_content) do
+        <<~TOML
+          [tool.poetry.dependencies]
+          python = ""
+        TOML
+      end
+
+      it "preserves the constraint" do
+        expect(preparer.update_python_requirement("3.13.17")).to include('python = ""')
+      end
     end
   end
 
@@ -276,6 +313,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
           project_deps = parsed.dig("project", "dependencies")
           requests_dep = project_deps.find { |d| d.start_with?("requests") }
           expect(requests_dep).to eq("requests>=2.13.0")
+        end
+      end
+    end
+
+    context "with a locked PEP 621 only project using the Poetry build backend" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+      let(:poetry_lock_fixture_name) { "poetry_v2_pep621_only.lock" }
+
+      it "freezes PEP 621 dependencies to their locked versions" do
+        project_deps = TomlRB.parse(freeze_top_level_dependencies_except).dig("project", "dependencies")
+        expect(project_deps).to all(include("=="))
+      end
+
+      context "when a dependency is locked at several versions" do
+        let(:poetry_lock_body) do
+          lock = super()
+          requests_block = lock[/\[\[package\]\]\nname = "requests".*?(?=\n\[\[package\]\])/m]
+          "#{lock}\n#{requests_block.sub('version = "2.31.0"', 'version = "2.0.0"')}\n"
+        end
+
+        it "leaves it unfrozen rather than picking one version for every declaration" do
+          project_deps = TomlRB.parse(freeze_top_level_dependencies_except).dig("project", "dependencies")
+
+          expect(project_deps).to include("requests>=2.28.0,<3.0")
+          expect(project_deps).to include(a_string_starting_with("urllib3=="))
+        end
+      end
+
+      context "when the build backend is not Poetry" do
+        let(:pyproject_content) do
+          super().sub("poetry.core.masonry.api", "setuptools.build_meta")
+        end
+
+        it "leaves the content untouched" do
+          expect(freeze_top_level_dependencies_except).to eq(pyproject_content)
         end
       end
     end

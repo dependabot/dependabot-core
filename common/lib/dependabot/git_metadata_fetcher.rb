@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "fileutils"
 require "open3"
 require "sorbet-runtime"
 require "tmpdir"
@@ -9,6 +10,7 @@ require "dependabot/errors"
 require "dependabot/git_ref"
 require "dependabot/git_tag_with_detail"
 require "dependabot/credential"
+require "dependabot/logger"
 
 module Dependabot
   class GitMetadataFetcher
@@ -344,18 +346,17 @@ module Dependabot
       uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)
 
       Dir.mktmpdir do |dir|
-        # Clone the repository into a temporary directory
-        clone_command = "git clone --bare #{uri_ending_with_git} #{dir}"
         env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
-        clone_command = SharedHelpers.escape_command(clone_command)
 
-        _stdout, stderr, process = Open3.capture3(env, clone_command)
+        # Clone the repository into a temporary directory
+        _stdout, stderr, process = clone_for_tag_details(env, uri_ending_with_git, dir)
         return GitResponse.new(body: stderr, status: 500) unless process.success?
 
         # Change to the cloned repository directory
         Dir.chdir(dir) do
-          # Fetch tags and their creation dates
-          tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
+          # Fetch tags and their creation dates. Keep the time of day: a cooldown is compared in seconds,
+          # and a date without a time reads as midnight, which ends the cooldown up to a day early.
+          tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:iso)" refs/tags'
           tags_stdout, stderr, process = Open3.capture3(env, tags_command)
 
           return GitResponse.new(body: stderr, status: 500) unless process.success?
@@ -374,6 +375,24 @@ module Dependabot
       end
     rescue Errno::ENOENT => e # Thrown when `git` isn't installed
       GitResponse.new(body: e.message, status: 500)
+    end
+
+    # Tag dates need only commits and tags, so skip trees and blobs: a full clone of a large
+    # repository can fill the disk or time out. Fall back to a full clone if the partial clone
+    # fails, so this never does worse than before.
+    sig do
+      params(env: T::Hash[String, T.nilable(String)], uri: String, dir: String)
+        .returns([String, String, Process::Status])
+    end
+    def clone_for_tag_details(env, uri, dir)
+      stdout, stderr, process = Open3.capture3(
+        env, SharedHelpers.escape_command("git clone --bare --filter=tree:0 #{uri} #{dir}")
+      )
+      return [stdout, stderr, process] if process.success?
+
+      Dependabot.logger.warn("Partial clone for tag dates failed, falling back to a full clone")
+      FileUtils.rm_rf(Dir.children(dir).map { |child| File.join(dir, child) })
+      Open3.capture3(env, SharedHelpers.escape_command("git clone --bare #{uri} #{dir}"))
     end
 
     sig do

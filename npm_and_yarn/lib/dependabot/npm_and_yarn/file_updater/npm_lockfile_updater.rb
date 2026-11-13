@@ -149,6 +149,10 @@ module Dependabot
         ERR_INVALID_AUTH = /npm error code ERR_INVALID_AUTH/
         INVALID_AUTH_CONFIG = /Invalid auth configuration found.*_auth.*must be renamed to/
 
+        # npm 12 blocked dependency errors
+        EALLOWGIT = /npm error code EALLOWGIT/
+        EALLOWREMOTE = /npm error code EALLOWREMOTE/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -404,12 +408,14 @@ module Dependabot
         #   stay in optionalDependencies section and allow version upgrades
         sig { params(install_args: T::Array[String], has_optional_dependencies: T::Boolean).returns(String) }
         def run_npm_install_lockfile_only(install_args = [], has_optional_dependencies: false)
+          allow_flags = npm_allow_flags
           command_args = [
             "install",
             *install_args,
             "--force",
             "--ignore-scripts",
-            "--package-lock-only"
+            "--package-lock-only",
+            *allow_flags
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
@@ -423,7 +429,8 @@ module Dependabot
             install_args.empty? ? "" : "<install_args>",
             "--force",
             "--ignore-scripts",
-            "--package-lock-only"
+            "--package-lock-only",
+            *allow_flags
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
@@ -469,6 +476,12 @@ module Dependabot
           return @npm_supports_min_release_age unless @npm_supports_min_release_age.nil?
 
           @npm_supports_min_release_age = Helpers.npm_supports_min_release_age?
+        end
+
+        # Returns the allow flags to pass to npm 12+ commands, respecting explicit .npmrc config.
+        sig { returns(T::Array[String]) }
+        def npm_allow_flags
+          @npm_allow_flags ||= T.let(Helpers.npm_allow_flags(dependency_files), T.nilable(T::Array[String]))
         end
 
         sig { params(arg: String).returns(String) }
@@ -788,6 +801,16 @@ module Dependabot
                   "The _auth setting in .npmrc needs to be scoped to the specific registry." \
                   "Please update your .npmrc configuration to use registry-specific auth settings."
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
+          if error_message.match?(EALLOWGIT)
+            msg = "Fetching packages of type \"git\" has been disabled by npm configuration."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(EALLOWREMOTE)
+            msg = "Fetching packages of type \"remote\" has been disabled by npm configuration."
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           raise error

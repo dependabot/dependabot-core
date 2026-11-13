@@ -535,11 +535,59 @@ public class SerializationTests : TestBase
         Assert.Equal("Some-Group-Name", jobWrapper.Job.ExistingGroupPullRequests[0].DependencyGroupName);
         Assert.Equal(2, jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies.Length);
         Assert.Equal("Some.Package", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyName);
-        Assert.Equal("1.2.3", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyVersion.ToString());
+        Assert.Equal("1.2.3", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyVersion!.ToString());
         Assert.Null(jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].Directory);
         Assert.Equal("Some.Other.Package", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyName);
-        Assert.Equal("4.5.6", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyVersion.ToString());
+        Assert.Equal("4.5.6", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyVersion!.ToString());
         Assert.Equal("/some-dir", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].Directory);
+    }
+
+    [Theory]
+    [InlineData("v0.4.53")]
+    [InlineData("not-a-version")]
+    [InlineData(null)]
+    public void DeserializeExistingGroupPullRequests_InvalidDependencyVersion(string? dependencyVersion)
+    {
+        var jsonWrapperJson = $$"""
+            {
+                "job": {
+                    "package-manager": "nuget",
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "existing-group-pull-requests": [
+                        {
+                            "dependency-group-name": "Some-Group-Name",
+                            "dependencies": [
+                                {
+                                    "dependency-name": "Some.Package",
+                                    "dependency-version": {{JsonSerializer.Serialize(dependencyVersion)}}
+                                },
+                                {
+                                    "dependency-name": "Some.Other.Package",
+                                    "dependency-version": "1.2.3"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+            """;
+
+        var logger = new StringLogger();
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson, logger);
+
+        Assert.Equal("some/repo", jobWrapper.Job.Source.Repo);
+        var pullRequest = Assert.Single(jobWrapper.Job.ExistingGroupPullRequests);
+        Assert.Equal("Some-Group-Name", pullRequest.DependencyGroupName);
+        Assert.Equal(2, pullRequest.Dependencies.Length);
+        Assert.Null(pullRequest.Dependencies[0].DependencyVersion);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), pullRequest.Dependencies[1].DependencyVersion);
+        if (dependencyVersion is not null)
+        {
+            Assert.Contains(logger.Messages, message => message.Contains(dependencyVersion) && message.Contains("unknown"));
+        }
     }
 
     [Theory]

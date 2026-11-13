@@ -176,11 +176,13 @@ module Dependabot
         def uses_declaration_pattern(declaration)
           escaped_declaration = Regexp.escape(declaration)
 
+          # The declaration must end at whitespace, a flow delimiter or the end of the line. `$` does not match
+          # before a carriage return, so a CRLF line ending has to be listed explicitly.
           /
             (?:^|[ \t{,])
             (?:"uses"|'uses'|uses)[ \t]*:[ \t]*
             (?:"#{escaped_declaration}"|'#{escaped_declaration}'|#{escaped_declaration})
-            (?=[ \t]|$|[,}\]])
+            (?=[ \t\r]|$|[,}\]])
           /x
         end
 

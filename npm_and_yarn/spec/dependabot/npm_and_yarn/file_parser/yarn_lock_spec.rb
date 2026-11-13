@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet resolves instance fixtures and matchers in loop-generated examples as class methods.
+
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser/yarn_lock"
 
@@ -24,6 +26,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
   it "preserves the sole-candidate lookup fallback" do
     expect(reader.details("example", "^9.0.0", "package.json"))
       .to have_attributes(version: "1.2.0", resolution: "example@npm:1.2.0")
+  end
+
+  context "when the requirement is only a prefix of another descriptor" do
+    let(:result) do
+      {
+        "example@npm:^1.0.0 || ^2.0.0" => {
+          "version" => "2.0.0",
+          "resolution" => "example@npm:2.0.0"
+        },
+        "example@npm:^3.0.0" => {
+          "version" => "3.0.0",
+          "resolution" => "example@npm:3.0.0"
+        }
+      }
+    end
+
+    it "does not match an incomplete descriptor" do
+      expect(reader.details("example", "^1.0.0", "package.json")).to be_nil
+    end
+  end
+
+  context "when bare descriptors contain a range with spaces" do
+    let(:result) do
+      {
+        "example@^1.0.0" => { "version" => "1.2.0" },
+        "example@^1.0.0 || ^2.0.0" => { "version" => "2.0.0" }
+      }
+    end
+
+    it "finds the entry matching the complete range" do
+      expect(reader.details("example", "^1.0.0 || ^2.0.0", "package.json"))
+        .to have_attributes(version: "2.0.0")
+    end
   end
 
   context "with unconsumed malformed dependency data" do
@@ -72,6 +107,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLock do
     it "reports the child requirement type" do
       expect { reader.parsed.values.first.dependencies }
         .to raise_error(Dependabot::DependencyFileNotParseable, /dependencies.*child.*must be a string/)
+    end
+  end
+
+  describe "nullable requirement maps" do
+    it "distinguishes unspecified maps from the graph reader's empty map" do
+      record = reader.parsed.values.first
+
+      expect(record.dependency_requirements).to be_nil
+      expect(record.optional_dependencies).to be_nil
+      expect(record.dependencies).to eq({})
+    end
+
+    [nil, {}, { "child" => "npm:other@^2", "@scope/local" => "link:../local" }].each do |value|
+      context "with both maps set to #{value.inspect}" do
+        let(:entry) { super().merge("dependencies" => value, "optionalDependencies" => value) }
+
+        it "preserves absent and explicit requirement maps" do
+          record = reader.parsed.values.first
+
+          expect(record.dependency_requirements).to eq(value)
+          expect(record.optional_dependencies).to eq(value)
+          expect(record.dependencies).to eq(value || {})
+        end
+      end
+    end
+
+    [[], { "child" => false }].each do |value|
+      context "with malformed optional requirements #{value.inspect}" do
+        let(:entry) { super().merge("optionalDependencies" => value) }
+
+        it "only reports the field when optional dependencies are read" do
+          record = reader.parsed.values.first
+          expect(record.dependencies).to eq({})
+          expect { record.optional_dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable, /optionalDependencies/) do |error|
+            expect(error.file_name).to eq("yarn.lock")
+          end
+        end
+      end
     end
   end
 

@@ -4,6 +4,9 @@ common: &common
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/**'
+apm:
+  - *common
+  - 'apm/**'
 bazel:
   - *common
   - 'bazel/**'

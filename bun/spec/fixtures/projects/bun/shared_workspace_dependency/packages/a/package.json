@@ -1,0 +1,7 @@
+{
+  "name": "pkg-a",
+  "version": "0.0.1",
+  "devDependencies": {
+    "etag": "^1.0.0"
+  }
+}

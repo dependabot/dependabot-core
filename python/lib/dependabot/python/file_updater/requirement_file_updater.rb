@@ -85,8 +85,8 @@ module Dependabot
         def unique_requirement_changes
           previous_reqs = dependency.previous_requirements || []
 
-          changes = dependency.requirements.filter_map do |new_req|
-            old_req = previous_reqs.find { |r| r.file == new_req.file && r.groups == new_req.groups }
+          changes = dependency.requirements.each_with_index.filter_map do |new_req, index|
+            old_req = matching_previous_requirement(new_req, previous_reqs, index)
             next if new_req == old_req
 
             T.let([new_req, old_req], RequirementChange)
@@ -97,6 +97,27 @@ module Dependabot
             old_req = pair[1]
             [new_req.file, old_req&.requirement, new_req.requirement]
           end
+        end
+
+        # Requirements and previous requirements are built in the same order, so
+        # pair them by position. The same package can be declared more than once
+        # in one file and group (e.g. with different environment markers), so
+        # matching on file and groups alone can pick the wrong declaration.
+        sig do
+          params(
+            new_req: Dependabot::DependencyRequirement,
+            previous_reqs: T::Array[Dependabot::DependencyRequirement],
+            index: Integer
+          ).returns(T.nilable(Dependabot::DependencyRequirement))
+        end
+        def matching_previous_requirement(new_req, previous_reqs, index)
+          positional = previous_reqs[index]
+          if previous_reqs.length == dependency.requirements.length &&
+             positional&.file == new_req.file && positional&.groups == new_req.groups
+            return positional
+          end
+
+          previous_reqs.find { |r| r.file == new_req.file && r.groups == new_req.groups }
         end
 
         sig do

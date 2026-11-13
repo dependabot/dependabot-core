@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,11 +6,12 @@ require "dependabot/go_modules/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GoModules::FileFetcher do
+  let(:credentials) { github_credentials.map { |credential| Dependabot::Credential.new(credential) } }
   let(:directory) { "/" }
   let(:file_fetcher_instance) do
     described_class.new(
       source: source,
-      credentials: github_credentials,
+      credentials: credentials,
       repo_contents_path: repo_contents_path
     )
   end
@@ -103,7 +104,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:file_fetcher_instance) do
       described_class.new(
         source: source,
-        credentials: github_credentials,
+        credentials: credentials,
         repo_contents_path: repo_contents_path
       )
     end
@@ -140,7 +141,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:file_fetcher_instance) do
       described_class.new(
         source: source,
-        credentials: github_credentials,
+        credentials: credentials,
         repo_contents_path: repo_contents_path
       )
     end
@@ -178,7 +179,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:file_fetcher_instance) do
       described_class.new(
         source: source,
-        credentials: github_credentials,
+        credentials: credentials,
         repo_contents_path: repo_contents_path
       )
     end

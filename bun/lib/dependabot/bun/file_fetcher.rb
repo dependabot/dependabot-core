@@ -19,8 +19,6 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      require_relative "file_fetcher/path_dependency_builder"
-
       # Npm always prefixes file paths in the lockfile "version" with "file:"
       # even when a naked path is used (e.g. "../dep")
       NPM_PATH_DEPENDENCY_STARTS = T.let(%w(file:).freeze, [String])

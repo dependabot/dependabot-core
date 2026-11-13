@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve examples generated from invalid JSON values. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"

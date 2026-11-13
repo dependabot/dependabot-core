@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve examples generated from unsupported TOML containers. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -66,6 +67,49 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     )
     expect(document.workspace_globs("members")).to eq(["packages/*"])
     expect(document.workspace_globs("exclude")).to eq(["packages/ignored"])
+  end
+
+  describe "#uv_git_tag_sources" do
+    let(:content) do
+      <<~TOML
+        [tool.uv.sources]
+        tagged = { git = "https://example.com/tagged.git", tag = "1.2.3" }
+        Odd_Key = { git = "https://example.com/odd.git", tag = "4.5.6" }
+        branch-only = { git = "https://example.com/branch.git", branch = "main" }
+        no-ref = { git = "https://example.com/no-ref.git" }
+        path-only = { path = "./local" }
+        arrayed = [{ git = "https://example.com/arrayed.git", tag = "7.8.9" }]
+        bad-tag = { git = "https://example.com/bad.git", tag = 1.2 }
+        bad-git = { git = { url = "https://example.com/bad.git" }, tag = "1.0.0" }
+      TOML
+    end
+
+    it "returns only the git-and-tag entries, keyed as the author wrote them" do
+      expect(document.uv_git_tag_sources).to eq(
+        "tagged" => { url: "https://example.com/tagged.git", ref: "1.2.3" },
+        "Odd_Key" => { url: "https://example.com/odd.git", ref: "4.5.6" }
+      )
+    end
+
+    context "without a [tool.uv.sources] table" do
+      let(:content) { "[project]\nname = \"x\"\n" }
+
+      it { expect(document.uv_git_tag_sources).to eq({}) }
+    end
+
+    # This runs for every PEP 621 manifest, so a table it cannot read has to yield nothing rather
+    # than stop every dependency in the repository being updated
+    [
+      ["an array of tables", "[[tool.uv.sources]]\nname = \"x\"\n"],
+      ["a string where the table belongs", "[tool.uv]\nsources = \"nope\"\n"],
+      ["a string where tool.uv belongs", "[tool]\nuv = \"nope\"\n"]
+    ].each do |shape, toml|
+      context "with #{shape}" do
+        let(:content) { toml }
+
+        it { expect(document.uv_git_tag_sources).to eq({}) }
+      end
+    end
   end
 
   context "with Poetry's reserved PyPI source" do

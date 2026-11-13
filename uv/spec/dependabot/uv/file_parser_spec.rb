@@ -1,4 +1,5 @@
 # typed: false
+# Sorbet cannot resolve generated parser examples. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -344,8 +345,95 @@ RSpec.describe Dependabot::Uv::FileParser do
 
         let(:requirements_fixture_name) { "malformed_markers.txt" }
 
-        it "does not return any dependencies" do
-          expect(dependencies).to be_empty
+        # An unparseable python_version clause can't be evaluated, so it's treated as
+        # satisfied rather than silently dropping the dependency.
+        it "keeps the dependency" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("arrow")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "when the marker combines python_version with other environment markers" do
+        let(:requirements_body) { "arrow==1.3.0 ; #{marker}\n" }
+
+        before do
+          allow(parser).to receive(:python_raw_version).and_return(python_version)
+        end
+
+        context "when a satisfied python_version is joined to a non-numeric marker using 'and'" do
+          let(:marker) { 'python_version >= "3.9" and platform_machine == "x86_64"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to a non-numeric marker using 'and'" do
+          let(:marker) { 'python_version >= "3.9" and platform_machine == "x86_64"' }
+          let(:python_version) { "3.8" }
+
+          it "discards the dependency" do
+            expect(dependencies).to be_empty
+          end
+        end
+
+        context "when a satisfied python_version is joined to a non-numeric marker using 'or'" do
+          let(:marker) { 'python_version >= "3.9" or platform_machine == "x86_64"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to a non-numeric marker using 'or'" do
+          let(:marker) { 'python_version >= "3.9" or platform_machine == "x86_64"' }
+          let(:python_version) { "3.8" }
+
+          it "keeps the dependency, since the other marker is assumed satisfied" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "when an unsatisfied python_version is joined to another numeric marker using 'or'" do
+          let(:marker) { 'python_version < "3.0" or implementation_version >= "3.0"' }
+          let(:python_version) { "3.11" }
+
+          it "keeps the dependency, since the other marker is assumed satisfied" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "with a satisfied python_full_version" do
+          let(:marker) { 'python_full_version >= "3.9.0"' }
+          let(:python_version) { "3.11.2" }
+
+          it "keeps the dependency" do
+            expect(dependencies.map(&:name)).to eq(["arrow"])
+          end
+        end
+
+        context "with an unsatisfied python_full_version" do
+          let(:marker) { 'python_full_version >= "3.9.0"' }
+          let(:python_version) { "3.8.5" }
+
+          it "discards the dependency" do
+            expect(dependencies).to be_empty
+          end
         end
       end
     end
@@ -889,6 +977,88 @@ RSpec.describe Dependabot::Uv::FileParser do
             "setuptools",
             "wheel"
           )
+      end
+    end
+
+    context "with dependencies pinned to a uv git source" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_git_tag_sources.toml")
+        )
+      end
+
+      # The requirement goes with the source: keeping the PEP 508 constraint makes
+      # requirements_up_to_date? compare it against the newest tag, so a floor above that tag would
+      # report the pin as current and it would never be updated
+      it "drops the requirement of the ones it enriches, and keeps the others'" do
+        expect(dependencies.map { |dep| [dep.name, dep.requirements.first[:requirement]] }).to eq(
+          [
+            ["requests", ">=2.31.0"],
+            ["malformed-package", "*"],
+            ["tagged-package", nil],
+            ["acme-tagged-package", nil],
+            ["other-tagged-package", nil],
+            ["array-package", "*"],
+            ["quoted-package", nil]
+          ]
+        )
+      end
+
+      it "gives a git source to every tag it can rewrite, and to nothing else" do
+        expect(dependencies.map { |dep| [dep.name, dep.requirements.first[:source]] }).to eq(
+          [
+            ["requests", nil],
+            ["malformed-package", nil],
+            ["tagged-package", { type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3" }],
+            ["acme-tagged-package",
+             { type: "git", url: "https://github.com/example/acme-tagged.git", ref: "1.2.3" }],
+            # The key is written `Other_Tagged_Package`; uv resolves it under PEP 508 normalisation
+            ["other-tagged-package", { type: "git", url: "https://github.com/example/other.git", ref: "7.8.9" }],
+            # Valid uv, in a form the rewrite cannot reach
+            ["array-package", nil],
+            # Quoting is the only legal spelling for a name carrying a dot, so it is supported
+            ["quoted-package",
+             { type: "git", url: "https://github.com/example/quoted.git", ref: "3.2.1" }]
+          ]
+        )
+      end
+
+      context "with the uv.lock a real repository has" do
+        let(:files) { [pyproject, lockfile] }
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "uv.lock",
+            content: fixture("uv_locks", "git_tag_sources.lock")
+          )
+        end
+
+        # The version comes from the lock, and for a git pin it is the package's own distribution
+        # version rather than a commit sha. Several shared code paths key on that difference, so the
+        # shape tested without a lockfile is not the shape a repository actually has.
+        it "carries the locked version alongside the git source" do
+          dep = dependencies.find { |d| d.name == "tagged-package" }
+
+          expect(dep.version).to eq("0.3.0")
+          expect(dep.requirements.first[:source])
+            .to eq(type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3")
+        end
+      end
+
+      context "when a source carries a tag that is not a string" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "uv_git_tag_sources.toml").sub('tag = "1.2.3" }', "tag = 1.2 }")
+          )
+        end
+
+        it "skips that entry rather than failing the whole manifest" do
+          expect(dependencies.map(&:name)).to include("requests", "tagged-package")
+          expect(dependencies.find { |dep| dep.name == "acme-tagged-package" }.requirements.first[:source])
+            .to be_nil
+        end
       end
     end
 

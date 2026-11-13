@@ -1,12 +1,15 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/rust_toolchain/models/rust_toolchain_toml"
 
 RSpec.describe Dependabot::RustToolchain::Models::RustToolchainToml do
+  extend T::Sig
+
   describe ".from_toml" do
     context "with valid TOML" do
+      sig { returns(String) }
       let(:toml_content) do
         <<~TOML
           [toolchain]
@@ -23,6 +26,7 @@ RSpec.describe Dependabot::RustToolchain::Models::RustToolchainToml do
     end
 
     context "with empty toolchain section" do
+      sig { returns(String) }
       let(:toml_content) do
         <<~TOML
           [toolchain]
@@ -36,6 +40,7 @@ RSpec.describe Dependabot::RustToolchain::Models::RustToolchainToml do
     end
 
     context "with no toolchain section" do
+      sig { returns(String) }
       let(:toml_content) { "" }
 
       it "raises DependencyFileNotParseable" do
@@ -45,6 +50,7 @@ RSpec.describe Dependabot::RustToolchain::Models::RustToolchainToml do
     end
 
     context "with invalid TOML syntax" do
+      sig { returns(String) }
       let(:invalid_toml) { "[toolchain\nchannel = \"stable\"" }
 
       it "raises DependencyFileNotParseable" do

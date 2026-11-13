@@ -1,9 +1,11 @@
 # typed: false
+# Sorbet cannot resolve generated examples or callback-assigned locals. https://srb.help/7003
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
+require "dependabot/maven/file_parser"
 require "dependabot/maven/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
@@ -86,6 +88,39 @@ RSpec.describe Dependabot::Maven::FileUpdater do
     end
 
     its(:length) { is_expected.to eq(1) }
+
+    context "when the requirements are unchanged" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.apache.httpcomponents:httpclient",
+          version: "4.5.3",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "4.5.3",
+            groups: dependency_groups,
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "4.5.3",
+            groups: dependency_groups,
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "raises with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["org.apache.httpcomponents:httpclient"],
+            "dependency-files" => ["pom.xml"]
+          )
+        end
+      end
+    end
 
     context "when updating a dependency declared in a .target file" do
       let(:target_body) { fixture("target-files", "example.target") }
@@ -179,6 +214,82 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         let(:dependencies) { [dependency, mockk_dependency] }
 
         its(:content) { is_expected.to include("<version>1.10.0</version>") }
+      end
+
+      context "when a plain and a classified managed entry are both updated" do
+        let(:classified_version) { "4.1.100.Final" }
+        let(:pom_body) do
+          <<~XML
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>app</artifactId>
+              <version>1.0.0</version>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <version>4.1.90.Final</version>
+                  </dependency>
+                  <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <version>#{classified_version}</version>
+                    <classifier>linux-x86_64</classifier>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+            </project>
+          XML
+        end
+        let(:requirement_pairs) do
+          plain = { file: "pom.xml", groups: [], source: nil, metadata: { packaging_type: "jar" } }
+          classified = {
+            file: "pom.xml",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar", classifier: "linux-x86_64" }
+          }
+          [
+            [plain.merge(requirement: "4.2.20.Final"), plain.merge(requirement: "4.1.90.Final")],
+            [classified.merge(requirement: "4.2.20.Final"), classified.merge(requirement: classified_version)]
+          ]
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "io.netty:netty-transport-native-epoll",
+            version: "4.2.20.Final",
+            previous_version: "4.1.90.Final",
+            requirements: requirement_pairs.map(&:first),
+            previous_requirements: requirement_pairs.map(&:last),
+            package_manager: "maven"
+          )
+        end
+
+        shared_examples "rewrites each entry in place" do
+          it "without adding a new declaration" do
+            content = updated_pom_file.content
+            expect(content.scan("<version>4.2.20.Final</version>").length).to eq(2)
+            expect(content).not_to include("4.1.90.Final")
+            expect(content).not_to include("4.1.100.Final")
+            expect(content.scan("<artifactId>netty-transport-native-epoll</artifactId>").length).to eq(2)
+          end
+        end
+
+        it_behaves_like "rewrites each entry in place"
+
+        context "when both entries have the same version" do
+          let(:classified_version) { "4.1.90.Final" }
+
+          it_behaves_like "rewrites each entry in place"
+
+          context "when the classified requirement comes first" do
+            let(:requirement_pairs) { super().reverse }
+
+            it_behaves_like "rewrites each entry in place"
+          end
+        end
       end
 
       context "with rogue whitespace" do
@@ -1583,6 +1694,75 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
 
       its(:content) { is_expected.to include("<version>0.9.5</version>") }
+    end
+
+    context "when the dependency tree scan merged into one of two identical XML entries" do
+      let(:pom_body) do
+        <<~XML
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.dependabot</groupId>
+            <artifactId>app</artifactId>
+            <version>1.0.0</version>
+            <dependencyManagement>
+              <dependencies>
+                <dependency>
+                  <groupId>org.ow2.asm</groupId>
+                  <artifactId>asm</artifactId>
+                  <version>9.6</version>
+                </dependency>
+              </dependencies>
+            </dependencyManagement>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-shade-plugin</artifactId>
+                  <version>3.5.1</version>
+                  <dependencies>
+                    <dependency>
+                      <groupId>org.ow2.asm</groupId>
+                      <artifactId>asm</artifactId>
+                      <version>9.6</version>
+                    </dependency>
+                  </dependencies>
+                </plugin>
+              </plugins>
+            </build>
+          </project>
+        XML
+      end
+      let(:previous_requirements) do
+        xml = { file: "pom.xml", requirement: "9.6", groups: [], source: nil, metadata: { packaging_type: "jar" } }
+        scanned = {
+          file: nil,
+          requirement: "9.6",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar", scope: "compile", pom_file: "pom.xml" }
+        }
+        Dependabot::Maven::FileParser::MavenDependencyParser.merge_requirements(
+          [xml.merge(metadata: xml[:metadata].merge(transitive_override: true)), xml, scanned]
+            .map { |req| Dependabot::DependencyRequirement.create(req) }
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.ow2.asm:asm",
+          version: "9.7",
+          previous_version: "9.6",
+          requirements: previous_requirements.map { |req| req.merge(requirement: "9.7") },
+          previous_requirements: previous_requirements,
+          package_manager: "maven"
+        )
+      end
+
+      it "rewrites both entries once" do
+        expect(previous_requirements.first.metadata_string("pom_file")).to eq("pom.xml")
+        content = updated_files.find { |file| file.name == "pom.xml" }.content
+        expect(content.scan("<version>9.7</version>").size).to eq(2)
+        expect(content).not_to include("<version>9.6</version>")
+      end
     end
 
     context "with a multimodule pom" do

@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Sorbet cannot resolve fixtures and matcher calls in class-scope generated examples.
+
 require "spec_helper"
 require "dependabot/go_modules/go_mod_manifest"
 

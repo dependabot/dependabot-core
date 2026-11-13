@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -14,12 +14,14 @@ RSpec.describe Dependabot::Sbt::FileUpdater do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: dependencies,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     )
   end
 
@@ -492,8 +494,13 @@ RSpec.describe Dependabot::Sbt::FileUpdater do
         )
       end
 
-      it "raises an error" do
-        expect { updated_files }.to raise_error("No files changed!")
+      it "raises an error with error report context attached" do
+        expect { updated_files }.to raise_error(RuntimeError, "No files changed!") do |error|
+          expect(Dependabot::ErrorReportContext.build(error: error)).to eq(
+            "dependency-names" => ["com.google.guava:guava"],
+            "dependency-files" => ["build.sbt"]
+          )
+        end
       end
     end
   end

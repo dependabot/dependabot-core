@@ -1,5 +1,7 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
+
+# Sorbet cannot resolve the child-context-only message fixture used by the parent subject.
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/pnpm_error_message"
@@ -99,6 +101,17 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmErrorMessage do
       it "rejoins every occurrence of the token without inserting spaces" do
         expect(normalized).to include("Failed to resolve tarball dependency \"#{url}\": error sending request for url")
         expect(normalized).to include("(#{url}): client error (Connect)")
+      end
+    end
+
+    context "with an error whose message is only the headline" do
+      let(:message) { pnpm_error("pnpm12", "unrecognized_workspace_settings") }
+
+      it "keeps the whole headline as the message" do
+        expect(normalized).to start_with(
+          "[ERR_PNPM_UNRECOGNIZED_WORKSPACE_SETTINGS] The following settings in pnpm-workspace.yaml are not " \
+          "recognized by this version of pnpm: \"minimumReleaseAg\" (did you mean \"minimumReleaseAge\"?)."
+        )
       end
     end
 

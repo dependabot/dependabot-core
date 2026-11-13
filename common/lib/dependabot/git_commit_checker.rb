@@ -315,7 +315,7 @@ module Dependabot
       local_tags_matching_sha(commit_sha).map(&:name)
     end
 
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
+    sig { overridable.params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
     def max_local_tag(tags)
       max_version_tag = tags.max_by { |t| version_from_tag(t) }
 
@@ -418,7 +418,7 @@ module Dependabot
     def allowed_versions(local_tags, filter_by_prefix: true)
       tags =
         local_tags
-        .select { |t| version_tag?(t.name) && (filter_by_prefix ? matches_existing_prefix?(t.name) : true) }
+        .select { |t| parsable_version_tag?(t.name) && (filter_by_prefix ? matches_existing_prefix?(t.name) : true) }
       filtered = tags
                  .reject { |t| tag_included_in_ignore_requirements?(t) }
       if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
@@ -589,9 +589,17 @@ module Dependabot
       dependency_source_details&.ref
     end
 
-    sig { params(tag: String).returns(T::Boolean) }
+    sig { overridable.params(tag: String).returns(T::Boolean) }
     def version_tag?(tag)
       tag.match?(VERSION_REGEX)
+    end
+
+    # A tag can match VERSION_REGEX and still be rejected by the ecosystem's version class
+    # (e.g. `v1.2.2-python38` is not a valid PEP 440 version). Parsing such a tag raises,
+    # which would abort the update for the whole dependency, so treat it as a non-version tag.
+    sig { params(tag: String).returns(T::Boolean) }
+    def parsable_version_tag?(tag)
+      version_tag?(tag) && version_class.correct?(scan_version(tag))
     end
 
     sig { params(tag: String).returns(T::Boolean) }
@@ -605,7 +613,7 @@ module Dependabot
       end
     end
 
-    sig { params(tag: String, other_tag: String).returns(T::Boolean) }
+    sig { overridable.params(tag: String, other_tag: String).returns(T::Boolean) }
     def same_prefix?(tag, other_tag)
       tag_prefix = tag.gsub(VERSION_REGEX, "")
       other_tag_prefix = other_tag.gsub(VERSION_REGEX, "")
@@ -796,7 +804,7 @@ module Dependabot
       version_class.new(scan_version(name))
     end
 
-    sig { params(name: String).returns(String) }
+    sig { overridable.params(name: String).returns(String) }
     def scan_version(name)
       T.must(T.must(name.match(VERSION_REGEX)).named_captures.fetch("version"))
     end

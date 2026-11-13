@@ -1,12 +1,15 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/rust_toolchain/models/rust_toolchain_config"
 
 RSpec.describe Dependabot::RustToolchain::Models::RustToolchainConfig do
+  extend T::Sig
+
   describe ".from_hash" do
     context "with channel specified" do
+      sig { returns(T::Hash[String, Object]) }
       let(:config_hash) do
         {
           "channel" => "nightly-2020-07-10"
@@ -21,6 +24,7 @@ RSpec.describe Dependabot::RustToolchain::Models::RustToolchainConfig do
     end
 
     context "with empty hash" do
+      sig { returns(T::Hash[String, Object]) }
       let(:config_hash) { {} }
 
       it "raises DependencyFileNotParseable" do
