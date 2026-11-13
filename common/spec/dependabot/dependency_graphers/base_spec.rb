@@ -81,6 +81,18 @@ RSpec.describe Dependabot::DependencyGraphers::Base do
           .to eq(["/app.manifest", "/app.lock", "/tests.manifest", "/tests.lock"])
       end
 
+      context "when the fetcher retrieved a support file that no group lists" do
+        let(:path_dependency) do
+          Dependabot::DependencyFile.new(name: "pkg/setup.py", content: "", directory: "/", support_file: true)
+        end
+        let(:dependency_files) { [manifest, lockfile, tests_manifest, tests_lockfile, path_dependency, unrelated] }
+
+        it "includes the support file, as resolving the directory needed it" do
+          expect(grapher.manifest_set_input_files.map(&:path))
+            .to eq(["/app.manifest", "/app.lock", "/tests.manifest", "/tests.lock", "/pkg/setup.py"])
+        end
+      end
+
       it "resolves each group so the snapshots match the groups" do
         grapher.manifest_set_input_files
 

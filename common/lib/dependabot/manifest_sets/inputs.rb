@@ -39,7 +39,8 @@ module Dependabot
 
       # Looks up the original blob of each dependency file at `commit` in the checkout at
       # `repo_contents_path`, so the result describes repository content rather than anything rewritten
-      # during fetching or resolution. Paths are deduplicated and sorted by bytes.
+      # during fetching or resolution. Paths are deduplicated and sorted by bytes. Symlinked inputs are
+      # unknown provenance: the link and every target it resolves through would all have to be recorded.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
@@ -49,9 +50,10 @@ module Dependabot
       end
       def self.resolve(dependency_files:, repo_contents_path:, commit:)
         return unresolvable(UNKNOWN_PROVENANCE) if repo_contents_path.nil?
+        return unresolvable(UNKNOWN_PROVENANCE) if dependency_files.any?(&:symlink_target)
 
         paths = dependency_files.map(&:realpath).uniq
-        return unresolvable(UNKNOWN_PROVENANCE) unless paths.all? { |path| batch_safe?(path) }
+        return unresolvable(UNKNOWN_PROVENANCE) unless paths.all? { |path| lookup_safe?(path) }
 
         oids = blob_oids(repo_contents_path, commit, paths)
         return unresolvable(UNKNOWN_PROVENANCE) if oids.nil?
@@ -60,16 +62,19 @@ module Dependabot
         new(files: files.sort_by { |file| file.path.b })
       end
 
-      # `git cat-file --batch-check` reads one `<rev>:<path>` per line, so a path must not contain a newline;
-      # anything escaping the repository root has no blob either.
+      # Paths are passed to git as literal arguments; anything escaping the repository root has no blob.
       sig { params(path: String).returns(T::Boolean) }
-      def self.batch_safe?(path)
+      def self.lookup_safe?(path)
         !path.empty? && !path.include?("\n") && !path.include?("\0") &&
           path != ".." && !path.start_with?("../", "/")
       end
-      private_class_method :batch_safe?
+      private_class_method :lookup_safe?
 
-      # Returns one blob OID per path, in order, or nil if any path is not a blob at `commit`.
+      # Mode of a regular (possibly executable) file in a Git tree; symlinks (120000) and submodules differ.
+      REGULAR_FILE_MODES = %w(100644 100755).freeze
+
+      # Returns one blob OID per path, in order, or nil if any path is not a regular file at `commit`. A path
+      # through a symlinked directory is not in the tree, so it is reported missing rather than followed.
       sig do
         params(repo_contents_path: String, commit: String, paths: T::Array[String])
           .returns(T.nilable(T::Array[String]))
@@ -77,24 +82,29 @@ module Dependabot
       def self.blob_oids(repo_contents_path, commit, paths)
         return [] if paths.empty?
 
-        stdin = paths.map { |path| "#{commit}:#{path}\n" }.join
         stdout, status = Open3.capture2(
           "git",
+          "--literal-pathspecs",
           "-C",
           repo_contents_path,
-          "cat-file",
-          "--batch-check=%(objecttype) %(objectname)",
-          stdin_data: stdin,
+          "ls-tree",
+          "-z",
+          "--full-tree",
+          commit,
+          "--",
+          *paths,
           binmode: true
         )
         return nil unless status.success?
 
-        lines = stdout.split("\n")
-        return nil unless lines.length == paths.length
-
-        lines.map do |line|
-          type, oid = line.split(" ", 2)
-          return nil unless type == "blob" && oid&.match?(/\A(?:\h{40}|\h{64})\z/)
+        entries = stdout.split("\0").to_h do |entry|
+          meta, path = entry.split("\t", 2)
+          [path.to_s.dup.force_encoding(Encoding::UTF_8), meta.to_s.split]
+        end
+        paths.map do |path|
+          mode, type, oid = entries[path]
+          return nil unless REGULAR_FILE_MODES.include?(mode) && type == "blob"
+          return nil unless oid&.match?(/\A(?:\h{40}|\h{64})\z/)
 
           oid.downcase
         end
