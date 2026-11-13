@@ -1303,6 +1303,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    # The update checker chose 6.7.3 by running the unpinned update under the repo's own minimumReleaseAge. With the
+    # security override the retry could take a newer release inside that window, so it runs under the same gate.
+    context "when it is a security update and the repo sets its own minimumReleaseAge" do
+      let(:files) do
+        project_dependency_files(project_name) +
+          [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 4320\n")]
+      end
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          security_updates_only: true
+        )
+      end
+      let(:security_override) { "--config.minimum-release-age=0 --config.minimum-release-age-strict=false" }
+      let(:strict_off) { "--config.minimum-release-age-strict=false" }
+      let(:pinned_update) do
+        "update fetch-factory@0.0.2 acorn@6.7.3  --lockfile-only --no-save -r #{security_override}"
+      end
+      let(:fingerprint) do
+        { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r #{security_override}" }
+      end
+      let(:repo_gated_update) { "#{unpinned_update} #{strict_off}" }
+      let(:repo_gated_fingerprint) do
+        { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r #{strict_off}" }
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("12.16.0"))
+      end
+
+      it "retries without a version under the repo's gate, not the security override" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(repo_gated_update, repo_gated_fingerprint) { rewrite_lockfile_acorn("6.7.3") }
+
+        expect(updated_pnpm_lock_content).to include("acorn@6.7.3:")
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+          .with(repo_gated_update, repo_gated_fingerprint)
+        expect(Dependabot::NpmAndYarn::Helpers).not_to have_received(:run_pnpm_command)
+          .with("#{unpinned_update} #{security_override}", anything)
+      end
+
+      context "when pnpm cannot resolve under the repo's gate" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with(repo_gated_update, repo_gated_fingerprint)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION  legacy-young@1.0.0 was published at …",
+                error_context: {}
+              )
+            )
+        end
+
+        it "falls back to the security override" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("#{unpinned_update} #{security_override}", fingerprint) { rewrite_lockfile_acorn("6.7.3") }
+
+          expect(updated_pnpm_lock_content).to include("acorn@6.7.3:")
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+            .with("#{unpinned_update} #{security_override}", fingerprint)
+        end
+      end
+    end
+
     # Stands in for pnpm in the temporary directory the update runs in: moves
     # the fixture's first edge to acorn onto `version`, and every other edge
     # onto `extra` when given.
