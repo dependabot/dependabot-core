@@ -1432,6 +1432,12 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         .to be(true)
     end
 
+    it "reports every layer's original files as the directory's inputs" do
+      expect(grapher.manifest_set_input_files.map(&:path)).to contain_exactly(
+        "/requirements.in", "/requirements.txt", "/requirements-tests.in", "/requirements-tests.txt"
+      )
+    end
+
     context "when the directory has a single manifest" do
       let(:requirements_txt) do
         Dependabot::DependencyFile.new(
