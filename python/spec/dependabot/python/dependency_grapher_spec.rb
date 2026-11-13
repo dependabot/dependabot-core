@@ -1531,8 +1531,9 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
   end
 
   describe "graph version" do
+    # uv's lock also covers parsing code in this gem, and uv's CI does not run when only this gem changes.
     it "is locked to the current grapher sources (run bin/update-manifest-set-graph-versions.rb)" do
-      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: ["pip"])).to be_empty
+      expect(Dependabot::DependencyGraphers::GraphVersions.stale_owners(owners: %w(pip uv))).to be_empty
     end
   end
 end
