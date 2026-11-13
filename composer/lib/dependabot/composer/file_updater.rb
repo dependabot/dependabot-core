@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -14,7 +14,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         if file_changed?(T.must(composer_json))
           updated_files <<
@@ -31,7 +31,7 @@ module Dependabot
 
         if updated_files.none? ||
            updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
-          raise "No files have changed!"
+          raise no_files_changed_error("No files have changed!", { updated_files: updated_files.map(&:name) })
         end
 
         updated_files

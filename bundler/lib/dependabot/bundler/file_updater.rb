@@ -107,7 +107,7 @@ module Dependabot
       def check_updated_files(updated_files)
         return if updated_files.reject { |f| dependency_files.include?(f) }.any?
 
-        raise "No files have changed!"
+        raise no_files_changed_error("No files have changed!", { updated_files: updated_files.map(&:name) })
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
