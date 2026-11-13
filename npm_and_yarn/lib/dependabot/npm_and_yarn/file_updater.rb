@@ -42,6 +42,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
+        Helpers.dependency_files = dependency_files
         Helpers.activate_npm_version_selector(dependency_files)
         updated_files = T.let([], T::Array[DependencyFile])
 

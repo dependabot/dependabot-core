@@ -77,11 +77,37 @@ jobs:
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: script/build ${{ matrix.suite.build || matrix.suite.path }}
 
+      - name: Set up Node 18 test runtime
+        if: steps.changes.outputs[matrix.suite.path] == 'true' && matrix.suite.path == 'npm_and_yarn'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 18.20.8
+
+      - name: Record Node 18 test runtime
+        if: steps.changes.outputs[matrix.suite.path] == 'true' && matrix.suite.path == 'npm_and_yarn'
+        run: echo "TEST_NODE_18=$(dirname "$(dirname "$(command -v node)")")" >> "$GITHUB_ENV"
+
+      - name: Set up Node 22 test runtime
+        if: steps.changes.outputs[matrix.suite.path] == 'true' && matrix.suite.path == 'npm_and_yarn'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.20.0
+
+      - name: Record Node 22 test runtime
+        if: steps.changes.outputs[matrix.suite.path] == 'true' && matrix.suite.path == 'npm_and_yarn'
+        run: echo "TEST_NODE_22=$(dirname "$(dirname "$(command -v node)")")" >> "$GITHUB_ENV"
+
       - name: Run ${{ matrix.suite.name }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
+          node_args=()
+          if [ "${{ matrix.suite.path }}" = "npm_and_yarn" ]; then
+            node_args+=(--volume "${TEST_NODE_18}:/opt/test-node-18:ro" --env DEPENDABOT_TEST_NODE_18=/opt/test-node-18)
+            node_args+=(--volume "${TEST_NODE_22}:/opt/test-node-22:ro" --env DEPENDABOT_TEST_NODE_22=/opt/test-node-22)
+          fi
           docker run \
             --pull never \
+            "${node_args[@]}" \
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \

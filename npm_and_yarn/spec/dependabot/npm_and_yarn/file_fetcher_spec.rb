@@ -62,6 +62,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   it_behaves_like "a dependency file fetcher"
 
+  context "with Node version files" do
+    before do
+      listing = JSON.parse(fixture("github", "contents_js_npm.json"))
+      %w(.nvmrc .node-version).each do |name|
+        listing << { "name" => name, "path" => name, "type" => "file", "size" => 3 }
+        body = { name: name, path: name, type: "file", encoding: "base64", content: Base64.strict_encode64("22\n") }
+        stub_request(:get, File.join(url, "#{name}?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: body.to_json, headers: json_header)
+      end
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: listing.to_json, headers: json_header)
+    end
+
+    it "fetches both version files as support files" do
+      names = %w(.nvmrc .node-version)
+      files = file_fetcher_instance.files.select { |file| names.include?(file.name) }
+
+      expect(files.map(&:name)).to contain_exactly(".nvmrc", ".node-version")
+      expect(files).to all(have_attributes(content: "22\n", support_file: true))
+    end
+
+    %i(files ecosystem_versions).each do |method|
+      it "uses this project's runtime files during #{method} package-manager setup" do
+        stale = Dependabot::DependencyFile.new(name: "package.json", content: '{"engines":{"node":"18"}}')
+        Dependabot::NpmAndYarn::Helpers.dependency_files = [stale]
+        expect(file_fetcher_instance).to receive(:npm_version).at_least(:once).and_wrap_original do |original|
+          files = Dependabot::NpmAndYarn::Helpers.dependency_files
+          expect(files.map(&:name)).to contain_exactly("package.json", ".nvmrc", ".node-version")
+          expect(files).not_to include(stale)
+          original.call
+        end
+
+        file_fetcher_instance.public_send(method)
+      end
+    end
+  end
+
   context "with .yarn data stored in git-lfs" do
     let(:source) do
       Dependabot::Source.new(

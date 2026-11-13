@@ -12,6 +12,6 @@
     "sourceMap": true,
     "skipLibCheck": true
   },
-  "include": ["lib/**/*.ts", "run.ts", "test/**/*.ts"],
+  "include": ["lib/**/*.ts", "run.ts", "node-version.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
