@@ -69,6 +69,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
+        Helpers.dependency_files = node_runtime_files
         package_managers = {}
 
         package_managers["npm"] = npm_version if npm_version
@@ -83,10 +84,10 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        Helpers.dependency_files = node_runtime_files
         raise_if_bun_lock_misconfigured_as_npm!
 
-        fetched_files = T.let([], T::Array[DependencyFile])
-        fetched_files << package_json
+        fetched_files = node_runtime_files.dup
         fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
@@ -115,6 +116,15 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Array[DependencyFile]) }
+      def node_runtime_files
+        @node_runtime_files ||= T.let(
+          [package_json, *%w(.nvmrc .node-version).filter_map { |name| fetch_support_file(name) }]
+            .reject { |file| Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths) },
+          T.nilable(T::Array[DependencyFile])
+        )
+      end
 
       sig { returns(T::Array[DependencyFile]) }
       def npm_files

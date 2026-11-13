@@ -54,12 +54,13 @@ def create_dependency(
   )
 end
 
-# The package manager helpers keep the job's files and credentials in thread-local storage, and pnpm is chosen from
-# those files. Clear it after each example so one spec's old-lockfile project cannot decide which pnpm a later spec
-# runs.
+# Runtime and package-manager selection use thread-local job state. Clear active selections after each example
+# so one repository cannot decide which Node, npm, or pnpm a later spec runs.
 RSpec.configure do |config|
   config.after do
     Thread.current[:npm_and_yarn_dependency_files] = nil
     Thread.current[:npm_and_yarn_credentials] = nil
+    Thread.current[:npm_and_yarn_node_version_manager] = nil
+    Thread.current[:npm_and_yarn_npm_version_selector] = nil
   end
 end

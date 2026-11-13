@@ -5,6 +5,7 @@
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
+require_relative "../../../support/node_runtime"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   subject(:updated_pnpm_lock_content) do
@@ -418,7 +419,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when there is a unsupported engine response from registry" do
+    context "when package.json declares a supported Node.js engine" do
+      include NodeRuntimeSpecHelper
+
       let(:dependency_name) { "@blocknote/core" }
       let(:version) { "0.15.4" }
       let(:previous_version) { "0.15.3 " }
@@ -433,9 +436,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       let(:project_name) { "pnpm/unsupported_engine" }
 
-      it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::ToolVersionNotSupported)
+      before { stub_node_runtime(18) }
+
+      it "updates the lockfile using the declared Node.js version" do
+        lockfile = YAML.safe_load(updated_pnpm_lock_content)
+        expect(lockfile.dig("dependencies", "@blocknote/core", "version")).to eq("0.15.4")
       end
     end
 

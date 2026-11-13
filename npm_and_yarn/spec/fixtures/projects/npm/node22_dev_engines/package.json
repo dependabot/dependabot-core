@@ -1,0 +1,12 @@
+{
+  "name": "node22-dev-engines",
+  "version": "1.0.0",
+  "private": true,
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "22.x",
+      "onFail": "error"
+    }
+  }
+}

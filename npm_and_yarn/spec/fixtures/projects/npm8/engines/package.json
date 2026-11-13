@@ -1,7 +1,7 @@
 {
     "name": "{{ name }}",
     "engines": {
-      "node": "512",
+      "node": ">=18",
       "npm": "256"
     },
     "version": "1.0.0",

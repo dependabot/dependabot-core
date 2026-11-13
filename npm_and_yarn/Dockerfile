@@ -23,6 +23,9 @@ ARG NODEJS_VERSION=24
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
 ARG NPM_VERSION=12.2.0
 
+# Check for updates at https://github.com/nvm-sh/nvm/releases
+ARG NVM_VERSION=v0.41.0
+
 # Route Node's built-in fetch() and http(s) agents through HTTP_PROXY/HTTPS_PROXY.
 # Corepack >=0.35 requires this setting for proxy support, and pnpm 12's
 # npm package is a launcher that downloads the native `@pnpm/exe.<platform>` binary
@@ -44,6 +47,13 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
+ARG NVM_NODEJS_ORG_MIRROR=https://nodejs.org/dist
+ENV NVM_DIR="$DEPENDABOT_HOME/.nvm" \
+    NVM_NODEJS_ORG_MIRROR="$NVM_NODEJS_ORG_MIRROR"
+RUN git clone --depth 1 --branch "$NVM_VERSION" https://github.com/nvm-sh/nvm.git "$NVM_DIR"
+
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers/node-version-manager /opt/node-version-manager
+
 RUN <<EOF
   corepack install pnpm@$PNPM_VERSION --global
   corepack install yarn@$YARN_VERSION --global
@@ -58,6 +68,10 @@ RUN <<EOF
   # pnpm 12's package is a launcher that downloads its native binary on first run; run it once to cache it in the image
   pnpm --version
 EOF
+
+# Keep the image's package managers ahead of nvm's bundled npm when selecting Node.
+RUN mkdir -p /opt/node-tools \
+  && for tool in npm corepack yarn pnpm; do ln -s "$(command -v "$tool")" "/opt/node-tools/$tool"; done
 
 # Configure Node to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
