@@ -143,6 +143,36 @@ has not been refreshed. Refresh it with an explicit decision per changed owner:
 `--check` reports owners whose lock is stale. When a grapher starts depending on another file, add it to
 that owner's `sources`.
 
+## Snapshot metadata
+
+With the `emit_manifest_set_envelope` experiment enabled (it is off by default), a job whose package
+manager is a catalog owner adds one snapshot metadata entry, `manifest_set`. Its value is a JSON
+**string** so that the metadata map stays string-to-string:
+
+```json
+{
+  "schema_version": 1, "ecosystem": "pypi", "directory": "api", "owner": "pip", "graph_version": "1",
+  "state": "present",
+  "files": [{ "path": "api/requirements.txt", "blob_oid": "2222222222222222222222222222222222222222" }]
+}
+```
+
+- `directory` is the job directory in canonical form: `/api/` becomes `api` and `/` becomes `.`. It
+  always names the same directory as the snapshot's `scanned_manifest_path`.
+- `present` lists every original repository input (path and Git blob OID), including selector files
+  for other owners in the directory, sorted by path. An empty dependency graph can still be present.
+- `absent` carries `"files": []`. It is reported when the job finds no manifests, which includes a
+  directory that was deleted. Its `owner` and `graph_version` are only there for schema uniformity.
+- `unresolvable` carries a `reason` and no `files`: `input_limit` (more than 4096 files, a path over
+  4096 bytes or an envelope over 1 MiB; lists are never truncated), `workspace` (a `go.work` in the
+  directory), `local_replace` (a Go `replace` pointing inside the repository), `ambiguous_owner` or
+  `unknown_provenance`.
+- Failed, degraded and error-skipped snapshots, and jobs whose package manager is not an owner,
+  carry no `manifest_set`.
+
+The snapshot metadata map allows at most eight entries, including keys added after submission;
+`GithubApi::DependencySubmission` refuses to build metadata over that budget.
+
 ## Changing the catalog
 
 Bumping the meaning of an existing rule invalidates every set it describes downstream, so prefer

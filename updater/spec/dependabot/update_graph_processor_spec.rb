@@ -673,6 +673,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
         expect(service).to receive(:create_dependency_submission) do |args|
           expect(args[:dependency_submission].manifest_set).to be(descriptor)
+          expect(args[:dependency_submission].payload[:metadata][:manifest_set]).to eq(descriptor.to_json_string)
         end
 
         update_graph_processor.run
