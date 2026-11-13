@@ -683,6 +683,77 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
+  context "with a grapher that records which manifest-set hooks it is asked for" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+    let(:hook_calls) { [] }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      calls = hook_calls
+      snapshots = [
+        Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+          manifest_file: dependency_files.first, resolved_dependencies: {}
+        )
+      ]
+      recording_grapher_class = Class.new(Dependabot::DependencyGraphers.for_package_manager(job.package_manager)) do
+        define_method(:manifest_group_snapshots) { snapshots }
+
+        define_method(:manifest_set_input_files) do
+          calls << :manifest_set_input_files
+          []
+        end
+
+        define_method(:manifest_set_unresolvable_reason) do
+          calls << :manifest_set_unresolvable_reason
+          nil
+        end
+      end
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with(job.package_manager).and_return(recording_grapher_class)
+      allow(service).to receive(:create_dependency_submission)
+      allow(service).to receive(:record_workflow_result)
+    end
+
+    it "does not ask the grapher for manifest-set inputs when the experiment is off" do
+      update_graph_processor.run
+
+      expect(hook_calls).to be_empty
+    end
+
+    context "when the experiment is on but the catalog does not list the package manager as an owner" do
+      before { Dependabot::Experiments.register(:emit_manifest_set_envelope, true) }
+
+      it "does not ask the grapher for manifest-set inputs" do
+        update_graph_processor.run
+
+        expect(hook_calls).to be_empty
+      end
+    end
+
+    context "when the catalog lists the package manager as an owner" do
+      include_context "with the job's package manager as a manifest-set owner"
+
+      it "asks the grapher for its manifest-set inputs" do
+        allow(Dependabot::ManifestSets::Collector).to receive(:describe).and_return(descriptor)
+
+        update_graph_processor.run
+
+        expect(hook_calls).to contain_exactly(:manifest_set_input_files, :manifest_set_unresolvable_reason)
+      end
+    end
+  end
+
   context "with a directory that failed to fetch due to an unreachable path dependency" do
     let(:directories) { [dir_ok, dir_broken] }
     let(:dir_ok) { "/" }

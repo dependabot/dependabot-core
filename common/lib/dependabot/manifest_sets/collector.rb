@@ -59,7 +59,8 @@ module Dependabot
       # manager is not a catalog owner, or its result is empty while files matching the ecosystem's path rules
       # remain in the directory (another owner's set). `unresolvable_reason` is the grapher's own reason why
       # the set's inputs cannot be listed. An empty result is `absent` only when no file directly in the
-      # directory matches a path rule, which includes a directory that no longer exists at the commit.
+      # directory matches a path rule, which includes a directory that no longer exists at the commit. Nonempty
+      # inputs in a directory where no such file exists are unresolvable: the catalog describes no set there.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
@@ -102,9 +103,12 @@ module Dependabot
         end
 
         if inputs.files.empty?
-          return nil if (listing.blobs.keys + listing.symlinks).any? { |basename| ecosystem.rule_matches?(basename) }
+          return nil if holds_set?(ecosystem, listing)
 
           return Descriptor.absent(**identity)
+        end
+        unless holds_set?(ecosystem, listing)
+          return Descriptor.unresolvable(**identity, reason: Descriptor::UNKNOWN_PROVENANCE)
         end
 
         inputs = inputs.with_files(selector_files(ecosystem, listing))
@@ -126,6 +130,12 @@ module Dependabot
         end
       end
 
+      # Whether any file directly in the directory, a blob or a symlink, matches one of the ecosystem's path rules.
+      sig { params(ecosystem: Catalog::Ecosystem, listing: DirectoryListing).returns(T::Boolean) }
+      def self.holds_set?(ecosystem, listing)
+        (listing.blobs.keys + listing.symlinks).any? { |basename| ecosystem.rule_matches?(basename) }
+      end
+
       # Like a symlinked input, a symlinked selector's link text says nothing about what it points to.
       sig { params(ecosystem: Catalog::Ecosystem, listing: DirectoryListing).returns(T::Boolean) }
       def self.symlinked_selector?(ecosystem, listing)
@@ -140,7 +150,7 @@ module Dependabot
           InputFile.new(path: "#{prefix}#{basename}", blob_oid: oid) if oid
         end
       end
-      private_class_method :selector_files, :symlinked_selector?, :basenames_in
+      private_class_method :selector_files, :holds_set?, :symlinked_selector?, :basenames_in
     end
   end
 end

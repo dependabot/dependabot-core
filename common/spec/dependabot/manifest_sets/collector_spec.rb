@@ -282,6 +282,16 @@ RSpec.describe Dependabot::ManifestSets::Collector do
       )
     end
 
+    it "is unresolvable when no file directly in the directory defines the set" do
+      commit = commit_files(%w(requirements/production.txt))
+
+      descriptor = describe_set([file("requirements/production.txt")], directory: "/", owner_id: "pip", commit: commit)
+
+      expect(descriptor.to_h).to include(
+        "directory" => ".", "state" => "unresolvable", "reason" => Dependabot::ManifestSets::Descriptor::UNKNOWN_PROVENANCE
+      )
+    end
+
     it "is unresolvable when an input has no repository blob" do
       commit = commit_files(%w(api/requirements.txt))
 

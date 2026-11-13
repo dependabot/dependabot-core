@@ -7,6 +7,7 @@ require "pathname"
 
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
+require "dependabot/manifest_sets/descriptor"
 require "dependabot/python/file_parser"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
@@ -69,6 +70,14 @@ module Dependabot
         # Checked last, as the package manager is memoised and must see any generated lockfile.
         file_parser.options[:requirement_roots] = true if supports_layering?
         super
+      end
+
+      # A generated poetry.lock pins whatever resolved during this scan, so the repository inputs alone do not
+      # determine the graph.
+      sig { override.returns(T.nilable(String)) }
+      def manifest_set_unresolvable_reason
+        manifest_group_snapshots
+        Dependabot::ManifestSets::Descriptor::UNKNOWN_PROVENANCE if @ephemeral_lockfile_generated
       end
 
       # Layering is specific to pip / pip-compile for Python.

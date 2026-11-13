@@ -330,6 +330,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
 
+      it "can describe the manifest set by its committed inputs" do
+        expect(grapher.manifest_set_unresolvable_reason).to be_nil
+      end
+
       it "extracts dependency relationships from the lockfile" do
         resolved_dependencies = grapher.resolved_dependencies
 
@@ -888,6 +892,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         it "reports pyproject.toml as the relevant dependency file, not the ephemeral lockfile" do
           grapher.resolved_dependencies
           expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+        end
+
+        it "reports the manifest set as unknown provenance, as the lockfile is not a repository input" do
+          expect(grapher.manifest_set_unresolvable_reason).to eq("unknown_provenance")
         end
       end
 
