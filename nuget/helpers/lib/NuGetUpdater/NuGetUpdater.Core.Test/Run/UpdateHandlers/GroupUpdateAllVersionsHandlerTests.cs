@@ -975,6 +975,293 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
     }
 
     [Fact]
+    public async Task GeneratesCreatePullRequest_GroupedUpdatesToSharedFileFromAllDirectories()
+    {
+        // both directories update the same Directory.Packages.props; the group PR has both updates and the ungrouped
+        // PR starts from the original file
+        await TestAsync(
+            job: new Job()
+            {
+                Source = CreateJobSource("/src/client", "/src/server"),
+                DependencyGroups = [
+                    new()
+                    {
+                        Name = "test-group",
+                        Rules = new()
+                        {
+                            ["patterns"] = new[] { "*" },
+                            ["exclude-patterns"] = new[] { "Ungrouped.*" },
+                        },
+                    },
+                ],
+            },
+            files: [
+                ("src/client/client.csproj", "contents irrelevant"),
+                ("src/server/server.csproj", "contents irrelevant"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Client.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Server.Dependency" Version="3.0.0" />
+                        <PackageVersion Include="Ungrouped.Dependency" Version="5.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src/client", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src/client",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "client.csproj",
+                            Dependencies = [
+                                new("Client.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Ungrouped.Dependency", "5.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = ["../../Directory.Packages.props"],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                }),
+                ("/src/server", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src/server",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "server.csproj",
+                            Dependencies = [
+                                new("Server.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = ["../../Directory.Packages.props"],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var repoRoot = input.Item1;
+                var discovery = input.Item2;
+                var dependencyInfo = input.Item3;
+                var newVersion = dependencyInfo.Name switch
+                {
+                    "Client.Dependency" => "2.0.0",
+                    "Server.Dependency" => "4.0.0",
+                    "Ungrouped.Dependency" => "6.0.0",
+                    _ => throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}"),
+                };
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = newVersion,
+                    UpdatedDependencies = [],
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRoot = input.Item1;
+                var workspacePath = input.Item2;
+                var dependencyName = input.Item3;
+                var previousVersion = input.Item4;
+                var newVersion = input.Item5;
+                var isTopLevel = input.Item6;
+
+                var propsPath = Path.Join(repoRoot, "Directory.Packages.props");
+                var contents = await File.ReadAllTextAsync(propsPath);
+                contents = contents.Replace(
+                    $"Include=\"{dependencyName}\" Version=\"{previousVersion}\"",
+                    $"Include=\"{dependencyName}\" Version=\"{newVersion}\"");
+                await File.WriteAllTextAsync(propsPath, contents);
+
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [new DirectUpdate() { DependencyName = dependencyName, NewVersion = NuGetVersion.Parse(newVersion), UpdatedFiles = ["/Directory.Packages.props"] }],
+                };
+            }),
+            expectedUpdateHandler: GroupUpdateAllVersionsHandler.Instance,
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions",
+                    }
+                },
+                // first the grouped updates
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Client.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Version = "5.0.0",
+                            Requirements = [
+                                new() { Requirement = "5.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/Directory.Packages.props", "/src/client/client.csproj"],
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Server.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/src/server/server.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/Directory.Packages.props", "/src/server/server.csproj"],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Client.Dependency",
+                            Directory = "/src/client",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new() { Requirement = "2.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "1.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Server.Dependency",
+                            Directory = "/src/server",
+                            Version = "4.0.0",
+                            Requirements = [
+                                new() { Requirement = "4.0.0", File = "/src/server/server.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "3.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "3.0.0", File = "/src/server/server.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "Directory.Packages.props",
+                            Content = """
+                                <Project>
+                                  <ItemGroup>
+                                    <PackageVersion Include="Client.Dependency" Version="2.0.0" />
+                                    <PackageVersion Include="Server.Dependency" Version="4.0.0" />
+                                    <PackageVersion Include="Ungrouped.Dependency" Version="5.0.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """,
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                    DependencyGroup = "test-group",
+                },
+                // now the ungrouped updates
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Client.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Version = "5.0.0",
+                            Requirements = [
+                                new() { Requirement = "5.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/Directory.Packages.props", "/src/client/client.csproj"],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Directory = "/src/client",
+                            Version = "6.0.0",
+                            Requirements = [
+                                new() { Requirement = "6.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "5.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "5.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "Directory.Packages.props",
+                            Content = """
+                                <Project>
+                                  <ItemGroup>
+                                    <PackageVersion Include="Client.Dependency" Version="1.0.0" />
+                                    <PackageVersion Include="Server.Dependency" Version="3.0.0" />
+                                    <PackageVersion Include="Ungrouped.Dependency" Version="6.0.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """,
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Server.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/src/server/server.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/Directory.Packages.props", "/src/server/server.csproj"],
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
     public async Task GeneratesCreatePullRequest_Grouped_SecurityUpdatesOnly()
     {
         // no groups specified; create 1 PR for each directory, but only for those dependencies explicitly listed
